@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
-import {ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
-import {normalizeStepRef} from './PipelineInstance';
+import {normalizeIdRef} from './PipelineInstance';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -21,15 +21,11 @@ export type FuncCallIODescription = {
   direction: 'input' | 'output';
 }
 
-type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
+type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial | AbstractPipelineActionConfiguration;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-/** @deprecated Use PipelineConfigurationDynamicProcessed */
-export type PipelineConfigurationParallelProcessed = PipelineConfigurationDynamicProcessed;
-/** @deprecated Use PipelineConfigurationDynamicProcessed */
-export type PipelineConfigurationSequentialProcessed = PipelineConfigurationDynamicProcessed;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<FuncCallIODescription[]>;
+export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<FuncCallIODescription[]>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationDynamicProcessed;
 
 export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
@@ -39,14 +35,8 @@ function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 function isPipelineDynamicInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationDynamicInitial {
-  const type = (c as PipelineConfigurationDynamicInitial).type;
-  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
+  return isDynamicType((c as PipelineConfigurationDynamicInitial).type);
 }
-
-/** @deprecated Use isPipelineDynamicInitial */
-const isPipelineParallelInitial = isPipelineDynamicInitial;
-/** @deprecated Use isPipelineDynamicInitial */
-const isPipelineSequentialInitial = isPipelineDynamicInitial;
 
 function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefInitial {
   return !!((c as PipelineRefInitial).type === 'ref');
@@ -57,11 +47,11 @@ function isActionConfigInitial(c: ConfigInitialTraverseItem): c is AbstractPipel
 }
 
 function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
-  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
+  return !isPipelineStaticInitial(c) && !isPipelineDynamicInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
 }
 
 function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationInitial {
-  return isPipelineStaticInitial(c) || isPipelineParallelInitial(c) || isPipelineSequentialInitial(c);
+  return isPipelineStaticInitial(c) || isPipelineDynamicInitial(c);
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
@@ -93,7 +83,7 @@ async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
@@ -130,7 +120,7 @@ async function configProcessing(
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
-function processUIFlags(item: PipelineDynamicItem<LinkSpecString, never, PipelineRefInitial>) {
+function processUIFlags(item: PipelineDynamicItem<never>) {
   if (item.disableUIControlls) {
     item.disableUIAdding = true;
     item.disableUIDragging = true;
@@ -143,7 +133,8 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: 
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
-  return {...conf, links, actions, onInit, onReturn};
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, links, actions, onInit, onReturn, states};
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
@@ -151,11 +142,12 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
-  const initialSteps = conf.initialSteps?.map((s) => normalizeStepRef(s));
-  return {...conf, actions, links, onInit, onReturn, initialSteps};
+  const initialSteps = conf.initialSteps?.map((s) => normalizeIdRef(s));
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, actions, links, onInit, onReturn, initialSteps, states};
 }
 
-async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>, logger?: DriverLogger) {
+async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const actions = processStepActions(conf.actions ?? [], logger);
   const io = await getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
@@ -165,7 +157,8 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
     const hookMaker = DG.Func.byName(viewersHookMakerName);
     viewersHook = await hookMaker.apply();
   }
-  return {...conf, viewersHook, io, actions};
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, viewersHook, io, actions, states};
 }
 
 function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {

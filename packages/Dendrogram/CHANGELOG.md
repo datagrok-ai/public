@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.4.14 (2026-05-19)
+
+* GROK-20143 Demo: Heatmap: cells are editable due to incorrect demo setup
+
 ## 1.4.13 (2026-05-19)
 
 * GROK-20140: Dendrogram: errors on switching beetween chem space and molecule activity cliffs demos
