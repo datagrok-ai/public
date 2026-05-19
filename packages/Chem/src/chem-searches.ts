@@ -219,7 +219,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
       _chemGetSimilarities(queryMolString, fingerprints)) : null;
 }
@@ -241,7 +241,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
   assure.notNull(queryMolString, 'queryMolString');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
 }
 

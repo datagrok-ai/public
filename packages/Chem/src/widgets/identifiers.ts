@@ -381,7 +381,7 @@ function isInchiKey(s: string) {
     return false;
 
   for (let i = 0; i < s.length; i++) {
-    if (i != 14 && i != 15) {
+    if (i !== 14 && i !== 15) {
       const c = s.charCodeAt(i);
       if (!(c >= 65 && c <= 90))
         return false;

@@ -210,6 +210,10 @@ export function rGroupAnalysis(col: DG.Column): void {
 
 
 export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promise<RGroupDecompRes | undefined> {
+  if (!col.dataFrame) {
+    grok.shell.error('R-group analysis requires a column that belongs to a table');
+    return;
+  }
   const getPrefixIdx = (colPrefix: string) => {
     let prefixIdx = 0;
     col = col.dataFrame.columns.byName(params.molColName);

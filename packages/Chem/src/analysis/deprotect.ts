@@ -89,7 +89,7 @@ export class DeprotectEditor extends DG.FuncCallEditor {
     const correctedFragment = correctRGroups(grok.chem.convert(this.fragmentInput.value ?? '', grok.chem.Notation.Unknown, grok.chem.Notation.Smiles));
     if (!correctedFragment)
       return 'Fragment must be a valid molecule';
-    if (correctedFragment.indexOf('[*:1]') == -1)
+    if (correctedFragment.indexOf('[*:1]') === -1)
       return 'Fragment must contain R1-group';
     return null;
   };
