@@ -337,7 +337,7 @@ export class PackageFunctions {
     'description': 'A network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.'
   })
   static async _networkDiagramDemo() : Promise<void> {
-    await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
+    await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', 'edgeColorColumnName': 'OverallRelationship', useGoogleImage: true} as DG.INetworkDiagramSettings);
   }
 
 
