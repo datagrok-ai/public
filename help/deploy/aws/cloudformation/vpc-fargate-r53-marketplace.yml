@@ -860,6 +860,8 @@ Resources:
         - RestoreFromSnapshot
         - Ref: AWS::NoValue
         - datagrok
+      DBParameterGroupName:
+        Ref: DatagrokDBParameterGroup
       DBSnapshotIdentifier:
         Fn::If:
         - RestoreFromSnapshot
@@ -896,6 +898,16 @@ Resources:
       - Ref: DatagrokDBSecurityGroup
     Type: AWS::RDS::DBInstance
     UpdateReplacePolicy: Delete
+  DatagrokDBParameterGroup:
+    Properties:
+      Description: Datagrok PostgreSQL tuning (SSD/EBS-aware planner, larger work_mem)
+      Family: postgres17
+      Parameters:
+        effective_io_concurrency: '200'
+        maintenance_work_mem: '524288'
+        random_page_cost: '1.1'
+        work_mem: '65536'
+    Type: AWS::RDS::DBParameterGroup
   DatagrokDBSecurityGroup:
     Properties:
       GroupDescription:
