@@ -824,6 +824,9 @@ export const TreeWizard = Vue.defineComponent({
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
               buttonActions={buttonActions.value}
+              body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
+                ? states.descriptions[chosenStepUuid.value]?.body as string
+                : undefined}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
               onUpdate:funcCall={onPipelineFuncCallUpdate}
