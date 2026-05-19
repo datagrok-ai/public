@@ -34,14 +34,14 @@ export type InstanceConfRecInput<C> = {
 export type PipelineInstanceConfig = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
 export type PipelineInstanceConfigInput = InstanceConfRecInput<StepDynamicInitialConfig | StepFunCallInitialConfig>;
 
-export function normalizeStepRef<T extends {id: ItemId}>(s: ItemId | T): T {
+export function normalizeIdRef<T extends {id: ItemId}>(s: ItemId | T): T {
   return typeof s === 'string' ? ({id: s} as T) : s;
 }
 
 export function normalizePipelineInstanceConfig(c: PipelineInstanceConfigInput): PipelineInstanceConfig {
   return {
     ...c,
-    steps: c.steps?.map((s) => normalizePipelineInstanceConfig(normalizeStepRef(s))),
+    steps: c.steps?.map((s) => normalizePipelineInstanceConfig(normalizeIdRef(s))),
   };
 }
 

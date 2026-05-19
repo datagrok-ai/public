@@ -5,7 +5,7 @@ import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguratio
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
-import {normalizeStepRef} from './PipelineInstance';
+import {normalizeIdRef} from './PipelineInstance';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -143,7 +143,8 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: 
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
-  return {...conf, links, actions, onInit, onReturn};
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, links, actions, onInit, onReturn, states};
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
@@ -151,8 +152,9 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
-  const initialSteps = conf.initialSteps?.map((s) => normalizeStepRef(s));
-  return {...conf, actions, links, onInit, onReturn, initialSteps};
+  const initialSteps = conf.initialSteps?.map((s) => normalizeIdRef(s));
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, actions, links, onInit, onReturn, initialSteps, states};
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>, logger?: DriverLogger) {
@@ -165,7 +167,8 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
     const hookMaker = DG.Func.byName(viewersHookMakerName);
     viewersHook = await hookMaker.apply();
   }
-  return {...conf, viewersHook, io, actions};
+  const states = conf.states?.map((s) => normalizeIdRef(s));
+  return {...conf, viewersHook, io, actions, states};
 }
 
 function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {

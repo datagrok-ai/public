@@ -127,6 +127,40 @@ category('ComputeUtils: Driver hooks running', async () => {
     });
   });
 
+  test('Run onInit with states shorthand', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      states: ['meta1'],
+      onInit: {
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:meta1',
+        handler({controller}) {
+          return of(undefined).pipe(
+            delay(250),
+            tap(() => controller.setAll('out1', 10)),
+          );
+        },
+      },
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const rnode = tree.nodeTree.root;
+      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1')).toBe('a 249ms b', {a: undefined, b: 10});
+    });
+  });
+
   test('Run onReturn hook', async () => {
     const pconf = await getProcessedConfig(config4);
 

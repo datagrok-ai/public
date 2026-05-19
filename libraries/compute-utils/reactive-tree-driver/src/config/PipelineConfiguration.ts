@@ -173,6 +173,8 @@ export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & 
 const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
+type StatesOf<S> = [S] extends [never] ? Array<ItemId | StateItem> : StateItem[];
+
 // static steps config
 export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
@@ -180,7 +182,7 @@ export type PipelineStepConfiguration<P, S> = {
   nqName: NqName;
   friendlyName?: string;
   actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
-  states?: StateItem[];
+  states?: StatesOf<S>;
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
@@ -194,7 +196,7 @@ export interface CustomExport {
   handler: PipelineExport,
 }
 
-export type PipelineConfigurationBase<P> = {
+export type PipelineConfigurationBase<P, S> = {
   id: ItemId;
   nqName?: NqName;
   version?: string;
@@ -203,7 +205,7 @@ export type PipelineConfigurationBase<P> = {
   actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
   onInit?: PipelineInitConfiguration<P>;
   onReturn?: PipelineReturnConfiguration<P>;
-  states?: StateItem[];
+  states?: StatesOf<S>;
   tags?: string[];
   forceNavigate?: boolean;
   customExports?: CustomExport[];
@@ -238,7 +240,7 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
   steps: PipelineStaticItem<P, S, R>[];
   type: 'static';
   isActionStep?: boolean;
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<P, S>;
 
 // dynamic pipeline (unified type for parallel and sequential)
 
@@ -248,7 +250,7 @@ export type AbstractPipelineDynamicConfiguration<P, S, R> = {
   initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
   stepTypes: PipelineDynamicItem<P, S, R>[];
   type: 'dynamic' | 'parallel' | 'sequential';
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<P, S>;
 
 /** @deprecated Use PipelineDynamicItem */
 export type PipelineParallelItem<P, S, R> = PipelineDynamicItem<P, S, R>;

@@ -155,8 +155,10 @@ Return hook specification, described [here](./code-usage).
 
 _Optional_
 
-A list of workflow-scoped state slots, declared as an array of
-`{id: string}` entries. Each `id` becomes addressable from
+A list of workflow-scoped state slots, declared as an array where each
+entry is either a bare string id (`'meta1'`) or an object with optional
+extra fields (`{id: 'meta1'}`). Both forms may be mixed in the same
+array. Each `id` becomes addressable from
 [LQL queries](./link-query-language) at the same path level as a script IO — but it
 lives on the workflow itself, not on any script. Use states for:
 
