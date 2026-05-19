@@ -50,42 +50,42 @@
   <!-- callouts -->
   <path d="M 280,33 H 540"   class="leader"/>
   <g class="callout">
-    <a xlink:href="../configuration#workflow-providers" target="_top">
+    <a xlink:href="/help/compute/workflows/configuration#workflow-providers" target="_top">
       <text x="545" y="36">workflow provider</text>
     </a>
   </g>
 
   <path d="M 175,130 H 540"  class="leader"/>
   <g class="callout">
-    <a xlink:href="../configuration#type" target="_top">
+    <a xlink:href="/help/compute/workflows/configuration#type" target="_top">
       <text x="545" y="133">pipeline type</text>
     </a>
   </g>
 
   <path d="M 260,190 H 540"  class="leader"/>
   <g class="callout">
-    <a xlink:href="../configuration#script-nodes" target="_top">
+    <a xlink:href="/help/compute/workflows/configuration#script-nodes" target="_top">
       <text x="545" y="193">script node (nqName)</text>
     </a>
   </g>
 
   <path d="M 195,310 H 540"  class="leader"/>
   <g class="callout">
-    <a xlink:href="../configuration#dynamic-workflows" target="_top">
+    <a xlink:href="/help/compute/workflows/configuration#dynamic-workflows" target="_top">
       <text x="545" y="313">nested dynamic pipeline</text>
     </a>
   </g>
 
   <path d="M 105,400 H 540"  class="leader"/>
   <g class="callout">
-    <a xlink:href="../link-types" target="_top">
+    <a xlink:href="/help/compute/workflows/link-types" target="_top">
       <text x="545" y="403">link (data, validator, meta, action)</text>
     </a>
   </g>
 
   <path d="M 290,468 H 540"  class="leader"/>
   <g class="callout">
-    <a xlink:href="../link-query-language" target="_top">
+    <a xlink:href="/help/compute/workflows/link-query-language" target="_top">
       <text x="545" y="471">LQL selectors for source / target</text>
     </a>
   </g>

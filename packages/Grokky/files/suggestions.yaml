@@ -4,42 +4,24 @@ powerSearch:
     - prompt: Gasteiger for CHEMBL1234
     - prompt: Gasteiger for Apremilast
     - label: Convert SMILES to HELM
-      prompt: convert C[C@H](N)C(=O)N(C)CC(=O)N[C@@H](Cc1ccc(N)cc1)C(=O)O to helm
-    - label: Convert peptide sequence to molecule
-      prompt: convert GROKPEP-000002 sequence to molecule
-    - label: Convert nucleotide sequence to SMILES
-      prompt: 'Convert to SMILES: GATTACA'
-    - label: Visualize aspirin synthesis path
-      prompt: Visualization of the aspirin synthesis path
-    - label: Variations of CHEMBL1235 with mass and logS
-      prompt: generate different variations of CHEMBL1235 and calculate molecular mass and logS
-    - label: Molecular structures of GROKPEP-000001 variants
-      prompt: generate molecular structures of GROKPEP-000001 variants
-    - prompt: Ongoing studies in rats
-    - prompt: Optimize PSA of GROKPEP-000001
+      prompt: Convert C[C@H](N)C(=O)N(C)CC(=O)N[C@@H](Cc1ccc(N)cc1)C(=O)O to HELM
+    - prompt: 'Convert to SMILES: GATTACA'
 
   Database queries:
     - prompt: ADCs with IC50 above 400
     - prompt: ADCs with caspase activity > 8
-    - label: Compounds active against CHEMBL1827
-      prompt: Which compounds are active against CHEMBL1827
     - prompt: Shigella bioactivity
     - prompt: PK for LEVOFLOXACIN
     - prompt: CHO assay data
-    - prompt: 'Northwind: sales by country'
-    - prompt: 'CHEMBL: targets involving thrombi'
 
-  DB identifiers:
-    - prompt: CHEMBL1234, CHEMBL13566
-    - prompt: GROKPEP001
+  Documentation:
+    - label: UMAP on sequences — parameters
+      prompt: How to perform UMAP on sequences and what parameters are available to tune?
+    - prompt: How to use lasso selection on a scatter plot?
 
   Code generation:
-    - label: 'JS: interactive sketcher with ADME panel'
-      prompt: 'JS: Add a view with the sketcher on the left, and the (predicted ADME properties, calculated MW, Gasteiger Partial Charges) on the right. As user sketches the molecule, the right part should update interactively'
-    - label: 'JS: cumulative sum column for sales'
-      prompt: 'JS: given a dataframe "sales" parameter with "date" and "amount" columns, create a "cumsum" column with the cumulative sum of sales for that date'
-    - label: Mean and SD of HEIGHT grouped by RACE, SEX
-      prompt: For demog table, compute the mean and sd of HEIGHT group by RACE, SEX
+    - label: 'JS: interactive sketcher with molecule properties'
+      prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
     - label: 'Python: render Gasteiger partial charges'
       prompt: 'Python: write a function that accepts a molecule and renders Gasteiger partial charges as a result'
 

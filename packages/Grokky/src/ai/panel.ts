@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
-import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
+import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveContextScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -61,6 +61,8 @@ export type UIMessageOptions = {
   confirm?: {confirmResult?: boolean, message?: string},
   /** if set on a user message, shows a small green check ("Handled natively") instead of a response block */
   handledNatively?: boolean,
+  /** if set, renders the message as a centered system event (retry notice, workflow header, etc.) */
+  system?: boolean,
 }
 
 export interface UIMessage {
@@ -97,7 +99,8 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>>;
+  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void>;
+  appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
@@ -511,6 +514,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
       this._lastUserPromptContainer = userDiv;
       this._aiMessagesAccordionPane = null; // reset accordion pane so that next AI message creates a new one
+    } else if (uiMessage.messageOptions?.system) {
+      this.outputArea.appendChild(ui.divText(uiMessage.content, 'grokky-system-message'));
+      this._aiMessagesAccordionPane = null;
     } else {
       this.ensureResponseBlock();
       const markDown = this.createStyledMarkdown(uiMessage.content);
@@ -670,24 +676,23 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
+  async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
       this._uiMessages.push({fromUser: false, text: displayContent, messageOptions: {finalResult: displayContent}});
-      return [];
+      return;
     }
     this.renderFinalContent(displayContent);
-    const {elements, errors} = await executeDatagrokBlocks(execContent, view);
-    for (const el of elements) {
-      this.ensureResponseBlock();
-      this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
-    }
-    return errors;
+  }
+
+  public appendStreamedElement(el: HTMLElement): void {
+    this.ensureResponseBlock();
+    this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
   }
 
   public appendUiMessage(content: string): void {
-    this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content});
+    this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content, messageOptions: {system: true}});
   }
 
   protected renderFinalContent(content: string): void {
@@ -1173,7 +1178,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     };
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
     this.renderFinalContent(displayContent);
     // Extract SQL from fenced code blocks and inject into query editor
     const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
@@ -1181,7 +1186,6 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
       const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
       this.setAndRunFunc(sql);
     }
-    return [];
   }
 }
 
@@ -1246,7 +1250,7 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
     };
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
     this.renderFinalContent(displayContent);
     // Extract code from datagrok-exec blocks and set on the script editor
     const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
@@ -1258,6 +1262,5 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
       (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
       ui.setUpdateIndicator(this.view.root, false);
     }
-    return [];
   }
 }

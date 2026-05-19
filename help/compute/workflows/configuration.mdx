@@ -50,7 +50,7 @@ configured slightly differently.
 | `type` value | Variant |
 |--------------|---------|
 | `'static'` (default) | [Static workflow](#static-workflows) — fixed `steps` array. |
-| `'dynamic'` | [Dynamic workflow](#dynamic-workflows) — user can add/remove steps from `stepTypes`. `parallel` and `sequential` are accepted as legacy aliases. |
+| `'dynamic'` | [Dynamic workflow](#dynamic-workflows) — user can add/remove steps from `stepTypes`. |
 | `'action'` | [Action step](#action-steps) — lightweight placeholder, no children. |
 | `'ref'` | [Workflow reference](#reusing-workflows) — replaced at load time by another provider's configuration. |
 
@@ -91,9 +91,6 @@ type, specified by the `type` field:
 - `dynamic`
 - `action`
 - `ref`
-
-`parallel` and `sequential` are accepted as legacy aliases for
-`dynamic`. Do not use them in new code.
 
 [Static workflow](#static-workflows) is an immutable sequence of
 steps. It is using field [steps](#steps) to define its steps.
