@@ -164,7 +164,6 @@ export class MetaController extends ControllerBase<any | undefined> implements I
 export class MutationController extends ControllerBase<PipelineInstanceConfig | undefined> implements IRuntimePipelineMutationController {
   public granularOps: Record<string, GranularMutationOp[]> = {};
   private removedUuids = new Set<string>();
-  private usedMode: Record<string, 'replace' | 'granular'> = {};
   public outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>;
 
   constructor(args: MutationControllerArgs) {
@@ -172,20 +171,9 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
     this.outputNodes = args.outputNodes;
   }
 
-  private checkExclusivity(name: string, mode: 'replace' | 'granular') {
-    const current = this.usedMode[name];
-    if (current && current !== mode) {
-      throw new Error(
-        `Handler for action ${this.id}: cannot mix setPipelineState and granular ops (addStep/removeStep/moveStep) on the same output "${name}"`,
-      );
-    }
-    this.usedMode[name] = mode;
-  }
-
   setPipelineState(name: string, state?: PipelineInstanceConfigInput) {
     this.checkIsClosed();
     this.checkOutput(name);
-    this.checkExclusivity(name, 'replace');
     this.outputs[name] = state ? normalizePipelineInstanceConfig(state) : state;
   }
 
@@ -213,14 +201,12 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
   addStep(name: string, configId: string, position?: number) {
     this.checkIsClosed();
     this.checkOutput(name);
-    this.checkExclusivity(name, 'granular');
     (this.granularOps[name] ??= []).push({op: 'add', configId, position});
   }
 
   removeStep(name: string, step: StepHandle) {
     this.checkIsClosed();
     this.checkOutput(name);
-    this.checkExclusivity(name, 'granular');
     if (this.removedUuids.has(step._uuid))
       throw new Error(`Handler for action ${this.id}: step handle (configId="${step.configId}") was already removed — stale handle`);
     this.removedUuids.add(step._uuid);
@@ -230,7 +216,6 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
   moveStep(name: string, step: StepHandle, position: number) {
     this.checkIsClosed();
     this.checkOutput(name);
-    this.checkExclusivity(name, 'granular');
     if (this.removedUuids.has(step._uuid))
       throw new Error(`Handler for action ${this.id}: step handle (configId="${step.configId}") was already removed — stale handle`);
     (this.granularOps[name] ??= []).push({op: 'move', _uuid: step._uuid, position});
