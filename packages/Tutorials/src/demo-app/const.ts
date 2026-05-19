@@ -4,6 +4,9 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
+					name: 'Med Chem',
+				},
+				{
 					name: 'Chemical Space'
 				},
 				{

@@ -153,17 +153,19 @@ export class PackageFunctions {
     const demoView = new DemoView(!hasPath);
     if (hasPath) {
       const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
-      const node = demoView.tree.items.find((node) => {
-        const nodeText = node.text.replaceAll('-', ' ');
-        return nodeText === pathElements[pathElements.length - 1];
-      })?.root;
+      const findNode = () => demoView.tree.items.find((node) =>
+        node.text.replaceAll('-', ' ') === pathElements[pathElements.length - 1])?.root;
       const closeSub = grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v?.root !== demoView.root) {
           closeSub.unsubscribe();
           demoView.close();
         }
       });
-      node?.click();
+      const initialNode = findNode();
+      if (initialNode)
+        initialNode.click();
+      else
+        demoView.projectsReady.then(() => findNode()?.click());
     }
     return demoView;
   }
