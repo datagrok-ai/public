@@ -16,6 +16,7 @@ import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 let attached = false;
 let scaffoldTreeId = 0;
@@ -2767,8 +2768,8 @@ class SketcherDialogWrapper {
   normalizeMolStr(molStr: string): string {
     let mol;
     try {
-      if (!grok.chem.isMolBlock(molStr) && molStr?.length > 5000)
-        throw new Error('SMILES string longer than 5000 characters not supported');
+      if (!grok.chem.isMolBlock(molStr) && molStr?.length > MAX_SMILES_LENGTH)
+        throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
       mol = _rdKitModule.get_mol(molStr);
       if (mol.has_coords() === 2) {
         mol.normalize_depiction(0);

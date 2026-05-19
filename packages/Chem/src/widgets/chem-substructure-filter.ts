@@ -372,13 +372,22 @@ export class SubstructureFilter extends DG.Filter {
     //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
-      this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
+      if (this.syncEvent === true)
+        this.syncEvent = false;
+      else
+        await this._onSketchChanged();
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {
-      this.alignSync === true ? this.alignSync = false : this.setFilterScaffoldTagAndFireSync(true);
+      if (this.alignSync === true)
+        this.alignSync = false;
+      else
+        this.setFilterScaffoldTagAndFireSync(true);
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onHighlightChanged.subscribe(async (_: any) => {
-      this.highlightSync === true ? this.highlightSync = false : this.setFilterScaffoldTagAndFireSync();
+      if (this.highlightSync === true)
+        this.highlightSync = false;
+      else
+        this.setFilterScaffoldTagAndFireSync();
     }));
     this.onSketcherChangedSubs?.push(this.searchTypeChanged.subscribe(async (_: any) => {
       await this._onSketchChanged();

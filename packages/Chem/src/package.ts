@@ -25,6 +25,7 @@ import {
   CHEM_SPACE_EMBEDDING_COL,
   CHEM_SPACE_CLUSTER_COL,
 } from './constants';
+import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
@@ -313,7 +314,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static getCLogP(
     @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) smiles: string): number {
-    if (!smiles || (!hasNewLines(smiles) && smiles.length > 5000))
+    if (!smiles || (!hasNewLines(smiles) && smiles.length > MAX_SMILES_LENGTH))
       return NaN; // do not attempt to parse very long SMILES, will cause MOB.
     const mol = PackageFunctions.getRdKitModule().get_mol(smiles);
     const res = JSON.parse(mol.get_descriptors()).CrippenClogP;

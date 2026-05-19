@@ -24,6 +24,7 @@ import {
   getSyncTag,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
   RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
@@ -244,7 +245,7 @@ M  END
         mol = molCtx.mol;
       } else {
         try {
-          if (!molString.includes('\n') && molString.length > 5000)
+          if (!molString.includes('\n') && molString.length > MAX_SMILES_LENGTH)
             throw new Error('Invalid molecule string'); // do not attempt to parse very long SMILES, will cause MOB.
           mol = this.rdKitModule.get_qmol(molString);
           mol.convert_to_aromatic_form();

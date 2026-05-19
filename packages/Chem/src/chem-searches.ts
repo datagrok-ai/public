@@ -46,8 +46,8 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString, fingerprints);
-  const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
-  const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
+  const limit = Math.min(settings.limit ?? len, len);
+  const minScore = settings.minScore ?? 0.0;
   const sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
     const a1 = distances[i1];
     const a2 = distances[i2];
