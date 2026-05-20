@@ -184,8 +184,8 @@ export class DemoView extends DG.ViewBase {
         el = el.parentElement;
       activeTabContent = el;
     }
-    const updateIndicatorRoot = (activeTabContent ??
-      dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
+    const tabContent = (activeTabContent ?? dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
+    const updateIndicatorRoot = (tabContent.parentElement ?? tabContent) as HTMLElement;
 
     this.currentView = null;
 
