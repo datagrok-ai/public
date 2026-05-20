@@ -41,6 +41,28 @@ export class DemoView extends DG.ViewBase {
   private _addedProjectIds = new Set<string>();
   public projectsReady: Promise<void>;
 
+  private static _imagePaths = new WeakMap<HTMLElement, string>();
+
+  private static _imageObserver: IntersectionObserver | null =
+    (typeof IntersectionObserver !== 'undefined') ? new IntersectionObserver((entries, obs) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting)
+          continue;
+        const el = entry.target as HTMLElement;
+        obs.unobserve(el);
+        const path = DemoView._imagePaths.get(el);
+        if (path != null)
+          DemoView._loadCardImage(el, path);
+      }
+    }, {rootMargin: '200px'}) : null;
+
+  private static _loadCardImage(el: HTMLElement, path: string): void {
+    fetch(path)
+      .then((r) => r.ok ? r.url : Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`))
+      .then((url) => el.style.backgroundImage = `url(${url})`)
+      .catch((url) => el.style.backgroundImage = `url(${url})`);
+  }
+
   constructor(initVisual: boolean = true) {
     super();
     this.tree = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Demo');
@@ -400,22 +422,14 @@ export class DemoView extends DG.ViewBase {
 
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
 
-      const img = ui.div([ui.wait(async () => {
-        let root = ui.div('','img');
-        root.className = 'ui-image';
-        await fetch(`${directionFuncs[i].imagePath}`)
-          .then(response => {
-            if (response.ok) {
-              return Promise.resolve(response.url)
-            } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
-            }
-          })
-          .then((data) => root.style.backgroundImage = `url(${data})`)
-          .catch((data) => root.style.backgroundImage = `url(${data})`);
-        return root;
-        })
-      ]);
+      const imgEl = ui.div('', 'ui-image');
+      if (DemoView._imageObserver != null) {
+        DemoView._imagePaths.set(imgEl, directionFuncs[i].imagePath);
+        DemoView._imageObserver.observe(imgEl);
+      }
+      else
+        DemoView._loadCardImage(imgEl, directionFuncs[i].imagePath);
+      const img = ui.div([imgEl]);
 
       let item = ui.card(ui.divV([
         img,
