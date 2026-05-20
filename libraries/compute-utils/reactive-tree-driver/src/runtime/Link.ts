@@ -104,7 +104,7 @@ export class Link {
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
         if (minfos.length > 1)
-          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger);
+          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
         const nodeActions = minfos.map((minfo) => {
           const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
@@ -126,7 +126,7 @@ export class Link {
           this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, baseNode, scope, state).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
-              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
+              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger, [this.matchInfo.spec.id]);
               return EMPTY;
             }),
           ),
@@ -387,7 +387,7 @@ export class Link {
           if (item instanceof PipelineNodeBase)
             item.setPipelineValidation(this.uuid, controller.output);
           else
-            reportError('warning', `link:${this.matchInfo.spec.id}`, `pipelineValidator \`to\` target ${item.uuid} is not a pipeline node — skipped`, this.logger);
+            reportError('warning', `link:${this.matchInfo.spec.id}`, `pipelineValidator \`to\` target ${item.uuid} is not a pipeline node — skipped`, this.logger, [this.matchInfo.spec.id]);
         }
       }
       return;
