@@ -1,0 +1,40 @@
+{
+  "name": "@datagrok-libraries/codegen-async-to-sync",
+  "version": "0.1.0",
+  "description": "Async-to-sync TypeScript codegen via ts-morph AST transform",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "codegen-async-to-sync": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "test": "jest",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint-fix": "eslint \"src/**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "ts-morph": "^28.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "eslint": "^8.56.0",
+    "eslint-config-google": "^0.14.0",
+    "jest": "^29.0.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.6.3"
+  }
+}

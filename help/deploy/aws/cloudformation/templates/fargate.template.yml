@@ -1673,6 +1673,22 @@ Resources:
         RequireEachIncludedType: true
         PasswordLength: 24
         ExcludePunctuation: true
+  DatagrokDBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Family: postgres17
+      Description: "Datagrok PostgreSQL tuning (SSD/EBS-aware planner, larger work_mem)"
+      Parameters:
+        # Planner cost of random vs sequential reads. PG default 4.0 is for spinning
+        # disks; 1.1 is appropriate for SSD/EBS and lets the planner pick index scans.
+        random_page_cost: "1.1"
+        # Bitmap-heap prefetch depth. PG default 1 underuses modern storage; 200 is
+        # the recommended value for SSD/NVMe/EBS.
+        effective_io_concurrency: "200"
+        # Per-operation working memory for sorts/hashes (kB). Default 4MB.
+        work_mem: "65536"
+        # Memory for VACUUM, CREATE INDEX (kB). Default 64MB.
+        maintenance_work_mem: "524288"
   DatagrokDB:
     Type: AWS::RDS::DBInstance
     UpdateReplacePolicy: Delete
@@ -1683,6 +1699,8 @@ Resources:
           - RestoreFromSnapshot
           - Ref: DBSnapshotIdentifier
           - Ref: "AWS::NoValue"
+      DBParameterGroupName:
+        Ref: DatagrokDBParameterGroup
       AllocatedStorage: '50'
       AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: true

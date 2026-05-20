@@ -39,6 +39,7 @@ import './tests/synthon-search-tests';
 
 import './tests/atom-index-mapper-tests';
 import './tests/atom-picker-tests';
+import './tests/reaction-enumeration-tests';
 // import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';

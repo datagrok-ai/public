@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable max-lines-per-function */
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
@@ -18,12 +19,13 @@ import {
   extractRNumbers,
   makeCore,
   makeRGroup,
+  normalizeRLabels,
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
 import {defaultErrorHandler} from '../utils/err-info';
 
-const DIALOG_TITLE = 'PolyTool Chem Enumeration';
+const DIALOG_TITLE = 'Markush Enumerator';
 
 const MODE_TOOLTIPS: Record<ChemEnumMode, string> = {
   [ChemEnumModes.Zip]: 'Zip: every R-group list must have the same length N. The i-th result uses the i-th entry from every list. Produces N results per core.',
@@ -45,14 +47,21 @@ interface CardOpts {
   subtitle: string;
   error?: string;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onRemove?: () => void;
 }
+
+// Popular multi symbol single atoms for quick lookup in card builder
+const SINGLE_ATOM_SYMBOLS_LOOKUP = new Set([
+  'Cl', 'Br', 'Al', 'Si', 'Li', 'Na', 'Mg', 'Ca', 'Ti', 'At', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Kr', 'Rb',
+  'Au', 'Ag', 'Pt', 'Pb', 'Sn', 'Sb', 'Te', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho']);
 
 /** Draws a molecule into a fixed-size host, constraining SVG dimensions. */
 function drawMolInto(host: HTMLElement, smi: string, w: number, h: number): void {
   ui.empty(host);
   try {
-    const el = grok.chem.drawMolecule(smi, w, h);
+    const correctedSmi = smi.length === 1 || SINGLE_ATOM_SYMBOLS_LOOKUP.has(smi) ? `[${smi}]` : smi;
+    const el = grok.chem.drawMolecule(correctedSmi, w, h);
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.maxWidth = `${w}px`;
@@ -70,7 +79,8 @@ function buildCard(opts: CardOpts): HTMLElement {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'transparent', overflow: 'hidden', flex: '0 0 auto',
   }});
-  if (opts.smiles && !opts.error) drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
+  if (opts.smiles && !opts.error)
+    drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
   else thumbHost.appendChild(ui.divText('—', {style: {color: 'var(--grey-4)'}}));
 
   const subtitleEl = ui.divText(opts.subtitle, {style: {
@@ -108,15 +118,22 @@ function buildCard(opts: CardOpts): HTMLElement {
   }});
   if (opts.onEdit) {
     const editBtn = ui.icons.edit((e: MouseEvent) => { e.stopPropagation(); opts.onEdit!(); }, 'Edit');
+    editBtn.style.color = 'var(--blue-3)';
     actions.appendChild(editBtn);
+  }
+  if (opts.onDuplicate) {
+    const dupBtn = ui.icons.copy((e: MouseEvent) => { e.stopPropagation(); opts.onDuplicate!(); }, 'Duplicate');
+    dupBtn.style.color = 'var(--blue-3)';
+    actions.appendChild(dupBtn);
   }
   if (opts.onRemove) {
     const delBtn = ui.icons.delete((e: MouseEvent) => { e.stopPropagation(); opts.onRemove!(); }, 'Remove');
+    delBtn.style.color = 'var(--red-3)';
     actions.appendChild(delBtn);
   }
   card.addEventListener('mouseenter', () => { actions.style.display = 'flex'; });
   card.addEventListener('mouseleave', () => { actions.style.display = 'none'; });
-  if (opts.onEdit || opts.onRemove) card.appendChild(actions);
+  if (opts.onEdit || opts.onDuplicate || opts.onRemove) card.appendChild(actions);
 
   return card;
 }
@@ -197,25 +214,38 @@ async function openRGroupSketchDialog(rdkit: RDModule, initialMolfile?: string, 
     const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
     let currentSmiles: string | null = null;
     let detectedRs: number[] = [];
+    let isSingleAtom = false;
     let okBtn: HTMLButtonElement | null = null;
     let userTouchedR = false;
     rNumberInput.onChanged.subscribe(() => { userTouchedR = true; updateOk(); });
 
     const updateOk = () => {
       const n = rNumberInput.value;
-      const ok = currentSmiles != null && n != null && n >= 1 && detectedRs.length === 1;
+      const ok = currentSmiles != null && n != null && n >= 1 &&
+        (detectedRs.length === 1 || isSingleAtom);
       if (okBtn) okBtn.disabled = !ok;
     };
 
     const revalidate = async () => {
       currentSmiles = await smilesFromSketcher(sk, rdkit);
       detectedRs = currentSmiles ? extractRNumbers(currentSmiles) : [];
+      // Probe single-atom mode only when there's no R-label — keeps the
+      // common labeled path free of an extra RDKit parse.
+      isSingleAtom = false;
+      if (currentSmiles && detectedRs.length === 0) {
+        const probe = makeRGroup(currentSmiles, rNumberInput.value ?? 1, '', rdkit);
+        isSingleAtom = !!probe.isSingleAtom;
+      }
       if (!currentSmiles) {
-        status.innerText = 'Draw an R-group with exactly one attachment point.';
+        status.innerText = 'Draw an R-group with one attachment point, or a single atom (e.g. N, O, Cl).';
         status.style.color = 'var(--grey-4)';
-      } else if (detectedRs.length === 0) {
-        status.innerText = 'No R-group detected — add [*:N] to mark the attachment point.';
+      } else if (detectedRs.length === 0 && !isSingleAtom) {
+        status.innerText = 'No R-group detected — add [*:N] to mark the attachment point, or draw a single atom (e.g. N, O, Cl).';
         status.style.color = 'var(--red-3)';
+      } else if (detectedRs.length === 0 && isSingleAtom) {
+        const targetN = rNumberInput.value;
+        status.innerText = `Single atom — will be substituted into [*:${targetN ?? '?'}] in the core.`;
+        status.style.color = 'var(--green-2)';
       } else if (detectedRs.length > 1) {
         status.innerText = `R-group must contain exactly one attachment point. Found ${detectedRs.length}: ${detectedRs.map((n) => 'R' + n).join(', ')}.`;
         status.style.color = 'var(--red-3)';
@@ -266,6 +296,10 @@ async function openImportWizard(
     const columnInput = ui.input.choice<string>('Column', {items: [] as string[], nullable: true});
     const rNumberInput = kind === 'rgroups' ?
       ui.input.int('Target R#', {value: 1, min: 1}) : null;
+    if (rNumberInput) {
+      ui.tooltip.bind(rNumberInput.input,
+        'Target R-number for these R-groups. Single-atom rows (no [*:N] label, e.g. just N or O) get substituted into the core\'s R# slot directly.');
+    }
     const dedupInput = ui.input.bool('Remove duplicates', {value: defaultDedup});
     ui.tooltip.bind(dedupInput.input,
       kind === 'cores' ?
@@ -361,10 +395,10 @@ async function openImportWizard(
         built.rGroups = rGroups;
         rGroups.forEach((rg, i) => {
           if (rg.error) errs.push(`R-group ${i + 1}: ${rg.error}`);
-          items.push({
-            smi: rg.error ? '' : rg.smiles, err: rg.error,
-            subtitle: rg.error ? 'invalid' : `R${rg.rNumber}${rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : ''}`,
-          });
+          const subtitle = rg.error ? 'invalid' :
+            rg.isSingleAtom ? `R${rg.rNumber} · atom` :
+              `R${rg.rNumber}${rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : ''}`;
+          items.push({smi: rg.error ? '' : rg.smiles, err: rg.error, subtitle});
         });
         countText.innerText = `${rGroups.length} R-group${rGroups.length === 1 ? '' : 's'} for R${n}` +
           (dedup && dupCount ? ` (${dupCount} duplicate${dupCount === 1 ? '' : 's'} skipped)` : '') + '.';
@@ -453,6 +487,149 @@ interface ChemEnumDialogState {
   appendToTable: DG.DataFrame | null;
 }
 
+// ─── History (localStorage-backed, shared by dialog + app) ──────────────────
+
+const HISTORY_KEY = 'd4-markush-enumeration-history';
+const HISTORY_MAX = 10;
+
+interface ChemEnumHistoryEntry {
+  /** ISO timestamp of when the enumeration was recorded. */
+  date: string;
+  /** One-line summary: `"6 cores · R1:6 · R2:4"`. */
+  summary: string;
+  mode: ChemEnumMode;
+  /** Original (unnormalized) SMILES for each core. */
+  cores: string[];
+  /** R-number → list of original R-group SMILES. JSON object so we can round-trip. */
+  rGroups: { [rNumber: string]: string[] };
+}
+
+function readHistory(): ChemEnumHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(entries: ChemEnumHistoryEntry[]): void {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+  } catch {
+    // Quota exceeded or storage unavailable — silently skip; history is best-effort.
+  }
+}
+
+function summarizeState(state: ChemEnumDialogState): string {
+  const partsR: string[] = [];
+  const sortedNums = [...state.rGroupsByNum.keys()].sort((a, b) => a - b);
+  for (const n of sortedNums) partsR.push(`R${n}:${state.rGroupsByNum.get(n)!.length}`);
+  return `${state.cores.length} core${state.cores.length === 1 ? '' : 's'}` +
+    (partsR.length ? ' · ' + partsR.join(' · ') : '');
+}
+
+function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
+  const rGroups: { [n: string]: string[] } = {};
+  for (const [n, list] of state.rGroupsByNum)
+    rGroups[String(n)] = list.map((rg) => rg.originalSmiles);
+  return {
+    date: new Date().toISOString(),
+    summary: summarizeState(state),
+    mode: state.mode,
+    cores: state.cores.map((c) => c.originalSmiles),
+    rGroups,
+  };
+}
+
+/** Prepends `state` as a new entry, keeps at most {@link HISTORY_MAX}. */
+function recordHistory(state: ChemEnumDialogState): void {
+  const entry = buildHistoryEntry(state);
+  const prev = readHistory();
+  writeHistory([entry, ...prev].slice(0, HISTORY_MAX));
+}
+
+/** Reparses SMILES through `makeCore` / `makeRGroup` so validation runs with the current rdkit. */
+function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
+  state.cores = entry.cores.map((smi) => makeCore(smi, '', rdkit));
+  state.rGroupsByNum = new Map();
+  for (const [nStr, list] of Object.entries(entry.rGroups ?? {})) {
+    const num = parseInt(nStr, 10);
+    if (!Number.isFinite(num)) continue;
+    state.rGroupsByNum.set(num, list.map((smi) => makeRGroup(smi, num, '', rdkit)));
+  }
+  if (entry.mode === ChemEnumModes.Zip || entry.mode === ChemEnumModes.Cartesian)
+    state.mode = entry.mode;
+}
+
+function formatHistoryDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+  } catch {
+    return iso;
+  }
+}
+
+/** Pops a context menu listing history entries. `onPick` applies + refreshes. */
+function showHistoryMenu(onPick: (entry: ChemEnumHistoryEntry) => void): void {
+  const entries = readHistory();
+  const menu = DG.Menu.popup();
+  if (entries.length === 0) {
+    menu.item('No entries', () => {});
+  } else {
+    for (const entry of entries) {
+      const label = `${formatHistoryDate(entry.date)} — ${entry.summary}`;
+      menu.item(label, () => onPick(entry));
+    }
+  }
+  menu.show();
+}
+
+// ─── CSV preload (app mode only, when history is empty) ─────────────────────
+
+/**
+ * Seeds `state` from the shipped `files/enumeration/{cores,rgroups}.csv`. The cores CSV has a
+ * single "Core" column; the R-groups CSV has one column per R-number (`R1`, `R2`, …).
+ * Returns whether anything was loaded.
+ */
+async function preloadFromFiles(state: ChemEnumDialogState, rdkit: RDModule): Promise<boolean> {
+  try {
+    const coresText = await _package.files.readAsText('enumeration/chem_enum_cores.csv');
+    const coresDf = DG.DataFrame.fromCsv(coresText);
+    const coreCol = coresDf.col('Core') ?? coresDf.columns.byIndex(0);
+    if (coreCol) {
+      for (let i = 0; i < coreCol.length; i++) {
+        if (coreCol.isNone(i)) continue;
+        const v = String(coreCol.get(i) ?? '').trim();
+        if (!v) continue;
+        state.cores.push(makeCore(v, '', rdkit));
+      }
+    }
+
+    const rgText = await _package.files.readAsText('enumeration/chem_enum_rgroups.csv');
+    const rgDf = DG.DataFrame.fromCsv(rgText);
+    for (const col of rgDf.columns.toList()) {
+      const m = col.name.match(/^r\s*(\d+)$/i);
+      if (!m) continue;
+      const num = parseInt(m[1], 10);
+      const list: ChemEnumRGroup[] = [];
+      for (let i = 0; i < col.length; i++) {
+        if (col.isNone(i)) continue;
+        const v = String(col.get(i) ?? '').trim();
+        if (!v) continue;
+        list.push(makeRGroup(v, num, '', rdkit));
+      }
+      if (list.length > 0) state.rGroupsByNum.set(num, list);
+    }
+    return state.cores.length > 0 || state.rGroupsByNum.size > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Extracts a molfile string from a cell whose column is of MOLECULE semtype. */
 async function cellToMolfile(cell: DG.Cell): Promise<string | null> {
   try {
@@ -497,9 +674,22 @@ export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
     const panel = buildChemEnumPanel(rdkit, preloadCore);
     const dialog = ui.dialog({title: DIALOG_TITLE})
       .add(panel.root)
+      .addButton('History', () => {
+        showHistoryMenu((entry) => {
+          applyHistoryEntry(entry, panel.state, rdkit);
+          panel.refresh();
+        });
+      })
       .onOK(async () => { await panel.execute(); });
     panel.bindActionButton(dialog.getButton('OK') as HTMLButtonElement);
     dialog.show({resizable: true, width: 960});
+    const historyButton = dialog.getButton('History') as HTMLButtonElement;
+    if (historyButton) {
+      historyButton.style.order = '1';
+      historyButton.style.marginRight = 'auto';
+      ui.tooltip.bind(historyButton, 'View and apply past enumerations');
+      historyButton.innerHTML = ui.iconFA('history', () => {}).outerHTML;
+    }
   } catch (err: any) {
     defaultErrorHandler(err);
   }
@@ -510,15 +700,29 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
   await _package.initPromise;
   try {
     const rdkit = await getRdKitModule();
-    const panel = buildChemEnumPanel(rdkit, null);
-    const runBtn = ui.bigButton('Enumerate', async () => { await panel.execute(); });
+    const panel = buildChemEnumPanel(rdkit, null, 'app');
+    const runBtn = ui.button('Enumerate', async () => { await panel.execute(); });
     panel.bindActionButton(runBtn as HTMLButtonElement);
+    panel.appActionHost?.appendChild(runBtn);
+
+    // Seed the panel: most-recent history wins; if there is none, fall back to the shipped
+    // demo CSVs so the app never opens to an empty screen. Both paths mutate panel.state and
+    // panel.refresh() picks the changes up.
+    const history = readHistory();
+    if (history.length > 0) {
+      applyHistoryEntry(history[0], panel.state, rdkit);
+      panel.refresh();
+    } else {
+      preloadFromFiles(panel.state, rdkit).then((loaded) => {
+        if (loaded) panel.refresh();
+      });
+    }
 
     const view = DG.View.create();
     view.name = DIALOG_TITLE;
     view.box = true;
-    view.root.appendChild(ui.divV([panel.root, ui.div([runBtn], {style: {padding: '8px 4px 0'}})],
-      {style: {height: '100%', width: '100%', padding: '8px'}}));
+    view.root.appendChild(ui.div([panel.root],
+      {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
     return view;
   } catch (err: any) {
     defaultErrorHandler(err);
@@ -532,9 +736,20 @@ interface ChemEnumPanel {
   execute: () => Promise<void>;
   /** Bind the action (OK / Enumerate) button so it tracks validation state. */
   bindActionButton: (btn: HTMLButtonElement) => void;
+  /** Re-render after mutating `state` from outside (e.g. applying a history entry). */
+  refresh: () => void;
+  /**
+   * Bottom-right "controls" cell host for the caller's Enumerate button.
+   * Only populated in app layout; undefined in dialog layout.
+   */
+  appActionHost?: HTMLElement;
 }
 
-function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): ChemEnumPanel {
+type ChemEnumLayout = 'dialog' | 'app';
+
+function buildChemEnumPanel(
+  rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
+): ChemEnumPanel {
   const state: ChemEnumDialogState = {
     cores: preloadCore ? [preloadCore] : [],
     rGroupsByNum: new Map(),
@@ -542,10 +757,14 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
     appendToTable: null,
   };
 
-  // ── Cores: single-row horizontal virtualView ───────────────────────────────
+  // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
   const ROW_H = CARD_H + 16; // card height + horizontal scrollbar breathing room
   const coresEmpty = ui.divText('No cores — draw or import at least one.', {style: {color: 'var(--grey-4)', padding: '20px 12px', fontSize: '12px'}});
-  const coresVvHost = ui.div([], {style: {width: '100%', height: `${ROW_H}px`, overflow: 'hidden'}});
+  // App layout puts cores into the top-left grid cell — fill height, scroll vertically as cards wrap.
+  // Dialog layout keeps the original single-row horizontal scroller.
+  const coresVvHost = layout === 'app' ?
+    ui.div([], {style: {width: '100%', flex: '1 1 auto', minHeight: '0', overflowY: 'auto', overflowX: 'hidden'}}) :
+    ui.div([], {style: {width: '100%', height: `${ROW_H}px`, overflow: 'hidden'}});
   let coresVv: DG.VirtualView | null = null;
 
   const coresRenderer = (i: number): HTMLElement => {
@@ -557,6 +776,10 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
       onEdit: async () => {
         const edited = await openCoreSketchDialog(rdkit, c.smiles);
         if (edited) { state.cores[i] = edited; refresh(); }
+      },
+      onDuplicate: async () => {
+        const dup = await openCoreSketchDialog(rdkit, c.smiles);
+        if (dup) { state.cores.push(dup); refresh(); }
       },
       onRemove: () => { state.cores.splice(i, 1); refresh(); },
     });
@@ -575,6 +798,20 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
     }
     coresVvHost.style.display = 'block';
     coresEmpty.style.display = 'none';
+    if (layout === 'app') {
+      // Cores are realistically dozens at most — render all directly in a wrapped flow so
+      // the top-left cell uses its full area instead of constraining cards to one row.
+      ui.empty(coresVvHost);
+      coresVv = null;
+      const wrap = ui.div([], {style: {
+        display: 'flex', flexWrap: 'wrap', gap: '4px',
+        width: '100%', alignContent: 'flex-start', padding: '2px 0',
+      }});
+      for (let i = 0; i < state.cores.length; i++)
+        wrap.appendChild(coresRenderer(i));
+      coresVvHost.appendChild(wrap);
+      return;
+    }
     if (!coresVv) {
       coresVv = ui.virtualView(state.cores.length, coresRenderer, false, 1);
       applyHorizontalRowStyle(coresVv.root);
@@ -625,9 +862,12 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
       const renderer = (i: number): HTMLElement => {
         const rg = list[i];
         const remap = rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : '';
+        const subtitle = rg.error ? 'invalid' :
+          rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
+            `r group ${i + 1} · R${rg.rNumber}${remap}`;
         return buildCard({
           smiles: rg.error ? '' : rg.smiles,
-          subtitle: rg.error ? 'invalid' : `r group ${i + 1} · R${rg.rNumber}${remap}`,
+          subtitle,
           error: rg.error,
           onEdit: async () => {
             const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
@@ -642,6 +882,14 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
             } else {
               list[i] = edited;
             }
+            refresh();
+          },
+          onDuplicate: async () => {
+            const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+            if (!dup) return;
+            const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
+            target.push(dup);
+            state.rGroupsByNum.set(dup.rNumber, target);
             refresh();
           },
           onRemove: () => {
@@ -661,9 +909,14 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
 
   // ── Preview (up to 12 random samples, wrapped flex) ───────────────────────
   const PREVIEW_COUNT = 12;
-  const previewHost = ui.div([], {style: {
+  // Dialog caps preview height at 450px (fits next to the cores/r-groups column).
+  // App layout drops the cap so preview fills its bottom-left cell.
+  const previewHost = ui.div([], {style: layout === 'app' ? {
+    width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '6px',
+    alignContent: 'flex-start', padding: '2px 0', flex: '1 1 auto', minHeight: '0', overflow: 'auto',
+  } : {
     width: '100%', display: 'flex', flexWrap: 'wrap', gap: '6px',
-    alignContent: 'flex-start', padding: '2px 0', maxHeight: '450px', overflow: 'scroll'
+    alignContent: 'flex-start', padding: '2px 0', maxHeight: '450px', overflow: 'scroll',
   }});
 
   const redrawPreview = () => {
@@ -808,69 +1061,169 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
     minHeight: '150px', padding: '4px 0',
   } as const;
 
-  // ── Layout: horizontal split — cores + r-groups (left 60%) | preview (right 40%) ──
+  // ── Section headers (shared between layouts) ──────────────────────────────
   const coresHeader = sectionHeader(
     'Cores', addCoreFromSketcher, addCoresFromImport,
     () => { state.cores.splice(0, state.cores.length); refresh(); },
   );
   coresClearBtn = coresHeader.clearBtn;
-  const coresSection = ui.divV([
-    coresHeader.root,
-    ui.div([coresVvHost, coresEmpty], {style: {padding: '0'}}),
-  ], {style: sectionStyle});
 
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
     () => { state.rGroupsByNum.clear(); refresh(); },
   );
   rGroupsClearBtn = rGroupsHeader.clearBtn;
-  const rGroupsSection = ui.divV([
-    rGroupsHeader.root,
-    rGroupsHost,
-  ], {style: {
-    display: 'flex', flexDirection: 'column',
-    maxHeight: '300px', padding: '4px 0',
-  }});
 
-  const previewSection = ui.divV([
-    sectionHeader(`Preview`).root,
-    previewHost,
-  ], {style: {
-    ...sectionStyle,
-    width: '100%', height: '100%',
-    overflowY: 'auto', overflowX: 'hidden',
-  }});
+  let body: HTMLElement;
+  let appActionHost: HTMLElement | undefined;
 
-  const leftColumn = ui.divV([coresSection, rGroupsSection], {style: {
-    flex: '0 0 60%', width: '60%',
-    display: 'flex', flexDirection: 'column', gap: '4px',
-    paddingRight: '8px', borderRight: '1px solid var(--grey-2)',
-  }});
+  if (layout === 'app') {
+    // ── App: two flex columns. Left = cores + preview. Right = r-groups (grows) + controls (compact). ──
+    const cellBaseStyle = {
+      display: 'flex', flexDirection: 'column',
+      minHeight: '0', minWidth: '0',
+      padding: '8px', boxSizing: 'border-box',
+      border: '1px solid var(--grey-2)', borderRadius: '4px',
+      background: 'var(--white)', overflow: 'hidden',
+    } as const;
+    const growCellStyle = {...cellBaseStyle, flex: '1 1 0'} as const;
 
-  const rightColumn = ui.divV([previewSection], {style: {
-    flex: '0 0 40%', width: '40%',
-    display: 'flex', flexDirection: 'column',
-    paddingLeft: '8px',
-  }});
+    countText.style.fontSize = '11px';
+    countText.style.color = 'var(--grey-5)';
 
-  const split = ui.divH([leftColumn, rightColumn], {style: {
-    width: '100%', alignItems: 'stretch', gap: '0',
-  }});
+    const coresCell = ui.divV([
+      coresHeader.root,
+      coresVvHost,
+      coresEmpty,
+    ], {style: growCellStyle});
 
-  const statusLine = ui.divH([
-    modeInput.root,
-    countText,
-    errorBadge.root,
-  ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
+    const rGroupsCell = ui.divV([
+      rGroupsHeader.root,
+      rGroupsHost,
+    ], {style: growCellStyle});
 
-  const footer = ui.div([appendToTableInput.root], {style: {padding: '2px 0'}});
+    const previewCell = ui.divV([
+      sectionHeader('Preview').root,
+      previewHost,
+    ], {style: growCellStyle});
 
-  const body = ui.divV([
-    split, statusLine, footer,
-  ], {style: {
-    width: '100%', padding: '4px',
-    display: 'flex', flexDirection: 'column', gap: '4px',
-  }});
+    // Run header carries the live status — count + issues — inline on the right.
+    const runLabel = ui.divText('Run', {style: {
+      fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '40px',
+    }});
+    const runHeaderStats = ui.divH([countText, errorBadge.root], {style: {
+      alignItems: 'center', gap: '8px', marginLeft: 'auto',
+    }});
+    const runHeader = ui.divH([runLabel, runHeaderStats], {style: {
+      alignItems: 'center', gap: '8px', margin: '0 0 6px',
+      flex: '0 0 auto', width: '100%',
+    }});
+
+    // History icon — sits next to Enumerate. Reads localStorage on click and pops a menu.
+    const historyBtn = ui.iconFA('history', () => {
+      showHistoryMenu((entry) => {
+        applyHistoryEntry(entry, state, rdkit);
+        refresh();
+      });
+    }, 'Show recent enumerations');
+    historyBtn.style.fontSize = '16px';
+    historyBtn.style.padding = '4px 6px';
+    historyBtn.style.cursor = 'pointer';
+    historyBtn.style.color = 'var(--blue-3)';
+
+    const clearAllBtn = ui.button('Clear all', () => {
+      state.cores.splice(0, state.cores.length);
+      state.rGroupsByNum.clear();
+      refresh();
+    });
+    ui.tooltip.bind(clearAllBtn, 'Remove all cores and R-groups');
+
+    appActionHost = ui.div([], {style: {flex: '0 0 auto'}});
+    const actionRow = ui.divH([historyBtn, appActionHost], {style: {
+      alignItems: 'center', gap: '8px', marginTop: '8px', flex: '0 0 auto',
+    }});
+
+    const controlsCell = ui.divV([
+      runHeader,
+      modeInput.root,
+      appendToTableInput.root,
+      clearAllBtn,
+      actionRow,
+    ], {style: {
+      ...cellBaseStyle, flex: '0 0 auto', overflow: 'visible',
+    }});
+
+    const leftColumn = ui.divV([coresCell, previewCell], {style: {
+      flex: '1 1 50%', minWidth: '0',
+      display: 'flex', flexDirection: 'column', gap: '8px',
+    }});
+
+    const rightColumn = ui.divV([rGroupsCell, controlsCell], {style: {
+      flex: '1 1 50%', minWidth: '0',
+      display: 'flex', flexDirection: 'column', gap: '8px',
+    }});
+
+    body = ui.divH([leftColumn, rightColumn], {style: {
+      width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'row',
+      gap: '8px',
+      padding: '4px', boxSizing: 'border-box',
+    }});
+  } else {
+    // ── Dialog: horizontal split — cores + r-groups (left 60%) | preview (right 40%) ──
+    const coresSection = ui.divV([
+      coresHeader.root,
+      ui.div([coresVvHost, coresEmpty], {style: {padding: '0'}}),
+    ], {style: sectionStyle});
+
+    const rGroupsSection = ui.divV([
+      rGroupsHeader.root,
+      rGroupsHost,
+    ], {style: {
+      display: 'flex', flexDirection: 'column',
+      maxHeight: '300px', padding: '4px 0',
+    }});
+
+    const previewSection = ui.divV([
+      sectionHeader(`Preview`).root,
+      previewHost,
+    ], {style: {
+      ...sectionStyle,
+      width: '100%', height: '100%',
+      overflowY: 'auto', overflowX: 'hidden',
+    }});
+
+    const leftColumn = ui.divV([coresSection, rGroupsSection], {style: {
+      flex: '0 0 60%', width: '60%',
+      display: 'flex', flexDirection: 'column', gap: '4px',
+      paddingRight: '8px', borderRight: '1px solid var(--grey-2)',
+    }});
+
+    const rightColumn = ui.divV([previewSection], {style: {
+      flex: '0 0 40%', width: '40%',
+      display: 'flex', flexDirection: 'column',
+      paddingLeft: '8px',
+    }});
+
+    const split = ui.divH([leftColumn, rightColumn], {style: {
+      width: '100%', alignItems: 'stretch', gap: '0',
+    }});
+
+    const statusLine = ui.divH([
+      modeInput.root,
+      countText,
+      errorBadge.root,
+    ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
+
+    const footer = ui.div([appendToTableInput.root], {style: {padding: '2px 0'}});
+
+    body = ui.divV([
+      split, statusLine, footer,
+    ], {style: {
+      width: '100%', padding: '4px',
+      display: 'flex', flexDirection: 'column', gap: '4px',
+    }});
+  }
 
   refresh();
   return {
@@ -878,6 +1231,8 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
     state,
     execute: () => executeEnumeration(state, rdkit),
     bindActionButton: (btn) => { okButton = btn; refresh(); },
+    refresh,
+    appActionHost,
   };
 }
 
@@ -892,13 +1247,17 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
     if (!results) { grok.shell.warning('Enumeration failed — check validation messages in the dialog.'); return; }
     if (results.length === 0) { grok.shell.warning('No molecules produced.'); return; }
 
+    // Record this configuration in history before any post-processing — if the user closes
+    // mid-canonicalization, they can still recover the inputs that produced something.
+    recordHistory(state);
+
     const rNumbersUsed = new Set<number>();
     for (const r of results) for (const n of r.rGroupSmilesByNum.keys()) rNumbersUsed.add(n);
     const sortedRs = [...rNumbersUsed].sort((a, b) => a - b);
 
     const smilesCol = DG.Column.fromStrings('Enumerated', results.map((r) => r.smiles));
     smilesCol.semType = DG.SEMTYPE.MOLECULE;
-    const coreCol = DG.Column.fromStrings('Core', results.map((r) => r.coreSmiles));
+    const coreCol = DG.Column.fromStrings('Core', results.map((r) => normalizeRLabels(r.coreSmiles ?? '')));
     coreCol.semType = DG.SEMTYPE.MOLECULE;
     const rCols = sortedRs.map((n) =>
       DG.Column.fromStrings(`R${n}`, results.map((r) => r.rGroupSmilesByNum.get(n) ?? '')));
@@ -910,14 +1269,18 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
     // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
     pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
     try {
-      await grok.functions.call('Chem:convertNotation', {
+      const res: DG.Column = await grok.functions.call('Chem:convertNotation', {
         data: df,
         molecules: smilesCol,
         targetNotation: DG.chem.Notation.Smiles,
-        overwrite: true,
+        overwrite: false,
         join: false,
         kekulize: false,
       });
+      // in older version of the chem, overwrite is super slow, it has been updated but we can do it like this here
+      const resArr = res.toList();
+      smilesCol.init((i) => resArr[i]);
+      smilesCol.meta.units = DG.chem.Notation.Smiles;
     } catch (err: any) {
       // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
       _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);

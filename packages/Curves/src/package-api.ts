@@ -35,6 +35,13 @@ export namespace funcs {
     return await grok.functions.call('Curves:CurveFitDemo', {});
   }
 
+  /**
+  Dashboard with curves for multiple compounds, assays and targets
+  */
+  export async function assayCurveFitDemo(): Promise<void> {
+    return await grok.functions.call('Curves:AssayCurveFitDemo', {});
+  }
+
   export async function initCurves(): Promise<void> {
     return await grok.functions.call('Curves:InitCurves', {});
   }

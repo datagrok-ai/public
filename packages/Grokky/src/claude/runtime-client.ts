@@ -1,7 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
-export type ChunkEvent = {sessionId: string, content: string};
+export const ClaudeModel = {
+  Haiku: 'haiku',
+  Sonnet: 'sonnet',
+  Opus: 'opus',
+} as const;
+export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+
+export type ChunkEvent = {sessionId: string, content: string, kind?: 'exec' | 'entity'};
 export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
@@ -14,6 +21,7 @@ export class ClaudeRuntimeClient {
   private ws: WebSocket | null = null;
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
+  private _connectPromise: Promise<void> | null = null;
 
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
@@ -40,8 +48,13 @@ export class ClaudeRuntimeClient {
   }
 
   async ensureConnected(): Promise<void> {
-    if (!this.connected)
-      await this.connect();
+    if (this.connected)
+      return;
+    if (!this._connectPromise) {
+      this._connectPromise = this.connect()
+        .finally(() => { this._connectPromise = null; });
+    }
+    return this._connectPromise;
   }
 
   async connect(): Promise<void> {
@@ -49,17 +62,21 @@ export class ClaudeRuntimeClient {
       return;
 
     try {
-      const [runtimeContainers, mcpContainers] = await Promise.all([
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
-      ]);
-      if (runtimeContainers.length > 0) {
-        this.containerId = runtimeContainers[0].id;
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
+      if (!this.containerId || !this.mcpServerUrl) {
+        const [runtimeContainers, mcpContainers] = await Promise.all([
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
+        ]);
+        this.containerId = runtimeContainers[0]?.id ?? null;
+        this.mcpServerUrl = mcpContainers[0] ?
+          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
+          null;
       }
-      if (mcpContainers.length > 0)
-        this.mcpServerUrl = `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp`;
+      if (this.containerId)
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
     } catch (e) {
+      this.containerId = null;
+      this.mcpServerUrl = null;
       console.error('Failed to connect to Claude runtime:', e);
     }
 
@@ -70,15 +87,14 @@ export class ClaudeRuntimeClient {
       let data: any;
       try {
         data = JSON.parse(event.data);
-      }
-      catch {
+      } catch {
         console.error('ClaudeRuntimeClient: failed to parse message', event.data);
         return;
       }
 
       switch (data.type) {
       case 'chunk':
-        this.onChunk.next({sessionId: data.sessionId, content: data.content});
+        this.onChunk.next({sessionId: data.sessionId, content: data.content, kind: data.kind});
         break;
       case 'tool_activity':
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
@@ -120,7 +136,7 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string}): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -129,6 +145,7 @@ export class ClaudeRuntimeClient {
       mcpServerUrl: this.mcpServerUrl,
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+      ...(options?.model ? {model: options.model} : {}),
     }));
   }
 
@@ -137,7 +154,6 @@ export class ClaudeRuntimeClient {
     packageName?: string,
   ): Promise<void> {
     await this.ensureConnected();
-    console.log(`ClaudeRuntimeClient: triggering sync (scope=${scope}${packageName ? `, package=${packageName}` : ''})`);
     this.ws!.send(JSON.stringify({
       type: 'sync_user_files',
       apiKey: grok.dapi.token,
@@ -163,7 +179,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;
     return new Promise((resolve, reject) => {
@@ -179,7 +195,11 @@ export class ClaudeRuntimeClient {
         cleanup();
         reject(new Error(evt.message));
       }));
-      this.send(sid, message, options?.outputSchema ? {outputSchema: options.outputSchema} : undefined);
+      this.send(sid, message, {
+        ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
+        ...(options?.model ? {model: options.model} : {}),
+        ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+      });
     });
   }
 

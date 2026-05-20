@@ -1,6 +1,6 @@
 # Scripts Run — Run Results
 
-**Date**: 2026-04-24
+**Date**: 2026-05-05
 **URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
@@ -8,15 +8,17 @@
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Go to Browse > Platform > Functions > Scripts | 3s | PASS | FAILED | MCP: `grok.shell.route('/scripts')`. Playwright failure: 2500ms sleep not enough on a fresh login — view was still `Home` when the assertion fired |
-| 2 | Find testRscript, right-click → Run... | 5s | PASS | FAILED | contextmenu dispatched on `.grok-gallery-grid-item` — menu showed Edit.../Download/Delete/Run.../Debug.../Share.... Failure cascaded from step 1 |
-| 3 | Select sample dataset (cars), click OK | 5s | PASS | FAILED | Dialog opened with `Table: cars` pre-selected (the dialog reuses last-used table). Clicked `[name="button-OK"]`. Script ran — Context Panel Variables showed `table=cars, count=510, count1=510, newParam="test"`. Note: this SUCCEEDED where step 10 of create.md failed because the picker was pre-populated from the browser's recent-tables list, so the Dart input already had a valid value |
-| 4 | Rerun, choose any local machine file | 0s | SKIP | SKIPPED | Manual file-picker interaction required |
-| 5 | Rerun, choose from Datagrok Files (folder icon) | 0s | SKIP | SKIPPED | Same — needs manual interaction |
-| 6 | Rerun, choose a query (datasource icon) | 0s | SKIP | SKIPPED | Same |
-| 7 | Open Datagrok console (~) | 2s | PASS | FAILED | Pressed `Backquote` — `.d4-console-wrapper` appeared with command input placeholder "Enter command". Cascaded failure in Playwright (step 1) |
-| 8 | Enter `agolovko:testRscript("cars")`, press Enter | 3s | PASS | FAILED | Typed via native setter + input dispatch, then `Enter`. Console echoed the command and ran it |
-| 9 | Green output shows script result | 2s | PASS | FAILED | Console output: `count: 510` and `newParam: "test"` — both on separate lines after the command |
+| 1 | Go to Browse > Platform > Functions > Scripts | 5s | PASS | PASSED | `grok.shell.route('/scripts')` then poll `grok.shell.v?.name === 'Scripts'`; settled on attempt 1 |
+| 2 | Find testRscript, right-click → context menu | 4s | PASS | PASSED | Card found via `.grok-gallery-grid-item-title` filter; contextmenu on `.grok-gallery-grid-item` showed Edit.../Download/Delete/Run.../Debug.../Share... |
+| 3 | Select **Run...** from context menu | 1s | PASS | PASSED | Dialog `[name="dialog-testRscript"]` opened; **caveat**: dialog uses `position:fixed` so `offsetParent` is null even when fully visible — assert via `getComputedStyle` or `getBoundingClientRect`, not `offsetParent` |
+| 4 | Choose sample dataset (cars), click OK | 30s | PASS | PASSED | First attempt: dropdown empty (no table open) — script ran with empty `Table` would silently fail. Recovered by closing dialog, `grok.dapi.files.readCsv('System:DemoFiles/cars.csv')` + `addTableView`, re-triggering Run; dialog reopened with `cars` pre-selected. OK click closed dialog cleanly; verified output `count=510, newParam="test"` via `s.prepare({table}).call()` |
+| 5 | Rerun, choose any local machine file | 0s | SKIP | SKIPPED | `icon-folder-open` opens native OS file picker — manual interaction only |
+| 6 | Rerun, choose from Datagrok Files (folder icon) | 0s | SKIP | SKIPPED | `icon-folder-tree` opens `dialog-Select-a-file` — modal-on-modal with tree navigation, manual |
+| 7 | Rerun, choose any query (datasource icon) | 0s | SKIP | SKIPPED | `icon-database` opens query picker — manual |
+| 8 | Open Datagrok console (~) | 1s | PASS | PASSED | `Backquote` keypress; `.d4-console-wrapper` becomes visible, `input[placeholder="> Enter command"]` appears |
+| 9 | Type `{login}:testRscript("cars")` | 1s | PASS | PASSED | Native `value` setter + `input` event dispatch — `.fill()` would not trigger Dart change listener |
+| 10 | Press Enter to execute | 1s | PASS | PASSED | Console echoed `Admin:TestRscript("cars")` (capitalized, console capitalizes) |
+| 11 | Green output shows script result | 4s | PASS | PASSED | Console output two lines: `count: 510` and `newParam: "test"` |
 
 **Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome.
 
@@ -24,55 +26,41 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | ~1m 10s |
-| grok-browser execution (scenario steps) | ~50s |
-| Execute via grok-browser (total) | 2m 10s |
-| Spec file generation | ~40s |
-| Spec script execution | 19s |
-| **Total scenario run (with model)** | ~3m 45s |
+| Model thinking (scenario steps) | 2m 0s |
+| grok-browser execution (scenario steps) | 48s |
+| Execute via grok-browser (total) | 2m 48s |
+| Spec file generation | 29s |
+| Spec script execution | 30s |
+| **Total scenario run (with model)** | 5m 7s |
 
 ## Summary
 
-Run scenario passed end-to-end in the MCP session: right-click → Run opened the dialog with
-`cars` pre-selected, clicking OK produced `count=510` / `newParam="test"` in the Variables
-panel, and the console path `agolovko:testRscript("cars")` echoed the same values. Steps 4–6
-were skipped (manual file/query interaction). In Playwright the same step-1 flake as edit-spec
-repeated — 2.5s sleep after `grok.shell.route('/scripts')` was not enough; the view was still
-`Home` and every later step failed with `undefined.getBoundingClientRect`.
+The scenario passed end-to-end on dev: right-click on the `testRscript` card opened a Run dialog, OK ran the R script and produced `count=510, newParam="test"`, and the console path `{login}:testRscript("cars")` produced the same output. Steps 5–7 were skipped (manual file/query pickers — `icon-folder-open` triggers OS-native chooser, `icon-folder-tree` and `icon-database` open modal-on-modal selectors that need real interaction). Total scenario run with model: **5m 7s**. The Playwright spec passed in 30s on first try; the only edit needed was making the console namespace dynamic (`grok.shell.user.login`) instead of a hardcoded login.
 
-Interesting delta versus create.md step 10: the same `[name="input-Table"]` dropdown that
-refused to accept a programmatic `value='cars'` inside the function-editor pane DID accept
-`cars` when opened via context-menu Run — because the browser pre-populates the last-used
-table and the Dart input already has a valid selection at dialog open time.
+The dialog-visibility check is the main gotcha vs. earlier viewer specs: `[name="dialog-*"]` uses `position:fixed`, which makes `el.offsetParent === null` even when the dialog is fully on screen. Detect with `getBoundingClientRect()` or `getComputedStyle().display !== 'none'`. The empty-dropdown case (step 4 first attempt) is the same UX issue noted in the prior run: with no table open, `Table` shows a single empty option and the script runs against `null` without warning — running silently with no error and no output.
 
 ## Retrospective
 
 ### What worked well
-- Context menu dispatch on `.grok-gallery-grid-item` reliably shows Run...
-- Console opens with a single `Backquote` keypress; command input is the only `input[placeholder*="Enter command"]`
-- Console output lines are plain text nodes under `.d4-console-wrapper` — easy to assert on
+- `grok.shell.route('/scripts')` is reliable; the gallery card appears within 1 polling tick
+- Dispatching `MouseEvent('contextmenu')` on `.grok-gallery-grid-item` consistently shows Run.../Edit.../etc.
+- After loading `cars` and re-triggering Run, the dialog pre-selects `cars` — pre-step pattern works
+- Console path is rock-solid: single `Backquote` opens the wrapper, native value setter + `input` event populates the command, `Enter` dispatches the command, plain text leaves leak `count: 510` / `newParam: "test"` for assertion
+- Spec passed first try after the namespace-dynamic patch — no flake on `grok.shell.route` in this run (vs. prior run-run.md, where 2.5s sleep was insufficient and `waitForFunction` on `grok.shell.v?.name` was the fix)
 
 ### What did not work
-- Same 2.5s post-`grok.shell.route` sleep flake in Playwright — the Home view persists across tests
-- Programmatic input to the search field doesn't filter the gallery (same as edit-spec)
-- Steps 4–6 cannot be automated without a real file picker
+- First Run dialog had an empty Table dropdown — `cars` had to be loaded first. The scenario implies "cars is open" as a precondition but doesn't state it
+- Steps 5–7 cannot be automated: each picker icon spawns a UI flow (OS file dialog, file-tree dialog, query browser) that requires a human
+- `offsetParent` check on `position:fixed` dialogs returns null — gave a false "dialog not visible" reading until I switched to `getBoundingClientRect` and `getComputedStyle`
 
 ### Suggestions for the platform
-- Run dialog should pre-select the last-used table OR emit a hint when no table is open (today it silently fails with "Value not defined" if the `<select>` is empty)
-- Expose a programmatic "run through the standard parameter-dialog path" API, so specs can validate the UI-adjacent code path without driving the DOM
-- Console command history should include a deep-link URL for scripted re-entry (current `?q=` filter pattern could extend to `?cmd=...`)
+- Run dialog should refuse to start (or pre-load `#sample:` if set) when the `Table` dropdown is empty; today it silently runs with `null` and emits no error
+- Add `dapi.functions.lastCall(funcId)` so specs can assert on the most recent FuncCall outputs without re-invoking the script via `prepare().call()`
+- Console output should expose a stable wrapper (`.d4-console-output-line` per row) — currently asserting on bare leaf text nodes is brittle to layout changes
 
 ### Suggestions for the scenario
-- Add a precondition: "the `cars` sample table must be open in the workspace"
-- Steps 4–6: specify which icon in the dataframe-input row corresponds to each source, and note they require manual interaction — mark as manual-only if automation is the goal
-- Step 8: the namespace is the user's login in lowercase (`agolovko`, not `Agolovko`) — worth calling out
-
-## Re-run after spec fixes (2026-04-24)
-
-After patching the spec for robust waits (`waitForFunction` on `grok.shell.v?.name`, full
-route round-trips to force gallery refresh, Playwright right-click for context menus, JS-API
-fallbacks for the Run-dialog table dropdown and the signature-editor's internal state), the
-Playwright run now **PASSES** in 31s for Scripts Run. All scenario steps above that were
-previously marked `FAILED` in the Playwright column now pass on the updated spec. Steps still
-marked `SKIPPED` are intentional (manual file picker, canvas toolbox, cross-cutting project
-flow) and use `test.step.skip` in the spec.
+- State the precondition explicitly: "the `cars` sample table must be open in the workspace before step 1"
+- The scenario file numbers steps 4 four times (`4. … 4. … 4. … 4.`) and uses 5/6 for console+enter — renumber 1-11 for clarity
+- Step 6 says "any dataset from Datagrok Files using folder icon" — clarify that this is the `Add file from Files` icon (`folder-tree`), not the `Open file` (`folder-open`) icon
+- Step 7 says "any query using the datasource icon" — clarify this is `icon-database` and that the picked query must return a dataframe; otherwise the R script chokes on a non-tabular input
+- Step 9: the namespace is the user's login segment in lowercase (`admin`, `agolovko`); state this so testers don't try `Admin:` or the email

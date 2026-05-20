@@ -48,27 +48,6 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:LinkStrands', { strands });
   }
 
-  /**
-  Translate oligonucleotide sequences across various formats accepted by different synthesizers
-  */
-  export async function demoTranslateSequence(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoTranslateSequence', {});
-  }
-
-  /**
-  Design a modification pattern for an oligonucleotide sequence
-  */
-  export async function demoOligoPattern(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoOligoPattern', {});
-  }
-
-  /**
-  Visualize duplex and save SDF
-  */
-  export async function demoOligoStructure(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoOligoStructure', {});
-  }
-
   export async function translateOligonucleotideSequence(sequence: string , sourceFormat: string , targetFormat: string ): Promise<string> {
     return await grok.functions.call('SequenceTranslator:TranslateOligonucleotideSequence', { sequence, sourceFormat, targetFormat });
   }
@@ -96,17 +75,10 @@ export namespace funcs {
   }
 
   /**
-  Perform enumeration of a molecule using different fragments at specified positions
-  */
-  export async function polyToolEnumerateChemTopMenu(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:PolyToolEnumerateChemTopMenu', {});
-  }
-
-  /**
   Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
   */
-  export async function chemEnumerateReactionsTopMenu(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:ChemEnumerateReactionsTopMenu', {});
+  export async function chemEnumerateMarkushTopMenu(): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:ChemEnumerateMarkushTopMenu', {});
   }
 
   export async function polyToolColumnChoice(df: DG.DataFrame , macroMolecule: DG.Column ): Promise<void> {
@@ -131,6 +103,10 @@ export namespace funcs {
 
   export async function getPtChemEnumeratorDialog(cell: any | null): Promise<void> {
     return await grok.functions.call('SequenceTranslator:GetPtChemEnumeratorDialog', { cell });
+  }
+
+  export async function getPtOligoEnumeratorDialog(cell: any | null): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:GetPtOligoEnumeratorDialog', { cell });
   }
 
   /**
@@ -159,6 +135,20 @@ export namespace funcs {
   }
 
   /**
+  OligoNucleotide
+  */
+  export async function editOligoNucleotideCell(cell: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:EditOligoNucleotideCell', { cell });
+  }
+
+  /**
+  Edit the oligonucleotide HELM in the HELM Web Editor
+  */
+  export async function openOligoHelmEditor(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:OpenOligoHelmEditor', { value });
+  }
+
+  /**
   Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
   */
   export async function oligoNucleotidePanel(value: any ): Promise<any> {
@@ -170,6 +160,20 @@ export namespace funcs {
   */
   export async function oligoNucleotideStructuresPanel(value: any ): Promise<any> {
     return await grok.functions.call('SequenceTranslator:OligoNucleotideStructuresPanel', { value });
+  }
+
+  /**
+  Copy the HELM string of an oligo cell to the clipboard
+  */
+  export async function copyOligoAsHelm(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:CopyOligoAsHelm', { value });
+  }
+
+  /**
+  Copy a high-resolution image of the oligo duplex
+  */
+  export async function copyOligoAsImage(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:CopyOligoAsImage', { value });
   }
 
   /**

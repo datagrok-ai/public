@@ -1010,13 +1010,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
-  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+  static async getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): Promise<any | null> {
     const df = view.dataFrame;
     if (!Pmpo.isTableValid(df))
       return null;
 
     const pMPO = new Pmpo(df, view);
-
     return pMPO.getPmpoAppItems();
   }
 

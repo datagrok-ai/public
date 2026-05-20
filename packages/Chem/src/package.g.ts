@@ -35,14 +35,6 @@ export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Colum
   return await PackageFunctions.recalculateCoords(table, molecules, method, join);
 }
 
-//name: Chemistry | Most Diverse Structures
-//input: column col { semType: Molecule }
-//output: widget result
-//meta.role: tooltip
-export async function chemTooltip(col: DG.Column) : Promise<any> {
-  return await PackageFunctions.chemTooltip(col);
-}
-
 //name: Scaffold Tree
 //output: viewer result
 //meta.icon: files/icons/scaffold-tree-icon.svg
@@ -195,6 +187,18 @@ export function diversitySearchViewer() : any {
 //top-menu: Chem | Search | Diversity Search...
 export function diversitySearchTopMenu() : void {
   PackageFunctions.diversitySearchTopMenu();
+}
+
+//name: Similarity Matrix
+//description: Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: column symbols 
+//input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//output: dataframe result
+//top-menu: Chem | Calculate | Similarity Matrix...
+export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG.Column, symbols: DG.Column, fingerprintType: string) : Promise<any> {
+  return await PackageFunctions.similarityMatrixTopMenu(table, molecules, symbols, fingerprintType);
 }
 
 //top-menu: Chem | Calculate | Descriptors...
@@ -526,8 +530,8 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
   return await PackageFunctions.getStructuralAlerts(molecules, alerts);
 }
 
-//name: Pharmacophore Features
-//description: Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)
+//name: Pharmacophores
+//description: Detects pharmacophores (donors, acceptors, hydrophobic, etc.)
 //input: dataframe table { description: Input data table; caption: Table }
 //input: column molecules { caption: Molecules; semType: Molecule; type: categorical }
 //input: bool donor = true { caption: Donor; description: "Hydrogen Bond Donor" }
@@ -539,7 +543,7 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 //input: bool halogenBond = false { caption: Halogen Bond; description: "Halogen bond donor" }
 //output: dataframe result
 //meta.role: hitTriageFunction
-//top-menu: Chem | Analyze | Pharmacophore Features...
+//top-menu: Chem | Analyze | Pharmacophores...
 export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean, halogenBond: boolean) : Promise<any> {
   return await PackageFunctions.pharmacophoreFeaturesTopMenu(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond);
 }
@@ -625,8 +629,8 @@ export async function structuralAlerts(smiles: string) : Promise<any> {
   return await PackageFunctions.structuralAlerts(smiles);
 }
 
-//name: Biology | Pharmacophore Features
-//description: Detects and highlights pharmacophore features (donors, acceptors, hydrophobic, aromatic, positive, negative)
+//name: Biology | Pharmacophores
+//description: Detects and highlights pharmacophores (donors, acceptors, hydrophobic, aromatic, positive, negative)
 //input: string smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -1042,15 +1046,6 @@ export function removeDuplicates(molecules: string[], molecule: string) : string
   return PackageFunctions.removeDuplicates(molecules, molecule);
 }
 
-//name: Demo Chem Overview
-//description: Overview of Cheminformatics functionality
-//meta.isDemoScript: true
-//meta.demoSkip: GROK-14320
-//meta.demoPath: Cheminformatics | Overview
-export async function demoChemOverview() : Promise<void> {
-  await PackageFunctions.demoChemOverview();
-}
-
 //name: Demo Similarity Search
 //description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
@@ -1298,6 +1293,15 @@ export async function biochemPropsWidget() : Promise<void> {
 //meta.role: app
 export async function mpoProfilesApp(path?: string) : Promise<any> {
   return await PackageFunctions.mpoProfilesApp(path);
+}
+
+//name: Reaction Enumerator
+//description: Forward-reaction library enumeration over building blocks and SMARTS templates.
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function reactionEnumeratorApp() : Promise<any> {
+  return await PackageFunctions.reactionEnumeratorApp();
 }
 
 //input: dynamic treeNode 

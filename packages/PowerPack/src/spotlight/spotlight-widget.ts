@@ -155,53 +155,37 @@ export class SpotlightWidget extends DG.Widget {
   }
 
   async createRandomizedTipOfTheDay(): Promise<HTMLElement> {
-    const seededRandom = (seed: string) => {
-      let x = 0;
-      for (let i = 0; i < seed.length; i++) {
-        x += seed.charCodeAt(i);
-        x = (x * 9301 + 49297) % 233280;
-      }
-      return x / 233280;
+    // Mon-Fri pick their own tips; Sat/Sun re-use Friday's. Same tip for all users on the same day.
+    const TIP_TYPE_BY_DAY = ['demo', 'tip', 'tutorial', 'tip', 'demo'] as const; // Mon..Fri
+    const hash = (s: string) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++)
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      return Math.abs(h);
     };
-    const getISOWeek = (date: Date) => {
-      const tmpDate = new Date(date.getTime());
-      tmpDate.setHours(0, 0, 0, 0);
-      tmpDate.setDate(tmpDate.getDate() + 3 - ((tmpDate.getDay() + 6) % 7)); // Thursday of this week
-      const week1 = new Date(tmpDate.getFullYear(), 0, 4); // first Thursday of the year
-      return 1 + Math.round(((tmpDate.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-    };
-    const today = new Date();
-    const year = today.getFullYear();
-    const weekNumber = getISOWeek(today);
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const dayName = [0, 6].includes(today.getDay()) ? 'Friday' : dayNames[today.getDay() - 1];
-    const weekSeed = `${year}-W${weekNumber}-${dayName}`;
 
-    const dayTipTypeMap: Record<string, 'tip' | 'demo' | 'tutorial'> = {
-      Monday: 'demo',
-      Tuesday: 'tip',
-      Wednesday: 'tutorial',
-      Thursday: 'tip',
-      Friday: 'demo',
-      Saturday: 'demo', // repeat Friday
-      Sunday: 'demo', // repeat Friday
-    };
-    const tipType = dayTipTypeMap[dayName];
-    const todayItemListFromType = tipType === 'tip' ? this.tipsOfTheDay : tipType === 'tutorial' ? this.tutorialsOfTheDay : [];
+    const today = dayjs();
+    const dow = today.day();
+    const isoDow = dow === 0 ? 7 : dow;
+    const anchor = today.subtract(Math.max(0, isoDow - 5), 'day') // Sat/Sun → Friday
+    const tipType = TIP_TYPE_BY_DAY[Math.min(isoDow, 5) - 1];
+    const seed = anchor.format('YYYY-MM-DD');
+    const pick = <T>(arr: T[]): T | '' => arr.length ? arr[hash(seed) % arr.length] : '';
+
     const randomizedTips = [...this.tipsOfTheDay, ...this.availableDemosOfTheDay, ...this.tutorialsOfTheDay];
     let randomTip: DG.Func | string;
     if (tipType === 'demo') {
-      let demosOfTheDay: (string | DG.Func)[] = await this.getDemosOfTheDay();
-      if (demosOfTheDay.length === 0)
-        demosOfTheDay = this.availableDemosOfTheDay;
-      randomTip = demosOfTheDay.length > 0 ? demosOfTheDay[Math.floor(seededRandom(weekSeed) * demosOfTheDay.length)] : '';
+      let demos: (string | DG.Func)[] = await this.getDemosOfTheDay();
+      if (demos.length === 0)
+        demos = this.availableDemosOfTheDay;
+      randomTip = pick(demos);
       if (!(randomTip instanceof DG.Func)) {
         const demoFunc = DG.Func.find({meta: {'demoPath': randomTip}})[0];
-        randomTip = demoFunc ? demoFunc : this.availableDemosOfTheDay[Math.floor(seededRandom(weekSeed) * this.availableDemosOfTheDay.length)];
+        randomTip = demoFunc ?? pick(this.availableDemosOfTheDay);
       }
     }
     else
-      randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
+      randomTip = pick(tipType === 'tip' ? this.tipsOfTheDay : this.tutorialsOfTheDay);
 
     let tipIdx = 0;
     const demoApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'demoApp'})[0];
@@ -514,7 +498,11 @@ export class SpotlightWidget extends DG.Widget {
     for (const func of additionalFuncs) {
       const subWidget: DG.Widget = await func.apply();
       subWidget.root.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const rootToAppend = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
+      const customHeader = subWidget.root.querySelector('.power-pack-activity-widget-custom-header');
+      if (customHeader)
+        customHeader.remove();
+      const headerContent = customHeader ?? ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]);
+      const rootToAppend = ui.divV([ui.h3(headerContent, 'power-pack-activity-widget-spotlight-column-header'),
         subWidget.root], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(rootToAppend);
     }

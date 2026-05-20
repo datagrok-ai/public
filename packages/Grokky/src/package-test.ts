@@ -1,3 +1,4 @@
+import './polyfills'; // must run before anything else — Chrome 50 / Dartium support, see polyfills.ts
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext } from '@datagrok-libraries/test/src/test';

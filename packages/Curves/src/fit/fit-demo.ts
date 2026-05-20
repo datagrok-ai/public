@@ -109,3 +109,16 @@ export async function curveDemo(): Promise<void> {
   const _tableView = grok.shell.addTableView(df);
   // tableView.addViewer('MultiCurveViewer');
 }
+
+export async function assayCurvesDemo(): Promise<void> {
+  const df = await grok.data.loadTable(`${_package.webRoot}files/demo/Assay_Curves.csv`);
+  await df.meta.detectSemanticTypes();
+  const layoutTXT = await _package.files.readAsText('demo/Assay_Curves.layout');
+  const layout = DG.ViewLayout.fromJson(layoutTXT);
+  df.selection.set(13, true);
+  df.selection.set(14, true); // two curves for multicurve viewer
+  const tv = grok.shell.addTableView(df);
+  await DG.delay(100);
+  tv.loadLayout(layout, true);
+  grok.shell.info('Select cells in Trellis plot to see corresponding curves in Multi Curve Viewer.', {timeout: 10});
+}

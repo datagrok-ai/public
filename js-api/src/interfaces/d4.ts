@@ -1,1013 +1,6 @@
 /// this file was generated automatically from d4 classes declarations
 
 
-export interface IBarChartSettings {
-  /// Determines the rows shown on the scatter plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Determines what happens when you click on a bar.
-  onClick: keyof typeof RowGroupAction;
-
-  /// Value column. See *Value Aggr Type* for aggregation options.
-  value: string;
-  valueColumnName: string;
-
-  /// Value aggregation.
-  valueAggrType: string;
-
-  /// When true, each outermost bar is of the same width.
-  /// This mode is useful for comparing relative value frequency when the *Stack* column is specified.
-  relativeValues: boolean;
-
-  /// Indicates whether the "no data" bar should appear
-  /// when the *Split* value is not present.
-  includeNulls: boolean;
-
-  /// Whether to sort bars *by category* or *by value*.
-  /// See also *Bar Sort Order*
-  barSortType: string;
-
-  /// Whether the bars should be sorted in ascending or descending order.
-  /// See also *Bar Sort Type*.
-  barSortOrder: string;
-
-  axisType: keyof typeof AxisType;
-
-  valueMin: number;
-
-  valueMax: number;
-
-  showValueAxis: boolean;
-
-  showValueSelector: boolean;
-
-  orientation: string;
-
-  /// A categorical column to split data on (each bar represents a category)
-  split: string;
-  splitColumnName: string;
-
-  /// Time unit map function for *Split* (applicable to dates only).
-  splitMap: string;
-
-  showCategoryValues: boolean;
-
-  showValuesInsteadOfCategories: boolean;
-
-  showCategorySelector: boolean;
-
-  /// A categorical column to further split data on.
-  /// Each category would become a part of the bar resulting from *Split*.
-  /// Shows stacked bars only when *Value Aggr Type* is additive.
-  stack: string;
-  stackColumnName: string;
-
-  /// Time unit map function for *Stack* (applicable to dates only).
-  stackMap: string;
-
-  showStackSelector: boolean;
-
-  /// Numerical column to be used for color-coding.
-  /// The values in the bin get aggregated using the *Color Aggr Type* property.
-  color: string;
-  colorColumnName: string;
-
-  /// Color aggregation type.
-  colorAggrType: string;
-
-  invertColorScheme: boolean;
-
-  linearColorScheme: Array<number>;
-
-  /// Whether the selected rows are indicated.
-  /// Only works for cumulative aggregations such as count.
-  showSelectedRows: boolean;
-
-  showMouseOverRect: boolean;
-
-  /// Show which part is filtered
-  /// Only works with RowSource = All
-  showFilteredRows: boolean;
-
-  showMouseOverRows: boolean;
-
-  autoLayout: boolean;
-
-  maxCategoryWidth: number;
-
-  categoryValueWidth: number;
-
-  showValueAxisLine: boolean;
-
-  showCategoryZeroBaseline: boolean;
-
-  barBorderLineMouseOverWidth: number;
-
-  barBorderLineWidth: number;
-
-  maxBarHeight: number;
-
-  barCornerRadius: number;
-
-  verticalAlign: keyof typeof VerticalAlignType;
-
-  font: string;
-
-  axisFont: string;
-
-  minTextHeight: number;
-
-  /// When enabled, shows hatched areas and arrows on bars
-  /// that are clipped by the value axis range.
-  showClippedBarIndicators: boolean;
-
-  backColor: number;
-
-  axisColor: number;
-
-  barColor: number;
-
-  categoryColor: number;
-
-  valueTextColor: number;
-
-  barBorderLineMouseOverColor: number;
-
-  barBorderLineFilteredColor: number;
-
-  barBorderLineColor: number;
-
-  outerMarginLeft: number;
-
-  outerMarginRight: number;
-
-  outerMarginTop: number;
-
-  outerMarginBottom: number;
-
-  showAllCats: boolean;
-
-  useSplitColors: boolean;
-
-  showEmptyBars: boolean;
-
-  showLabels: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum RowSet {
-  All = 'All',
-  Filtered = 'Filtered',
-  Selected = 'Selected',
-  SelectedOrCurrent = 'SelectedOrCurrent',
-  FilteredSelected = 'FilteredSelected',
-  MouseOverGroup = 'MouseOverGroup',
-  CurrentRow = 'CurrentRow',
-  MouseOverRow = 'MouseOverRow',
-}
-
-export enum RowGroupAction {
-  Select = 'Select',
-  Filter = 'Filter',
-  None = 'None',
-}
-
-export enum AxisType {
-  linear = 'linear',
-  logarithmic = 'logarithmic',
-}
-
-export enum VerticalAlignType {
-  Center = 'Center',
-  Top = 'Top',
-  Bottom = 'Bottom',
-}
-
-export enum VisibilityMode {
-  Auto = 'Auto',
-  Always = 'Always',
-  Never = 'Never',
-}
-
-export enum FlexAutoPosition {
-  Auto = 'Auto',
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
-  RightTop = 'RightTop',
-  RightBottom = 'RightBottom',
-  LeftTop = 'LeftTop',
-  LeftBottom = 'LeftBottom',
-}
-
-export enum FlexPosition {
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
-}
-
-export interface IBoxPlotSettings {
-  categoryColumnNames: Array<string>;
-
-  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
-  category1: string;
-  category1ColumnName: string;
-
-  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
-  category1Map: string;
-
-  /// If defined, sets *Markers Color* the same as the currently selected column.
-  category2: string;
-  category2ColumnName: string;
-
-  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
-  category2Map: string;
-
-  showStatistics: boolean;
-
-  showCategoryAxis: boolean;
-
-  showCategorySelector: boolean;
-
-  labelOrientation: keyof typeof TextOrientation;
-
-  /// Display subcategories - category combinations in the x axis table.
-  showMinorCategories: boolean;
-
-  value: string;
-  valueColumnName: string;
-
-  axisType: keyof typeof AxisType;
-
-  valueMin: number;
-
-  valueMax: number;
-
-  invertYAxis: boolean;
-
-  showValueAxis: boolean;
-
-  showValueSelector: boolean;
-
-  /// If checked, focuses on filtered points (on value axis) as the filter changes.
-  /// If current value column is filtered, zoom is not applied.
-  zoomValuesByFilter: boolean;
-
-  /// Include plots, which are empty or have null values.
-  showEmptyCategories: boolean;
-
-  /// Column to color-code boxes (Q2-Q3 region) or inner violin shapes.
-  /// See also *Bin Color Aggr Type*.
-  binColor: string;
-  binColorColumnName: string;
-
-  /// Aggregation function for color-coding.
-  /// See also *Bin Color*.
-  binColorAggrType: string;
-
-  showColorSelector: boolean;
-
-  /// Column to color-code markers. Changing *Category 1* or *Category 2*
-  /// sets the color scheme to categorical (same as selected category column).
-  markerColor: string;
-  markerColorColumnName: string;
-
-  /// Categorical coloring time unit map function (applicable to dates only).
-  markerColorMap: string;
-
-  colorAxisType: keyof typeof AxisType;
-
-  invertColorScheme: boolean;
-
-  colorMin: number;
-
-  colorMax: number;
-
-  markers: string;
-  markersColumnName: string;
-
-  /// Marker category time unit map function (applicable to dates only).
-  markersMap: string;
-
-  markerMinSize: number;
-
-  markerMaxSize: number;
-
-  showSizeSelector: boolean;
-
-  markerSizeColumnName: string;
-
-  markerType: string;
-
-  markerSize: number;
-
-  markerOpacity: number;
-
-  showMeanCross: boolean;
-
-  showLowerDash: boolean;
-
-  showUpperDash: boolean;
-
-  showMedianDash: boolean;
-
-  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
-  showValuesLimit: number;
-
-  /// Show points inside the interquartile range (Q3 - Q1).
-  showInsideValues: boolean;
-
-  /// Show points outside the interquartile range (Q3 - Q1).
-  showOutsideValues: boolean;
-
-  /// Show p-value. Press T to toggle.
-  /// Currently works only when there are two categories.
-  /// Welch's t-test is used for calculating the p-value.
-  showPValue: boolean;
-
-  showMouseOverPoint: boolean;
-
-  showMouseOverRowGroup: boolean;
-
-  statistics: Array<string>;
-
-  /// Format for statistics and p-value values.
-  statisticsFormat: string;
-
-  showTotalCount: boolean;
-
-  /// Shown values count inside lower and upper bounds, where:
-  /// IQR = Q3 - Q1.
-  /// Lower Bound = Q1 - (1.5 * IQR).
-  /// Upper Bound = Q3 + (1.5 * IQR).
-  showInliersCount: boolean;
-
-  /// Shown values count outside lower and upper bounds, where:
-  /// IQR = Q3 - Q1.
-  /// Lower Bound = Q1 - (1.5 * IQR).
-  /// Upper Bound = Q3 + (1.5 * IQR).
-  showOutliersCount: boolean;
-
-  showMin: boolean;
-
-  showMax: boolean;
-
-  showAvg: boolean;
-
-  showMed: boolean;
-
-  showStdev: boolean;
-
-  showQ1: boolean;
-
-  showQ3: boolean;
-
-  viewport: string;
-
-  allowColorSynchronization: boolean;
-
-  autoLayout: boolean;
-
-  /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
-  showAllCategories: boolean;
-
-  plotStyle: string;
-
-  axisFont: string;
-
-  categoryFont: string;
-
-  statisticsFont: string;
-
-  whiskerLineWidth: number;
-
-  /// Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow.
-  interquartileLineWidth: number;
-
-  whiskerWidthRatio: number;
-
-  axisUseColumnFormat: boolean;
-
-  /// Number of KDE bins to display a violin plot.
-  bins: number;
-
-  whiskerColor: number;
-
-  violinWhiskerColor: number;
-
-  backColor: number;
-
-  filteredRowsColor: number;
-
-  filteredOutRowsColor: number;
-
-  selectedRowsColor: number;
-
-  missingValueColor: number;
-
-  defaultBoxColor: number;
-
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
-  /// Controls box plot tooltip visibility
-  showTooltip: string;
-
-  showLabels: keyof typeof VisibilityMode;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum TextOrientation {
-  Auto = 'Auto',
-  Horz = 'Horz',
-  Vert = 'Vert',
-}
-
-export interface ICalendarSettings {
-  date: string;
-  dateColumnName: string;
-
-  controlsFont: string;
-
-  showHeader: boolean;
-
-  redWeekends: boolean;
-
-  /// Determines what happens when you click a date.
-  onClick: keyof typeof RowGroupAction;
-
-  showFilteredOnly: boolean;
-
-  backColor: number;
-
-  oddMonthColor: number;
-
-  evenMonthColor: number;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface ICardSettings {
-  caption: string;
-
-  valueSourceType: keyof typeof CardValueSourceType;
-
-  /// Source-type specific value.
-  value: string;
-
-  format: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum CardValueSourceType {
-  Constant = 'Constant',
-  TableMeta = 'TableMeta',
-  ColumnMeta = 'ColumnMeta',
-  Markup = 'Markup',
-  Formula = 'Formula',
-  External = 'External',
-}
-
-export interface IConfusionMatrixSettings {
-  /// Column to be put on the X axis
-  x: string;
-  xColumnName: string;
-
-  /// Column to be put on the Y axis
-  y: string;
-  yColumnName: string;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface ICorrelationPlotSettings {
-  controlsFont: string;
-
-  /// Columns to be put on the X axis
-  xColumnNames: Array<string>;
-
-  /// Columns to be put on the Y axis
-  yColumnNames: Array<string>;
-
-  correlationType: keyof typeof CorrelationType;
-
-  /// Shows the Pearson correlation coefficient inside the corresponding cell.
-  showPearsonR: boolean;
-
-  /// Shows the tooltip with the corresponding scatter plot inside.
-  showTooltip: boolean;
-
-  /// Ignores double click behavior on the grid cells.
-  ignoreDoubleClick: boolean;
-
-  backColor: number;
-
-  defaultCellFont: string;
-
-  colHeaderFont: string;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum CorrelationType {
-  Pearson = 'Pearson',
-  Spearman = 'Spearman',
-}
-
-export interface IDensityPlotSettings {
-  binShape: string;
-
-  /// Columns to be put on the X axis
-  x: string;
-  xColumnName: string;
-
-  /// Columns to be put on the Y axis
-  y: string;
-  yColumnName: string;
-
-  autoLayout: boolean;
-
-  axisFont: string;
-
-  showColorScale: boolean;
-
-  invertColorScheme: boolean;
-
-  colorTransformType: keyof typeof AxisType;
-
-  linearColorScheme: Array<number>;
-
-  showXAxis: boolean;
-
-  showYAxis: boolean;
-
-  xAxisType: keyof typeof AxisType;
-
-  yAxisType: keyof typeof AxisType;
-
-  invertXAxis: boolean;
-
-  invertYAxis: boolean;
-
-  showXSelector: boolean;
-
-  showYSelector: boolean;
-
-  xMin: number;
-
-  yMin: number;
-
-  xMax: number;
-
-  yMax: number;
-
-  bins: number;
-
-  allowZoom: boolean;
-
-  binToRange: boolean;
-
-  showBinSelector: boolean;
-
-  backColor: number;
-
-  viewport: string;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IFiltersSettings {
-  active: boolean;
-
-  histogramLook: any;
-
-  showFilterCountsIndication: boolean;
-
-  showFilterIndication: boolean;
-
-  /// Indicate the proportion of the selected rows inside each category.
-  showSelectionIndication: boolean;
-
-  showHeader: boolean;
-
-  showHistogram: boolean;
-
-  showMinMax: boolean;
-
-  showSearchBox: boolean;
-
-  // shows the current mouse over row in the table using grey vertical bar in corresponding row
-  showMouseOverRow: boolean;
-
-  // shows the current row in the table using green vertical bar in corresponding row
-  showCurrentRow: boolean;
-
-  // shouws the mouse over group porportion in the filter (similar to how selection proportion is shown).
-  showMouseOverGroupRow: boolean;
-
-  /// Show a filter that represents all boolean columns in the table.
-  showBoolCombinedFilter: boolean;
-
-  columnNames: Array<string>;
-
-  filters: Array<{[index: string]: any}>;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IFormSettings {
-  /// Determines what gets shown on the form.
-  syncMode: string;
-
-  showNavigation: boolean;
-
-  showPrevRowArrow: boolean;
-
-  showNextRowArrow: boolean;
-
-  showRowSelector: boolean;
-
-  showFieldEditor: boolean;
-
-  showDesignEditor: boolean;
-
-  showColumnSelector: boolean;
-
-  showSaveFile: boolean;
-
-  showOpenFile: boolean;
-
-  sketchState: {[index: string]: any};
-
-  columnNames: Array<string>;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
 export interface IGridSettings {
   controlsFont: string;
 
@@ -1308,10 +301,40 @@ export enum GridColorCodingType {
   None = 'None',
 }
 
+export enum TextOrientation {
+  Auto = 'Auto',
+  Horz = 'Horz',
+  Vert = 'Vert',
+}
+
+export enum VisibilityMode {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
+
 export enum AllowStickyMetaType {
   Auto = 'Auto',
   Always = 'Always',
   Never = 'Never',
+}
+
+export enum RowSet {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  SelectedOrCurrent = 'SelectedOrCurrent',
+  FilteredSelected = 'FilteredSelected',
+  MouseOverGroup = 'MouseOverGroup',
+  CurrentRow = 'CurrentRow',
+  MouseOverRow = 'MouseOverRow',
+}
+
+export enum FlexPosition {
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
 }
 
 export interface IGridCellStyle {
@@ -1358,6 +381,1421 @@ export interface IGridCellStyle {
 
   /// When defined, the cell editor becomes a combo box with the specified values
   choices: Array<string>;
+
+}
+
+export interface IScatterPlotSettings {
+  /// Invalid are null values and not positive numbers if axis is logarithmic.
+  filterOutInvalid: boolean;
+
+  /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
+  showFilteredOutPoints: boolean;
+
+  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
+  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
+  axesFollowFilter: boolean;
+
+  /// Determines the relationship between table filter and scatter plot area:
+  /// * No action: they are disconnected
+  /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
+  /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
+  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
+  zoomAndFilter: string;
+
+  /// A column to use on the X axis. Could be numerical or categorical.
+  x: string;
+  xColumnName: string;
+
+  /// Time unit map function for x column (applicable to dates only).
+  xMap: string;
+
+  /// A column to use on the Y axis. Could be numerical or categorical.
+  y: string;
+  yColumnName: string;
+
+  /// Time unit map function for y column (applicable to dates only).
+  yMap: string;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
+  showVerticalGridLines: boolean;
+
+  showHorizontalGridLines: boolean;
+
+  showXAxis: boolean;
+
+  showYAxis: boolean;
+
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  /// Shows a distribution histogram along the X axis (at the top)
+  showXHistogram: boolean;
+
+  /// Shows a distribution histogram along the Y axis (on the right)
+  showYHistogram: boolean;
+
+  /// Number of bins for axis histograms
+  histogramBins: number;
+
+  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
+  xWhiskerMin: string;
+  xWhiskerMinColumnName: string;
+
+  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
+  xWhiskerMax: string;
+  xWhiskerMaxColumnName: string;
+
+  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
+  xWhiskerRange: string;
+  xWhiskerRangeColumnName: string;
+
+  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
+  yWhiskerMin: string;
+  yWhiskerMinColumnName: string;
+
+  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
+  yWhiskerMax: string;
+  yWhiskerMaxColumnName: string;
+
+  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
+  yWhiskerRange: string;
+  yWhiskerRangeColumnName: string;
+
+  xAxisLabelOrientation: string;
+
+  /// A column to be used for color-coding. Could be numerical or categorical.
+  /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
+  /// Color palettes could defined either for columns in the column context panel,
+  /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
+  color: string;
+  colorColumnName: string;
+
+  /// Categorical coloring time unit map function (applicable to dates only).
+  colorMap: string;
+
+  showColorSelector: boolean;
+
+  colorAxisType: keyof typeof AxisType;
+
+  invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
+
+  /// A numerical column to use for size-coding markers.
+  /// See also *Marker Min Size* and *Marker Max Size*.
+  size: string;
+  sizeColumnName: string;
+
+  showSizeSelector: boolean;
+
+  /// A categorical column that determines the shape of the markers.
+  markers: string;
+  markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
+
+  markerType: string;
+
+  // By default - automatic sizing based on current dataframe
+  markerDefaultSize: number;
+
+  markerOpacity: number;
+
+  /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
+  /// Useful when multiple points fall on the same exact position.
+  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
+  jitterSize: number;
+
+  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
+  jitterSizeY: number;
+
+  markerDrawBorder: boolean;
+
+  markerBorderWidth: number;
+
+  markerMinSize: number;
+
+  markerMaxSize: number;
+
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  /// When defined, lines are split into separate series by this categorical column instead of the color column.
+  linesBy: string;
+  linesByColumnName: string;
+
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
+  linesWidth: number;
+
+  /// Label columns to show next to the markers.
+  labelColumnNames: Array<string>;
+
+  /// Determines the rows shown on the scatter plot.
+  showLabelsFor: keyof typeof RowSet;
+
+  /// Determines how to show marker label:
+  /// * Always - show labels for all visible markers
+  /// * Auto - show labels only for markers where enough space is available
+  /// * Never - show no labels.
+  displayLabels: keyof typeof VisibilityMode;
+
+  /// Determines whether to show column names next to label values.
+  showLabelNamedColumns: keyof typeof VisibilityMode;
+
+  /// If checked, display a label content as marker.
+  useLabelAsMarker: boolean;
+
+  /// To display labels separately or as markers (works for non-text labels).
+  labelColorAsMarker: boolean;
+
+  /// Marker size in which label is inscribed.
+  labelAsMarkerSize: number;
+
+  /// Label inner content size.
+  labelContentSize: number;
+
+  /// Regression line visibility (toggle by pressing R)
+  showRegressionLine: boolean;
+
+  showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
+
+  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
+  regressionPerCategory: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Controls the indication of the current row
+  showCurrentPoint: boolean;
+
+  /// Controls the indication of the mouse-over row
+  showMouseOverPoint: boolean;
+
+  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
+  /// the mouse is currently hovering over).
+  showMouseOverRowGroup: boolean;
+
+  /// When true, selected markers are highlighted using the selected rows color.
+  /// When false, selected markers use their regular color coding.
+  showSelectedRows: boolean;
+
+  /// When true, clicking on the background (no point hit) clears the current selection.
+  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
+  resetSelectionOnBackgroundClick: boolean;
+
+  /// Shows tickmarks and labels for minimum and maximum value on each axis.
+  showMinMaxTickmarks: boolean;
+
+  /// Shows exact X and Y coordinates for the mouse cursor.
+  showDropLines: boolean;
+
+  mouseDrag: string;
+
+  /// When true, lasso area selector is used instead of the rectangular one.
+  /// Toggle this option by pressing L.
+  lassoTool: boolean;
+
+  allowZoom: boolean;
+
+  autoLayout: boolean;
+
+  backColor: number;
+
+  filteredRowsColor: number;
+
+  filteredOutRowsColor: number;
+
+  selectedRowsColor: number;
+
+  missingValueColor: number;
+
+  labelColor: number;
+
+  axisLineColor: number;
+
+  axisTextColor: number;
+
+  gridLineColor: number;
+
+  regressionLineColor: number;
+
+  whiskerColor: number;
+
+  regressionLineTransparency: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
+  /// Determines whether the axes should follow the non-precision-related format (such as "money")
+  /// set for the corresponding column.
+  axesUseColumnFormat: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  viewport: string;
+
+  /// Controls scatter plot tooltip visibility
+  showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
+
+  /// Controls whether columns on X and Y axes are displayed in tooltip
+  /// * Do not add: they are not shown
+  /// * Data values only: only they are shown
+  /// * Merge: standard behavior
+  dataValues: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  /// Delay in milliseconds before showing row tooltip
+  tooltipDelay: number;
+
+  rowGroupTooltip: string;
+
+  /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.
+  /// If false, the specified *X Axis Height* and *Y Axis Width* properties are used.
+  autoAxisSize: boolean;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  xAxisHeight: number;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  yAxisWidth: number;
+
+  axisFont: string;
+
+  labelFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  defaultRenderer: boolean;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum AxisType {
+  linear = 'linear',
+  logarithmic = 'logarithmic',
+}
+
+export enum FlexAutoPosition {
+  Auto = 'Auto',
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+  RightTop = 'RightTop',
+  RightBottom = 'RightBottom',
+  LeftTop = 'LeftTop',
+  LeftBottom = 'LeftBottom',
+}
+
+export interface IBarChartSettings {
+  /// Determines the rows shown on the scatter plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Determines what happens when you click on a bar.
+  onClick: keyof typeof RowGroupAction;
+
+  /// Value column. See *Value Aggr Type* for aggregation options.
+  value: string;
+  valueColumnName: string;
+
+  /// Value aggregation.
+  valueAggrType: string;
+
+  /// When true, each outermost bar is of the same width.
+  /// This mode is useful for comparing relative value frequency when the *Stack* column is specified.
+  relativeValues: boolean;
+
+  /// Indicates whether the "no data" bar should appear
+  /// when the *Split* value is not present.
+  includeNulls: boolean;
+
+  /// Whether to sort bars *by category* or *by value*.
+  /// See also *Bar Sort Order*
+  barSortType: string;
+
+  /// Whether the bars should be sorted in ascending or descending order.
+  /// See also *Bar Sort Type*.
+  barSortOrder: string;
+
+  axisType: keyof typeof AxisType;
+
+  valueMin: number;
+
+  valueMax: number;
+
+  showValueAxis: boolean;
+
+  showValueSelector: boolean;
+
+  orientation: string;
+
+  /// A categorical column to split data on (each bar represents a category)
+  split: string;
+  splitColumnName: string;
+
+  /// Time unit map function for *Split* (applicable to dates only).
+  splitMap: string;
+
+  showCategoryValues: boolean;
+
+  showValuesInsteadOfCategories: boolean;
+
+  showCategorySelector: boolean;
+
+  /// A categorical column to further split data on.
+  /// Each category would become a part of the bar resulting from *Split*.
+  /// Shows stacked bars only when *Value Aggr Type* is additive.
+  stack: string;
+  stackColumnName: string;
+
+  /// Time unit map function for *Stack* (applicable to dates only).
+  stackMap: string;
+
+  showStackSelector: boolean;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
+
+  invertColorScheme: boolean;
+
+  linearColorScheme: Array<number>;
+
+  /// Whether the selected rows are indicated.
+  /// Only works for cumulative aggregations such as count.
+  showSelectedRows: boolean;
+
+  showMouseOverRect: boolean;
+
+  /// Show which part is filtered
+  /// Only works with RowSource = All
+  showFilteredRows: boolean;
+
+  showMouseOverRows: boolean;
+
+  autoLayout: boolean;
+
+  maxCategoryWidth: number;
+
+  categoryValueWidth: number;
+
+  showValueAxisLine: boolean;
+
+  showCategoryZeroBaseline: boolean;
+
+  barBorderLineMouseOverWidth: number;
+
+  barBorderLineWidth: number;
+
+  maxBarHeight: number;
+
+  barCornerRadius: number;
+
+  verticalAlign: keyof typeof VerticalAlignType;
+
+  font: string;
+
+  axisFont: string;
+
+  minTextHeight: number;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
+
+  backColor: number;
+
+  axisColor: number;
+
+  barColor: number;
+
+  categoryColor: number;
+
+  valueTextColor: number;
+
+  barBorderLineMouseOverColor: number;
+
+  barBorderLineFilteredColor: number;
+
+  barBorderLineColor: number;
+
+  outerMarginLeft: number;
+
+  outerMarginRight: number;
+
+  outerMarginTop: number;
+
+  outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
+
+  /// Indicates whether categories with no matching rows should appear as zero-height bars.
+  showEmptyBars: boolean;
+
+  showLabels: string;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum RowGroupAction {
+  Select = 'Select',
+  Filter = 'Filter',
+  None = 'None',
+}
+
+export enum VerticalAlignType {
+  Center = 'Center',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
+
+export interface IBoxPlotSettings {
+  categoryColumnNames: Array<string>;
+
+  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
+  category1: string;
+  category1ColumnName: string;
+
+  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
+  category1Map: string;
+
+  /// If defined, sets *Markers Color* the same as the currently selected column.
+  category2: string;
+  category2ColumnName: string;
+
+  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
+  category2Map: string;
+
+  showStatistics: boolean;
+
+  showCategoryAxis: boolean;
+
+  showCategorySelector: boolean;
+
+  labelOrientation: keyof typeof TextOrientation;
+
+  /// Display subcategories - category combinations in the x axis table.
+  showMinorCategories: boolean;
+
+  value: string;
+  valueColumnName: string;
+
+  axisType: keyof typeof AxisType;
+
+  valueMin: number;
+
+  valueMax: number;
+
+  invertYAxis: boolean;
+
+  showValueAxis: boolean;
+
+  showValueSelector: boolean;
+
+  /// If checked, focuses on filtered points (on value axis) as the filter changes.
+  /// If current value column is filtered, zoom is not applied.
+  zoomValuesByFilter: boolean;
+
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
+
+  /// Column to color-code boxes (Q2-Q3 region) or inner violin shapes.
+  /// See also *Bin Color Aggr Type*.
+  binColor: string;
+  binColorColumnName: string;
+
+  /// Aggregation function for color-coding.
+  /// See also *Bin Color*.
+  binColorAggrType: string;
+
+  showColorSelector: boolean;
+
+  /// Column to color-code markers. Changing *Category 1* or *Category 2*
+  /// sets the color scheme to categorical (same as selected category column).
+  markerColor: string;
+  markerColorColumnName: string;
+
+  /// Categorical coloring time unit map function (applicable to dates only).
+  markerColorMap: string;
+
+  colorAxisType: keyof typeof AxisType;
+
+  invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
+
+  markers: string;
+  markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
+
+  markerMinSize: number;
+
+  markerMaxSize: number;
+
+  showSizeSelector: boolean;
+
+  markerSizeColumnName: string;
+
+  markerType: string;
+
+  markerSize: number;
+
+  markerOpacity: number;
+
+  showMeanCross: boolean;
+
+  showLowerDash: boolean;
+
+  showUpperDash: boolean;
+
+  showMedianDash: boolean;
+
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
+  showValuesLimit: number;
+
+  /// Show points inside the interquartile range (Q3 - Q1).
+  showInsideValues: boolean;
+
+  /// Show points outside the interquartile range (Q3 - Q1).
+  showOutsideValues: boolean;
+
+  /// Show p-value. Press T to toggle.
+  /// Currently works only when there are two categories.
+  /// Welch's t-test is used for calculating the p-value.
+  showPValue: boolean;
+
+  showMouseOverPoint: boolean;
+
+  showMouseOverRowGroup: boolean;
+
+  statistics: Array<string>;
+
+  /// Format for statistics and p-value values.
+  statisticsFormat: string;
+
+  showTotalCount: boolean;
+
+  /// Shown values count inside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showInliersCount: boolean;
+
+  /// Shown values count outside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showOutliersCount: boolean;
+
+  showMin: boolean;
+
+  showMax: boolean;
+
+  showAvg: boolean;
+
+  showMed: boolean;
+
+  showStdev: boolean;
+
+  showQ1: boolean;
+
+  showQ3: boolean;
+
+  viewport: string;
+
+  allowColorSynchronization: boolean;
+
+  autoLayout: boolean;
+
+  /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
+  showAllCategories: boolean;
+
+  plotStyle: string;
+
+  axisFont: string;
+
+  categoryFont: string;
+
+  statisticsFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  whiskerLineWidth: number;
+
+  /// Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow.
+  interquartileLineWidth: number;
+
+  whiskerWidthRatio: number;
+
+  axisUseColumnFormat: boolean;
+
+  /// Number of KDE bins to display a violin plot.
+  bins: number;
+
+  whiskerColor: number;
+
+  violinWhiskerColor: number;
+
+  backColor: number;
+
+  filteredRowsColor: number;
+
+  filteredOutRowsColor: number;
+
+  selectedRowsColor: number;
+
+  missingValueColor: number;
+
+  defaultBoxColor: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
+  /// Controls box plot tooltip visibility
+  showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ICalendarSettings {
+  date: string;
+  dateColumnName: string;
+
+  controlsFont: string;
+
+  showHeader: boolean;
+
+  redWeekends: boolean;
+
+  /// Determines what happens when you click a date.
+  onClick: keyof typeof RowGroupAction;
+
+  showFilteredOnly: boolean;
+
+  backColor: number;
+
+  oddMonthColor: number;
+
+  evenMonthColor: number;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ICardSettings {
+  caption: string;
+
+  valueSourceType: keyof typeof CardValueSourceType;
+
+  /// Source-type specific value.
+  value: string;
+
+  format: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum CardValueSourceType {
+  Constant = 'Constant',
+  TableMeta = 'TableMeta',
+  ColumnMeta = 'ColumnMeta',
+  Markup = 'Markup',
+  Formula = 'Formula',
+  External = 'External',
+}
+
+export interface IConfusionMatrixSettings {
+  /// Column to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Column to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ICorrelationPlotSettings {
+  controlsFont: string;
+
+  /// Columns to be put on the X axis
+  xColumnNames: Array<string>;
+
+  /// Columns to be put on the Y axis
+  yColumnNames: Array<string>;
+
+  correlationType: keyof typeof CorrelationType;
+
+  /// Shows the Pearson correlation coefficient inside the corresponding cell.
+  showPearsonR: boolean;
+
+  /// Shows the tooltip with the corresponding scatter plot inside.
+  showTooltip: boolean;
+
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
+
+  backColor: number;
+
+  defaultCellFont: string;
+
+  colHeaderFont: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum CorrelationType {
+  Pearson = 'Pearson',
+  Spearman = 'Spearman',
+}
+
+export interface IDensityPlotSettings {
+  binShape: string;
+
+  /// Columns to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Columns to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  autoLayout: boolean;
+
+  axisFont: string;
+
+  showColorScale: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
+
+  showXAxis: boolean;
+
+  showYAxis: boolean;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
+  bins: number;
+
+  allowZoom: boolean;
+
+  binToRange: boolean;
+
+  showBinSelector: boolean;
+
+  backColor: number;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// When true, lasso area selector is used instead of the rectangular one when drawing annotation regions.
+  lassoTool: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  viewport: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface IFiltersSettings {
+  active: boolean;
+
+  histogramLook: any;
+
+  showFilterCountsIndication: boolean;
+
+  showFilterIndication: boolean;
+
+  /// Indicate the proportion of the selected rows inside each category.
+  showSelectionIndication: boolean;
+
+  showHeader: boolean;
+
+  showHistogram: boolean;
+
+  showMinMax: boolean;
+
+  showSearchBox: boolean;
+
+  // shows the current mouse over row in the table using grey vertical bar in corresponding row
+  showMouseOverRow: boolean;
+
+  // shows the current row in the table using green vertical bar in corresponding row
+  showCurrentRow: boolean;
+
+  // shouws the mouse over group porportion in the filter (similar to how selection proportion is shown).
+  showMouseOverGroupRow: boolean;
+
+  /// Show a filter that represents all boolean columns in the table.
+  showBoolCombinedFilter: boolean;
+
+  columnNames: Array<string>;
+
+  filters: Array<{[index: string]: any}>;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface IFormSettings {
+  /// Determines what gets shown on the form.
+  syncMode: string;
+
+  showNavigation: boolean;
+
+  showPrevRowArrow: boolean;
+
+  showNextRowArrow: boolean;
+
+  showRowSelector: boolean;
+
+  showFieldEditor: boolean;
+
+  showDesignEditor: boolean;
+
+  showColumnSelector: boolean;
+
+  showSaveFile: boolean;
+
+  showOpenFile: boolean;
+
+  sketchState: {[index: string]: any};
+
+  formFont: string;
+
+  columnNames: Array<string>;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
@@ -1483,6 +1921,28 @@ export interface IHistogramSettings {
   backColor: number;
 
   axisFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
 
   filteredBinsColor: number;
 
@@ -2727,388 +3187,6 @@ export interface IRocCurveSettings {
 
   /// Select to draw thresholds
   showThreshold: boolean;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IScatterPlotSettings {
-  /// Invalid are null values and not positive numbers if axis is logarithmic.
-  filterOutInvalid: boolean;
-
-  /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
-  showFilteredOutPoints: boolean;
-
-  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
-  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
-  axesFollowFilter: boolean;
-
-  /// Determines the relationship between table filter and scatter plot area:
-  /// * No action: they are disconnected
-  /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
-  /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
-  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
-  zoomAndFilter: string;
-
-  /// A column to use on the X axis. Could be numerical or categorical.
-  x: string;
-  xColumnName: string;
-
-  /// Time unit map function for x column (applicable to dates only).
-  xMap: string;
-
-  /// A column to use on the Y axis. Could be numerical or categorical.
-  y: string;
-  yColumnName: string;
-
-  /// Time unit map function for y column (applicable to dates only).
-  yMap: string;
-
-  xAxisType: keyof typeof AxisType;
-
-  yAxisType: keyof typeof AxisType;
-
-  invertXAxis: boolean;
-
-  invertYAxis: boolean;
-
-  xMin: number;
-
-  yMin: number;
-
-  xMax: number;
-
-  yMax: number;
-
-  showVerticalGridLines: boolean;
-
-  showHorizontalGridLines: boolean;
-
-  showXAxis: boolean;
-
-  showYAxis: boolean;
-
-  showXSelector: boolean;
-
-  showYSelector: boolean;
-
-  /// Shows a distribution histogram along the X axis (at the top)
-  showXHistogram: boolean;
-
-  /// Shows a distribution histogram along the Y axis (on the right)
-  showYHistogram: boolean;
-
-  /// Number of bins for axis histograms
-  histogramBins: number;
-
-  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
-  xWhiskerMin: string;
-  xWhiskerMinColumnName: string;
-
-  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
-  xWhiskerMax: string;
-  xWhiskerMaxColumnName: string;
-
-  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
-  xWhiskerRange: string;
-  xWhiskerRangeColumnName: string;
-
-  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
-  yWhiskerMin: string;
-  yWhiskerMinColumnName: string;
-
-  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
-  yWhiskerMax: string;
-  yWhiskerMaxColumnName: string;
-
-  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
-  yWhiskerRange: string;
-  yWhiskerRangeColumnName: string;
-
-  xAxisLabelOrientation: string;
-
-  /// A column to be used for color-coding. Could be numerical or categorical.
-  /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
-  /// Color palettes could defined either for columns in the column context panel,
-  /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
-  color: string;
-  colorColumnName: string;
-
-  /// Categorical coloring time unit map function (applicable to dates only).
-  colorMap: string;
-
-  showColorSelector: boolean;
-
-  colorAxisType: keyof typeof AxisType;
-
-  invertColorScheme: boolean;
-
-  colorMin: number;
-
-  colorMax: number;
-
-  /// A numerical column to use for size-coding markers.
-  /// See also *Marker Min Size* and *Marker Max Size*.
-  size: string;
-  sizeColumnName: string;
-
-  showSizeSelector: boolean;
-
-  /// A categorical column that determines the shape of the markers.
-  markers: string;
-  markersColumnName: string;
-
-  /// Marker category time unit map function (applicable to dates only).
-  markersMap: string;
-
-  markerType: string;
-
-  // By default - automatic sizing based on current dataframe
-  markerDefaultSize: number;
-
-  markerOpacity: number;
-
-  /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
-  /// Useful when multiple points fall on the same exact position.
-  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
-  jitterSize: number;
-
-  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
-  jitterSizeY: number;
-
-  markerDrawBorder: boolean;
-
-  markerBorderWidth: number;
-
-  markerMinSize: number;
-
-  markerMaxSize: number;
-
-  /// When defined, a line would be drawn for each series (defined by the categorical color column)
-  /// using the order specified by "Lines Order"
-  linesOrder: string;
-  linesOrderColumnName: string;
-
-  /// When defined, lines are split into separate series by this categorical column instead of the color column.
-  linesBy: string;
-  linesByColumnName: string;
-
-  /// Defines the width of the lines connecting the markers. See **Lines Width**.
-  linesWidth: number;
-
-  /// Label columns to show next to the markers.
-  labelColumnNames: Array<string>;
-
-  /// Determines the rows shown on the scatter plot.
-  showLabelsFor: keyof typeof RowSet;
-
-  /// Determines how to show marker label:
-  /// * Always - show labels for all visible markers
-  /// * Auto - show labels only for markers where enough space is available
-  /// * Never - show no labels.
-  displayLabels: keyof typeof VisibilityMode;
-
-  /// Determines whether to show column names next to label values.
-  showLabelNamedColumns: keyof typeof VisibilityMode;
-
-  /// If checked, display a label content as marker.
-  useLabelAsMarker: boolean;
-
-  /// To display labels separately or as markers (works for non-text labels).
-  labelColorAsMarker: boolean;
-
-  /// Marker size in which label is inscribed.
-  labelAsMarkerSize: number;
-
-  /// Label inner content size.
-  labelContentSize: number;
-
-  /// Regression line visibility (toggle by pressing R)
-  showRegressionLine: boolean;
-
-  showRegressionLineEquation: boolean;
-
-  showSpearmanCorrelation: boolean;
-
-  showPearsonCorrelation: boolean;
-
-  showMeanAbsoluteError: boolean;
-
-  showRootMeanSquareError: boolean;
-
-  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
-  regressionPerCategory: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
-  /// Controls the indication of the current row
-  showCurrentPoint: boolean;
-
-  /// Controls the indication of the mouse-over row
-  showMouseOverPoint: boolean;
-
-  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
-  /// the mouse is currently hovering over).
-  showMouseOverRowGroup: boolean;
-
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
-  showSelectedRows: boolean;
-
-  /// When true, clicking on the background (no point hit) clears the current selection.
-  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
-  resetSelectionOnBackgroundClick: boolean;
-
-  /// Shows tickmarks and labels for minimum and maximum value on each axis.
-  showMinMaxTickmarks: boolean;
-
-  /// Shows exact X and Y coordinates for the mouse cursor.
-  showDropLines: boolean;
-
-  mouseDrag: string;
-
-  /// When true, lasso area selector is used instead of the rectangular one.
-  /// Toggle this option by pressing L.
-  lassoTool: boolean;
-
-  allowZoom: boolean;
-
-  autoLayout: boolean;
-
-  backColor: number;
-
-  filteredRowsColor: number;
-
-  filteredOutRowsColor: number;
-
-  selectedRowsColor: number;
-
-  missingValueColor: number;
-
-  labelColor: number;
-
-  axisLineColor: number;
-
-  axisTextColor: number;
-
-  gridLineColor: number;
-
-  regressionLineColor: number;
-
-  whiskerColor: number;
-
-  regressionLineTransparency: number;
-
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
-  /// Determines whether the axes should follow the non-precision-related format (such as "money")
-  /// set for the corresponding column.
-  axesUseColumnFormat: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  viewport: string;
-
-  /// Controls scatter plot tooltip visibility
-  showTooltip: string;
-
-  showLabels: keyof typeof VisibilityMode;
-
-  /// Controls whether columns on X and Y axes are displayed in tooltip
-  /// * Do not add: they are not shown
-  /// * Data values only: only they are shown
-  /// * Merge: standard behavior
-  dataValues: string;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
-  /// Delay in milliseconds before showing row tooltip
-  tooltipDelay: number;
-
-  rowGroupTooltip: string;
-
-  /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.
-  /// If false, the specified *X Axis Height* and *Y Axis Width* properties are used.
-  autoAxisSize: boolean;
-
-  /// Requires *Auto Axis Size* to be turned off.
-  xAxisHeight: number;
-
-  /// Requires *Auto Axis Size* to be turned off.
-  yAxisWidth: number;
-
-  axisFont: string;
-
-  labelFont: string;
-
-  formulaFont: string;
-
-  annotationFont: string;
-
-  defaultRenderer: boolean;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
 
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;

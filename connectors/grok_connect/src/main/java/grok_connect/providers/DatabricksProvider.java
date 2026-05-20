@@ -4,6 +4,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.OAuthSpec;
+import grok_connect.connectors_info.TokenExchangeSpec;
 import grok_connect.utils.*;
 import serialization.DataFrame;
 import serialization.IntColumn;
@@ -62,16 +63,26 @@ public class DatabricksProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD_NAME, new Prop("password")));
         }};
 
-        // Lazy OAuth/OpenID consent descriptor. Azure AD uses
-        // first-party AzureDatabricks passthrough (no token exchange);
-        // every other OIDC provider triggers a /oidc/v1/token exchange
-        // on Datlas (see `_postProcessToken` in `oauth.dart`).
+        // Lazy OAuth/OpenID consent descriptor. Azure-flavour (workspaces
+        // on .azuredatabricks.net / .databricks.azure.cn) uses first-party
+        // AzureDatabricks passthrough — request the user_impersonation
+        // scope and hand the IdP access token to the JDBC driver. Every
+        // other workspace flavour (AWS, GCP) uses an OIDC consent and a
+        // /oidc/v1/token RFC 8693 swap executed by Datlas.
         descriptor.oauth = new OAuthSpec()
                 .scopes("azure", Arrays.asList(
                         AZURE_DATABRICKS_APP_ID + "/user_impersonation",
                         "offline_access"))
                 .scopes("oidc", Arrays.asList("openid", "offline_access"))
-                .tokenProperty("Auth_AccessToken");
+                .flavourFromHostSuffix("workspaceURL",
+                        "azure", ".azuredatabricks.net",
+                        "azure", ".databricks.azure.cn")
+                .flavourDefault("oidc")
+                .tokenExchange("oidc", new TokenExchangeSpec()
+                        .endpointTemplate("https://{workspaceURL}/oidc/v1/token")
+                        .subjectTokenField("id_token")
+                        .subjectTokenType("urn:ietf:params:oauth:token-type:jwt")
+                        .scope("all-apis"));
 
         descriptor.nameBrackets = "`";
         descriptor.defaultSchema = "default";

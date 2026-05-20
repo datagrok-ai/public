@@ -100,19 +100,19 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (!this.initialized)
       return;
-    if (this.metricsProperties.includes(property.name))
+    if (this.metricsProperties.includes(property?.name))
       this.updateMetricsLink(this, {});
-    if (property.name === 'moleculeColumnName') {
+    if (property?.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this));
       this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
       this.limit = MAX_LIMIT;
     if (property.name === 'moleculeProperties') {
-      this.render(false);
+      this.debouncedRender(false);
       return;
     }
-    this.render();
+    this.debouncedRender();
   }
 
   updateMetricsLink(object: any, options: {[key: string]: string}): void {
@@ -125,6 +125,19 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (this.metricsDiv!.children.length > 1)
       this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
     this.metricsDiv!.appendChild(metricsButton);
+  }
+
+  private _debRenderTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _debComputeFlag = false;
+  protected async debouncedRender(computeData = true): Promise<void> {
+    if (this._debRenderTimeout)
+      clearTimeout(this._debRenderTimeout);
+    this._debComputeFlag = this._debComputeFlag || computeData;
+    this._debRenderTimeout = setTimeout(async () => {
+      const flag = this._debComputeFlag;
+      this._debComputeFlag = false;
+      await this.render(flag);
+    }, 200);
   }
 
   async render(computeData = true): Promise<void> {
@@ -183,7 +196,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       if (propsDict[key].color) {
         const color = DG.Color.toHtml(propsDict[key].color);
         if (!propsDict[key].isTextColorCoded) {
-          value.style.backgroundColor = color,
+          value.style.backgroundColor = color;
           value.style.color = DG.Color.toHtml(DG.Color.getContrastColor(propsDict[key].color));
         } else
           value.style.color = color;

@@ -25,6 +25,7 @@ export class TimelinesViewer extends EChartViewer {
   markerSize: number;
   markerPosition: markerPosition;
   lineWidth: number;
+  autoSize: boolean;
   dateFormat: string;
   axisPointer: string;
   showZoomSliders: boolean;
@@ -65,6 +66,8 @@ export class TimelinesViewer extends EChartViewer {
     this.markerPosition = <markerPosition> this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
     this.lineWidth = this.int('lineWidth', 3);
+    this.autoSize = this.bool('autoSize', true,
+      {description: 'Auto-scale marker size and line width based on the Y-axis zoom level'});
     this.dateFormat = this.string('dateFormat'); // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       {choices: ['cross', 'line', 'shadow', 'none']});
@@ -93,17 +96,13 @@ export class TimelinesViewer extends EChartViewer {
 
   init() {
     if (!this.initialized) {
-      this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Charts/README.md#timelines';
+      this.helpUrl = '/help/visualize/viewers/timelines.md';
 
       this.updateZoom();
       this.chart.on('dataZoom', () => {
         this.chart.getOption().dataZoom!.forEach((z, i) => {
           this.zoomState[i][0] = z.start!;
           this.zoomState[i][1] = z.end!;
-          if (z.type === 'slider' && Object.keys(z).includes('yAxisIndex')) {
-            this.lineWidth = z.end! - z.start! < 60 ? z.end! - z.start! < 30 ? 3 : 2 : 1;
-            this.markerSize = z.end! - z.start! < 60 ? z.end! - z.start! < 30 ? 6 : 4 : 3;
-          }
         });
       });
 
@@ -322,6 +321,11 @@ export class TimelinesViewer extends EChartViewer {
       const start = api.coord!([api.value!(1), categoryIndex]);
       const end = api.coord!([api.value!(2), categoryIndex]);
       const width = end[0] - start[0];
+      if (this.autoSize) {
+        const yZoom = this.zoomState[3][1] - this.zoomState[3][0];
+        this.lineWidth = yZoom < 60 ? (yZoom < 30 ? 3 : 2) : 1;
+        this.markerSize = yZoom < 60 ? (yZoom < 30 ? 6 : 4) : 3;
+      }
 
       const group: echarts.EChartOption.SeriesCustom.RenderItemReturnGroup = {
         type: 'group',
@@ -391,11 +395,11 @@ export class TimelinesViewer extends EChartViewer {
         });
 
         if (overlap) {
-          const height = api.size!([0, 1])[1];
+          const rowHeight = api.size!([0, 1])[1];
           const offset = Math.max(this.markerSize * 2, this.lineWidth);
           // Shift along the Y axis
           rectShape.y += (this.count % 3) ? (this.count % 3 === 2) ?
-            0 : offset-height/2 : height/2-offset;
+            0 : offset-rowHeight/2 : rowHeight/2-offset;
           this.count += 1;
         }
 

@@ -2,7 +2,16 @@
 
 ## v.next
 
+* GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+
+## 1.17.8 (2026-05-12)
+
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Reaction enumerator: Reworked UI — replaced the preview with side-by-side reaction templates and building blocks grids that subset the enumeration via row selection; renamed inputs and the full-config button for clarity
+* Reaction enumerator: Right pane is now a tabbed view (Reaction templates, Building blocks, Reagents, Preview); preview tab re-runs lazily on activation
+* Reaction enumerator: Added reagents-mode enumeration — when a reagents file/column are provided, each step uses exactly one BB or earlier-round product plus reagents in every remaining slot (produces derivatives of each BB across rounds)
+* Reaction enumerator: Added a plain-English mode summary under the config buttons describing how the current selections drive the run
+* Reaction enumerator: Added test coverage for reagents-mode enumeration (round 1 / multi-round step-pool invariants, empty-reagents fallback, BB-BB combo isolation)
 
 ## 1.17.5 (2026-04-15)
 

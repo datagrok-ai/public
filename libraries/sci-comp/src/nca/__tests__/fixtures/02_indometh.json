@@ -1,0 +1,178 @@
+{
+  "dataset": "02_indometh",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50
+  },
+  "dataset_meta": {
+    "dose": {
+      "value": 25,
+      "unit": "mg"
+    },
+    "route": "iv-bolus"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "1",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 1.5,
+        "tmax": 0.25,
+        "auclast": 2.0098984364,
+        "aucinf": 2.3257135428,
+        "pct_aucextrap": 13.5792779557,
+        "lambda_z": 0.1583204824,
+        "half_life": 4.3781270121,
+        "cl": 10.7493891829,
+        "vz": 67.8963897783
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99706672743,
+        "lambda_z_adj_r_squared": 0.99413345485,
+        "lambda_z_time_first": 5,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.05,
+        "c0_extrapolated": 2.3936170213
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "2",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 2.03,
+        "tmax": 0.25,
+        "auclast": 3.2028877813,
+        "aucinf": 3.4675430504,
+        "pct_aucextrap": 7.6323571268,
+        "lambda_z": 0.30228001982,
+        "half_life": 2.2930631703,
+        "cl": 7.2097158237,
+        "vz": 23.8511160213
+      },
+      "provenance": {
+        "lambda_z_n_points": 9,
+        "lambda_z_r_squared": 0.94766911156,
+        "lambda_z_adj_r_squared": 0.94019327036,
+        "lambda_z_time_first": 0.75,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.08,
+        "c0_extrapolated": 2.5281595092
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "3",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 2.72,
+        "tmax": 0.25,
+        "auclast": 3.4743970731,
+        "aucinf": 3.6640187701,
+        "pct_aucextrap": 5.1752381441,
+        "lambda_z": 0.42189264872,
+        "half_life": 1.6429468081,
+        "cl": 6.8231091511,
+        "vz": 16.1726192002
+      },
+      "provenance": {
+        "lambda_z_n_points": 10,
+        "lambda_z_r_squared": 0.87582605193,
+        "lambda_z_adj_r_squared": 0.86030430842,
+        "lambda_z_time_first": 0.5,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.08,
+        "c0_extrapolated": 4.9653691275
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "4",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 1.85,
+        "tmax": 0.25,
+        "auclast": 2.7483832313,
+        "aucinf": 2.9020789132,
+        "pct_aucextrap": 5.2960545335,
+        "lambda_z": 0.45544545662,
+        "half_life": 1.5219104077,
+        "cl": 8.6145141975,
+        "vz": 18.9144804769
+      },
+      "provenance": {
+        "lambda_z_n_points": 11,
+        "lambda_z_r_squared": 0.87282485234,
+        "lambda_z_adj_r_squared": 0.85869428038,
+        "lambda_z_time_first": 0.25,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.07,
+        "c0_extrapolated": 2.4622302158
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "5",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 2.05,
+        "tmax": 0.25,
+        "auclast": 2.3983736478,
+        "aucinf": 2.635764453,
+        "pct_aucextrap": 9.0065257895,
+        "lambda_z": 0.25274778417,
+        "half_life": 2.7424461221,
+        "cl": 9.4849143182,
+        "vz": 37.5271907897
+      },
+      "provenance": {
+        "lambda_z_n_points": 8,
+        "lambda_z_r_squared": 0.87524422214,
+        "lambda_z_adj_r_squared": 0.8544515925,
+        "lambda_z_time_first": 1,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.06,
+        "c0_extrapolated": 4.0408653846
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "6",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 2.31,
+        "tmax": 0.25,
+        "auclast": 3.2908266157,
+        "aucinf": 3.545408725,
+        "pct_aucextrap": 7.1806138303,
+        "lambda_z": 0.3535205214,
+        "half_life": 1.9606985694,
+        "cl": 7.0513731813,
+        "vz": 19.9461495287
+      },
+      "provenance": {
+        "lambda_z_n_points": 9,
+        "lambda_z_r_squared": 0.90395380863,
+        "lambda_z_adj_r_squared": 0.89023292415,
+        "lambda_z_time_first": 0.75,
+        "lambda_z_time_last": 8,
+        "clast_obs": 0.09,
+        "c0_extrapolated": 3.705625
+      }
+    }
+  ]
+}

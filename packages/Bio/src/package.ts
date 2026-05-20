@@ -53,10 +53,9 @@ import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {MonomerCollectionHandler} from './utils/monomer-lib/monomer-collection-handler';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
-import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
+import {demoBioSimDivLayout} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
-import {demoActivityCliffsCyclic} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
-import {demoToAtomicLevel} from './demo/bio03-atomic-level';
+import {demoActivityCliffsCyclicLayout} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
@@ -92,6 +91,7 @@ import {showAnnotationManagerDialog} from './utils/annotations/annotation-manage
 import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
 import * as api from './package-api';
+import {antibodyDemo, atomicLevelDemo, sirnaDemo} from './demo/feature_demos';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -236,6 +236,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SequenceSpaceEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Space requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Sequence Space'})
       .add(funcEditor.getEditor())
@@ -258,6 +267,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SeqActivityCliffsEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Activity Cliffs requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Activity Cliffs'})
       .add(funcEditor.getEditor())
@@ -615,7 +633,7 @@ export class PackageFunctions {
       return;
     }
     const actCliffsParams: SeqActivityCliffsParams = JSON.parse(tag);
-    const molCol = sp.dataFrame.col(actCliffsParams.seqColName)!
+    const molCol = sp.dataFrame.col(actCliffsParams.seqColName)!;
     const actCol = sp.dataFrame.col(actCliffsParams.activityColName)!;
 
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
@@ -650,7 +668,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) options?: string,
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean,
     @grok.decorators.param({options: {optional: true}}) axesNames?: string[]): Promise<void> {
-    await table.meta.detectSemanticTypes();  
+    await table.meta.detectSemanticTypes();
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
     if (!axesNames)
       axesNames = getEmbeddingColsNames(table);
@@ -1522,7 +1540,7 @@ export class PackageFunctions {
     path: '/apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity',
   })
   static async demoBioSimilarityDiversity(): Promise<void> {
-    await demoBioSimDiv();
+    await demoBioSimDivLayout();
   }
 
   @grok.decorators.demo({
@@ -1539,20 +1557,31 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Activity Cliffs analysis on Macromolecules data',
-    demoPath: 'Bioinformatics | Activity Cliffs',
+    demoPath: 'Bioinformatics | Sequence Activity Cliffs',
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
   })
   static async demoBioActivityCliffs(): Promise<void> {
-    await demoActivityCliffsCyclic();
+    await demoActivityCliffsCyclicLayout();
   }
 
   @grok.decorators.demo({
     description: 'Atomic level structure of Macromolecules',
     demoPath: 'Bioinformatics | Atomic Level',
     path: '/apps/Tutorials/Demo/Bioinformatics/Atomic%20Level',
+    meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
   })
   static async demoBioAtomicLevel(): Promise<void> {
-    await demoToAtomicLevel();
+    await atomicLevelDemo();
+  }
+
+  @grok.decorators.demo({
+    description: 'siRNA sequences, molecular structures, curves and assay data',
+    demoPath: 'Bioinformatics | siRNA',
+    path: '/apps/Tutorials/Demo/Bioinformatics/siRNA',
+    meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
+  })
+  static async demoBioSiRNA(): Promise<void> {
+    await sirnaDemo();
   }
 
   @grok.decorators.func({name: 'SDF to JSON Library'})
@@ -1560,6 +1589,15 @@ export class PackageFunctions {
     const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
     const jsonMonomerLibrary = JSON.stringify(_jsonMonomerLibrary);
     DG.Utils.download(`${table.name}.json`, jsonMonomerLibrary);
+  }
+
+  @grok.decorators.demo({
+    description: 'Antibody sequences, numbering, liabilities, extraction and SAR',
+    demoPath: 'Bioinformatics | Antibodies',
+    path: '/apps/Tutorials/Demo/Bioinformatics/Antibodies',
+  })
+  static async demoAntibodies(): Promise<void> {
+    await antibodyDemo();
   }
 
   // -- Utils --

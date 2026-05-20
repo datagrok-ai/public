@@ -43,7 +43,8 @@ category('UI: Sharing', () => {
     });
     await grok.dapi.connections.save(newConnection);
     try {
-      await testEntityUI(['Databases'], '.d4-gallery-card');
+      // Connection is in the tree (hierarchy in the DataSourceCardView) under the Postgres
+      await testEntityUI(['Databases'], '.d4-link-label');
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }

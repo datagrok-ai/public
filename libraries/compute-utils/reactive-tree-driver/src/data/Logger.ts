@@ -73,6 +73,7 @@ export interface ErrorLogItem extends DebugLogBase {
   context: string;
   message: string;
   error?: Error;
+  links?: string[];
 }
 
 export type LogItem =
@@ -109,7 +110,7 @@ export class DriverLogger {
     this.log = [...this.log, {type: 'treeUpdateMutation', uuid, timestamp, ...data}];
   }
 
-  logError(severity: ErrorSeverity, context: string, error: Error) {
+  logError(severity: ErrorSeverity, context: string, error: Error, links?: string[]) {
     const entry: ErrorLogItem = {
       type: 'error',
       uuid: uuidv4(),
@@ -118,6 +119,7 @@ export class DriverLogger {
       context,
       message: error.message,
       error,
+      links,
     };
     this._errors.push(entry);
     this.errors$.next(entry);
@@ -136,10 +138,10 @@ export function reportErrorToUI(severity: ErrorSeverity, context: string, error:
     grok.shell.warning(msg);
 }
 
-export function reportError(severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger) {
+export function reportError(severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger, links?: string[]) {
   const err = error instanceof Error ? error : new Error(error);
   if (logger)
-    logger.logError(severity, context, err);
+    logger.logError(severity, context, err, links);
   else
     reportErrorToUI(severity, context, err);
 }

@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-19683: Charts | Tree viewer: Option to customize molecule label size
+* GROK-20084: Radar, Tree, Timelines: Broken help page
 
 ## 1.7.0 (2026-03-20)
 

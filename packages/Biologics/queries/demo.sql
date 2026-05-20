@@ -5,10 +5,13 @@
 --description: "Find biologics assays for a specified organism."
 --meta.searchPattern: "biologics assays for ${organism}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
-    ar.result_value, ar.units, seq.sequence AS antibody_sequence, seq.identifier as sequence_identifier,
+    ar.result_value, ar.units,
+    seq.heavy_chain AS antibody_heavy_chain, seq.light_chain AS antibody_light_chain,
+    seq.identifier as sequence_identifier,
     seq.name AS antibody_name, adc.name as adc_name, adc.identifier as adc_identifier, adc.glyph AS glyph,
     d.name AS drug_name, d.identifier as drug_identifier, d.smiles AS drug_smiles,
     l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence,
+    crv.curve AS curve,
     org.id as orgID, at.id as assay_type_id, seq.id as seqId, ar.id as assay_res_id, adc.id as adc_id, d.id as drug_id
 FROM biologics.assay_results ar
 LEFT JOIN biologics.assay_types at ON ar.assay_id = at.id
@@ -17,8 +20,9 @@ LEFT JOIN biologics.adc adc ON ar.adc_id = adc.id
 LEFT JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 LEFT JOIN biologics.drugs d ON adc.drug_id = d.id
 LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
+LEFT JOIN biologics.assay_curves crv ON crv.assay_result_id = ar.id
 WHERE org.name ilike @organism
-AND seq.sequence IS NOT NULL
+AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL)
 
 -- end
 
@@ -28,10 +32,13 @@ AND seq.sequence IS NOT NULL
 --input: double minActivity
 --meta.searchPattern: "biologics ADCs with caspase activity higher than ${minActivity}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
-    ar.result_value, ar.units, seq.sequence AS antibody_sequence, seq.identifier as sequence_identifier,
+    ar.result_value, ar.units,
+    seq.heavy_chain AS antibody_heavy_chain, seq.light_chain AS antibody_light_chain,
+    seq.identifier as sequence_identifier,
     seq.name AS antibody_name, adc.name as adc_name, adc.identifier as adc_identifier, adc.glyph AS glyph,
     d.name AS drug_name, d.identifier as drug_identifier, d.smiles AS drug_smiles,
-    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence, l.linker_type
+    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence,
+    crv.curve AS curve
 FROM biologics.assay_results ar
 LEFT JOIN biologics.assay_types at ON ar.assay_id = at.id
 LEFT JOIN biologics.target_organisms org ON ar.target_organism_id = org.id
@@ -39,7 +46,9 @@ LEFT JOIN biologics.adc adc ON ar.adc_id = adc.id
 LEFT JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 LEFT JOIN biologics.drugs d ON adc.drug_id = d.id
 LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
-WHERE at.name ILIKE 'caspase activity' AND ar.result_value > @minActivity AND seq.sequence IS NOT NULL;
+LEFT JOIN biologics.assay_curves crv ON crv.assay_result_id = ar.id
+WHERE at.name ILIKE 'caspase activity' AND ar.result_value > @minActivity
+AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL);
 
 -- end
 
@@ -50,10 +59,13 @@ WHERE at.name ILIKE 'caspase activity' AND ar.result_value > @minActivity AND se
 --input: string valueTarget {choices: ['higher', 'lower']}
 --meta.searchPattern: "biologics ADCs with IC50 ${valueTarget} than ${value}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
-    ar.result_value, ar.units, seq.sequence AS antibody_sequence, seq.identifier as sequence_identifier,
+    ar.result_value, ar.units,
+    seq.heavy_chain AS antibody_heavy_chain, seq.light_chain AS antibody_light_chain,
+    seq.identifier as sequence_identifier,
     seq.name AS antibody_name, adc.name as adc_name, adc.identifier as adc_identifier, adc.glyph AS glyph,
     d.name AS drug_name, d.identifier as drug_identifier, d.smiles AS drug_smiles,
-    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence, l.linker_type
+    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence,
+    crv.curve AS curve
 FROM biologics.assay_results ar
 LEFT JOIN biologics.assay_types at ON ar.assay_id = at.id
 LEFT JOIN biologics.target_organisms org ON ar.target_organism_id = org.id
@@ -61,10 +73,11 @@ LEFT JOIN biologics.adc adc ON ar.adc_id = adc.id
 LEFT JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 LEFT JOIN biologics.drugs d ON adc.drug_id = d.id
 LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
+LEFT JOIN biologics.assay_curves crv ON crv.assay_result_id = ar.id
 WHERE at.name ILIKE 'IC50' AND (
     ((@valueTarget ILIKE 'lower' or @valueTarget ILIKE 'less') AND ar.result_value < @value) OR
     ((@valueTarget ILIKE 'higher' or @valueTarget ILIKE 'more') AND ar.result_value > @value)
-) AND seq.sequence IS NOT NULL;
+) AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL);
 
 -- end
 
@@ -75,14 +88,16 @@ WHERE at.name ILIKE 'IC50' AND (
 --description: "Find ADCs in biologics database linked to a specified drug identifier."
 --meta.searchPattern: "adcs linked to ${drugID}"
 SELECT adc.identifier AS adc_identifier, adc.name AS adc_name, adc.glyph AS glyph,
-    seq.identifier as sequence_identifier, seq.name AS antibody_name, seq.sequence AS antibody_sequence,
+    seq.identifier as sequence_identifier, seq.name AS antibody_name,
+    seq.heavy_chain AS antibody_heavy_chain, seq.light_chain AS antibody_light_chain,
     l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence,
     d.identifier as drug_identifier, d.name AS drug_name, d.smiles AS drug_smiles
 FROM biologics.adc adc
 JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 JOIN biologics.drugs d ON adc.drug_id = d.id
 JOIN biologics.linkers l ON adc.linker_id = l.id
-WHERE d.identifier = @drugID AND seq.sequence IS NOT NULL;
+WHERE d.identifier = @drugID
+AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL);
 
 -- end
 
@@ -94,5 +109,16 @@ WHERE d.identifier = @drugID AND seq.sequence IS NOT NULL;
 SELECT helm
 FROM biologics.peptides
 WHERE identifier = @peptideIdentifier
+limit 1;
+-- end
+
+--name: getBiologicsCurveByAssayResultIdentifier
+--connection: Biologics:biologics
+--description: "Retrieve the dose-response curve JSON for a biologics assay curve identifier (GROKCRV-######)."
+--input: string curveIdentifier
+--output: string result
+SELECT curve
+FROM biologics.assay_curves
+WHERE identifier = @curveIdentifier
 limit 1;
 -- end

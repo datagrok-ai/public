@@ -15,7 +15,7 @@ let featuresDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
 let rdKitModule: RDModule | null = null;
 
-const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
+export const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
   'D': {name: 'Donor', color: '#2196F3'},
   'A': {name: 'Acceptor', color: '#E53935'},
   'H': {name: 'Hydrophobic', color: '#FFEB3B'},
@@ -26,7 +26,7 @@ const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
 };
 
 // Priority for overlapping atoms (higher = takes precedence)
-const FAMILY_PRIORITY: {[key: string]: number} = {
+export const FAMILY_PRIORITY: {[key: string]: number} = {
   'P': 7,
   'N': 6,
   'D': 5,
@@ -187,7 +187,7 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   if (matches.length === 0)
-    return new DG.Widget(ui.divText('No pharmacophore features detected'));
+    return new DG.Widget(ui.divText('No pharmacophores detected'));
 
   // Convert SMILES to MolBlock for consistent rendering
   if (!DG.chem.isMolBlock(molecule))
@@ -209,7 +209,7 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
   const calcForWholeButton = ui.button('Calculate for whole dataset', async () => {
     const func = DG.Func.find({package: 'Chem', name: 'pharmacophoreFeaturesTopMenu'})[0];
     const funcCall = func.prepare();
-    ui.dialog('Pharmacophore Features')
+    ui.dialog('Pharmacophores')
       .add(await funcCall.getEditor())
       .onOK(() => {
         const args: any = {};
@@ -312,7 +312,7 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
   const overviewRow = ui.divH([overviewCanvas, legend],
     {style: {alignItems: 'center', gap: '10px', marginBottom: '8px'}});
 
-  const sectionLabel = ui.divText('Individual pharmacophore features',
+  const sectionLabel = ui.divText('Individual pharmacophores',
     {style: {fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--grey-2)'}});
 
   return new DG.Widget(ui.divV([

@@ -106,7 +106,7 @@ export interface IDartApi {
   grok_View_Get_Viewers(v: any): any;
   grok_View_SetIcon(v: any, icon: any): any;
   grok_View_Get_IsPinned(v: any): any;
-  grok_View_Pin(v: any): any;
+  grok_View_Set_IsPinned(v: any, value: Bool): any;
   grok_ScriptView_Set_Code(v: any, s: String): any;
   grok_ScriptView_Get_Code(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
@@ -1072,6 +1072,7 @@ export interface IDartApi {
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
+  grok_EntitiesDataSource_GetFavoritesForGroups(s: any, groups: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;
@@ -1537,6 +1538,7 @@ export interface IDartApi {
   grok_PictureMixin_Get_PictureUrl(p: any): any;
   grok_Project_Get_Path(p: any): any;
   grok_Project_Get_Options(p: any): any;
+  grok_Project_Get_Meta(p: any): any;
   grok_Project_From_Id(id: String): any;
   grok_Project_Get_IsOnServer(p: any): any;
   grok_Project_GetRelations(p: any, link: Bool): any;

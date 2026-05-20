@@ -29,6 +29,8 @@ export async function report(args: ReportArgs): Promise<boolean> {
     return await handleComment(args);
   case 'label':
     return await handleLabel(args);
+  case 'attach':
+    return await handleAttach(args);
   default:
     return false;
   }
@@ -610,6 +612,71 @@ async function handleComment(args: ReportArgs): Promise<boolean> {
     color.error(`Error: ${err.message}`);
     return false;
   }
+}
+
+async function handleAttach(args: ReportArgs): Promise<boolean> {
+  const ticket = args._[2];
+  const filePath = args._[3];
+  if (!ticket || !filePath) {
+    color.error('Usage: grok report attach <ticket-key> <file> [--jira-url <url>]');
+    return false;
+  }
+  if (!fs.existsSync(filePath)) {
+    color.error(`File not found: ${filePath}`);
+    return false;
+  }
+
+  const user = process.env.JIRA_USER;
+  const token = process.env.JIRA_TOKEN;
+  if (!user || !token) {
+    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report attach`.');
+    return false;
+  }
+
+  const base = resolveJiraBase(args);
+  const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}/attachments`;
+
+  // node-fetch v2 has no built-in FormData and the codebase doesn't depend on
+  // form-data. curl is universally available in deploy targets and handles
+  // multipart upload natively. JIRA REST v2 needs the X-Atlassian-Token
+  // anti-CSRF header; the field name must be `file`.
+  const {spawnSync} = require('child_process');
+  const r = spawnSync('curl', [
+    '-sS', '-X', 'POST',
+    '-u', `${user}:${token}`,
+    '-H', 'X-Atlassian-Token: no-check',
+    '-F', `file=@${filePath}`,
+    '-w', '\n%{http_code}\n',
+    url,
+  ], {encoding: 'utf8', timeout: 120_000, maxBuffer: 4 * 1024 * 1024});
+
+  if (r.error) {
+    color.error(`curl spawn failed: ${r.error.message}`);
+    return false;
+  }
+  if (r.status !== 0) {
+    color.error(`curl exit ${r.status}: ${(r.stderr || '').slice(0, 400)}`);
+    return false;
+  }
+  // Stdout layout from curl `-w`: <body>\n<http_code>\n
+  const out = (r.stdout || '').trim();
+  const lastNl = out.lastIndexOf('\n');
+  const httpCode = lastNl >= 0 ? out.slice(lastNl + 1).trim() : '';
+  const body = lastNl >= 0 ? out.slice(0, lastNl) : out;
+  if (httpCode !== '200' && httpCode !== '201') {
+    color.error(`JIRA attachment POST failed (HTTP ${httpCode}): ${body.slice(0, 400)}`);
+    return false;
+  }
+  let id: string | null = null;
+  try {
+    const parsed = JSON.parse(body);
+    if (Array.isArray(parsed) && parsed[0] && (parsed[0].id || parsed[0].Id))
+      id = String(parsed[0].id || parsed[0].Id);
+  } catch (_) { /* ignored — JIRA usually returns JSON, but tolerate */ }
+  const fileName = path.basename(filePath);
+  color.success(`Attached ${fileName} to ${ticket}` + (id ? ` (id ${id})` : ''));
+  if (id) console.log(id);
+  return true;
 }
 
 async function handleLabel(args: ReportArgs): Promise<boolean> {

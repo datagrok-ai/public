@@ -105,6 +105,8 @@ public class ConnectionPool {
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setMaxLifetime(30 * 60 * 1000);   // force physical-conn recycle every 30 min
+        config.setKeepaliveTime(2 * 60 * 1000);  // detect dead TCP between borrows
         config.setInitializationFailTimeout(-1);
 
         return new HikariDataSource(config);
@@ -142,6 +144,8 @@ public class ConnectionPool {
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setMaxLifetime(30 * 60 * 1000);
+        config.setKeepaliveTime(2 * 60 * 1000);
         config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
     }

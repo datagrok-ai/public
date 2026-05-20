@@ -18,6 +18,11 @@ export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-li
 
 export const UNTITLED_PROFILE = 'Untitled Profile';
 
+export enum MpoMethod {
+  Manual = 'Manual',
+  DataDriven = 'Data-driven',
+}
+
 export function isEdaPackageInstalled(): boolean {
   if (!checkPackage('EDA', 'getPmpoAppItems')) {
     grok.shell.warning('EDA package is not installed');
@@ -210,7 +215,8 @@ export function deepEqual<T>(current: T, original: T): boolean {
   if (current === original)
     return true;
 
-  if (typeof original !== 'object')
+  if (typeof original !== 'object' || original === null ||
+      typeof current !== 'object' || current === null)
     return false;
 
   if (Array.isArray(original)) {

@@ -5,9 +5,8 @@ import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
 import {ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
-import {BehaviorSubject, merge} from 'rxjs';
-import {map, tap} from 'rxjs/operators';
-import {useExtractedObservable} from '@vueuse/rxjs';
+import {BehaviorSubject} from 'rxjs';
+import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
 declare global {
   namespace JSX {
@@ -60,19 +59,7 @@ export const InputForm = Vue.defineComponent({
     const skipInit = Vue.computed(() => props.skipInit);
     const formRef = Vue.shallowRef<InputFormT | undefined>(undefined);
 
-    const states = Vue.reactive({
-      meta: {} as Record<string, any>,
-    });
-
-    useExtractedObservable(() => props.callMeta, (meta) => {
-      states.meta = {};
-      const entries = Object.entries(meta).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
-      return merge(...entries).pipe(
-        tap(([k, val]) => {
-          states.meta[k] = val ? Vue.markRaw(val) : undefined;
-        }),
-      );
-    });
+    const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
 
     const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
@@ -95,7 +82,7 @@ export const InputForm = Vue.defineComponent({
         });
     });
 
-    Vue.watch([currentCall, currentForm, states.meta], ([call, form, meta]) => {
+    Vue.watch([currentCall, currentForm, callMetaValues], ([call, form, meta]) => {
       if (!form || !call) return;
 
       [...call.inputParams.values()]

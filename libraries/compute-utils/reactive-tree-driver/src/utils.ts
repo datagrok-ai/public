@@ -61,6 +61,20 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
   }
 }
 
+/** Filter `map` keeping only keys in `currentIds`. Returns the filtered map
+ *  if any keys were dropped, or `null` if nothing changed. */
+export function pruneByKeys<T>(map: Record<string, T>, currentIds: Set<string>): Record<string, T> | null {
+  let changed = false;
+  const next: Record<string, T> = {};
+  for (const [k, v] of Object.entries(map)) {
+    if (currentIds.has(k))
+      next[k] = v;
+    else
+      changed = true;
+  }
+  return changed ? next : null;
+}
+
 export function mergeValidationResults(...results: (ValidationResult | undefined)[]): ValidationResult {
   const errors = [];
   const warnings = [];

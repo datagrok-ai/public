@@ -1,6 +1,6 @@
 # Scripts Edit — Run Results
 
-**Date**: 2026-04-24
+**Date**: 2026-05-05
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -8,12 +8,12 @@
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Go to Browse > Platform > Functions > Scripts | 3s | PASS | FAILED | MCP: `grok.shell.route('/scripts')` lands on Scripts view. Playwright failure: 2000ms sleep was not enough on a fresh login — view was still 'Home' when assertion fired |
-| 2 | Find testRscript and double-click | 4s | PASS | FAILED | Located via `.grok-gallery-grid-item-title` with text `testRscript`, dispatched `dblclick` on the card; Playwright failure cascaded from step 1 (view never reached Scripts) |
-| 3 | Add newParam="test" to script body | 3s | PASS | FAILED | CodeMirror `setValue(current + '\nnewParam="test"\n')`. Playwright failure: CodeMirror wasn't in DOM because step 2 never opened the editor |
-| 4 | Click Save | 4s | PASS | PASSED | `[name="button-Save"]` clicked; verified via `grok.dapi.scripts.filter('name = "testRscript"').first()` returning script body that contains `newParam="test"` |
-| 5 | Close script view | 2s | PASS | PASSED | `grok.shell.v.close()`; back to Scripts |
-| 6 | Double-click testRscript again; verify newParam="test" | 4s | PASS | PASSED | Reopened via same dblclick pattern; CodeMirror body shows `newParam="test"` on the last content line |
+| 1 | Go to Browse > Platform > Functions > Scripts | 9s | PASS | PASSED | `grok.shell.route('/scripts')` after a `route('/')` round-trip; polled `grok.shell.v?.name === 'Scripts'` and `.grok-gallery-grid-item-title` count > 0 (50 cards) |
+| 2 | Find testRscript and double-click | 7s | PASS | PASSED | `.grok-gallery-grid-item-title` text=`testRscript` → closest `.grok-gallery-grid-item` → `dblclick`; polled `grok.shell.v?.type === 'ScriptView'` + `.CodeMirror?.CodeMirror` |
+| 3 | Add newParam="test" to script body | 5s | PASS | PASSED | `cm.setValue(before + '\nnewParam="test"\n')` on the active CodeMirror — preserves existing body |
+| 4 | Click Save | 8s | PASS | PASSED | `[name="button-Save"]` clicked; persistence confirmed via `grok.dapi.scripts.filter('name = "testRscript"').first()` body containing `newParam="test"` |
+| 5 | Close script view | 6s | PASS | PASSED | `.d4-tab-header.selected i[name="icon-times"]` did not match — fell back to `grok.shell.v.close()`; view returned to `Scripts` |
+| 6 | Double-click testRscript again; verify newParam="test" | 9s | PASS | PASSED | Re-found gallery card by label, dblclick, polled until `grok.shell.v?.name === 'testRscript'`; CodeMirror body contains `newParam="test"` |
 
 **Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome (plain `PASSED`/`FAILED`/`SKIPPED`).
 
@@ -21,48 +21,56 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | ~55s |
-| grok-browser execution (scenario steps) | ~30s |
-| Execute via grok-browser (total) | 1m 25s |
-| Spec file generation | ~30s |
-| Spec script execution | 21s |
-| **Total scenario run (with model)** | ~2m 25s |
+| Model thinking (scenario steps) | ~30s |
+| grok-browser execution (scenario steps) | ~14s |
+| Execute via grok-browser (total) | 1m 13s |
+| Spec file generation | ~10s (no edit needed — existing spec faithfully matches the run log) |
+| Spec script execution | 22s |
+| **Total scenario run (with model)** | ~1m 45s |
 
 ## Summary
 
-Edit works end-to-end in the MCP run: the script reopens, a new line is added via CodeMirror,
-Save persists, and re-opening shows the change. The Playwright replay flaked on step 1 — a
-2000ms sleep after `grok.shell.route('/scripts')` was not enough on a fresh login context on
-dev; the view was still `Home` when the assertion fired and every subsequent step failed with
-`null.CodeMirror`. Steps 4–6 passed in Playwright once the dblclick path recovered.
+End-to-end edit works on dev: the seeded `testRscript` opens, `newParam="test"`
+is appended via CodeMirror, `Save` persists the change to the server, and
+re-opening the script confirms the new line is present. The Playwright replay
+of `edit-spec.ts` passed on the first attempt in 19.6s — every scenario step
+green. The only caveat is a missing prerequisite: `testRscript` did not exist
+on dev, so the spec's `[pre]` softStep seeded it before step 1 (and we did the
+same in the MCP run via `DG.Script.create`).
 
 ## Retrospective
 
 ### What worked well
-- `.grok-gallery-grid-item-title` label match + `dblclick` on the card is a reliable way to open a script (no `name=` attribute on gallery items)
-- CodeMirror append via `setValue(current + ...)` preserves existing content
-- `grok.dapi.scripts.filter(...).first()` is a clean way to verify Save without round-tripping through the UI
+- Token exchange `POST /api/users/login/dev/<key>` → `DATAGROK_AUTH_TOKEN` →
+  `loginToDatagrok(page)` was clean and matches what `grok test` does internally.
+- The existing `edit-spec.ts` was a faithful transcription of the working flow —
+  no edits required, ran green on the first invocation.
+- `grok.dapi.scripts.filter('name = "testRscript"').first()` is a reliable Save
+  verifier (poll the persisted body rather than UI state).
+- `.grok-gallery-grid-item-title` text match + dblclick on the closest card is a
+  robust alternative to gallery-search filtering (cards have no `name=` attribute).
 
 ### What did not work
-- The search input did not filter the grid when value was set programmatically; re-typing or relying on the URL `?q=` parameter is more reliable
-- A blanket 2-second sleep after `grok.shell.route(...)` is not enough in fresh contexts — the view swap is async
-- Auto-triggered `alert('Hello World!')` from an earlier Grok-language script run blocked a screenshot until the dialog was dismissed
+- Step 5's literal "x icon" selector `.d4-tab-header.selected i[name="icon-times"]`
+  did not match — the active tab in the view selector uses different markup. The
+  spec works because it skips that path entirely and calls `grok.shell.v.close()`.
 
 ### Suggestions for the platform
-- `grok.shell.route()` should expose a promise that resolves when the target view is mounted
-- Grok scripts that call `alert(...)` should route through `grok.shell.info(...)` or a non-blocking balloon by default
-- The scripts gallery search should respond to programmatic `input` dispatch the same way it does to keystrokes
+- Add a stable selector (`[name="view-tab-close"]` or similar) to the active
+  view-tab close icon so Test Track scenarios can drive the literal "click x"
+  step without needing a JS-API fallback.
+- `grok.shell.route()` should expose a promise that resolves when the target view
+  is mounted — would replace the `for (let i=0; i<60; i++)` polling loops scattered
+  across this and other Scripts specs.
+- Browse tree / scripts gallery do not auto-refresh after a JS-API
+  `grok.dapi.scripts.save(...)`. The `[pre]` step works around this with a
+  `route('/')` → `route('/scripts')` round-trip.
 
 ### Suggestions for the scenario
-- Add a precondition that `testRscript` already exists (otherwise step 2 fails silently)
-- Step 2 "double-click" — clarify that on the current Scripts gallery, a click opens the context pane; only a double-click opens the editor
-
-## Re-run after spec fixes (2026-04-24)
-
-After patching the spec for robust waits (`waitForFunction` on `grok.shell.v?.name`, full
-route round-trips to force gallery refresh, Playwright right-click for context menus, JS-API
-fallbacks for the Run-dialog table dropdown and the signature-editor's internal state), the
-Playwright run now **PASSES** in 24s for Scripts Edit. All scenario steps above that were
-previously marked `FAILED` in the Playwright column now pass on the updated spec. Steps still
-marked `SKIPPED` are intentional (manual file picker, canvas toolbox, cross-cutting project
-flow) and use `test.step.skip` in the spec.
+- Add an explicit precondition line: "This scenario assumes `testRscript` already
+  exists (created via `Scripts/create.md`). If it was deleted by a previous run
+  or this is a fresh server, run create.md first."
+- Step 5 says "Click on the **x** icon to close script view" — consider clarifying
+  that this means the close icon on the active view tab (not the View → Close
+  menu, not Esc), and ideally tagging that icon with a stable `name=` attribute
+  so the wording matches the selector.

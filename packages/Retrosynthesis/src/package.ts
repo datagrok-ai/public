@@ -64,25 +64,21 @@ export class PackageFunctions {
 
     view.append(container);
 
-    const showWidget = (smiles: string) => {
-      try {
-        const widget = PackageFunctions.retroSynthesisPath(smiles);
-        if (widget.root.parentElement !== retrosynthesisDiv) {
-          ui.empty(retrosynthesisDiv);
-          retrosynthesisDiv.append(widget.root);
-        }
-      } catch (e) {
-        console.error(e);
-        grok.shell.error('Invalid or empty molecule');
-      }
-    };
-
-    showWidget(DEMO_MOLECULE);
-
-    sketcher.onChanged.subscribe(() => {
+    let demoInited = false;
+    sketcher.onChanged.subscribe(async () => {
       const smiles = sketcher.getSmiles();
-      if (smiles)
-        showWidget(smiles);
+      if (smiles) {
+        try {
+          ui.empty(retrosynthesisDiv);
+          ui.setUpdateIndicator(retrosynthesisDiv, true, 'Calculating retrosyntehsis paths...');
+          const widget = await PackageFunctions.retroSynthesisPath(!demoInited ? DEMO_MOLECULE : smiles);
+          demoInited = true;
+          retrosynthesisDiv.append(widget.root);
+          ui.setUpdateIndicator(retrosynthesisDiv, false);
+        } catch (e) {
+          grok.shell.error('Invalid or empty molecule');
+        }
+      }
     });
     grok.shell.addPreview(view);
   }

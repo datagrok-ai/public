@@ -10,6 +10,8 @@ let descriptorsCached: object[];
 async function getContainer() {
   if (!chemContainer)
     chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
+  if (!chemContainer)
+    throw new Error('Chem service is not available: "chem-chem" Docker container not found');
   // if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
   //   await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
   return chemContainer;

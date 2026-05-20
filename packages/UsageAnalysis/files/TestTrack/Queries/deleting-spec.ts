@@ -8,7 +8,9 @@ test('Queries — delete new_test_query via context menu', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Setup + precondition: ensure new_test_query exists.
+  // Setup + precondition: ensure new_test_query exists on the PostgresTest
+  // connection (UI label "NorthwindTest"). The scenario depends on the prior
+  // edit step leaving the query behind; if previous runs deleted it, seed it.
   const seedId = await page.evaluate(async () => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
@@ -17,7 +19,8 @@ test('Queries — delete new_test_query via context menu', async ({page}) => {
     let q = await (window as any).grok.dapi.queries
       .filter('friendlyName = "new_test_query"').first().catch(() => null);
     if (!q) {
-      const conn = await (window as any).grok.dapi.connections.find('a2d74603-7594-56ea-a2bd-844b2fd16ee7');
+      const conn = await (window as any).grok.dapi.connections
+        .find('a2d74603-7594-56ea-a2bd-844b2fd16ee7');
       const newQ = conn.query('new_test_query', 'select * from orders');
       q = await (window as any).grok.dapi.queries.save(newQ);
     }
@@ -43,7 +46,7 @@ test('Queries — delete new_test_query via context menu', async ({page}) => {
       const nw = find('NorthwindTest');
       if (!nw) return {ok: false, stage: 'no-nw'};
       nw.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 50; i++) {
         if ((window as any).grok.shell.v?.type === 'queries') return {ok: true};
         await new Promise((r) => setTimeout(r, 300));
       }
@@ -58,24 +61,29 @@ test('Queries — delete new_test_query via context menu', async ({page}) => {
         .some((el) => el.children.length === 0 && (el as HTMLElement).textContent?.trim() === 'new_test_query'
           && (el as HTMLElement).offsetParent !== null);
     }, null, {timeout: 15_000});
-    // Dispatch contextmenu on the card containing the label.
+    // Dispatch contextmenu with viewport coords on the gallery card.
     await page.evaluate(async () => {
       const label = Array.from(document.querySelectorAll('*'))
         .find((el) => el.children.length === 0 && (el as HTMLElement).textContent?.trim() === 'new_test_query'
           && (el as HTMLElement).offsetParent !== null) as HTMLElement;
-      const card = label.closest('.grok-gallery-grid-item, .d4-gallery-item, .grok-entity, .grok-item, .d4-tile, .d4-card')
-        ?? label.parentElement!;
-      card.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2}));
+      const card = (label.closest('.grok-gallery-grid-item, .d4-gallery-card, .d4-gallery-item, .grok-entity, .grok-item, .d4-tile, .d4-card')
+        ?? label.parentElement) as HTMLElement;
+      const r = card.getBoundingClientRect();
+      card.dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true, cancelable: true, view: window,
+        button: 2, buttons: 2,
+        clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+      }));
     });
-    // Click Delete menu item.
-    const deleteItem = page.locator('.d4-menu-item-label', {hasText: /^Delete$/}).first();
+    // Click "Delete" menu item (no name= attribute).
+    const deleteItem = page.locator('.d4-menu-popup .d4-menu-item-label', {hasText: /^Delete$/}).first();
     await deleteItem.waitFor({timeout: 10_000});
     await deleteItem.click();
-    // Confirmation dialog — click DELETE button.
-    const deleteBtn = page.locator('.d4-dialog button', {hasText: 'DELETE'}).first();
+    // Confirmation dialog — DELETE button lives in .d4-dialog-footer.
+    const deleteBtn = page.locator('.d4-dialog-footer button', {hasText: /^DELETE$/}).first();
     await deleteBtn.waitFor({timeout: 10_000});
     await deleteBtn.click();
-    // Verify deletion.
+    // Verify deletion via dapi.
     const gone = await page.evaluate(async (id) => {
       for (let i = 0; i < 40; i++) {
         const q = await (window as any).grok.dapi.queries.find(id).catch(() => null);

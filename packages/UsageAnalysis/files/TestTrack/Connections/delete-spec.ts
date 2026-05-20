@@ -3,36 +3,56 @@ import {baseUrl, loginToDatagrok, specTestOptions, softStep, stepErrors} from '.
 
 test.use(specTestOptions);
 
-// Prerequisite: Adding-spec.ts and Edit-spec.ts must have run
-// (new_test_postgres and test_postgres_2 must exist)
+// Self-contained: creates `new_test_postgres` and `test_postgres_2` via JS API if missing,
+// then deletes them through the UI to exercise the right-click → Delete… → confirm flow.
 
-const deleteConnection = async (page: Page, name: string) => {
-  await page.evaluate(async (connName) => {
-    const target = Array.from(document.querySelectorAll('.d4-link-label, label'))
-      .find((el) => el.textContent?.trim() === connName) as HTMLElement | undefined;
+const ensureConnection = async (page: Page, friendlyName: string, slug: string): Promise<string> => {
+  return await page.evaluate(async ({friendlyName, slug}) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const list = await grok.dapi.connections.filter(`name = "${slug}"`).list();
+    if (list.length > 0) {
+      const conn = list[0];
+      if (conn.friendlyName !== friendlyName) {
+        conn.friendlyName = friendlyName;
+        await grok.dapi.connections.save(conn);
+      }
+      return conn.nqName;
+    }
+    const fresh = DG.DataConnection.create(slug, {
+      dataSource: 'Postgres', server: 'db.datagrok.ai', port: 54322, db: 'northwind', ssl: false,
+    });
+    fresh.name = slug;
+    fresh.friendlyName = friendlyName;
+    const saved = await grok.dapi.connections.save(fresh);
+    return saved.nqName;
+  }, {friendlyName, slug});
+};
+
+const deleteConnectionByDataLink = async (page: Page, dataLink: string) => {
+  await page.evaluate(async (link) => {
+    const target = document.querySelector(`[data-link="${link}"]`) as HTMLElement | null;
     if (!target) return;
     target.scrollIntoView({behavior: 'instant' as ScrollBehavior, block: 'center'});
-    await new Promise((r) => setTimeout(r, 200));
+    const r = target.getBoundingClientRect();
     target.dispatchEvent(new MouseEvent('contextmenu', {
       bubbles: true, cancelable: true, button: 2,
-      clientX: target.getBoundingClientRect().left + 10,
-      clientY: target.getBoundingClientRect().top + 5,
+      clientX: r.left + 10, clientY: r.top + 5,
     }));
-    await new Promise((r) => setTimeout(r, 400));
-    const deleteItem = Array.from(document.querySelectorAll('.d4-menu-item'))
+    await new Promise((res) => setTimeout(res, 500));
+    const del = Array.from(document.querySelectorAll('.d4-menu-item'))
       .find((el) => el.textContent?.trim() === 'Delete...') as HTMLElement | undefined;
-    deleteItem?.click();
-    await new Promise((r) => setTimeout(r, 1000));
-    const deleteBtn = Array.from(document.querySelectorAll('button,.ui-btn'))
-      .find((b) => b.textContent?.trim() === 'DELETE') as HTMLElement | undefined;
-    deleteBtn?.click();
-    await new Promise((r) => setTimeout(r, 2000));
-  }, name);
-
-  await page.evaluate(() => {
-    (document.querySelector('.d4-refresh, .fa-sync, .fa-sync-alt') as HTMLElement | null)?.click();
-  });
-  await page.waitForTimeout(2000);
+    del?.click();
+    await new Promise((res) => setTimeout(res, 1000));
+    const dialog = document.querySelector('.d4-dialog');
+    const confirmBtn = (dialog?.querySelector('[name="button-DELETE"]')
+      ?? Array.from(dialog?.querySelectorAll('button, .ui-btn') ?? [])
+          .find((b) => b.textContent?.trim() === 'DELETE')) as HTMLElement | undefined;
+    confirmBtn?.click();
+    await new Promise((res) => setTimeout(res, 2500));
+    (document.querySelector('[name="icon-sync"]') as HTMLElement | null)?.click();
+    await new Promise((res) => setTimeout(res, 1500));
+  }, dataLink);
 };
 
 test('Connections / Delete', async ({page}) => {
@@ -40,6 +60,13 @@ test('Connections / Delete', async ({page}) => {
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
+
+  // Setup: ensure both targets exist
+  const ntpNq = await ensureConnection(page, 'new_test_postgres', 'NewTestPostgres');
+  const tp2Nq = await ensureConnection(page, 'test_postgres_2', 'test_postgres_2');
+  const ntpLink = '/db/' + ntpNq.replace(/^([^:]+):/, '$1.');
+  const tp2Link = '/db/' + tp2Nq.replace(/^([^:]+):/, '$1.');
+
   await page.goto(`${baseUrl}/connect?browse=connections`, {waitUntil: 'networkidle', timeout: 30000});
   await page.waitForTimeout(3000);
   await page.evaluate(async () => {
@@ -47,23 +74,21 @@ test('Connections / Delete', async ({page}) => {
       .find((el) => el.textContent?.trim() === 'Postgres');
     (postgresNode as HTMLElement | undefined)?.click();
     await new Promise((r) => setTimeout(r, 2000));
+    (document.querySelector('[name="icon-sync"]') as HTMLElement | null)?.click();
+    await new Promise((r) => setTimeout(r, 1500));
   });
 
   await softStep('Steps 1-2: Delete new_test_postgres', async () => {
-    await deleteConnection(page, 'new_test_postgres');
-    const present = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.d4-link-label, label'))
-        .some((el) => el.textContent?.trim() === 'new_test_postgres'),
-    );
+    await expect(page.locator(`[data-link="${ntpLink}"]`)).toBeVisible({timeout: 10000});
+    await deleteConnectionByDataLink(page, ntpLink);
+    const present = await page.evaluate((link) => !!document.querySelector(`[data-link="${link}"]`), ntpLink);
     expect(present).toBe(false);
   });
 
   await softStep('Steps 3-4: Delete test_postgres_2', async () => {
-    await deleteConnection(page, 'test_postgres_2');
-    const present = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.d4-link-label, label'))
-        .some((el) => el.textContent?.trim() === 'test_postgres_2'),
-    );
+    await expect(page.locator(`[data-link="${tp2Link}"]`)).toBeVisible({timeout: 10000});
+    await deleteConnectionByDataLink(page, tp2Link);
+    const present = await page.evaluate((link) => !!document.querySelector(`[data-link="${link}"]`), tp2Link);
     expect(present).toBe(false);
   });
 

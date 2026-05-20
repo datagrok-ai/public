@@ -83,7 +83,7 @@ export namespace chem {
      * This field is used in cases when smiles is set from column but actually molblock is set to keep same coordinates.
      * When this happens and user copies over the smiles from sketche, the sketcher returns transformed smiles.
     */
-    explicitMol?: {notation: 'smiles' | 'molblock' | 'molblockV3000'; value: string} | null = null;
+    explicitMol?: {notation: 'smiles' | 'molblock' | 'molblockV3000' | 'smarts'; value: string} | null = null;
 
     /** SMILES representation of the molecule */
     abstract get smiles(): string;
@@ -284,6 +284,8 @@ export namespace chem {
     }
 
     isEmpty(): boolean {
+      if (this.sketcher?.explicitMol?.value)
+        return false;
       const molFile = this.getMolFile();
       return Sketcher.isEmptyMolfile(molFile);
     }
@@ -349,6 +351,7 @@ export namespace chem {
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       ui.tooltip.bind(this.errorDiv, () => this.error);
+      this.attachMolInputListeners();
       if (validationFunc)
         this._validationFunc = validationFunc;
       this.alighInput = this.createAlignHighlightInputs(CHEM_FILTER_ALIGN, 'Align', () => {
@@ -365,6 +368,28 @@ export namespace chem {
     createAlignHighlightInputs(key: string, inputName: string, callback: () => void) {
       const value: string = grok.userSettings.getValue(FILTER_KEY, key);
       return ui.input.bool(inputName, {value: !value || value === 'true', onValueChanged: callback});
+    }
+
+    /** Attaches listeners once on the persistent molInput element to avoid duplicate
+     * subscriptions when the dialog is reopened (each open used to stack new handlers). */
+    private attachMolInputListeners() {
+      this.molInput.addEventListener('keydown', (e) => {
+        if (e.key == 'Enter') {
+          const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
+          if (this.getSmiles() !== newSmilesValue)
+            this.setValue(newSmilesValue);
+          e.stopImmediatePropagation();
+        }
+      });
+
+      this.molInput.addEventListener('paste', (e) => {
+        const text = e.clipboardData?.getData('text/plain');
+        if (text != null && (isMolBlock(text) || checkSmiles(text))) {
+          if (isMolBlock(text))
+            e.preventDefault();
+          this.setValue(text);
+        }
+      });
     }
 
     /** In case sketcher is opened in filter panel use EXTERNAL mode*/
@@ -400,10 +425,10 @@ export namespace chem {
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          const currentMolfile = this.getMolFile();
+          const currentMolfile = this.sketcher?.explicitMol?.value ?? this.getMolFile();
           ui.tooltip.bind(this.extSketcherCanvas, () => this.createMoleculeTooltip(currentMolfile));
           const r = window.devicePixelRatio;
-          canvasMol(0, 0, width * r, height * r, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
+          canvasMol(0, 0, width * r, height * r, this.extSketcherCanvas, currentMolfile!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
               this.extSketcherDiv.append(this.extSketcherCanvas);
@@ -460,10 +485,13 @@ export namespace chem {
     }
 
     createExternalModeSketcher(): HTMLElement {
+      let sizeChangedSub: Subscription | null = null;
       const closeDlg = () => {
         this.sketcherDialogOpened = false;
         this.resized = false;
         this._autoResized = true;
+        sizeChangedSub?.unsubscribe();
+        sizeChangedSub = null;
       }
 
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -471,22 +499,23 @@ export namespace chem {
       this.extSketcherDiv.onclick = () => {
         if (!this.sketcherDialogOpened) {
           this.sketcherDialogOpened = true;
-          let savedMolFile = this.getMolFile();
+          //in case explicit mol has been set and hasn't been changed - use it as saved molecule
+          let savedMolFile = this.sketcher?.explicitMol?.value ?? this.getMolFile();
 
           const hostDlg = ui.dialog();
           hostDlg.add(this.createInplaceModeSketcher())
             .onOK(() => {
-              this.updateExtSketcherContent();
-              Sketcher.addToCollection(Sketcher.RECENT_KEY, this.getMolFile());
+              this.updateExtSketcherContent(); //in case explicit mol has been set and hasn't been changed - add it to recent
+              Sketcher.addToCollection(Sketcher.RECENT_KEY, this.sketcher?.explicitMol?.value ?? this.getMolFile());
               closeDlg();
             })
             .onCancel(() => {
               this.setMolFile(savedMolFile!);
               closeDlg();
             })
-            .show({ resizable: true }); 
+            .show({ resizable: true });
           hostDlg.root.append(this.filterOptionsDiv);
-          ui.onSizeChanged(hostDlg.root).subscribe((_) => {
+          sizeChangedSub = ui.onSizeChanged(hostDlg.root).subscribe((_) => {
             if (this.sketcherDialogOpened)
               if (!this.sketcher?.isInitialized)
                 return;
@@ -513,29 +542,6 @@ export namespace chem {
           extractors = [];
         }
       }
-      const applyInput = (e: any) => {
-        const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
-
-        if (this.getSmiles() !== newSmilesValue)
-          this.setValue(newSmilesValue);
-      };
-
-      this.molInput.addEventListener('keydown', (e) => {
-        if (e.key == 'Enter') {
-          applyInput(e);
-          e.stopImmediatePropagation();
-        }
-      });
-
-      this.molInput.addEventListener('paste', (e) => {
-        const text = e.clipboardData?.getData('text/plain');
-        if (text != null && (isMolBlock(text) || checkSmiles(text))) {
-          if (isMolBlock(text))
-            e.preventDefault();
-          this.setValue(text);
-        }
-      });
-
       let optionsIcon = ui.iconFA('bars', (event: MouseEvent) => {
         const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
@@ -561,8 +567,8 @@ export namespace chem {
           .group('Recent')
           .items(Sketcher.getCollection(Sketcher.RECENT_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
-          .group('Favorites')
-          .item('Add to Favorites', () => Sketcher.addToCollection(Sketcher.FAVORITES_KEY, this.getMolFile()))
+          .group('Favorites') //in case explicit mol has been set and hasn't been changed - add it to favorites
+          .item('Add to Favorites', () => Sketcher.addToCollection(Sketcher.FAVORITES_KEY, this.sketcher?.explicitMol?.value ?? this.getMolFile())) 
           .separator()
           .items(Sketcher.getCollection(Sketcher.FAVORITES_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
@@ -599,6 +605,9 @@ export namespace chem {
 
     private _setSketcherType(sketcherType: string): void {
       const getMolecule = async () => {
+        //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
+        if (this.sketcher?.explicitMol)
+          return this.sketcher?.explicitMol.value;
         return this._smiles === null ? this._molfile === null ? this._smarts === null ? this.getMolFile() :
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
       };

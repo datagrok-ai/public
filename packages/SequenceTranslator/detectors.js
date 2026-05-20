@@ -39,7 +39,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
           const col = item.tableColumn;
           switch (col.semType) {
           case DG.SEMTYPE.MACROMOLECULE: {
-            menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtHelmEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            menu.item('Enumerate Sequence', () => { grok.functions.call(`${packageName}:getPtHelmEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
 
             // Oligo submenu — all oligo-related actions live under one group
             // so they stay discoverable but don't clutter the top context menu.
@@ -58,7 +58,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
             // Combine sense + antisense → opens the function editor so the user
             // can pick the antisense column (and confirm sense).
-            oligoMenu.item('Combine sense+antisense to Oligo...', () => {
+            oligoMenu.item('Combine Sense+Antisense to Oligo...', () => {
               try {
                 const fns = DG.Func.find({package: packageName, name: 'combineSenseAntisenseToOligoNucleotide'});
                 if (fns.length > 0)
@@ -70,7 +70,15 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
             break;
           }
           case DG.SEMTYPE.MOLECULE: {
-            menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtChemEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            menu.item('Enumerate Markush Structure...', () => { grok.functions.call(`${packageName}:getPtChemEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            break;
+          }
+          case 'OligoNucleotide': {
+            // Same enumerator as HELM cells, but the result column is tagged
+            // as OligoNucleotide so the duplex renderer picks it up.
+            menu.item('Enumerate Oligos', () => {
+              grok.functions.call(`${packageName}:getPtOligoEnumeratorDialog`, {cell: item.cell}).catch(catchError);
+            });
             break;
           }
           }

@@ -3,39 +3,14 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {HitDesignApp} from '../hit-design-app';
-import {HitAppBase} from '../hit-app-base';
 import {HitDesignMergeClashStrategy, HitDesignMergeConfig, HitDesignMergeMode} from '../types';
-import {guessMoleculeColumn, guessVidColumn, isLocalUploadFileInfo, mergeIntoCampaign} from '../utils/merge-table';
+import {
+  MERGE_ALLOWED_EXTENSIONS as ALLOWED_EXTENSIONS,
+  getFileInfoExtension as getExtension,
+  guessMoleculeColumn, guessVidColumn, isLocalUploadFileInfo,
+  mergeIntoCampaign, readFileInfoToDataFrame,
+} from '../utils/merge-table';
 import {_package} from '../../package';
-
-// Mirrors the drag-n-drop path in HitDesignApp.handleUploadingDataframe: csv goes through
-// DG.DataFrame.fromCsv, anything else is delegated to a registered file-handler function.
-// HitAppBase.molFileExtReaders is statically filtered to only those extensions for which
-// the platform actually exposes a reader, so this list reflects what we can really parse.
-const ALLOWED_EXTENSIONS: string[] = ['csv', ...HitAppBase.molFileExtReaders.map((r) => r.ext)];
-
-function getExtension(fi: DG.FileInfo): string {
-  const ext = fi.extension?.toLowerCase();
-  if (ext) return ext;
-  const name = fi.name?.toLowerCase() ?? '';
-  const dot = name.lastIndexOf('.');
-  return dot >= 0 ? name.slice(dot + 1) : '';
-}
-
-async function readFileInfoToDataFrame(fi: DG.FileInfo): Promise<DG.DataFrame | null> {
-  const ext = getExtension(fi);
-  if (ext === 'csv') {
-    const text = await fi.readAsString();
-    return DG.DataFrame.fromCsv(text);
-  }
-  const reader = HitAppBase.molFileExtReaders.find((r) => r.ext === ext);
-  if (!reader) return null;
-  const bytes = await fi.readAsBytes();
-  if (!bytes) return null;
-  const bytesArg = reader.handlerFunc.inputs[0].name;
-  const result: any = await reader.handlerFunc.apply({[bytesArg]: bytes});
-  return Array.isArray(result) ? result[0] : result;
-}
 
 const MODE_LABELS: Record<HitDesignMergeMode, string> = {
   smiles: 'By canonical SMILES',
@@ -134,6 +109,16 @@ export async function openMergeTableDialog<T extends HitDesignApp>(app: T): Prom
     onValueChanged: () => runValidation(),
   });
 
+  const autoMergeOnOpenInput = ui.input.bool('Auto-merge on campaign open', {
+    value: saved?.autoMergeOnOpen ?? false,
+    tooltipText: 'When on, this file is re-read and merged into the campaign every time the ' +
+      'campaign is opened, using the configuration below. Compute is never re-run for this ' +
+      'implicit pass and the campaign is not auto-saved. ' +
+      'Only available for files picked from a Datagrok file share — local uploads cannot be ' +
+      're-read on open.',
+    onValueChanged: () => runValidation(),
+  });
+
   const errorDiv = ui.divText('');
   errorDiv.style.color = 'var(--failure)';
   errorDiv.style.fontSize = '12px';
@@ -148,6 +133,7 @@ export async function openMergeTableDialog<T extends HitDesignApp>(app: T): Prom
     addRowsInput.root,
     runComputeInput.root,
     clashInput.root,
+    autoMergeOnOpenInput.root,
     errorDiv,
   ]);
   inputsRoot.style.minWidth = '420px';
@@ -184,6 +170,13 @@ export async function openMergeTableDialog<T extends HitDesignApp>(app: T): Prom
 
     const canRunCompute = canChooseAddRows && addRowsInput.value === true;
     runComputeInput.enabled = canRunCompute;
+
+    // Auto-merge-on-open requires a remembered file path, i.e. a file from the share rather
+    // than a local upload. We don't clobber the user's value here — onOk gates it the same
+    // way as the other downstream flags.
+    const fi = fileInput.value;
+    const canAutoMergeOnOpen = !!fi && !isLocalUploadFileInfo(fi);
+    autoMergeOnOpenInput.enabled = canAutoMergeOnOpen;
 
     let errorMessage = '';
     if (isLoadingFile)
@@ -248,6 +241,7 @@ export async function openMergeTableDialog<T extends HitDesignApp>(app: T): Prom
     addRowsInput.value = savedToApply.addNewRows;
     runComputeInput.value = savedToApply.runComputeOnNewRows;
     clashInput.value = CLASH_LABELS[savedToApply.clashStrategy];
+    autoMergeOnOpenInput.value = savedToApply.autoMergeOnOpen ?? false;
   }
 
   async function onFileChanged(fi: DG.FileInfo | null): Promise<void> {
@@ -313,6 +307,8 @@ export async function openMergeTableDialog<T extends HitDesignApp>(app: T): Prom
       addNewRows: !!addRowsInput.value && !!molCol,
       runComputeOnNewRows: !!runComputeInput.value && !!addRowsInput.value && !!molCol,
       clashStrategy: labelToClash(clashInput.value),
+      // Auto-merge only makes sense when we have a remembered path to re-read on open.
+      autoMergeOnOpen: !!autoMergeOnOpenInput.value && !!filePath,
     };
 
     const pg = DG.TaskBarProgressIndicator.create('Merging table into campaign...');

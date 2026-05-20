@@ -8,15 +8,20 @@ import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNode
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler} from '../utils';
-import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, RuntimeReturnController, ValidatorController} from './LinkControllers';
-import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
+import {callHandler, indexFromEnd} from '../utils';
+import {defaultLinkHandler, Slot} from './default-handler';
+import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
+import {TemplateInfo} from '../RuntimeControllers';
+import {LinkIOParsed, LinkSelectorSegment} from '../config/LinkSpec';
+import {FuncCallAdapter, FuncCallMockAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
 import {GranularMutationOp} from '../data/common-types';
 import {DriverLogger, reportError} from '../data/Logger';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
+import {toStateRec} from './StateTreeSerializer';
+import {PipelineNodeBase} from './StateTreeNodes';
+import {PipelineOutline} from '../config/PipelineInstance';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -31,6 +36,7 @@ export class Link {
 
   public uuid = uuidv4();
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
+  public readonly isPipelineValidator = this.matchInfo.spec.type === 'pipelineValidator';
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
@@ -65,7 +71,7 @@ export class Link {
     private logger?: DriverLogger,
   ) {
     const spec = this.matchInfo.spec;
-    if (spec.type === 'validator') {
+    if (spec.type === 'validator' || spec.type === 'pipelineValidator') {
       const effectiveDebounce = this.customDebounceTime ?? VALIDATOR_DEBOUNCE_TIME;
       this.isBatchable = effectiveDebounce === 0 && !spec.sequential;
     } else if (spec.type === 'meta' || spec.type === 'nodemeta' || spec.type === 'selector')
@@ -78,10 +84,15 @@ export class Link {
     if (this.isWired)
       return;
 
-    const inputNames = Object.keys(this.matchInfo.inputs);
-    const outputNames = Object.keys(this.matchInfo.outputs);
+    const {slots: inputSlots, templates: inputTemplates} =
+      this.buildSlotsAndTemplates(this.matchInfo.spec.from ?? [], this.matchInfo.inputs);
+    const {slots: outputSlots, templates: outputTemplates} =
+      this.buildSlotsAndTemplates(this.matchInfo.spec.to ?? [], this.matchInfo.outputs);
     const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
     const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
+    const callInputs = new Set(
+      (this.matchInfo.spec.from ?? []).filter((io) => io.flags?.includes('call')).map((io) => io.name),
+    );
 
     const inputsChanges$ = this.makeInputsChanges(state, linksState);
     const baseNode = this.matchInfo.basePath ?
@@ -93,7 +104,7 @@ export class Link {
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
         if (minfos.length > 1)
-          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger);
+          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
         const nodeActions = minfos.map((minfo) => {
           const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
@@ -109,13 +120,15 @@ export class Link {
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
+    const actionsVisibility = linksState?.actionsVisibility ?? new Map<string, boolean>();
+
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state).pipe(
+          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
-              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
+              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger, [this.matchInfo.spec.id]);
               return EMPTY;
             }),
           ),
@@ -160,7 +173,10 @@ export class Link {
           !!dataFrameMutations;
         const store = item.getStateStore();
         const state$ = ioName ? store.getStateChanges(ioName, includeDFMutations) :
-          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map((x) => x?.adapter.getFuncCall())) : of(undefined));
+          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map((x) => {
+            const adapter = x?.adapter;
+            return (adapter && !(adapter instanceof FuncCallMockAdapter)) ? adapter.getFuncCall() : undefined;
+          })) : of(undefined));
         return state$;
       });
       return [inputAlias, combineLatest(inputStates)] as const;
@@ -187,7 +203,7 @@ export class Link {
       return inputsTriggered$.pipe(map(toInputsChanges));
     }
 
-    const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
+    const debounceVal = this.customDebounceTime ?? ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
@@ -202,14 +218,18 @@ export class Link {
     inputs: Record<string, any>,
     inputSet: Set<string>,
     outputSet: Set<string>,
-    inputNames: string[],
-    outputNames: string[],
+    callInputs: Set<string>,
+    inputSlots: Slot[],
+    outputSlots: Slot[],
+    inputTemplates: TemplateInfo[],
+    outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
+    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -231,7 +251,7 @@ export class Link {
       );
     } else if (!this.isValidator && !this.isMeta) {
       return defer(() => of(
-        defaultLinkHandler(controller as LinkController, inputNames, outputNames, this.matchInfo.spec.defaultRestrictions),
+        defaultLinkHandler(controller as LinkController, inputSlots, outputSlots, this.matchInfo.spec.defaultRestrictions),
       ).pipe(mapTo(controller)));
     }
 
@@ -253,32 +273,76 @@ export class Link {
     inputs: Record<string, any>,
     inputSet: Set<string>,
     outputSet: Set<string>,
+    callInputs: Set<string>,
+    inputTemplates: TemplateInfo[],
+    outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
+    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
+    const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates};
+
     if (this.isValidator)
-      return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
+      return new ValidatorController({...baseArgs, actions, actionsVisibility, baseNode});
+
+    if (this.isPipelineValidator) {
+      const outline = this.resolveOutline(state);
+      return new PipelineValidatorController({...baseArgs, outline});
+    }
 
     if (this.isMeta)
-      return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new MetaController(baseArgs);
 
     if (this.isMutation) {
       const outputNodes = state ? this.resolveOutputNodes(state) : {};
-      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope, outputNodes);
+      return new MutationController({...baseArgs, outputNodes});
     }
 
     if (this.isNodeMeta)
-      return new NodeMetaController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
+      return new NodeMetaController({...baseArgs, outputsSet: new Set(descriptionOutputs)});
 
     if (this.isFuncallAction)
-      return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new FuncallActionController(baseArgs);
 
     if (this.isReturn)
-      return new RuntimeReturnController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new RuntimeReturnController(baseArgs);
 
-    return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+    return new LinkController(baseArgs);
+  }
+
+  private resolveOutline(state?: BaseTree<StateTreeNode>): PipelineOutline {
+    if (!state)
+      throw new Error(`Link ${this.matchInfo.spec.id}: pipeline validator has no tree state`);
+    return toStateRec(state.getNode(this.prefix), {skipFuncCalls: true}) as PipelineOutline;
+  }
+
+  private buildSlotsAndTemplates(
+    specSide: LinkIOParsed[],
+    matchSide: Record<string, MatchedNodePaths>,
+  ): {slots: Slot[], templates: TemplateInfo[]} {
+    const slots: Slot[] = [];
+    const templates: TemplateInfo[] = [];
+    const templateById = new Map<string | number, TemplateInfo>();
+    for (const io of specSide) {
+      if (matchSide[io.name] == null) continue;
+      const tplId = io.templateName;
+      if (tplId != null) {
+        let tpl = templateById.get(tplId);
+        if (!tpl) {
+          tpl = {name: tplId, ios: []};
+          templateById.set(tplId, tpl);
+          templates.push(tpl);
+          slots.push({kind: 'template', name: tplId});
+        }
+        const lastSeg = indexFromEnd(io.segments) as LinkSelectorSegment;
+        tpl.ios.push({ioName: io.name, scriptIoId: lastSeg.ids[0]});
+      } else {
+        slots.push({kind: 'bare', name: io.name});
+      }
+    }
+    return {slots, templates};
   }
 
   private getOrderedIO(ioData: Record<string, MatchedNodePaths>) {
@@ -297,7 +361,7 @@ export class Link {
     return p0;
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController | PipelineValidatorController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     this.lastGranularMutations = [];
     if (this.logger) {
@@ -318,6 +382,18 @@ export class Link {
     });
     if (controller instanceof RuntimeReturnController) {
       this.returnResult = controller.result;
+      return;
+    }
+    if (controller instanceof PipelineValidatorController) {
+      for (const matched of Object.values(this.matchInfo.outputs)) {
+        for (const target of matched) {
+          const item = state.getNode([...this.prefix, ...target.path]).getItem();
+          if (item instanceof PipelineNodeBase)
+            item.setPipelineValidation(this.uuid, controller.output);
+          else
+            reportError('warning', `link:${this.matchInfo.spec.id}`, `pipelineValidator \`to\` target ${item.uuid} is not a pipeline node — skipped`, this.logger, [this.matchInfo.spec.id]);
+        }
+      }
       return;
     }
     for (const [outputAlias, nodesData] of outputsEntries) {
@@ -371,6 +447,22 @@ export class Link {
           }
         }
       }
+    }
+    if (controller instanceof MutationController)
+      checkMutationOverlap(this.matchInfo.spec.id, this.lastPipelineMutations, this.lastGranularMutations);
+  }
+}
+
+function checkMutationOverlap(
+  actionId: string,
+  pipelineMutations?: Array<{path: NodePath}>,
+  granularMutations?: Array<{path: NodePath}>,
+) {
+  const all: NodePath[] = [...(pipelineMutations ?? []).map((m) => m.path), ...(granularMutations ?? []).map((m) => m.path)];
+  for (let i = 0; i < all.length; i++) {
+    for (let j = i + 1; j < all.length; j++) {
+      if (BaseTree.isNodeChildOrEq(all[i], all[j]) || BaseTree.isNodeChildOrEq(all[j], all[i]))
+        throw new Error(`Handler for action ${actionId}: mutations on overlapping subtrees (${JSON.stringify(all[i])} and ${JSON.stringify(all[j])}). Combine into a single setPipelineState at the common ancestor, or operate only at the inner level.`);
     }
   }
 }
