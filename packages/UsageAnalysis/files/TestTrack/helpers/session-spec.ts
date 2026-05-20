@@ -37,6 +37,12 @@ import {logoutAndLoginAs} from './session';
 
 test.use({...specTestOptions, navigationTimeout: 180_000});
 
+// Skip unless explicitly opted in: this test requires a human typing the
+// password in the visible browser window. Headless `grok test` / CI runs would
+// hang on the password input for the full 15-min timeout. Run via:
+//   HEADED_MANUAL=1 npx playwright test helpers/session-spec.ts --headed
+test.skip(!process.env.HEADED_MANUAL, 'requires HEADED_MANUAL=1 + --headed (manual password entry)');
+
 test('helpers.playwright.session — logoutAndLoginAs end-to-end', async ({page}) => {
   // Long timeout — accommodates manual password entry windows (5 min each).
   test.setTimeout(900_000);
