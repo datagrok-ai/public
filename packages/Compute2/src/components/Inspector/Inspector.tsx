@@ -40,43 +40,47 @@ function summarizeFuncCallParams(params: DG.FuncCallParam[]): Record<string, any
   return Object.fromEntries(params.map((p) => [p.name, summarizeValue(p.value)]));
 }
 
-/** Check if an array looks like LinkIOParsed[] (has name + segments on first element). */
-function isLinkIOParsedArray(v: any): v is LinkIOParsed[] {
-  return Array.isArray(v) && v.length > 0
-    && typeof v[0]?.name === 'string'
-    && Array.isArray(v[0]?.segments);
+function isLinkSelectorSegment(v: any): v is LinkSelectorSegment {
+  return v && v.type === 'selector' && Array.isArray(v.ids);
 }
 
-/** Reconstruct a spec string from a parsed LinkIOParsed object.
- *  e.g. {name: "in1", segments: [{selector: "first", ids: ["stepAdd"]}, ...]} → "in1:stepAdd/res" */
-function linkIOToString(io: LinkIOParsed): string {
-  const parts: string[] = [io.name];
-  if (io.flags?.length)
-    parts[0] += `(${io.flags.join(',')})`;
-  for (const seg of io.segments) {
-    if (seg.type === 'tag') {
-      const t = seg as LinkTagSegment;
-      const ref = t.ref ? `@${t.ref},` : '';
-      parts.push(`#${t.selector}(${ref}${t.tags.join('&')})`);
-    } else {
-      const s = seg as LinkSelectorSegment;
-      if (s.selector === 'first' && !s.ref && s.stopIds.length === 0)
-        parts.push(s.ids.join('|'));
-      else {
-        const ref = s.ref ? `@${s.ref},` : '';
-        const stop = s.stopIds.length ? `,${s.stopIds.join('|')}` : '';
-        parts.push(`${s.selector}(${ref}${s.ids.join('|')}${stop})`);
-      }
-    }
-  }
-  return parts[0] + (parts.length > 1 ? ':' + parts.slice(1).join('/') : '');
+function isLinkTagSegment(v: any): v is LinkTagSegment {
+  return v && v.type === 'tag' && Array.isArray(v.tags);
 }
 
-/** Convert LinkIOParsed[] to readable spec strings. */
-function linkIOArrayToStrings(ios: LinkIOParsed[] | undefined): string | string[] | undefined {
-  if (!ios || ios.length === 0) return undefined;
-  const strs = ios.map(linkIOToString);
-  return strs.length === 1 ? strs[0] : strs;
+function isLinkIOParsed(v: any): v is LinkIOParsed {
+  return v && typeof v.name === 'string' && Array.isArray(v.segments)
+    && !v.type;
+}
+
+/** Compact one-line rendering of a selector segment. Lossless. */
+function prettySegment(s: LinkSelectorSegment): string {
+  const ids = s.ids.join('|');
+  if (s.selector === 'first' && !s.ref && s.stopIds.length === 0)
+    return ids || '*';
+  const parts: string[] = [];
+  if (s.ref) parts.push(`@${s.ref}`);
+  if (ids) parts.push(ids);
+  if (s.stopIds.length) parts.push(s.stopIds.join('|'));
+  return `${s.selector}(${parts.join(', ')})`;
+}
+
+function prettyTagSegment(s: LinkTagSegment): string {
+  const ref = s.ref ? `@${s.ref},` : '';
+  return `#${s.selector}(${ref}${s.tags.join('&')})`;
+}
+
+function prettyAnySegment(s: LinkSelectorSegment | LinkTagSegment): string {
+  return s.type === 'tag' ? prettyTagSegment(s) : prettySegment(s);
+}
+
+/** Compact rendering of a parsed link IO; surfaces `templateName` when present. */
+function prettyLinkIO(io: LinkIOParsed): Record<string, any> {
+  const out: Record<string, any> = {name: io.name};
+  if (io.flags?.length) out.flags = io.flags;
+  if (io.templateName !== undefined) out.templateName = io.templateName;
+  out.path = io.segments.map(prettyAnySegment);
+  return out;
 }
 
 /** Convert a MatchedNodePaths record to readable path strings. */
@@ -89,6 +93,9 @@ function matchedPathsToStrings(paths: Record<string, MatchedNodePaths>): Record<
 
 /** JSON replacer that handles all Datagrok and reactive types. */
 function dgReplacer(_key: any, value: any): any {
+  if (isLinkIOParsed(value)) return prettyLinkIO(value);
+  if (isLinkSelectorSegment(value)) return prettySegment(value);
+  if (isLinkTagSegment(value)) return prettyTagSegment(value);
   if (value instanceof DG.FuncCall) {
     return {
       '#': 'FuncCall',
@@ -113,16 +120,15 @@ function dgReplacer(_key: any, value: any): any {
   return value;
 }
 
-/** Post-process config JSON to reconstruct link spec strings and IO descriptions. */
+/** Post-process config JSON to compact IO descriptions. Parsed link IOs are
+ *  handled by `dgReplacer` via `prettyLinkIO`, so they fall through here. */
 function humanizeConfig(data: any): any {
   if (data == null || typeof data !== 'object') return data;
   if (Array.isArray(data)) return data.map(humanizeConfig);
 
   const result: Record<string, any> = {};
   for (const [k, v] of Object.entries(data)) {
-    if ((k === 'from' || k === 'to' || k === 'not' || k === 'base' || k === 'actions') && isLinkIOParsedArray(v)) {
-      result[k] = linkIOArrayToStrings(v);
-    } else if (k === 'io' && Array.isArray(v) && v.length > 0 && v[0]?.id && v[0]?.direction) {
+    if (k === 'io' && Array.isArray(v) && v.length > 0 && v[0]?.id && v[0]?.direction) {
       result[k] = v.map((item: any) => {
         const nullable = item.nullable ? '?' : '';
         return `${item.direction} ${item.id}${nullable}: ${item.type}`;
@@ -212,8 +218,8 @@ function buildLinksData(links: LinksData[], config: PipelineConfigurationProcess
 
     const fromParsed = matchSpec?.from ?? spec?.from;
     const toParsed = matchSpec?.to ?? spec?.to;
-    if (fromParsed) entry.from = linkIOArrayToStrings(fromParsed);
-    if (toParsed) entry.to = linkIOArrayToStrings(toParsed);
+    if (fromParsed) entry.from = fromParsed;
+    if (toParsed) entry.to = toParsed;
 
     if (spec?.defaultRestrictions) entry.defaultRestrictions = spec.defaultRestrictions;
     if (spec?.handler) entry.handler = '#Handler';
