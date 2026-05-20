@@ -172,6 +172,27 @@ export interface PickColumnOptions {
    * JS-API fallback safety net described in scatter-plot-spec.ts:25-47.
    */
   propName?: string;
+  /**
+   * How to wait for the popup to open after the trigger mousedown:
+   *   - `'sleep'` (default) — fixed 500ms wait. Matches the original
+   *     scatter-plot-spec.ts:25-47 pattern.
+   *   - `'backdrop'` — poll for `.d4-column-selector-backdrop` (up to 3s).
+   *     Matches density-plot-spec.ts:29-38. More reliable when the popup
+   *     init is slow, but the backdrop element doesn't render on every
+   *     build/widget — fall back to sleep if it doesn't appear.
+   *   - `'either'` — race backdrop (3s) vs 500ms sleep, whichever first.
+   *     Robust default for new call sites that don't know which strategy
+   *     fits.
+   */
+  popupWaitStrategy?: 'sleep' | 'backdrop' | 'either';
+  /**
+   * Optional scope for the column-combobox lookup. When provided, the
+   * helper restricts the `[name="div-column-combobox-<suffix>"]` query
+   * to descendants of this CSS selector — e.g. `[name="viewer-Density-plot"]`
+   * for density-plot, where the same combobox suffix can appear elsewhere
+   * on the page (gear panel, second viewer instance, etc).
+   */
+  scopeSelector?: string;
 }
 
 /**
@@ -192,16 +213,32 @@ export interface PickColumnOptions {
  */
 export async function pickColumnViaSelector(page: Page, opts: PickColumnOptions): Promise<void> {
   const selectorName = `div-column-combobox-${opts.comboboxSuffix}`;
+  const scope = opts.scopeSelector ?? null;
+  const strategy = opts.popupWaitStrategy ?? 'sleep';
   // Open the popup. Mousedown on .d4-column-selector-column is the proven
   // trigger — direct click or focus does NOT reliably open the popup.
-  await page.evaluate((name) => {
+  await page.evaluate(({name, sc}) => {
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const sel = document.querySelector(`[name="${name}"]`);
+    const root: Document | Element = sc
+      ? (document.querySelector(sc) as Element | null) ?? document
+      : document;
+    const sel = root.querySelector(`[name="${name}"]`);
     if (!sel) return;
     const colLabel = sel.querySelector('.d4-column-selector-column');
     (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, selectorName);
-  await page.waitForTimeout(500);
+  }, {name: selectorName, sc: scope});
+  if (strategy === 'sleep') {
+    await page.waitForTimeout(500);
+  } else if (strategy === 'backdrop') {
+    await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+      null, {timeout: 3000}).catch(() => {});
+  } else { // 'either' — race
+    await Promise.race([
+      page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+        null, {timeout: 3000}).catch(() => {}),
+      page.waitForTimeout(500),
+    ]);
+  }
   // Type the column name. First key separated by a 100ms wait — the popup
   // focuses its search input asynchronously via Timer.run and the first
   // letter sometimes drops if both keys land in the same tick.
