@@ -277,7 +277,7 @@ export const Inspector = Vue.defineComponent({
       }).map((l) => ({
         value: l.id,
         label: l.id,
-        detail: l.type ?? 'data',
+        detail: l.isAction ? `${l.type ?? 'data'} (action)` : (l.type ?? 'data'),
       }));
     });
 
