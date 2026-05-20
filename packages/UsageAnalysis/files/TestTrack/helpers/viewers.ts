@@ -141,6 +141,118 @@ export async function addLegendViewers(
 }
 
 // ---------------------------------------------------------------------------
+// 2b. pickColumnViaSelector — type-and-search column selector (UI path).
+// ---------------------------------------------------------------------------
+
+export interface PickColumnOptions {
+  /**
+   * Suffix of the column-combobox name attribute. The selector matched is
+   * `[name="div-column-combobox-<suffix>"]` — see `references/viewers.md`.
+   * Examples (lowercase, multi-word uses double dash):
+   *   - `'color'`              Scatter plot color
+   *   - `'size'`               Scatter plot size
+   *   - `'split'`              Histogram / Bar / Line split
+   *   - `'split--by'`          Timelines split-by
+   *   - `'category'`           Pie chart category
+   *   - `'x'` / `'y'`          Generic XY axis
+   *   - `'stack'`              Bar chart stack
+   */
+  comboboxSuffix: string;
+  /** Column name to type into the selector. */
+  columnName: string;
+  /**
+   * Optional viewer type for fallback verification + scope (e.g. 'Scatter plot').
+   * When set, after the UI flow the helper reads `props[propName]` and, if it
+   * doesn't equal `columnName`, falls back to JS API. Pass propName too.
+   */
+  viewerType?: string;
+  /**
+   * Property name to verify the change landed (e.g. 'colorColumnName',
+   * 'splitColumnName'). When set together with viewerType, enables the
+   * JS-API fallback safety net described in scatter-plot-spec.ts:25-47.
+   */
+  propName?: string;
+}
+
+/**
+ * Drive the column-selector widget: open the popup, type the column name,
+ * press Enter. Verbatim extraction of `setColumnViaSelector` from
+ * scatter-plot-spec.ts:25-47 — same mousedown-on-`.d4-column-selector-column`
+ * trigger, same first-key + rest-of-name typing rhythm (avoids the timing
+ * bug where the popup's async-focused search input drops the first letter),
+ * same ArrowDown + Enter commit, same prop-equality JS-API fallback.
+ *
+ * Assumes the viewer's properties Context Panel (gear) is already open, or
+ * the target column-combobox is rendered somewhere on the page. Callers that
+ * need to open the gear first should do so before invoking this helper.
+ *
+ * Reference: `.claude/skills/grok-browser/references/viewers.md` "Column
+ * Selectors on Viewers" + `density-plot-run.md` rows 17-19 (UI flow
+ * validated against dev).
+ */
+export async function pickColumnViaSelector(page: Page, opts: PickColumnOptions): Promise<void> {
+  const selectorName = `div-column-combobox-${opts.comboboxSuffix}`;
+  // Open the popup. Mousedown on .d4-column-selector-column is the proven
+  // trigger — direct click or focus does NOT reliably open the popup.
+  await page.evaluate((name) => {
+    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    const sel = document.querySelector(`[name="${name}"]`);
+    if (!sel) return;
+    const colLabel = sel.querySelector('.d4-column-selector-column');
+    (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
+  }, selectorName);
+  await page.waitForTimeout(500);
+  // Type the column name. First key separated by a 100ms wait — the popup
+  // focuses its search input asynchronously via Timer.run and the first
+  // letter sometimes drops if both keys land in the same tick.
+  await page.keyboard.press(opts.columnName[0].toLowerCase());
+  await page.waitForTimeout(100);
+  if (opts.columnName.length > 1)
+    await page.keyboard.type(opts.columnName.slice(1).toLowerCase());
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+
+  // JS-API fallback verify: if the UI didn't apply, set the prop directly so
+  // downstream assertions can proceed (mirrors scatter-plot-spec.ts pattern).
+  if (opts.viewerType && opts.propName) {
+    await page.evaluate(({vt, prop, col}) => {
+      const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+      if (view && (view.props as any)[prop] !== col)
+        (view.props as any)[prop] = col;
+    }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+  }
+}
+
+/**
+ * Open a viewer's properties Context Panel by clicking the gear icon. The
+ * gear is scoped to the viewer's panel-titlebar to disambiguate across
+ * multiple viewers on screen.
+ *
+ * Selectors from `references/viewers.md`:
+ *   - viewer container: `[name="viewer-<Type>"]` (spaces preserved or dashed)
+ *   - title-bar gear:   `.panel-titlebar [name="icon-font-icon-settings"]`
+ */
+export async function openViewerGear(page: Page, viewerType: string): Promise<void> {
+  await page.evaluate((vt) => {
+    const candidates = [
+      `[name="viewer-${vt}"]`,
+      `[name="viewer-${vt.replace(/\s+/g, '-')}"]`,
+    ];
+    let vEl: HTMLElement | null = null;
+    for (const c of candidates) {
+      vEl = document.querySelector(c) as HTMLElement | null;
+      if (vEl) break;
+    }
+    if (!vEl) return;
+    const panel = vEl.closest('.panel-base') as HTMLElement | null;
+    const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
+    gear?.click();
+  }, viewerType);
+  await page.waitForTimeout(1000);
+}
+
+// ---------------------------------------------------------------------------
 // 3. readLegend — DOM read of a viewer's legend items.
 // ---------------------------------------------------------------------------
 

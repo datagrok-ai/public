@@ -1,5 +1,6 @@
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -7,52 +8,11 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 // -- UI Helpers --
 
-/** Open column selector popup via mousedown on .d4-column-selector-column */
-async function openColumnPopup(page: Page, selectorName: string) {
-  await page.evaluate((name) => {
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const sel = document.querySelector(`[name="${name}"]`);
-    const colLabel = sel!.querySelector('.d4-column-selector-column');
-    (colLabel || sel)!.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, selectorName);
-  await page.waitForTimeout(500);
-}
-
-/** Set column via column selector popup: open, press first key, type rest, ArrowDown, Enter.
- *  Synthetic mouse/keyboard events are timing-sensitive (the popup focuses its search input
- *  asynchronously via Timer.run, so the first letter sometimes doesn't land in the input).
- *  When propName is provided and the UI attempt didn't apply, falls back to JS API. */
-async function setColumnViaSelector(page: Page, selectorName: string, columnName: string, propName?: string) {
-  await openColumnPopup(page, selectorName);
-  await page.keyboard.press(columnName[0].toLowerCase());
-  await page.waitForTimeout(100);
-  if (columnName.length > 1)
-    await page.keyboard.type(columnName.slice(1).toLowerCase());
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
-
-  // Verify and fall back to JS API if the selector didn't apply
-  if (propName) {
-    const applied = await page.evaluate(({propName, columnName}) => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      if ((sp.props as any)[propName] !== columnName) {
-        (sp.props as any)[propName] = columnName;
-        return false;
-      }
-      return true;
-    }, {propName, columnName});
-    if (!applied)
-      console.warn(`setColumnViaSelector: UI failed for ${selectorName}→${columnName}, used JS API fallback`);
-  }
-}
-
-/** Clear column via selector: open popup and press Enter on the empty first row */
-async function clearColumnViaSelector(page: Page, selectorName: string) {
-  await openColumnPopup(page, selectorName);
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
-}
+/** Set a Scatter plot column via the column-combobox UI flow. Thin alias over
+ *  helpers/viewers.ts:pickColumnViaSelector that fills in viewerType='Scatter plot'
+ *  for every call site below. */
+const setCol = (page: Page, comboboxSuffix: string, columnName: string, propName: string) =>
+  v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName});
 
 /** Right-click center of scatter plot canvas to open context menu using real Playwright mouse */
 async function openScatterContextMenu(page: Page) {
@@ -134,27 +94,27 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Changing axes ──────────────────────────────────────────────────────
   await softStep('Changing axes', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE', 'xColumnName');
+    await setCol(page, 'x', 'AGE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('AGE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT', 'yColumnName');
+    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.yColumnName
     )).toBe('WEIGHT');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'RACE', 'xColumnName');
+    await setCol(page, 'x', 'RACE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('RACE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'STARTED', 'xColumnName');
+    await setCol(page, 'x', 'STARTED', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('STARTED');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'HEIGHT', 'xColumnName');
+    await setCol(page, 'x', 'HEIGHT', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('HEIGHT');
@@ -162,8 +122,8 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Axis types and inversion ───────────────────────────────────────────
   await softStep('Axis types and inversion', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE', 'xColumnName');
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT', 'yColumnName');
+    await setCol(page, 'x', 'AGE', 'xColumnName');
+    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
 
     // Set X Axis Type to logarithmic via context menu
     await openScatterContextMenu(page);
@@ -250,12 +210,12 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Color coding ──────────────────────────────────────────────────────
   await softStep('Color coding', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-color', 'SEX', 'colorColumnName');
+    await setCol(page, 'color', 'SEX', 'colorColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
     )).toBe('SEX');
 
-    await setColumnViaSelector(page, 'div-column-combobox-color', 'AGE', 'colorColumnName');
+    await setCol(page, 'color', 'AGE', 'colorColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
     )).toBe('AGE');

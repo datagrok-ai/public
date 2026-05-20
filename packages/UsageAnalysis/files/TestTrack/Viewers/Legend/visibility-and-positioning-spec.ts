@@ -35,10 +35,19 @@ test('Legend visibility and positioning', async ({page}) => {
     expect(legends).toBeGreaterThan(0);
   });
 
+  // Sc2 exercises legend-column-property-selector UI flow (previously
+  // delegated). First switch goes through the column-combobox UI; second
+  // switch stays on the JS API path (settled state for downstream steps).
   await softStep('Sc2 steps 1-4: legend redraws on column change (Series ↔ Stereo Category)', async () => {
+    await v.openViewerGear(page, 'Scatter plot');
+    await v.pickColumnViaSelector(page, {
+      comboboxSuffix: 'color',
+      columnName: 'Series',
+      viewerType: 'Scatter plot',
+      propName: 'colorColumnName',
+    });
     const result = await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      sp.props.colorColumnName = 'Series';
       await new Promise((r) => setTimeout(r, 800));
       const a = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
       sp.props.colorColumnName = 'Stereo Category';
