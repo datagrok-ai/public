@@ -151,6 +151,24 @@ category('ComputeUtils: Driver template expansion config-time', async () => {
     expectDeepEqual(links[0].to.map((io) => io.name), ['out_a', 'out_b']);
   });
 
+  test('Error: base with more than one entry', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        base: ['base:expand(step1)', 'base:expand(step2)'],
+        from: 'in:same(@base)/res',
+        to: 'out:same(@base)/a',
+      }],
+    };
+    await expectThrowsAsync(() => getProcessedConfig(config), /base accepts at most one entry/);
+  });
+
   test('Error: unknown nqName', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',

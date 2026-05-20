@@ -219,6 +219,8 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   const from = expandDeferredIOs(processLink(link.from ?? [], 'input'), link.id);
   const to = expandDeferredIOs(processLink(link.to ?? [], 'output'), link.id);
   const base = processLink(link.base ?? [], 'base');
+  if (base.length > 1)
+    throw new Error(`Link ${link.id}: base accepts at most one entry, got ${base.length}.`);
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
   const linkType = (link as any).type;
