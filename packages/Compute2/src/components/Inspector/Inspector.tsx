@@ -303,8 +303,8 @@ export const Inspector = Vue.defineComponent({
 
     // --- Filtered data ---
 
-    const handleLinkClicked = (linkId: string) => {
-      linksFilterSelection.value = [linkId];
+    const handleLinkClicked = (linkIds: string[]) => {
+      linksFilterSelection.value = [...linkIds];
       selectedTab.value = 'Links';
     };
 
