@@ -8,9 +8,11 @@ import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNode
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler} from '../utils';
-import {defaultLinkHandler} from './default-handler';
+import {callHandler, indexFromEnd} from '../utils';
+import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
+import {TemplateInfo} from '../RuntimeControllers';
+import {LinkIOParsed, LinkSelectorSegment} from '../config/LinkSpec';
 import {FuncCallAdapter, FuncCallMockAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
@@ -82,8 +84,10 @@ export class Link {
     if (this.isWired)
       return;
 
-    const inputNames = Object.keys(this.matchInfo.inputs);
-    const outputNames = Object.keys(this.matchInfo.outputs);
+    const {slots: inputSlots, templates: inputTemplates} =
+      this.buildSlotsAndTemplates(this.matchInfo.spec.from ?? [], this.matchInfo.inputs);
+    const {slots: outputSlots, templates: outputTemplates} =
+      this.buildSlotsAndTemplates(this.matchInfo.spec.to ?? [], this.matchInfo.outputs);
     const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
     const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
     const callInputs = new Set(
@@ -119,7 +123,7 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, callInputs, inputNames, outputNames, actions, baseNode, scope, state).pipe(
+          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, baseNode, scope, state).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
@@ -213,14 +217,16 @@ export class Link {
     inputSet: Set<string>,
     outputSet: Set<string>,
     callInputs: Set<string>,
-    inputNames: string[],
-    outputNames: string[],
+    inputSlots: Slot[],
+    outputSlots: Slot[],
+    inputTemplates: TemplateInfo[],
+    outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, actions, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -242,7 +248,7 @@ export class Link {
       );
     } else if (!this.isValidator && !this.isMeta) {
       return defer(() => of(
-        defaultLinkHandler(controller as LinkController, inputNames, outputNames, this.matchInfo.spec.defaultRestrictions),
+        defaultLinkHandler(controller as LinkController, inputSlots, outputSlots, this.matchInfo.spec.defaultRestrictions),
       ).pipe(mapTo(controller)));
     }
 
@@ -265,12 +271,14 @@ export class Link {
     inputSet: Set<string>,
     outputSet: Set<string>,
     callInputs: Set<string>,
+    inputTemplates: TemplateInfo[],
+    outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope};
+    const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates};
 
     if (this.isValidator)
       return new ValidatorController({...baseArgs, actions, baseNode});
@@ -304,6 +312,33 @@ export class Link {
     if (!state)
       throw new Error(`Link ${this.matchInfo.spec.id}: pipeline validator has no tree state`);
     return toStateRec(state.getNode(this.prefix), {skipFuncCalls: true}) as PipelineOutline;
+  }
+
+  private buildSlotsAndTemplates(
+    specSide: LinkIOParsed[],
+    matchSide: Record<string, MatchedNodePaths>,
+  ): {slots: Slot[], templates: TemplateInfo[]} {
+    const slots: Slot[] = [];
+    const templates: TemplateInfo[] = [];
+    const templateById = new Map<string | number, TemplateInfo>();
+    for (const io of specSide) {
+      if (matchSide[io.name] == null) continue;
+      const tplId = io.templateName;
+      if (tplId != null) {
+        let tpl = templateById.get(tplId);
+        if (!tpl) {
+          tpl = {name: tplId, ios: []};
+          templateById.set(tplId, tpl);
+          templates.push(tpl);
+          slots.push({kind: 'template', name: tplId});
+        }
+        const lastSeg = indexFromEnd(io.segments) as LinkSelectorSegment;
+        tpl.ios.push({ioName: io.name, scriptIoId: lastSeg.ids[0]});
+      } else {
+        slots.push({kind: 'bare', name: io.name});
+      }
+    }
+    return {slots, templates};
   }
 
   private getOrderedIO(ioData: Record<string, MatchedNodePaths>) {

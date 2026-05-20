@@ -184,58 +184,29 @@ name — never in the path leading to the script. The expanded query name is
 the template name concatenated with the IO name (`in_output1`, `in_output2`,
 …); use `_(template)` if you want no prefix.
 
-#### Wildcard IO selectors: `outputs(nqName)` / `inputs(nqName)`
+#### Wildcard IO selectors: `outputs(nqName)` / `inputs(nqName)` {#wildcard-selectors}
 
-When source-output and target-input sets share names, listing them twice
-is redundant. A `(template)` query can use `inputs(...)` or `outputs(...)`
-as its last segment to pull the IO list from a script's declared
-inputs/outputs. Expansion happens at **config-processing time**: the
-deferred entry is replaced by N concrete bare-list entries before any
-runtime matching runs.
-
-The first argument is the script's **nqName** (package-qualified function
-name, e.g. `MyPkg:MyScript`). An optional second argument is a
-pipe-separated exclusion list.
+Alias for the bare-list form. The argument is the script's `nqName`; an
+optional pipe-separated second argument excludes IOs. Expansion happens
+at config-processing time.
 
 ```
-{
-  from: "in_(template):script1/outputs(MyPkg:Script1)",
-  to:   "out_(template):script2/inputs(MyPkg:Script2)"
-}
+from: "in_(template):script1/outputs(MyPkg:Script1)"
+to:   "out_(template):script2/inputs(MyPkg:Script2, debug|verbose)"
 ```
 
-With exclusions:
+`outputs(...)` always pulls outputs, `inputs(...)` always pulls inputs,
+regardless of which side it appears on.
 
-```
-from: "in_(template):script1/outputs(MyPkg:Script1, debug|verbose)"
-to:   "out_(template):script2/inputs(MyPkg:Script2, opts)"
-```
+**`_(template)`.** No prefix — expanded link-io names equal the script
+IO ids verbatim (`a`, `b` instead of `in_a`, `in_b`). The slot id is
+then the operator's 0-based index on its side, so multiple anonymous
+templates stay addressable without colliding with string-named ones.
 
-`outputs(...)` always pulls the script's outputs and `inputs(...)` always
-pulls its inputs, regardless of whether the selector appears in `from` or
-`to`. There is no parse-time direction check.
-
-**Pairing is purely positional and uses no name check.** After expansion,
-the deferred entry becomes N bare-list entries, in the order the script
-declared its IOs. The default handler then pairs the i-th expanded source
-entry with the i-th expanded target entry — names on the two sides are
-not cross-checked. Concretely:
-
-- Source and target IOs share names AND match the declaration order →
-  pairing is correct.
-- Source and target IOs share names but declaration order differs → the
-  link **silently miswires** (e.g. source `a` ends up at target `b`).
-- Source and target IOs don't share names at all → the link still writes
-  positionally, transferring values into target slots that have no
-  semantic relationship to the source.
-
-If you can't guarantee declaration-order alignment, use the explicit
-bare-list template form (`script1/a|b|c` → `script2/x|y|z`), which gives
-you full control over the pairing.
-
-**Custom handlers.** No contract change — custom handlers receive
-expansion arrays in the script's declared IO order. Existing custom
-handlers continue to work unchanged.
+How template slots propagate at runtime is covered under the
+[default handler](./link-types#default-handler); the controller
+primitives custom handlers can use are listed under
+[Data links](./link-types#data-links).
 
 ---
 

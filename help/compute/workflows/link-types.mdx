@@ -197,13 +197,57 @@ Receives an output query name, state, and an optional restriction. Sets
 all matched outputs to the specified state with the restriction. For
 more details about restriction see [Consistency](#consistency).
 
+#### `getInputTemplates` / `getOutputTemplates`
+
+```
+getInputTemplates(): TemplateInfo[];
+getOutputTemplates(): TemplateInfo[];
+
+type TemplateInfo = {
+  name: string | number;
+  ios: {ioName: string, scriptIoId: string}[];
+};
+```
+
+Enumerate the template slots produced by [`(template)` wildcard
+selectors](./link-query-language#wildcard-selectors) on each side, in
+spec order. Each entry pairs the link-io name with the underlying script
+IO id. Returns `[]` when no wildcard selectors are used.
+
+#### `propagateTemplatePair`
+
+```
+propagateTemplatePair(
+  inputTemplate: string | number,
+  outputTemplate: string | number,
+  defaultRestrictions?: Record<string, RestrictionType> | RestrictionType,
+): void;
+```
+
+Name-matches a single (input-template, output-template) pair and runs
+`getFirst` → `setAll` for each matched script IO id. Unmatched ids on
+either side are silently dropped. Throws if either name is not a known
+template. Used by the [default handler](#default-handler) for the
+template ↔ template case; available to custom handlers that want the
+same primitive.
+
 
 ### Default handler
 
-For [data links](#data-links) it is possible to omit `hander` and use
-a default one. For each [LQL](./link-query-language) input query the first matched input is
-passed to the corresponding by order LQL output. It is also possible
-to configure restrictions, via
+For [data links](#data-links) it is possible to omit `handler` and use
+a default one.
+
+Each top-level entry in `from`/`to` is one *slot*. The default handler
+pairs slots by index. For each pair:
+
+- **bare ↔ bare**: the first matched input is passed to the
+  corresponding output, in declaration order. This is the original
+  behavior.
+- **template ↔ template**: when both slots come from
+  [`(template)` wildcard selectors](./link-query-language#wildcard-selectors),
+  the handler matches their IOs by script IO name (not position) and
+  silently drops anything unique to one side.
+- **template ↔ bare**: throws — flip the order or split the link.
 
 #### `defaultRestrictions`
 

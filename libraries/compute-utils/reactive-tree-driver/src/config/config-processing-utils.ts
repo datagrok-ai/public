@@ -258,9 +258,16 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
 // ---------------------------------------------------------------------------
 
 function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
+  const seenTemplateNames = new Set<string | number>();
+  let anonIdx = 0;
   return ioList.flatMap((io) => {
     const lastSeg = indexFromEnd(io.segments);
     if (!lastSeg || lastSeg.type !== 'selector' || !lastSeg.ioExpand) return [io];
+    const isAnonymous = io.name === '_';
+    const templateName: string | number = isAnonymous ? anonIdx++ : io.name;
+    if (!isAnonymous && seenTemplateNames.has(templateName))
+      throw new Error(`Link ${linkId}: multiple (template) operators on the same side use the link-io name "${io.name}". Give them distinct prefixes (e.g. a_(template), b_(template)) so they can be addressed individually.`);
+    seenTemplateNames.add(templateName);
     const direction: 'input' | 'output' = lastSeg.ioExpand === 'inputs' ? 'input' : 'output';
     const excludeSet = new Set(lastSeg.excludeIds ?? []);
     let targetIO: FuncCallIODescription[];
@@ -272,9 +279,9 @@ function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed
     return targetIO
       .filter((d) => d.direction === direction && !excludeSet.has(d.id))
       .map((d) => {
-        const nname = io.name === '_' ? d.id : io.name + d.id;
+        const nname = isAnonymous ? d.id : io.name + d.id;
         const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};
-        return {name: nname, segments: [...io.segments.slice(0, -1), nlastSegment], flags: io.flags};
+        return {name: nname, segments: [...io.segments.slice(0, -1), nlastSegment], flags: io.flags, templateName};
       });
   });
 }

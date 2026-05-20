@@ -203,6 +203,221 @@ category('ComputeUtils: Driver template expansion runtime', async () => {
     });
   });
 
+  test('Marker: templateName is the prefix string for prefixed templates; absent on bare entries', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesB'},
+      ],
+      links: [{
+        id: 'link1',
+        from: ['in_(template):step1/outputs(LibTests:TestIONamesA)', 'bare_:step1/x'],
+        to: ['out_(template):step2/inputs(LibTests:TestIONamesB)', 'plain_:step2/x'],
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    const link = (pconf as PipelineConfigurationStaticProcessed).links![0];
+    for (const io of link.from)
+      expectDeepEqual((io as any).templateName, io.name.startsWith('in_') ? 'in_' : undefined);
+    for (const io of link.to)
+      expectDeepEqual((io as any).templateName, io.name.startsWith('out_') ? 'out_' : undefined);
+  });
+
+  test('Name matching propagates regardless of target IO declaration order', async () => {
+    // TestIONamesA outputs [x, y]; TestIONamesBReversed inputs [y, x].
+    // Positional pairing would miswire (x→y); name matching pairs x→x.
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesBReversed'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in_(template):step1/outputs(LibTests:TestIONamesA)',
+        to: 'out_(template):step2/inputs(LibTests:TestIONamesBReversed)',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('x', 11);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('x'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 11});
+    });
+  });
+
+  test('Unmatched script IOs inside a template are dropped', async () => {
+    // TestIONamesAExtra outputs [x, y, z]; TestIONamesB inputs [x, y]. z is dropped.
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesAExtra'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesB'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in_(template):step1/outputs(LibTests:TestIONamesAExtra)',
+        to: 'out_(template):step2/inputs(LibTests:TestIONamesB)',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('y', 22);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('y'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 22});
+    });
+  });
+
+  test('Interleaved bare and template slots', async () => {
+    // bare slot pair (a→a) plus template slot pair (x,y matched by name).
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesBReversed'},
+      ],
+      links: [{
+        id: 'link1',
+        from: ['seed_:step1/seed', 'in_(template):step1/outputs(LibTests:TestIONamesA)'],
+        to: ['drop_:step2/y', 'out_(template):step2/inputs(LibTests:TestIONamesBReversed)'],
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('x', 7);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('x'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 7});
+    });
+  });
+
+  test('No-op when no templates: bare entries still pair positionally', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in_:step1/res',
+        to: 'out_:step2/a',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('res', 13);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 13});
+    });
+  });
+
+  test('_(template) on source with bare on target: templateName is numeric 0', async () => {
+    // _(template) produces link-io names equal to script IO ids verbatim (x, y) —
+    // no prefix. The slot identity is the numeric index 0, distinct from any
+    // user-typed string template name (grammar identifiers can never be pure digits).
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesB'},
+      ],
+      links: [{
+        id: 'link1',
+        from: '_(template):step1/outputs(LibTests:TestIONamesA)',
+        to: 'plain_:step2/x',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    const link = (pconf as PipelineConfigurationStaticProcessed).links![0];
+    expectDeepEqual(link.from.map((io) => io.name), ['x', 'y']);
+    for (const io of link.from)
+      expectDeepEqual((io as any).templateName, 0);
+    expectDeepEqual((link.to[0] as any).templateName, undefined);
+  });
+
+  test('Two _(template) on the same side index to 0, 1', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesB'},
+      ],
+      links: [{
+        id: 'link1',
+        from: [
+          '_(template):step1/outputs(LibTests:TestIONamesA)',
+          '_(template):step1/inputs(LibTests:TestIONamesA, seed)',
+        ],
+        to: 'out_(template):step2/inputs(LibTests:TestIONamesB)',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    const link = (pconf as PipelineConfigurationStaticProcessed).links![0];
+    // First anonymous template expands TestIONamesA's outputs (x, y); second
+    // expands its inputs minus `seed` (so nothing). The counter increments
+    // per anonymous operator regardless of how many entries it emits.
+    const firstTplNames = link.from.filter((io: any) => io.templateName === 0).map((io) => io.name);
+    expectDeepEqual(firstTplNames, ['x', 'y']);
+    expectDeepEqual(link.from.every((io: any) => io.templateName !== 1), true);
+  });
+
+  test('Repeated non-_ prefix on the same side still throws (manual disambiguation is the right answer)', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestIONamesA'},
+        {id: 'step2', nqName: 'LibTests:TestIONamesB'},
+      ],
+      links: [{
+        id: 'link1',
+        from: [
+          'dup_(template):step1/outputs(LibTests:TestIONamesA)',
+          'dup_(template):step1/inputs(LibTests:TestIONamesA, seed)',
+        ],
+        to: 'out_(template):step2/inputs(LibTests:TestIONamesB)',
+      }],
+    };
+    await expectThrowsAsync(() => getProcessedConfig(config), /distinct prefixes/);
+  });
+
+
   test('Existing bare-list template still pairs by index (regression)', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',

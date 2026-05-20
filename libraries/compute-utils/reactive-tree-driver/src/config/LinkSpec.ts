@@ -71,6 +71,13 @@ export type LinkIOParsed = {
   name: string;
   segments: (LinkSelectorSegment | LinkTagSegment)[];
   flags?: LinkFlags[] | undefined,
+  // Canonical slot id for the controller API (propagateTemplatePair,
+  // getInputTemplates/getOutputTemplates). For prefixed operators
+  // (e.g. `in_(template)`) it is the prefix string `'in_'`. For the
+  // anonymous form `_(template)` it is the 0-based numeric index of the
+  // anonymous operator on its side — using a number prevents any collision
+  // with user-typed prefix strings (grammar identifiers cannot be pure digits).
+  templateName?: string | number;
 }
 
 const nonRefSelectors = ['first', 'last', 'all', 'expand'];

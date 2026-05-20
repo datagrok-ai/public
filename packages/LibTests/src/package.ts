@@ -279,6 +279,21 @@ export async function TestIONamesB(x: number, y: number) {
   return x + y;
 }
 
+//input: double y
+//input: double x
+//output: double res
+export async function TestIONamesBReversed(y: number, x: number) {
+  return x + y;
+}
+
+//input: double seed
+//output: double x
+//output: double y
+//output: double z
+export async function TestIONamesAExtra(seed: number) {
+  return {x: seed, y: seed + 1, z: seed + 2};
+}
+
 //input: object params
 //output: object result
 export async function MockWrapper1(params: any) {
