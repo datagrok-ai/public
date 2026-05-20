@@ -216,10 +216,9 @@ function buildLinksData(links: LinksData[], config: PipelineConfigurationProcess
       isAction: linkData.isAction,
     };
 
-    const fromParsed = matchSpec?.from ?? spec?.from;
-    const toParsed = matchSpec?.to ?? spec?.to;
-    if (fromParsed) entry.from = fromParsed;
-    if (toParsed) entry.to = toParsed;
+    // Raw from/to are intentionally omitted from the Links view — they're
+    // visible in the Config tab (with the same structural pretty-print).
+    // The Links view focuses on resolved wiring via resolvedInputs/Outputs.
 
     if (spec?.defaultRestrictions) entry.defaultRestrictions = spec.defaultRestrictions;
     if (spec?.handler) entry.handler = '#Handler';
