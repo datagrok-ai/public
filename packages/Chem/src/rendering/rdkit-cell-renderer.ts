@@ -379,9 +379,15 @@ M  END
   }
 
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
+    if (!toAtomsOrBonds) return;
+    // Use a Set for O(1) membership checks; the previous .includes() loop was O(n*m).
+    const seen = new Set(toAtomsOrBonds);
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
-      if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
-        toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
+      const item = fromAtomsOrBonds[j];
+      if (!seen.has(item)) {
+        seen.add(item);
+        toAtomsOrBonds.push(item);
+      }
     }
   }
 

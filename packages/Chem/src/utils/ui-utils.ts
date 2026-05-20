@@ -27,7 +27,9 @@ export function addCopyIcon(element: Object | HTMLElement, paneName: string) {
     e.stopImmediatePropagation();
   };
   copyIcon.classList.add('copy-icon');
-  const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
+  // Snapshot to a static array — getElementsByClassName returns a live collection
+  // that would silently reshape if DOM mutations changed class membership during the loop.
+  const accPanes = Array.from(document.getElementsByClassName('d4-accordion-pane-header'));
   for (let i = 0; i < accPanes.length; ++i) {
     if (accPanes[i].innerHTML === paneName) {
       const pane = accPanes[i];

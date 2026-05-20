@@ -36,6 +36,8 @@ class UniChemSource {
   description: string;
 
   static _sources: {[key: number]: UniChemSource} = {};
+  // Name → source lookup built once in refreshSources(), so byName() is O(1).
+  static _byNameIndex: Map<string, UniChemSource> = new Map();
 
   static idNamesChoices: string[] = `actor,atlas,bindingdb,brenda,carotenoiddb,chebi,chembl,chemicalbook,comptox,drugbank,drugcentral,emolecules,fdasrs,gtopdb,hmdb,ibm,inchi,inchi_key,kegg_ligand,lincs,lipidmaps,mcule,metabolights,molport,nih_ncc,nikkaji,nmrshiftdb2,pdb,pharmgkb,pubchem,pubchem_dotf,pubchem_tpharma,recon,rhea,selleck,smiles,surechembl,zinc`.split(',');
 
@@ -95,21 +97,20 @@ class UniChemSource {
   static async refreshSources(): Promise<void> {
     const table = await getOrLoadUnichemSources();
     const rowCount = table.rowCount;
+    this._byNameIndex.clear();
     for (let i = 0; i < rowCount; i++) {
       const id = table.get('src_id', i);
-      this._sources[id] = new UniChemSource(
+      const source = new UniChemSource(
         id, table.get('name', i), table.get('name_long', i), table.get('name_label', i),
         table.get('base_id_url', i), table.get('src_url', i), table.get('description', i),
       );
+      this._sources[id] = source;
+      this._byNameIndex.set(source.name, source);
     }
   }
 
   static byName(name: string): UniChemSource | null {
-    for (const source of Object.values(this._sources)) {
-      if (source.name === name)
-        return source;
-    }
-    return null;
+    return this._byNameIndex.get(name) ?? null;
   }
 }
 

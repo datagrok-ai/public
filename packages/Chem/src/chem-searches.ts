@@ -95,7 +95,8 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
-  const diversities = new Array(limit).fill('');
+  // Pre-allocated to the known length; every slot is written below so no need to .fill('').
+  const diversities = new Array<string>(limit);
 
   for (let i = 0; i < limit; i++)
     diversities[i] = molStringsColumn.get(indexes[diverseIndexes[i]]);
