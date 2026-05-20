@@ -33,7 +33,7 @@ test.use(specTestOptions);
 // listing returned only datetime.csv + excel/ in that folder, but the user
 // confirms ae.csv should be there — readCsv may resolve handler differently
 // from list. If readCsv still fails, fall back to System:AppData/Charts/ae.csv.
-const aePath = 'System:DemoFiles/test/ae.csv';
+const aePath = 'System:AppData/Charts/ae.csv';
 
 test('Timelines viewer — legend filtering regression (GROK-19033)', async ({page}) => {
   test.setTimeout(300_000);
@@ -113,7 +113,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
         // Charts package webpack-lazy-loads — wait ≥3000ms before probing.
         await new Promise((r) => setTimeout(r, 4500));
         const viewerTypes: string[] = [];
-        for (const v of tv.viewers) viewerTypes.push(v.type);
+        for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) viewerTypes.push(v.type);
         const tlRoot = !!document.querySelector('[name="viewer-Timelines"]');
         return {rowCount: df.rowCount, viewerTypes, tlRoot, columns: df.columns.names(), fallbackUsed: true};
       }
@@ -129,7 +129,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
       }
       await new Promise((r) => setTimeout(r, 500));
       const viewerTypes: string[] = [];
-      for (const v of tv.viewers) viewerTypes.push(v.type);
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) viewerTypes.push(v.type);
       const tlRoot = !!document.querySelector('[name="viewer-Timelines"]');
       return {rowCount: df.rowCount, viewerTypes, tlRoot, columns: df.columns.names(), fallbackUsed: false};
     }, aePath);
@@ -155,7 +155,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
       // alternative to props.get during cold-start.
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false, gearClicked: true};
       const safeGet = (n: string) => { try { return timelines.props.get(n); } catch (e) { return null; } };
       const defaultProps = {
@@ -298,7 +298,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Always'});
       await new Promise((r) => setTimeout(r, 1500));
@@ -332,7 +332,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Never'});
       await new Promise((r) => setTimeout(r, 1500));
@@ -365,7 +365,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Auto'});
       await new Promise((r) => setTimeout(r, 1500));
@@ -431,7 +431,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       // timelines-split-by-column-rebind: drive setOptions; the split combobox
       // [name="div-column-combobox-split--by"] should reflect the new value.
@@ -519,7 +519,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
-      for (const v of tv.viewers) if (v.type === 'Timelines') { timelines = v; break; }
+      for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({splitByColumnName: 'USUBJID'});
       await new Promise((r) => setTimeout(r, 1500));

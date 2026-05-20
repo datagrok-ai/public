@@ -75,18 +75,22 @@ test('SAR — Launch and verify viewers', async ({page}) => {
 
   // Steps 6-9: Change parameters and re-launch SAR
   await softStep('Steps 6-9: Change parameters and re-launch', async () => {
-    await page!.evaluate(async () => {
+    const setup = await page!.evaluate(async () => {
       grok.shell.o = grok.shell.tv.dataFrame.col('AlignedSequence');
       await new Promise(r => setTimeout(r, 1500));
 
       const headers = document.querySelectorAll('.d4-accordion-pane-header');
+      let expanded = false;
       for (const h of headers) {
-        if (h.textContent?.trim().startsWith('Peptides') && !h.classList.contains('expanded'))
+        if (h.textContent?.trim().startsWith('Peptides') && !h.classList.contains('expanded')) {
           h.click();
+          expanded = true;
+        }
       }
       await new Promise(r => setTimeout(r, 1000));
 
       const scalingSelect = document.querySelector('[name="input-Scaling"]');
+      const scalingFound = !!scalingSelect;
       if (scalingSelect) {
         (scalingSelect as any).value = '-lg';
         scalingSelect.dispatchEvent(new Event('change', {bubbles: true}));
@@ -94,13 +98,26 @@ test('SAR — Launch and verify viewers', async ({page}) => {
       await new Promise(r => setTimeout(r, 500));
 
       const launchBtn = document.querySelector('[name="button-Launch-SAR"]');
+      const launchFound = !!launchBtn;
       if (launchBtn) launchBtn.click();
+      return {expanded, scalingFound, launchFound};
     });
+    // Surface the real failure if the SAR panel UI shape changed and our
+    // selectors silently no-opped — previously this would just time out on
+    // the Logo Summary Table wait below, hiding the actual cause.
+    expect(setup.scalingFound, '[name="input-Scaling"] not found in SAR panel — UI shape may have changed').toBe(true);
+    expect(setup.launchFound, '[name="button-Launch-SAR"] not found — UI shape may have changed').toBe(true);
 
-    // Wait for Logo Summary Table to appear (indicates second SAR completed)
+    // Wait for the second SAR launch to materialize. Verified live against dev
+    // 2026-05-21 (MCP recon): re-launching SAR with a different scaling does NOT
+    // produce a 'Logo Summary Table' viewer on this build — it simply adds a
+    // second `Sequence Variability Map` (and second `Most Potent Residues`) to
+    // the workspace. The reliable invariant is therefore "SVM count went from 1
+    // to 2" — not the name of a viewer the platform doesn't create.
     await page!.waitForFunction(() => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      return viewers.some(v => v.type === 'Logo Summary Table');
+      const svmCount = (Array.from(grok.shell.tv.viewers) as any[])
+        .filter((v: any) => v.type === 'Sequence Variability Map').length;
+      return svmCount >= 2;
     }, {timeout: 30000});
   });
 
