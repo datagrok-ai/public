@@ -51,32 +51,33 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const savedSketchedMolecule = this.sketchedMolecule;
       sketcher.setMolecule(this.targetMolecule);
 
+      const applySketchedMolecule = (mol: string) => {
+        this.isEditedFromSketcher = true;
+        this.sketchedMolecule = mol;
+        this.gridSelect = false;
+        this.render();
+      };
+
       let liveSub: Subscription | null = null;
       if (this.searchAsYouSketch) {
         liveSub = DG.debounce(sketcher.onChanged, this.sketcherDebounceMs).subscribe(() => {
           const mol = sketcher.getMolFile();
           if (DG.chem.Sketcher.isEmptyMolfile(mol))
             return;
-          this.isEditedFromSketcher = true;
-          this.sketchedMolecule = mol;
-          this.gridSelect = false;
-          this.render();
+          applySketchedMolecule(mol);
         });
       }
 
       const dialog = ui.dialog()
         .add(sketcher.root)
         .onOK(() => {
-          this.isEditedFromSketcher = true;
           const editedMolecule = sketcher.getMolFile();
           if (DG.chem.Sketcher.isEmptyMolfile(editedMolecule)) {
             grok.shell.error(`Empty molecule cannot be used for similarity search`);
+            this.isEditedFromSketcher = true;
             this.sketchedMolecule = savedMolecule;
-          } else {
-            this.sketchedMolecule = editedMolecule;
-            this.gridSelect = false;
-            this.render();
-          }
+          } else
+            applySketchedMolecule(editedMolecule);
         })
         .onCancel(() => {
           this.isEditedFromSketcher = savedIsEditedFromSketcher;
