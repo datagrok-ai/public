@@ -32,12 +32,9 @@ function summarizeDataFrame(df: DG.DataFrame): string {
   return `#DataFrame(${df.rowCount} rows, ${df.columns.length} cols)`;
 }
 
-function summarizeValue(v: any): any {
-  return v instanceof DG.DataFrame ? summarizeDataFrame(v) : v;
-}
-
-function summarizeFuncCallParams(params: DG.FuncCallParam[]): Record<string, any> {
-  return Object.fromEntries(params.map((p) => [p.name, summarizeValue(p.value)]));
+/** Emit IO declarations as [{name, type}] — never reads param values. */
+function summarizeFuncCallIODecls(params: DG.FuncCallParam[]): Array<{name: string, type?: string}> {
+  return params.map((p) => ({name: p.name, type: p.property?.propertyType}));
 }
 
 function isLinkSelectorSegment(v: any): v is LinkSelectorSegment {
@@ -101,8 +98,6 @@ function dgReplacer(_key: any, value: any): any {
       '#': 'FuncCall',
       id: value.id,
       func: value.func?.nqName,
-      inputs: summarizeFuncCallParams([...value.inputParams.values()]),
-      outputs: summarizeFuncCallParams([...value.outputParams.values()]),
     };
   }
   if (value instanceof DG.Func)
@@ -120,8 +115,10 @@ function dgReplacer(_key: any, value: any): any {
   return value;
 }
 
-/** Post-process config JSON to compact IO descriptions. Parsed link IOs are
- *  handled by `dgReplacer` via `prettyLinkIO`, so they fall through here. */
+/** Post-process config JSON. Splits the `io` array into `inputs` and
+ *  `outputs` (each `[{name, type, nullable?}]`) so the shape matches the
+ *  Tree State view. Parsed link IOs are handled by `dgReplacer` via
+ *  `prettyLinkIO`, so they fall through here. */
 function humanizeConfig(data: any): any {
   if (data == null || typeof data !== 'object') return data;
   if (Array.isArray(data)) return data.map(humanizeConfig);
@@ -129,10 +126,15 @@ function humanizeConfig(data: any): any {
   const result: Record<string, any> = {};
   for (const [k, v] of Object.entries(data)) {
     if (k === 'io' && Array.isArray(v) && v.length > 0 && v[0]?.id && v[0]?.direction) {
-      result[k] = v.map((item: any) => {
-        const nullable = item.nullable ? '?' : '';
-        return `${item.direction} ${item.id}${nullable}: ${item.type}`;
-      });
+      const inputs: any[] = [];
+      const outputs: any[] = [];
+      for (const item of v as any[]) {
+        const decl: Record<string, any> = {name: item.id, type: item.type};
+        if (item.nullable) decl.nullable = true;
+        (item.direction === 'output' ? outputs : inputs).push(decl);
+      }
+      if (inputs.length) result.inputs = inputs;
+      if (outputs.length) result.outputs = outputs;
     } else {
       result[k] = humanizeConfig(v);
     }
@@ -174,13 +176,12 @@ function buildSelectedStepData(
   };
 
   if (isFuncCallState(node) && node.funcCall) {
-    data.inputs = summarizeFuncCallParams([...node.funcCall.inputParams.values()]);
-    data.outputs = summarizeFuncCallParams([...node.funcCall.outputParams.values()]);
+    data.inputs = summarizeFuncCallIODecls([...node.funcCall.inputParams.values()]);
+    data.outputs = summarizeFuncCallIODecls([...node.funcCall.outputParams.values()]);
   }
 
   if (stepStates.calls[uuid]) data.callState = stepStates.calls[uuid];
   if (stepStates.validations[uuid]) data.validations = stepStates.validations[uuid];
-  if (stepStates.consistency[uuid]) data.consistency = stepStates.consistency[uuid];
   if (stepStates.descriptions[uuid]) data.descriptions = stepStates.descriptions[uuid];
   if (stepStates.meta[uuid]) {
     data.meta = {};
