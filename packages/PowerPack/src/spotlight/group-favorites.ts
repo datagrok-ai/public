@@ -23,16 +23,17 @@ export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
   });
 
   const results: GroupFavorites[] = [];
-  await Promise.all(uniqueGroups.map(async (g) => {
-    try {
-      const entities = await grok.dapi.entities.getFavorites(g);
+  try {
+    const byGroup = await grok.dapi.entities.getFavoritesForGroups(uniqueGroups);
+    for (const g of uniqueGroups) {
+      const entities = byGroup[g.id] ?? [];
       if (entities.length > 0)
         results.push({group: g, entities, isAdmin: adminIds.has(g.id)});
     }
-    catch (e) {
-      console.warn(`Failed to load group favorites for "${g.friendlyName}"`, e);
-    }
-  }));
+  }
+  catch (e) {
+    console.warn('Failed to load group favorites', e);
+  }
   return results;
 }
 
