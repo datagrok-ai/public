@@ -95,7 +95,9 @@ export class RdKitService {
     const getTerminateFlag = () => {return terminateFlag;};
     const t = this;
     const dataLength = data.length;
-    const increment = Math.floor(Math.max(500 / this.workerCount, 20));
+    const batchSizeBase = 500; // initial batch budget, split across workers
+    const minBatchSize = 20; // floor per-worker so very small workerCounts don't shrink batches to nothing
+    const increment = Math.floor(Math.max(batchSizeBase / this.workerCount, minBatchSize));
     const incrementMultiplier = 1.05; // each iteration increment is multiplied by this value to increase sub_batch size
     const workingIndexes = new Array<{start: number, increment: number}>(this.workerCount)
       .fill({start: 0, increment});

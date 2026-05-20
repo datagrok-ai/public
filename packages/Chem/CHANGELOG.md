@@ -8,6 +8,7 @@
 * OCL worker: Fixed an off-by-one atom loop that could miscalculate molecule charge
 * RDKit worker: Fixed the R-group analysis handler posting a stray `undefined` result due to a shadowed variable
 * Identifiers: Fixed the UniChem home-page link mapped to the base-ID URL instead of `src_url`
+* Map Identifiers: Fixed `column ids.key does not exist` when converting from InChIKey or via the ChEMBL bridge — `_chemMapViaQuery` now renames a cloned input column to `key` to match the converter SQL parameter name
 * Chem search: Replaced a floating promise with proper `if`/`.catch()` so substructure-search sub-task rejections are handled
 * RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
 * BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously

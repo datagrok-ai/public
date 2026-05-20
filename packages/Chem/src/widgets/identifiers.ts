@@ -333,7 +333,10 @@ export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fro
 async function _chemMapViaQuery(keys: DG.Column, queryName: string, resultColumnName: string) {
   const query: DG.DataQuery = await grok.functions.eval(`chembl:${queryName}`);
   if (!query) throw new Error('Missing Chembl package');
-  const df = DG.DataFrame.fromColumns([keys]);
+  // chembl:* converter SQL references ids.key — clone & rename so the caller's column is not mutated.
+  const keysCopy = keys.clone();
+  keysCopy.name = 'key';
+  const df = DG.DataFrame.fromColumns([keysCopy]);
   df.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(df.rowCount).keys()]));
   const call: DG.FuncCall = await (query.prepare({'ids': df})).call();
   const result: DG.DataFrame = call.getOutputParamValue() as DG.DataFrame;
@@ -376,19 +379,12 @@ function isInchi(s: string) {
   return s && s.startsWith('InChI=') && s.length > 8;
 }
 
-function isInchiKey(s: string) {
-  if (s?.length !== 27 || s[14] !== '-' || s[25] !== '-')
-    return false;
+/** Standard InChIKey format: 14-letter hash block A, hyphen, 10-letter hash block B,
+ *  hyphen, 1-letter version/protonation flag (e.g., `XLYOFNOQVPJJNP-UHFFFAOYSA-N`). */
+const INCHIKEY_RE = /^[A-Z]{14}-[A-Z]{10}-[A-Z]$/;
 
-  for (let i = 0; i < s.length; i++) {
-    if (i !== 14 && i !== 15) {
-      const c = s.charCodeAt(i);
-      if (!(c >= 65 && c <= 90))
-        return false;
-    }
-  }
-
-  return true;
+function isInchiKey(s: string): boolean {
+  return INCHIKEY_RE.test(s);
 }
 
 export async function textToSmiles(molfile: string): Promise<string | null> {
