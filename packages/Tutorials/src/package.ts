@@ -446,6 +446,9 @@ export class PackageFunctions {
     'description': 'Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer or as a row template of the Tile Viewer.'
   })
   static async _formDemo() : Promise<void> {
+    // The Form layout binds a Sketch field to the `smiles` column, which needs Chem's Molecule
+    // cell renderer registered before the grid is created in viewerDemo.
+    await grok.functions.call('Chem:initChemAutostart');
     await viewerDemo(DG.VIEWER.FORM);
   }
 
