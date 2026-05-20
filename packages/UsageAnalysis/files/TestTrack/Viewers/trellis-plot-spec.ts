@@ -1,26 +1,18 @@
 import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const curvesPath = 'System:DemoFiles/curves.csv';
 
 test('Trellis plot tests', async ({page}) => {
-  // Phase 1: Navigate
+  // 9 softSteps with viewer attaches + layout round-trips — won't fit in the
+  // playwright default 60s per-test budget. Matches the budget that other
+  // viewer specs (heatmap, correlation-plot, row-source) use.
+  test.setTimeout(900_000);
   page.setDefaultTimeout(120000);
-  await page.goto(baseUrl, {timeout: 120000, waitUntil: 'domcontentloaded'});
-  await page.waitForFunction(() => {
-    try {
-      return typeof grok !== 'undefined'
-        && grok.shell
-        && typeof grok.shell.closeAll === 'function'
-        && grok.dapi
-        && grok.dapi.files
-        && document.querySelector('.d4-root') !== null;
-    } catch { return false; }
-  }, {timeout: 120000});
+  await loginToDatagrok(page);
   await page.waitForTimeout(5000);
 
   // Phase 2: Open dataset

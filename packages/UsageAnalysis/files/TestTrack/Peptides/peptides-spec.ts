@@ -1,23 +1,12 @@
-import {test, expect, chromium} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {test, expect} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 
-test('Peptides — SAR parameters and WebLogo', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
-  }
+test('Peptides — SAR parameters and WebLogo', async ({page}) => {
+  await loginToDatagrok(page);
 
   // Steps 1-2: Open peptides.csv and click column title
   await softStep('Steps 1-2: Open dataset and select column', async () => {

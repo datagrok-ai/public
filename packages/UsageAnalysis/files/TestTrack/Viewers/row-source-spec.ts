@@ -1,21 +1,14 @@
 import {test, expect, Page} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
 const demogPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 const allRowSources = ['Filtered', 'All', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow'] as const;
 
 async function openDatasetsAndSetup(page: Page) {
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
-
   await page.evaluate(async (args: {demogPath: string; spgiPath: string}) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -249,8 +242,7 @@ async function addViewerWithFilter(page: Page, viewerType: string, props: Record
 test('Row Source tests', async ({page}) => {
   test.setTimeout(900_000);
 
-  // Phase 1: Navigate
-  await page.goto(baseUrl);
+  await loginToDatagrok(page);
   await openDatasetsAndSetup(page);
 
   // Phase 2: Open filter panel on demog

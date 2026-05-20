@@ -1,9 +1,8 @@
 import {test, expect, Page} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 const curvesPath = 'System:DemoFiles/curves.csv';
@@ -11,13 +10,7 @@ const curvesPath = 'System:DemoFiles/curves.csv';
 test('Forms viewer tests', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate and wait for grok
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
+  await loginToDatagrok(page);
 
   // Phase 2: Open demog dataset
   await page.evaluate(async (path: string) => {

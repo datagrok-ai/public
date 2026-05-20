@@ -1,21 +1,14 @@
 import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 test('Correlation Plot tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
+  await loginToDatagrok(page);
 
   // Phase 2: Open dataset
   await page.evaluate(async (path) => {

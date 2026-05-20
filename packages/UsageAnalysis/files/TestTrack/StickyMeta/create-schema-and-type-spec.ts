@@ -1,23 +1,15 @@
 import {test, expect} from '@playwright/test';
-import {baseUrl, login, password, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {baseUrl, loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
 test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
   test.setTimeout(300_000);
 
-  await page.goto(baseUrl);
-  await page.waitForTimeout(3000);
-  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
-  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
-    // Login form is plain HTML (not a Dart widget), so .fill() works and is more reliable
-    // than keyboard.type(), which silently drops characters on a fresh page on dev.
-    await loginInput.fill(login);
-    const pw = page.getByPlaceholder('Password').and(page.locator(':visible'));
-    await pw.fill(password);
-    await page.keyboard.press('Enter');
-  }
-  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+  // Canonical token-based login; the previous flow imported login/password
+  // from spec-login (which doesn't export them) and filled the HTML form
+  // manually, so the spec couldn't even compile against a fresh checkout.
+  await loginToDatagrok(page);
 
   await page.evaluate(() => {
     document.body.classList.add('selenium');
