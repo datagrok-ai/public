@@ -102,9 +102,6 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       // possibly get rid of fall-over in future
       queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
     }
-
-    // queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
-    //queryMol?.convert_to_aromatic_form();
   }
   return queryMol;
 }

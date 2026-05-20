@@ -26,9 +26,7 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
     if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
       throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
     mol = rdKitModule.get_mol(molecule);
-    //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
-    // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
-    // lib.add_smiles(smiles);
+    //TODO: Currently throws an error on rule id 221
     const smartsCol = alertsDf!.getCol('smarts');
     for (let i = 0; i < smartsCol.length; i++) {
       const subMol = _smartsMap.get(smartsCol.get(i));

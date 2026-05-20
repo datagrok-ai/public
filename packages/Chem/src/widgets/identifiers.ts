@@ -130,7 +130,6 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
 
   for (const [source, id] of Object.entries(idMap))
     idMap[source] = {id: id, link: UniChemSource.byName(source)!.baseUrl + id};
-    // idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
 
   return idMap;
 }

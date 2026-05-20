@@ -566,7 +566,7 @@ export class SubstructureFilter extends DG.Filter {
         this.recalculateFilter = true; //in case applyState was called on disabled filter -> need to recalculate results
       else
         this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary('')}; //sketcher was cleared -> current sketcher becomes the active one
-      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null; //TODO
+      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null;
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();

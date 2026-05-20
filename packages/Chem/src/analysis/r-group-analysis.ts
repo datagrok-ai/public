@@ -44,12 +44,6 @@ export type RGroupDecompRes = {
   highlightColName?: string,
 }
 
-// const enum RGroupAlignment {
-//   None = 'None',
-//   NoAlignment = 'NoAlignment',
-//   MCS = 'MCS'
-// };
-
 type RGroupsRes = {
   rGroups: DG.Column<string>[];
   highlightCol?: DG.Column<object>;
