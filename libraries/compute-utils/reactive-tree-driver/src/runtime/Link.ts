@@ -120,10 +120,12 @@ export class Link {
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
+    const actionsVisibility = linksState?.actionsVisibility ?? new Map<string, boolean>();
+
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, baseNode, scope, state).pipe(
+          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger, [this.matchInfo.spec.id]);
@@ -222,11 +224,12 @@ export class Link {
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
+    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -274,6 +277,7 @@ export class Link {
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
     actions: Record<string, Map<string, string>>,
+    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
@@ -281,7 +285,7 @@ export class Link {
     const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates};
 
     if (this.isValidator)
-      return new ValidatorController({...baseArgs, actions, baseNode});
+      return new ValidatorController({...baseArgs, actions, actionsVisibility, baseNode});
 
     if (this.isPipelineValidator) {
       const outline = this.resolveOutline(state);

@@ -122,12 +122,13 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
   const isBase = ioType === 'base';
   const isAction = ioType === 'actions';
   const isNot = ioType === 'not';
+  const isVisibility = ioType === 'showWhen' || ioType === 'hideWhen';
   const isTemplate = flags.includes('template');
   if (flags.includes('call')) {
     if (isTemplate)
       throw new Error(`Link io ${io}: (call) and (template) flags cannot be combined`);
-    if (isBase)
-      throw new Error(`Link io ${io}: (call) flag is not allowed in base queries`);
+    if (isBase || isVisibility)
+      throw new Error(`Link io ${io}: (call) flag is not allowed in ${ioType} queries`);
   }
 
   type Segment = LinkSelectorSegment | LinkTagSegment;
@@ -148,7 +149,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       const nqName = node.children.find((c) => c.type === 'IOSelectorNqName')!.text.trim();
       const targetIdsNode = node.children.find((c) => c.type === 'TargetIds');
       const excludeIds = targetIdsNode ? targetIdsNode.children.map((c) => c.text) : [];
-      if (isBase || isAction || isNot)
+      if (isBase || isAction || isNot || isVisibility)
         throw new Error(`Link io ${io}: '${ioExpand}' selector is not allowed in ${ioType} queries`);
       return {type: 'selector' as const, selector: 'first', ids: [], stopIds: [], ioExpand, nqName, excludeIds};
     } else if (node.type === 'TargetIds') {

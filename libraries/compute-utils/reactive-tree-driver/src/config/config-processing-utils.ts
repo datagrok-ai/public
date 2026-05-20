@@ -28,7 +28,7 @@ export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfigu
 export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<FuncCallIODescription[]>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationDynamicProcessed;
 
-export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
+export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not' | 'showWhen' | 'hideWhen';
 
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
@@ -195,14 +195,20 @@ function isOptional(prop: DG.Property) {
 
 function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action)}));
+  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
   return actions;
 }
 
 function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action)}));
+  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
   return actions;
+}
+
+function processActionVisibility(action: {showWhen?: LinkSpecString, hideWhen?: LinkSpecString}) {
+  const showWhen = processLink(action.showWhen ?? [], 'showWhen');
+  const hideWhen = processLink(action.hideWhen ?? [], 'hideWhen');
+  return {showWhen, hideWhen};
 }
 
 function processReturnHook(hooksInput?: PipelineReturnConfiguration<LinkSpecString>) {

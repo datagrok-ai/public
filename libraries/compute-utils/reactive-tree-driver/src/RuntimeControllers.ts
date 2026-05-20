@@ -36,6 +36,11 @@ export interface IRuntimeReturnController extends IControllerBase {
 export interface IRuntimeValidatorController extends IControllerBase {
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   getValidationAction(id: string, actionId: string): string | undefined;
+  /** True when the action has no `showWhen`/`hideWhen` or its condition currently matches.
+   *  Returns false if the action is not visible OR the name/actionId pair is not known.
+   *  This is a pure query — `getValidationAction` is not gated by visibility, so a validator
+   *  can still surface hidden actions in its result if it chooses to. */
+  isActionVisible(name: string, actionId: string): boolean;
 }
 
 export interface IRuntimePipelineValidatorController extends IControllerBase {

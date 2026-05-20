@@ -22,6 +22,7 @@ export interface ControllerBaseArgs {
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
   actions: Record<string, Map<string, string>>;
+  actionsVisibility: ReadonlyMap<string, boolean>;
   baseNode?: TreeNode<StateTreeNode>;
 }
 
@@ -158,11 +159,13 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
   public actions: Record<string, Map<string, string>>;
+  public actionsVisibility: ReadonlyMap<string, boolean>;
   public baseNode?: TreeNode<StateTreeNode>;
 
   constructor(args: ValidatorControllerArgs) {
     super(args);
     this.actions = args.actions;
+    this.actionsVisibility = args.actionsVisibility;
     this.baseNode = args.baseNode;
   }
 
@@ -171,6 +174,13 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     const actions = this.actions[name];
     const actionUUID = actions?.get(actionId);
     return actionUUID;
+  }
+
+  isActionVisible(name: string, actionId: string): boolean {
+    this.checkIsClosed();
+    const uuid = this.actions[name]?.get(actionId);
+    if (!uuid) return false;
+    return this.actionsVisibility.get(uuid) ?? true;
   }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {

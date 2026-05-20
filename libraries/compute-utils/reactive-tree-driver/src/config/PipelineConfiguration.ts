@@ -142,7 +142,9 @@ export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfiguratio
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
-export type ActionInfo = {
+/** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
+ *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
   friendlyName?: string;
@@ -150,26 +152,35 @@ export type ActionInfo = {
   menuCategory?: string;
   confirmationMessage?: string;
   icon?: string;
-  runOnInit?: undefined;
   /** Show this action on a specific child step instead of where it's defined.
    *  Uses configId of the target step. The action's from/to still resolve at definition scope. */
   visibleOn?: string;
 };
 
+export type ActionInfo<P> = ActionInfoBase & {
+  runOnInit?: undefined;
+  /** LQL string or array. Action's ViewAction.visible is true only when all
+   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  showWhen?: P;
+  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+   *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
+  hideWhen?: P;
+};
+
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   handler: Handler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'pipeline',
   handler: MutationHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'funccall',
   handler: FunccallActionHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
