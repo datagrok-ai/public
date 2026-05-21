@@ -1,6 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {df, expectPropAndLook} from '../helpers';
 
 // Regression coverage for GROK-13205: Trellis plot inner viewers (Line / Box /
 // Pie / Bar) used to duplicate data instead of partitioning when rowSource was
@@ -14,6 +14,8 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 //   All, Filtered, Selected, SelectedOrCurrent, FilteredSelected,
 //   MouseOverGroup, CurrentRow, MouseOverRow.
 category('AI: GROK-13205: Trellis row source variants', () => {
+  const ROW_SOURCES = ['Selected', 'SelectedOrCurrent', 'CurrentRow', 'MouseOverRow', 'FilteredSelected', 'MouseOverGroup'];
+
   function makeDf(): DG.DataFrame {
     const n = 60;
     const value = new Array<number>(n);
@@ -26,81 +28,49 @@ category('AI: GROK-13205: Trellis row source variants', () => {
       split2[i] = ['x', 'y', 'z'][i % 3];
       idx[i] = i;
     }
-    return DG.DataFrame.fromColumns([
-      DG.Column.fromList('int', 'idx', idx),
-      DG.Column.fromList('double', 'value', value),
-      DG.Column.fromList('string', 'cat1', split1),
-      DG.Column.fromList('string', 'cat2', split2),
-    ]);
+    return df([['idx', 'int', idx], ['value', 'double', value], ['cat1', 'string', split1], ['cat2', 'string', split2]]);
   }
 
-  function applyRowSourceState(df: DG.DataFrame, rowSource: string): void {
-    // Drive the corresponding df state so the inner viewers have something to
-    // partition against. We don't assert on bar geometry — only that the
-    // setter does not throw under each combination.
-    if (rowSource === 'Selected' || rowSource === 'SelectedOrCurrent' ||
-        rowSource === 'FilteredSelected') {
-      df.selection.setAll(false);
-      for (var i = 0; i < df.rowCount; i += 2)
-        df.selection.set(i, true);
+  function applyRowSourceState(d: DG.DataFrame, rs: string): void {
+    if (rs === 'Selected' || rs === 'SelectedOrCurrent' || rs === 'FilteredSelected') {
+      d.selection.setAll(false);
+      for (var i = 0; i < d.rowCount; i += 2) d.selection.set(i, true);
     }
-    if (rowSource === 'CurrentRow' || rowSource === 'SelectedOrCurrent')
-      df.currentRowIdx = 5;
-    if (rowSource === 'MouseOverRow' || rowSource === 'MouseOverGroup')
-      df.mouseOverRowIdx = 7;
-    if (rowSource === 'FilteredSelected' || rowSource === 'Filtered') {
-      df.filter.setAll(true);
-      for (var i = 0; i < df.rowCount; i += 3)
-        df.filter.set(i, false);
+    if (rs === 'CurrentRow' || rs === 'SelectedOrCurrent') d.currentRowIdx = 5;
+    if (rs === 'MouseOverRow' || rs === 'MouseOverGroup') d.mouseOverRowIdx = 7;
+    if (rs === 'FilteredSelected' || rs === 'Filtered') {
+      d.filter.setAll(true);
+      for (var i = 0; i < d.rowCount; i += 3) d.filter.set(i, false);
     }
   }
 
-  const rowSources = [
-    'Selected',
-    'SelectedOrCurrent',
-    'CurrentRow',
-    'MouseOverRow',
-    'FilteredSelected',
-    'MouseOverGroup',
-  ];
+  function makeTrellis(d: DG.DataFrame): DG.Viewer {
+    return DG.Viewer.trellisPlot(d, {viewerType: 'Line chart', xColumnNames: ['cat1'], yColumnNames: ['cat2']});
+  }
 
   test('rowSource literals persist through props and look', async () => {
-    for (var rs of rowSources) {
-      const df = makeDf();
-      applyRowSourceState(df, rs);
-      const v = DG.Viewer.trellisPlot(df, {
-        viewerType: 'Line chart',
-        xColumnNames: ['cat1'],
-        yColumnNames: ['cat2'],
-      });
-      expect(v instanceof DG.Viewer, true);
+    for (var rs of ROW_SOURCES) {
+      const d = makeDf();
+      applyRowSourceState(d, rs);
+      const v = makeTrellis(d);
       expect(v.type, DG.VIEWER.TRELLIS_PLOT);
       (v.props as any)['rowSource'] = rs;
-      expect(v.props['rowSource'], rs);
-      expect(v.getOptions(true).look['rowSource'], rs);
-      // Detached viewer (never attached to a TableView) — do not call close().
+      expectPropAndLook(v, {rowSource: rs});
     }
   });
 
   test('inner viewerType swap survives across rowSource variants', async () => {
     const innerTypes = ['Bar chart', 'Box plot', 'Pie chart', 'Line chart'];
-    for (var rs of rowSources) {
-      const df = makeDf();
-      applyRowSourceState(df, rs);
-      const v = DG.Viewer.trellisPlot(df, {
-        viewerType: 'Line chart',
-        xColumnNames: ['cat1'],
-        yColumnNames: ['cat2'],
-      });
+    for (var rs of ROW_SOURCES) {
+      const d = makeDf();
+      applyRowSourceState(d, rs);
+      const v = makeTrellis(d);
       (v.props as any)['rowSource'] = rs;
       for (var inner of innerTypes) {
         v.props['viewerType'] = inner;
-        expect(v.props['viewerType'], inner);
-        expect(v.getOptions(true).look['viewerType'], inner);
-        // rowSource must not be clobbered by the inner-type swap.
+        expectPropAndLook(v, {viewerType: inner});
         expect(v.props['rowSource'], rs);
       }
-      // Detached viewer (never attached to a TableView) — do not call close().
     }
   });
 });
