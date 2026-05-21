@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../helpers';
 import {
   openDemoCsv, openTrainModelView, resetShell, setPredictColumn, trainEdaModelViaApi,
 } from '../helpers';

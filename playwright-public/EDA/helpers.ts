@@ -1,6 +1,36 @@
-import { Page, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 
 export const BASE = process.env.DATAGROK_URL!;
+
+/**
+ * Shared, already-authenticated page reused across every test in the worker.
+ * `global-setup` logs in and writes `e2e/.auth.json`; we boot the Datagrok SPA
+ * exactly once here, then tests load data and reset state through the JS API
+ * (`openDemoCsv` / `resetShell` below) with no further full-page navigation —
+ * this removes the two ~3s reloads that previously dominated each test.
+ */
+export const test = base.extend<{}, { sharedPage: Page }>({
+  sharedPage: [async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'e2e/.auth.json',
+      viewport: { width: 1920, height: 1080 },
+    });
+    const page = await context.newPage();
+    await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null,
+      undefined, { timeout: 120_000 });
+    await page.locator('.d4-ribbon').first().waitFor({ timeout: 60_000 });
+    await use(page);
+    await context.close();
+  }, { scope: 'worker' }],
+  // Override the built-in test-scoped `page` so existing `async ({ page }) => …`
+  // bodies transparently receive the shared worker page.
+  page: async ({ sharedPage }, use) => {
+    await use(sharedPage);
+  },
+});
+
+export { expect };
 
 /** `[name="input-host-..."]` wrapper around any DG input. */
 export const inputHost = (safeName: string): string => `[name="input-host-${safeName}"]`;
@@ -9,36 +39,21 @@ export const inputHost = (safeName: string): string => `[name="input-host-${safe
 export const inputEditor = (safeName: string): string => `${inputHost(safeName)} .ui-input-editor`;
 
 /**
- * Open a CSV from `System:DemoFiles/` via the Browse files URL and a double-click on the
- * file label. UI-first per task contract — falls back to the JS API only when the dblclick
- * does not produce a table view within `uiTimeoutMs`.
+ * Open a CSV from `System:DemoFiles/` into a fresh TableView via the JS API
+ * (`readCsv` + `addTableView`) — no page navigation. With the shared worker page
+ * the SPA is already booted, so this is the ~0.4s fast path instead of a ~3s
+ * Files-browser navigation + dblclick. The ML menu attaches to the new
+ * TableView exactly as it does for a UI-opened file.
  *
  * `fileName` is the bare CSV name (e.g. `cars.csv`); the folder is always `System:DemoFiles`.
  */
 export async function openDemoCsv(page: Page, fileName: string, uiTimeoutMs = 25_000): Promise<void> {
-  await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-  await page.waitForTimeout(1500);
-
-  const item = page.locator('label', { hasText: new RegExp(`^${escapeRegex(fileName)}$`, 'i') }).first();
-  const uiOk = await item.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false);
-
-  if (uiOk) {
-    await item.scrollIntoViewIfNeeded();
-    await item.dblclick();
-    const opened = await waitForCurrentTableView(page, uiTimeoutMs);
-    if (opened) return;
-  }
-
-  // JS API fallback — used when the file is absent from the Files browser tile (e.g. on
-  // some dev tenants), or when dblclick is intercepted by an overlay. Recorded here to
-  // keep the test deterministic without polluting test bodies.
   await page.evaluate(async (name) => {
     const g = (window as unknown as { grok: any }).grok;
     const df = await g.dapi.files.readCsv(`System:DemoFiles/${name}`);
     g.shell.addTableView(df);
   }, fileName);
-  await waitForCurrentTableView(page, 20_000);
+  await waitForCurrentTableView(page, uiTimeoutMs);
 }
 
 /** Resolves true once `grok.shell.tv?.dataFrame` is populated. */
@@ -268,8 +283,9 @@ export async function resetShell(page: Page): Promise<void> {
     const g = (window as unknown as { grok?: any }).grok;
     g?.shell?.closeAll?.();
   }).catch(() => {});
-  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
+  // No navigation: closeAll() resets the shared page's views/tables in-place, so
+  // the next test's openDemoCsv() starts clean without a full reload.
+  await page.waitForTimeout(200);
 }
 
 /**

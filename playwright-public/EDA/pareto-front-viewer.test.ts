@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers';
 import { openDemoCsv, resetShell } from './helpers';
 
 // Test Track scenario: EDA/pareto-front-viewer.md

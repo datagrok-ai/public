@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers';
 import {
   clickDialogPrimary, clickTopMenuLeaf, currentViewerTypes, openDemoCsv,
   resetShell, waitForDialog,
