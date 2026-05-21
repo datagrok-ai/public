@@ -32,6 +32,7 @@ import './tests/compute-utils/reactive-tree-driver/error-handling';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/reactive-tree-driver/links-template-expand';
+import './tests/compute-utils/reactive-tree-driver/links-on-steps';
 import './tests/compute-utils/fitting/nm-pure-math';
 import './tests/compute-utils/fitting/nm-sync-vs-async';
 import './tests/compute-utils/fitting/worker-dg-shim';
