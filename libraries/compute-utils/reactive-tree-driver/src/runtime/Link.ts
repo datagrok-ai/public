@@ -445,6 +445,11 @@ export class Link {
             else
               node.getItem().getStateStore().setState(ioName, nextValue, restriction);
           }
+          if (controller instanceof LinkController && controller.consistencyResets.has(outputAlias)) {
+            const item = node.getItem();
+            if (isFuncCallNode(item))
+              item.instancesWrapper.removeRestriction(ioName);
+          }
         }
       }
     }

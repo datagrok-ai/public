@@ -231,6 +231,22 @@ template. Used by the [default handler](#default-handler) for the
 template ↔ template case; available to custom handlers that want the
 same primitive.
 
+#### `clearRestriction`
+
+```
+clearRestriction(name: string): void;
+```
+
+Clears the consistency restriction on all matched outputs of `name`
+without changing their current value. After the handler completes the
+targeted inputs are no longer marked as "set by a link" and no longer
+report inconsistency — until another link writes them again. Calling
+`clearRestriction` on an output that has no active restriction is a
+no-op. If the handler also calls `setAll(name, ...)` for the same
+output, the later of the two calls wins.
+
+See [Consistency](#consistency) for the underlying model.
+
 
 ### Default handler
 
