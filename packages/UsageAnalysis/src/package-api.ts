@@ -364,14 +364,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:StressTestsDashboard', { lastBuildsNum });
   }
 
-  export async function manualTicketCreation(name: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ManualTicketCreation', { name });
-  }
-
-  export async function manualTicketFetch(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ManualTicketFetch', {});
-  }
-
   export async function benchmarks(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:Benchmarks', {});
   }
