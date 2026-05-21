@@ -5,13 +5,13 @@ End-to-end coverage for Test Track scenarios under
 only when the UI path is verifiably blocked (canvas-rendered controls, Dart-side dialog
 state that does not surface to JS, missing test data, etc.).
 
-Created 2026-05-18, last green run 2026-05-20 against `https://dev.datagrok.ai`
-(13/13 passing, no skips and no `test.fail`).
+Created 2026-05-18. Green 13/13 both locally against `https://dev.datagrok.ai` and on the
+Jenkins **Test-Playwright** CI (the `ui_tests` stack) — no skips, no `test.fail`.
 
 ## Files
 
 ```
-playwright-tests/e2e/EDA/
+public/playwright-public/EDA/
 ├── helpers.ts                       # Shared helpers (menu, dialog, picker, viewer probes)
 ├── anova.test.ts                    # ML > Analyze > ANOVA on demog.csv
 ├── multivariate-analysis.test.ts    # ML > Analyze > Multivariate Analysis on cars.csv
@@ -28,52 +28,66 @@ playwright-tests/e2e/EDA/
 
 ## Running
 
+These tests live in the standalone `public/playwright-public` Playwright project and share
+its `playwright.config.ts`, `e2e/global-setup.ts` auth, and CSV reporting with the other
+suites there (connections, queries, scripts, …).
+
+### Via the grok runner (canonical)
+
 ```powershell
-# All EDA tests
-cd C:\DataGrok\NewBitbucket\reddata\playwright-tests
-npx playwright test e2e/EDA --reporter=list
-
-# Single file
-npx playwright test e2e/EDA/anova.test.ts --reporter=list
-
-# Filter by test title (regex)
-npx playwright test e2e/EDA --grep "PCA" --reporter=list
-
-# Visible browser (debug)
-npx playwright test e2e/EDA/pls.test.ts --headed --reporter=list
-
-# Auth state is built once by e2e/global-setup.ts using env vars from .env:
-#   DATAGROK_URL, DATAGROK_LOGIN, DATAGROK_PASSWORD
-# It writes e2e/.auth.json; delete that file to force a fresh login.
+cd C:\DataGrok\NewBitbucket\reddata\public\playwright-public
+npm install                          # first time
+npx playwright install chromium      # first time
+grok test --skip-puppeteer --host dev --category EDA              # all EDA tests
+grok test --skip-puppeteer --host dev --category EDA --test PCA   # filter by title (regex)
 ```
+
+`--category EDA` scopes the run to this subfolder; `--test` becomes Playwright's `--grep`
+(test-title regex). The runner resolves the host from `~/.grok/config.yaml`, exchanges the
+dev key for a token, and exports `DATAGROK_URL` + `DATAGROK_AUTH_TOKEN` to Playwright.
+
+> The globally-installed `grok` may predate `--skip-puppeteer` (added in datagrok-tools
+> 6.2.x). If it runs the Puppeteer pass instead, drive Playwright directly:
+
+### Directly via Playwright (fast local loop)
+
+```powershell
+cd C:\DataGrok\NewBitbucket\reddata\public\playwright-public
+$env:DATAGROK_URL = "https://dev.datagrok.ai"
+$env:DATAGROK_AUTH_TOKEN = (Invoke-RestMethod -Method Post `
+  "https://dev.datagrok.ai/api/users/login/dev/<devKey>").token
+npx playwright test EDA --reporter=list                  # all EDA tests
+npx playwright test EDA/anova.test.ts --reporter=list    # single file
+npx playwright test EDA --grep "PCA" --reporter=list     # filter by title
+npx playwright test EDA/pls.test.ts --headed             # visible browser (debug)
+```
+
+`e2e/global-setup.ts` turns `DATAGROK_URL` + `DATAGROK_AUTH_TOKEN` into browser storage
+state at `e2e/.auth.json` (gitignored). Delete that file to force a fresh login.
+
+### On CI
+
+The Jenkins **Test-Playwright** job runs the whole `public/playwright-public` suite on a
+fresh `ui_tests` stack. To exercise the EDA suite there:
+
+* `PREREQ_PACKAGES` must include `EDA` — the ML menu (ANOVA/PCA/PLS/MVA/Train Model/Pareto)
+  is provided by the `@datagrok/eda` package and won't exist on the stack otherwise.
+* `TEST_GREP=EDA /` selects exactly these tests. The runner's grep is case-insensitive, so
+  a bare `EDA` also matches unrelated titles (e.g. `…TestUpdateData…`); the `/` keeps it to
+  the `EDA / *` describes.
+
+A pipeline `SUCCESS` alone does **not** prove the tests ran — a `global-setup` failure
+collects 0 tests yet still reports "passed". Read the real result from the build artifact
+`public/playwright-public/result/playwright-public.jest` (`Running N tests`, `N passed`).
 
 ### Reports
 
-`playwright.config.ts` configures three reporters: `list` (console), `html`
-(`e2e/html-report/`) and `monocart-reporter` (`e2e/monocart-report/index.html`).
-
-> **Run without `--reporter` to get the monocart report at the configured path.**
-> Passing `--reporter=...` on the CLI *overrides* the whole config reporter block and drops
-> monocart's `outputFile` option, so the report is written to the default
-> `playwright-tests/monocart-report/` instead of `e2e/monocart-report/`. You then risk
-> opening a stale `e2e/monocart-report/index.html` from an earlier run.
-
-```powershell
-# Generates list + html + monocart at their configured paths:
-npx playwright test e2e/EDA
-
-# Open the monocart report (Windows):
-Start-Process e2e\monocart-report\index.html
-# or serve it (if assets don't load via file://):
-npx monocart show-report e2e/monocart-report/index.html
-```
-
-The monocart summary has separate `Failed` and `Errors` rows. `Failed` is the test result;
-`Errors` counts *captured error events*, including each failed retry of an `expect.poll`
-matcher — so a green suite could still show `Errors > 0`, fluctuating run to run. The EDA
-tests therefore wait via `page.waitForFunction` (polls in-browser, rejects only once on
-timeout) plus a single trailing `expect`, which keeps `Errors` reliably at `0`. Don't
-reintroduce `expect.poll` here.
+`playwright.config.ts` uses the `list` reporter, plus a `json` reporter when
+`PLAYWRIGHT_JSON_OUTPUT_NAME` is set (the grok runner sets it and converts the JSON to the
+platform CSV). Don't reintroduce `expect.poll` for readiness waits: each failed poll retry
+is recorded as a captured error event, so a green suite could still show errors fluctuating
+run to run. These tests wait via `page.waitForFunction` (polls in-page, rejects only once
+on timeout) plus a single trailing `expect`, keeping the error count at `0`.
 
 ## Last results
 
@@ -121,7 +135,7 @@ to `grok.dapi.files.readCsv` only when the dblclick does not produce a TableView
 The scenario literally says "select all available columns" for Using. After `All` is
 clicked, `price` is in both Predict and Using, the validator silently disables RUN with
 only a red border on Predict — no tooltip, no banner. See
-[pls-run.md](../../../public/packages/UsageAnalysis/files/TestTrack/EDA/pls-run.md).
+[pls-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/pls-run.md).
 
 The test cannot work around the bug from the UI either:
 
@@ -149,7 +163,7 @@ string `Species`, was passed as features).
 The fix lives in `trainEdaModelViaApi`: with `numericOnly: true` it feeds only the numeric
 feature columns (and now excludes the predict column from them), while still passing
 `Species` as the predict column. `softmax.test.ts` therefore runs as a normal passing test.
-See [softmax-run.md](../../../public/packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md).
+See [softmax-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md).
 
 ### 3. Train Model view: canvas-based Features picker, missing Model Engine dropdown, no Train button
 
@@ -179,7 +193,7 @@ scenario.
 
 ### 5. `cars-with-missing.csv` is not deployed on dev under `System:DemoFiles/`
 
-See [pareto-front-viewer-run.md](../../../public/packages/UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md).
+See [pareto-front-viewer-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md).
 The Pareto test synthesises an equivalent dataset in memory: open `cars.csv`, null every
 cell of the `turbo` column, rename to `cars-with-missing`.
 
@@ -250,8 +264,9 @@ which one their dialog uses.
 
 ### See what the page looks like at failure
 
-* Screenshot is in `e2e/test-results/<test-name>-chromium/test-failed-1.png` after a run.
-* Add an ad-hoc screenshot: `await page.screenshot({ path: 'e2e/test-results/probe.png', fullPage: true });`
+* Screenshot is in `test-output/<test-name>-chromium/test-failed-1.png` after a run (the
+  config sets `outputDir: 'test-output'`; failures keep traces + screenshots there).
+* Add an ad-hoc screenshot: `await page.screenshot({ path: 'test-output/probe.png', fullPage: true });`
 
 ### Dump DOM for an open dialog
 
@@ -315,10 +330,10 @@ del e2e\.auth.json
 
 ```powershell
 $env:DATAGROK_URL = "https://public.datagrok.ai"
-$env:DATAGROK_LOGIN = "<login>"
-$env:DATAGROK_PASSWORD = "<password>"
+$env:DATAGROK_AUTH_TOKEN = (Invoke-RestMethod -Method Post `
+  "https://public.datagrok.ai/api/users/login/dev/<devKey>").token
 del e2e\.auth.json
-npx playwright test e2e/EDA --reporter=list
+npx playwright test EDA --reporter=list
 ```
 
 ## Things tried that did NOT work — don't go back down these paths
