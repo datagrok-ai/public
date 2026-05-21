@@ -38,7 +38,7 @@ function radicalToRgroupForm(smiles: string): string {
   });
 }
 
-const defaultFramgment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
+const defaultFragment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
 export class DeprotectEditor extends DG.FuncCallEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   columnInput!: DG.InputBase<DG.Column | null>;
@@ -52,7 +52,7 @@ export class DeprotectEditor extends DG.FuncCallEditor {
       funcCall.inputs['table'] = this.tableInput.value;
       this.inputChangedSubject.next();
     }, tooltipText: 'Input data frame containing molecule column'});
-    this.fragmentInput = ui.input.molecule('Fragment', {value: radicalToRgroupForm(funcCall.inputs['fragment'] ?? defaultFramgment), nullable: false, onValueChanged: () => {
+    this.fragmentInput = ui.input.molecule('Fragment', {value: radicalToRgroupForm(funcCall.inputs['fragment'] ?? defaultFragment), nullable: false, onValueChanged: () => {
       funcCall.inputs['fragment'] = correctRGroups(grok.chem.convert(this.fragmentInput.value ?? '', grok.chem.Notation.Unknown, grok.chem.Notation.Smiles));
       this.inputChangedSubject.next();
     }, tooltipText: 'Smiles of the protecting group fragment to be removed. R1 group should be used to mark the attachment point.'});
@@ -61,7 +61,7 @@ export class DeprotectEditor extends DG.FuncCallEditor {
     this.updateColumnInput();
     this.fragmentInput.addValidator(() => this.validate());
     this.tableInput.addValidator(() => this.validate());
-    // triger changes to init the funccall
+    // trigger changes to init the funccall
     this.tableInput.fireChanged();
     this.fragmentInput.fireChanged();
     this.columnInput.fireChanged();

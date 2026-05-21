@@ -37,8 +37,6 @@ export async function demoBioSimDivLayout() {
     const layout = DG.ViewLayout.fromJson(layoutString);
     await DG.delay(100);
     tv.loadLayout(layout);
-    grok.shell.windows.showHelp = true;
-    setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#similarity-search'), 1000);
   });
 }
 

@@ -14,7 +14,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {drawDuplex, hitTest, DuplexLayout} from './canvas-renderer';
+import {drawDuplex, hitTest, DuplexLayout, RenderOpts, DEFAULT_OPTS} from './canvas-renderer';
 import {looksLikeHelm, parseHelmDuplex} from './helm-parser';
 import {ParsedDuplex} from './types';
 import {showMonomerTooltip} from './tooltip';
@@ -23,9 +23,9 @@ const CELL_TYPE = 'OligoNucleotide';
 
 export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
   /** WeakMap-by-value cache of parsed HELM. Avoids reparsing on redraw. */
-  private modelCache = new Map<string, ParsedDuplex>();
+  private modelCache = new DG.LruCache<string, ParsedDuplex>();
   /** Last-rendered layout per cell key, for hit-testing on subsequent moves. */
-  private layoutCache = new Map<string, DuplexLayout>();
+  private layoutCache = new DG.LruCache<string, DuplexLayout>();
 
   get name(): string { return CELL_TYPE; }
   get cellType(): string { return CELL_TYPE; }
@@ -54,11 +54,16 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
     }
 
     const model = this.getOrParse(value);
+    if (!gridCell.cell?.dart || !gridCell.cell.column) {
+      w = g.canvas.width;
+      h = g.canvas.height;
+      x = 0;
+      y = 0;
+      // this happens in forms....
+    }
     const layout = drawDuplex(g, x, y, w, h, model);
     // Cache for hit-test on subsequent mouse moves over the same cell.
-    this.layoutCache.set(this.cellKey(gridCell), layout);
-    // Avoid unbounded growth on big tables.
-    if (this.layoutCache.size > 5000) this.layoutCache.clear();
+    this.layoutCache.set(this.cellKey(value, w, h, DEFAULT_OPTS), layout);
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -68,7 +73,11 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
       return;
     }
     const model = this.getOrParse(value);
-    const layout = this.layoutCache.get(this.cellKey(gridCell));
+    const layout = this.layoutCache.getOrCreate(
+      this.cellKey(value, gridCell.bounds.width, gridCell.bounds.height, DEFAULT_OPTS), (v) => drawDuplex(
+        null as unknown as CanvasRenderingContext2D, 0, 0, gridCell.bounds.width, gridCell.bounds.height,
+        model, DEFAULT_OPTS, true,
+      ));
     if (!layout) return;
 
     const bounds = gridCell.bounds;
@@ -88,24 +97,14 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
   }
 
   private getOrParse(helm: string): ParsedDuplex {
-    let m = this.modelCache.get(helm);
-    if (!m) {
-      m = parseHelmDuplex(helm);
-      // Cap cache to avoid unbounded growth on huge tables.
-      if (this.modelCache.size > 5000) this.modelCache.clear();
-      this.modelCache.set(helm, m);
-    }
-    return m;
+    return this.modelCache.getOrCreate(helm, (h) => parseHelmDuplex(h));
   }
 
   /** Cache key for a cell's layout. Includes the column's `version` so any
    * edit to the column (which bumps version) orphans previous cache entries
    * — preventing onMouseMove from hit-testing a stale layout that was cached
    * before the edit and not yet replaced by a fresh render(). */
-  private cellKey(gridCell: DG.GridCell): string {
-    const col = gridCell.tableColumn;
-    const colName = col?.name ?? gridCell.gridColumn?.name ?? '?';
-    const ver = col?.version ?? 0;
-    return `${colName}@${ver}::${gridCell.tableRowIndex ?? -1}`;
+  private cellKey(value: string, width: number, height: number, opts: RenderOpts): string {
+    return `${value}::${Math.floor(width)}x${Math.floor(height)}::${JSON.stringify(opts)}`;
   }
 }

@@ -9,6 +9,7 @@ import {
   RibbonMenu,
   ifOverlapping,
   IconImage,
+  useUnwrappedCallMeta,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -234,7 +235,9 @@ export const RichFunctionView = Vue.defineComponent({
 
     const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
     const tabLabels = Vue.shallowRef<string[]>([]);
-    const visibleTabLabels = Vue.shallowRef([] as string[]);
+    const tabToPropertiesMap = Vue.shallowRef(getEmptyTabToProperties());
+    const userClosed = Vue.shallowRef(new Set<string>());
+    const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
     const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
     const customExports = Vue.ref<ExportDefinition[]>([]);
@@ -244,10 +247,14 @@ export const RichFunctionView = Vue.defineComponent({
     const isFittingEnabled = Vue.ref(false);
     const allowRerun = Vue.ref(false);
     const runLabel = Vue.ref('Run');
+    const formAsTab = Vue.ref(false);
 
     const isLocked = Vue.ref(false);
 
     const formHidden = Vue.ref(false);
+    const inputsHidden = Vue.ref(false);
+    const hasInputsHiddenOption = Vue.computed(() =>
+      !!currentCall.value?.func && Utils.getInputsHidden(currentCall.value.func));
     const historyHidden = Vue.ref(true);
 
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
@@ -267,12 +274,31 @@ export const RichFunctionView = Vue.defineComponent({
       currentCall,
     );
 
+    const hiddenByMeta = Vue.computed(() => {
+      const hidden = new Set<string>();
+      for (const [name, m] of Object.entries(callMetaValues)) {
+        if (m && (m as any).hidden)
+          hidden.add(name);
+      }
+      return hidden;
+    });
+
+    const visibleTabLabels = Vue.computed(() => tabLabels.value.filter((label) => {
+      if (userClosed.value.has(label))
+        return false;
+      const inputContent = tabToPropertiesMap.value.inputs.get(label);
+      if (inputContent && inputContent.type === 'dataframe' && hiddenByMeta.value.has(inputContent.name))
+        return false;
+      return true;
+    }));
+
     Vue.watch(currentCall, (call) => {
-      const tabToPropertiesMap = tabToProperties(call);
+      tabToPropertiesMap.value = tabToProperties(call);
       tabLabels.value = [
-        ...tabToPropertiesMap.inputs.keys(),
-        ...tabToPropertiesMap.outputs.keys(),
+        ...tabToPropertiesMap.value.inputs.keys(),
+        ...tabToPropertiesMap.value.outputs.keys(),
       ];
+      userClosed.value = new Set();
 
       const features = Utils.getFeatures(call.func);
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
@@ -282,18 +308,20 @@ export const RichFunctionView = Vue.defineComponent({
       runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
       customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
+      formAsTab.value = Utils.getFormAsTab(call.func);
+      inputsHidden.value = Utils.getInputsHidden(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
       if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
-      const tabToPropertiesMap = tabToProperties(call);
+      const map = tabToPropertiesMap.value;
 
       tabsData.value = labels.map((tabLabel) =>
         ({
           tabLabel,
-          tabContent: tabToPropertiesMap.inputs.get(tabLabel) ?? tabToPropertiesMap.outputs.get(tabLabel)!,
-          isInput: !!tabToPropertiesMap.inputs.has(tabLabel),
+          tabContent: map.inputs.get(tabLabel) ?? map.outputs.get(tabLabel)!,
+          isInput: !!map.inputs.has(tabLabel),
         }));
     }, {immediate: true});
 
@@ -342,27 +370,24 @@ export const RichFunctionView = Vue.defineComponent({
       if (el === helpRef.value) helpHidden.value = true;
       if (el === formRef.value) formHidden.value = true;
 
-      const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.getAttribute('dock-spawn-title'));
-      if (tabIdx >= 0) {
-        visibleTabLabels.value.splice(tabIdx, 1);
-        visibleTabLabels.value = [...visibleTabLabels.value];
+      const closedLabel = el.getAttribute('dock-spawn-title');
+      if (closedLabel && tabLabels.value.includes(closedLabel)) {
+        const next = new Set(userClosed.value);
+        next.add(closedLabel);
+        userClosed.value = next;
       }
     };
 
     const handlePanelChanged = (name: string | null, oldName: string | null) => {
       if (oldName == null) {
         const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value.func?.nqName}`);
-        if (savedName)
+        if (savedName && visibleTabLabels.value.includes(savedName))
           setTimeout(() => activePanelTitle.value = savedName);
       }
 
       if (currentCall.value)
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
     };
-
-    Vue.watch(currentCall, () => {
-      visibleTabLabels.value = [...tabLabels.value];
-    }, {immediate: true});
 
     ////
     // Intergrations related
@@ -446,16 +471,16 @@ export const RichFunctionView = Vue.defineComponent({
             onClick={() => formHidden.value = !formHidden.value}
             class={'flex justify-between w-full'}
           >
-            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show inputs </div>
+            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show form </div>
             { !formHidden.value && <IconFA name='check'/>}
           </span>
           <span
-            onClick={() => visibleTabLabels.value = [...tabLabels.value]}
+            onClick={() => userClosed.value = new Set()}
             class={'flex justify-between'}
           >
             <div> <IconFA name='sign-out'
-              style={menuIconStyle}/> Show all outputs </div>
-            { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
+              style={menuIconStyle}/> Show all viewers </div>
+            { userClosed.value.size === 0 && <IconFA name='check'/>}
           </span>
           { <span
             onClick={() => helpHidden.value = !helpHidden.value}
@@ -532,13 +557,25 @@ export const RichFunctionView = Vue.defineComponent({
               <div
                 key="__FORM__"
                 class='flex flex-col p-2 overflow-scroll h-full'
-                dock-spawn-dock-type='left'
-                dock-spawn-dock-ratio={0.2}
+                {...(formAsTab.value ? {} : {
+                  'dock-spawn-dock-type': 'left',
+                  'dock-spawn-dock-ratio': 0.2,
+                })}
                 dock-spawn-title='Inputs'
                 dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
               >
-                {
+                { hasInputsHiddenOption.value &&
+                  <div
+                    class='flex items-center justify-start'
+                    style={{cursor: 'pointer', color: 'var(--grey-4)', fontSize: '12px', gap: '6px', padding: '4px 0'}}
+                    onClick={() => inputsHidden.value = !inputsHidden.value}
+                  >
+                    <IconFA name={inputsHidden.value ? 'chevron-down' : 'chevron-up'} />
+                    <span>{inputsHidden.value ? 'Show inputs' : 'Hide inputs'}</span>
+                  </div>
+                }
+                { !inputsHidden.value &&
                   <InputForm
                     key={currentCall.value?.id}
                     ref={inputFormComponentRef}
@@ -553,8 +590,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     isReadonly={isReadonly.value}
-                  />
-                }
+                  /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :

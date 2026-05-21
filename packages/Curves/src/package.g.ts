@@ -30,6 +30,13 @@ export async function curveFitDemo() : Promise<void> {
   await PackageFunctions.curveFitDemo();
 }
 
+//name: Assay Curves
+//description: Dashboard with curves for multiple compounds, assays and targets
+//meta.demoPath: Curves | Assay Curves
+export async function assayCurveFitDemo() : Promise<void> {
+  await PackageFunctions.assayCurveFitDemo();
+}
+
 //meta.role: init
 export async function _initCurves() : Promise<void> {
   await PackageFunctions._initCurves();

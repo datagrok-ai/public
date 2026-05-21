@@ -24,7 +24,7 @@ export async function drawMoleculeLabels(
       //@ts-ignore
       const point = sp.pointToScreen(i);
       if (point.x > minX && point.x < maxX && point.y > minY && point.y < maxY && table.filter.get(i)) {
-        if (counter == 20) {
+        if (counter === 20) {
           sp.setOptions({
             markerDefaultSize: smallMarkerSize,
             sizeColumnName: sizeCol,
@@ -85,9 +85,9 @@ export async function drawMoleculeLabels(
         ctxMain.strokeStyle = `rgba(0, 0, 0, 0.1)`;
         ctxMain.fillStyle = `white`;
         const moleculeRectOffset = 10;
-        const canwasWidth = largeMarkerSize - moleculeRectOffset;
-        const canvasHeight = canwasWidth * 0.7;
-        const imageHost = ui.canvas(canwasWidth, canvasHeight);
+        const canvasWidth = largeMarkerSize - moleculeRectOffset;
+        const canvasHeight = canvasWidth * 0.7;
+        const imageHost = ui.canvas(canvasWidth, canvasHeight);
         const mStr = molCol.get(pointsOnScreenIdxs[i]);
         if (mStr && !isMolBlock(mStr) && mStr.length > 5000) {
           // throw new Error('SMILES string longer than 5000 characters not supported')
@@ -99,7 +99,7 @@ export async function drawMoleculeLabels(
         mol?.draw_to_canvas_with_highlights(imageHost, JSON.stringify(RDKIT_COMMON_RENDER_OPTS));
         ctxMain.arc(pointsOnScreen[i].x, pointsOnScreen[i].y, Math.floor(largeMarkerSize/2), 0, 2 * Math.PI);
         ctxMain.fill();
-        const leftX = pointsOnScreen[i].x - Math.floor(canwasWidth / 2);
+        const leftX = pointsOnScreen[i].x - Math.floor(canvasWidth / 2);
         ctxMain.drawImage(imageHost, leftX, pointsOnScreen[i].y - Math.floor(canvasHeight / 2));
         if (sizeCol) {
           ctxMain.fillStyle = `black`;

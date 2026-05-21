@@ -7,6 +7,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subscription} from 'rxjs';
+
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -113,7 +115,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
@@ -174,6 +176,8 @@ let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
 let _initChemPromise: Promise<void> | null = null;
+
+let mpoTreeBrowserSub: Subscription | null = null;
 
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -258,72 +262,6 @@ export class PackageFunctions {
     if (!join)
       return newCol;
     table.columns.add(newCol);
-  }
-
-  @grok.decorators.func({
-    name: 'Chemistry | Most Diverse Structures',
-    meta: {role: 'tooltip'},
-  })
-  static async chemTooltip(
-    @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
-    const initialWidth = 255;
-    const initialHeight = 90;
-    const tooltipMaxWidth = 500;
-    const version = col.version;
-    const colCategories = col.categories;
-    for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
-      if (!!colCategories[i] && _isSmarts(colCategories[i]))
-        return;
-    }
-
-    const divMain = ui.div();
-    divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
-    const divStructures = ui.div([ui.loader()]);
-    divStructures.classList.add('chem-tooltip-structure-div');
-    const getDiverseStructures = async (): Promise<void> => {
-      if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
-        const molIds = await chemDiversitySearch(
-          col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
-
-        Object.assign(col.temp, {
-          'version': version,
-          'molIds': molIds,
-        });
-      }
-      ui.empty(divStructures);
-      const molIdsCached = col.temp['molIds'];
-      for (let i = 0; i < molIdsCached.length; ++i)
-        divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
-    };
-
-    divMain.append(divStructures);
-    const widget = new DG.Widget(divMain);
-
-    Object.assign(widget.root.style, {
-      position: 'relative',
-      width: `${initialWidth}px`,
-      height: `${initialHeight}px`,
-    });
-
-    const tooltip = document.querySelector('.d4-tooltip');
-    if (tooltip) {
-      const rect = tooltip.getBoundingClientRect();
-      const {width, height} = rect;
-      const isWideTooltip = width + initialWidth > tooltipMaxWidth;
-      const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
-
-      if (!isWideTooltip && fitsRight) {
-        Object.assign(widget.root.style, {
-          left: `${width}px`,
-          top: `${30 - height}px`,
-          width: `${initialWidth + width}px`,
-          height: '0',
-        });
-      }
-    }
-
-    setTimeout(() => getDiverseStructures(), 10);
-    return widget;
   }
 
   @grok.decorators.func({
@@ -1427,12 +1365,12 @@ export class PackageFunctions {
 
   //#endregion
 
-  //#region Pharmacophore Features
+  //#region Pharmacophores
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Analyze | Pharmacophore Features...',
-    'name': 'Pharmacophore Features',
-    'description': 'Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)',
+    'top-menu': 'Chem | Analyze | Pharmacophores...',
+    'name': 'Pharmacophores',
+    'description': 'Detects pharmacophores (donors, acceptors, hydrophobic, etc.)',
     'meta': {'role': 'hitTriageFunction'},
   })
   static async pharmacophoreFeaturesTopMenu(
@@ -1483,7 +1421,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Halogen Bond', initialValue: 'false', description: '"Halogen bond donor"'}}) halogenBond: boolean,
   ): Promise<void> {
     if (table.rowCount > 5000)
-      grok.shell.info('Pharmacophore feature detection will take a while to run');
+      grok.shell.info('Pharmacophore detection will take a while to run');
 
     const familySet: PharmFamilySet = {
       'Donor': donor, 'Acceptor': acceptor, 'Hydrophobic': hydrophobic,
@@ -1494,7 +1432,8 @@ export class PackageFunctions {
 
     if (resultDf) {
       for (const resultCol of resultDf.columns) {
-        resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
+        if (resultCol.semType !== DG.SEMTYPE.MOLECULE)
+          resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
         table.columns.add(resultCol.clone());
       }
     }
@@ -1586,8 +1525,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'name': 'Biology | Pharmacophore Features',
-    'description': 'Detects and highlights pharmacophore features (donors, acceptors, hydrophobic, aromatic, positive, negative)',
+    'name': 'Biology | Pharmacophores',
+    'description': 'Detects and highlights pharmacophores (donors, acceptors, hydrophobic, aromatic, positive, negative)',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static async pharmacophoreFeatures(
@@ -1768,8 +1707,7 @@ export class PackageFunctions {
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
     if (overwrite) {
-      for (let i = 0; i < molecules.length; i++)
-        molecules.set(i, res[i], false);
+      molecules.init((i) => res[i]);
       molecules.meta.units = units;
     } else {
       const colName = data.columns.getUnusedName(`${molecules.name}_${targetNotation}`);
@@ -2423,17 +2361,6 @@ export class PackageFunctions {
     return filteredMolecules;
   }
 
-
-  @grok.decorators.func({
-    name: 'Demo Chem Overview',
-    description: 'Overview of Cheminformatics functionality',
-    meta: {isDemoScript: 'true', demoSkip: 'GROK-14320', demoPath: 'Cheminformatics | Overview'},
-  })
-  static async demoChemOverview(): Promise<void> {
-    await _demoChemOverview();
-  }
-
-
   @grok.decorators.func({
     name: 'Demo Similarity Search',
     description: 'Searching for most similar or diverse molecules in dataset',
@@ -2962,16 +2889,13 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'view'}) _browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
-    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
-      profileMap.clear();
 
       const profiles = await MpoProfileManager.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
-        profileMap.set(item, profile);
 
         item.onSelected.subscribe(() => {
           openedView?.close();
@@ -2994,8 +2918,8 @@ export class PackageFunctions {
 
     await refresh();
 
-    grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
-      await MpoProfileManager.load();
+    mpoTreeBrowserSub?.unsubscribe();
+    mpoTreeBrowserSub = grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
       await refresh();
     });
   }
@@ -3161,3 +3085,69 @@ export class PackageFunctions {
     return DG.Widget.fromRoot(container);
   }
 }
+
+// removed because is not useful enaugh and can freeze browser.
+// @grok.decorators.func({
+//   name: 'Chemistry | Most Diverse Structures',
+// })
+// static async chemTooltip(
+//   @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
+//   const initialWidth = 255;
+//   const initialHeight = 90;
+//   const tooltipMaxWidth = 500;
+//   const version = col.version;
+//   const colCategories = col.categories;
+//   for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
+//     if (!!colCategories[i] && _isSmarts(colCategories[i]))
+//       return;
+//   }
+
+//   const divMain = ui.div();
+//   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
+//   const divStructures = ui.div([ui.loader()]);
+//   divStructures.classList.add('chem-tooltip-structure-div');
+//   const getDiverseStructures = async (): Promise<void> => {
+//     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
+//       const molIds = await chemDiversitySearch(
+//         col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+
+//       Object.assign(col.temp, {
+//         'version': version,
+//         'molIds': molIds,
+//       });
+//     }
+//     ui.empty(divStructures);
+//     const molIdsCached = col.temp['molIds'];
+//     for (let i = 0; i < molIdsCached.length; ++i)
+//       divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
+//   };
+
+//   divMain.append(divStructures);
+//   const widget = new DG.Widget(divMain);
+
+//   Object.assign(widget.root.style, {
+//     position: 'relative',
+//     width: `${initialWidth}px`,
+//     height: `${initialHeight}px`,
+//   });
+
+//   const tooltip = document.querySelector('.d4-tooltip');
+//   if (tooltip) {
+//     const rect = tooltip.getBoundingClientRect();
+//     const {width, height} = rect;
+//     const isWideTooltip = width + initialWidth > tooltipMaxWidth;
+//     const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
+
+//     if (!isWideTooltip && fitsRight) {
+//       Object.assign(widget.root.style, {
+//         left: `${width}px`,
+//         top: `${30 - height}px`,
+//         width: `${initialWidth + width}px`,
+//         height: '0',
+//       });
+//     }
+//   }
+
+//   setTimeout(() => getDiverseStructures(), 10);
+//   return widget;
+// }

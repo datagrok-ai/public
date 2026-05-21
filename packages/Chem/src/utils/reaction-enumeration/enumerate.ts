@@ -47,6 +47,12 @@ export interface EnumerateOptions {
   templates: TemplateInput[];
   buildingBlocks: string[];
   exclusionSmarts: string[];
+  // Optional library of "reagents". When non-empty, switches to reagents mode: every step uses
+  // EXACTLY ONE reactant from the main pool (BBs in round 1, round-(R-1) products in round R > 1)
+  // and fills every remaining slot from this reagents library. Used to grow derivatives of each
+  // BB across rounds (P1 = BB + reagents, P2 = P1 + reagents, …). Overrides depth_first /
+  // breadth_first slot logic when present.
+  reagents?: string[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
 }
@@ -295,7 +301,7 @@ export interface OutputRow {
 }
 
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
-  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, onProgress, isCancelled} = opts;
+  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents, onProgress, isCancelled} = opts;
   const warnings: string[] = [];
 
   const parsedTemplates: ParsedTemplate[] = [];
@@ -317,6 +323,21 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     else warnings.push(`Skipped invalid BB SMILES: ${s}`);
   }
   const uniqueBBs = Array.from(new Set(canonBBs));
+
+  const reagentsMode = !!(reagents && reagents.length > 0);
+  const uniqueReagents: string[] = [];
+  if (reagentsMode) {
+    const canonReagents: string[] = [];
+    for (const s of reagents!) {
+      const c = canonicalize(rdkit, s);
+      if (c) canonReagents.push(c);
+      else warnings.push(`Skipped invalid reagent SMILES: ${s}`);
+    }
+    uniqueReagents.push(...new Set(canonReagents));
+    if (uniqueReagents.length === 0)
+      warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
+  }
+  const useReagents = reagentsMode && uniqueReagents.length > 0;
 
   const molCache = new MolCache(rdkit);
 
@@ -377,7 +398,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       // - depth_first round R > 1: BBs ∪ R(R-1) products. The combo filter below then enforces
       //   exactly one R(R-1) product + (N-1) BBs per combo (linear chain extension).
       // - breadth_first: any product produced so far (rounds 0..R-1).
-      const eligibleSmiles = config.enumeration.depth_first ?
+      // - reagents mode reuses the depth_first pool for the "main" slot only; other slots draw
+      //   from the reagents library and the depth-first combo filter is skipped (the slot pools
+      //   already enforce "exactly one from main, rest from reagents").
+      const eligibleSmiles = useReagents || config.enumeration.depth_first ?
         (round === 1 ? uniqueBBs : Array.from(new Set([...uniqueBBs, ...prevRoundProducts]))) :
         Array.from(allPriorPool);
 
@@ -395,53 +419,106 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           templateIndex: ti, numTemplates: parsedTemplates.length,
           productsSoFar: newPool.size});
 
-        const slots: string[][] = [];
-        for (let i = 0; i < t.numReactants; i++) slots.push([]);
+        // Build one or more slot configurations to enumerate. Each configuration is a
+        // slots[i] = SMILES candidates for reactant slot i; cartesian(slots) generates combos.
+        //
+        // - Standard mode: a single configuration where every slot draws from eligibleSmiles.
+        // - Reagents mode: one configuration per "main slot" index. For each i in 0..N-1,
+        //   slot i draws from eligibleSmiles (BBs ∪ round-(R-1) products) and every other
+        //   slot draws from the reagents library. Different "main slot" choices can produce
+        //   duplicate combos for symmetric templates; the product-pool dedup handles that.
+        const slotConfigs: string[][][] = [];
 
-        for (const smi of eligibleSmiles) {
-          if (isCancelled?.()) break;
-          await yieldIfNeeded();
-          const mol = molCache.get(smi);
-          if (!mol) continue;
-          if (buildBlockingFilter(mol, t.blockingQmols)) continue;
-          for (let i = 0; i < t.numReactants; i++)
-            if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
+        if (useReagents) {
+          for (let mainSlot = 0; mainSlot < t.numReactants; mainSlot++) {
+            if (isCancelled?.()) break;
+            const slots: string[][] = [];
+            for (let i = 0; i < t.numReactants; i++) slots.push([]);
+
+            for (const smi of eligibleSmiles) {
+              if (isCancelled?.()) break;
+              await yieldIfNeeded();
+              const mol = molCache.get(smi);
+              if (!mol) continue;
+              if (buildBlockingFilter(mol, t.blockingQmols)) continue;
+              if (bbMatchesSlot(mol, t.reactantQmols[mainSlot])) slots[mainSlot].push(smi);
+            }
+
+            if (slots[mainSlot].length === 0) continue;
+
+            let otherSlotsOk = true;
+            for (let i = 0; i < t.numReactants; i++) {
+              if (i === mainSlot) continue;
+              for (const smi of uniqueReagents) {
+                if (isCancelled?.()) break;
+                await yieldIfNeeded();
+                const mol = molCache.get(smi);
+                if (!mol) continue;
+                if (buildBlockingFilter(mol, t.blockingQmols)) continue;
+                if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
+              }
+              if (slots[i].length === 0) {otherSlotsOk = false; break;}
+            }
+            if (otherSlotsOk) slotConfigs.push(slots);
+          }
+        } else {
+          const slots: string[][] = [];
+          for (let i = 0; i < t.numReactants; i++) slots.push([]);
+          for (const smi of eligibleSmiles) {
+            if (isCancelled?.()) break;
+            await yieldIfNeeded();
+            const mol = molCache.get(smi);
+            if (!mol) continue;
+            if (buildBlockingFilter(mol, t.blockingQmols)) continue;
+            for (let i = 0; i < t.numReactants; i++)
+              if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
+          }
+          if (!slots.some((s) => s.length === 0)) slotConfigs.push(slots);
         }
 
-        if (slots.some((s) => s.length === 0)) continue;
+        if (slotConfigs.length === 0) continue;
 
-        let totalCombos = 1;
-        for (const s of slots) totalCombos *= s.length;
+        let totalCombos = 0;
+        for (const cfg of slotConfigs) {
+          let c = 1;
+          for (const s of cfg) c *= s.length;
+          totalCombos += c;
+        }
         const comboCap = max_num_combinations_per_template;
         let executed = 0;
         let truncated = false;
         progressContext.combosTotal = totalCombos;
 
-        for (const combo of cartesian(slots)) {
-          if (isCancelled?.()) break;
-          if (comboCap >= 0 && executed >= comboCap) {
-            truncated = true;
-            break;
-          }
-          executed++;
-          progressContext.combosDone = executed;
-          progressContext.productsSoFar = newPool.size;
-          await yieldIfNeeded();
-
-          if (config.enumeration.depth_first && round > 1) {
-            // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
-            // round-(R-1) product and reacts it with original BBs only — no merging two
-            // complex products in a single step (that would be convergent/breadth-first).
-            const prevSet = new Set(prevRoundProducts);
-            const bbSet = new Set(uniqueBBs);
-            let prevCount = 0;
-            let bbCount = 0;
-            for (const c of combo) {
-              if (prevSet.has(c)) prevCount++;
-              else if (bbSet.has(c)) bbCount++;
+        configLoop:
+        for (const slots of slotConfigs)
+          for (const combo of cartesian(slots)) {
+            if (isCancelled?.()) break configLoop;
+            if (comboCap >= 0 && executed >= comboCap) {
+              truncated = true;
+              break configLoop;
             }
-            if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
-          }
+            executed++;
+            progressContext.combosDone = executed;
+            progressContext.productsSoFar = newPool.size;
+            await yieldIfNeeded();
+
+            // In reagents mode the slot pools already enforce "exactly one main + reagents
+            // elsewhere", so skip the depth-first combo filter (it would reject everything
+            // because reagents aren't in the BB or prev-round sets).
+            if (!useReagents && config.enumeration.depth_first && round > 1) {
+              // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
+              // round-(R-1) product and reacts it with original BBs only — no merging two
+              // complex products in a single step (that would be convergent/breadth-first).
+              const prevSet = new Set(prevRoundProducts);
+              const bbSet = new Set(uniqueBBs);
+              let prevCount = 0;
+              let bbCount = 0;
+              for (const c of combo) {
+                if (prevSet.has(c)) prevCount++;
+                else if (bbSet.has(c)) bbCount++;
+              }
+              if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
+            }
 
           let molList: MolList | null = null;
           let result: ReturnType<RDReaction['run_reactants']> | null = null;

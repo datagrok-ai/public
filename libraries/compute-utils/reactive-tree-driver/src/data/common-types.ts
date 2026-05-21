@@ -6,6 +6,11 @@ export type NqName = string;
 export type TypeKey = string;
 export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 export type StateType = 'input' | 'output' | 'state';
+export type DynamicPipelineType = 'dynamic' | 'parallel' | 'sequential';
+
+export function isDynamicType(t: string | undefined): t is DynamicPipelineType {
+  return t === 'dynamic' || t === 'parallel' || t === 'sequential';
+}
 export type Constructor = new (...args: any[]) => {};
 export type GConstructor<T = {}> = new (...args: any[]) => T;
 export type TraverseHandler<R, I, A> = (acc: R, item: I, pathAddress: A, stop: () => void) => R;

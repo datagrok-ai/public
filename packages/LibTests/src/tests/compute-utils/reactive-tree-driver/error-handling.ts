@@ -265,8 +265,8 @@ category('ComputeUtils: Driver error handling: error content', async () => {
   });
 });
 
-// Note: Bridge setMeta and structureCheck error tests require specific edge cases
-// (IO mismatch after link matching, throwing structureCheck on nested nodes) that
-// are difficult to trigger in mockMode. The reportError mechanism is proven to work
-// by the link recovery and error content tests above. The bridge and node logger
-// injection paths are verified by code review and TypeScript compilation.
+// Note: Bridge setMeta error tests require specific edge cases (IO mismatch after
+// link matching) that are difficult to trigger in mockMode. The reportError mechanism
+// is proven to work by the link recovery and error content tests above. The bridge
+// and node logger injection paths are verified by code review and TypeScript
+// compilation.

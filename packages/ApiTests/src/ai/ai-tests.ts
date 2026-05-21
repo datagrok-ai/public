@@ -23,6 +23,7 @@ import './viewers/pie-chart-js-api';
 import './viewers/scatter-plot-auto-detect';
 import './viewers/scatter-plot-extras';
 import './viewers/scatter-plot-js-api';
+import './viewers/viewer-layout-backward-compat';
 
 // Reported issues (regression coverage from JIRA tickets and GitHub issues)
 import './reported-issues/gh-3469';

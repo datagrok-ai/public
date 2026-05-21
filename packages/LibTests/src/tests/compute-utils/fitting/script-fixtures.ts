@@ -67,6 +67,36 @@ export function makeExpDecayFunc(): DG.Func {
 }
 
 /**
+ * Async-yielding exponential decay: same math as makeExpDecayFunc, with a
+ * single `await Promise.resolve()` inside the body. Triggers the worker's
+ * AsyncFunction compile path; results must match the sync fixture bit for
+ * bit because the math is identical.
+ */
+export function makeAsyncExpDecayFunc(): DG.Func {
+  return buildScript([
+    '//name: AsyncExpDecay',
+    '//language: javascript',
+    '//meta.workerSafe: true',
+    '//input: double a',
+    '//input: double b',
+    '//input: int N = 20',
+    '//output: dataframe simulation',
+    '',
+    'await Promise.resolve();',
+    'const tArr = new Float32Array(N);',
+    'const yArr = new Float32Array(N);',
+    'for (let i = 0; i < N; i++) {',
+    '  tArr[i] = i / (N - 1) * 5;',
+    '  yArr[i] = a * Math.exp(-b * tArr[i]);',
+    '}',
+    'simulation = DG.DataFrame.fromColumns([',
+    "  DG.Column.fromFloat32Array('t', tArr),",
+    "  DG.Column.fromFloat32Array('y', yArr),",
+    ']);',
+  ]);
+}
+
+/**
  * Two-output linear mixture: y = a*t + b*sin(c*t).
  * One DataFrame output `simulation` with columns [t, y]; one scalar `mean` (mean of y).
  */

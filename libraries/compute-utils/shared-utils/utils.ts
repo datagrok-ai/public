@@ -73,6 +73,14 @@ export const getRunLabel = (func: DG.Func) => {
   return func.options['runLabel'];
 };
 
+export const getFormAsTab = (func: DG.Func): boolean => {
+  return func.options['formAsTab'] === 'true';
+};
+
+export const getInputsHidden = (func: DG.Func): boolean => {
+  return func.options['inputsHidden'] === 'true';
+};
+
 export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
   return JSON.parse(func.options['customExports'] ?? '[]');
 };

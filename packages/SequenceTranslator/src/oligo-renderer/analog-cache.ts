@@ -15,11 +15,14 @@
  * resolve fully.
  */
 
+import * as DG from 'datagrok-api/dg';
+
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {_package} from '../package';
 
-/** symbol → natural-analog letter, or null if absent / no analog. */
-const _cache = new Map<string, string | null>();
+/** symbol → natural-analog letter, or null if absent / no analog.
+ * LRU bound prevents unbounded growth across a long-lived session. */
+const _cache = new DG.LruCache<string, string | null>(256);
 
 /** Resolve `symbol` to its single-letter natural analog. Returns `null` for
  * unknowns, the canonical letter (uppercase) for matches. Pure sync. */

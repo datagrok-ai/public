@@ -1,5 +1,19 @@
 # Grokky changelog
 
+## v.next
+
+* AI: Voice input — while a prompt is being processed the loader shows a `Say "cancel" to stop` hint, and saying "stop"/"cancel" aborts the run instead of being sent as a new prompt
+* AI: Fixed Enter key not submitting prompts in Chrome ≤ 50 / Dartium (no `KeyboardEvent.key`)
+* AI: Prompts claimed by Datagrok's built-in handler now show a green "Handled natively" check instead of a Responses block
+* AI: Ctrl+[ / Ctrl+] cycle through the current session's prompt history
+* AI: Replaced the "Responses" accordion with a hover-only minimize icon that collapses a reply block to one line
+* AI: Chat panel CSS now works in Chrome 50 — replaced flexbox `gap` with sibling margins, added `-webkit-` fallbacks for `filter` / `user-select` / `mask-image`
+* AI: Unified the bottom controls row icons — same size, larger spacing, subtle hover background
+* AI: Copy / thumbs-up / thumbs-down icons under a reply now appear only on hover of that message
+* Added `src/polyfills.ts` (Chrome 50 / Dartium) — `crypto.randomUUID`, `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`, `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`; routed clipboard writes through a `copyToClipboard()` helper with an `execCommand` fallback
+* AI: Added a Run button to the ribbon of file views opened from `MyFiles/agents/scripts/`
+* AI: Added wand icon to open curated prompt suggestions menu (loaded from suggestions.yaml)
+
 ## 1.0.4 (2026-02-01)
 
 * Grokky: Azure compatible client

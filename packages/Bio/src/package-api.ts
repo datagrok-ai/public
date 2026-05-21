@@ -498,8 +498,22 @@ export namespace funcs {
     return await grok.functions.call('Bio:DemoBioAtomicLevel', {});
   }
 
+  /**
+  siRNA sequences, molecular structures, curves and assay data
+  */
+  export async function demoBioSiRNA(): Promise<void> {
+    return await grok.functions.call('Bio:DemoBioSiRNA', {});
+  }
+
   export async function sdfToJsonLib(table: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('Bio:SdfToJsonLib', { table });
+  }
+
+  /**
+  Antibody sequences, numbering, liabilities, extraction and SAR
+  */
+  export async function demoAntibodies(): Promise<void> {
+    return await grok.functions.call('Bio:DemoAntibodies', {});
   }
 
   /**

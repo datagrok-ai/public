@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {LOSS, runOptimizer, OptimizerInputsConfig, OptimizerOutputsConfig} from './imports';
-import {makeExpDecayFunc, makeMultiOutputFunc, makeRefDfPassthroughFunc,
+import {makeExpDecayFunc, makeAsyncExpDecayFunc, makeMultiOutputFunc, makeRefDfPassthroughFunc,
   makeDayjsFormatFunc, makeDateGetTimeFunc} from './script-fixtures';
 import {rangeBound, formulaBound} from './utils';
 import {assertResultParity} from './parity-assertions';
@@ -427,5 +427,43 @@ category('ComputeUtils: Fitting / Cross-executor parity', () => {
     const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
 
     assertResultParity(mainRes, wkrRes, 'above_threshold_spillover');
+  });
+
+  test('parity_async_exp_decay', async () => {
+    // Script body contains top-level `await`. The worker's compileBody
+    // try/catch falls back to AsyncFunction; fitting.worker.ts picks the
+    // async cost branch + async optimizeNM. Math is identical to the sync
+    // ExpDecay fixture, so main↔worker parity must still hold byte for byte.
+    const func = makeAsyncExpDecayFunc();
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      a: rangeBound(0.5, 5, 'a'),
+      b: rangeBound(0.1, 2, 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 42},
+    };
+
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+
+    assertResultParity(mainRes, wkrRes, 'async_exp_decay');
   });
 });

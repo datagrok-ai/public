@@ -21,10 +21,12 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.19",
+    "js-yaml": "^4.1.0",
     "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
+    "@types/js-yaml": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",

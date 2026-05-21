@@ -116,6 +116,10 @@ export type HitDesignMergeConfig = {
     addNewRows: boolean,
     runComputeOnNewRows: boolean,
     clashStrategy: HitDesignMergeClashStrategy,
+    // When true AND filePath is set, the file is automatically re-read and merged into the
+    // campaign every time the campaign is opened, before the design view is shown. Compute is
+    // never run for this implicit pass, and the campaign is not auto-saved.
+    autoMergeOnOpen?: boolean,
 }
 
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {

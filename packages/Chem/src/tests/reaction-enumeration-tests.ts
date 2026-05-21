@@ -615,4 +615,260 @@ category('Reaction Enumeration', () => {
     expect(rows.length > 0, true,
       `Enumeration produced no rows. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
   }, {timeout: 300000});
+
+  // ── reagents mode ───────────────────────────────────────────────────────
+  //
+  // Shared helpers for the reagents-mode tests. We split the AA library into a disjoint BB-pool
+  // and reagent-pool, then use peptide coupling (a symmetric 2-slot template that yields chain-
+  // extendable dipeptides). The structural invariant we verify is the spec from the email:
+  //   every step uses EXACTLY ONE reactant from the "main pool" (BBs in round 1, or any earlier
+  //   product / BB in round R > 1), and EVERY remaining slot is filled from reagents.
+  async function loadAaSplit(rdkit: any, bbCount: number) {
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+    const rawAAs = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0);
+    expect(rawAAs.length > bbCount + 2, true, 'AA library too small to split');
+    const bbs = rawAAs.slice(0, bbCount);
+    const reagents = rawAAs.slice(bbCount);
+
+    const canon = (s: string): string => {
+      const m = rdkit.get_mol(s);
+      try {return (m && m.is_valid()) ? m.get_smiles() : s;} finally {
+        try {m?.delete();} catch {/* ignore */}
+      }
+    };
+    const canonBBs = new Set(bbs.map(canon));
+    const canonReagents = new Set(reagents.map(canon));
+    // Sanity: the split must actually be disjoint after canonicalisation, otherwise the test
+    // can't classify reactants.
+    for (const s of canonBBs)
+      expect(canonReagents.has(s), false, `Split overlap at canonical SMILES "${s}"`);
+
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const peptideIdx = (namesList ?? []).findIndex((n) => /peptide/i.test(n));
+    expect(peptideIdx >= 0, true, 'Could not find peptide coupling template in aa_reactions.csv');
+    const peptideTemplate: TemplateInput = {
+      smarts: smartsList[peptideIdx].trim(),
+      blockingSmartsList: [],
+      reactionName: namesList?.[peptideIdx] ?? '',
+    };
+
+    return {bbs, reagents, canonBBs, canonReagents, peptideTemplate};
+  }
+
+  function reagentsModeBaseConfig() {
+    const config = cloneConfig(DEFAULT_CONFIG);
+    config.enumeration.depth_first = true; // ignored in reagents mode but exercises that fact
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_components = 2;
+    config.max_num_combinations_per_template = 200;
+    return config;
+  }
+
+  test('reagents mode: round 1 — every step is exactly one BB and one reagent', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, canonBBs, canonReagents, peptideTemplate} = await loadAaSplit(rdkit, 5);
+
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const {rows, warnings} = await enumerate({
+      rdkit, config, templates: [peptideTemplate],
+      buildingBlocks: bbs, reagents, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true,
+      `Expected products. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
+
+    let checked = 0;
+    for (const row of rows) {
+      if (!row.route) continue;
+      const stepStrs = row.route.split('--**--');
+      expect(stepStrs.length, 1, `Round-1 route should be single-step: ${row.route}`);
+      const arrow = stepStrs[0].indexOf('>>');
+      const lhs = stepStrs[0].slice(0, arrow);
+      const reactants = lhs.split('.').filter((r) => r.length > 0);
+      const fromBB = reactants.filter((r) => canonBBs.has(r));
+      const fromReagent = reactants.filter((r) => canonReagents.has(r));
+      expect(fromBB.length, 1,
+        `Round-1 step "${stepStrs[0]}" should have EXACTLY 1 BB reactant, got ${fromBB.length}: ${reactants.join(' + ')}`);
+      expect(fromBB.length + fromReagent.length, reactants.length,
+        `Round-1 step "${stepStrs[0]}" had unclassified reactants: ${reactants.join(' + ')}`);
+      checked++;
+    }
+    expect(checked > 0, true, 'No reagents-mode rows were checked');
+  }, {timeout: 300000});
+
+  test('reagents mode: multi-round — every step is one main-pool reactant plus reagents only', async () => {
+    // Spec from the email:
+    //   round 1: BB + reagent(s)               → P1
+    //   round 2: P1 + reagent(s)               → P2
+    //   ...
+    // For each step in each route, exactly one reactant comes from the "main pool" — that is,
+    // either a BB or a previously-emitted product in this same route — and every remaining
+    // reactant comes from the reagents library. The test also verifies that *at least one*
+    // multi-step route is produced, otherwise the round-2+ path wasn't actually exercised.
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, canonBBs, canonReagents, peptideTemplate} = await loadAaSplit(rdkit, 4);
+
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 2;
+    // Cap needs to comfortably exceed (bbs × reagents) so the round-2 main slot sampling
+    // reaches the round-1 products that follow BBs in eligibleSmiles.
+    config.max_num_combinations_per_template = 200;
+
+    const {rows, warnings} = await enumerate({
+      rdkit, config, templates: [peptideTemplate],
+      buildingBlocks: bbs, reagents, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true,
+      `Expected products. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
+
+    let multiStepChecked = 0;
+    let totalSteps = 0;
+    for (const row of rows) {
+      if (!row.route) continue;
+      const stepStrs = row.route.split('--**--');
+      const knownProducts = new Set<string>();
+      for (const stepStr of stepStrs) {
+        const arrow = stepStr.indexOf('>>');
+        if (arrow < 0) continue;
+        const lhs = stepStr.slice(0, arrow);
+        const rhs = stepStr.slice(arrow + 2);
+        const reactants = lhs.split('.').filter((r) => r.length > 0);
+        // Main pool at this point = BBs ∪ products of earlier steps in this route.
+        const mainPool = (r: string) => canonBBs.has(r) || knownProducts.has(r);
+        const mainCount = reactants.filter(mainPool).length;
+        const reagentCount = reactants.filter((r) => canonReagents.has(r)).length;
+        expect(mainCount, 1,
+          `Step "${stepStr}" in route "${row.route}": expected EXACTLY 1 main-pool reactant, got ${mainCount}. Reactants: ${reactants.join(' + ')}`);
+        expect(mainCount + reagentCount, reactants.length,
+          `Step "${stepStr}" had unclassified reactants: ${reactants.join(' + ')}`);
+        for (const p of rhs.split('.')) if (p) knownProducts.add(p);
+        totalSteps++;
+      }
+      if (stepStrs.length > 1) multiStepChecked++;
+    }
+    expect(multiStepChecked > 0, true,
+      `No multi-step routes produced — round 2 chain extension wasn't exercised. Total rows: ${rows.length}, total steps: ${totalSteps}`);
+  }, {timeout: 600000});
+
+  test('reagents mode: empty reagents array behaves like standard depth-first', async () => {
+    // The reagentsMode branch must be skipped when no reagents are provided so existing setups
+    // keep working without surprises. Run the same template/BBs once with reagents=[] and once
+    // with reagents undefined; both should produce identical product sets to a baseline that
+    // doesn't pass the field at all.
+    const rdkit = getRdKitModule();
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+    const bbs = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0).slice(0, 6);
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const peptideIdx = (namesList ?? []).findIndex((n) => /peptide/i.test(n));
+    const peptideTemplate: TemplateInput = {
+      smarts: smartsList[peptideIdx].trim(), blockingSmartsList: [],
+      reactionName: namesList?.[peptideIdx] ?? '',
+    };
+
+    const baseConfig = reagentsModeBaseConfig();
+    baseConfig.enumeration.num_rounds = 1;
+
+    const baseline = await enumerate({
+      rdkit, config: baseConfig, templates: [peptideTemplate],
+      buildingBlocks: bbs, exclusionSmarts: [],
+    });
+    const withEmptyReagents = await enumerate({
+      rdkit, config: baseConfig, templates: [peptideTemplate],
+      buildingBlocks: bbs, reagents: [], exclusionSmarts: [],
+    });
+
+    expect(baseline.rows.length > 0, true, 'Baseline produced no rows');
+    expect(baseline.rows.length, withEmptyReagents.rows.length,
+      `Empty-reagents run should match baseline row count. Baseline=${baseline.rows.length}, empty=${withEmptyReagents.rows.length}`);
+
+    const baseSet = new Set(baseline.rows.map((r) => r.product));
+    const emptySet = new Set(withEmptyReagents.rows.map((r) => r.product));
+    expect(baseSet.size, emptySet.size, 'Product sets differ in size');
+    for (const p of baseSet)
+      expect(emptySet.has(p), true, `Empty-reagents missing product "${p}" present in baseline`);
+  }, {timeout: 300000});
+
+  test('reagents mode: no BB × BB combinations leak through (regression for slot pool isolation)', async () => {
+    // With reagents present, slot pools enforce one-from-main + rest-from-reagents. A BB-only
+    // combination (e.g. two BB reactants in the same step) would violate the spec and indicate
+    // the slot pools got mixed. Use disjoint BB/reagent sets so the check is unambiguous.
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, canonBBs, peptideTemplate} = await loadAaSplit(rdkit, 5);
+
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const {rows} = await enumerate({
+      rdkit, config, templates: [peptideTemplate],
+      buildingBlocks: bbs, reagents, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true, 'Expected products');
+
+    for (const row of rows) {
+      if (!row.route) continue;
+      const lhs = row.route.split('>>')[0];
+      const reactants = lhs.split('.').filter((r) => r.length > 0);
+      const allBBs = reactants.every((r) => canonBBs.has(r));
+      expect(allBBs, false,
+        `Step "${row.route}" used BB-only reactants (${reactants.join(' + ')}) — slot pools should have isolated BBs to a single slot.`);
+    }
+  }, {timeout: 300000});
+
+  test('reagents mode: round-2 step uses one round-1 product or BB plus reagents only', async () => {
+    // Stronger spec check: in a 2-round run, for every multi-step route, the SECOND step's
+    // reactants must come from {round-1 products of THIS route} or {BBs}, never from raw BBs in
+    // the "other" slots. (One reactant comes from the round-1 product or BB; everything else is
+    // reagents.) The combo cap needs to be high enough that round-2 sampling reaches the
+    // round-1 products in the main slot — eligibleSmiles is [BBs..., prevRoundProducts...] so
+    // the first (bbs × reagents) combos hit BBs only. With 4 BBs × 16 reagents = 64, anything
+    // ≤ 64 misses prevRoundProducts entirely; we use 200 to be comfortably past that.
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, canonBBs, canonReagents, peptideTemplate} = await loadAaSplit(rdkit, 4);
+
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 2;
+    config.max_num_combinations_per_template = 200;
+
+    const {rows} = await enumerate({
+      rdkit, config, templates: [peptideTemplate],
+      buildingBlocks: bbs, reagents, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true, 'Expected products');
+
+    let multiStepChecked = 0;
+    for (const row of rows) {
+      if (!row.route) continue;
+      const stepStrs = row.route.split('--**--');
+      if (stepStrs.length < 2) continue;
+      multiStepChecked++;
+      // After step 1, the "known products" set is the RHS of step 1.
+      const step1 = stepStrs[0];
+      const step1Rhs = step1.slice(step1.indexOf('>>') + 2).split('.').filter((s) => s.length > 0);
+      const knownAfterStep1 = new Set([...step1Rhs]);
+
+      const step2 = stepStrs[1];
+      const lhs2 = step2.slice(0, step2.indexOf('>>'));
+      const r2 = lhs2.split('.').filter((r) => r.length > 0);
+      // Step-2 main candidate set: round-1 products in this same route, OR fresh BBs starting a
+      // new chain in round 2. Reagents fill the remaining slots. Use the canonicalized BB set so
+      // raw-SMILES vs RDKit-emitted-SMILES casing/forms don't cause false negatives.
+      const fromMain = r2.filter((r) => knownAfterStep1.has(r) || canonBBs.has(r));
+      const fromReagent = r2.filter((r) => canonReagents.has(r));
+      expect(fromMain.length, 1,
+        `Step 2 "${step2}" of route "${row.route}" should have EXACTLY 1 main-pool reactant ` +
+        `(round-1 product or BB), got ${fromMain.length}. Reactants: ${r2.join(' + ')}`);
+      expect(fromMain.length + fromReagent.length, r2.length,
+        `Step 2 "${step2}" had unclassified reactants: ${r2.join(' + ')}`);
+    }
+    expect(multiStepChecked > 0, true, 'No multi-step routes produced — round 2 wasn\'t exercised');
+  }, {timeout: 600000});
 });
