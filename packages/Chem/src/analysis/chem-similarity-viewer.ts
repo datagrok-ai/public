@@ -51,8 +51,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const savedSketchedMolecule = this.sketchedMolecule;
       sketcher.setMolecule(this.targetMolecule);
 
-      const applySketchedMolecule = (mol: string) => {
-        this.isEditedFromSketcher = true;
+      const applySketcherState = (isEdited: boolean, mol: string) => {
+        this.isEditedFromSketcher = isEdited;
         this.sketchedMolecule = mol;
         this.gridSelect = false;
         this.render();
@@ -64,7 +64,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const mol = sketcher.getMolFile();
           if (DG.chem.Sketcher.isEmptyMolfile(mol))
             return;
-          applySketchedMolecule(mol);
+          applySketcherState(true, mol);
         });
       }
 
@@ -77,14 +77,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.isEditedFromSketcher = true;
             this.sketchedMolecule = savedMolecule;
           } else
-            applySketchedMolecule(editedMolecule);
+            applySketcherState(true, editedMolecule);
         })
-        .onCancel(() => {
-          this.isEditedFromSketcher = savedIsEditedFromSketcher;
-          this.sketchedMolecule = savedSketchedMolecule;
-          this.gridSelect = false;
-          this.render();
-        });
+        .onCancel(() => applySketcherState(savedIsEditedFromSketcher, savedSketchedMolecule));
       dialog.show();
       dialog.onClose.subscribe(() => liveSub?.unsubscribe());
     }, 'Edit');
