@@ -332,13 +332,6 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  clearOldTags(currentIds: Set<string>) {
-    const cur = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? {};
-    const next = pruneByKeys(cur, currentIds);
-    if (next)
-      this.nodeDescription.setState('tags', next);
-  }
-
   setPipelineValidation(uuid: string, r?: ValidationResult) {
     const cur = {...this.pipelineValidations$.value};
     if (r === undefined)

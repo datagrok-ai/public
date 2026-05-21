@@ -148,6 +148,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
+  const links = conf.links?.map((link) => processLinkData(link));
   const actions = processStepActions(conf.actions ?? [], logger);
   const io = getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
@@ -158,7 +159,7 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
     viewersHook = await hookMaker.apply();
   }
   const states = conf.states?.map((s) => normalizeIdRef(s));
-  return {...conf, viewersHook, io, actions, states};
+  return {...conf, viewersHook, io, links, actions, states};
 }
 
 function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {

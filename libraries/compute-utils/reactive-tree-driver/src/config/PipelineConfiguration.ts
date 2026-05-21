@@ -195,6 +195,7 @@ export type PipelineStepConfiguration<S> = {
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
+  links?: PipelineLinkConfiguration<LinkOf<S>>[];
   actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   states?: StatesOf<S>;
   tags?: string[];
