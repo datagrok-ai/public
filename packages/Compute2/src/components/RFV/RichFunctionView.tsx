@@ -55,7 +55,7 @@ function applyOutputCategoryGroups(outputs: TabContent, spec: OutputCategoryGrou
     for (const item of items) {
       if (typeof item === 'string') {
         const entry = outputs.get(item);
-        if (!entry || entry.type !== 'scalars') continue;
+        if (!entry || entry.type !== 'scalars' || entry.scalarsData.length === 0) continue;
         sink.push({label: item, indent: depth, scalarsData: entry.scalarsData});
         outputs.delete(item);
       } else if (item && typeof item === 'object' && !Array.isArray(item)) {
@@ -118,6 +118,12 @@ const getEmptyTabToProperties = () => ({
 
 const DEFAULT_FLOAT_PRECISION = 4;
 
+const isEmptyScalar = (v: any) =>
+  v == null || v === '' || v === DG.FLOAT_NULL || v === DG.INT_NULL;
+
+const isEmptyDataFrame = (df: any) =>
+  !df || (df instanceof DG.DataFrame && df.rowCount === 0);
+
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   const isHidden = JSON.parse(prop.options.hidden || 'false');
   if (isHidden)
@@ -140,10 +146,12 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
 
 const tabToProperties = (fc: DG.FuncCall) => {
   const tabsToProps = getEmptyTabToProperties();
+  const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
     const dfViewers = Utils.getPropViewers(dfProp).config;
     if (dfViewers.length === 0) return;
+    if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
 
     dfViewers.forEach((dfViewer) => {
       const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
@@ -183,6 +191,8 @@ const tabToProperties = (fc: DG.FuncCall) => {
     if (!content)
       return;
     const [rawValue, formattedValue, units] = content;
+    if (hideEmpty && isEmptyScalar(rawValue))
+      return;
     const scalarProp = {name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units};
     if (categoryProps && categoryProps.type === 'scalars')
       categoryProps.scalarsData.push(scalarProp);
@@ -288,7 +298,6 @@ export const RichFunctionView = Vue.defineComponent({
     const tabToPropertiesMap = Vue.shallowRef(getEmptyTabToProperties());
     const userClosed = Vue.shallowRef(new Set<string>());
     const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
-    const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
     const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
     const customExports = Vue.ref<ExportDefinition[]>([]);
 
@@ -342,12 +351,16 @@ export const RichFunctionView = Vue.defineComponent({
       return true;
     }));
 
-    Vue.watch(currentCall, (call) => {
+    const rebuildTabs = (call: DG.FuncCall) => {
       tabToPropertiesMap.value = tabToProperties(call);
       tabLabels.value = [
         ...tabToPropertiesMap.value.inputs.keys(),
         ...tabToPropertiesMap.value.outputs.keys(),
       ];
+    };
+
+    Vue.watch(currentCall, (call) => {
+      rebuildTabs(call);
       userClosed.value = new Set();
 
       const features = Utils.getFeatures(call.func);
@@ -365,9 +378,10 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
       if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
-      // Re-run mutates outputs in place; refresh scalar snapshots when only callState moved.
+      // Re-run mutates outputs in place; refresh tabToPropertiesMap and tabLabels so
+      // hide-empty-outputs can drop/re-add tabs whose emptiness changed.
       if (prevCall && call === prevCall && callState !== prevCallState)
-        tabToPropertiesMap.value = tabToProperties(call);
+        rebuildTabs(call);
       const map = tabToPropertiesMap.value;
 
       tabsData.value = labels.map((tabLabel) =>
@@ -431,15 +445,38 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const handlePanelChanged = (name: string | null, oldName: string | null) => {
-      if (oldName == null) {
-        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value.func?.nqName}`);
-        if (savedName && visibleTabLabels.value.includes(savedName))
-          setTimeout(() => activePanelTitle.value = savedName);
+    let rebuildInFlight = false;
+    let rebuildTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const clearRebuildFlag = () => {
+      rebuildInFlight = false;
+      if (rebuildTimeoutId !== undefined) {
+        clearTimeout(rebuildTimeoutId);
+        rebuildTimeoutId = undefined;
       }
+    };
+    Vue.watch(tabLabels, () => {
+      rebuildInFlight = true;
+      if (rebuildTimeoutId !== undefined) clearTimeout(rebuildTimeoutId);
+      rebuildTimeoutId = setTimeout(clearRebuildFlag, 50);
+    });
+    Vue.onUnmounted(clearRebuildFlag);
 
-      if (currentCall.value)
-        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
+    // 'Inputs' is the form side-panel unless formAsTab is on. Don't persist or
+    // restore it as an active tab — it's a sticky panel, not a tab the user switches to.
+    const isInputsSidePanel = (n: string | null) => n === 'Inputs' && !formAsTab.value;
+
+    const handlePanelChanged = (name: string | null, oldName: string | null) => {
+      // Restore on initial mount OR when an inflight rebuild auto-focused away from
+      // the user's saved tab — push the saved tab back if it's still visible.
+      if (oldName == null || rebuildInFlight) {
+        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
+        if (savedName && visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
+          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName));
+      }
+      if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
+        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
+        clearRebuildFlag();
+      }
     };
 
     ////
@@ -588,7 +625,6 @@ export const RichFunctionView = Vue.defineComponent({
           onPanelClosed={handlePanelClose}
           onUpdate:activePanelTitle={handlePanelChanged}
           key={currentUuid.value}
-          activePanelTitle={activePanelTitle.value}
           ref={dockSpawnRef}
         >
           { !historyHidden.value && props.historyEnabled &&
