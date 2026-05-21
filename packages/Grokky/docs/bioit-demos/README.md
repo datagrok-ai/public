@@ -12,7 +12,7 @@ Each scenario is a single markdown file with this structure:
 4. **Wow moment** — the single visual beat the recording should land on.
 5. **Talking points** — for live voiceover or title slides/text overlay. Two flavors: IT-lead and scientist.
 6. **Works today / Needs polish** — calibrates expectations. The polish items map to [`POLISH.md`](./POLISH.md).
-7. **Backup plan** — if a step breaks live, what to do.
+7. **Backup plan** — if a step breaks live, what to do or fewer features delivered by Day 1.
 
 ## The five scenarios
 
@@ -32,7 +32,7 @@ Scenarios 1 and 5 also pair well — same data democratization story, but S5 add
 
 ## Sequencing tip
 
-For the keynote/highlight reel, lead with **S1** (instant gratification) → cut to **S3** (bio depth) → close with **S5** (enterprise trust). The recordings of S2 and S4 belong in deeper-dive collateral and on the booth screen rotation.
+For the keynote/highlight reel, lead with **S1** (instant gratification) → cut to **S3** (domain depth) → close with **S5** (enterprise trust). The recordings of S2 and S4 belong in deeper-dive collateral and on the booth screen rotation.
 
 ## Related
 

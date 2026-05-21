@@ -224,7 +224,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ui.tooltip.bind(transformationsTab.header, decript1);
 
     const fragmentsTab = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
-      this.prepareMwForSorting();
       //need timeout not to freeze when switching to tab
       setTimeout(() => {
         this.setupFragmentsTab();
@@ -975,6 +974,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       break;
     case TrellisSortByProp.MW:
       if (!this.mWCalulationsReady) {
+        this.prepareMwForSorting();
         grok.shell.warning('MW calculations for fragments in progress. Please try again later');
         return;
       } else if (!this.fragSortingInfo.mw || this.fragSortingInfo.mw.every((it) => it === 0)) {

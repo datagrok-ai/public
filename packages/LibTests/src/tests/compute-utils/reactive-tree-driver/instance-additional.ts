@@ -223,12 +223,13 @@ category('ComputeUtils: Driver instance additional states', async () => {
         id: 'selector',
         type: 'selector',
         from: 'in:step1/a',
-        to: ['out1:title', 'out2:description', 'out3:tags'],
+        to: ['out1:title', 'out2:description', 'out3:tags', 'out4:body'],
         handler({controller}) {
           const val = controller.getFirst('in');
           controller.setDescriptionItem('out1', `Title ${val}`);
           controller.setDescriptionItem('out2', `Description ${val}`);
           controller.setDescriptionItem('out3', [`tag ${val}`]);
+          controller.setDescriptionItem('out4', `**Body** ${val}`);
         },
       }],
     };
@@ -250,6 +251,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'title': undefined,
           'description': undefined,
           'tags': [],
+          'body': undefined,
         },
         b: {
           'title': 'Title 1',
@@ -257,6 +259,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'tags': [
             'tag 1',
           ],
+          'body': '**Body** 1',
         },
         c: {
           'title': 'Title 2',
@@ -264,7 +267,44 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'tags': [
             'tag 2',
           ],
+          'body': '**Body** 2',
         },
+      });
+    });
+  });
+
+  test('Propagate body to an action step node description', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'myAction', type: 'action'},
+      ],
+      links: [{
+        id: 'bodyToAction',
+        type: 'selector',
+        from: 'in:step1/a',
+        to: 'out:first(myAction)/body',
+        handler({controller}) {
+          const val = controller.getFirst('in');
+          controller.setDescriptionItem('out', `# heading ${val}`);
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const stepNode = tree.nodeTree.getNode([{idx: 0}]);
+      const actionNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('--a').subscribe(() => {
+        stepNode.getItem().getStateStore().setState('a', 7);
+      });
+      expectObservable(actionNode.getItem().nodeDescription.getStateChanges('body')).toBe('a-b', {
+        a: undefined,
+        b: '# heading 7',
       });
     });
   });

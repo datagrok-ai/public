@@ -5,6 +5,19 @@ sidebar_position: 1
 
 This section describes the configuration object in depth.
 
+:::tip Type reference
+
+Install `@datagrok-libraries/compute-api` in your package. It re-exports every
+type referenced on this page — `PipelineConfiguration`, `ValidationResult`, all
+the handler and controller interfaces, `PipelineInstanceConfig`,
+`PipelineOutline`, etc. With those types in scope, your IDE will autocomplete
+field names and surface required fields as you type, so the prose below
+focuses on the _meaning_ of each option rather than its TypeScript shape.
+
+:::
+
+## Getting started
+
 ### Workflow providers
 
 An example of a minimal workflow package setup is available
@@ -32,6 +45,18 @@ reference](#reusing-workflows) or a [script
 node](#script-nodes). Depending on a workflow [type](#type), steps are
 configured slightly differently.
 
+`PipelineConfiguration` is a discriminated union keyed on the `type` field:
+
+| `type` value | Variant |
+|--------------|---------|
+| `'static'` (default) | [Static workflow](#static-workflows) — fixed `steps` array. |
+| `'dynamic'` | [Dynamic workflow](#dynamic-workflows) — user can add/remove steps from `stepTypes`. |
+| `'action'` | [Action step](#action-steps) — lightweight placeholder, no children. |
+| `'ref'` | [Workflow reference](#reusing-workflows) — replaced at load time by another provider's configuration. |
+
+Leaves of the tree are [script nodes](#script-nodes), which use `type: 'step'`
+(or omit `type`).
+
 ### General conventions
 
 Configuration is a tree of JavaScript objects and arrays of type
@@ -46,6 +71,8 @@ Configuration is a tree of JavaScript objects and arrays of type
 - If an item has a corresponding UI element, usually a field
   `friendlyName` could be used to customize it.
 
+## Common options
+
 ### Common configuration options
 
 The following fields are available for `PipelineConfiguration` of
@@ -53,7 +80,7 @@ types `static` and `dynamic`.
 
 #### `id`
 
-This id is used in [links](./links-spec) for paths.
+This id is used in [links](./link-query-language) for paths.
 
 #### `type`
 
@@ -65,9 +92,6 @@ type, specified by the `type` field:
 - `action`
 - `ref`
 
-`parallel` and `sequential` are accepted as legacy aliases for
-`dynamic`. Do not use them in new code.
-
 [Static workflow](#static-workflows) is an immutable sequence of
 steps. It is using field [steps](#steps) to define its steps.
 
@@ -76,7 +100,7 @@ that users can add, remove, and reorder at runtime. They use
 the [stepTypes](#steptypes) field to define available step templates.
 
 [Action step](#action-steps) is a lightweight placeholder designed to
-display actions from outer pipelines via
+display actions from outer workflows via
 [visibleOn](./link-types#visibleon). It has no child steps
 and no history.
 
@@ -131,10 +155,25 @@ Return hook specification, described [here](./code-usage).
 
 _Optional_
 
-A list states, each state is just an object with `id`. Could be used
-to store data from [onInit](./link-types#init-hook) hook, or some
-derived state based on scripts inputs/outputs. These states could be
-used in links the same way as scripts inputs/outputs.
+A list of workflow-scoped state slots, declared as an array where each
+entry is either a bare string id (`'meta1'`) or an object with optional
+extra fields (`{id: 'meta1'}`). Both forms may be mixed in the same
+array. Each `id` becomes addressable from
+[LQL queries](./link-query-language) at the same path level as a script IO — but it
+lives on the workflow itself, not on any script. Use states for:
+
+- values populated once by the [`onInit`](./link-types#init-hook) hook (for
+  example, the current user, a server-loaded constant, the workflow start
+  time);
+- derived values computed from one or more downstream scripts (a summary
+  that several validators want to share);
+- bookkeeping flags that links and meta handlers can read.
+
+A state's lifetime matches the workflow instance: it is created when the
+workflow loads and destroyed when the workflow closes. Writes happen through
+the usual link controller methods (`setAll` for `data` links, `setViewMeta`
+for `meta` links, etc.); reads happen via `getFirst` / `getAll` like any
+other input.
 
 #### `tags`
 
@@ -143,18 +182,7 @@ _Optional_
 A list of strings. The primary use case is for annotating that a
 step/workflow has a certain structural invariant, like the interface
 concept in programming. Could be matched in
-[links](./links-spec.mdx#tag-selectors).
-
-#### `structureCheck`
-
-_Optional_
-
-A synchronous function that could do checks on dynamic workflow items
-themselves (not just inputs/outputs). Receives `PipelineOutline`
-input, should return `ValidationResult` or undefined. Could be used to
-check an order of steps and give a user errors/warnings if the current
-dynamic workflow steps state has issues. `ValidationResult` is the
-same as described [here](./link-types#setvalidation).
+[links](./link-query-language-reference#selectors).
 
 #### `forceNavigate`
 
@@ -187,6 +215,8 @@ Disables the default export, custom exports if provided still can be
 used.
 
 
+## Workflow types
+
 ### Static workflows
 
 #### `steps`
@@ -211,29 +241,141 @@ workflow.
 _Optional_
 
 Is an array of initial steps. Each item is a reference to a
-[stepTypes](#steptypes) item.
+[stepTypes](#steptypes) item, written either as a bare string id
+(`'stepAdd'`) or as an object with optional `initialValues` and
+`inputRestrictions`. Both forms may be mixed in the same array. The
+same shorthand applies to the `steps` array passed at runtime via
+`setPipelineState`.
 
 ### Action steps
 
 An action step is a lightweight step type designed to display
-pipeline-level [actions](./link-types#action-options) in a dedicated
-place within the workflow tree. Under the hood it is a static pipeline
+workflow-level [actions](./link-types#action-options) in a dedicated
+place within the workflow tree. Under the hood it is a static workflow
 with no child steps and no history. Action steps are always included
 in the back/next navigation sequence.
 
 Use action steps with [visibleOn](./link-types#visibleon) to route
-actions from an outer pipeline to the action step, giving them their
+actions from an outer workflow to the action step, giving them their
 own card-based UI.
 
-The only required fields are `id` and `type: 'action'`. Optional
-fields: `friendlyName`, `description`, `tags`.
+#### `id` (Action step)
+
+Same as the [common `id`](#id) — used in [links](./link-query-language) for paths.
+Must be unique inside its parent array.
+
+#### `type` (Action step)
+
+Must be `'action'`. Distinguishes the action step from other variants of
+[`PipelineConfiguration`](#type).
+
+#### `friendlyName` (Action step)
+
+_Optional_
+
+A user-friendly name for the action step, shown in the navigation tree.
+
+#### `description` (Action step)
+
+_Optional_
+
+Free-form description shown in the action step's UI card.
+
+#### `tags` (Action step)
+
+_Optional_
+
+Same as workflow [tags](#tags) — a list of strings that links can match via
+[tag selectors](./link-query-language-reference#selectors).
+
+## Step definitions
+
+### Script nodes
+
+These are end nodes in the configuration graph aka leafs. These nodes
+provide additional configuration for scripts.
+
+#### `id` (Script node)
+
+This id is used in [links](./link-query-language) for paths.
+
+#### `nqName` (Script node)
+
+Mandatory script full name.
+
+#### `type` (Script node)
+
+_Optional_
+
+Could be omitted, but the only other possible value is `step`.
+
+#### `friendlyName` (Script node)
+
+_Optional_
+
+A user-friendly name of a script to show in UI.
+
+#### `actions` (Script node)
+
+_Optional_
+
+Same as workflow [actions](#actions)
+
+#### `tags` (Script node)
+
+_Optional_
+
+Same as workflow [tags](#tags)
+
+#### `initialValues` (Script node)
+
+_Optional_
+
+A key-value object of input initial values. Will override scripts own
+initial values. __Note__ Initial values don't trigger links, so there
+should be no data links that are dependent only on inputs with initial
+values.
+
+#### `inputRestrictions` (Script node)
+
+_Optional_
+
+A key-value object with input initial restrictions. Used with
+`initialValues`. Read more about restriction values in
+[Consistency](./link-types#consistency).
+
+#### `viewersHook` (Script node)
+
+_Optional_
+
+A JavaScript function that lets you customize each `DG.Viewer` that the
+platform renders for a script IO, optionally reacting to metadata published
+by [`meta` links](./link-types#metadata-links). Signature:
+
+```
+(ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
+```
+
+- `ioName` — the name of the script input or output the viewer is bound to.
+- `type` — the `DG.Viewer` type string (e.g. `'Scatter plot'`).
+- `viewer` — the live viewer instance, or `undefined` if not yet attached.
+  **Mutate it in place** (`viewer.setOptions(...)`, change column bindings,
+  attach event listeners). The return value is ignored.
+- `meta` — the merged metadata bag for this IO. The hook is re-invoked whenever
+  the metadata changes, so reading from `meta` is how you make the viewer
+  reactive.
+
+The hook fires once per `(ioName, viewer type)` combination when the viewer
+appears, and again on every metadata update. Keep it side-effect-free aside
+from mutating the supplied viewer.
+
 
 ### Additional stepTypes items options
 
 For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has
 additional options available that limit a user's ability to alter the
-workflow.  If more validation logic is needed, a
-[structureCheck](#structurecheck) can be used.
+workflow. If more validation logic is needed, a
+[pipelineValidator link](./link-types#pipeline-validators) can be used.
 
 #### `disableUIAdding`
 
@@ -260,76 +402,7 @@ _Optional_
 Disables all of the above.
 
 
-### Script nodes
-
-These are end nodes in the configuration graph aka leafs. These nodes
-provide additional configuration for scripts.
-
-#### `id` (Script node)
-
-This id is used in [links](./links-spec) for paths.
-
-#### `nqName`  (Script node)
-
-Mandatory script full name.
-
-#### `type`  (Script node)
-
-_Optional_
-
-Could be omitted, but the only other possible value is `step`.
-
-#### `friendlyName`  (Script node)
-
-_Optional_
-
-A user-friendly name of a script to show in UI.
-
-#### `actions`  (Script node)
-
-_Optional_
-
-Same as workflow [actions](#actions)
-
-#### `tags`  (Script node)
-
-_Optional_
-
-Same as workflow [tags](#tags)
-
-#### `initialValues`  (Script node)
-
-_Optional_
-
-A key-value object of input initial values. Will override scripts own
-initial values. __Note__ Initial values don't trigger links, so there
-should be no data links that are dependent only on inputs with initial
-values.
-
-#### `inputRestrictions`  (Script node)
-
-_Optional_
-
-A key-value object with input initial restrictions. Used with
-`initialValues`. Read more about restrictions
-[here](./link-types.mdx).
-
-#### `viewersHook`  (Script node)
-
-_Optional_
-
-Is a JavaScript function that is used to tweak options of `DG.Viewer`,
-potentially based on metadata state. More information about metadata
-links is available [here](./link-types). Here is the TypeScript
-signature of viewersHook:
-
-```
-(ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
-```
-
-`ioName` is the name of input/output and `type` is a type of the
-viewer.
-
+## Reuse and export
 
 ### Reusing workflows
 
@@ -346,11 +419,11 @@ Not used, id of the returned workflow will be used.
 
 `ref` must be provided to distinguish from other configuration types.
 
-#### `provider`  (Reference)
+#### `provider` (Reference)
 
 `nqName` of the provider function.
 
-#### `version`  (Reference)
+#### `version` (Reference)
 
 A version string that will be passed as an argument to the provider
 function.
@@ -423,19 +496,45 @@ This allows to reuse most of the tree export logic, however individual
 exceljs workbooks could be customized or replaced/augmented with a
 different file.
 
-## Edge cases
+## Constraints and review checklist
 
-Keep the following constraints in mind when designing workflows:
+Use this section as a sanity check before publishing a workflow. The platform
+will not reject a configuration that violates these guidelines — most of them
+produce silent misbehaviour instead — so it is worth walking the checklist
+deliberately.
 
-* **No cycles in data links.** Data links can only reference the same node or nodes that come
-  later in the depth-first traversal order of the tree. Backward references are not supported
-  and will cause undefined behavior.
-* **Transitive I/O dependencies require `nodePriority`.** By default, dependencies between
-  inputs/outputs of the same node are not tracked automatically. If you need a chain of links
-  within one node (e.g., `a` → `b` → `c` on the same step), assign `nodePriority` values to
-  ensure correct execution order — higher priority links run first. Without explicit priorities,
-  the execution order of same-node links is not guaranteed.
-* **Link handler execution order.** When multiple links target the same node, they are sorted
-  by `nodePriority` (higher values run first, default is 0). Links with the same priority
-  execute in traversal order. This applies regardless of which `links` array the links are
-  defined in.
+**Topology constraints:**
+
+* **No cycles in data links.** Data links can only reference the same node or
+  nodes that come later in the depth-first traversal order of the tree.
+  Backward references are not supported and will cause undefined behaviour.
+* **Transitive I/O dependencies require [`nodePriority`](./link-types#nodepriority).**
+  By default, dependencies between inputs/outputs of the same node are not
+  tracked automatically. If you need a chain of links within one node (e.g.
+  `a` → `b` → `c` on the same step), assign `nodePriority` values to ensure
+  correct execution order — higher-priority links run first. Without explicit
+  priorities, the execution order of same-node links is not guaranteed.
+* **At most one data link per script input.** Multiple data links writing to
+  the same script input race against each other. Use a single data link, or
+  switch the secondary writers to validators / meta links.
+
+**Per-link review:**
+
+* **LQL paths resolve.** Every `from` / `to` / `base` segment matches a step
+  `id`, a script IO name, or a [tag](./link-query-language-reference#selectors) that exists
+  in the current configuration. Typos here silently prevent the link from
+  ever firing.
+* **Restrictions are intentional.** When using `defaultRestrictions` or
+  `setAll(..., restriction)`, pick the value that matches the intended UX:
+  `disabled` (locked), `restricted` (editable, marks inconsistency on edit),
+  `info` (editable, tracked but never marks inconsistency), `none` (write
+  through with no tracking). See [Consistency](./link-types#consistency).
+
+**Package structure check:**
+
+* Import types from `@datagrok-libraries/compute-api`, not from
+  `@datagrok-libraries/compute-utils` (internal paths).
+* Provider function has the [required annotations](#workflow-providers).
+  Without them the workflow does not appear in ModelHub.
+* Publish with `grok publish --release`. Debug-mode packages are only visible
+  to the publisher.

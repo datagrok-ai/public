@@ -1,5 +1,11 @@
 # tutorials changelog
 
+## 1.7.7 (2026-05-16)
+
+### Features
+
+*  BaseViewApp: Option to not persist the last sketched molecule
+
 ## 1.7.5 (2026-03-06)
 
 ### Features

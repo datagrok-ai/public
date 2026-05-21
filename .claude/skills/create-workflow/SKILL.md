@@ -10,60 +10,39 @@ disable-model-invocation: true
 
 # Create a Compute2 workflow
 
-Help the user create a Datagrok workflow — a `PipelineConfiguration` object that wires
+The user wants a `PipelineConfiguration` — a Datagrok Compute2 workflow that wires
 multiple scripts together with reactive data links, validators, and metadata handlers.
 
-## Prerequisites
+The authoritative reference lives in the docs. This skill is a working procedure;
+when you need to know _what something is_ or _how a field behaves_, read the docs.
 
-The package must have `@datagrok-libraries/compute-api` installed. This is the public API
-for workflow development — it re-exports all needed types (`PipelineConfiguration`, `Handler`,
-`Validator`, `MetaHandler`, controller interfaces, etc.).
+## Reading order
 
-```bash
-npm i @datagrok-libraries/compute-api
-```
+Read these before you write any configuration:
 
-The provider file must also import `dayjs` with UTC/timezone plugins — required by
-TreeWizardEditor at runtime:
+- `help/compute/workflows/overview.mdx` — terms (node, link, controller, action, FuncCall, nqName, RichFunctionView).
+- `help/compute/workflows/configuration.mdx` — every field of `PipelineConfiguration`,
+  the workflow types, states, custom exports, and the
+  [constraints / review checklist](#) (consult the section before publishing).
+- `help/compute/workflows/link-types.mdx` — link/action types, controller methods, handler signatures.
 
-```typescript
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-dayjs.extend(utc);
-dayjs.extend(timezone);
-```
+Read on demand:
 
-## References
+- `help/compute/workflows/links-spec.mdx` — Link Query Language grammar. Needed only when the
+  workflow uses tag selectors, template queries, or relative (`base` / `@base`) refs.
+- `help/compute/workflows/examples.mdx` — Wine Quality walkthrough end-to-end.
+- `help/compute/workflows/code-usage.mdx` — only if the workflow will be launched
+  programmatically.
 
-**Always read before implementing:**
+Reference examples (also linked from `examples.mdx`):
 
-| File | Purpose |
-|------|---------|
-| `help/compute/workflows/configuration.mdx` | All configuration options, workflow types, states, exports, edge cases |
-| `help/compute/workflows/link-types.mdx` | Link/action types, controller methods, handler signatures |
+| File | Use when |
+|------|----------|
+| `examples/minimal-static.ts` | Fixed sequence of scripts, no links, user fills inputs manually. |
+| `examples/dynamic-with-links.ts` | User can add/remove steps; outputs propagate to all downstream instances. |
+| `examples/validators-and-meta.ts` | Cross-field validation, conditional input visibility, user-triggered actions. |
 
-**Read when the workflow uses complex link queries (tags, templates, relative refs):**
-
-| File | Purpose |
-|------|---------|
-| `help/compute/workflows/links-spec.mdx` | Link Query Language (LQL) specification |
-
-**Read for additional context as needed:**
-
-| File | Purpose |
-|------|---------|
-| `help/compute/workflows/overview.mdx` | Core terms and concepts (node, link, controller, action, FuncCall) |
-| `help/compute/workflows/examples.mdx` | Full tutorial: Wine Quality dataset workflow with 5 steps, data links, visualization |
-| `help/compute/workflows/code-usage.mdx` | Starting workflows programmatically from code |
-
-**Read the example that matches the target complexity:**
-
-| File | Complexity |
-|------|-----------|
-| `.claude/skills/create-workflow/examples/minimal-static.ts` | Static pipeline, no links |
-| `.claude/skills/create-workflow/examples/dynamic-with-links.ts` | Dynamic pipeline with data links and restrictions |
-| `.claude/skills/create-workflow/examples/validators-and-meta.ts` | Validators, meta handlers, and actions |
+Setup (install + dayjs/timezone imports) is covered in `examples.mdx#dependencies`.
 
 ## Instructions
 
@@ -75,25 +54,36 @@ dayjs.extend(timezone);
    - Is the set of steps fixed (static) or user-configurable (dynamic)?
    - Are there validation rules? (required fields, value ranges, cross-field checks)
    - Should any inputs be visually customized? (hidden, readonly, dropdowns)
-2. Verify that the referenced scripts exist: `grok s functions list --filter "<nqName>"`
-3. Present a plain-language summary of the workflow for approval before coding.
+2. Verify that every referenced script exists. A script may be deployed, scaffolded
+   locally but not yet published, or only an idea in the user's head. Check each
+   location and stop searching once you find a match:
+   - **Deployed on the server**: `grok s functions list --filter "<nqName>"`.
+     A non-empty result means the script is live and the `nqName` is correct.
+   - **Local `package.ts`**: grep for `//name:\s*<FunctionName>` in `src/package.ts`
+     (and any `src/package-*.ts` entries). Each annotated export becomes a function
+     with `nqName: <PackageName>:<FunctionName>` once published.
+   - **Local `scripts/` directory**: grep for `^#name:\s*<scriptName>` in
+     `scripts/**/*.{py,r,js,jl,m,sql}`. Each `#name`-annotated file becomes a
+     function with `nqName: <PackageName>:<scriptName>` once published.
+
+   If a script is found locally but not on the server, note it as "scaffolded — will be
+   published with this workflow". If a script is missing in all three places, ask the
+   user whether to scaffold it (and follow the appropriate skill: see `/init` or the
+   scripting docs) or to drop it from the workflow.
+3. Present a plain-language summary of the workflow for approval before coding. Mark
+   each step as **deployed**, **scaffolded**, or **to be created** so the user can see
+   the integration surface at a glance.
 
 ### Phase 2: Design the configuration
 
-1. Read `help/compute/workflows/configuration.mdx`.
-2. Read `help/compute/workflows/link-types.mdx`.
-3. Choose workflow type:
-   - `static` — fixed sequence of steps
-   - `dynamic` — user can add/remove steps at runtime
-   - `action` — lightweight placeholder for displaying actions via visibleOn
-4. Design the `PipelineConfiguration` object:
-   - Define steps with `id` and `nqName`
-   - Define data links with `from`/`to` using LQL paths
-   - Define validators if cross-field validation is needed
-   - Define meta links if UI customization is needed (hiding inputs, setting viewer config)
-   - Define actions if user-triggered operations are needed
-5. If any link uses tag selectors, template queries, or relative references, read `help/compute/workflows/links-spec.mdx`.
-6. Present the configuration skeleton for approval. Do not implement handlers yet.
+1. Choose the workflow type. See `configuration.mdx` for the discriminated union of
+   `static` / `dynamic` / `action` / `ref`.
+2. Sketch the `PipelineConfiguration` object: steps with `id` and `nqName`; data links
+   with `from`/`to`; validators and meta links if needed; actions for user-triggered
+   operations.
+3. If any link uses tag selectors, template queries, or relative references, consult
+   `links-spec.mdx`.
+4. Present the configuration skeleton for approval. Do not implement handlers yet.
 
 ### Phase 3: Implement
 
@@ -104,7 +94,6 @@ dayjs.extend(timezone);
    //name: MyWorkflow
    //description: Description of the workflow
    //tags: model
-   //output: object config
    //editor: Compute2:TreeWizardEditor
    //input: object params
    //output: object result
@@ -117,38 +106,40 @@ dayjs.extend(timezone);
      };
    }
    ```
-2. Implement link handlers using the controller methods from the reference.
+2. Implement link handlers using the controller methods documented in `link-types.mdx`.
 3. Register the function in `package.ts` if not already there.
 4. Run `grok api` to regenerate wrappers.
 
 ### Phase 4: Review
 
-Spawn a sub-agent to review the configuration. The reviewer must check:
-
-- [ ] **No cycles:** data links only reference the same or forward nodes in DFS order
-- [ ] **LQL paths resolve:** every `from`/`to` path segment matches a step `id` in the config
-- [ ] **Controller methods match link type:** `setAll` only in data/action handlers, `setValidation` only in validators, `setViewMeta` only in meta handlers
-- [ ] **Restrictions consistent:** `defaultRestrictions` types match the intended behavior (`restricted` = editable with warning, `disabled` = locked, `info` = informational)
-- [ ] **nodePriority set** when multiple links write to the same node and order matters
-- [ ] **No duplicate I/O deps:** at most one data link writes to each input of a node
-- [ ] **Import path:** types imported from `@datagrok-libraries/compute-api`, not from `compute-utils`
-
-Present the review findings. Fix any issues before proceeding.
+Validate the configuration against the
+[constraints and review checklist](../../../help/compute/workflows/configuration.mdx#constraints-and-review-checklist).
+Spawn a sub-agent for an independent pass if the configuration is non-trivial. Fix
+anything that fails before proceeding.
 
 ### Phase 5: Build and verify
 
-1. `grok check --soft` — verify function signatures
-2. `webpack` or `npm run build` — build the package
-3. `grok publish --release` — publish to the server (must use `--release` for workflows)
-4. Inform the user how to open the workflow: **Apps -> Compute -> ModelHub**
+1. `grok check --soft` — verify function signatures.
+2. `webpack` or `npm run build` — build the package.
+3. `grok publish --release` — `--release` is mandatory; debug-mode packages are only
+   visible to the publishing user.
+4. Tell the user where to open the workflow: **Apps → Compute → ModelHub**.
 
 ## Behavior
 
 - **Do not invent scripts.** Only reference functions that exist on the server or in the package.
 - **Present config for approval** before writing handler code. Handlers are the expensive part.
-- **Use simple LQL paths** unless the user needs dynamic matching. Prefer `in1:step1/a` over complex selectors.
-- **Keep handlers pure.** Handlers should transform data, not perform side effects. Use actions for user-triggered operations.
-- **One link per output.** Each input of a downstream node should receive data from at most one data link. Use validators or meta links for additional concerns.
-- **Import from `@datagrok-libraries/compute-api`.** This is the public API. Do not import from `@datagrok-libraries/compute-utils` directly — those are internal paths.
-- **Always publish with `--release`.** Debug-mode packages are only visible to the developer.
-- **Use the `/ui` skill** if the workflow needs custom viewer hooks or complex UI layout.
+- **Use simple LQL paths** unless the user needs dynamic matching. Prefer `in1:step1/a`
+  over complex selectors.
+- **Keep handlers pure.** Handlers should transform data, not perform side effects.
+  Use actions for user-triggered operations.
+- **One data link per script input.** Each input of a downstream node should receive
+  data from at most one data link. Use validators or meta links for additional concerns.
+- **Import from `@datagrok-libraries/compute-api`.** This is the public API. Do not
+  import from `@datagrok-libraries/compute-utils` directly — those are internal paths.
+- **Always publish with `--release`.**
+- **Use the `/ui` skill** only in two cases: (1) an action needs to show custom inputs
+  inline (e.g. a confirmation form with extra fields), or (2) a script's output viewer
+  needs tweaks applied through its `DG.Viewer` JS API inside a
+  [`viewersHook`](../../../help/compute/workflows/configuration.mdx#viewershook-script-node).
+  Workflow scaffolding, links, validators, and meta-driven UI changes do not need `/ui`.

@@ -1,11 +1,11 @@
 # Usage Analysis changelog
 
-## v.next
+## 2.5.1 (2026-05-21)
 
 * TestTrack: Wired Playwright suite (`files/TestTrack`) into `grok test` via the new `playwrightTests` opt-in; specs now authenticate via the same dev-key→token flow as the Puppeteer pass and run in CI alongside existing tests
-
-## 2.5.1 ()
-
+* Test Dashboard: Moved "Watch a jira ticket" storage from the `ua_tickets` Postgres schema to a JSON file in `System:AppData/UsageAnalysis/manual-tickets.json`; removes the package-owned schema (and its `UA_tickets` connection / `ManualTicketFetch` / `ManualTicketCreation` queries) so UA installs cleanly on customer envs without CREATE SCHEMA/ROLE privileges
+* Test Dashboard: Wired the JIRA-ticket verdict grids back into `onFrameAttached` so watched/auto-detected tickets now render as priority-bucketed grids in the dashboard accordion (previously the display path was defined but never called)
+* Test Dashboard: Removed dead code (~115 lines): unused `verdictsOnTestTrack`/`testTrackDowngrades`, commented-out `unaddressedTests` block, stray `debugger` statement, and several unused locals
 * Click Events widget: Added date range filter, section labels, highlight zones tooltip
 
 ## 2.5.0 (2026-03-20)

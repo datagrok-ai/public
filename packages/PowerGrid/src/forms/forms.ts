@@ -229,8 +229,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     scenes.set(gridCell.grid, scene);
     console.log('[Form] onMouseEnter: scene elements:', scene.elements.length, scene.elements.map(el => ({bounds: `${el.bounds.x},${el.bounds.y},${el.bounds.width},${el.bounds.height}`, tooltip: (el as any).style?.tooltip})));
     if (scene.elements.every((el) => el.bounds.width < 25 && el.bounds.height < 25)) {
-      ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(),
-        gridCell.documentBounds.right, gridCell.documentBounds.top, {delay: 200});
+      // @ts-ignore
+      ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(), gridCell.documentBounds.right, gridCell.documentBounds.top, {delay: 200});
     }
   }
 
@@ -238,6 +238,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const scene = scenes.get(gridCell.grid);
     const el = scene?.hitTest(e.offsetX, e.offsetY);
     console.log('[Form] onMouseMove: offsetX/Y=', e.offsetX, e.offsetY, 'scene=', !!scene, 'el=', el, 'tooltip=', (el as any)?.style?.tooltip);
+    // @ts-ignore
     ui.tooltip.show(el?.style?.tooltip ?? null, e.x + 20, e.y - 20, {delay: 200});
   }
 

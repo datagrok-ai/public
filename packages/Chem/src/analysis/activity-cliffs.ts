@@ -12,7 +12,7 @@ import {getUncommonAtomsAndBonds} from '../utils/chem-common';
 const canvasWidth = 200;
 const canvasHeight = 100;
 
-const cashedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+const cachedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
 
 export type ActivityCliffsParams = {
   molColName: string,
@@ -26,7 +26,7 @@ export type ActivityCliffsParams = {
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const molecule1 = params.seqCol.get(params.points[0]);
   const molecule2 = params.seqCol.get(params.points[1]);
-  if (!cashedData.has(`${molecule1}_${molecule2}`))
+  if (!cachedData.has(`${molecule1}_${molecule2}`))
     drawMoleculesWithMcsAsync(params, hosts, [molecule1, molecule2]);
   drawMolecules(params, hosts, [molecule1, molecule2]);
 }
@@ -35,17 +35,17 @@ async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: 
   const mcsDf = DG.DataFrame.create(2);
   mcsDf.columns.addNewString('smiles').init((i) => molecules[i]);
   const mcs = await getMCS(mcsDf.col('smiles')!, true, true);
-  cashedData.set(`${molecules[0]}_${molecules[1]}`, mcs);
+  cachedData.set(`${molecules[0]}_${molecules[1]}`, mcs);
   drawMolecules(params, hosts, molecules);
 }
 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
   const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
-  const mcsGenerated = cashedData.has(`${molecules[0]}_${molecules[1]}`);
+  const mcsGenerated = cachedData.has(`${molecules[0]}_${molecules[1]}`);
   try {
     if (mcsGenerated)
-      mcsMol = rdkit.get_qmol(cashedData.get(`${molecules[0]}_${molecules[1]}`));
+      mcsMol = rdkit.get_qmol(cachedData.get(`${molecules[0]}_${molecules[1]}`));
     molecules.forEach((molecule: string, index: number) => {
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
       if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
@@ -56,7 +56,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
         {normalizeDepiction: true, straightenDepiction: true}, substruct);
       ui.empty(hosts[index]);
-      if (!cashedData.has(`${molecules[0]}_${molecules[1]}`))
+      if (!cachedData.has(`${molecules[0]}_${molecules[1]}`))
         hosts[index].append(ui.divText('MCS loading...'));
       hosts[index].append(imageHost);
     });

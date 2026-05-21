@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" font-family="sans-serif" font-size="14">
+  <style>
+    text { fill: #222; }
+    .query { font-family: monospace; font-weight: 600; font-size: 15px; }
+    .node { fill: #dee7e5; stroke: #3465a4; stroke-width: 1; }
+    .container { fill: #f0f0f5; stroke: #888; stroke-width: 1; }
+    .match { fill: #afd095; stroke: #ff4000; stroke-width: 2; }
+    .nl { font-size: 13px; }
+    .tag { font-size: 11px; fill: #666; font-style: italic; }
+    .caption { font-size: 13px; fill: #555; }
+  </style>
+
+  <text x="20" y="26" font-size="18" font-weight="600">Tag selectors on a nested tree</text>
+
+  <!-- Legend -->
+  <rect x="20" y="38" width="18" height="16" class="match"/>
+  <text x="44" y="52" font-size="13">matched</text>
+  <rect x="120" y="38" width="18" height="16" class="container"/>
+  <text x="144" y="52" font-size="13">container</text>
+  <rect x="220" y="38" width="18" height="16" class="node"/>
+  <text x="244" y="52" font-size="13">step</text>
+
+  <!-- ============== Tree 1: #first(metric) ============== -->
+  <g transform="translate(20, 70)">
+    <text x="0" y="14" class="query">#first(metric)</text>
+
+    <rect x="0" y="28" width="220" height="24" rx="3" class="container"/>
+    <text x="10" y="44" class="nl">myworkflow</text>
+
+    <rect x="20" y="60" width="200" height="24" rx="3" class="match"/>
+    <text x="30" y="76" class="nl">stepA</text>
+    <text x="210" y="76" text-anchor="end" class="tag">(metric)</text>
+
+    <rect x="20" y="92" width="200" height="24" rx="3" class="container"/>
+    <text x="30" y="108" class="nl">subA</text>
+
+    <rect x="40" y="124" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="140" class="nl">stepB</text>
+    <text x="210" y="140" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="40" y="156" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="172" class="nl">stepC</text>
+    <text x="210" y="172" text-anchor="end" class="tag">(prep)</text>
+
+    <rect x="40" y="188" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="204" class="nl">stepD</text>
+    <text x="210" y="204" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="20" y="220" width="200" height="24" rx="3" class="node"/>
+    <text x="30" y="236" class="nl">stepE</text>
+    <text x="210" y="236" text-anchor="end" class="tag">(report)</text>
+  </g>
+
+  <!-- ============== Tree 2: #all(metric) ============== -->
+  <g transform="translate(260, 70)">
+    <text x="0" y="14" class="query">#all(metric)</text>
+
+    <rect x="0" y="28" width="220" height="24" rx="3" class="container"/>
+    <text x="10" y="44" class="nl">myworkflow</text>
+
+    <rect x="20" y="60" width="200" height="24" rx="3" class="match"/>
+    <text x="30" y="76" class="nl">stepA</text>
+    <text x="210" y="76" text-anchor="end" class="tag">(metric)</text>
+
+    <rect x="20" y="92" width="200" height="24" rx="3" class="container"/>
+    <text x="30" y="108" class="nl">subA</text>
+
+    <rect x="40" y="124" width="180" height="24" rx="3" class="match"/>
+    <text x="50" y="140" class="nl">stepB</text>
+    <text x="210" y="140" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="40" y="156" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="172" class="nl">stepC</text>
+    <text x="210" y="172" text-anchor="end" class="tag">(prep)</text>
+
+    <rect x="40" y="188" width="180" height="24" rx="3" class="match"/>
+    <text x="50" y="204" class="nl">stepD</text>
+    <text x="210" y="204" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="20" y="220" width="200" height="24" rx="3" class="node"/>
+    <text x="30" y="236" class="nl">stepE</text>
+    <text x="210" y="236" text-anchor="end" class="tag">(report)</text>
+  </g>
+
+  <!-- ============== Tree 3: #first(metric&primary) ============== -->
+  <g transform="translate(500, 70)">
+    <text x="0" y="14" class="query">#first(metric&amp;primary)</text>
+
+    <rect x="0" y="28" width="220" height="24" rx="3" class="container"/>
+    <text x="10" y="44" class="nl">myworkflow</text>
+
+    <rect x="20" y="60" width="200" height="24" rx="3" class="node"/>
+    <text x="30" y="76" class="nl">stepA</text>
+    <text x="210" y="76" text-anchor="end" class="tag">(metric)</text>
+
+    <rect x="20" y="92" width="200" height="24" rx="3" class="container"/>
+    <text x="30" y="108" class="nl">subA</text>
+
+    <rect x="40" y="124" width="180" height="24" rx="3" class="match"/>
+    <text x="50" y="140" class="nl">stepB</text>
+    <text x="210" y="140" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="40" y="156" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="172" class="nl">stepC</text>
+    <text x="210" y="172" text-anchor="end" class="tag">(prep)</text>
+
+    <rect x="40" y="188" width="180" height="24" rx="3" class="node"/>
+    <text x="50" y="204" class="nl">stepD</text>
+    <text x="210" y="204" text-anchor="end" class="tag">(metric, primary)</text>
+
+    <rect x="20" y="220" width="200" height="24" rx="3" class="node"/>
+    <text x="30" y="236" class="nl">stepE</text>
+    <text x="210" y="236" text-anchor="end" class="tag">(report)</text>
+  </g>
+
+  <!-- Caption -->
+  <text x="20" y="375" class="caption">Same nested tree, three queries. Tag matches descend across nesting; `&amp;` requires every listed tag; `#first` is depth-first.</text>
+</svg>

@@ -2,9 +2,10 @@ import {Observable, BehaviorSubject, asapScheduler, merge} from 'rxjs';
 import {map, scan, debounceTime} from 'rxjs/operators';
 import {BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
+import {mergeValidationResults} from '../utils';
 
 export function toStateRec(
   node: TreeNode<StateTreeNode>,
@@ -21,7 +22,8 @@ export function toStateRec(
     return item;
   });
   const fullState = {...selfState, steps};
-  const structureCheckResults = item.getStructureCheck(fullState);
+  const reactive = Object.values(item.pipelineValidations$.value);
+  const structureCheckResults = reactive.length ? mergeValidationResults(...reactive) : undefined;
   return {...fullState, structureCheckResults};
 }
 

@@ -21,7 +21,7 @@ export class PlateCellHandler extends DG.ObjectHandler {
 
 @grok.decorators.cellRenderer({cellType: 'Plate', name: 'PlateGridCellRenderer'})
 export class PlateGridCellRenderer extends DG.GridCellRenderer {
-  plateWidget = new PlateWidget();
+  plateWidget = PlateWidget.renderingInstance();
 
   get name(): string { return 'Plate'; }
   get cellType(): string { return 'Plate'; }
@@ -46,6 +46,10 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent) {
-    grok.shell.o = PlateWidget.detailedView(Plate.fromTableByRow(gridCell.value!)).root;
+    const pw = PlateWidget.detailedView(Plate.fromTableByRow(gridCell.value!), false);
+    pw.grid.root.style.maxHeight = '300px';
+    pw.root.style.flexDirection = 'column';
+    pw.grid.root.style.width = 'unset';
+    grok.shell.o = pw.root;
   }
 }

@@ -20,6 +20,7 @@ import {
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
+import {getMonomerColors} from './monomer-colors';
 
 export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
@@ -110,9 +111,10 @@ function section(title: string, body: HTMLElement): HTMLElement {
 
 /** Build a legend filtered to modifications actually present in this cell.
  * One row per unique mod, with the count to the right. Items collapse by
- * canonical symbol so legacy/canonical aliases share a row. Custom bases
- * (non-A/C/G/U/T HELM symbols) are listed with their natural-analog color
- * — resolved async via the central Bio monomer library. */
+ * canonical symbol so legacy/canonical aliases share a row. Colors come from
+ * the same `getMonomerColors()` path the canvas renderer uses — so what's
+ * drawn on the chip and what's in the legend swatch are always in sync. The
+ * local mod meta only supplies the fallback color and human-readable name. */
 function buildCellLegend(
   sugars: Map<string, number>, phos: Map<string, number>,
   conjs: Map<string, number>, bases: Map<string, number>,
@@ -120,34 +122,39 @@ function buildCellLegend(
   type Item = { label: string; color: string; count: number };
   const items: Item[] = [];
 
-  // Sugar mods — collapse by canonical symbol so e.g. mR + m → one row
+  // Sugars — collapse by canonical symbol so e.g. mR + m → one row. Canonical
+  // ribose/deoxyribose are included too since the canvas now draws a stripe
+  // for every sugar, not just the modified ones.
   const sugarByCanon = new Map<string, number>();
   for (const [sym, n] of sugars.entries()) {
     const c = canonicalSugarSymbol(sym);
-    if (c === 'r' || c === 'd') continue; // unmodified
     sugarByCanon.set(c, (sugarByCanon.get(c) ?? 0) + n);
   }
   for (const [c, n] of sugarByCanon.entries()) {
     const meta = resolveSugar(c, null).meta;
-    items.push({label: meta.name, color: meta.color, count: n});
+    const libColor = getMonomerColors('sugar', c).backgroundcolor;
+    items.push({label: meta.name, color: libColor ?? meta.color, count: n});
   }
 
-  // Phosphate / linkage mods
+  // Phosphate / linkage mods — show ALL linkages used in the cell (including
+  // canonical `p`) since the canvas now draws an apex for every linkage.
   const phosByCanon = new Map<string, number>();
   for (const [sym, n] of phos.entries()) {
     const c = canonicalPhosphateSymbol(sym);
-    if (c === 'p') continue;
     phosByCanon.set(c, (phosByCanon.get(c) ?? 0) + n);
   }
   for (const [c, n] of phosByCanon.entries()) {
     const meta = resolvePhosphate(c).meta;
-    items.push({label: `${meta.name} (linkage)`, color: meta.color, count: n});
+    const libColor = getMonomerColors('linker', c).backgroundcolor;
+    items.push({label: `${meta.name} (linkage)`, color: libColor ?? meta.color, count: n});
   }
 
-  // Custom bases — color via natural analog from the central Bio lib (sync).
+  // Custom bases — prefer the library's base color; fall back to natural-
+  // analog palette and finally to FALLBACK_COLOR.
   for (const [sym, n] of bases.entries()) {
+    const libColor = getMonomerColors('base', sym).backgroundcolor;
     const analog = getNaturalAnalog(sym);
-    const color = (analog && BASE_COLORS[analog]) ? BASE_COLORS[analog] : FALLBACK_COLOR;
+    const color = libColor ?? (analog && BASE_COLORS[analog]) ?? FALLBACK_COLOR;
     const label = analog ? `${sym} (base, analog ${analog})` : `${sym} (base)`;
     items.push({label, color, count: n});
   }
@@ -155,7 +162,8 @@ function buildCellLegend(
   // Conjugates
   for (const [sym, n] of conjs.entries()) {
     const meta = resolveConjugate(sym).meta;
-    items.push({label: meta.name, color: meta.color, count: n});
+    const libColor = getMonomerColors('chem', sym).backgroundcolor;
+    items.push({label: meta.name, color: libColor ?? meta.color, count: n});
   }
 
   if (items.length === 0) {

@@ -8422,7 +8422,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#6a78b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8449,7 +8457,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8503,7 +8519,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8530,7 +8554,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8557,7 +8589,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8584,7 +8624,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8611,7 +8659,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8638,7 +8694,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8665,7 +8729,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8767,7 +8839,15 @@
           "label": "R4"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8821,7 +8901,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8854,7 +8942,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8887,7 +8983,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8962,7 +9066,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -8995,7 +9107,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9028,7 +9148,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6a832"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9061,7 +9189,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9094,7 +9230,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9148,7 +9292,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9181,7 +9333,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9256,7 +9416,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9310,7 +9478,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9343,7 +9519,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9412,7 +9596,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#bda088"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9487,7 +9679,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9520,7 +9720,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9574,7 +9782,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9607,7 +9823,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9640,7 +9864,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9673,7 +9905,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9706,7 +9946,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9739,7 +9987,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9772,7 +10028,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9805,7 +10069,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9838,7 +10110,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9871,7 +10151,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9904,7 +10192,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9937,7 +10233,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -9970,7 +10274,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10003,7 +10315,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10036,7 +10356,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10069,7 +10397,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10102,7 +10438,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10135,7 +10479,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10168,7 +10520,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10201,7 +10561,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10234,7 +10602,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10267,7 +10643,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10300,7 +10684,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10333,7 +10725,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10366,7 +10766,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10399,7 +10807,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10432,7 +10848,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10465,7 +10889,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10498,7 +10930,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10531,7 +10971,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10564,7 +11012,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10597,7 +11053,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10630,7 +11094,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10663,7 +11135,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10696,7 +11176,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10729,7 +11217,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10762,7 +11258,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10795,7 +11299,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10828,7 +11340,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10861,7 +11381,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10894,7 +11422,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10927,7 +11463,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10960,7 +11504,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -10993,7 +11545,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11026,7 +11586,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11059,7 +11627,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11092,7 +11668,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11125,7 +11709,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11158,7 +11750,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11191,7 +11791,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11224,7 +11832,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11257,7 +11873,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11290,7 +11914,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11323,7 +11955,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11356,7 +11996,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11389,7 +12037,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11422,7 +12078,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11455,7 +12119,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11551,7 +12223,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11584,7 +12264,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11638,7 +12326,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11671,7 +12367,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11767,7 +12471,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11800,7 +12512,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11833,7 +12553,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11866,7 +12594,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11899,7 +12635,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11932,7 +12676,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11965,7 +12717,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -11998,7 +12758,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12031,7 +12799,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12064,7 +12840,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#6a78b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12097,7 +12881,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12130,7 +12922,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12226,7 +13026,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12259,7 +13067,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12292,7 +13108,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12325,7 +13149,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12352,7 +13184,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#c8a89c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12385,7 +13225,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12418,7 +13266,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12451,7 +13307,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12505,7 +13369,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12670,7 +13542,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12703,7 +13583,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12883,7 +13771,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12916,7 +13812,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12949,7 +13853,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -12982,7 +13894,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13294,7 +14214,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13327,7 +14255,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13360,7 +14296,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13393,7 +14337,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13426,7 +14378,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13459,7 +14419,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9876b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13492,7 +14460,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c0833f"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13630,7 +14606,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13873,7 +14857,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -13927,7 +14919,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -14614,7 +15614,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15193,7 +16201,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15226,7 +16242,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15259,7 +16283,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15292,7 +16324,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15325,7 +16365,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15358,7 +16406,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15391,7 +16447,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15424,7 +16488,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15457,7 +16529,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2fb1a3"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15490,7 +16570,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15523,7 +16611,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15550,7 +16646,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d8b898"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15583,7 +16687,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15610,7 +16722,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#c8a878"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15643,7 +16763,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a93b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15697,7 +16825,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#b656d0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15730,7 +16866,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#4fc26a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15763,7 +16907,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15796,7 +16948,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15829,7 +16989,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15862,7 +17030,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15895,7 +17071,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15928,7 +17112,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15961,7 +17153,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -15988,7 +17188,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9b7ab8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16015,7 +17223,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#e89e58"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16048,7 +17264,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#b656d0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16081,7 +17305,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16114,7 +17346,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16147,7 +17387,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16180,7 +17428,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16213,7 +17469,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16246,7 +17510,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16279,7 +17551,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a59880"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16306,7 +17586,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9b7ab8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16333,7 +17621,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#e89e58"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16366,7 +17662,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16414,7 +17718,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d9c39a"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16447,7 +17759,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16480,7 +17800,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16579,7 +17907,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16627,7 +17963,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#c49066"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16660,7 +18004,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16687,7 +18039,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6eb8b0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16720,7 +18080,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16747,7 +18115,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#c0b0a0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16774,7 +18150,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#baa89c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16807,7 +18191,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16861,7 +18253,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#6a78b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16888,7 +18288,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#aec0a8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16936,7 +18344,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d9b888"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16963,7 +18379,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#a8c868"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -16996,7 +18420,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17092,7 +18524,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#6cc28c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17161,7 +18601,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#cfa070"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17215,7 +18663,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#6a78b8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17248,7 +18704,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17275,7 +18739,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#e0c588"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17302,7 +18774,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#c0bfb5"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17335,7 +18815,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17362,7 +18850,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#b895c0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17389,7 +18885,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9b7ab8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17416,7 +18920,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a85c70"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17449,7 +18961,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#9a4ec8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17818,7 +19338,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17845,7 +19373,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#c4b488"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17878,7 +19414,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17932,7 +19476,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17965,7 +19517,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -17998,7 +19558,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18025,7 +19593,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#e0a0a0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18052,7 +19628,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7d96aa"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18085,7 +19669,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6a832"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18118,7 +19710,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6a832"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18151,7 +19751,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6a832"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18199,7 +19807,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#9aa5e1"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18226,7 +19842,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#d87090"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18253,7 +19877,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7b5ba8"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18280,7 +19912,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#d8703e"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18307,7 +19947,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#e89e58"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18334,7 +19982,15 @@
           "label": "R2"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d5a878"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18409,7 +20065,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a85c1"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18442,7 +20106,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#7a85c1"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18475,7 +20147,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18529,7 +20209,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#d6b860"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18583,7 +20271,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18616,7 +20312,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18649,7 +20353,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18682,7 +20394,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#e65a96"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18757,7 +20477,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18790,7 +20518,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18823,7 +20559,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18856,7 +20600,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#a8993c"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18889,7 +20641,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#1a1a1a",
+            "background": "#f08a45"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18922,7 +20682,15 @@
           "label": "R3"
         }
       ],
-      "meta": {},
+      "meta": {
+        "colors": {
+          "default": {
+            "line": "#202020",
+            "text": "#ffffff",
+            "background": "#2c7be0"
+          }
+        }
+      },
       "author": "Pistoia Alliance HELM project",
       "createDate": null
     },
@@ -18945,6 +20713,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:39:24.944Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#d6336c"
+        }
+      },
       "pubchemCID": 35717,
       "description": "Liver-targeting GalNAc sugar — single-arm form. Asialoglycoprotein receptor ligand.",
       "source": "PubChem CID 35717",
@@ -18970,6 +20745,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:40:24.469Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#b51b5b"
+        }
+      },
       "pubchemCID": 117789597,
       "description": "Trivalent GalNAc cluster (Inclisiran / Vutrisiran-style 3'-terminal conjugate).",
       "source": "PubChem CID 117789597",
@@ -18995,6 +20777,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:41:45.930Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#8b5a2b"
+        }
+      },
       "pubchemCID": 5997,
       "description": "Cholesterol delivery moiety. Common 3' or 5' lipid conjugate for hepatocyte / lipoprotein-mediated delivery.",
       "source": "PubChem CID 5997",
@@ -19020,6 +20809,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:42:04.506Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#1a1a1a",
+          "background": "#f1a23b"
+        }
+      },
       "pubchemCID": 171548,
       "description": "Biotin tag — affinity / pull-down handle, also used as a delivery moiety.",
       "source": "PubChem CID 171548",
@@ -19045,6 +20841,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:43:04.558Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#2e8b57"
+        }
+      },
       "pubchemCID": 14985,
       "description": "Vitamin E delivery moiety. Used in tocopherol-conjugated siRNA for systemic / liver delivery.",
       "source": "PubChem CID 14985",
@@ -19070,6 +20873,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:43:13.428Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#c08b3a"
+        }
+      },
       "pubchemCID": 985,
       "description": "Lipophilic palmitoyl conjugate (C16 fatty acid).",
       "source": "PubChem CID 985",
@@ -19095,6 +20905,13 @@
     "author": "Admin",
     "createDate": "2026-05-01T12:43:53.749Z",
     "meta": {
+      "colors": {
+        "default": {
+          "line": "#202020",
+          "text": "#ffffff",
+          "background": "#16919a"
+        }
+      },
       "pubchemCID": 25195294,
       "description": "DBCO group for strain-promoted azide-alkyne click (SPAAC) conjugation.",
       "source": "PubChem CID 25195294",
