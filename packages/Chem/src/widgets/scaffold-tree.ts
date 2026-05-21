@@ -1670,7 +1670,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   private getPeerViewers(): ScaffoldTreeViewer[] {
-    return (Array.from(grok.shell.tv?.viewers) ?? []).filter(
+    return Array.from(grok.shell.tv?.viewers ?? []).filter(
       (v) => v !== this && v.type === ScaffoldTreeViewer.TYPE &&
         (v as ScaffoldTreeViewer).molColumn?.name === this.molColumn?.name,
     ) as ScaffoldTreeViewer[];
