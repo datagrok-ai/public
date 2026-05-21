@@ -107,6 +107,7 @@ export class ControllerBase<T> {
 export class LinkController extends ControllerBase<[any, RestrictionType]> implements IRuntimeLinkController {
   public inputTemplates: TemplateInfo[];
   public outputTemplates: TemplateInfo[];
+  public consistencyResets = new Set<string>();
 
   constructor(args: ControllerBaseArgs) {
     super(args);
@@ -117,7 +118,15 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
   setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
+    this.consistencyResets.delete(name);
     this.outputs[name] = [state, restriction] as const;
+  }
+
+  clearRestriction(name: string) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    delete this.outputs[name];
+    this.consistencyResets.add(name);
   }
 
   getInputTemplates(): TemplateInfo[] {

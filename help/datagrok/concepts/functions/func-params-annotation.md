@@ -273,6 +273,24 @@ When all parameters in a category are hidden programmatically (via `input.visibl
 the category header hides automatically. If all sub-categories under a section header are also
 hidden, that header hides too.
 
+### Output parameter groups
+
+Use `meta.outputCategoryGroups` to organize scalar **output** categories into super-categories.
+The format mirrors `meta.categoryGroups` but applies only to scalar outputs rendered by
+Compute2's Rich Function View. DataFrame and viewer outputs are unaffected; the annotation
+is deliberately separate so the two can coexist on the same function.
+
+```js
+//output: double rmse {category: Metrics}
+//output: double r2 {category: Metrics}
+//output: double trainTime {category: Performance}
+//meta.outputCategoryGroups: {"Summary": ["Metrics", "Performance"]}
+```
+
+Each top-level key produces one scalar-output tab; nested `{label: [...]}` entries appear
+as indented sub-sections inside that tab. Referenced categories that don't exist, or that
+contain non-scalar outputs, are silently skipped — their original tabs are left in place.
+
 ### Initial values and optional parameters
 
 Proper handling of the empty parameters requires special efforts when building a SQL query,

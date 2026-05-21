@@ -18,7 +18,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-import {ScalarsPanel, ScalarState} from './ScalarsPanel';
+import {ScalarsPanel, ScalarsSection, ScalarState} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
@@ -33,6 +33,51 @@ import {getViewers} from '../../utils';
 interface ScalarsState {
   type: 'scalars',
   scalarsData: ScalarState[],
+  sections?: ScalarsSection[],
+}
+
+type OutputCategoryGroupSpec = ReadonlyArray<string | Record<string, OutputCategoryGroupSpec>>;
+type OutputCategoryGroups = Record<string, OutputCategoryGroupSpec>;
+
+function parseOutputCategoryGroups(func: DG.Func): OutputCategoryGroups | undefined {
+  const raw = func?.options?.['outputCategoryGroups'];
+  if (!raw) return undefined;
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function applyOutputCategoryGroups(outputs: TabContent, spec: OutputCategoryGroups) {
+  const consume = (items: OutputCategoryGroupSpec, depth: number, sink: ScalarsSection[]) => {
+    for (const item of items) {
+      if (typeof item === 'string') {
+        const entry = outputs.get(item);
+        if (!entry || entry.type !== 'scalars') continue;
+        sink.push({label: item, indent: depth, scalarsData: entry.scalarsData});
+        outputs.delete(item);
+      } else if (item && typeof item === 'object' && !Array.isArray(item)) {
+        for (const [label, nested] of Object.entries(item)) {
+          if (!Array.isArray(nested)) continue;
+          const start = sink.length;
+          consume(nested, depth + 1, sink);
+          if (sink.length > start)
+            sink.splice(start, 0, {label, indent: depth, scalarsData: []});
+        }
+      }
+    }
+  };
+
+  for (const [superLabel, items] of Object.entries(spec)) {
+    if (!Array.isArray(items)) continue;
+    const sections: ScalarsSection[] = [];
+    consume(items, 0, sections);
+    if (sections.length === 0) continue;
+    const flat = sections.flatMap((s) => s.scalarsData);
+    outputs.set(superLabel, {type: 'scalars', scalarsData: flat, sections});
+  }
 }
 
 interface DataFrameState {
@@ -144,6 +189,11 @@ const tabToProperties = (fc: DG.FuncCall) => {
     else
       tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
   });
+
+  const groupsSpec = parseOutputCategoryGroups(fc.func);
+  if (groupsSpec)
+    applyOutputCategoryGroups(tabsToProps.outputs, groupsSpec);
+
   return tabsToProps;
 };
 
@@ -315,6 +365,9 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
       if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
+      // Re-run mutates outputs in place; refresh scalar snapshots when only callState moved.
+      if (prevCall && call === prevCall && callState !== prevCallState)
+        tabToPropertiesMap.value = tabToProperties(call);
       const map = tabToPropertiesMap.value;
 
       tabsData.value = labels.map((tabLabel) =>
@@ -631,11 +684,13 @@ export const RichFunctionView = Vue.defineComponent({
 
                 if (tabContent?.type === 'scalars') {
                   const scalarsData = tabContent.scalarsData;
+                  const sections = tabContent.sections;
 
                   const panel = <ScalarsPanel
                     validationStates={validationState.value}
                     class='h-full overflow-scroll'
                     scalarsData={scalarsData}
+                    sections={sections}
                     dock-spawn-panel-icon='sign-out-alt'
                     dock-spawn-title={tabLabel}
                     key={tabLabel}

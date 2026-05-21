@@ -20,6 +20,7 @@ export type TemplateInfo = {
 
 export interface IRuntimeLinkController extends IControllerBase {
   setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
+  clearRestriction(name: string): void;
   getInputTemplates(): TemplateInfo[];
   getOutputTemplates(): TemplateInfo[];
   propagateTemplatePair(
