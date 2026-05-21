@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Features Table Layout — Mockup Index</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #3c3c3c;
+         background: #f5f5f5; padding: 32px; }
+  h1 { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+  .subtitle { font-size: 12px; color: #888; margin-bottom: 28px; }
+  .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px;
+          padding: 18px 20px; margin-bottom: 14px; max-width: 720px; }
+  .card-header { display: flex; align-items: flex-start; gap: 12px; }
+  .badge { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center;
+           justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; color: #fff; }
+  .badge-a { background: #0085c4; }
+  .badge-b { background: #388e3c; }
+  .badge-c { background: #757575; }
+  .card-title { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+  .card-desc { font-size: 12px; color: #555; line-height: 1.55; }
+  .card-link { display: inline-block; margin-top: 10px; font-size: 12px; color: #0085c4;
+               text-decoration: none; font-weight: 600; }
+  .card-link:hover { text-decoration: underline; }
+  .rec-tag { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 10px;
+             font-weight: 700; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+             margin-left: 8px; vertical-align: middle; }
+  .divider { border: none; border-top: 1px solid #e0e0e0; margin: 24px 0; max-width: 720px; }
+  .notes { max-width: 720px; font-size: 11px; color: #888; line-height: 1.6; }
+  .notes strong { color: #555; }
+</style>
+</head>
+<body>
+
+<h1>Features Table Layout — Mockup Comparison</h1>
+<div class="subtitle">Consensus Pharmacophore app · Stage 4 "Features" post-run view · 2026-05-21</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="badge badge-b">B</div>
+    <div>
+      <div class="card-title">Option B — Keep 25-row grid; add per-PDB summary in left rail
+        <span class="rec-tag">Recommended</span>
+      </div>
+      <div class="card-desc">
+        The 25-row <code>ligand_features</code> grid is unchanged. A new compact "SUMMARY" block
+        appears in the left rail above the preview buttons: one entry per PDB with color-coded
+        family chips (D×1, A×1, H×3 …) and a warning icon for PDBs with skipped interactions.
+        Clicking a PDB entry applies a grid filter. Lowest implementation cost; preserves the
+        downstream Stage 5a data model.
+      </div>
+      <a class="card-link" href="option-b-keep-detail-add-summary.html">Open Option B &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="badge badge-a">A</div>
+    <div>
+      <div class="card-title">Option A — Per-PDB summary in grid; full detail in context panel</div>
+      <div class="card-desc">
+        The grid is replaced with a 5-row aggregation (one row per PDB) with colored count columns
+        (<em>n_hbd</em>, <em>n_hba</em>, <em>n_hyd</em>, <em>n_pi</em>, <em>n_xb</em>, <em>n_total</em>).
+        Selecting a row opens the full per-interaction detail (9 rows for 1XKK) in the Datagrok
+        context panel. The Mol* viewer always shows all 25 chain-F spheres. More polished first
+        impression; higher implementation cost.
+      </div>
+      <a class="card-link" href="option-a-per-pdb-summary.html">Open Option A &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="badge badge-c">C</div>
+    <div>
+      <div class="card-title">Option C — Current state (baseline, no changes)</div>
+      <div class="card-desc">
+        The existing layout: 25-row <code>ligand_features</code> table, left rail with PDB textarea
+        + options + 5 preview buttons + BUILD, Mol* pane with chain-F spacefill overlay. Use this
+        as the visual reference point when comparing the other two options.
+      </div>
+      <a class="card-link" href="option-c-current.html">Open Option C &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="notes">
+  <strong>Demo data:</strong> 5 EGFR kinase PDBs — 1XKK (FMM, 9 interactions), 3W2S (W2R, 6),
+  4WKQ (IRE, 3 + 1 skipped), 5HG5 (633, 5), 5HG8 (634, 2). Total = 25.
+  CPK family colors: D=#2196F3, A=#E53935, a=#4CAF50, H=#FFEB3B, P=#00BCD4, N=#FF9800, X=#9C27B0.
+  See <code>README.md</code> for full trade-off analysis and open questions.
+</div>
+
+</body>
+</html>

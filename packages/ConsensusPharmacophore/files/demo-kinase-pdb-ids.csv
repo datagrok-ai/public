@@ -1,0 +1,6 @@
+pdb_id,ligand_comp_id,ligand_name,notes
+1XKK,FMM,lapatinib,EGFR active-state (DFG-in) with lapatinib (2.40 A)
+3W2S,W2R,afatinib analog,EGFR active-state with afatinib-like urea (1.90 A)
+4WKQ,IRE,gefitinib,EGFR active-state with gefitinib (1.85 A)
+5HG5,633,mereletinib analog,EGFR active-state with mereletinib analog (1.52 A)
+5HG8,634,osimertinib,EGFR T790M active-state with osimertinib (1.42 A)

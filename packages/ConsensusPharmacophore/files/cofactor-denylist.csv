@@ -1,0 +1,43 @@
+ccd_id,category,notes
+HOH,solvent,water
+DOD,solvent,heavy water
+SO4,buffer,sulfate
+PO4,buffer,phosphate
+CL,ion,chloride
+NA,ion,sodium
+K,ion,potassium
+CA,ion,calcium
+MG,ion,magnesium
+ZN,ion,zinc
+FE,ion,iron
+MN,ion,manganese
+NI,ion,nickel
+CU,ion,copper
+EDO,cryoprotectant,ethylene glycol
+GOL,cryoprotectant,glycerol
+PEG,cryoprotectant,polyethylene glycol
+PG4,cryoprotectant,PEG-4
+PGE,cryoprotectant,triethylene glycol
+DMS,solvent,DMSO
+ACT,buffer,acetate
+TRS,buffer,tris
+MES,buffer,MES
+IMD,buffer,imidazole
+HEM,cofactor,heme
+HEC,cofactor,heme C
+NAG,glycosylation,N-acetylglucosamine
+BMA,glycosylation,beta-D-mannose
+MAN,glycosylation,alpha-D-mannose
+FUC,glycosylation,fucose
+GAL,glycosylation,galactose
+FAD,cofactor,FAD
+NAD,cofactor,NAD
+NAP,cofactor,NADP
+ADP,cofactor,ADP
+ATP,cofactor,ATP
+GDP,cofactor,GDP
+GTP,cofactor,GTP
+COA,cofactor,coenzyme A
+FMN,cofactor,FMN
+SAM,cofactor,S-adenosylmethionine
+SAH,cofactor,S-adenosylhomocysteine

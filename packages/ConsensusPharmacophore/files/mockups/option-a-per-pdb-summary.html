@@ -1,0 +1,485 @@
+<!-- viewport: 1280x800, light theme — Stage 4 "Features" result, Option A: per-PDB summary grid + context panel detail -->
+<!--
+  OPTION A — PER-PDB SUMMARY IN GRID; INTERACTION DETAIL IN CONTEXT PANEL
+
+  Grid = 5 rows, one per PDB. Columns: pdb_id, ligand_comp_id, ligand_smiles (truncated),
+  n_hbond_donor (blue), n_hbond_acceptor (red), n_hydrophobic (green), n_pistacking,
+  n_xbond, n_total (bold), top_residues. First row (1XKK) is selected.
+
+  Right side = Datagrok context panel showing the 9 per-interaction rows for 1XKK.
+  Mol* always shows ALL 25 spheres regardless of grid selection.
+
+  UX trade-offs:
+  + Immediately answers "5 PDBs → 5 rows". n_total column makes coverage legible at a glance.
+  + Context panel is the standard Datagrok pattern for showing entity detail without leaving the view.
+  + Colored count columns allow quick visual comparison of interaction-type distribution across ligands.
+  - Replaces the raw ligand_features DataFrame entirely — the 25-row table is no longer directly accessible
+    in the grid. Power users who want to sort/filter by distance or export individual interactions must
+    open the context panel and scroll.
+  - Implementation cost: Stage 4 result must be aggregated in JS before binding to the view.
+    The ligand_features df should be kept in cache for context-panel rendering.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Option A — Per-PDB summary grid + context panel detail (Stage 4 Features)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #3c3c3c;
+         background: #f5f5f5; height: 800px; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* Shell chrome */
+  .topbar { height: 26px; background: #2c2c2c; color: #d0d0d0; display: flex; align-items: center;
+            padding: 0 10px; gap: 14px; font-size: 11px; flex-shrink: 0; }
+  .topbar .logo { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: -0.5px; }
+  .ribbon { height: 32px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0; display: flex;
+            align-items: center; padding: 0 8px; gap: 2px; flex-shrink: 0; }
+  .ribbon-btn { height: 22px; padding: 0 8px; background: transparent; border: 1px solid transparent;
+                border-radius: 2px; cursor: pointer; font-size: 11px; color: #3c3c3c; }
+  .ribbon-btn.active { background: #dbe8f5; border-color: #0085c4; color: #0066a0; }
+
+  .stage-bar { height: 24px; background: #fafafa; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px; gap: 4px; flex-shrink: 0; }
+  .sbadge { height: 18px; padding: 0 7px; border-radius: 9px; font-size: 10px; font-weight: 600;
+            display: flex; align-items: center; white-space: nowrap; }
+  .sbadge.done   { background: #e8f5e9; color: #388e3c; border: 1px solid #a5d6a7; }
+  .sbadge.active { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .sbadge.pending { background: #f5f5f5; color: #9e9e9e; border: 1px solid #e0e0e0; }
+  .sbadge-sep { color: #ccc; font-size: 10px; }
+
+  .shell-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* Browse tree */
+  .sidebar { width: 190px; background: #fafafa; border-right: 1px solid #e0e0e0;
+             display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+                 display: flex; align-items: center; padding: 0 8px;
+                 font-size: 11px; font-weight: 600; color: #666; }
+  .tnode { padding: 2px 8px; font-size: 11px; cursor: pointer; }
+  .tnode:hover { background: #e8f0fa; }
+  .tnode.sel { background: #cce0f5; color: #0066a0; font-weight: 600; }
+  .tnode.grp { font-weight: 600; color: #555; padding-top: 7px; }
+  .tnode.i1  { padding-left: 18px; }
+  .tnode.i2  { padding-left: 30px; }
+
+  .view-area { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left input panel */
+  .input-panel { width: 250px; background: #fff; border-right: 1px solid #e0e0e0;
+                 display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .panel-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px;
+               font-size: 11px; font-weight: 600; color: #444; flex-shrink: 0; }
+  .p-section { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .p-label { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.4px;
+             text-transform: uppercase; margin-bottom: 4px; }
+  textarea.dg-ta { width: 100%; height: 72px; border: 1px solid #ccc; border-radius: 2px;
+                   padding: 4px 6px; font-size: 11px; font-family: 'Courier New', monospace;
+                   resize: none; color: #3c3c3c; background: #f9f9f9; }
+  .demo-link { font-size: 11px; color: #0085c4; cursor: pointer; }
+  .prop-row { display: flex; align-items: center; margin-bottom: 5px; gap: 4px; }
+  .prop-key { font-size: 11px; color: #666; flex: 1; }
+  .prop-val-el { height: 20px; border: 1px solid #ccc; border-radius: 2px; font-size: 11px;
+                 color: #3c3c3c; padding: 0 5px; background: #fff; }
+  input.prop-val-el { width: 60px; }
+  select.prop-val-el { width: 80px; }
+  .preview-btns { padding: 8px 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 4px; }
+  .prev-btn { height: 22px; padding: 0 10px; background: #f5f5f5; border: 1px solid #d0d0d0;
+              border-radius: 2px; font-size: 11px; color: #3c3c3c; cursor: pointer; text-align: left; }
+  .prev-btn.done { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .prev-btn.active-stage { background: #e3f2fd; border-color: #90caf9; color: #1565c0; font-weight: 600; }
+  .build-btn { margin: 8px 10px; height: 30px; background: #0085c4; color: #fff; border: none;
+               border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; width: calc(100% - 20px); }
+
+  /* Centre grid — the 5-row summary */
+  .grid-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .grid-tabbar { height: 26px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0;
+                 display: flex; align-items: flex-end; padding: 0 6px; flex-shrink: 0; }
+  .gtab { height: 22px; padding: 0 10px; border: 1px solid #ccc; border-bottom: none;
+          background: #e8e8e8; cursor: pointer; font-size: 11px; color: #555;
+          border-radius: 3px 3px 0 0; margin-right: 2px; }
+  .gtab.active { background: #fff; font-weight: 600; color: #3c3c3c; }
+  .grid-toolbar { height: 24px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0;
+                  display: flex; align-items: center; padding: 0 6px; gap: 3px; flex-shrink: 0; }
+  .tb-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid transparent;
+            border-radius: 2px; font-size: 10px; cursor: pointer; color: #555; }
+  .tb-btn:hover { background: #e0e0e0; }
+  .row-count { margin-left: auto; font-size: 10px; color: #888; }
+
+  .data-grid { flex: 1; overflow: auto; }
+  .dg-tbl { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 11px; }
+  .dg-tbl th { height: 22px; background: #f0f0f0; border: 1px solid #d8d8d8; padding: 0 6px;
+               text-align: left; font-weight: 600; color: #444; position: sticky; top: 0; z-index: 2;
+               white-space: nowrap; cursor: pointer; }
+  .dg-tbl th:hover { background: #e4e4e4; }
+  .dg-tbl td { height: 22px; border-right: 1px solid #ececec; border-bottom: 1px solid #ececec;
+               padding: 0 6px; vertical-align: middle; white-space: nowrap; }
+  .dg-tbl tr:nth-child(even) td { background: #fafafa; }
+  .dg-tbl tr:hover td { background: #f0f6ff; }
+  .dg-tbl tr.sel td { background: #cde4f7 !important; }
+
+  /* Colored count cells */
+  .cnt { font-weight: 600; text-align: right; min-width: 28px; display: inline-block; }
+  .cnt-D { color: #1565c0; }
+  .cnt-A { color: #c62828; }
+  .cnt-a { color: #2e7d32; }
+  .cnt-H { color: #795548; }
+  .cnt-P { color: #00838f; }
+  .cnt-X { color: #6a1b9a; }
+  .cnt-tot { color: #3c3c3c; font-weight: 700; font-size: 12px; }
+  .smiles-trunc { font-family: 'Courier New', monospace; font-size: 10px; color: #666;
+                  max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  .residue-list { font-size: 10px; color: #555; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Context panel (right, simulating Datagrok's right dock) */
+  .ctx-panel { width: 300px; background: #fff; border-left: 1px solid #e0e0e0;
+               display: flex; flex-direction: column; flex-shrink: 0; }
+  .ctx-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+             display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
+  .ctx-hdr-title { font-size: 11px; font-weight: 600; color: #444; flex: 1; }
+  .ctx-close { color: #888; cursor: pointer; font-size: 14px; line-height: 1; }
+  .ctx-sub { height: 22px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0;
+             display: flex; align-items: center; padding: 0 8px; font-size: 10px; color: #555;
+             flex-shrink: 0; }
+  .ctx-badge { display: inline-block; padding: 1px 6px; border-radius: 9px; font-size: 10px;
+               font-weight: 600; margin-right: 4px; }
+  .ctx-body { flex: 1; overflow-y: auto; }
+
+  /* Mini interaction table in context panel */
+  .ctx-tbl { border-collapse: collapse; width: 100%; font-size: 10px; }
+  .ctx-tbl th { height: 20px; background: #f0f0f0; border: 1px solid #d8d8d8; padding: 0 5px;
+                text-align: left; font-weight: 600; color: #555; position: sticky; top: 0; z-index: 2; }
+  .ctx-tbl td { height: 18px; border-right: 1px solid #ececec; border-bottom: 1px solid #ececec;
+                padding: 0 5px; vertical-align: middle; }
+  .ctx-tbl tr:nth-child(even) td { background: #fafafa; }
+
+  .fam-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 3px; }
+  .fam-D { background: #2196F3; }
+  .fam-A { background: #E53935; }
+  .fam-a { background: #4CAF50; }
+  .fam-H { background: #FFEB3B; border: 1px solid #ccc; }
+  .fam-P { background: #00BCD4; }
+  .fam-X { background: #9C27B0; }
+
+  .ctx-footer { height: 28px; background: #f7f7f7; border-top: 1px solid #e0e0e0;
+                display: flex; align-items: center; padding: 0 8px; font-size: 10px; color: #888;
+                flex-shrink: 0; }
+  .ctx-footer-note { font-style: italic; }
+
+  /* Mol* placeholder (narrow, right of context panel) */
+  .molstar-pane { width: 240px; background: #13131e; display: flex; flex-direction: column;
+                  flex-shrink: 0; border-left: 1px solid #444; }
+  .ms-hdr { height: 26px; background: #222233; border-bottom: 1px solid #3a3a4a;
+            display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
+  .ms-hdr span { color: #b0b0c0; font-size: 11px; }
+  .ms-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid #3a3a4a;
+            border-radius: 2px; cursor: pointer; font-size: 10px; color: #999; }
+  .ms-canvas { flex: 1; position: relative; overflow: hidden;
+               background: radial-gradient(ellipse at 40% 45%, #1e2a4a 0%, #0a0a18 100%); }
+  .backbone { position: absolute; top: 30px; left: 20px; right: 20px; bottom: 30px;
+              border: 2px solid rgba(100,160,255,0.12); border-radius: 50%;
+              background: radial-gradient(ellipse, rgba(40,60,120,0.3) 0%, transparent 70%); }
+  .sphere { position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 7px currentColor; }
+  .ms-note { background: rgba(10,10,20,0.9); border-top: 1px solid #2a2a3a; padding: 5px 8px;
+             flex-shrink: 0; font-size: 10px; color: #666; text-align: center; font-style: italic; }
+
+  /* Status bar */
+  .statusbar { height: 18px; background: #f0f0f0; border-top: 1px solid #d0d0d0;
+               display: flex; align-items: center; padding: 0 8px; gap: 10px; flex-shrink: 0; }
+  .statusbar span { font-size: 10px; color: #888; }
+  .status-green { color: #388e3c !important; font-weight: 600; }
+
+  /* Callouts */
+  .callout { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e65100;
+             color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center;
+             justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 200;
+             pointer-events: none; }
+  .legend-box { background: #fffbf4; border: 1px solid #f0c060; border-radius: 3px;
+                padding: 6px 10px; font-size: 10px; color: #555; max-width: 360px; }
+  .legend-box h4 { font-size: 11px; color: #333; margin-bottom: 4px; font-weight: 600; }
+  .legend-box ol { padding-left: 14px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Datagrok</span>
+  <span style="color:#555">|</span>
+  <span style="cursor:pointer">File</span>
+  <span style="cursor:pointer">Edit</span>
+  <span style="cursor:pointer">View</span>
+  <span style="cursor:pointer">Windows</span>
+  <span style="flex:1"></span>
+  <span style="color:#888">researcher@pharma.com</span>
+</div>
+
+<div class="ribbon">
+  <button class="ribbon-btn">Data</button>
+  <button class="ribbon-btn active">Apps</button>
+  <button class="ribbon-btn">Chem</button>
+  <button class="ribbon-btn">Bio</button>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#888">Consensus Pharmacophore</span>
+</div>
+
+<div class="stage-bar">
+  <span class="sbadge done">1. Enrich</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">2a. Align</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">Picker</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">3. Pocket</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">2b. Re-align</span><span class="sbadge-sep">›</span>
+  <span class="sbadge active">4. Features</span><span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5a. Consensus</span><span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5b. Render</span>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#388e3c;font-weight:600">Stage 4 complete — 25 interactions · 5 structures</span>
+</div>
+
+<div class="shell-body">
+
+  <div class="sidebar">
+    <div class="sidebar-hdr">Browse</div>
+    <div class="tnode grp">Apps</div>
+    <div class="tnode i1">Bio</div>
+    <div class="tnode i2 sel">Consensus Pharmacophore</div>
+    <div class="tnode grp" style="margin-top:8px">Data</div>
+    <div class="tnode i1">pdb_interaction_summary</div>
+  </div>
+
+  <div class="view-area">
+
+    <!-- Left input panel -->
+    <div class="input-panel">
+      <div class="panel-hdr">Consensus Pharmacophore</div>
+      <div class="p-section">
+        <div class="p-label">PDB IDs</div>
+        <textarea class="dg-ta" readonly>1XKK
+3W2S
+4WKQ
+5HG5
+5HG8</textarea>
+        <div style="margin-top:4px">
+          <a class="demo-link">Use demo input</a>
+          <span style="color:#ccc;margin:0 4px">·</span>
+          <span style="font-size:10px;color:#666">5 active-state EGFR</span>
+        </div>
+      </div>
+      <div class="p-section">
+        <div class="p-label">Options</div>
+        <div class="prop-row"><span class="prop-key">Max resolution (A)</span><input class="prop-val-el" value="2.5" readonly></div>
+        <div class="prop-row"><span class="prop-key">X-ray only</span><input type="checkbox" checked></div>
+        <div class="prop-row"><span class="prop-key">Min ligand MW (Da)</span><input class="prop-val-el" value="100" readonly></div>
+        <div class="prop-row"><span class="prop-key">Pocket method</span><select class="prop-val-el"><option>cutoff</option></select></div>
+        <div class="prop-row"><span class="prop-key">Pocket radius (A)</span><input class="prop-val-el" value="5.0" readonly></div>
+      </div>
+      <div class="preview-btns">
+        <div class="p-label">Preview stages</div>
+        <button class="prev-btn done">&#10003; 1. Fetch PDBs</button>
+        <button class="prev-btn done">&#10003; 2. Align</button>
+        <button class="prev-btn done">&#10003; 3. Pocket</button>
+        <button class="prev-btn active-stage">&#9654; 4. Features</button>
+        <button class="prev-btn">5. Consensus</button>
+      </div>
+      <button class="build-btn">BUILD ALL</button>
+    </div>
+
+    <!-- Centre grid: 5-row summary -->
+    <div class="grid-area" style="position:relative">
+      <!-- Callout 1 -->
+      <div class="callout" style="top:52px;left:6px">1</div>
+      <!-- Callout 2 -->
+      <div class="callout" style="top:52px;right:8px">2</div>
+
+      <div class="grid-tabbar">
+        <div class="gtab active">pdb_interaction_summary</div>
+        <div class="gtab">aligned_pdbs</div>
+      </div>
+      <div class="grid-toolbar">
+        <button class="tb-btn">Filter</button>
+        <button class="tb-btn">Sort</button>
+        <button class="tb-btn">Columns</button>
+        <span class="row-count">5 rows · 10 columns · click a row to see detail</span>
+      </div>
+      <div class="data-grid">
+        <table class="dg-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>pdb_id</th>
+              <th>ligand_comp_id</th>
+              <th>ligand_smiles</th>
+              <th title="HBDonor count" style="color:#1565c0">n_hbd</th>
+              <th title="HBAcceptor count" style="color:#c62828">n_hba</th>
+              <th title="Hydrophobic count" style="color:#795548">n_hyd</th>
+              <th title="Aromatic / PiStacking count" style="color:#2e7d32">n_pi</th>
+              <th title="Halogen bond count" style="color:#6a1b9a">n_xb</th>
+              <th style="font-weight:700">n_total</th>
+              <th>top_residues</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="sel">
+              <td>1</td><td><b>1XKK</b></td><td>FMM</td>
+              <td class="smiles-trunc">CC1=CC2=C(N…</td>
+              <td><span class="cnt cnt-D">1</span></td>
+              <td><span class="cnt cnt-A">1</span></td>
+              <td><span class="cnt cnt-H">3</span></td>
+              <td><span class="cnt cnt-a">2</span></td>
+              <td><span class="cnt cnt-X">1</span></td>
+              <td><span class="cnt cnt-tot">9</span></td>
+              <td class="residue-list">MET769, LEU777, PHE699</td>
+            </tr>
+            <tr>
+              <td>2</td><td><b>3W2S</b></td><td>W2R</td>
+              <td class="smiles-trunc">CCc1ccc(NC…</td>
+              <td><span class="cnt cnt-D">1</span></td>
+              <td><span class="cnt cnt-A">1</span></td>
+              <td><span class="cnt cnt-H">2</span></td>
+              <td><span class="cnt cnt-a">1</span></td>
+              <td><span class="cnt cnt-X">0</span></td>
+              <td><span class="cnt cnt-tot">6</span></td>
+              <td class="residue-list">MET769, LEU777, PHE699</td>
+            </tr>
+            <tr>
+              <td>3</td><td><b>4WKQ</b></td><td>IRE</td>
+              <td class="smiles-trunc">Cc1cnc(Nc…</td>
+              <td><span class="cnt cnt-D">1</span></td>
+              <td><span class="cnt cnt-A">1</span></td>
+              <td><span class="cnt cnt-H">1</span></td>
+              <td><span class="cnt cnt-a">0</span></td>
+              <td><span class="cnt cnt-X">0</span></td>
+              <td><span class="cnt cnt-tot">3</span></td>
+              <td class="residue-list" style="color:#b71c1c">MET769 · 1 skipped (CSX)</td>
+            </tr>
+            <tr>
+              <td>4</td><td><b>5HG5</b></td><td>633</td>
+              <td class="smiles-trunc">CN1CCN(Cc…</td>
+              <td><span class="cnt cnt-D">1</span></td>
+              <td><span class="cnt cnt-A">1</span></td>
+              <td><span class="cnt cnt-H">2</span></td>
+              <td><span class="cnt cnt-a">1</span></td>
+              <td><span class="cnt cnt-X">0</span></td>
+              <td><span class="cnt cnt-tot">5</span></td>
+              <td class="residue-list">MET769, THR766, LEU777</td>
+            </tr>
+            <tr>
+              <td>5</td><td><b>5HG8</b></td><td>634</td>
+              <td class="smiles-trunc">COc1cc2nc…</td>
+              <td><span class="cnt cnt-D">1</span></td>
+              <td><span class="cnt cnt-A">1</span></td>
+              <td><span class="cnt cnt-H">0</span></td>
+              <td><span class="cnt cnt-a">0</span></td>
+              <td><span class="cnt cnt-X">0</span></td>
+              <td><span class="cnt cnt-tot">2</span></td>
+              <td class="residue-list">MET769</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Context panel: detail for selected row (1XKK) -->
+    <div class="ctx-panel" style="position:relative">
+      <!-- Callout 3 -->
+      <div class="callout" style="top:4px;left:4px">3</div>
+      <div class="ctx-hdr">
+        <span class="ctx-hdr-title">1XKK · FMM — 9 interactions</span>
+        <span class="ctx-close">&#10005;</span>
+      </div>
+      <div class="ctx-sub">
+        <span class="ctx-badge" style="background:#e3f2fd;color:#1565c0">D×1</span>
+        <span class="ctx-badge" style="background:#ffebee;color:#c62828">A×1</span>
+        <span class="ctx-badge" style="background:#fff9c4;color:#795548">H×3</span>
+        <span class="ctx-badge" style="background:#e8f5e9;color:#2e7d32">a×2</span>
+        <span class="ctx-badge" style="background:#f3e5f5;color:#6a1b9a">X×1</span>
+        <span class="ctx-badge" style="background:#e0f7fa;color:#00838f">P×1</span>
+      </div>
+      <div class="ctx-body">
+        <table class="ctx-tbl">
+          <thead>
+            <tr>
+              <th>fam</th>
+              <th>interaction_type</th>
+              <th>residue</th>
+              <th>dist (&#197;)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="fam-dot fam-D"></span>D</td><td>HBDonor</td><td>MET769.A</td><td>3.12</td></tr>
+            <tr><td><span class="fam-dot fam-A"></span>A</td><td>HBAcceptor</td><td>MET769.A</td><td>3.07</td></tr>
+            <tr><td><span class="fam-dot fam-H fam-H-dot" style="background:#FFEB3B;border:1px solid #ccc"></span>H</td><td>Hydrophobic</td><td>LEU777.A</td><td>4.31</td></tr>
+            <tr><td><span class="fam-dot fam-H" style="background:#FFEB3B;border:1px solid #ccc"></span>H</td><td>Hydrophobic</td><td>ALA743.A</td><td>4.08</td></tr>
+            <tr><td><span class="fam-dot fam-H" style="background:#FFEB3B;border:1px solid #ccc"></span>H</td><td>Hydrophobic</td><td>VAL726.A</td><td>3.99</td></tr>
+            <tr><td><span class="fam-dot fam-a"></span>a</td><td>PiStacking</td><td>PHE699.A</td><td>4.82</td></tr>
+            <tr><td><span class="fam-dot fam-a"></span>a</td><td>PiStacking</td><td>PHE699.A</td><td>4.91</td></tr>
+            <tr><td><span class="fam-dot fam-P"></span>P</td><td>Cationic</td><td>ASP855.A</td><td>3.44</td></tr>
+            <tr><td><span class="fam-dot fam-X"></span>X</td><td>XBDonor</td><td>THR766.A</td><td>3.28</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ctx-footer">
+        <span class="ctx-footer-note">Mol* shows all 25 spheres regardless of selection</span>
+      </div>
+    </div>
+
+    <!-- Mol* pane (narrower to make room for context panel) -->
+    <div class="molstar-pane">
+      <div class="ms-hdr">
+        <span style="font-weight:600">Mol*</span>
+        <span style="flex:1"></span>
+        <button class="ms-btn">&#8634;</button>
+      </div>
+      <div class="ms-canvas">
+        <div class="backbone"></div>
+        <svg width="100%" height="100%" style="position:absolute;top:0;left:0" viewBox="0 0 240 420" preserveAspectRatio="xMidYMid meet">
+          <path d="M30,100 Q60,70 100,85 Q140,100 170,75" stroke="rgba(100,150,255,0.2)" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M25,180 Q65,155 105,168 Q145,180 185,160" stroke="rgba(100,150,255,0.15)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <!-- All 25 spheres, grouped by family -->
+        <div class="sphere" style="width:15px;height:15px;background:#2196F3;color:#2196F3;top:75px;left:85px;opacity:0.85"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#2196F3;color:#2196F3;top:80px;left:108px;opacity:0.7"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#2196F3;color:#2196F3;top:88px;left:130px;opacity:0.65"></div>
+        <div class="sphere" style="width:10px;height:10px;background:#2196F3;color:#2196F3;top:73px;left:148px;opacity:0.6"></div>
+        <div class="sphere" style="width:15px;height:15px;background:#E53935;color:#E53935;top:118px;left:70px;opacity:0.85"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#E53935;color:#E53935;top:126px;left:98px;opacity:0.7"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#E53935;color:#E53935;top:112px;left:122px;opacity:0.65"></div>
+        <div class="sphere" style="width:16px;height:16px;background:#c8b400;color:#c8b400;top:155px;left:90px;opacity:0.75"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#c8b400;color:#c8b400;top:163px;left:118px;opacity:0.65"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#c8b400;color:#c8b400;top:148px;left:142px;opacity:0.7"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#c8b400;color:#c8b400;top:168px;left:72px;opacity:0.6"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#4CAF50;color:#4CAF50;top:188px;left:100px;opacity:0.75"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#4CAF50;color:#4CAF50;top:198px;left:128px;opacity:0.65"></div>
+        <div class="sphere" style="width:10px;height:10px;background:#4CAF50;color:#4CAF50;top:183px;left:80px;opacity:0.6"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#00BCD4;color:#00BCD4;top:220px;left:95px;opacity:0.75"></div>
+        <div class="sphere" style="width:10px;height:10px;background:#00BCD4;color:#00BCD4;top:228px;left:118px;opacity:0.65"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#9C27B0;color:#9C27B0;top:245px;left:88px;opacity:0.75"></div>
+      </div>
+      <div class="ms-note">All 25 spheres shown</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="statusbar">
+  <span class="status-green">Stage 4 complete</span>
+  <span>Row 1 selected: 1XKK · 9 interactions</span>
+  <span style="flex:1"></span>
+  <span>5 PDBs · 25 total interactions</span>
+</div>
+
+<!-- Annotation legend -->
+<div style="position:fixed;bottom:24px;left:196px;z-index:300">
+  <div class="legend-box">
+    <h4>Callout legend</h4>
+    <ol>
+      <li><b>1</b> — Grid has <b>5 rows, one per PDB</b>. n_total column makes per-PDB coverage obvious.</li>
+      <li><b>2</b> — n_hbd / n_hba / n_hyd / n_pi / n_xb count columns; colored by family code.</li>
+      <li><b>3</b> — Datagrok context panel opens when a row is selected; shows the 9 per-interaction rows for 1XKK. Mol* always shows all 25 spheres.</li>
+    </ol>
+  </div>
+</div>
+
+</body>
+</html>

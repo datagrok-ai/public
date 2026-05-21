@@ -1,0 +1,509 @@
+<!-- viewport: 1280x800, light theme — Stage 4 "Features" result, current layout (Option C baseline) -->
+<!--
+  OPTION C — CURRENT STATE (baseline for comparison)
+
+  Grid = 25-row ligand_features table. One row per detected protein-ligand interaction.
+  Columns: pdb_id, ligand_comp_id, family (code), interaction_type, residue, distance, skip_reason.
+  Left rail = PDB IDs textarea + 5 preview buttons + BUILD.
+  Right = Mol* placeholder showing chain-F spacefill spheres colored by pharmacophore family.
+
+  UX trade-offs:
+  + No code changes required — this is live today.
+  + Every interaction is visible and sortable in the grid.
+  - 25 rows with repeated pdb_id/ligand_comp_id columns looks noisy; user doesn't immediately
+    understand why there are 25 rows for 5 inputs. The question "why 25 rows?" motivated these mockups.
+  - Column redundancy (pdb_id repeats 9 times for 1XKK alone) wastes horizontal space.
+  - No at-a-glance per-PDB summary; user has to mentally count/filter to understand coverage per structure.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Option C — Current State (25-row interaction table, Stage 4 Features)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #3c3c3c;
+         background: #f5f5f5; height: 800px; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* Shell chrome */
+  .topbar { height: 26px; background: #2c2c2c; color: #d0d0d0; display: flex; align-items: center;
+            padding: 0 10px; gap: 14px; font-size: 11px; flex-shrink: 0; }
+  .topbar .logo { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: -0.5px; }
+  .topbar .nav { cursor: pointer; }
+  .topbar .nav:hover { color: #fff; }
+
+  .ribbon { height: 32px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0; display: flex;
+            align-items: center; padding: 0 8px; gap: 2px; flex-shrink: 0; }
+  .ribbon-btn { height: 22px; padding: 0 8px; background: transparent; border: 1px solid transparent;
+                border-radius: 2px; cursor: pointer; font-size: 11px; color: #3c3c3c; }
+  .ribbon-btn:hover { background: #e0e0e0; }
+  .ribbon-btn.active { background: #dbe8f5; border-color: #0085c4; color: #0066a0; }
+
+  /* Stage progress bar (docked top, thin) */
+  .stage-bar { height: 24px; background: #fafafa; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px; gap: 4px; flex-shrink: 0; }
+  .sbadge { height: 18px; padding: 0 7px; border-radius: 9px; font-size: 10px; font-weight: 600;
+            display: flex; align-items: center; white-space: nowrap; }
+  .sbadge.done  { background: #e8f5e9; color: #388e3c; border: 1px solid #a5d6a7; }
+  .sbadge.active { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .sbadge.pending { background: #f5f5f5; color: #9e9e9e; border: 1px solid #e0e0e0; }
+  .sbadge-sep { color: #ccc; font-size: 10px; }
+
+  /* Shell body */
+  .shell-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left sidebar: Browse tree */
+  .sidebar { width: 190px; background: #fafafa; border-right: 1px solid #e0e0e0;
+             display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+                 display: flex; align-items: center; padding: 0 8px;
+                 font-size: 11px; font-weight: 600; color: #666; }
+  .tnode { padding: 2px 8px; font-size: 11px; cursor: pointer; }
+  .tnode:hover { background: #e8f0fa; }
+  .tnode.sel { background: #cce0f5; color: #0066a0; font-weight: 600; }
+  .tnode.grp { font-weight: 600; color: #555; padding-top: 7px; }
+  .tnode.i1  { padding-left: 18px; }
+  .tnode.i2  { padding-left: 30px; }
+
+  /* View area */
+  .view-area { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left input panel */
+  .input-panel { width: 250px; background: #fff; border-right: 1px solid #e0e0e0;
+                 display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .panel-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px;
+               font-size: 11px; font-weight: 600; color: #444; flex-shrink: 0; }
+  .p-section { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .p-label { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.4px;
+             text-transform: uppercase; margin-bottom: 4px; }
+  .p-val { font-size: 11px; color: #3c3c3c; }
+  textarea.dg-ta { width: 100%; height: 72px; border: 1px solid #ccc; border-radius: 2px;
+                   padding: 4px 6px; font-size: 11px; font-family: 'Courier New', monospace;
+                   resize: none; color: #3c3c3c; background: #f9f9f9; }
+  .demo-link { font-size: 11px; color: #0085c4; cursor: pointer; text-decoration: none; }
+  .demo-link:hover { text-decoration: underline; }
+
+  /* Property grid rows for options */
+  .prop-row { display: flex; align-items: center; margin-bottom: 5px; gap: 4px; }
+  .prop-key { font-size: 11px; color: #666; flex: 1; }
+  .prop-val-el { height: 20px; border: 1px solid #ccc; border-radius: 2px; font-size: 11px;
+                  color: #3c3c3c; padding: 0 5px; background: #fff; }
+  input.prop-val-el { width: 60px; }
+  select.prop-val-el { width: 80px; }
+
+  /* Preview buttons */
+  .preview-btns { padding: 8px 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 4px; }
+  .prev-btn { height: 22px; padding: 0 10px; background: #f5f5f5; border: 1px solid #d0d0d0;
+              border-radius: 2px; font-size: 11px; color: #3c3c3c; cursor: pointer; text-align: left; }
+  .prev-btn.done { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .prev-btn.active-stage { background: #e3f2fd; border-color: #90caf9; color: #1565c0; font-weight: 600; }
+  .prev-btn:hover:not(.done) { background: #e8e8e8; }
+
+  .build-btn { margin: 8px 10px; height: 30px; background: #0085c4; color: #fff; border: none;
+               border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; width: calc(100% - 20px); }
+  .build-btn:hover { background: #006fa3; }
+
+  /* Centre grid */
+  .grid-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .grid-tabbar { height: 26px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0;
+                 display: flex; align-items: flex-end; padding: 0 6px; flex-shrink: 0; }
+  .gtab { height: 22px; padding: 0 10px; border: 1px solid #ccc; border-bottom: none;
+          background: #e8e8e8; cursor: pointer; font-size: 11px; color: #555;
+          border-radius: 3px 3px 0 0; margin-right: 2px; }
+  .gtab.active { background: #fff; font-weight: 600; color: #3c3c3c; }
+
+  .grid-toolbar { height: 24px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0;
+                  display: flex; align-items: center; padding: 0 6px; gap: 3px; flex-shrink: 0; }
+  .tb-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid transparent;
+            border-radius: 2px; font-size: 10px; cursor: pointer; color: #555; }
+  .tb-btn:hover { background: #e0e0e0; border-color: #ccc; }
+  .row-count { margin-left: auto; font-size: 10px; color: #888; }
+
+  .data-grid { flex: 1; overflow: auto; }
+  .dg-tbl { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 11px; }
+  .dg-tbl th { height: 22px; background: #f0f0f0; border: 1px solid #d8d8d8; padding: 0 6px;
+               text-align: left; font-weight: 600; color: #444; position: sticky; top: 0; z-index: 2;
+               white-space: nowrap; cursor: pointer; }
+  .dg-tbl th:hover { background: #e4e4e4; }
+  .dg-tbl td { height: 20px; border-right: 1px solid #ececec; border-bottom: 1px solid #ececec;
+               padding: 0 6px; vertical-align: middle; white-space: nowrap; }
+  .dg-tbl tr:nth-child(even) td { background: #fafafa; }
+  .dg-tbl tr:hover td { background: #f0f6ff; }
+  .dg-tbl tr.sel td { background: #cde4f7 !important; }
+
+  /* Family chip */
+  .fam { display: inline-flex; align-items: center; gap: 3px; }
+  .fam-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .fam-D  { background: #2196F3; }
+  .fam-A  { background: #E53935; }
+  .fam-a  { background: #4CAF50; }
+  .fam-H  { background: #FFEB3B; border: 1px solid #ccc; }
+  .fam-P  { background: #00BCD4; }
+  .fam-N  { background: #FF9800; }
+  .fam-X  { background: #9C27B0; }
+
+  .dist { color: #0066a0; font-family: 'Courier New', monospace; font-size: 10px; }
+  .skip { color: #c62828; font-size: 10px; font-style: italic; }
+  .mono { font-family: 'Courier New', monospace; font-size: 10px; }
+
+  /* Right Mol* pane */
+  .molstar-pane { width: 340px; background: #13131e; display: flex; flex-direction: column;
+                  flex-shrink: 0; border-left: 1px solid #444; }
+  .ms-hdr { height: 26px; background: #222233; border-bottom: 1px solid #3a3a4a;
+            display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
+  .ms-hdr span { color: #b0b0c0; font-size: 11px; }
+  .ms-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid #3a3a4a;
+            border-radius: 2px; cursor: pointer; font-size: 10px; color: #999; }
+  .ms-canvas { flex: 1; position: relative; overflow: hidden;
+               background: radial-gradient(ellipse at 40% 45%, #1e2a4a 0%, #0a0a18 100%); }
+
+  /* Protein backbone cartoon placeholder */
+  .backbone { position: absolute; top: 40px; left: 40px; right: 40px; bottom: 40px;
+              border: 2px solid rgba(100,160,255,0.12); border-radius: 50%;
+              background: radial-gradient(ellipse, rgba(40,60,120,0.3) 0%, transparent 70%); }
+
+  /* Chain-F interaction spheres */
+  .sphere { position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 8px currentColor; }
+
+  .ms-legend { background: rgba(10,10,20,0.9); border-top: 1px solid #2a2a3a; padding: 6px 8px; flex-shrink: 0; }
+  .ms-legend-title { color: #777; font-size: 9px; font-weight: 600; margin-bottom: 3px; text-transform: uppercase; }
+  .ms-legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+  .ms-legend-item { display: flex; align-items: center; gap: 4px; }
+  .ms-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ms-legend-label { color: #b0b0c0; font-size: 10px; }
+
+  /* Status bar */
+  .statusbar { height: 18px; background: #f0f0f0; border-top: 1px solid #d0d0d0;
+               display: flex; align-items: center; padding: 0 8px; gap: 10px; flex-shrink: 0; }
+  .statusbar span { font-size: 10px; color: #888; }
+  .status-green { color: #388e3c !important; font-weight: 600; }
+
+  /* Callouts */
+  .callout { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e65100;
+             color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center;
+             justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 200;
+             pointer-events: none; }
+  .legend-box { background: #fffbf4; border: 1px solid #f0c060; border-radius: 3px;
+                padding: 6px 10px; font-size: 10px; color: #555; }
+  .legend-box h4 { font-size: 11px; color: #333; margin-bottom: 4px; font-weight: 600; }
+  .legend-box ol { padding-left: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <span class="logo">Datagrok</span>
+  <span style="color:#555">|</span>
+  <span class="nav">File</span>
+  <span class="nav">Edit</span>
+  <span class="nav">View</span>
+  <span class="nav">Windows</span>
+  <span style="flex:1"></span>
+  <span style="color:#888">researcher@pharma.com</span>
+</div>
+
+<!-- Ribbon -->
+<div class="ribbon">
+  <button class="ribbon-btn">Data</button>
+  <button class="ribbon-btn active">Apps</button>
+  <button class="ribbon-btn">Chem</button>
+  <button class="ribbon-btn">Bio</button>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#888">Consensus Pharmacophore</span>
+</div>
+
+<!-- Stage progress -->
+<div class="stage-bar">
+  <span class="sbadge done">1. Enrich</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge done">2a. Align</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge done">Picker</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge done">3. Pocket</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge done">2b. Re-align</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge active">4. Features</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5a. Consensus</span>
+  <span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5b. Render</span>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#388e3c;font-weight:600">Stage 4 complete — 25 interactions detected</span>
+</div>
+
+<div class="shell-body">
+
+  <!-- Browse tree -->
+  <div class="sidebar">
+    <div class="sidebar-hdr">Browse</div>
+    <div class="tnode grp">Apps</div>
+    <div class="tnode i1">Bio</div>
+    <div class="tnode i2 sel">Consensus Pharmacophore</div>
+    <div class="tnode grp" style="margin-top:8px">Data</div>
+    <div class="tnode i1">ligand_features</div>
+  </div>
+
+  <div class="view-area">
+
+    <!-- Left input panel -->
+    <div class="input-panel">
+      <div class="panel-hdr">Consensus Pharmacophore</div>
+
+      <div class="p-section">
+        <div class="p-label">PDB IDs</div>
+        <textarea class="dg-ta" readonly>1XKK
+3W2S
+4WKQ
+5HG5
+5HG8</textarea>
+        <div style="margin-top:4px">
+          <a class="demo-link">Use demo input</a>
+          <span style="color:#ccc;margin:0 4px">·</span>
+          <span style="font-size:10px;color:#666">5 active-state EGFR</span>
+        </div>
+      </div>
+
+      <div class="p-section">
+        <div class="p-label">Options</div>
+        <div class="prop-row">
+          <span class="prop-key">Max resolution (A)</span>
+          <input class="prop-val-el" value="2.5" readonly>
+        </div>
+        <div class="prop-row">
+          <span class="prop-key">X-ray only</span>
+          <input type="checkbox" checked>
+        </div>
+        <div class="prop-row">
+          <span class="prop-key">Min ligand MW (Da)</span>
+          <input class="prop-val-el" value="100" readonly>
+        </div>
+        <div class="prop-row">
+          <span class="prop-key">Pocket method</span>
+          <select class="prop-val-el"><option>cutoff</option></select>
+        </div>
+        <div class="prop-row">
+          <span class="prop-key">Pocket radius (A)</span>
+          <input class="prop-val-el" value="5.0" readonly>
+        </div>
+      </div>
+
+      <div class="preview-btns">
+        <div class="p-label">Preview stages</div>
+        <button class="prev-btn done">&#10003; 1. Fetch PDBs</button>
+        <button class="prev-btn done">&#10003; 2. Align</button>
+        <button class="prev-btn done">&#10003; 3. Pocket</button>
+        <button class="prev-btn active-stage">&#9654; 4. Features</button>
+        <button class="prev-btn">5. Consensus</button>
+      </div>
+
+      <button class="build-btn">BUILD ALL</button>
+    </div>
+
+    <!-- Centre grid -->
+    <div class="grid-area" style="position:relative">
+
+      <!-- Callout 1 -->
+      <div class="callout" style="top:52px;left:6px">1</div>
+
+      <div class="grid-tabbar">
+        <div class="gtab active">ligand_features</div>
+        <div class="gtab">aligned_pdbs</div>
+      </div>
+      <div class="grid-toolbar">
+        <button class="tb-btn">Filter</button>
+        <button class="tb-btn">Sort</button>
+        <button class="tb-btn">Group</button>
+        <button class="tb-btn">Columns</button>
+        <span class="row-count">25 rows · 10 columns</span>
+        <!-- Callout 2 -->
+        <div class="callout" style="position:relative;top:-1px;right:unset;left:4px">2</div>
+      </div>
+      <div class="data-grid">
+        <table class="dg-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>pdb_id</th>
+              <th>ligand_comp_id</th>
+              <th>family</th>
+              <th>interaction_type</th>
+              <th>residue</th>
+              <th>distance</th>
+              <th>x</th>
+              <th>y</th>
+              <th>skip_reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 1XKK: 9 rows -->
+            <tr class="sel"><td class="mono">1</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-D"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.12</td><td class="mono">-2.4</td><td class="mono">7.1</td><td></td></tr>
+            <tr><td class="mono">2</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-A"></span>A</span></td>
+              <td>HBAcceptor</td><td>MET769.A</td><td class="dist">3.07</td><td class="mono">-1.8</td><td class="mono">8.2</td><td></td></tr>
+            <tr><td class="mono">3</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>LEU777.A</td><td class="dist">4.31</td><td class="mono">1.9</td><td class="mono">3.4</td><td></td></tr>
+            <tr><td class="mono">4</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>ALA743.A</td><td class="dist">4.08</td><td class="mono">-3.1</td><td class="mono">2.7</td><td></td></tr>
+            <tr><td class="mono">5</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-a"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.82</td><td class="mono">0.4</td><td class="mono">-1.2</td><td></td></tr>
+            <tr><td class="mono">6</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-a"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.91</td><td class="mono">0.7</td><td class="mono">-1.8</td><td></td></tr>
+            <tr><td class="mono">7</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-P"></span>P</span></td>
+              <td>Cationic</td><td>ASP855.A</td><td class="dist">3.44</td><td class="mono">4.2</td><td class="mono">-3.9</td><td></td></tr>
+            <tr><td class="mono">8</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>VAL726.A</td><td class="dist">3.99</td><td class="mono">2.1</td><td class="mono">5.8</td><td></td></tr>
+            <tr><td class="mono">9</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-X"></span>X</span></td>
+              <td>XBDonor</td><td>THR766.A</td><td class="dist">3.28</td><td class="mono">-4.3</td><td class="mono">6.1</td><td></td></tr>
+            <!-- 3W2S: 6 rows -->
+            <tr><td class="mono">10</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-D"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.08</td><td class="mono">-2.1</td><td class="mono">7.4</td><td></td></tr>
+            <tr><td class="mono">11</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-A"></span>A</span></td>
+              <td>HBAcceptor</td><td>MET769.A</td><td class="dist">3.14</td><td class="mono">-1.5</td><td class="mono">8.1</td><td></td></tr>
+            <tr><td class="mono">12</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>LEU777.A</td><td class="dist">4.19</td><td class="mono">2.2</td><td class="mono">3.1</td><td></td></tr>
+            <tr><td class="mono">13</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>ALA743.A</td><td class="dist">4.22</td><td class="mono">-3.4</td><td class="mono">2.4</td><td></td></tr>
+            <tr><td class="mono">14</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-P"></span>P</span></td>
+              <td>CationPi</td><td>PHE699.A</td><td class="dist">4.55</td><td class="mono">0.6</td><td class="mono">-1.5</td><td></td></tr>
+            <tr><td class="mono">15</td><td>3W2S</td><td>W2R</td>
+              <td><span class="fam"><span class="fam-dot fam-a"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.66</td><td class="mono">0.3</td><td class="mono">-2.0</td><td></td></tr>
+            <!-- 4WKQ: 3 rows -->
+            <tr><td class="mono">16</td><td>4WKQ</td><td>IRE</td>
+              <td><span class="fam"><span class="fam-dot fam-D"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.21</td><td class="mono">-2.3</td><td class="mono">7.2</td><td></td></tr>
+            <tr><td class="mono">17</td><td>4WKQ</td><td>IRE</td>
+              <td><span class="fam"><span class="fam-dot fam-A"></span>A</span></td>
+              <td>HBAcceptor</td><td>MET769.A</td><td class="dist">3.19</td><td class="mono">-1.6</td><td class="mono">8.4</td><td></td></tr>
+            <tr><td class="mono">18</td><td>4WKQ</td><td>IRE</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>VAL726.A</td><td class="dist">4.01</td><td class="mono">2.0</td><td class="mono">5.5</td>
+              <td class="skip">CSX cofactor nearby</td></tr>
+            <!-- 5HG5: 5 rows -->
+            <tr><td class="mono">19</td><td>5HG5</td><td>633</td>
+              <td><span class="fam"><span class="fam-dot fam-D"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.05</td><td class="mono">-2.0</td><td class="mono">7.3</td><td></td></tr>
+            <tr><td class="mono">20</td><td>5HG5</td><td>633</td>
+              <td><span class="fam"><span class="fam-dot fam-A"></span>A</span></td>
+              <td>HBAcceptor</td><td>THR766.A</td><td class="dist">2.98</td><td class="mono">-1.9</td><td class="mono">8.0</td><td></td></tr>
+            <tr><td class="mono">21</td><td>5HG5</td><td>633</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>LEU777.A</td><td class="dist">4.27</td><td class="mono">2.3</td><td class="mono">3.0</td><td></td></tr>
+            <tr><td class="mono">22</td><td>5HG5</td><td>633</td>
+              <td><span class="fam"><span class="fam-dot fam-H"></span>H</span></td>
+              <td>Hydrophobic</td><td>ALA743.A</td><td class="dist">4.11</td><td class="mono">-3.2</td><td class="mono">2.6</td><td></td></tr>
+            <tr><td class="mono">23</td><td>5HG5</td><td>633</td>
+              <td><span class="fam"><span class="fam-dot fam-a"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.73</td><td class="mono">0.5</td><td class="mono">-1.4</td><td></td></tr>
+            <!-- 5HG8: 2 rows -->
+            <tr><td class="mono">24</td><td>5HG8</td><td>634</td>
+              <td><span class="fam"><span class="fam-dot fam-D"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.18</td><td class="mono">-2.2</td><td class="mono">7.5</td><td></td></tr>
+            <tr><td class="mono">25</td><td>5HG8</td><td>634</td>
+              <td><span class="fam"><span class="fam-dot fam-A"></span>A</span></td>
+              <td>HBAcceptor</td><td>MET769.A</td><td class="dist">3.11</td><td class="mono">-1.7</td><td class="mono">8.3</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Mol* pane -->
+    <div class="molstar-pane" style="position:relative">
+      <!-- Callout 3 -->
+      <div class="callout" style="top:4px;left:4px">3</div>
+      <div class="ms-hdr">
+        <span style="font-weight:600">Mol*</span>
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:#666">Chain F: interaction sites</span>
+        <button class="ms-btn">Reset</button>
+        <button class="ms-btn">Screenshot</button>
+      </div>
+      <div class="ms-canvas">
+        <div class="backbone"></div>
+        <!-- Cartoon helix traces -->
+        <svg width="100%" height="100%" style="position:absolute;top:0;left:0" viewBox="0 0 340 440" preserveAspectRatio="xMidYMid meet">
+          <path d="M60,120 Q90,80 130,100 Q170,120 200,90 Q230,60 270,80" stroke="rgba(100,150,255,0.25)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M80,200 Q120,170 160,185 Q200,200 240,175 Q260,165 280,180" stroke="rgba(100,150,255,0.18)" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M50,280 Q90,260 130,270 Q160,278 190,260 Q220,245 260,255" stroke="rgba(100,150,255,0.15)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <!-- Chain-F spheres: family colors, varying positions -->
+        <!-- D: blue HBD -->
+        <div class="sphere" style="width:18px;height:18px;background:#2196F3;color:#2196F3;top:85px;left:120px;opacity:0.85"></div>
+        <div class="sphere" style="width:16px;height:16px;background:#2196F3;color:#2196F3;top:95px;left:155px;opacity:0.7"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#2196F3;color:#2196F3;top:108px;left:185px;opacity:0.65"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#2196F3;color:#2196F3;top:82px;left:200px;opacity:0.6"></div>
+        <!-- A: red HBA -->
+        <div class="sphere" style="width:18px;height:18px;background:#E53935;color:#E53935;top:140px;left:100px;opacity:0.85"></div>
+        <div class="sphere" style="width:15px;height:15px;background:#E53935;color:#E53935;top:152px;left:140px;opacity:0.7"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#E53935;color:#E53935;top:135px;left:170px;opacity:0.65"></div>
+        <!-- H: yellow hydrophobic -->
+        <div class="sphere" style="width:20px;height:20px;background:#c8b400;color:#c8b400;top:185px;left:130px;opacity:0.75"></div>
+        <div class="sphere" style="width:16px;height:16px;background:#c8b400;color:#c8b400;top:195px;left:165px;opacity:0.65"></div>
+        <div class="sphere" style="width:18px;height:18px;background:#c8b400;color:#c8b400;top:175px;left:200px;opacity:0.7"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#c8b400;color:#c8b400;top:205px;left:105px;opacity:0.6"></div>
+        <!-- a: green PiStack -->
+        <div class="sphere" style="width:17px;height:17px;background:#4CAF50;color:#4CAF50;top:220px;left:145px;opacity:0.75"></div>
+        <div class="sphere" style="width:15px;height:15px;background:#4CAF50;color:#4CAF50;top:235px;left:175px;opacity:0.65"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#4CAF50;color:#4CAF50;top:215px;left:115px;opacity:0.6"></div>
+        <!-- P: cyan cationic -->
+        <div class="sphere" style="width:15px;height:15px;background:#00BCD4;color:#00BCD4;top:260px;left:140px;opacity:0.75"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#00BCD4;color:#00BCD4;top:268px;left:170px;opacity:0.65"></div>
+        <!-- X: violet halogen -->
+        <div class="sphere" style="width:14px;height:14px;background:#9C27B0;color:#9C27B0;top:285px;left:125px;opacity:0.75"></div>
+      </div>
+      <div class="ms-legend">
+        <div class="ms-legend-title">Chain F — interaction sites by family</div>
+        <div class="ms-legend-grid">
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#2196F3"></div><span class="ms-legend-label">D HBDonor</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#E53935"></div><span class="ms-legend-label">A HBAcceptor</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#4CAF50"></div><span class="ms-legend-label">a Aromatic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#c8b400"></div><span class="ms-legend-label">H Hydrophobic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#00BCD4"></div><span class="ms-legend-label">P Cationic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#9C27B0"></div><span class="ms-legend-label">X Halogen</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- view-area -->
+</div><!-- shell-body -->
+
+<div class="statusbar">
+  <span class="status-green">Stage 4 complete</span>
+  <span>25 interactions · 5 PDBs · 6 families</span>
+  <span style="flex:1"></span>
+  <span>ProLIF 2.1.0</span>
+</div>
+
+<!-- Annotation legend -->
+<div style="position:fixed;bottom:24px;left:200px;z-index:300">
+  <div class="legend-box">
+    <h4>Callout legend</h4>
+    <ol>
+      <li><b>1</b> — Active tab shows <code>ligand_features</code> DataFrame (Stage 4 output)</li>
+      <li><b>2</b> — Row count reads 25 rows — this is the question the user raised ("why 25 for 5 PDBs?")</li>
+      <li><b>3</b> — Mol* chain-F overlay: one spacefill sphere per row; CPK-colored by family</li>
+    </ol>
+  </div>
+</div>
+
+</body>
+</html>

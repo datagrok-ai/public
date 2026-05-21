@@ -1,0 +1,13 @@
+REMARK   V1 verification — 7 fake HETATMs (chain P), varied B-factors
+REMARK   If Mol* colors atoms by B-factor automatically, the row should show a gradient.
+REMARK   If all atoms render the same color, Mol* is in element-CPK mode by default and
+REMARK   the v1 renderer story (frequency -> B-factor -> color) is invisible without a
+REMARK   property toggle. See blueprint Q13 / Phase 0 V1.
+HETATM    1  N   HBD P   1       0.000   0.000   0.000  1.00  0.10           N
+HETATM    2  O   HBA P   2       3.000   0.000   0.000  1.00  0.25           O
+HETATM    3  S   ARO P   3       6.000   0.000   0.000  1.00  0.40           S
+HETATM    4  C   HYD P   4       9.000   0.000   0.000  1.00  0.55           C
+HETATM    5 NA   POS P   5      12.000   0.000   0.000  1.00  0.70          NA
+HETATM    6 CL   NEG P   6      15.000   0.000   0.000  1.00  0.85          CL
+HETATM    7 BR   HAL P   7      18.000   0.000   0.000  1.00  1.00          BR
+END

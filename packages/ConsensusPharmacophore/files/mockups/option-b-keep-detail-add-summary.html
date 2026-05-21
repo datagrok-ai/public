@@ -1,0 +1,556 @@
+<!-- viewport: 1280x800, light theme — Stage 4 "Features" result, Option B: 25-row grid + per-PDB summary in left rail -->
+<!--
+  OPTION B — KEEP 25-ROW DETAIL GRID; ADD PER-PDB SUMMARY ABOVE BUTTONS IN LEFT RAIL
+
+  Grid = unchanged 25-row ligand_features table (same as today).
+  Left rail gains a new "SUMMARY" block above the preview buttons:
+    - One line per PDB: pdb_id · ligand · N interactions
+    - Second line: color-coded family chips (D, A, H, a, P, N, X)
+    - Warning icon for PDBs with skip_reason rows
+  The preview buttons and BUILD button are unchanged below the summary block.
+  Mol* pane = unchanged from today.
+
+  UX trade-offs:
+  + Zero change to the grid data model — ligand_features DataFrame is shown as-is.
+  + Summary answers the "why 25 rows?" question without changing the data the user sees.
+  + Each PDB entry in the summary can act as a filter shortcut (click to filter grid to that PDB).
+  + Low implementation cost: summary is a pure JS loop over the existing DataFrame.
+  - Left rail becomes taller; on small screens it may require scrolling to reach the BUILD button.
+  - Summary is informational only — users who want to compare PDB interaction counts still need
+    to scan the grid or mentally total the chips.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Option B — 25-row detail grid + per-PDB summary in left rail (Stage 4 Features)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #3c3c3c;
+         background: #f5f5f5; height: 800px; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* Shell chrome */
+  .topbar { height: 26px; background: #2c2c2c; color: #d0d0d0; display: flex; align-items: center;
+            padding: 0 10px; gap: 14px; font-size: 11px; flex-shrink: 0; }
+  .topbar .logo { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: -0.5px; }
+  .ribbon { height: 32px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0; display: flex;
+            align-items: center; padding: 0 8px; gap: 2px; flex-shrink: 0; }
+  .ribbon-btn { height: 22px; padding: 0 8px; background: transparent; border: 1px solid transparent;
+                border-radius: 2px; cursor: pointer; font-size: 11px; color: #3c3c3c; }
+  .ribbon-btn.active { background: #dbe8f5; border-color: #0085c4; color: #0066a0; }
+
+  .stage-bar { height: 24px; background: #fafafa; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px; gap: 4px; flex-shrink: 0; }
+  .sbadge { height: 18px; padding: 0 7px; border-radius: 9px; font-size: 10px; font-weight: 600;
+            display: flex; align-items: center; white-space: nowrap; }
+  .sbadge.done   { background: #e8f5e9; color: #388e3c; border: 1px solid #a5d6a7; }
+  .sbadge.active { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .sbadge.pending { background: #f5f5f5; color: #9e9e9e; border: 1px solid #e0e0e0; }
+  .sbadge-sep { color: #ccc; font-size: 10px; }
+
+  .shell-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* Browse tree */
+  .sidebar { width: 190px; background: #fafafa; border-right: 1px solid #e0e0e0;
+             display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+                 display: flex; align-items: center; padding: 0 8px;
+                 font-size: 11px; font-weight: 600; color: #666; }
+  .tnode { padding: 2px 8px; font-size: 11px; cursor: pointer; }
+  .tnode:hover { background: #e8f0fa; }
+  .tnode.sel { background: #cce0f5; color: #0066a0; font-weight: 600; }
+  .tnode.grp { font-weight: 600; color: #555; padding-top: 7px; }
+  .tnode.i1  { padding-left: 18px; }
+  .tnode.i2  { padding-left: 30px; }
+
+  .view-area { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left input panel — now taller to include the summary block */
+  .input-panel { width: 258px; background: #fff; border-right: 1px solid #e0e0e0;
+                 display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .panel-hdr { height: 28px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0;
+               display: flex; align-items: center; padding: 0 8px;
+               font-size: 11px; font-weight: 600; color: #444; flex-shrink: 0; }
+  .p-section { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .p-label-sm { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.4px;
+                text-transform: uppercase; margin-bottom: 4px; }
+  textarea.dg-ta { width: 100%; height: 60px; border: 1px solid #ccc; border-radius: 2px;
+                   padding: 4px 6px; font-size: 11px; font-family: 'Courier New', monospace;
+                   resize: none; color: #3c3c3c; background: #f9f9f9; }
+  .demo-link { font-size: 11px; color: #0085c4; cursor: pointer; }
+  .prop-row { display: flex; align-items: center; margin-bottom: 4px; gap: 4px; }
+  .prop-key { font-size: 11px; color: #666; flex: 1; }
+  .prop-val-el { height: 20px; border: 1px solid #ccc; border-radius: 2px; font-size: 11px;
+                 color: #3c3c3c; padding: 0 5px; background: #fff; }
+  input.prop-val-el { width: 60px; }
+  select.prop-val-el { width: 80px; }
+
+  /* ========== NEW: Per-PDB summary block ========== */
+  .summary-block { padding: 6px 10px; border-bottom: 1px solid #eee; background: #fafbff; }
+  .summary-block-hdr { display: flex; align-items: center; margin-bottom: 5px; }
+  .summary-block-title { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.4px;
+                         text-transform: uppercase; flex: 1; }
+  .summary-block-total { font-size: 10px; color: #666; }
+  .pdb-entry { margin-bottom: 6px; padding: 5px 6px; border-radius: 3px; cursor: pointer;
+               border: 1px solid transparent; }
+  .pdb-entry:hover { background: #f0f4ff; border-color: #c8d8f0; }
+  .pdb-entry.active-filter { background: #e3f0ff; border-color: #90b8f0; }
+  .pdb-line1 { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .pdb-id { font-weight: 700; color: #0066a0; min-width: 36px; }
+  .pdb-lig { color: #555; min-width: 28px; }
+  .pdb-sep { color: #ccc; }
+  .pdb-count { color: #333; font-size: 11px; }
+  .pdb-warn { color: #e65100; font-size: 11px; }
+  .pdb-line2 { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; padding-left: 2px; }
+
+  /* Family chips */
+  .chip { display: inline-flex; align-items: center; gap: 2px; height: 16px; padding: 0 5px;
+          border-radius: 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .chip-D { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .chip-A { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+  .chip-H { background: #fff9c4; color: #795548; border: 1px solid #f9e04b; }
+  .chip-a { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .chip-P { background: #e0f7fa; color: #00838f; border: 1px solid #80deea; }
+  .chip-N { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+  .chip-X { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+
+  /* ========== Preview buttons (below summary) ========== */
+  .preview-btns { padding: 6px 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 3px; }
+  .prev-btn { height: 22px; padding: 0 10px; background: #f5f5f5; border: 1px solid #d0d0d0;
+              border-radius: 2px; font-size: 11px; color: #3c3c3c; cursor: pointer; text-align: left; }
+  .prev-btn.done { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .prev-btn.active-stage { background: #e3f2fd; border-color: #90caf9; color: #1565c0; font-weight: 600; }
+  .build-btn { margin: 6px 10px; height: 30px; background: #0085c4; color: #fff; border: none;
+               border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; width: calc(100% - 20px); }
+
+  /* Centre grid */
+  .grid-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .grid-tabbar { height: 26px; background: #f0f0f0; border-bottom: 1px solid #d0d0d0;
+                 display: flex; align-items: flex-end; padding: 0 6px; flex-shrink: 0; }
+  .gtab { height: 22px; padding: 0 10px; border: 1px solid #ccc; border-bottom: none;
+          background: #e8e8e8; cursor: pointer; font-size: 11px; color: #555;
+          border-radius: 3px 3px 0 0; margin-right: 2px; }
+  .gtab.active { background: #fff; font-weight: 600; color: #3c3c3c; }
+  .grid-toolbar { height: 24px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0;
+                  display: flex; align-items: center; padding: 0 6px; gap: 3px; flex-shrink: 0; }
+  .tb-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid transparent;
+            border-radius: 2px; font-size: 10px; cursor: pointer; color: #555; }
+  .tb-btn:hover { background: #e0e0e0; }
+  .filter-pill { height: 18px; padding: 0 6px; background: #e3f0ff; border: 1px solid #90b8f0;
+                 border-radius: 9px; font-size: 10px; color: #1565c0; display: flex; align-items: center;
+                 gap: 4px; }
+  .filter-pill-x { cursor: pointer; color: #888; }
+  .row-count { margin-left: auto; font-size: 10px; color: #888; }
+
+  .data-grid { flex: 1; overflow: auto; }
+  .dg-tbl { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 11px; }
+  .dg-tbl th { height: 22px; background: #f0f0f0; border: 1px solid #d8d8d8; padding: 0 6px;
+               text-align: left; font-weight: 600; color: #444; position: sticky; top: 0; z-index: 2;
+               white-space: nowrap; cursor: pointer; }
+  .dg-tbl th:hover { background: #e4e4e4; }
+  .dg-tbl td { height: 20px; border-right: 1px solid #ececec; border-bottom: 1px solid #ececec;
+               padding: 0 6px; vertical-align: middle; white-space: nowrap; }
+  /* Grouped row coloring by pdb_id */
+  .dg-tbl tr.g1 td { background: #ffffff; }
+  .dg-tbl tr.g2 td { background: #f5f8ff; }
+  .dg-tbl tr.g3 td { background: #fff9f9; }
+  .dg-tbl tr.g4 td { background: #f5fff5; }
+  .dg-tbl tr.g5 td { background: #fdf5ff; }
+  .dg-tbl tr:hover td { background: #f0f6ff !important; }
+  .dg-tbl tr.sel td { background: #cde4f7 !important; }
+
+  .fam { display: inline-flex; align-items: center; gap: 3px; }
+  .fam-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .fam-D-d { background: #2196F3; }
+  .fam-A-d { background: #E53935; }
+  .fam-a-d { background: #4CAF50; }
+  .fam-H-d { background: #FFEB3B; border: 1px solid #ccc; }
+  .fam-P-d { background: #00BCD4; }
+  .fam-X-d { background: #9C27B0; }
+  .dist { color: #0066a0; font-family: 'Courier New', monospace; font-size: 10px; }
+  .skip-cell { color: #c62828; font-size: 10px; font-style: italic; }
+  .mono { font-family: 'Courier New', monospace; font-size: 10px; }
+  /* PDB separator line at first row of each PDB group */
+  .dg-tbl tr.pdb-first td { border-top: 2px solid #c8d8f0; }
+
+  /* Mol* pane */
+  .molstar-pane { width: 330px; background: #13131e; display: flex; flex-direction: column;
+                  flex-shrink: 0; border-left: 1px solid #444; }
+  .ms-hdr { height: 26px; background: #222233; border-bottom: 1px solid #3a3a4a;
+            display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
+  .ms-hdr span { color: #b0b0c0; font-size: 11px; }
+  .ms-btn { height: 18px; padding: 0 5px; background: transparent; border: 1px solid #3a3a4a;
+            border-radius: 2px; cursor: pointer; font-size: 10px; color: #999; }
+  .ms-canvas { flex: 1; position: relative; overflow: hidden;
+               background: radial-gradient(ellipse at 40% 45%, #1e2a4a 0%, #0a0a18 100%); }
+  .backbone { position: absolute; top: 35px; left: 30px; right: 30px; bottom: 35px;
+              border: 2px solid rgba(100,160,255,0.12); border-radius: 50%;
+              background: radial-gradient(ellipse, rgba(40,60,120,0.3) 0%, transparent 70%); }
+  .sphere { position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 8px currentColor; }
+  .ms-legend { background: rgba(10,10,20,0.9); border-top: 1px solid #2a2a3a; padding: 6px 8px; flex-shrink: 0; }
+  .ms-legend-title { color: #777; font-size: 9px; font-weight: 600; margin-bottom: 3px; text-transform: uppercase; }
+  .ms-legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+  .ms-legend-item { display: flex; align-items: center; gap: 4px; }
+  .ms-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ms-legend-label { color: #b0b0c0; font-size: 10px; }
+
+  .statusbar { height: 18px; background: #f0f0f0; border-top: 1px solid #d0d0d0;
+               display: flex; align-items: center; padding: 0 8px; gap: 10px; flex-shrink: 0; }
+  .statusbar span { font-size: 10px; color: #888; }
+  .status-green { color: #388e3c !important; font-weight: 600; }
+
+  .callout { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #e65100;
+             color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center;
+             justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 200;
+             pointer-events: none; }
+  .legend-box { background: #fffbf4; border: 1px solid #f0c060; border-radius: 3px;
+                padding: 6px 10px; font-size: 10px; color: #555; max-width: 380px; }
+  .legend-box h4 { font-size: 11px; color: #333; margin-bottom: 4px; font-weight: 600; }
+  .legend-box ol { padding-left: 14px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Datagrok</span>
+  <span style="color:#555">|</span>
+  <span style="cursor:pointer">File</span>
+  <span style="cursor:pointer">Edit</span>
+  <span style="cursor:pointer">View</span>
+  <span style="cursor:pointer">Windows</span>
+  <span style="flex:1"></span>
+  <span style="color:#888">researcher@pharma.com</span>
+</div>
+
+<div class="ribbon">
+  <button class="ribbon-btn">Data</button>
+  <button class="ribbon-btn active">Apps</button>
+  <button class="ribbon-btn">Chem</button>
+  <button class="ribbon-btn">Bio</button>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#888">Consensus Pharmacophore</span>
+</div>
+
+<div class="stage-bar">
+  <span class="sbadge done">1. Enrich</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">2a. Align</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">Picker</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">3. Pocket</span><span class="sbadge-sep">›</span>
+  <span class="sbadge done">2b. Re-align</span><span class="sbadge-sep">›</span>
+  <span class="sbadge active">4. Features</span><span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5a. Consensus</span><span class="sbadge-sep">›</span>
+  <span class="sbadge pending">5b. Render</span>
+  <span style="flex:1"></span>
+  <span style="font-size:10px;color:#388e3c;font-weight:600">Stage 4 complete — 25 interactions · 5 structures</span>
+</div>
+
+<div class="shell-body">
+
+  <div class="sidebar">
+    <div class="sidebar-hdr">Browse</div>
+    <div class="tnode grp">Apps</div>
+    <div class="tnode i1">Bio</div>
+    <div class="tnode i2 sel">Consensus Pharmacophore</div>
+    <div class="tnode grp" style="margin-top:8px">Data</div>
+    <div class="tnode i1">ligand_features</div>
+  </div>
+
+  <div class="view-area">
+
+    <!-- Left input panel with summary block inserted -->
+    <div class="input-panel" style="position:relative">
+      <!-- Callout 1 -->
+      <div class="callout" style="top:88px;left:4px">1</div>
+
+      <div class="panel-hdr">Consensus Pharmacophore</div>
+
+      <div class="p-section">
+        <div class="p-label-sm">PDB IDs</div>
+        <textarea class="dg-ta" readonly>1XKK
+3W2S
+4WKQ
+5HG5
+5HG8</textarea>
+        <div style="margin-top:3px">
+          <a class="demo-link">Use demo input</a>
+          <span style="color:#ccc;margin:0 4px">·</span>
+          <span style="font-size:10px;color:#666">5 EGFR</span>
+        </div>
+      </div>
+
+      <!-- ====== NEW SUMMARY BLOCK ====== -->
+      <div class="summary-block">
+        <div class="summary-block-hdr">
+          <span class="summary-block-title">Summary</span>
+          <span class="summary-block-total">25 interactions total</span>
+        </div>
+
+        <!-- 1XKK -->
+        <div class="pdb-entry active-filter">
+          <div class="pdb-line1">
+            <span class="pdb-id">1XKK</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-lig">FMM</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-count">9 interactions</span>
+          </div>
+          <div class="pdb-line2">
+            <span class="chip chip-D">D ×1</span>
+            <span class="chip chip-A">A ×1</span>
+            <span class="chip chip-H">H ×3</span>
+            <span class="chip chip-a">a ×2</span>
+            <span class="chip chip-P">P ×1</span>
+            <span class="chip chip-X">X ×1</span>
+          </div>
+        </div>
+
+        <!-- 3W2S -->
+        <div class="pdb-entry">
+          <div class="pdb-line1">
+            <span class="pdb-id">3W2S</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-lig">W2R</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-count">6 interactions</span>
+          </div>
+          <div class="pdb-line2">
+            <span class="chip chip-D">D ×1</span>
+            <span class="chip chip-A">A ×1</span>
+            <span class="chip chip-H">H ×2</span>
+            <span class="chip chip-a">a ×1</span>
+            <span class="chip chip-P">P ×1</span>
+          </div>
+        </div>
+
+        <!-- 4WKQ -->
+        <div class="pdb-entry">
+          <div class="pdb-line1">
+            <span class="pdb-id">4WKQ</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-lig">IRE</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-count">3 interactions</span>
+            <span class="pdb-warn" title="1 interaction skipped: CSX cofactor nearby">&#9888;</span>
+          </div>
+          <div class="pdb-line2">
+            <span class="chip chip-D">D ×1</span>
+            <span class="chip chip-A">A ×1</span>
+            <span class="chip chip-H">H ×1</span>
+          </div>
+        </div>
+
+        <!-- 5HG5 -->
+        <div class="pdb-entry">
+          <div class="pdb-line1">
+            <span class="pdb-id">5HG5</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-lig">633</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-count">5 interactions</span>
+          </div>
+          <div class="pdb-line2">
+            <span class="chip chip-D">D ×1</span>
+            <span class="chip chip-A">A ×1</span>
+            <span class="chip chip-H">H ×2</span>
+            <span class="chip chip-a">a ×1</span>
+          </div>
+        </div>
+
+        <!-- 5HG8 -->
+        <div class="pdb-entry">
+          <div class="pdb-line1">
+            <span class="pdb-id">5HG8</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-lig">634</span>
+            <span class="pdb-sep">·</span>
+            <span class="pdb-count">2 interactions</span>
+          </div>
+          <div class="pdb-line2">
+            <span class="chip chip-D">D ×1</span>
+            <span class="chip chip-A">A ×1</span>
+          </div>
+        </div>
+      </div>
+      <!-- ====== END SUMMARY BLOCK ====== -->
+
+      <div class="p-section" style="padding:5px 10px;">
+        <div class="p-label-sm">Options</div>
+        <div class="prop-row"><span class="prop-key">Max resolution (A)</span><input class="prop-val-el" value="2.5" readonly></div>
+        <div class="prop-row"><span class="prop-key">Pocket method</span><select class="prop-val-el"><option>cutoff</option></select></div>
+        <div class="prop-row"><span class="prop-key">Pocket radius (A)</span><input class="prop-val-el" value="5.0" readonly></div>
+      </div>
+
+      <div class="preview-btns">
+        <div class="p-label-sm">Preview stages</div>
+        <button class="prev-btn done">&#10003; 1. Fetch PDBs</button>
+        <button class="prev-btn done">&#10003; 2. Align</button>
+        <button class="prev-btn done">&#10003; 3. Pocket</button>
+        <button class="prev-btn active-stage">&#9654; 4. Features</button>
+        <button class="prev-btn">5. Consensus</button>
+      </div>
+      <button class="build-btn">BUILD ALL</button>
+    </div>
+
+    <!-- Centre grid: 25-row ligand_features (unchanged) -->
+    <div class="grid-area" style="position:relative">
+      <!-- Callout 2 -->
+      <div class="callout" style="top:52px;left:6px">2</div>
+      <!-- Callout 3 -->
+      <div class="callout" style="top:52px;right:8px">3</div>
+
+      <div class="grid-tabbar">
+        <div class="gtab active">ligand_features</div>
+        <div class="gtab">aligned_pdbs</div>
+      </div>
+      <div class="grid-toolbar">
+        <button class="tb-btn">Filter</button>
+        <button class="tb-btn">Sort</button>
+        <button class="tb-btn">Group</button>
+        <button class="tb-btn">Columns</button>
+        <!-- Active filter pill: clicking 1XKK in summary filters here -->
+        <div class="filter-pill">
+          pdb_id = 1XKK
+          <span class="filter-pill-x">&#10005;</span>
+        </div>
+        <span class="row-count">9 of 25 rows</span>
+      </div>
+      <div class="data-grid">
+        <table class="dg-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>pdb_id</th>
+              <th>ligand_comp_id</th>
+              <th>family</th>
+              <th>interaction_type</th>
+              <th>residue</th>
+              <th>distance</th>
+              <th>x</th>
+              <th>y</th>
+              <th>skip_reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Filtered to 1XKK (9 rows) -->
+            <tr class="g1 pdb-first sel">
+              <td class="mono">1</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-D-d"></span>D</span></td>
+              <td>HBDonor</td><td>MET769.A</td><td class="dist">3.12</td>
+              <td class="mono">-2.4</td><td class="mono">7.1</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">2</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-A-d"></span>A</span></td>
+              <td>HBAcceptor</td><td>MET769.A</td><td class="dist">3.07</td>
+              <td class="mono">-1.8</td><td class="mono">8.2</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">3</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H-d"></span>H</span></td>
+              <td>Hydrophobic</td><td>LEU777.A</td><td class="dist">4.31</td>
+              <td class="mono">1.9</td><td class="mono">3.4</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">4</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H-d"></span>H</span></td>
+              <td>Hydrophobic</td><td>ALA743.A</td><td class="dist">4.08</td>
+              <td class="mono">-3.1</td><td class="mono">2.7</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">5</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-a-d"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.82</td>
+              <td class="mono">0.4</td><td class="mono">-1.2</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">6</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-a-d"></span>a</span></td>
+              <td>PiStacking</td><td>PHE699.A</td><td class="dist">4.91</td>
+              <td class="mono">0.7</td><td class="mono">-1.8</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">7</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-P-d"></span>P</span></td>
+              <td>Cationic</td><td>ASP855.A</td><td class="dist">3.44</td>
+              <td class="mono">4.2</td><td class="mono">-3.9</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">8</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-H-d"></span>H</span></td>
+              <td>Hydrophobic</td><td>VAL726.A</td><td class="dist">3.99</td>
+              <td class="mono">2.1</td><td class="mono">5.8</td><td></td></tr>
+            <tr class="g1">
+              <td class="mono">9</td><td>1XKK</td><td>FMM</td>
+              <td><span class="fam"><span class="fam-dot fam-X-d"></span>X</span></td>
+              <td>XBDonor</td><td>THR766.A</td><td class="dist">3.28</td>
+              <td class="mono">-4.3</td><td class="mono">6.1</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mol* pane (unchanged from Option C) -->
+    <div class="molstar-pane" style="position:relative">
+      <div class="ms-hdr">
+        <span style="font-weight:600">Mol*</span>
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:#666">Chain F</span>
+        <button class="ms-btn">Reset</button>
+        <button class="ms-btn">Screenshot</button>
+      </div>
+      <div class="ms-canvas">
+        <div class="backbone"></div>
+        <svg width="100%" height="100%" style="position:absolute;top:0;left:0" viewBox="0 0 330 430" preserveAspectRatio="xMidYMid meet">
+          <path d="M55,115 Q85,80 125,98 Q165,115 195,88 Q225,62 265,78" stroke="rgba(100,150,255,0.22)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M70,195 Q110,165 150,180 Q190,195 230,170 Q255,158 278,172" stroke="rgba(100,150,255,0.16)" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M45,275 Q85,255 125,265 Q155,272 185,255 Q215,240 255,248" stroke="rgba(100,150,255,0.12)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="sphere" style="width:17px;height:17px;background:#2196F3;color:#2196F3;top:82px;left:115px;opacity:0.85"></div>
+        <div class="sphere" style="width:15px;height:15px;background:#2196F3;color:#2196F3;top:92px;left:148px;opacity:0.7"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#2196F3;color:#2196F3;top:104px;left:178px;opacity:0.65"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#2196F3;color:#2196F3;top:80px;left:193px;opacity:0.6"></div>
+        <div class="sphere" style="width:17px;height:17px;background:#E53935;color:#E53935;top:135px;left:96px;opacity:0.85"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#E53935;color:#E53935;top:146px;left:132px;opacity:0.7"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#E53935;color:#E53935;top:130px;left:163px;opacity:0.65"></div>
+        <div class="sphere" style="width:19px;height:19px;background:#c8b400;color:#c8b400;top:178px;left:126px;opacity:0.75"></div>
+        <div class="sphere" style="width:15px;height:15px;background:#c8b400;color:#c8b400;top:187px;left:158px;opacity:0.65"></div>
+        <div class="sphere" style="width:17px;height:17px;background:#c8b400;color:#c8b400;top:168px;left:193px;opacity:0.7"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#c8b400;color:#c8b400;top:197px;left:100px;opacity:0.6"></div>
+        <div class="sphere" style="width:16px;height:16px;background:#4CAF50;color:#4CAF50;top:213px;left:140px;opacity:0.75"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#4CAF50;color:#4CAF50;top:227px;left:170px;opacity:0.65"></div>
+        <div class="sphere" style="width:12px;height:12px;background:#4CAF50;color:#4CAF50;top:208px;left:112px;opacity:0.6"></div>
+        <div class="sphere" style="width:14px;height:14px;background:#00BCD4;color:#00BCD4;top:252px;left:135px;opacity:0.75"></div>
+        <div class="sphere" style="width:11px;height:11px;background:#00BCD4;color:#00BCD4;top:260px;left:163px;opacity:0.65"></div>
+        <div class="sphere" style="width:13px;height:13px;background:#9C27B0;color:#9C27B0;top:277px;left:120px;opacity:0.75"></div>
+      </div>
+      <div class="ms-legend">
+        <div class="ms-legend-title">Chain F — family colors</div>
+        <div class="ms-legend-grid">
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#2196F3"></div><span class="ms-legend-label">D HBDonor</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#E53935"></div><span class="ms-legend-label">A HBAcceptor</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#4CAF50"></div><span class="ms-legend-label">a Aromatic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#c8b400"></div><span class="ms-legend-label">H Hydrophobic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#00BCD4"></div><span class="ms-legend-label">P Cationic</span></div>
+          <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#9C27B0"></div><span class="ms-legend-label">X Halogen</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="statusbar">
+  <span class="status-green">Stage 4 complete</span>
+  <span>Filter: pdb_id = 1XKK · 9 of 25 rows</span>
+  <span style="flex:1"></span>
+  <span>ProLIF 2.1.0 · 5 PDBs</span>
+</div>
+
+<!-- Annotation legend -->
+<div style="position:fixed;bottom:24px;left:196px;z-index:300">
+  <div class="legend-box">
+    <h4>Callout legend</h4>
+    <ol>
+      <li><b>1</b> — NEW per-PDB summary block in left rail. Color chips show per-family interaction counts. Warning icon for 4WKQ (1 skipped). Clicking a PDB entry filters the grid (active filter = 1XKK shown here).</li>
+      <li><b>2</b> — Grid unchanged: still the 25-row <code>ligand_features</code> DataFrame. Filter pill appears after clicking a PDB entry in the summary; "×" clears it to show all 25 rows.</li>
+      <li><b>3</b> — Grid row-count now reads "9 of 25 rows" when a PDB filter is active.</li>
+    </ol>
+  </div>
+</div>
+
+</body>
+</html>
