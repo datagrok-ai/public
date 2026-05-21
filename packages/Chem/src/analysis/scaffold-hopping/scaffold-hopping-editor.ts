@@ -16,24 +16,42 @@ const REPLACEABLE_COLOR: [number, number, number] = [1.0, 0.6, 0.2];
  *  molecule into the box and the picker uses these as click coordinates. */
 const PREVIEW_SIZE = 320;
 
-/** Three named threshold presets keyed to the Sun-Tawa-Wallqvist 2012 hop
- *  taxonomy ("Classification of scaffold hopping approaches", DDT 17:310).
- *  Each preset sets the ECFP4 Tc range and the Maeda 2024 atom-ratio cap to
- *  match the structural-change regime users typically have in mind:
+/** Four named threshold presets. **Category labels follow the qualitative
+ *  Sun-Tawa-Wallqvist 2012 hop taxonomy** ("Classification of scaffold
+ *  hopping approaches", DDT 17:310), which describes the structural-change
+ *  regimes by name but does NOT prescribe numeric cutoffs. **The numeric
+ *  thresholds below are Datagrok defaults**, calibrated on the BCR-ABL
+ *  smoke set and tuned for usable defaults across the four regimes; only
+ *  the Hard preset's `mcsRatioMax = 0.4` matches a published number
+ *  (Maeda 2024's atom-ratio cap for scaffold hops). Users are expected to
+ *  edit the numeric inputs in the dialog when their dataset's distribution
+ *  warrants it.
  *
+ *  - **Local** (R-group / bioisostere refinement, marked-atoms driven):
+ *    user marks a sub-region of the reference and the run looks for
+ *    candidates that share the unmarked region but swap the marked part.
+ *    Tc 0.5-0.95 keeps the candidate inside the reference's chemotype;
+ *    mcsRatio ≤ 0.98 admits single-atom bioisosteric swaps (O↔N in
+ *    bicyclic rings, Cl↔F, ring-N position changes) that 0.95 silently
+ *    dropped on drug-sized molecules (a 30-atom molecule with one swap
+ *    gives ratio 29/30 = 0.97). The marked-atoms criterion remains the
+ *    load-bearing filter; mcsRatio is the backstop against zero-swap
+ *    near-duplicates. Datagrok defaults; not held-out-validated.
  *  - **Easy** (substituent / heterocycle swap, Sun-Tawa-Wallqvist class 1°):
  *    candidates share most of the scaffold; hops are decorations or single-
- *    ring isosteres. Tc 0.4-0.7 is the typical range; mcsRatio ≤ 0.7 admits
- *    most of the molecule into the MCS.
+ *    ring isosteres. Tc 0.4-0.7 is the typical range; mcsRatio ≤ 0.75 admits
+ *    single-heteroaryl-ring swaps on medium drug-sized molecules
+ *    (a 40-atom molecule with a 10-atom ring isostere gives ratio ≈ 0.75).
+ *    Both numbers are Datagrok defaults.
  *  - **Middle** (ring open/close, residue swap, class 2°): meaningful but
- *    bounded scaffold change. The default, balanced for typical SAR-table
- *    workflows.
+ *    bounded scaffold change. Default, balanced for typical SAR-table
+ *    workflows. Datagrok defaults.
  *  - **Hard / Maeda-faithful** (large topological change, class 3°/4°):
- *    paper-faithful Maeda 2024 thresholds. The Tc lower bound is dropped to
- *    0.05 because Schneider 1999, Vogt et al. 2010, and Iktos/Pinel 2023 all
- *    show genuine large-topology hops sit in the 0.05-0.30 ECFP4 range —
- *    higher cutoffs systematically discard exactly the candidates Maeda's
- *    atom-ratio classifier is designed to find. */
+ *    paper-faithful Maeda 2024 atom-ratio cap (0.4). The Tc lower bound
+ *    (0.05) is a Datagrok default informed by Schneider 1999, Vogt et al.
+ *    2010, and Iktos/Pinel 2023, which all show genuine large-topology hops
+ *    sit in the 0.05-0.30 ECFP4 range — higher cutoffs systematically
+ *    discard exactly the candidates Maeda's classifier is designed to find. */
 type PresetKey = 'Local' | 'Easy' | 'Middle' | 'Hard';
 // Per-preset defaults. `activityWeight` is the proximity-multiplier
 // strength in [0, 1]: Local hops share a SARM with the reference so MMP
@@ -46,11 +64,27 @@ type PresetKey = 'Local' | 'Easy' | 'Middle' | 'Hard';
 // from one-shot users and waste the MMPA/kNN compute cost.
 const PRESETS: Record<PresetKey, {tcMin: number; tcMax: number; mcsRatioMax: number;
   activityWeight: number}> = {
-  'Local':  {tcMin: 0.5,  tcMax: 0.95, mcsRatioMax: 0.95, activityWeight: 0.3},
-  'Easy':   {tcMin: 0.4,  tcMax: 0.7,  mcsRatioMax: 0.7,  activityWeight: 0.2},
-  'Middle': {tcMin: 0.2,  tcMax: 0.5,  mcsRatioMax: 0.5,  activityWeight: 0.15},
-  'Hard':   {tcMin: 0.05, tcMax: 0.3,  mcsRatioMax: 0.4,  activityWeight: 0.15},
-};
+  // Local mcsRatioMax = 0.98 (was 0.95): on drug-sized molecules (~30-50
+  // heavy atoms) a single-atom swap such as O↔N in a bicyclic ring,
+  // Cl↔F on a substituent, or C↔N in a pyridine→pyrimidine bioisostere
+  // gives mcsRatio = 29/30 to 49/50 ≈ 0.967-0.980. At 0.95 those swaps
+  // sat just above the cap and were never flagged as hops — exactly the
+  // bioisosteric class Local mode is supposed to surface. 0.98 admits
+  // single-atom heteroatom swaps; identical molecules (ratio = 1.0)
+  // still get filtered out. The marked-atoms criterion remains the
+  // load-bearing filter when atoms are marked. NOT held-out-validated.
+    'Local': {tcMin: 0.5, tcMax: 0.95, mcsRatioMax: 0.98, activityWeight: 0.3},
+    // Easy mcsRatioMax = 0.75 (was 0.70): single-ring isostere swaps on
+    // medium-sized drugs (40-atom molecule with a 10-atom heteroaryl ring
+    // replaced by an isosteric ring of similar size) give mcsRatio ≈ 0.75
+    // — exactly at the old cap. 0.70 systematically dropped them. 0.75
+    // still requires ≥25% atom-level structural change, which keeps the
+    // class-1° "substituent / heterocycle swap" semantics intact. NOT
+    // held-out-validated; rationale matches the Local 0.95→0.98 change.
+    'Easy': {tcMin: 0.4, tcMax: 0.7, mcsRatioMax: 0.75, activityWeight: 0.2},
+    'Middle': {tcMin: 0.2, tcMax: 0.5, mcsRatioMax: 0.5, activityWeight: 0.15},
+    'Hard': {tcMin: 0.05, tcMax: 0.3, mcsRatioMax: 0.4, activityWeight: 0.15},
+  };
 /** Display labels for the preset dropdown — keep the taxonomy hint visible
  *  so the user doesn't have to read the tooltip to understand the choice.
  *  Local appears first as the most directed (region-specific) mode; the
@@ -58,10 +92,10 @@ const PRESETS: Record<PresetKey, {tcMin: number; tcMax: number; mcsRatioMax: num
  *  distance order so the user can scan top-to-bottom by "how far do I
  *  want to hop?" */
 const PRESET_LABELS: Record<PresetKey, string> = {
-  'Local':  'Local — change only the marked region (requires atom marks)',
-  'Easy':   'Easy — substituent / heterocycle swap',
+  'Local': 'Local — change only the marked region (requires atom marks)',
+  'Easy': 'Easy — substituent / heterocycle swap',
   'Middle': 'Middle — ring open/close, residue swap',
-  'Hard':   'Hard — large topological change (atom-ratio ≤ 0.4)',
+  'Hard': 'Hard — large topological change (atom-ratio ≤ 0.4)',
 };
 const DEFAULT_PRESET: PresetKey = 'Middle';
 
@@ -275,8 +309,11 @@ export class ScaffoldHoppingFunctionEditor {
       'a shared scaffold series), 0.15-0.20 for non-Local presets where ' +
       'cross-chemotype predictions are noisier. The proximity itself is ' +
       'exp(-|delta| / sigma) where sigma = the activity column\'s standard ' +
-      'deviation, so it works on any potency scale (pIC50, raw IC50, etc.) ' +
-      'without manual calibration.'});
+      'deviation. EXPECTS LOG-SCALED ACTIVITY (pIC50 / pKi / pEC50). Raw ' +
+      'IC50/Ki/Kd columns are log-normal-distributed; the wide range blows ' +
+      'sigma out so exp(-|delta|/sigma) collapses to ~1 for every pair and ' +
+      'the re-rank does nothing. Pre-compute -log10(activity) into a new ' +
+      'column and pick that instead if your data is raw.'});
 
   /** Optional MMP-rule-based prediction of missing activities. Same
    *  machinery the MMP viewer's Generations tab uses — `MMPA.init` to
@@ -617,9 +654,9 @@ export class ScaffoldHoppingFunctionEditor {
     const total = table.rowCount;
     if (total <= 1) return;
     const indices: number[] = [];
-    if (total - 1 <= SAMPLE_SIZE) {
+    if (total - 1 <= SAMPLE_SIZE)
       for (let i = 0; i < total; i++) indices.push(i);
-    } else {
+    else {
       // Reservoir-style uniform sample without replacement. Fast and
       // deterministic enough for a UI preview — proper PRNG seeding is
       // not warranted for an approximate count.
@@ -634,7 +671,7 @@ export class ScaffoldHoppingFunctionEditor {
     try {
       tcCol = await chemSearches.chemGetSimilarities(sampleCol, expectedRefSmiles);
     } catch {/* sample compute failed — preview stays "computing…" */}
-    if (this._currentRefSmiles !== expectedRefSmiles) return;   // user switched ref mid-flight
+    if (this._currentRefSmiles !== expectedRefSmiles) return; // user switched ref mid-flight
     if (!tcCol) return;
     const arr = new Float32Array(indices.length);
     for (let i = 0; i < indices.length; i++) arr[i] = tcCol.get(i) ?? NaN;
@@ -774,9 +811,9 @@ export class ScaffoldHoppingFunctionEditor {
     const isPaint = (ev.ctrlKey || ev.metaKey) && !ev.shiftKey;
 
     let changed = false;
-    if (isErase) {
+    if (isErase)
       changed = this.selectedAtoms.delete(nearest);
-    } else if (isPaint) {
+    else if (isPaint) {
       if (!this.selectedAtoms.has(nearest)) {
         this.selectedAtoms.add(nearest);
         changed = true;
@@ -820,9 +857,9 @@ export class ScaffoldHoppingFunctionEditor {
     this._lastPaintMode = mode;
 
     let changed = false;
-    if (mode === 'erase') {
+    if (mode === 'erase')
       changed = this.selectedAtoms.delete(nearest);
-    } else {
+    else {
       if (!this.selectedAtoms.has(nearest)) {
         this.selectedAtoms.add(nearest);
         changed = true;
@@ -942,9 +979,8 @@ export class ScaffoldHoppingFunctionEditor {
       const c = table.col(name);
       if (!c || c === molCol) continue;
       const v = c.get(refIdx);
-      if (typeof v === 'string' && v.length > 0) {
+      if (typeof v === 'string' && v.length > 0)
         return v.length > 40 ? v.substring(0, 37) + '...' : v;
-      }
     }
     return `row ${refIdx}`;
   }
@@ -974,7 +1010,7 @@ export class ScaffoldHoppingFunctionEditor {
   private _clearSelection() {
     if (this.selectedAtoms.size === 0) return;
     this.selectedAtoms.clear();
-    this._saveMarksToCache();   // drops the cache entry — empty set is treated as "no marks"
+    this._saveMarksToCache(); // drops the cache entry — empty set is treated as "no marks"
     if (this._currentRefSmiles) this._reRender(this._currentRefSmiles);
     else this._updateSelectionCaption();
   }
@@ -1018,9 +1054,13 @@ export class ScaffoldHoppingFunctionEditor {
         {style: {marginTop: '12px', marginBottom: '4px'}}),
       this.presetInput,
       ui.divText('Sets Tc range + MCS atom-ratio cap. The numeric inputs ' +
-        'below remain editable; the preset just seeds them. Anchored to the ' +
-        'Sun-Tawa-Wallqvist 2012 hop taxonomy (DDT 17:310).',
-        {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
+        'below remain editable; the preset just seeds them. The category ' +
+        'labels (Local / Easy / Middle / Hard) are informed by the ' +
+        'qualitative hop taxonomy of Sun-Tawa-Wallqvist 2012 (DDT 17:310), ' +
+        'which describes the regimes by NAME but does NOT prescribe numeric ' +
+        'cutoffs — the thresholds below are Datagrok defaults, except ' +
+        'Hard\'s ≤0.4 atom-ratio which matches Maeda 2024.',
+      {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
       ui.h3('Pre-filter shortlist (ECFP4 Tanimoto)',
         {style: {marginTop: '12px', marginBottom: '4px'}}),
       this.tanimotoMinInput,
@@ -1031,7 +1071,7 @@ export class ScaffoldHoppingFunctionEditor {
       this.mcsMaxInput,
       ui.divText('ratio_atom = atoms(MCS) / atoms(reference). A row passes ' +
         'this criterion iff ratio_atom ≤ max.',
-        {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
+      {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
 
       ui.h3('Optional flag conditions',
         {style: {marginTop: '12px', marginBottom: '4px'}}),
@@ -1041,7 +1081,7 @@ export class ScaffoldHoppingFunctionEditor {
       ui.divText('Each unchecked condition is computed and shown but does not ' +
         'affect the Scaffold Hop boolean flag. Uncheck both to keep only the ' +
         'atom-ratio criterion (≤ 0.4) driving the flag.',
-        {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
+      {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
 
       this.showReasonInput,
 
@@ -1058,7 +1098,7 @@ export class ScaffoldHoppingFunctionEditor {
         'column for inspection. Tick "Predict missing activity (MMP)" to also ' +
         'fill in masked / unknown activities via MMP rules. The two inputs ' +
         'below it are MMP knobs — leave at defaults unless you know why.',
-        {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
+      {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
     ], {style: {minWidth: '340px'}, classes: 'ui-form'});
 
     return ui.divH([left, right], {style: {alignItems: 'flex-start'}});

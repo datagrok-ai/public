@@ -50,6 +50,68 @@ import {computeKnnFpPrediction} from './scaffold-hopping-knn';
 const W_TANIMOTO = 0.4;
 const W_CATS = 0.6;
 
+/** Local-mode score weights. Sum to 1. Introduced because the default
+ *  `0.4·Tc + 0.6·CATS` formula doesn't penalise candidates that drop
+ *  unmarked-side substituents — ECFP4 and CATS2D degrade gracefully when
+ *  one ring goes missing, so a "truncated" candidate (e.g. compound 7 in
+ *  the GSK650394 series, which keeps the pyrrolopyridine + central
+ *  benzamide + cyclopentyl but loses the second phenyl) scores nearly as
+ *  high as a fully-preserved candidate whose marked region has been
+ *  rewired (the actual intent of a Local hop).
+ *
+ *  Adding the MCS atom-ratio with a heavy weight (0.5) makes "scaffold
+ *  preserved" the DOMINANT scoring criterion for Local mode. Tc and
+ *  CATS still contribute (mostly as tie-breakers among similarly-
+ *  preserved candidates), but the primary ranking signal is "does this
+ *  candidate keep the reference's scaffold?". Combined with the "marked
+ *  region changed" check, this produces the ordering the user wants:
+ *  candidates that keep the WHOLE scaffold AND rewire the marked region
+ *  rank decisively above candidates that drop unmarked substituents.
+ *
+ *  Weight tuning history: started at 0.3 for a balanced blend. Promoted
+ *  to 0.5 after the GSK650394 CAMKK2 case showed that the gap between
+ *  truncated (MCS≈0.79) and full-scaffold (MCS≈1.0) candidates needed a
+ *  more decisive numerical separation — a 0.5 weight means MCS-difference
+ *  of 0.21 contributes 0.105 score difference, large enough to dominate
+ *  the small Tc/CATS perturbations between same-family analogs.
+ *
+ *  Non-Local presets (Easy / Middle / Hard) keep the original
+ *  `0.4·Tc + 0.6·CATS` formula intentionally — Maeda 2024's atom-ratio
+ *  is already a gate for those presets, and inverting the MCS direction
+ *  (`1 - MCS` as bonus) for "real hops" would compete with the gate
+ *  rather than complement it. Direction-by-mode added complexity for no
+ *  clear win on those presets; trade-off settled in favour of fewer
+ *  knobs. */
+const W_LOCAL_TANIMOTO = 0.2;
+const W_LOCAL_CATS = 0.3;
+const W_LOCAL_MCS = 0.5;
+
+/** Maximum MCS atom-ratio value used in the Local score when the marked-
+ *  region detector verdict is "changed". Applied as `min(mcsRatio, cap)`,
+ *  so candidates whose ratio is BELOW the cap are unaffected.
+ *
+ *  Rationale: the Maeda atom-ratio metric is composition-only. A
+ *  connectivity isomer (same atom inventory as the reference, only the
+ *  bonds within the marked region differ — e.g. GSK650394 vs compound
+ *  29: same pyrrolopyridine atoms, swapped 2,4 ↔ 3,5 substitution
+ *  pattern) saturates at `ratio_atom = 1.0`, because FMCS finds all of
+ *  the reference's atoms in the candidate (potentially as disconnected
+ *  pieces with mismatched boundary bonds). Bond-Tanimoto would
+ *  correctly score this lower (~0.7-0.8), but bond-Tc is a bigger
+ *  refactor and an at-rest measure for the next pass.
+ *
+ *  Capping at 0.95 trims only the very top of the artifact range:
+ *    - Connectivity isomer (MCS=1.0, changed) → contribution = 0.5·0.95.
+ *    - Same-scaffold + R-swap (MCS≈0.97, preserved) → NOT capped (not
+ *      flagged as a hop anyway; `markedOverride === false`).
+ *    - Real scaffold hop (MCS<0.95, changed) → NOT capped (below cap).
+ *  Keeps the chemically correct ranking (real hop > truncated analog)
+ *  while removing the artifactual ceiling that pushed connectivity
+ *  isomers to rank #1 by virtue of `ratio_atom = 1.0`. Below ~0.9 the
+ *  cap would start inverting the real-hop > truncation ordering — that
+ *  trade-off is documented at the call site. */
+const W_LOCAL_MCS_CAP_WHEN_CHANGED = 0.95;
+
 // top-n moved to ./scaffold-hopping-mcs.ts
 
 // timeout moved to ./scaffold-hopping-mcs.ts
@@ -97,6 +159,47 @@ const COL_ACTIVITY_PROX = 'Scaffold Hop Activity Proximity';
 const COL_PRED_ACTIVITY = 'Scaffold Hop Predicted Activity';
 const COL_PRED_SOURCE = 'Scaffold Hop Predicted Activity Source';
 const COL_PRED_STDEV = 'Scaffold Hop Predicted Activity Stdev';
+/** Applicability-domain Tc column. ECFP4 Tanimoto from each predicted
+ *  row to its NEAREST measured-activity row in the table (self-excluded).
+ *
+ *  Why this is the right AD signal for MMP imputation specifically:
+ *
+ *    1. MMP rules are atom-level substructure transformations learned
+ *       on training molecules. For a rule to transfer, the query
+ *       molecule must share enough atom-level structure with the
+ *       molecules the rule was trained on. ECFP4 (Morgan, radius 2)
+ *       captures exactly that — circular atom environments out to
+ *       2 bonds — at the same granularity MMP rules operate.
+ *    2. Tanimoto is size-invariant. A small fragment with one matching
+ *       feature shouldn't be falsely judged "close" to a giant molecule
+ *       sharing that one feature; Tanimoto normalises by union.
+ *    3. The ECFP4 fingerprints are already computed for the kNN step,
+ *       so this column is essentially free (one extra max-Tc pass).
+ *
+ *  Why not other fingerprints:
+ *    - MACCS: too coarse (166 fixed pharmacophore-like bits), misses
+ *      the atom-level structural detail MMP rules depend on.
+ *    - Atom-pairs / topological torsions: capture longer-range
+ *      structure, but largely correlated with ECFP4 on drug-like sets;
+ *      not worth the extra fingerprint computation cost.
+ *    - 3D / pharmacophore: answers a different question ("similar
+ *      binding mode"), not "similar substructure transferability".
+ *    - Learned (GNN, ChemBERTa, etc.): could be better but requires
+ *      a trained model, validation, and GPU; massive overkill for an
+ *      AD signal that's just a "is this row in or out of the training
+ *      neighbourhood" check.
+ *
+ *  Interpretation guidance for users:
+ *    - Tc >= 0.6: same chemotype as known compounds → predictions
+ *      typically reliable within the model's stress-tested MAE.
+ *    - 0.3 <= Tc < 0.6: structurally adjacent but distinct → take
+ *      predictions as ballpark estimates with σ-level error bars.
+ *    - Tc < 0.3: extrapolation / out-of-domain → predictions are
+ *      best-guess only; σ underestimates true uncertainty here.
+ *
+ *  Reference row gets Tc = 1.0 (it's identical to itself). Rows with
+ *  no fingerprint (malformed SMILES) get FNULL. */
+const COL_PRED_IN_DOMAIN_TC = 'Scaffold Hop Predicted Activity In-Domain Tc';
 /** Visible integer rank column. Drives the "reference → hops by score desc
  *  → survivors → dropped" view ordering via the standard grid sort (`grid.
  *  sort([COL_RANK], [true])` = ascending), and doubles as a "this is hop
@@ -288,7 +391,7 @@ export async function runScaffoldHopping(
       writeOutputColumns(table, molecules, tanimoto, catsCosine, mcsRatio, score, isHop,
         reasonEmpty, activityProxEmpty, '',
         new Map(), new Map(), replaceableAtoms.length > 0, showReason,
-        refSmiles, new Set(replaceableAtoms), referenceRowIdx);
+        refSmiles, new Set(replaceableAtoms), referenceRowIdx, useRGroupReplacement);
       applyColorCoding(table, tanimotoMin, tanimotoMax, mcsRatioMax, minCatsSim);
       applyHopsFirstOrder(table, referenceRowIdx, isHop, score, tanimoto);
       return;
@@ -337,9 +440,23 @@ export async function runScaffoldHopping(
       if (activityCol && activityCol.type !== DG.COLUMN_TYPE.STRING) {
         const FNULL = DG.FLOAT_NULL;
         const acts = new Float32Array(N);
+        // Datagrok column null-sentinels:
+        //   FLOAT / DOUBLE → DG.FLOAT_NULL (the JS sentinel; not finite)
+        //   INT / BIGINT   → DG.INT_NULL (= -2_147_483_648, a finite int)
+        // `Number.isFinite(-2147483648)` returns TRUE, so the old guard
+        // `typeof v === 'number' && Number.isFinite(v)` let INT_NULL pass
+        // through unchanged. An integer activity column with even one null
+        // row therefore silently corrupted MMP's pair deltas, kNN's
+        // weighted means, and the proximity factor — all without any
+        // visible warning. Branch on column type to use the right sentinel.
+        const isIntCol = activityCol.type === DG.COLUMN_TYPE.INT ||
+                         activityCol.type === DG.COLUMN_TYPE.BIG_INT;
+        const intNullSentinel = DG.INT_NULL;
         for (let i = 0; i < N; i++) {
           const v = activityCol.get(i);
-          acts[i] = (typeof v === 'number' && Number.isFinite(v)) ? v : FNULL;
+          if (typeof v !== 'number' || !Number.isFinite(v)) {acts[i] = FNULL; continue;}
+          if (isIntCol && v === intNullSentinel) {acts[i] = FNULL; continue;}
+          acts[i] = v;
         }
 
         // Filled = measured where known, predicted where missing.
@@ -357,6 +474,11 @@ export async function runScaffoldHopping(
           let knnPred: Float32Array | null = null;
           let knnK: Int32Array | null = null;
           let knnStdev: Float32Array | null = null;
+          // Tc-to-nearest-known-activity-row, per predicted row. Filled
+          // by the kNN pass as a free byproduct of the top-K Tanimoto
+          // search. Used to populate the applicability-domain column
+          // (Scaffold Hop Predicted Activity In-Domain Tc).
+          let knnNearestTc: Float32Array | null = null;
 
           progress.update(48, 'MMP activity prediction...');
           if (progress.canceled) throw new Error('Scaffold hopping cancelled by user.');
@@ -368,9 +490,37 @@ export async function runScaffoldHopping(
               [acts], [activityColumnName], [MmpDiffTypes.delta], sortingInfo,
             );
             console.log(`[scaffold-hopping] MMPA built: ${mmpa.rules.rules.length} rules`);
+            // Opt into LOO meanDiff for predict-known rows. Reasoning:
+            //
+            // Without LOO, the rule's meanDiff includes the target row's
+            // own pairs. When we then predict the target row using that
+            // rule, we're effectively letting the row contribute to its
+            // own prediction (a "leak"). This makes predictions look
+            // closer to the row's MEASURED value, but the model is
+            // really just fitting the row's own noise rather than
+            // learning what other compounds say about it.
+            //
+            // With LOO, the meanDiff excludes the target row's pairs,
+            // so the prediction is what other compounds in the rule
+            // collectively predict — the right "validation" estimate
+            // when a user has predictKnown=true. Counter-intuitive
+            // consequence: on noisy data, LOO predictions look slightly
+            // WORSE against measured values, because they predict the
+            // signal (noise-free) rather than the signal+noise the
+            // assay actually reports. That's the correct behaviour for
+            // a validation column; the user asked "what would the model
+            // predict if it didn't know this row?" — they didn't ask
+            // for the row's own measurement back.
+            //
+            // The Imatinib stress fixture confirms this: LOO leaves
+            // holdout MAE unchanged (0.017), pushes predict-known MAE
+            // from 0.035 to 0.042 (signal-vs-noise gap widens), and σ
+            // on high-anchor rows becomes a touch larger (more honest).
+            // Cost is negligible (O(pairs_in_rule) per predict-known
+            // row) and only paid when predictKnown=true.
             const result = imputeMmpActivities(
               mmpa.initData, mmpa.rules, mmpa.rulesBased, mmpa.allCasesBased,
-              mmpSupportFloor, 2, predictKnown,
+              mmpSupportFloor, 2, predictKnown, predictKnown,
             );
             mmpPred = result.perActivity[0].pred;
             mmpSupport = result.perActivity[0].support;
@@ -388,8 +538,11 @@ export async function runScaffoldHopping(
           // known-activity neighbours by ECFP4 Tanimoto and average their
           // activity weighted by similarity. Same-row excluded.
           // k = 10 with Tc weighting is a standard kNN-FP regression
-          // baseline for chem activity (Sheridan 2004,
-          // DOI 10.1021/ci049782w).
+          // baseline; k=10 chosen as the conservative end of the k=5-10
+          // community range. No single paper establishes 10 specifically —
+          // Sheridan 2004 (DOI 10.1021/ci049782w) is the canonical
+          // applicability-domain reference (similarity predicts QSAR
+          // confidence), which is a sibling concept, not this exact choice.
           progress.update(56, 'kNN-Morgan-FP prediction...');
           console.log('[scaffold-hopping] kNN-FP prediction starting...');
           try {
@@ -401,6 +554,7 @@ export async function runScaffoldHopping(
             knnPred = r.pred;
             knnK = r.k;
             knnStdev = r.stdev;
+            knnNearestTc = r.nearestKnownTc;
             const nKnnTotal = Array.from(knnPred).filter((p) => p !== FNULL).length;
             console.log(`[scaffold-hopping] kNN-FP predictions: ${nKnnTotal} total`);
           } catch (e: any) {
@@ -526,12 +680,74 @@ export async function runScaffoldHopping(
           if (hasNonZeroStdev) {
             const stdevCol = DG.Column.fromFloat32Array(COL_PRED_STDEV, predStdev);
             stdevCol.setTag('description',
-              `Std-dev of the prediction. For MMP rows: spread across the ` +
-              `rule anchors. For kNN rows: Tc-weighted std-dev of the k ` +
-              `neighbour activities. Both are in the activity column's ` +
-              `units, so they are directly comparable as a per-row ` +
-              `confidence proxy (smaller = more agreement).`);
+              `Estimated spread of the prediction. For MMP rows: ` +
+              `decomposes into σ² = σ_between² + σ_within² (between-rule ` +
+              `disagreement + average within-rule pair spread), with ` +
+              `each rule contributing equally to the between term — so ` +
+              `a single dominant rule's tight cluster doesn't ` +
+              `artificially collapse σ. Bessel-corrected sample variance ` +
+              `(/(n-1)) so the absolute σ value is unbiased rather than ` +
+              `systematically understated. For kNN rows: Tc-weighted ` +
+              `std-dev of the k neighbour activities. Both in the ` +
+              `activity column's units.\n\n` +
+              `On the 24-compound Imatinib local-SAR stress fixture σ ` +
+              `correlates with the actual |prediction - measured| error ` +
+              `at Pearson r ≈ 0.3-0.4 — weakly positive, useful for ` +
+              `flagging the highest-σ rows for follow-up but NOT for ` +
+              `ranking individual predictions. On larger / more ` +
+              `uniformly-easy fixtures (e.g. 60 compounds where every ` +
+              `prediction is near the noise floor) r can drop further ` +
+              `because |error| is dominated by random measurement noise ` +
+              `that σ can't predict. Treat as a directional reliability ` +
+              `indicator, not a calibrated uncertainty.\n\n` +
+              `For applicability-domain filtering, prefer the ` +
+              `companion "In-Domain Tc" column: it answers "is this ` +
+              `prediction within the chemical-space coverage of the ` +
+              `training set?" — a complementary question that σ ` +
+              `cannot answer.`);
             table.columns.add(stdevCol);
+          }
+
+          // Applicability-domain Tc column. Emitted whenever kNN ran
+          // (regardless of whether kNN actually produced a regression
+          // prediction — the Tc-to-nearest is meaningful even on rows
+          // where kNN abstained). Skipped when kNN failed entirely
+          // (knnNearestTc null) since we have no fingerprint data to
+          // populate from.
+          if (knnNearestTc !== null) {
+            // Reference row's nearest-known-Tc is itself (skipped in the
+            // kNN loop via `i === j` exclusion), so it currently sits at
+            // FNULL. Pin it to 1.0 — the reference is by definition
+            // in-domain for itself, and an "FNULL on the reference"
+            // confuses users looking at the column.
+            knnNearestTc[referenceRowIdx] = 1.0;
+            if (table.col(COL_PRED_IN_DOMAIN_TC))
+              table.columns.remove(COL_PRED_IN_DOMAIN_TC);
+            const inDomainCol = DG.Column.fromFloat32Array(
+              COL_PRED_IN_DOMAIN_TC, knnNearestTc);
+            inDomainCol.setTag('description',
+              `Applicability-domain signal for the activity prediction. ` +
+              `ECFP4 Tanimoto similarity (radius 2, 2048 bits) between ` +
+              `this row and its nearest measured-activity neighbour ` +
+              `(self-excluded). Higher = the prediction sits within a ` +
+              `well-covered area of chemical space, where MMP rules and ` +
+              `kNN have anchor support; lower = the prediction is an ` +
+              `extrapolation to chemistry unlike anything in the ` +
+              `training set.\n\n` +
+              `Suggested interpretation:\n` +
+              `  • Tc ≥ 0.6 — same chemotype, predictions typically ` +
+              `reliable within the stress-tested MAE.\n` +
+              `  • 0.3 ≤ Tc < 0.6 — structurally adjacent but distinct; ` +
+              `treat predictions as ballpark with σ-level error bars.\n` +
+              `  • Tc < 0.3 — extrapolation; predictions are best-guess ` +
+              `only, and σ underestimates true uncertainty here.\n\n` +
+              `Why ECFP4 + Tanimoto: MMP rules are atom-level ` +
+              `substructure transformations, and ECFP4 captures atom ` +
+              `environments at the same granularity (radius 2). ` +
+              `Tanimoto is size-invariant so analogs of different size ` +
+              `are compared fairly. The fingerprints are reused from ` +
+              `the kNN step, so this column is essentially free.`);
+            table.columns.add(inDomainCol);
           }
 
           // Fill measured-gaps in `filled[]` from predValue (MMP > kNN).
@@ -539,8 +755,7 @@ export async function runScaffoldHopping(
           filled = new Float32Array(N);
           for (let i = 0; i < N; i++) {
             if (acts[i] !== FNULL) filled[i] = acts[i];
-            else if (predValue[i] !== FNULL) {filled[i] = predValue[i]; nFilled++;}
-            else filled[i] = FNULL;
+            else if (predValue[i] !== FNULL) {filled[i] = predValue[i]; nFilled++;} else filled[i] = FNULL;
           }
           console.log(`[scaffold-hopping] Pred fired: ${nBlended} blended (MMP+kNN), ` +
             `${nMmpFired} MMP-only, ${nKnnFired} kNN-only, ` +
@@ -604,10 +819,95 @@ export async function runScaffoldHopping(
     const topByScore = survivorIdxs.slice().sort((a, b) => score[b] - score[a]);
     const topMcsRows = topByScore.slice(0, TOP_N_FOR_MCS);
     const markedRefSet = new Set(replaceableAtoms);
-    const {refMcsAtoms: mcsResults, sharedSubstructs, sharedFragments} =
-      await computeTopMcsRatio(
-        molecules, refSmiles, topMcsRows, mcsRatio, markedRefSet,
-        useRGroupReplacement, progress);
+    const {
+      refMcsAtoms: mcsResults, sharedSubstructs, sharedFragments,
+      refToCandByRow, candAdjByRow, refAdj,
+    } = await computeTopMcsRatio(
+      molecules, refSmiles, topMcsRows, mcsRatio, markedRefSet,
+      useRGroupReplacement, progress);
+
+    // Pre-compute the marked-region-changed verdict per row. Used by BOTH
+    // the Local re-scoring (below) — to cap the MCS contribution when the
+    // verdict is "changed" so connectivity isomers can't ride a saturated
+    // 1.0 atom-ratio to the top — AND the flag composition loop further
+    // down (where it triggers the MCS-gate override). Centralising the
+    // computation here avoids re-doing it twice. Empty when no marks.
+    const markedRegionChanged = new Set<number>();
+    if (replaceableAtoms.length > 0) {
+      for (const i of topMcsRows) {
+        const refMcsAtoms = mcsResults.get(i);
+        if (!refMcsAtoms) continue;
+        const compositionPreserved =
+          replaceableAtoms.every((a) => refMcsAtoms.has(a));
+        let preserved = compositionPreserved;
+        if (compositionPreserved) {
+          const refToCand = refToCandByRow.get(i);
+          const candAdj = candAdjByRow.get(i);
+          if (refToCand && candAdj && refAdj.size > 0) {
+            preserved = isMarkedRegionTrulyPreserved(
+              markedRefSet, refToCand, refAdj, candAdj);
+          }
+        }
+        if (!preserved) markedRegionChanged.add(i);
+      }
+    }
+
+    // Local-mode MCS-aware re-score. The initial score (0.4·Tc + 0.6·CATS)
+    // is used ONLY to pick the top-N for MCS; once MCS is known, candidates
+    // that preserve more of the reference scaffold should rank higher in
+    // Local mode. Without this, truncated candidates — same marked region
+    // but missing an unmarked substituent (e.g. compound 7 in the
+    // GSK650394 series) — rank as high as candidates that fully reproduce
+    // the scaffold with the marked region rewired (the actual Local-hop
+    // intent). Only rows that GOT MCS computed get re-scored; the rest
+    // keep the original score and will rank below re-scored survivors.
+    //
+    // Connectivity-isomer cap: when the marked-region verdict is "changed",
+    // the MCS contribution is capped at `W_LOCAL_MCS_CAP_WHEN_CHANGED`
+    // (0.95). Strips the artifactual ceiling at `ratio_atom = 1.0` that
+    // FMCS produces for connectivity isomers (same atom set, different
+    // bonds in the marked region — compound 29 of the GSK650394 series
+    // is the canonical example). MCS values below the cap pass through
+    // unchanged.
+    //
+    // Restricted to Local (`useRGroupReplacement=true`). Non-Local presets
+    // use Maeda's atom-ratio as a gate, not a continuous signal — adding
+    // `(1 - MCS)` as a positive bonus would compete with that gate.
+    //
+    // Activity-multiplier re-application: the activity-proximity blend
+    // (`score *= (1 - aw) + aw * proximity`) was applied to the initial
+    // score above. We re-apply it to the MCS-aware score below so the
+    // activity-aware re-rank survives the re-scoring step.
+    if (useRGroupReplacement) {
+      for (const i of topMcsRows) {
+        const m = mcsRatio[i];
+        if (Number.isNaN(m)) continue; // MCS timed out — keep initial score
+        const tc = tanimoto[i];
+        const ca = catsCosine[i];
+        // Apply cap if marked region changed (likely connectivity-isomer
+        // artifact where atom ratio saturates at 1.0 despite real
+        // structural difference).
+        const mForScore = markedRegionChanged.has(i) ?
+          Math.min(m, W_LOCAL_MCS_CAP_WHEN_CHANGED) : m;
+        // CATS-NaN fallback: when CATS unavailable, drop the CATS term and
+        // proportionally redistribute its weight to Tc + MCS so the score
+        // still ranks on real signals (matches the spirit of the original
+        // CATS-NaN fallback). Tc and MCS split CATS's weight equally.
+        let s: number;
+        if (Number.isNaN(ca)) {
+          const halfCatsW = W_LOCAL_CATS / 2;
+          s = (W_LOCAL_TANIMOTO + halfCatsW) * tc +
+              (W_LOCAL_MCS + halfCatsW) * mForScore;
+        } else
+          s = W_LOCAL_TANIMOTO * tc + W_LOCAL_CATS * ca + W_LOCAL_MCS * mForScore;
+
+        // Re-apply activity-proximity multiplier when it was active.
+        const p = activityProx[i];
+        if (activityColUsed && activityWeight > 0 && Number.isFinite(p))
+          s = s * ((1 - activityWeight) + activityWeight * p);
+        score[i] = s;
+      }
+    }
 
     // Reference-row populating. With marks: the reference row's Shared
     // Region cell shows the marked-region fragment (so the user can read
@@ -677,9 +977,10 @@ export async function runScaffoldHopping(
         const tc = tanimoto[i];
         if (Number.isNaN(tc))
           reason[i] = 'Tc — (could not compute)';
-        else
+        else {
           reason[i] =
             `Tc ${fmtNum(tc)} ✗ (pre-filtered; outside [${fmtNum(tanimotoMin)}, ${fmtNum(tanimotoMax)}])`;
+        }
         continue;
       }
       const tc = tanimoto[i];
@@ -692,47 +993,108 @@ export async function runScaffoldHopping(
       parts.push(`Tc ${fmtNum(tc)} ${tcInWindow ? '✓' : '✗'}`);
       if (useTcInFlag && !tcInWindow) pass = false;
 
-      if (Number.isNaN(ca)) {
+      if (Number.isNaN(ca))
         parts.push('CATS — (Python failure)');
         // CATS-in-flag: NaN degrades to "Tc + Maeda" rather than blocking.
-      } else {
+      else {
         const catsOk = ca >= minCatsSim;
         parts.push(`CATS ${fmtNum(ca)} ${catsOk ? '✓' : '✗'}`);
         if (useCatsInFlag && !catsOk) pass = false;
       }
 
+      // MCS gate. Failure tracked separately from `pass` so the marked-
+      // region check below can override the gate when the user marked
+      // atoms and the connectivity check verdict is "changed" — the
+      // marked-region signal is more specific than the global MCS atom-
+      // ratio and should win when they disagree. Without the override,
+      // the GSK650394 / compound 29 case (same atoms, rewired
+      // substituent positions) lands at mcsRatio ≈ 1.0 because FMCS
+      // finds all 29 reference atoms in the candidate (potentially as
+      // disconnected pieces), and the gate then vetoes a verdict the
+      // marked-region detector has already correctly flagged as a hop.
+      let mcsFailed = false;
       if (Number.isNaN(m)) {
         parts.push('MCS — (timed out)');
-        pass = false;
+        mcsFailed = true;
       } else {
         const mcsOk = m <= mcsRatioMax;
         parts.push(`MCS ${fmtNum(m)} ${mcsOk ? '✓' : '✗'}`);
-        if (!mcsOk) pass = false;
+        if (!mcsOk) mcsFailed = true;
       }
 
+      // Marked-region check. Three outcomes:
+      //  - No marks given: skip; `mcsFailed` directly drives `pass`.
+      //  - Marks given AND `preserved`: hard veto (user wanted region
+      //    changed; it wasn't, so this isn't the candidate they want).
+      //  - Marks given AND `changed`: override MCS gate (mark-region
+      //    signal is more specific than global MCS).
+      //
+      // Verdict comes from the `markedRegionChanged` Set pre-computed
+      // above; that set was populated only for rows where the MCS-extract
+      // produced `refMcsAtoms`. So `refMcsAtoms == null` is equivalent to
+      // "the row is absent from the set" (MCS was skipped on it).
+      let markedOverride = false;
       if (replaceableAtoms.length > 0) {
         const refMcsAtoms = mcsResults.get(i);
-        const markedPreserved = refMcsAtoms &&
-          replaceableAtoms.every((a) => refMcsAtoms.has(a));
-        if (markedPreserved) {
-          parts.push('marked region preserved ✗');
-          pass = false;
-        } else if (refMcsAtoms) {
-          parts.push('marked region changed ✓');
-        } else {
-          // MCS skipped — already covered by the "MCS —" token above.
+        if (refMcsAtoms) {
+          if (markedRegionChanged.has(i)) {
+            // "changed ✓" → override the MCS gate (see comment block
+            // above the MCS check). Tc / CATS gates still apply.
+            parts.push('marked region changed ✓');
+            markedOverride = true;
+          } else {
+            parts.push('marked region preserved ✗');
+            pass = false;
+          }
         }
+        // If `refMcsAtoms == null`, the "MCS —" token already explains
+        // the missing data; we don't add a redundant marked-region tag.
       }
+
+      // Apply MCS gate UNLESS the marked-region check overrode it.
+      if (mcsFailed && !markedOverride) pass = false;
 
       if (pass) isHop[i] = 1;
       reason[i] = parts.join(' · ');
+    }
+
+    // Suppress degenerate Replaced Region outputs — when the algorithm
+    // finds no real analog (very different chemotypes), it falls back
+    // to a small acyclic fragment (e.g. just an NH from FMCS pairing
+    // on the marked aniline-N). These mislead the user by suggesting an
+    // analog where none exists. Rule: clear the Replaced Region cell
+    // when the output has 0 ring atoms AND < 5 heavy atoms AND the
+    // ECFP4 Tc to the reference is < 0.2. The combined gate keeps
+    // small-but-valid outputs (e.g. an isolated chlorofluoroaniline
+    // analog at Tc=0.4 stays visible) while clearing the
+    // truly-degenerate ones.
+    const rdkitForSuppress = chemCommonRdKit.getRdKitModule();
+    for (const idx of [...sharedFragments.keys()]) {
+      if (idx === referenceRowIdx) continue;
+      const tc = tanimoto[idx];
+      if (tc >= 0.2) continue;
+      const molblock = sharedFragments.get(idx);
+      if (!molblock) continue;
+      let mol: any = null;
+      try {
+        mol = rdkitForSuppress.get_mol(molblock);
+        if (!mol) continue;
+        const numAtoms = mol.get_num_atoms?.() ?? 0;
+        if (numAtoms >= 5) continue;
+        const smi = mol.get_smiles?.() ?? '';
+        const strippedSmi = smi.replace(/\[\d*\*\]/g, '');
+        if (/\d/.test(strippedSmi)) continue; // contains ring closure → keep
+        // 0 rings AND < 5 atoms AND Tc < 0.2 → suppress.
+        sharedFragments.delete(idx);
+        sharedSubstructs.delete(idx);
+      } catch {/* parse failure — leave untouched */} finally {mol?.delete?.();}
     }
 
     progress.update(95, 'Writing result columns...');
     writeOutputColumns(table, molecules, tanimoto, catsCosine, mcsRatio, score, isHop,
       reason, activityProx, activityColUsed,
       sharedSubstructs, sharedFragments, replaceableAtoms.length > 0, showReason,
-      refSmiles, markedRefSet, referenceRowIdx);
+      refSmiles, markedRefSet, referenceRowIdx, useRGroupReplacement);
     applyColorCoding(table, tanimotoMin, tanimotoMax, mcsRatioMax, minCatsSim);
     applyHopsFirstOrder(table, referenceRowIdx, isHop, score, tanimoto);
 
@@ -761,6 +1123,85 @@ function parseReplaceableAtoms(json: string): number[] {
   }
 }
 
+/** Topology-aware "marked region preserved" check. Returns `true` only if
+ *  ALL three of the following hold:
+ *    (1) Composition: every marked reference atom pairs to a candidate
+ *        atom via the MCS — i.e. the candidate contains the marked atoms.
+ *    (2) Boundary degree: each marked ref atom has the same number of
+ *        cross-boundary bonds (= bonds to UNMARKED atoms) as its
+ *        candidate-side correspondent has bonds to atoms outside the
+ *        cand-image of the marked region. Catches the case where the
+ *        same marked atoms appear in the candidate but with substituents
+ *        at different positions on the marked region (the bicycle).
+ *    (3) Matched-neighbour: when the MCS DID extend through a boundary
+ *        bond (so we know how the unmarked-side atom corresponds), the
+ *        pair must align — the cand correspondent of the boundary
+ *        neighbour must be a graph-neighbour of the cand correspondent
+ *        of the marked atom.
+ *
+ *  Why this matters: composition-only (the previous behaviour) miscalls
+ *  "preserved" when a candidate has the same marked atoms wired at
+ *  different attachment positions on the unmarked core. The canonical
+ *  example is compound 29 of the GSK650394 series (Asquith et al.,
+ *  J. Med. Chem. 2020, 63, 13750, DOI 10.1021/acs.jmedchem.0c00200):
+ *  the pyrrolopyridine bicycle of the reference is "preserved" by
+ *  composition (same N, C, and aromatic-ring atom set), but the
+ *  benzamide attaches at the 2-position and the phenyl at the
+ *  4-position — swapped relative to the reference's 3,5-substitution
+ *  pattern. The paper classifies this as a scaffold hop; composition-
+ *  only blocked it from being flagged. (3) alone catches some cases but
+ *  fails when FMCS doesn't extend into the substituent — it pairs the
+ *  bicycle and stops at the boundary, so there's no matched neighbour
+ *  to check against. (2) is the load-bearing fix: it doesn't need the
+ *  MCS to extend through the boundary; the boundary-degree count alone
+ *  is enough to detect attachment-position swaps and N-H ↔ N-Me changes.
+ *
+ *  Algorithm: O(|marked| × avg-degree) per row.
+ *
+ *  Safe-default: returns `true` (preserved) on data-missing edge cases —
+ *  if the cand mapping or adjacency couldn't be built, we don't flip
+ *  the user's call from "preserved" to "changed" on incomplete data. */
+function isMarkedRegionTrulyPreserved(
+  markedRefAtoms: Set<number>,
+  refToCand: Map<number, number>,
+  refAdj: Map<number, number[]>,
+  candAdj: Map<number, number[]>,
+): boolean {
+  // (1) Composition: every marked ref atom is paired by the MCS.
+  for (const a of markedRefAtoms)
+    if (!refToCand.has(a)) return false;
+  // Cand-side image of the marked region — used by (2) to compute the
+  // candidate's boundary-degree without needing the MCS to extend
+  // beyond the marked atoms.
+  const markedCandAtoms = new Set<number>();
+  for (const a of markedRefAtoms) markedCandAtoms.add(refToCand.get(a)!);
+  for (const refMarked of markedRefAtoms) {
+    const candCorresp = refToCand.get(refMarked)!;
+    const candNbrs = candAdj.get(candCorresp) ?? [];
+    // (2) Boundary-degree check. Count bonds out of the marked region on
+    // each side. Mismatch = substitution-pattern change (e.g. compound 29).
+    let refBoundary = 0;
+    for (const nbr of refAdj.get(refMarked) ?? [])
+      if (!markedRefAtoms.has(nbr)) refBoundary++;
+    let candBoundary = 0;
+    for (const nbr of candNbrs)
+      if (!markedCandAtoms.has(nbr)) candBoundary++;
+    if (refBoundary !== candBoundary) return false;
+    // (3) Matched-neighbour check. When the MCS extended through a boundary
+    // bond on the ref side, the corresponding bond must exist on the cand
+    // side at the paired atoms. Catches different-but-same-degree cases
+    // (e.g. bicycle rearrangement where boundary degrees coincidentally
+    // match).
+    for (const refNbr of refAdj.get(refMarked) ?? []) {
+      if (markedRefAtoms.has(refNbr)) continue;
+      if (!refToCand.has(refNbr)) continue;
+      const expectedCandNbr = refToCand.get(refNbr)!;
+      if (!candNbrs.includes(expectedCandNbr)) return false;
+    }
+  }
+  return true;
+}
+
 // computeTanimoto + computeTopMcsRatio moved to ./scaffold-hopping-mcs.ts
 
 
@@ -778,6 +1219,13 @@ function writeOutputColumns(
   refSmiles: string,
   markedRefAtoms: Set<number>,
   referenceRowIdx: number,
+  /** Local-preset flag — when true, the Replacement / Replaced Region
+   *  columns were populated via strict MCS + R-group decomposition;
+   *  when false, via ErG pharmacophore matching. The column
+   *  descriptions are gated on this so the user reads the rules that
+   *  actually fired on THIS run rather than a hedged both-mode summary
+   *  that mentions ErG even when the actual primitive was strict MCS. */
+  useRGroupReplacement: boolean = false,
 ): void {
   // Drop legacy columns from earlier versions so the table doesn't accumulate
   // orphan columns when re-running across upgrades.
@@ -798,19 +1246,19 @@ function writeOutputColumns(
   // power users who need the per-row pass/fail breakdown can toggle it
   // on in the dialog. On re-run with the checkbox off, drop any column
   // left over from a prior run that had it on.
-  if (showReason) {
+  if (showReason)
     replaceStringColumn(table, COL_REASON, reason);
-  } else {
+  else
     if (table.col(COL_REASON)) table.columns.remove(COL_REASON);
-  }
+
   // Activity proximity column is only meaningful when an activity column
   // was selected. Without it the array is all-NaN; drop the column so the
   // table doesn't carry a row of empty cells.
-  if (activityColUsed) {
+  if (activityColUsed)
     replaceFloatColumn(table, COL_ACTIVITY_PROX, activityProx);
-  } else {
+  else
     if (table.col(COL_ACTIVITY_PROX)) table.columns.remove(COL_ACTIVITY_PROX);
-  }
+
   // The Replacement and Shared Region columns answer "what corresponds to
   // the region I marked?" — without marks the answer is "the entire shared
   // scaffold" which mostly duplicates the input molecule + adds visual
@@ -842,9 +1290,10 @@ function writeOutputColumns(
           const unmarkedAtoms = new Set<number>();
           for (let i = 0; i < refNumAtoms; i++)
             if (!markedRefAtoms.has(i)) unmarkedAtoms.add(i);
-          if (unmarkedAtoms.size > 0)
+          if (unmarkedAtoms.size > 0) {
             unmarkedRegionMolblock = buildCleanFragmentMolblock(
               refMolblock, unmarkedAtoms, rdkit);
+          }
         }
       }
     } catch {/* alignment is best-effort */} finally {refMol?.delete();}
@@ -861,7 +1310,7 @@ function writeOutputColumns(
     if (table.col(COL_REPLACEMENT)) table.columns.remove(COL_REPLACEMENT);
     if (table.col(COL_REPLACED)) table.columns.remove(COL_REPLACED);
   }
-  applyColumnDescriptions(table, activityColUsed);
+  applyColumnDescriptions(table, activityColUsed, useRGroupReplacement);
 }
 
 /** Attaches per-column descriptions so hovering the column header in the
@@ -871,7 +1320,9 @@ function writeOutputColumns(
  *  description is written to the `description` tag, the same surface
  *  Datagrok's column tooltip reads. Idempotent — re-running overwrites
  *  with the current text. */
-function applyColumnDescriptions(table: DG.DataFrame, activityColUsed: string): void {
+function applyColumnDescriptions(
+  table: DG.DataFrame, activityColUsed: string, useRGroupReplacement: boolean,
+): void {
   const desc = (name: string, text: string) => {
     const col = table.col(name);
     if (col) col.setTag('description', text);
@@ -899,7 +1350,17 @@ function applyColumnDescriptions(table: DG.DataFrame, activityColUsed: string): 
     'When an activity column is selected, the score is also multiplied by ' +
     '(1 - activityWeight) + activityWeight × proximity so candidates near the ' +
     'reference\'s activity rank higher. When CATS fails (Python script ' +
-    'unavailable), score falls back to ECFP4 Tc only.');
+    'unavailable), score falls back to ECFP4 Tc only.\n\n' +
+    'Calibration provenance: the 0.4 / 0.6 split was tuned by inspection ' +
+    'on a 5-row BCR-ABL test set (Imatinib + Nilotinib + Dasatinib + ' +
+    'Bosutinib + Ponatinib), NOT on a held-out validation set. The ' +
+    'direction (CATS-heavier) is consistent with the original CATS ' +
+    'methodology (Schneider 1999) and the Maeda 2024 scaffold-hop ' +
+    'classifier, but the exact weights have NOT been validated on a ' +
+    'large diverse dataset. Treat the Score as a useful ranking signal ' +
+    'within a single run, not as an absolute calibrated metric. To ' +
+    're-rank by your own priors, sort independently by Tanimoto, CATS ' +
+    'Sim, or MCS Ratio columns.');
   desc(COL_FLAG,
     'Scaffold-hop flag. TRUE iff the candidate passes the always-applied ' +
     'atom-ratio criterion (ratio_atom = atoms(MCS) / atoms(reference) ≤ ' +
@@ -922,29 +1383,53 @@ function applyColumnDescriptions(table: DG.DataFrame, activityColUsed: string): 
       'decay as exp(-|delta| / sigma) where sigma is the column\'s standard ' +
       'deviation. When the score is activity-weighted, this is the unblended ' +
       'proximity that went into the multiplier — sort by this column to find ' +
-      'hops near the reference\'s potency independent of structure.');
+      'hops near the reference\'s potency independent of structure. ' +
+      'EXPECTS LOG-SCALED ACTIVITY (pIC50 / pKi / pEC50): raw IC50/Ki/Kd ' +
+      'columns are log-normal-distributed and blow sigma out, so the ' +
+      'proximity factor collapses to ~1 for every pair (rank no longer ' +
+      'shifts). Pre-compute -log10(activity) into a new column and re-run.');
   }
-  desc(COL_REPLACEMENT,
-    'Full candidate molecule with the shared region highlighted in green. ' +
-    'The matching primitive depends on the preset: in Local mode it\'s strict ' +
-    'MCS via R-group decomposition (exact-core matching, clean attachment-' +
-    'point semantics); in Easy / Middle / Hard modes it\'s ErG (Stiefl 2006 ' +
-    'JCIM 46:208) reduced-graph matching, which collapses each ring system to ' +
-    'a pharmacophore-labelled node so chemically equivalent heterocycles ' +
-    '(pyrimidine ↔ thiazole) match where strict-MCS refuses to. Path-completion ' +
-    'extends the highlight along the shortest linker between matched rings so ' +
-    'the green region reads as a connected scaffold, not isolated atom dots. ' +
-    'Visible only when the user marked atoms on the reference.');
-  desc(COL_REPLACED,
-    'Standalone fragment SMILES of the candidate\'s region that corresponds ' +
-    'to the user\'s marked region on the reference. In Local mode, this is ' +
-    'the R-group decomposition output: the candidate\'s R-group fragment at ' +
-    'the marked attachment positions (exact-core matching, clean attachment-' +
-    'point semantics). In Easy / Middle / Hard modes, this is the ErG-matched ' +
-    'region (pharmacophore equivalence, allows ring chemotype swaps). ' +
-    'Filterable: use Datagrok\'s substructure filter on this column to find ' +
-    '"candidates whose replaced region contains X". Visible only when the ' +
-    'user marked atoms on the reference.');
+  // Mode-aware descriptions. Pre-fix, both columns emitted a hedged
+  // both-mode summary that mentioned ErG even when the actual primitive
+  // was strict MCS (in Local mode). Now we describe ONLY the primitive
+  // that fired on this run, which is what the user sees in the column.
+  if (useRGroupReplacement) {
+    desc(COL_REPLACEMENT,
+      'Full candidate molecule with the shared region highlighted in green. ' +
+      'Local preset: matching is strict MCS via R-group decomposition — ' +
+      'the unmarked region of the reference is treated as an EXACT core, ' +
+      'and only candidates that contain that core get a populated cell. ' +
+      'Same-core analogs (Murcko-equal candidates) get the Murcko scaffold ' +
+      'as a placeholder fragment, signalling "scaffold preserved." ' +
+      'Visible only when the user marked atoms on the reference.');
+    desc(COL_REPLACED,
+      'Standalone fragment SMILES of the candidate\'s R-group at the ' +
+      'marked attachment positions on the reference. Local-preset R-group ' +
+      'decomposition output — exact-core matching with clean attachment-' +
+      'point semantics. Empty cell = candidate doesn\'t contain the ' +
+      'reference\'s exact core. Filterable: use Datagrok\'s substructure ' +
+      'filter on this column to find "candidates whose R-group contains ' +
+      'X". Visible only when the user marked atoms on the reference.');
+  } else {
+    desc(COL_REPLACEMENT,
+      'Full candidate molecule with the shared region highlighted in green. ' +
+      'Easy / Middle / Hard preset: matching is ErG (Stiefl 2006 JCIM ' +
+      '46:208) reduced-graph — each ring system collapses to a ' +
+      'pharmacophore-labelled node, so chemically equivalent heterocycles ' +
+      '(pyrimidine ↔ thiazole) match where strict-MCS refuses to. ' +
+      'Path-completion extends the highlight along the shortest linker ' +
+      'between matched rings so the green region reads as a connected ' +
+      'scaffold, not isolated atom dots. Visible only when the user ' +
+      'marked atoms on the reference.');
+    desc(COL_REPLACED,
+      'Standalone fragment SMILES of the candidate\'s region that ' +
+      'corresponds to the user\'s marked region on the reference. ' +
+      'Easy / Middle / Hard preset: ErG-matched region — pharmacophore ' +
+      'equivalence allows ring chemotype swaps (pyrimidine ↔ thiazole, ' +
+      'phenyl ↔ pyridine). Filterable: use Datagrok\'s substructure ' +
+      'filter on this column to find "candidates whose replaced region ' +
+      'contains X". Visible only when the user marked atoms on the reference.');
+  }
 }
 
 /** Removes every Scaffold-Hop result column from `table` (current + legacy ' +
@@ -1101,9 +1586,9 @@ function applyColorCoding(
   table: DG.DataFrame, tanimotoMin: number, tanimotoMax: number,
   mcsRatioMax: number, minCatsSim: number,
 ): void {
-  const PASS = DG.Color.fromHtml('#1B9E3F');     // saturated green — readable as foreground
-  const MID = DG.Color.fromHtml('#B8860B');      // dark yellow — readable as foreground
-  const FAIL = DG.Color.fromHtml('#C92020');     // deep red — readable as foreground
+  const PASS = DG.Color.fromHtml('#1B9E3F'); // saturated green — readable as foreground
+  const MID = DG.Color.fromHtml('#B8860B'); // dark yellow — readable as foreground
+  const FAIL = DG.Color.fromHtml('#C92020'); // deep red — readable as foreground
   const fmt = (n: number) => Number.isInteger(n) ? `${n}` : n.toFixed(2);
 
   const setTextColor = (col: DG.Column | null) => {

@@ -1,4 +1,5 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {findRingSystems as findBridgeAwareRingSystems} from './scaffold-hopping-molblock';
 
 /** ErG (Stiefl 2006) reduced-graph scaffold matching for the scaffold-
  *  hopping result table.
@@ -121,59 +122,45 @@ export function labelAtomsByPharmacophore(
 }
 
 /** Identifies ring systems in `mol`. A ring system is a connected
- *  component in the subgraph induced by ring atoms — fused rings (sharing
- *  an edge) collapse into one system, spiro / bridged systems likewise.
+ *  component in the **ring-edge** subgraph — fused rings (sharing an
+ *  edge) collapse into one system, spiro systems likewise. Rings
+ *  connected only by a **bridge bond** (e.g. a biaryl, or DLK
+ *  compound 3's pyrazole-piperidine where the C-C bond between the
+ *  two ring atoms is a rotatable single bond, NOT in any ring) are
+ *  returned as SEPARATE systems — chemically correct since they're
+ *  two distinct rings linked by a rotatable bond.
+ *
+ *  Delegates to `findBridgeAwareRingSystems` from `scaffold-hopping-
+ *  molblock.ts`, which walks ring-edges only (not full adjacency
+ *  restricted to ring atoms). Walking the full restricted adjacency
+ *  is the older approach this function used to do — it INCORRECTLY
+ *  merges bridge-connected rings into a single component because
+ *  both endpoints of the bridge ARE ring atoms (each individually in
+ *  a cycle, just not in the same cycle through the bridge bond).
+ *  That over-merging propagated into ErG's reduced-graph: pyrazole +
+ *  piperidine became one "ring system" node, the ErG match treated
+ *  the combined system as the candidate's image of ref's marked
+ *  pyrimidine, and the Replaced Region surfaced both rings instead
+ *  of just the heterocycle. The bridge-aware version fixes this.
+ *
  *  Returns an array of atom-index arrays, one per ring system. */
-export function findRingSystems(mol: any, rdkit: RDModule): number[][] {
-  // Step 1: identify ring atoms via the SMARTS [*;r] (any atom in any ring).
-  const ringQmol = rdkit.get_qmol('[*;r]');
-  let ringAtomSet = new Set<number>();
-  try {
-    const matchesJson = mol.get_substruct_matches(ringQmol);
-    if (matchesJson) {
-      const matches = JSON.parse(matchesJson);
-      if (Array.isArray(matches)) {
-        for (const m of matches) {
-          for (const a of m?.atoms ?? []) ringAtomSet.add(a);
-        }
-      }
-    }
-  } finally {
-    ringQmol?.delete?.();
-  }
-  if (ringAtomSet.size === 0) return [];
-
-  // Step 2: parse the molblock to get the bond table — RDKit-WASM doesn't
-  // expose a direct bond-iterator, so we read connectivity from the V2000
-  // bond block. Cheap (~few microseconds for drug-sized molecules).
+export function findRingSystems(mol: any, _rdkit: RDModule): number[][] {
   const molblock = mol.get_molblock?.() ?? '';
+  if (!molblock) return [];
   const bonds = parseV2000Bonds(molblock);
-
-  // Step 3: build the ring-atom adjacency and find connected components.
-  const adj = new Map<number, Set<number>>();
-  for (const a of ringAtomSet) adj.set(a, new Set());
+  if (bonds.length === 0) return [];
+  // Build an undirected adjacency map covering EVERY atom, not just ring
+  // atoms — the bridge-detection inside `findBridgeAwareRingSystems`
+  // needs the full graph to correctly classify each bond.
+  const nAtoms = mol.get_num_atoms?.() ?? 0;
+  const adj = new Map<number, number[]>();
+  for (let i = 0; i < nAtoms; i++) adj.set(i, []);
   for (const [a, b] of bonds) {
-    if (ringAtomSet.has(a) && ringAtomSet.has(b)) {
-      adj.get(a)!.add(b);
-      adj.get(b)!.add(a);
-    }
+    adj.get(a)?.push(b);
+    adj.get(b)?.push(a);
   }
-  const visited = new Set<number>();
-  const systems: number[][] = [];
-  for (const start of ringAtomSet) {
-    if (visited.has(start)) continue;
-    const stack = [start];
-    const sys: number[] = [];
-    while (stack.length > 0) {
-      const x = stack.pop()!;
-      if (visited.has(x)) continue;
-      visited.add(x);
-      sys.push(x);
-      for (const y of adj.get(x) ?? []) if (!visited.has(y)) stack.push(y);
-    }
-    systems.push(sys);
-  }
-  return systems;
+  const systems = findBridgeAwareRingSystems(adj);
+  return systems.map((s) => Array.from(s));
 }
 
 /** Parses the V2000 molblock bond block into [atom_a (0-indexed),
@@ -202,7 +189,7 @@ function parseV2000Bonds(molblock: string): Array<[number, number]> {
 /** Builds the ErG reduced graph for `mol`. */
 export function buildReducedGraph(
   mol: any, ringSystems: number[][], atomLabels: Map<number, Set<string>>,
-  rdkit: RDModule,
+  _rdkit: RDModule,
 ): {nodes: ErgNode[]; adj: Set<number>[]} {
   const nAtoms = mol.get_num_atoms();
   const ringAtomToSystem = new Map<number, number>();
@@ -271,23 +258,53 @@ export function nodeCompatibility(a: ErgNode, b: ErgNode): number {
 /** Disconnected greedy match between two reduced graphs. For each ref
  *  node, picks the best-scoring still-unmatched cand node (compatibility
  *  ≥ threshold). Ref nodes with no compatible candidate stay unmatched.
+ *
+ *  Two-tier ordering when `markedRefAtoms` is provided: ref nodes that
+ *  do NOT contain marked atoms (= the "conserved core") are matched
+ *  FIRST, in score-desc order. Then ref nodes that DO contain marked
+ *  atoms (= the user's region of interest) match against whatever cand
+ *  nodes are left. This is load-bearing for the Replaced Region
+ *  extraction: without it, a marked ref ring can greedy-steal the
+ *  candidate node that should have paired with a non-marked ref ring,
+ *  surfacing the wrong cand ring as the "replacement". E.g. DLK ref
+ *  pyrimidine (marked, a + 2A, size 6) and cand aminopyridyl (a + 1A,
+ *  size 6) have the SAME size and similar pharmacophore signature, so
+ *  the unconstrained matcher pairs them — but cand aminopyridyl is the
+ *  candidate's image of ref aminopyridyl, NOT of ref pyrimidine. The
+ *  two-tier order ensures ref aminopyridyl claims cand aminopyridyl
+ *  first, leaving ref pyrimidine to match the actual replacement ring
+ *  (cand pyrazole / thiazole / etc.).
+ *
+ *  When `markedRefAtoms` is empty (global-hop run), the order
+ *  collapses to pure score-desc — same behaviour as before.
+ *
  *  Returns `Map<refNodeIdx, candNodeIdx>`. */
 export function matchReducedGraphs(
   refRG: {nodes: ErgNode[]; adj: Set<number>[]},
   candRG: {nodes: ErgNode[]; adj: Set<number>[]},
   threshold: number = 0.05,
+  markedRefAtoms: Set<number> = new Set(),
 ): Map<number, number> {
-  // Collect compatible (ref, cand, score) triples, sort by score desc.
-  type Triple = {r: number; c: number; s: number};
+  type Triple = {r: number; c: number; s: number; markedRef: boolean};
+  const isRefMarked = (node: ErgNode): boolean => {
+    if (markedRefAtoms.size === 0) return false;
+    for (const a of node.atoms) if (markedRefAtoms.has(a)) return true;
+    return false;
+  };
   const triples: Triple[] = [];
   for (let r = 0; r < refRG.nodes.length; r++) {
+    const markedRef = isRefMarked(refRG.nodes[r]);
     for (let c = 0; c < candRG.nodes.length; c++) {
       const s = nodeCompatibility(refRG.nodes[r], candRG.nodes[c]);
-      if (s >= threshold) triples.push({r, c, s});
+      if (s >= threshold) triples.push({r, c, s, markedRef});
     }
   }
-  triples.sort((x, y) => y.s - x.s);
-  // Greedy 1-to-1 assignment in score-desc order.
+  // Sort: non-marked ref nodes first (so they claim cand nodes first),
+  // then marked ref nodes. Within each tier, score-desc.
+  triples.sort((x, y) => {
+    if (x.markedRef !== y.markedRef) return x.markedRef ? 1 : -1;
+    return y.s - x.s;
+  });
   const refUsed = new Set<number>();
   const candUsed = new Set<number>();
   const out = new Map<number, number>();
@@ -333,9 +350,8 @@ function findConnectedComponents(
       if (visited.has(x)) continue;
       visited.add(x);
       component.push(x);
-      for (const y of adj[x] ?? []) {
+      for (const y of adj[x] ?? [])
         if (atoms.has(y) && !visited.has(y)) stack.push(y);
-      }
     }
     components.push(component);
   }
@@ -414,7 +430,7 @@ function connectMatchedAtomsViaShortestPaths(
           bestPath = path;
       }
     }
-    if (!bestPath) break;   // genuinely disconnected — leave as separate fragments
+    if (!bestPath) break; // genuinely disconnected — leave as separate fragments
     for (const a of bestPath) expanded.add(a);
   }
   return expanded;
@@ -452,7 +468,10 @@ export function computeErgSharedAtoms(
   const candLabels = labelAtomsByPharmacophore(candMol, familyQmols);
   const refRG = buildReducedGraph(refMol, refRings, refLabels, rdkit);
   const candRG = buildReducedGraph(candMol, candRings, candLabels, rdkit);
-  const matching = matchReducedGraphs(refRG, candRG);
+  // Pass `markedRefAtoms` so the matcher orders non-marked ref nodes
+  // first — see the comment block on `matchReducedGraphs` for why this
+  // matters for the Replaced Region extraction.
+  const matching = matchReducedGraphs(refRG, candRG, 0.05, markedRefAtoms);
 
   const refAtoms = new Set<number>();
   const seedCandAtoms = new Set<number>();
@@ -461,12 +480,11 @@ export function computeErgSharedAtoms(
     const refNode = refRG.nodes[r];
     const candNode = candRG.nodes[c];
     let include = false;
-    if (markedRefAtoms.size === 0) {
+    if (markedRefAtoms.size === 0)
       include = true;
-    } else {
-      for (const a of refNode.atoms) {
+    else {
+      for (const a of refNode.atoms)
         if (markedRefAtoms.has(a)) {include = true; break;}
-      }
     }
     if (!include) continue;
     for (const a of refNode.atoms) refAtoms.add(a);

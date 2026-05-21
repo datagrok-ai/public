@@ -2376,6 +2376,7 @@ export class PackageFunctions {
     'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, CATS2D pharmacophore similarity, MCS atom-ratio).',
     'editor': 'Chem:ScaffoldHoppingEditor',
     'top-menu': 'Chem | Analyze | Scaffold Hopping...',
+    'help-url': '/help/datagrok/solutions/domains/chem/scaffold-hopping',
   })
   static async scaffoldHopping(
     table: DG.DataFrame,

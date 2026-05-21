@@ -5,9 +5,12 @@
  *  The Tc-weighted std-dev of the same 10 activities is emitted as a
  *  per-row confidence proxy (see comment inside).
  *
- *  Reference baseline: Sheridan 2004 (DOI 10.1021/ci049782w) established
- *  k=10 with Tc weighting as the standard non-parametric chem-activity
- *  predictor against which other models are compared.
+ *  Standard kNN-FP regression baseline. k=10 is the conservative end of
+ *  the k=5-10 community range; no single published paper establishes 10
+ *  specifically. Sheridan 2004 (DOI 10.1021/ci049782w) is the canonical
+ *  applicability-domain reference (similarity predicts QSAR confidence) —
+ *  a sibling concept that motivates similarity-weighted regression but
+ *  doesn't fix the k value.
  *
  *  Extracted from `scaffold-hopping.ts` as part of the multi-module split;
  *  no behaviour change. */
@@ -18,14 +21,29 @@ import * as chemSearches from '../../chem-searches';
 import {Fingerprint} from '../../utils/chem-common';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-/** Per-row kNN prediction output. Three Float32Arrays of length N (the input
+/** Number of nearest known-activity neighbours used per prediction. 10 is
+ *  the conservative end of the k=5-10 community convention for kNN-FP
+ *  regression on chem data. Not a tuned hyper-parameter — calibrated by
+ *  Sheridan 2004's applicability-domain framing (similarity predicts
+ *  QSAR confidence). */
+const KNN_K = 10;
+
+/** Per-row kNN prediction output. Four arrays of length N (the input
  *  table's row count). Rows that didn't get a prediction (no fingerprint, no
  *  neighbours, or excluded from `predictTargets`) carry `DG.FLOAT_NULL` /
- *  zero — caller checks against FNULL to know whether a value is real. */
+ *  zero — caller checks against FNULL to know whether a value is real.
+ *
+ *  `nearestKnownTc[i]` = max ECFP4 Tanimoto between row i and any
+ *  known-activity row in the table (self-excluded). Used by the caller
+ *  to populate an applicability-domain column without recomputing
+ *  fingerprints — the Tc-to-nearest is a free byproduct of the top-k
+ *  search this function already performs. FNULL when no comparison was
+ *  possible (no fingerprint or no known-activity rows). */
 export interface KnnPredictionResult {
   pred: Float32Array;
   k: Int32Array;
   stdev: Float32Array;
+  nearestKnownTc: Float32Array;
 }
 
 /** Runs the kNN-on-Morgan-FP prediction.
@@ -50,16 +68,20 @@ export async function computeKnnFpPrediction(
   progress: DG.TaskBarProgressIndicator,
 ): Promise<KnnPredictionResult> {
   const FNULL = DG.FLOAT_NULL;
-  const KNN_K = 10;
   const fingerprints = await chemSearches.chemGetFingerprints(
     molecules, Fingerprint.Morgan, false);
   const knownIdxs: number[] = [];
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < N; i++)
     if (acts[i] !== FNULL && fingerprints[i]) knownIdxs.push(i);
-  }
+
   const pred = new Float32Array(N).fill(FNULL);
   const k = new Int32Array(N);
   const stdev = new Float32Array(N).fill(FNULL);
+  // Track the maximum Tc to any known-activity row, per predicted row.
+  // Filled inline in the top-K search loop — when we encounter a higher
+  // Tc than the current max, we update it. Cost: one branch per
+  // neighbour comparison, negligible.
+  const nearestKnownTc = new Float32Array(N).fill(FNULL);
 
   // Restrict prediction TARGETS to the caller-provided set — non-survivors
   // are filtered out of the displayed result anyway, and the proximity loop
@@ -85,11 +107,13 @@ export async function computeKnnFpPrediction(
       let topLen = 0;
       let minTc = Infinity;
       let minPos = 0;
+      let maxTc = -Infinity;
       for (const j of knownIdxs) {
         if (i === j) continue;
         const fpJ = fingerprints[j];
         if (!fpJ) continue;
         const tc = tanimotoSimilarity(fpI, fpJ);
+        if (tc > maxTc) maxTc = tc;
         if (topLen < KNN_K) {
           topTc[topLen] = tc;
           topAct[topLen] = acts[j];
@@ -99,11 +123,15 @@ export async function computeKnnFpPrediction(
           topTc[minPos] = tc;
           topAct[minPos] = acts[j];
           minTc = Infinity;
-          for (let m = 0; m < KNN_K; m++) {
+          for (let m = 0; m < KNN_K; m++)
             if (topTc[m] < minTc) {minTc = topTc[m]; minPos = m;}
-          }
         }
       }
+      // Emit the row's Tc-to-nearest-known regardless of whether the
+      // weighted-mean step (below) succeeds. The AD signal is useful
+      // even on rows where kNN can't produce a regression prediction
+      // (e.g., sumW = 0 because every Tc = 0).
+      if (Number.isFinite(maxTc)) nearestKnownTc[i] = maxTc;
       if (topLen > 0) {
         let sumW = 0;
         let sumWV = 0;
@@ -134,5 +162,5 @@ export async function computeKnnFpPrediction(
       }
     }
   }
-  return {pred, k, stdev};
+  return {pred, k, stdev, nearestKnownTc};
 }

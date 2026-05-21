@@ -82,9 +82,9 @@ export function extractFragmentSmiles(
     countsLine.substring(6);
 
   const newMolblock = [
-    lines[0] || '',           // title (often empty)
+    lines[0] || '', // title (often empty)
     lines[1] || '  scaffold-hop fragment',
-    lines[2] || '',           // comment (often empty)
+    lines[2] || '', // comment (often empty)
     newCountsLine,
     ...atomLines,
     ...bondLines,
@@ -102,6 +102,153 @@ export function extractFragmentSmiles(
   } finally {
     mol?.delete();
   }
+}
+
+/** Returns ring atoms AND the non-bridge edges between them. A bond is
+ *  a "ring edge" iff it is part of at least one cycle (= removing it
+ *  doesn't disconnect its endpoints). Tested per-bond by BFS from one
+ *  endpoint avoiding the bond — if the other endpoint is reached, the
+ *  bond is in a cycle.
+ *
+ *  Both outputs are returned together because `findRingSystems` needs
+ *  the ring-edge subgraph (not the full adjacency restricted to ring
+ *  atoms) to group atoms correctly: pyrazole-CH2-piperidine has both
+ *  pyrazole AND piperidine atoms as ring atoms, but the bond between
+ *  them is a BRIDGE — so they're two distinct ring systems. Walking
+ *  the full adjacency restricted to ring atoms would incorrectly merge
+ *  them.
+ *
+ *  O(B × (A + B)) where A = atom count, B = bond count. For drug-sized
+ *  molecules (~40 atoms / ~45 bonds) this is microseconds — fine for
+ *  our use case. A linear-time Tarjan bridge-finding implementation
+ *  would be cleaner but the per-bond BFS is dead-simple and avoids
+ *  recursion-depth concerns on the WASM-bridged worker. */
+function findRingAtomsAndEdges(
+  adj: Map<number, number[]>,
+): {ringAtoms: Set<number>; ringEdges: Map<number, Set<number>>} {
+  const ringAtoms = new Set<number>();
+  const ringEdges = new Map<number, Set<number>>();
+  for (const a of adj.keys()) ringEdges.set(a, new Set());
+  const seen = new Set<string>();
+  for (const [u, nbrs] of adj.entries()) {
+    for (const v of nbrs) {
+      const key = u < v ? `${u}|${v}` : `${v}|${u}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const visited = new Set<number>([u]);
+      const queue: number[] = [u];
+      let reached = false;
+      while (queue.length > 0 && !reached) {
+        const x = queue.shift()!;
+        for (const y of adj.get(x) ?? []) {
+          if ((x === u && y === v) || (x === v && y === u)) continue;
+          if (visited.has(y)) continue;
+          if (y === v) {reached = true; break;}
+          visited.add(y);
+          queue.push(y);
+        }
+      }
+      if (reached) {
+        ringAtoms.add(u);
+        ringAtoms.add(v);
+        ringEdges.get(u)?.add(v);
+        ringEdges.get(v)?.add(u);
+      }
+    }
+  }
+  return {ringAtoms, ringEdges};
+}
+
+/** Returns the set of atoms that participate in at least one ring.
+ *  Thin wrapper around `findRingAtomsAndEdges` for callers that only
+ *  need the atom set. */
+export function findRingAtoms(adj: Map<number, number[]>): Set<number> {
+  return findRingAtomsAndEdges(adj).ringAtoms;
+}
+
+/** Selects the candidate's ring system that occupies the position of
+ *  the user's marked region in the reference. Used by the Replaced
+ *  Region extraction in BOTH the Local mode and the ErG (Easy/Middle/
+ *  Hard) modes so the column shows just the heterocycle that replaced
+ *  the marked ring (pyrimidine → pyrazole / thiazole / pyridine), not
+ *  the union of every non-MCS-preserved component.
+ *
+ *  Criterion: a cand ring system is the "replacement" iff it is NOT
+ *  entirely inside `candPreserved` AND at least one ring atom has a
+ *  neighbour OUTSIDE the ring that is in `edgeAnchors` (= cand atoms
+ *  paired to ref atoms that bordered the marked region in ref).
+ *
+ *  Returns the cand atoms NOT in candPreserved that belong to the
+ *  selected ring system(s). Empty set if no qualifying ring exists
+ *  (caller falls back to BFS / ErG / etc.). */
+export function selectReplacementRingAtoms(
+  candAdj: Map<number, number[]>,
+  candPreserved: Set<number>,
+  edgeAnchors: Set<number>,
+): Set<number> {
+  const ringSystems = findRingSystems(candAdj);
+  const selected = new Set<number>();
+  for (const ring of ringSystems) {
+    let allPreserved = true;
+    for (const a of ring)
+      if (!candPreserved.has(a)) {allPreserved = false; break;}
+
+    if (allPreserved) continue;
+    let bondedToEdge = false;
+    for (const a of ring) {
+      for (const nbr of candAdj.get(a) ?? []) {
+        if (ring.has(nbr)) continue;
+        if (edgeAnchors.has(nbr)) {bondedToEdge = true; break;}
+      }
+      if (bondedToEdge) break;
+    }
+    if (bondedToEdge) {
+      for (const a of ring)
+        if (!candPreserved.has(a)) selected.add(a);
+    }
+  }
+  return selected;
+}
+
+/** Groups ring atoms into maximal connected components of the
+ *  RING-EDGE subgraph — i.e. each returned Set is one ring system (a
+ *  single ring OR a set of fused rings sharing atoms, like
+ *  pyrrolopyridine's 9 atoms forming one system). Atoms NOT in any
+ *  ring are absent from every returned Set. Rings connected only by
+ *  bridge bonds (e.g. biphenyl's two phenyls, or DLK compound 3's
+ *  pyrazole–piperidine pair) are returned as SEPARATE systems because
+ *  the connecting bond is a bridge — by design, since chemically those
+ *  are two distinct ring systems linked by a rotatable bond.
+ *
+ *  Critically, we walk over `ringEdges` (non-bridge bonds) NOT the
+ *  full adjacency. Walking over full adjacency would incorrectly merge
+ *  bridge-connected ring systems into a single component because the
+ *  bridge bond's endpoints are BOTH ring atoms (each individually in
+ *  a cycle, just not in the SAME cycle through the bridge).
+ *
+ *  Used by the Local-mode "Replaced Region" extraction to surface the
+ *  candidate's ring system that occupies the position of the user's
+ *  marked ring in the reference — bypassing unrelated substituents the
+ *  BFS-on-non-preserved-atoms approach would also pick up. */
+export function findRingSystems(adj: Map<number, number[]>): Set<number>[] {
+  const {ringAtoms, ringEdges} = findRingAtomsAndEdges(adj);
+  const systems: Set<number>[] = [];
+  const visited = new Set<number>();
+  for (const a of ringAtoms) {
+    if (visited.has(a)) continue;
+    const system = new Set<number>();
+    const stack: number[] = [a];
+    while (stack.length > 0) {
+      const x = stack.pop()!;
+      if (visited.has(x)) continue;
+      visited.add(x);
+      system.add(x);
+      for (const y of ringEdges.get(x) ?? [])
+        if (!visited.has(y)) stack.push(y);
+    }
+    systems.push(system);
+  }
+  return systems;
 }
 
 /** Parses a V2000 molblock's bond block into an undirected atom-atom
@@ -168,9 +315,9 @@ export function extractFragmentMolblockWithRGroups(
   // 1-indexed renumbering for the kept atoms.
   const oldToNew = new Map<number, number>();
   let newIdx = 1;
-  for (let i = 0; i < nAtoms; i++) {
+  for (let i = 0; i < nAtoms; i++)
     if (atomsToKeep.has(i)) {oldToNew.set(i, newIdx); newIdx++;}
-  }
+
   if (oldToNew.size === 0) return null;
 
   const realAtomLines: string[] = [];
@@ -224,7 +371,7 @@ export function extractFragmentMolblockWithRGroups(
       let line = `M  RGP${chunk.length.toString().padStart(3)}`;
       for (let j = 0; j < chunk.length; j++) {
         const idx = chunk[j];
-        const label = i + j + 1;   // R1, R2, …
+        const label = i + j + 1; // R1, R2, …
         line += idx.toString().padStart(4) + label.toString().padStart(4);
       }
       rgpLines.push(line);
@@ -340,11 +487,12 @@ export function buildR1AnchorMolblock(
 
   const rNeighbours = adj.get(rIdx) ?? [];
   if (rNeighbours.length === 0) return null;
-  const nA1 = rNeighbours[0].neighbour;           // R#'s sole neighbour
+  const nA1 = rNeighbours[0].neighbour; // R#'s sole neighbour
   const rToN1Bond = rNeighbours[0].bondLine;
 
   // Pick A1's OTHER neighbours (not the R atom). For a typical ring
-  // attachment, A1 has 2-3 connections: R, ring-C-left, ring-C-right.
+  // attachment point, A1 has two or three connections — the R atom
+  // itself, ring-C-left, and (if present) ring-C-right.
   // We pick the first non-R neighbour.
   const a1Neighbours = (adj.get(nA1) ?? []).filter((x) => x.neighbour !== rIdx);
   if (a1Neighbours.length === 0) {

@@ -45,6 +45,7 @@ import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';
 
 import './tests/scaffold-hopping-tests';
+import './tests/hop-classification-validation';
 
 import './tests/viewers';
 

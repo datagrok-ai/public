@@ -83,7 +83,18 @@ category('mmpa-imputation', () => {
     expect(pred[1], FNULL, 'mol1 has known activity — pred must stay FNULL');
     expect(Math.abs(pred[2] - 13.0) < EPS, true, `mol2 pred expected 13.0, got ${pred[2]}`);
     expect(support[2], 2, 'mol2 support must be 2');
-    expect(Math.abs(stdev[2] - 1.0) < EPS, true, `mol2 stdev expected 1.0, got ${stdev[2]}`);
+    // mol2 has predictions [12, 14] from one rule (both pairs share the
+    // same rule with meanDiff=2.0). Mean = 13. With Bessel-corrected
+    // sample variance: var = ((12-13)² + (14-13)²) / (2-1) = 2.0,
+    // σ = √2 ≈ 1.4142. Pre-Bessel (biased /n) gave σ = 1.0 — flagged
+    // by external review as understating uncertainty by ~29% at the
+    // minimum-anchor floor and inflating MMP's weight in the inverse-
+    // variance blend. Test updated to the unbiased value.
+    expect(Math.abs(stdev[2] - Math.sqrt(2)) < EPS, true,
+      `mol2 stdev expected √2 (Bessel-corrected sample variance), ` +
+      `got ${stdev[2]}. Pre-Bessel biased value was 1.0; if the test ` +
+      `is seeing 1.0 again the /(n-1) correction in mmpa-imputation.ts ` +
+      `has regressed.`);
   });
 
   test('synthetic_mol3_suppressed_by_minAnchors', async () => {

@@ -52,6 +52,17 @@ export function extractAtomPositionsFromSvg(
 
   // Text-labeled heteroatoms. `<text>` is `SVGTextElement` which extends
   // `SVGGraphicsElement`, so `getBBox()` is reachable without an unknown cast.
+  //
+  // First-text-wins (`if (positions.has(idx)) continue;`) is important
+  // for multi-glyph labels: RDKit's SVG renderer emits MULTIPLE <text>
+  // elements per atom for NH₂, OH, etc. — one for the element symbol,
+  // one for each hydrogen / subscript / charge glyph, all sharing the
+  // same `atom-N` class. Without the guard, the loop ended on the LAST
+  // text element per atom, which is typically the subscript (e.g. the
+  // "2" in NH₂). That sits below the main symbol and shifts the click
+  // center 4-8 px down, making donors/acceptors harder to click in the
+  // Local-mode atom picker. The first text element is the element
+  // symbol (drawn first by RDKit), which is the correct click target.
   const texts = svgEl.querySelectorAll<SVGTextElement>('text[class*="atom-"]');
   for (let i = 0; i < texts.length; i++) {
     const t = texts[i];
@@ -59,6 +70,7 @@ export function extractAtomPositionsFromSvg(
     const m = /(?:^|\s)atom-(\d+)/.exec(cls);
     if (!m) continue;
     const idx = parseInt(m[1], 10);
+    if (positions.has(idx)) continue; // keep the element-symbol glyph
     try {
       const bb = t.getBBox();
       positions.set(idx, {x: bb.x + bb.width / 2, y: bb.y + bb.height / 2});

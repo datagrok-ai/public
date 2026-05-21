@@ -16,12 +16,34 @@ import {removeWaterAndSaltsSingle} from '../../utils/reactions/reactions';
  *  is consumed by two distinct paths (CATS cosine + ErG matching), and a
  *  non-Local run with marked atoms used to fetch it twice per invocation.
  *  Caching the Promise (rather than the DataFrame) lets concurrent callers
- *  share an in-flight request without races. */
+ *  share an in-flight request without races.
+ *
+ *  Rejection handling: a Promise that rejects stays rejected forever, so a
+ *  naive `if (!cache) cache = fetch()` would PERMANENTLY disable CATS for
+ *  the rest of the session after a single network blip. The `.catch()`
+ *  below evicts the failed Promise from the cache so the next caller gets
+ *  a fresh fetch attempt, then re-throws so the current caller still sees
+ *  the failure (rather than getting a silently undefined DataFrame). */
 let _pharmacophoreFeaturesCache: Promise<DG.DataFrame> | null = null;
 export function getPharmacophoreFeatures(): Promise<DG.DataFrame> {
   if (!_pharmacophoreFeaturesCache) {
-    _pharmacophoreFeaturesCache = grok.data.loadTable(
-      chemCommonRdKit.getRdKitWebRoot() + 'files/pharmacophore-features.csv');
+    // Bind to a local first so the catch handler can compare identity
+    // against the same reference we'll store in the module cache. (If we
+    // chained `.catch()` directly off `loadTable(...)` and stored the
+    // result, the local `loadTable(...)` Promise and the stored
+    // `.catch()`-wrapped Promise would be different objects and the
+    // self-eviction check would never match.)
+    const wrapped: Promise<DG.DataFrame> = grok.data.loadTable(
+      chemCommonRdKit.getRdKitWebRoot() + 'files/pharmacophore-features.csv',
+    ).catch((e) => {
+      // Evict ONLY if the cache still points at THIS in-flight Promise.
+      // If a later caller already swapped in a new one (race window
+      // between this rejection settling and our self-eviction running),
+      // leave it alone.
+      if (_pharmacophoreFeaturesCache === wrapped) _pharmacophoreFeaturesCache = null;
+      throw e;
+    });
+    _pharmacophoreFeaturesCache = wrapped;
   }
   return _pharmacophoreFeaturesCache;
 }
@@ -79,8 +101,10 @@ export async function computeCatsCosine(
     throw new Error('CATS2D fingerprint column not produced — Python env may lack rdkit / numpy');
 
   const refVec = parseCatsVector(fpCol.get(0));
-  if (refVec.length === 0)
-    throw new Error(`CATS2D fingerprint for the reference is empty — RDKit could not parse "${refSmiles}" or no features matched`);
+  if (refVec.length === 0) {
+    throw new Error(`CATS2D fingerprint for the reference is empty — ` +
+      `RDKit could not parse "${refSmiles}" or no features matched`);
+  }
   const refNorm = vectorNorm(refVec);
 
   for (let s = 0; s < survivorIdxs.length; s++) {
@@ -110,12 +134,22 @@ export function vectorNorm(v: Float32Array): number {
   return Math.sqrt(s);
 }
 
-/** Cosine similarity over two equal-length float vectors. Returns 0 if
- *  either vector has zero norm (no features matched). Pre-computed `aNorm`
- *  saves a √ on the reference side across the loop. */
+/** Cosine similarity over two equal-length float vectors. Returns NaN
+ *  when similarity is mathematically undefined (length mismatch, length
+ *  zero, or either vector has zero norm — typically a tiny molecule with
+ *  no detectable pharmacophore features).
+ *
+ *  Why NaN and not 0: callers compose this into the composite score
+ *  `score = NaN(ca) ? tc : 0.4·tc + 0.6·ca`. A zero-norm CATS returning
+ *  0 would compute `0.4·tc + 0.6·0` → artificially penalize feature-less
+ *  molecules below their structural similarity. Returning NaN routes the
+ *  score through the Tc-only fallback, which is the correct behaviour
+ *  ("no CATS signal, fall back to structural").
+ *
+ *  Pre-computed `aNorm` saves a √ on the reference side across the loop. */
 export function cosineSimilarity(a: Float32Array, aNorm: number, b: Float32Array): number {
-  if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
-  if (aNorm === 0) return 0;
+  if (a.length === 0 || b.length === 0 || a.length !== b.length) return NaN;
+  if (aNorm === 0) return NaN;
   let dot = 0;
   let bSq = 0;
   for (let i = 0; i < a.length; i++) {
@@ -123,6 +157,6 @@ export function cosineSimilarity(a: Float32Array, aNorm: number, b: Float32Array
     bSq += b[i] * b[i];
   }
   const bNorm = Math.sqrt(bSq);
-  if (bNorm === 0) return 0;
+  if (bNorm === 0) return NaN;
   return dot / (aNorm * bNorm);
 }
