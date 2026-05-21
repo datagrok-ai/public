@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
-import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
-import {PipelineState, StepDynamicInitialConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
+import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 import {Zippable} from 'fflate';
@@ -141,7 +142,9 @@ export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfiguratio
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
-export type ActionInfo = {
+/** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
+ *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
   friendlyName?: string;
@@ -149,38 +152,51 @@ export type ActionInfo = {
   menuCategory?: string;
   confirmationMessage?: string;
   icon?: string;
-  runOnInit?: undefined;
   /** Show this action on a specific child step instead of where it's defined.
    *  Uses configId of the target step. The action's from/to still resolve at definition scope. */
   visibleOn?: string;
 };
 
+export type ActionInfo<P> = ActionInfoBase & {
+  runOnInit?: undefined;
+  /** LQL string or array. Action's ViewAction.visible is true only when all
+   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  showWhen?: P;
+  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+   *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
+  hideWhen?: P;
+};
+
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   handler: Handler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'pipeline',
   handler: MutationHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'funccall',
   handler: FunccallActionHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
+type LinkOf<S> = [S] extends [never] ? LinkSpecString : LinkIOParsed[];
+type RefOf<S> = [S] extends [never] ? PipelineRefInitial : PipelineSelfRef;
+type StatesOf<S> = [S] extends [never] ? Array<ItemId | StateItem> : StateItem[];
+
 // static steps config
-export type PipelineStepConfiguration<P, S> = {
+export type PipelineStepConfiguration<S> = {
   id: ItemId;
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
-  actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
-  states?: StateItem[];
+  actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
+  states?: StatesOf<S>;
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
@@ -194,16 +210,16 @@ export interface CustomExport {
   handler: PipelineExport,
 }
 
-export type PipelineConfigurationBase<P> = {
+export type PipelineConfigurationBase<S> = {
   id: ItemId;
   nqName?: NqName;
   version?: string;
   friendlyName?: string;
-  links?: PipelineLinkConfiguration<P>[];
-  actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
-  onInit?: PipelineInitConfiguration<P>;
-  onReturn?: PipelineReturnConfiguration<P>;
-  states?: StateItem[];
+  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
+  onInit?: PipelineInitConfiguration<LinkOf<S>>;
+  onReturn?: PipelineReturnConfiguration<LinkOf<S>>;
+  states?: StatesOf<S>;
   tags?: string[];
   forceNavigate?: boolean;
   customExports?: CustomExport[];
@@ -231,39 +247,30 @@ export type AbstractPipelineActionConfiguration = {
 
 // fixed pipeline
 
-export type PipelineStaticItem<P, S, R> =
-PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R;
+export type PipelineStaticItem<S> =
+PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> | AbstractPipelineActionConfiguration | RefOf<S>;
 
-export type AbstractPipelineStaticConfiguration<P, S, R> = {
-  steps: PipelineStaticItem<P, S, R>[];
+export type AbstractPipelineStaticConfiguration<S> = {
+  steps: PipelineStaticItem<S>[];
   type: 'static';
   isActionStep?: boolean;
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<S>;
 
 // dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R) & NestedItemContext);
+export type PipelineDynamicItem<S> = ((PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> | AbstractPipelineActionConfiguration | RefOf<S>) & NestedItemContext);
 
-export type AbstractPipelineDynamicConfiguration<P, S, R> = {
-  initialSteps?: StepDynamicInitialConfig[];
-  stepTypes: PipelineDynamicItem<P, S, R>[];
-  type: 'dynamic' | 'parallel' | 'sequential';
-} & PipelineConfigurationBase<P>;
-
-/** @deprecated Use PipelineDynamicItem */
-export type PipelineParallelItem<P, S, R> = PipelineDynamicItem<P, S, R>;
-/** @deprecated Use PipelineDynamicItem */
-export type PipelineSequentialItem<P, S, R> = PipelineDynamicItem<P, S, R>;
-/** @deprecated Use AbstractPipelineDynamicConfiguration */
-export type AbstractPipelineParallelConfiguration<P, S, R> = AbstractPipelineDynamicConfiguration<P, S, R>;
-/** @deprecated Use AbstractPipelineDynamicConfiguration */
-export type AbstractPipelineSequentialConfiguration<P, S, R> = AbstractPipelineDynamicConfiguration<P, S, R>;
+export type AbstractPipelineDynamicConfiguration<S> = {
+  initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
+  stepTypes: PipelineDynamicItem<S>[];
+  type: DynamicPipelineType;
+} & PipelineConfigurationBase<S>;
 
 // pipeline config
 
-export type AbstractPipelineConfiguration<P, S, R> =
-AbstractPipelineStaticConfiguration<P, S, R> |
-AbstractPipelineDynamicConfiguration<P, S, R>;
+export type AbstractPipelineConfiguration<S> =
+AbstractPipelineStaticConfiguration<S> |
+AbstractPipelineDynamicConfiguration<S>;
 
 export type PipelineRefInitial = {
   id?: string;
@@ -272,12 +279,8 @@ export type PipelineRefInitial = {
   type: 'ref';
 }
 
-export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<LinkSpecString, never, PipelineRefInitial>;
-export type PipelineConfigurationDynamicInitial = AbstractPipelineDynamicConfiguration<LinkSpecString, never, PipelineRefInitial>;
-/** @deprecated Use PipelineConfigurationDynamicInitial */
-export type PipelineConfigurationParallelInitial = PipelineConfigurationDynamicInitial;
-/** @deprecated Use PipelineConfigurationDynamicInitial */
-export type PipelineConfigurationSequentialInitial = PipelineConfigurationDynamicInitial;
+export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<never>;
+export type PipelineConfigurationDynamicInitial = AbstractPipelineDynamicConfiguration<never>;
 
 export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial | PipelineRefInitial;
 

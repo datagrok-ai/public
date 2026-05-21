@@ -1707,8 +1707,7 @@ export class PackageFunctions {
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
     if (overwrite) {
-      for (let i = 0; i < molecules.length; i++)
-        molecules.set(i, res[i], false);
+      molecules.init((i) => res[i]);
       molecules.meta.units = units;
     } else {
       const colName = data.columns.getUnusedName(`${molecules.name}_${targetNotation}`);

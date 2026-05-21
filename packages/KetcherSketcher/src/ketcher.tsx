@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import * as grok from 'datagrok-api/grok';
@@ -25,7 +26,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   private _editorComponent: React.ReactElement | null = null;
   private _editorMounted = false;
   private _resizeObserver: ResizeObserver | null = null;
-  private importing = false;
+  private importedMoleculesCounter = 0;
+  private _detached = false;
 
   constructor() {
     super();
@@ -56,12 +58,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         // });
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async () => {
+          if (this._detached)
+            return;
           this.updatingMolecule = false;
           // we do not reset explicit mol in case this is the first change event called after ketcher was created
           // since change event is fired not only when user changes the molecule but also when the molecule is
           // initially set into ketcher
-          if (this.importing)
-            this.importing = false;
+          if (this.importedMoleculesCounter > 0)
+            this.importedMoleculesCounter --;
           else
             this.explicitMol = null;
           try {
@@ -69,8 +73,18 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           } catch { //in case we are working with smarts - getSmiles() will fail with exception
             this._smiles = null;
           }
-          this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
-          this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+          // detach() (e.g. clicking OK on the cell editor dialog) unmounts the React <Editor>
+          // while the awaits above are still pending; ketcher-core then drops its singleton
+          // instance and any getMolfile() still in flight throws "couldnt find ketcher instance N".
+          try {
+            if (this._detached)
+              return;
+            this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
+            this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+            this._smarts = await this._sketcher!.getSmarts();
+          } catch {
+            return;
+          }
           this.onChanged.next(null);
         });
       },
@@ -147,7 +161,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('smiles', smiles);
   }
 
@@ -170,7 +184,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smiles = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('molblock', molfile);
   }
 
@@ -193,12 +207,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._smiles = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('molblockV3000', molfile);
   }
 
   async getSmarts(): Promise<string> {
-    return this._sketcher ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    if (this._sketcher)
+      return !this._detached ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    return this._smarts ?? '';
   }
 
   set smarts(smarts: string) {
@@ -206,7 +222,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV3000 = null;
     this._molV2000 = null;
     this._smiles = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('smarts', smarts);
   }
 
@@ -254,6 +270,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   detach() {
+    this._detached = true;
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this._resizeObserver?.disconnect();
     this._resizeObserver = null;

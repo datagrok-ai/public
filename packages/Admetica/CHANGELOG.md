@@ -3,6 +3,7 @@
 ## v.next
 
 * Admetica: App view function returns the view directly instead of calling `grok.shell.addPreview`, letting the platform host place it
+* Admetica: Demo no longer persists the last sketched molecule
 
 ## 1.3.1 (2025-09-17)
 

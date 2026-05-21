@@ -535,6 +535,14 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     return toJs(api.grok_EntitiesDataSource_GetFavorites(this.dart, toDart(group)));
   }
 
+  /** Returns favorites for multiple groups in a single round trip; object keyed by group id. */
+  async getFavoritesForGroups(groups: Group[]): Promise<{[gid: string]: Entity[]}> {
+    const obj: {[k: string]: any[]} = await api.grok_EntitiesDataSource_GetFavoritesForGroups(this.dart, groups.map((g) => toDart(g)));
+    for (const gid of Object.keys(obj))
+      obj[gid] = obj[gid].map((e) => toJs(e));
+    return obj;
+  }
+
   /** Allows to set properties for entities */
   saveProperties(props: Map<Property, any>): Promise<void> {
     return api.grok_EntitiesDataSource_SaveProperties(this.dart, props);

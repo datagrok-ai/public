@@ -16,7 +16,7 @@ NAME(FLAGS)?:PATH
 
 - `NAME` — query name; an identifier (`[_a-zA-Z][a-zA-Z_0-9]*`).
 - `FLAGS` — optional comma-separated subset of `optional`, `call`, `template`.
-- `PATH` — `/`-separated segments, relative to the link's host pipeline.
+- `PATH` — `/`-separated segments, relative to the link's host workflow.
   Leading `/` is forbidden. The last segment of a data-link `from`/`to` must
   be a script I/O name (bare identifier).
 
@@ -24,7 +24,7 @@ A bare identifier in a segment is shorthand for `first(identifier)`.
 
 ### Glossary
 
-- **Path** — `/`-separated segments resolved relative to the link's host pipeline.
+- **Path** — `/`-separated segments resolved relative to the link's host workflow.
 - **Segment** — a single selector or bare id inside a path.
 - **Base** — the link's anchor query (the `base` field); evaluated first, before `from` and `to`.
 - **Link instance** — one execution of a link, produced for each match of an `expand` selector in the base.
@@ -63,7 +63,7 @@ Notes:
 | Flag       | Meaning                                                                              | Used in                                       |
 |------------|--------------------------------------------------------------------------------------|-----------------------------------------------|
 | `optional` | A missing match is allowed; the link simply does not fire for that instance.         | Any query.                                    |
-| `call`     | Resolve to the matched `FuncCall` itself rather than a script IO.                    | `funccall` [actions](./link-types#funccall-actions). |
+| `call`     | Match the node (FuncCall) itself rather than a script IO. In `funccall` actions: required for inputs read as `DG.FuncCall` and for the `setFuncCall` output target. In all other link types: must be combined with `(optional)`; the controller exposes a `hasCall(name)` presence check. Not allowed on `to` outside `funccall` actions, not allowed inside `base`, not allowed with `(template)`. | All link types (with the constraints above). |
 | `template` | Expand the last segment's `\|`-list into one query per id (see [guide](./link-query-language#template-queries)). | `from` / `to` in data links. |
 
 ### Modifiers and stop ids
@@ -133,8 +133,8 @@ sinks:#all(report)/result
 src:#first(workflowA)/#all(metric)/result
 ```
 
-**Match the host pipeline.** A query with no path (just a name) resolves to
-the pipeline that hosts the link — used by `pipelineValidator`:
+**Match the host workflow.** A query with no path (just a name) resolves to
+the workflow that hosts the link — used by `pipelineValidator`:
 
 ```
 host
@@ -189,12 +189,15 @@ from: "in:same(@base, workflowA|workflowB)/.../result"
 - Tag id-lists combine with **AND** (`&`); regular id-lists combine with
   **OR** (`|`). Easy to flip.
 - Tag matches descend; they never travel upward past the link's host
-  pipeline.
+  workflow.
 - `#+` (adjacent-tag) selectors do not exist — only `#*` is available for
   tag variants of `before` / `after`.
 - Absolute paths (leading `/`) are forbidden; mid-path `.` is forbidden.
 - Reference selectors **require** a leading `@ref` argument; non-ref
   selectors (`first`, `last`, `all`, `expand`) must **not** take one. Mixing
   is a parse-time error.
-- The `call` flag is only meaningful in `funccall` actions; in data links it
-  is silently inert.
+- Outside `funccall` actions, `(call)` requires `(optional)` — the matched
+  FuncCall isn't exposed to handlers; the controller only offers a
+  `hasCall(name)` presence check. `(call)` on a `to` IO is rejected outside
+  `funccall` actions. `(call)` inside `base` and `(call,template)`
+  combinations are rejected at parse time.

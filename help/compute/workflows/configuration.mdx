@@ -16,6 +16,8 @@ focuses on the _meaning_ of each option rather than its TypeScript shape.
 
 :::
 
+## Getting started
+
 ### Workflow providers
 
 An example of a minimal workflow package setup is available
@@ -48,7 +50,7 @@ configured slightly differently.
 | `type` value | Variant |
 |--------------|---------|
 | `'static'` (default) | [Static workflow](#static-workflows) — fixed `steps` array. |
-| `'dynamic'` | [Dynamic workflow](#dynamic-workflows) — user can add/remove steps from `stepTypes`. `parallel` and `sequential` are accepted as legacy aliases. |
+| `'dynamic'` | [Dynamic workflow](#dynamic-workflows) — user can add/remove steps from `stepTypes`. |
 | `'action'` | [Action step](#action-steps) — lightweight placeholder, no children. |
 | `'ref'` | [Workflow reference](#reusing-workflows) — replaced at load time by another provider's configuration. |
 
@@ -69,6 +71,8 @@ Configuration is a tree of JavaScript objects and arrays of type
 - If an item has a corresponding UI element, usually a field
   `friendlyName` could be used to customize it.
 
+## Common options
+
 ### Common configuration options
 
 The following fields are available for `PipelineConfiguration` of
@@ -88,9 +92,6 @@ type, specified by the `type` field:
 - `action`
 - `ref`
 
-`parallel` and `sequential` are accepted as legacy aliases for
-`dynamic`. Do not use them in new code.
-
 [Static workflow](#static-workflows) is an immutable sequence of
 steps. It is using field [steps](#steps) to define its steps.
 
@@ -99,7 +100,7 @@ that users can add, remove, and reorder at runtime. They use
 the [stepTypes](#steptypes) field to define available step templates.
 
 [Action step](#action-steps) is a lightweight placeholder designed to
-display actions from outer pipelines via
+display actions from outer workflows via
 [visibleOn](./link-types#visibleon). It has no child steps
 and no history.
 
@@ -154,8 +155,10 @@ Return hook specification, described [here](./code-usage).
 
 _Optional_
 
-A list of workflow-scoped state slots, declared as an array of
-`{id: string}` entries. Each `id` becomes addressable from
+A list of workflow-scoped state slots, declared as an array where each
+entry is either a bare string id (`'meta1'`) or an object with optional
+extra fields (`{id: 'meta1'}`). Both forms may be mixed in the same
+array. Each `id` becomes addressable from
 [LQL queries](./link-query-language) at the same path level as a script IO — but it
 lives on the workflow itself, not on any script. Use states for:
 
@@ -212,6 +215,8 @@ Disables the default export, custom exports if provided still can be
 used.
 
 
+## Workflow types
+
 ### Static workflows
 
 #### `steps`
@@ -236,18 +241,22 @@ workflow.
 _Optional_
 
 Is an array of initial steps. Each item is a reference to a
-[stepTypes](#steptypes) item.
+[stepTypes](#steptypes) item, written either as a bare string id
+(`'stepAdd'`) or as an object with optional `initialValues` and
+`inputRestrictions`. Both forms may be mixed in the same array. The
+same shorthand applies to the `steps` array passed at runtime via
+`setPipelineState`.
 
 ### Action steps
 
 An action step is a lightweight step type designed to display
-pipeline-level [actions](./link-types#action-options) in a dedicated
-place within the workflow tree. Under the hood it is a static pipeline
+workflow-level [actions](./link-types#action-options) in a dedicated
+place within the workflow tree. Under the hood it is a static workflow
 with no child steps and no history. Action steps are always included
 in the back/next navigation sequence.
 
 Use action steps with [visibleOn](./link-types#visibleon) to route
-actions from an outer pipeline to the action step, giving them their
+actions from an outer workflow to the action step, giving them their
 own card-based UI.
 
 #### `id` (Action step)
@@ -279,37 +288,7 @@ _Optional_
 Same as workflow [tags](#tags) — a list of strings that links can match via
 [tag selectors](./link-query-language-reference#selectors).
 
-### Additional stepTypes items options
-
-For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has
-additional options available that limit a user's ability to alter the
-workflow. If more validation logic is needed, a
-[pipelineValidator link](./link-types#pipeline-validators) can be used.
-
-#### `disableUIAdding`
-
-_Optional_
-
-This dynamic item type cannot be added from the UI.
-
-#### `disableUIRemoving`
-
-_Optional_
-
-This dynamic item type cannot be removed from the UI.
-
-#### `disableUIDragging`
-
-_Optional_
-
-This dynamic item type cannot be dragged from the UI.
-
-#### `disableUIControlls`
-
-_Optional_
-
-Disables all of the above.
-
+## Step definitions
 
 ### Script nodes
 
@@ -390,6 +369,40 @@ The hook fires once per `(ioName, viewer type)` combination when the viewer
 appears, and again on every metadata update. Keep it side-effect-free aside
 from mutating the supplied viewer.
 
+
+### Additional stepTypes items options
+
+For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has
+additional options available that limit a user's ability to alter the
+workflow. If more validation logic is needed, a
+[pipelineValidator link](./link-types#pipeline-validators) can be used.
+
+#### `disableUIAdding`
+
+_Optional_
+
+This dynamic item type cannot be added from the UI.
+
+#### `disableUIRemoving`
+
+_Optional_
+
+This dynamic item type cannot be removed from the UI.
+
+#### `disableUIDragging`
+
+_Optional_
+
+This dynamic item type cannot be dragged from the UI.
+
+#### `disableUIControlls`
+
+_Optional_
+
+Disables all of the above.
+
+
+## Reuse and export
 
 ### Reusing workflows
 

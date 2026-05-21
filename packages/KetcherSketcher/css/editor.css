@@ -36,7 +36,7 @@ body > div.MuiPopover-root.MuiMenu-root {
 
 body > div.MuiPopover-root {
     z-index: 20000;
-}
+} 
 
 /* ---------------------------------------------------------------------------
  * Hide Extended Table generic-atom buttons that cannot be faithfully translated

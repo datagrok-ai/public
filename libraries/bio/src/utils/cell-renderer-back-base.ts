@@ -51,6 +51,7 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
   protected subs: Unsubscribable[] = [];
   protected dirty: boolean = true;
   protected destroyed: boolean = false;
+  protected cleanColVersion: number = -1;
 
   /** Overriding care to trigger {@link onRendered} event. */
   protected constructor(
@@ -61,8 +62,12 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
   ) {
     super();
     if (this.tableCol && this.tableCol.dataFrame) {
+      this.cleanColVersion = this.tableCol.version;
       this.subs.push(this.tableCol.dataFrame.onDataChanged.subscribe(() => {
-        this.dirty = true;
+        if (this.tableCol?.version !== this.cleanColVersion) {
+          this.cleanColVersion = this.tableCol?.version;
+          this.dirty = true;
+        }
       }));
 
       this.subs.push(this.tableCol.dataFrame.onColumnsRemoved.subscribe((_) => {

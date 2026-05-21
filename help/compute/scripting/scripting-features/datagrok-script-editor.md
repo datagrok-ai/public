@@ -1,7 +1,7 @@
 ---
 title: "Work with the Datagrok script editor"
 sidebar_position: 5
-format: 'md'
+format: 'mdx'
 ---
 
 ```mdx-code-block

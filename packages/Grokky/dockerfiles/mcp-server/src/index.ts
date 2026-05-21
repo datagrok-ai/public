@@ -147,7 +147,7 @@ function createServer(): McpServer {
   );
 
   server.tool(
-    'create_project', 'Create a new project',
+    'create_project', 'Create a new project.',
     {
       name: z.string().describe('Project name'),
       description: z.string().optional().describe('Project description'),
@@ -171,6 +171,49 @@ function createServer(): McpServer {
   server.tool(
     'list_recent_projects', 'List recently accessed projects', {},
     () => runTool('list_recent_projects', {}, () => api.listRecentProjects()),
+  );
+
+  server.tool(
+    'attach_entity_to_project',
+    'Attach an existing server-side entity to a project. ' +
+    'Works for any entity type (TableInfo, LayoutInfo, Script, Query, Connection, ...). ' +
+    'The entity must already be persisted on the server — pass a real server id, ' +
+    'not a client-side stub from `t.getTableInfo().id` or similar.',
+    {
+      projectId: z.string().describe('Project ID (UUID)'),
+      entityId: z.string().describe('Entity ID (UUID) of the server-side entity to attach'),
+      link: z.boolean().optional()
+        .describe('If true, creates a reference; if false (default), the entity belongs to the project'),
+    },
+    ({projectId, entityId, link}) => runTool('attach_entity_to_project',
+      {projectId, entityId, link},
+      () => api.attachEntityToProject(projectId, entityId, link ?? false)),
+  );
+
+  server.tool(
+    'share_project',
+    'Share a project with one or more user groups at the given access level. ' +
+    'If the entity passed is not itself a project, the server shares its owning project. ' +
+    'Returns per-group success/already-shared/failure records.',
+    {
+      projectId: z.string()
+        .describe('Project ID (UUID) or "namespace:name" of the project to share'),
+      groups: z.array(z.string()).min(1)
+        .describe('Group names to share with (e.g. ["toxicology-review", "clinical-ops"])'),
+      access: z.enum(['View', 'Edit']).optional()
+        .describe('Access level — defaults to "View"'),
+    },
+    ({projectId, groups, access}) => runTool('share_project',
+      {projectId, groups, access},
+      () => api.shareProject(projectId, groups, access ?? 'View')),
+  );
+
+  server.tool(
+    'list_project_shares',
+    'List the groups a project is currently shared with, grouped by access level.',
+    {projectId: z.string().describe('Project ID (UUID)')},
+    ({projectId}) => runTool('list_project_shares', {projectId},
+      () => api.listProjectShares(projectId)),
   );
 
   // --- Spaces ---

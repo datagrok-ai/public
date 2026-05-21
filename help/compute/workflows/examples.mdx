@@ -227,9 +227,9 @@ df_clustering = pd.DataFrame({
 This script runs PCA and then simple k-means clustering on the all wine characteristics,
 excluding quality and type.
 
-Now, we need to add the clustering step to the pipeline.
+Now, we need to add the clustering step to the workflow.
 
-Add the data clustering step to the pipeline configuration
+Add the data clustering step to the workflow configuration
 
 ```typescript
 steps: [
@@ -276,7 +276,7 @@ Each entry in `from` and `to` has the form `<queryName>:<stepId>/<ioName>`:
 - `<stepId>` matches the `id` of a step declared in `steps`.
 - `<ioName>` matches a script input or output name (`df_wine`, etc.).
 
-The `<stepId>` refers to the id you assigned in the pipeline configuration, not
+The `<stepId>` refers to the id you assigned in the workflow configuration, not
 the script's `nqName`. This lets the same script appear as multiple steps with
 different input bindings.
 
@@ -501,7 +501,7 @@ npm i && npm run build && grok publish local --release
 ```
 
 
-You'll see the following pipeline tree:
+You'll see the following workflow tree:
 
 ![Completed multi-step wine quality analysis workflow](pics/wineQ_full_workflow.png)
 
@@ -550,13 +550,13 @@ Its advanced tools help maintain data consistency throughout the analysis proces
 
 ## More worked examples
 
-The walkthrough above covers a static pipeline with plain data links. For
+The walkthrough above covers a static workflow with plain data links. For
 runnable TypeScript examples of the patterns that this tutorial does _not_
 cover, see the example files bundled with the `create-workflow` agent skill:
 
 | File | Demonstrates |
 |------|--------------|
-| [`minimal-static.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/minimal-static.ts) | A static pipeline with no links — the smallest configuration that works. |
+| [`minimal-static.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/minimal-static.ts) | A static workflow with no links — the smallest configuration that works. |
 | [`dynamic-with-links.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/dynamic-with-links.ts) | A [dynamic workflow](./configuration#dynamic-workflows) with `stepTypes`, `initialSteps`, an `all()` selector, and a link handler that propagates outputs to every downstream instance. |
 | [`validators-and-meta.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/validators-and-meta.ts) | Cross-field [validators](./link-types#validators), [meta links](./link-types#metadata-links) that hide/show advanced inputs, and a user-triggered reset [action](./link-types#data-actions). |
 

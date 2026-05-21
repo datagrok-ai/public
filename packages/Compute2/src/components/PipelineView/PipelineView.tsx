@@ -31,6 +31,9 @@ export const PipelineView = Vue.defineComponent({
     buttonActions: {
       type: Object as Vue.PropType<ViewAction[]>,
     },
+    body: {
+      type: String,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -127,6 +130,10 @@ export const PipelineView = Vue.defineComponent({
               <div
                 style={{minWidth: '200px', flex: '1'}}
               >
+                { props.body &&
+                  <MarkDown markdown={props.body} class='mtl-mb' />
+                }
+
                 <span>
                   {description.value}
                 </span>

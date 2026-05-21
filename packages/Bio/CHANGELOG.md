@@ -1,8 +1,9 @@
 # Bio changelog
 
-## v.next
+## 2.27.11 (2026-05-15)
 
 * Sequence Space / Sequence Activity Cliffs editors: bail with a clear error when no current table or Macromolecule column is available (prevents NullError in DimReductionBaseEditor)
+* HELMCore monomer library: assigned chemistry-keyed colors to RNA sugars, linkers, and conjugates.
 
 ## 2.27.4 (2026-04-29)
 

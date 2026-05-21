@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
+import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
@@ -29,6 +29,7 @@ export class LinksState {
   public links: Map<string, Link> = new Map();
   public actions: Map<string, Action> = new Map();
   public nodesActions: Map<string, Action[]> = new Map();
+  public actionsVisibility: Map<string, boolean> = new Map();
   public stepsDependencies: Map<string, DependenciesData> = new Map();
   public ioDependencies: Map<string, IoDeps> = new Map();
 
@@ -76,9 +77,10 @@ export class LinksState {
     const [links, addedLinks] = this.updateLinks(state, oldLinks);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
 
-    const [actions, nodesActions] = this.updateActions(state, oldActions);
+    const [actions, nodesActions, actionsVisibility] = this.updateActions(state, oldActions);
     this.actions = new Map(actions.map((link) => [link.uuid, link] as const));
     this.nodesActions = nodesActions;
+    this.actionsVisibility = actionsVisibility;
 
     this.stepsDependencies = calculateStepsDependencies(state, links);
     this.ioDependencies = calculateIoDependencies(state, links, this.logger);
@@ -109,8 +111,8 @@ export class LinksState {
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
     if (actions) {
-      return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage}}) =>
-        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage}));
+      return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}}) =>
+        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn, visible: this.actionsVisibility.get(uuid) ?? true}));
     }
     return actions;
   }
@@ -128,21 +130,25 @@ export class LinksState {
     const newActions = this.createStateActions(state);
     const [mergedActions] = this.mergeLinks(oldActions, newActions, 'action');
     const nodeActions = new Map<string, Action[]>;
+    const actionsVisibility = new Map<string, boolean>();
     for (const action of mergedActions) {
+      const owningNode = state.getNode(action.prefix);
+      actionsVisibility.set(action.uuid, isActionVisible(owningNode, action.spec));
       const visibleOn = action.spec.visibleOn;
       let targetUuid: string;
       if (visibleOn) {
-        // Route action to the descendant node matching visibleOn configId
-        const found = state.getNode(action.prefix).find((item) => item.config.id === visibleOn);
-        targetUuid = found ? found[0].getItem().uuid : state.getNode(action.prefix).getItem().uuid;
+        const found = owningNode.find((item) => item.config.id === visibleOn);
+        if (!found)
+          continue;
+        targetUuid = found[0].getItem().uuid;
       } else {
-        targetUuid = state.getNode(action.prefix).getItem().uuid;
+        targetUuid = owningNode.getItem().uuid;
       }
       const acts = nodeActions.get(targetUuid) ?? [];
       acts.push(action);
       nodeActions.set(targetUuid, acts);
     }
-    return [mergedActions, nodeActions] as const;
+    return [mergedActions, nodeActions, actionsVisibility] as const;
   }
 
   private mergeLinks<L extends Link>(oldLinks: L[], newLinks: L[], prefix: 'link' | 'action'): [L[], L[]] {

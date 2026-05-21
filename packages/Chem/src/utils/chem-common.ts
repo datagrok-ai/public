@@ -67,7 +67,6 @@ export function hasNewLines(s: string): boolean {
   return s.includes('\n') || s.includes('\r');
 }
 
-/** @deprecated Use DG.Color.hexToPercentRgb */
 export function hexToPercentRgb(hex: string): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -186,7 +185,7 @@ export function waitFor(condition: () => boolean, timeout: number = 5000, interv
     let timeoutRef: any = null;
     const intervalRef = setInterval(() => {
       if (condition()) {
-        clearInterval(interval);
+        clearInterval(intervalRef);
         clearTimeout(timeoutRef);
         resolve(true);
       }
