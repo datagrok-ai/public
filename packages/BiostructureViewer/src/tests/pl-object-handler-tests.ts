@@ -22,6 +22,8 @@ category('PLObjectHandler', () => {
     df.col('PL Diagram')!.tags[PROLIF_SOURCE_TAG] = 'protein';
     df.col('PL Diagram')!.semType = 'rawPng';
     const sv = DG.SemanticValue.fromTableCell(df.cell(0, 'PL Diagram'));
+    expect(handler.isApplicable(sv), false);
+    df.columns.addNewString('protein');// this column needs to exist
     expect(handler.isApplicable(sv), true);
   });
 

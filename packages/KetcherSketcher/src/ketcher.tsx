@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import * as grok from 'datagrok-api/grok';
@@ -21,9 +22,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
   reactRoot: ReactDOM.Root | null = null;
+  updatingMolecule = false;
   private _editorComponent: React.ReactElement | null = null;
   private _editorMounted = false;
   private _resizeObserver: ResizeObserver | null = null;
+  private importedMoleculesCounter = 0;
+  private _detached = false;
 
   constructor() {
     super();
@@ -54,18 +58,33 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         // });
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async () => {
+          if (this._detached)
+            return;
+          this.updatingMolecule = false;
           // we do not reset explicit mol in case this is the first change event called after ketcher was created
           // since change event is fired not only when user changes the molecule but also when the molecule is
           // initially set into ketcher
-          if (this._smiles !== null || this._molV2000 !== null || this._molV3000 !== null || this._smarts !== null)
+          if (this.importedMoleculesCounter > 0)
+            this.importedMoleculesCounter --;
+          else
             this.explicitMol = null;
           try {
             this._smiles = await this._sketcher!.getSmiles();
           } catch { //in case we are working with smarts - getSmiles() will fail with exception
             this._smiles = null;
           }
-          this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
-          this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+          // detach() (e.g. clicking OK on the cell editor dialog) unmounts the React <Editor>
+          // while the awaits above are still pending; ketcher-core then drops its singleton
+          // instance and any getMolfile() still in flight throws "couldnt find ketcher instance N".
+          try {
+            if (this._detached)
+              return;
+            this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
+            this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+            this._smarts = await this._sketcher!.getSmarts();
+          } catch {
+            return;
+          }
           this.onChanged.next(null);
         });
       },
@@ -136,6 +155,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set smiles(smiles: string) {
+    //in case we opened sketcher in filter, draw something and clicked Cancel -> ketcher will be detached
+    // and we will not get into onChange event, so update inner structures to prevent loosing the information
+    this._smiles = smiles;
+    this._molV2000 = null;
+    this._molV3000 = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('smiles', smiles);
   }
 
@@ -154,6 +180,11 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molFile(molfile: string) {
+    this._molV2000 = molfile;
+    this._smiles = null;
+    this._molV3000 = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('molblock', molfile);
   }
 
@@ -172,14 +203,26 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molV3000(molfile: string) {
+    this._molV3000 = molfile;
+    this._molV2000 = null;
+    this._smiles = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('molblockV3000', molfile);
   }
 
   async getSmarts(): Promise<string> {
-    return this._sketcher ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    if (this._sketcher)
+      return !this._detached ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    return this._smarts ?? '';
   }
 
   set smarts(smarts: string) {
+    this._smarts = smarts;
+    this._molV3000 = null;
+    this._molV2000 = null;
+    this._smiles = null;
+    this.importedMoleculesCounter++;
     this._setNotation('smarts', smarts);
   }
 
@@ -220,19 +263,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   private _setNotation(notation: NotationKey, value: string): void {
-    //in case kecther is closed and we reset value from outside - only possible when clearing filter from filter panel
-    if (this.isDetached && !value) {
-      this._smiles = '';
-      this._smarts = '';
-      this._molV2000 = DG.WHITE_MOLBLOCK;
-      this._molV3000 = DG.WHITE_MOLBLOCK_V_3000;
-    }
+    this.updatingMolecule = true;
     this.setKetcherMolecule(value);
-    if (notation !== 'smarts')
-      this.explicitMol = {notation, value};
+    //@ts-ignore
+    this.explicitMol = {notation, value};
   }
 
   detach() {
+    this._detached = true;
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this._resizeObserver?.disconnect();
     this._resizeObserver = null;
@@ -240,5 +278,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.reactRoot?.unmount();
     this.reactRoot = null;
     super.detach();
+    //if detach occured while setting molecule into ketcher, send onChange, since we will not enter ketcher's onChange handler
+    if (this.updatingMolecule)
+      this.onChanged.next(null);
   }
 }

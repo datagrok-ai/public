@@ -163,10 +163,6 @@ This also delivers the inline-buttons UX we earlier deferred for the safety-net 
 
 The LLM cannot drift, skip, or be talked out of it — the code refuses. Pair with a soft system-prompt instruction as defense-in-depth so the agent volunteers the question rather than hits the wall, but **the wall is what makes "gate" honest in talking points.**
 
-#### Earlier-rejected approaches
-
-Recorded so they don't come back: structured `clarify()` skill with per-option metadata; trigger taxonomy; `package-knowledge.yaml` enrichment with `typicalQuestions` / `bestFor`; **system-prompt-only "soft form" as the primary mechanism** — insufficient because it's a convention, not a gate, and S5's IT-lead talking point becomes dishonest under it.
-
 #### Definition of done
 
 - The share MCP tool refuses to fire without a valid token, demonstrated by an attempted bypass that fails with `requires_confirmation`.
@@ -265,12 +261,6 @@ That's it for Tier 2. Anything not on this list goes through T1.4.
 **Why:** Audit confirmed `activityDetailsForTarget.sql` has no pChEMBL column or filter. S1's demo prompt requires the threshold.
 
 **Backs:** S1.
-
-### T4.3 — Pre-warm + pre-record harness
-
-**What:** Script that runs each scenario end-to-end on the demo server, warms caches, validates each step, and captures clean fallback recordings.
-
-**Backs:** every scenario; the final gate before the conference.
 
 ---
 

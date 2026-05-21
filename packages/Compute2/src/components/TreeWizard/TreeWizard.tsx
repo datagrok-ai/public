@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {BigButton, Button, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {
-  isFuncCallState, isParallelPipelineState,
-  isSequentialPipelineState, isStaticPipelineState,
+  isDynamicPipelineState, isFuncCallState,
+  isStaticPipelineState,
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -493,7 +493,7 @@ export const TreeWizard = Vue.defineComponent({
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
       const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
-      const actions = [...globalActions, ...currentStepActions];
+      const actions = [...globalActions, ...currentStepActions].filter((action) => action.visible !== false);
       return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
         if (action.position === 'menu' || action.position === 'globalmenu') {
@@ -508,7 +508,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons')
+        if (action.position === 'buttons' && action.visible !== false)
           acc.push(action);
 
         return acc;
@@ -546,13 +546,13 @@ export const TreeWizard = Vue.defineComponent({
 
     const isEachDraggable = (stat: AugmentedStat) => {
       return stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
+        (isDynamicPipelineState(stat.parent.data)) &&
         !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
       const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
-      return (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data)) &&
+      return isDynamicPipelineState(stat.data) &&
         (!draggedStep || stat.data.uuid === draggedStep.parent?.data.uuid);
     };
 
@@ -570,7 +570,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
+        (isDynamicPipelineState(stat.parent.data)) &&
         !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
@@ -824,6 +824,9 @@ export const TreeWizard = Vue.defineComponent({
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
               buttonActions={buttonActions.value}
+              body={typeof states.descriptions[chosenStepUuid.value]?.body === 'string'
+                ? states.descriptions[chosenStepUuid.value]?.body as string
+                : undefined}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
               onUpdate:funcCall={onPipelineFuncCallUpdate}

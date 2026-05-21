@@ -64,8 +64,18 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType])
-            reportError('warning', 'ioDependencies', `Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName}`, logger);
+          if (depsData[ioName][depType]) {
+            const prevUuid = depsData[ioName][depType] as string;
+            const prevSpecId = links.find((l) => l.uuid === prevUuid)?.matchInfo.spec.id ?? prevUuid;
+            const newSpecId = link.matchInfo.spec.id;
+            reportError(
+              'warning',
+              'ioDependencies',
+              `Duplicate data link target: step ${JSON.stringify(stepPath)} io "${ioName}" is written by both "${prevSpecId}" and "${newSpecId}"`,
+              logger,
+              [prevSpecId, newSpecId],
+            );
+          }
           depsData[ioName][depType] = linkId;
         }
         deps.set(node.getItem().uuid, depsData);

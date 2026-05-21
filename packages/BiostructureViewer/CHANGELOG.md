@@ -3,6 +3,7 @@
 ## v.next
 
 * Added Protein-Ligand Interactions feature: ProLIF-based interactive LigNetwork diagrams + per-residue breakdown in the context panel for Molecule3D, PDB_ID, and AutoDock-pose cells, with a "Compute for whole dataset" batch that produces a `PL Diagram` (rawPng) column and per-interaction-type count columns
+* GROK-20115: Demo | Docking: Transform 'sequence-visual' is already present in the tree
 
 ## 1.4.4 (2025-11-11)
 

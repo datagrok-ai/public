@@ -1,4 +1,5 @@
 ---
+format: mdx
 title: Cheminformatics
 keywords:
   - cheminformatics

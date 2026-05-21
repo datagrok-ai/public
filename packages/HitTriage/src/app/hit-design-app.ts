@@ -23,7 +23,7 @@ import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialo
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 import * as api from '../package-api';
 import {registerMol} from './utils/molreg';
-import {mergeIntoCampaign} from './utils/merge-table';
+import {autoMergeOnCampaignOpen, mergeIntoCampaign} from './utils/merge-table';
 import {openMergeTableDialog} from './dialogs/merge-table-dialog';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
@@ -319,6 +319,13 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       await this.setCanEdit(this.campaign);
     else
       this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
+
+    // Implicit merge pass before the view is shown: only runs when the campaign carries a
+    // mergeConfig with autoMergeOnOpen and a remembered fileshare path. Compute is forced off
+    // and we deliberately do not save — the user can save manually after the merge.
+    if (campaignId && this.campaign?.mergeConfig?.autoMergeOnOpen && this.campaign.mergeConfig.filePath)
+      await autoMergeOnCampaignOpen(this);
+
     const designV = this.designView;
     this.currentDesignViewId = designV.name;
     this.setBaseUrl();

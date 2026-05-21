@@ -28,7 +28,7 @@ export const Logger = Vue.defineComponent({
     },
   },
   emits: {
-    'linkClicked': (_linkId: string) => true,
+    'linkClicked': (_linkIds: string[]) => true,
   },
   setup(props, {emit}) {
     const eventTypeOptions: FilterOption[] = [
@@ -98,6 +98,7 @@ export const Logger = Vue.defineComponent({
             </div>,
           ]);
         } else if (item.type === 'error') {
+          const links = item.links ?? [];
           return ([
             <div key={item.uuid + '1'}>
               {formatTime(item.timestamp)}
@@ -106,7 +107,15 @@ export const Logger = Vue.defineComponent({
               {item.type} ({item.severity})
               </div>,
             <div key={item.uuid + '3'}>
-              {item.context}: {item.message}
+              <span>{item.context}: {item.message}</span>
+              {links.length > 0 && (
+                <span> [
+                  {links.map((id, i) => [
+                    i > 0 ? ', ' : '',
+                    <span key={id} style={linkStyle} onClick={() => emit('linkClicked', links)}>{id}</span>,
+                  ])}
+                ]</span>
+              )}
             </div>,
           ]);
         } else {
@@ -124,7 +133,7 @@ export const Logger = Vue.defineComponent({
             <div key={item.uuid + '3'}>
               { isDefault
                 ? <span>{pathString}</span>
-                : <span style={linkStyle} onClick={() => emit('linkClicked', item.id)}>{pathString}</span>
+                : <span style={linkStyle} onClick={() => emit('linkClicked', [item.id])}>{pathString}</span>
               }
             </div>,
           ]);

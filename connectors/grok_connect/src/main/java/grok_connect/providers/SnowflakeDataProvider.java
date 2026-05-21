@@ -9,6 +9,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.connectors_info.OAuthSpec;
+import grok_connect.GrokConnect;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
@@ -117,7 +118,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
-            queryBuffer.append("SELECT TRIM(VALUE) FROM TABLE(SPLIT_TO_TABLE(?, ','))");
+            queryBuffer.append("SELECT value::STRING FROM TABLE(FLATTEN(input => PARSE_JSON(?)))");
         } else {
             queryBuffer.append("?");
         }
@@ -126,9 +127,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     @Override
     protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
         @SuppressWarnings("unchecked")
-        List<String> list = ((ArrayList<String>) param.value);
-        String values = String.join(",", list);
-        statement.setObject(n, values);
+        List<String> list = (ArrayList<String>) param.value;
+        statement.setString(n, GrokConnect.gson.toJson(list == null ? Collections.emptyList() : list));
         return 0;
     }
 

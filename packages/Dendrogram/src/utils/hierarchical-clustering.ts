@@ -114,6 +114,12 @@ export async function hierarchicalClusteringUI(
   }
 
   const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
+  let loaderClosed = false;
+  const closeLoader = () => {
+    if (loaderClosed) return;
+    loaderClosed = true;
+    try { loaderNB.close(); } catch {}
+  };
 
   // TODO: Filter rows with nulls in selected columns
   const preparedDf = DG.DataFrame.fromColumns(
@@ -166,7 +172,10 @@ export async function hierarchicalClusteringUI(
     // empty clusterDf to stub injectTreeForGridUI2
     // const clusterDf = DG.DataFrame.fromColumns([
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
-    loaderNB.close();
+    closeLoader();
+    // bail out if the table view was disposed while we were awaiting compute
+    if (!tv?.grid || !tv?.grid?.dataFrame)
+      return;
     tv.grid.props.onInitializedScript = `
       setTimeout(async () => {
         const t = grok.shell.table('${tv.dataFrame.name}');
@@ -196,7 +205,7 @@ export async function hierarchicalClusteringUI(
       if (view === tv) {
         try {
           viewRemoveSub.unsubscribe();
-          loaderNB.close();
+          closeLoader();
           tv.grid.props.onInitializedScript = '';
         } catch {}
       };
@@ -206,8 +215,8 @@ export async function hierarchicalClusteringUI(
   } catch (err) {
     grok.shell.error('Error during hierarchical clustering. See console for details.');
     console.error(err);
-    tv.grid.invalidate();
-    loaderNB.close();
+    try { tv?.grid?.invalidate(); } catch {}
+    closeLoader();
   }
 }
 

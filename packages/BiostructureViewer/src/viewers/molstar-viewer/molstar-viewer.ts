@@ -9,6 +9,7 @@ import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-m
 import $ from 'cash-dom';
 import wu from 'wu';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
+import * as rxjs from 'rxjs';
 
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
@@ -380,8 +381,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     new DG.LruCache<string, SelectionCacheEntry>();
 
   private _initButtonExpand() {
-    const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
-    button.on('click', () => this.root.requestFullscreen());
+    this.subs.push(rxjs.fromEvent<KeyboardEvent>(document, 'keydown').subscribe((ev) => {
+      if (ev.key?.toLowerCase() === 'escape' || ev.code?.toLowerCase() === 'escape') {
+        const expandButton: HTMLButtonElement | null = this.root.querySelector('.msp-plugin-content.msp-layout-expanded .msp-btn.msp-btn-icon.msp-btn-link-toggle-on[title="Toggle Expanded Viewport"]');
+        if (expandButton && this.viewer?.plugin?.layout?.state?.isExpanded) {
+          ev.preventDefault();
+          ev.stopImmediatePropagation();
+          ev.stopPropagation();
+          expandButton.click();
+          // expandButton.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window,}));
+        }
+      }
+    }));
   }
 
   private async _initProps() {
@@ -1126,7 +1137,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
           type: type
         });
-        components.applyOrUpdate(StateElements.SequenceVisual, StateTransforms.Representation.StructureRepresentation3D, repr);
+        components.applyOrUpdate(`${StateElements.SequenceVisual}-${ref}`, StateTransforms.Representation.StructureRepresentation3D, repr);
         await components.commit();
       }
     });

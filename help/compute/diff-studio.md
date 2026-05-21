@@ -28,6 +28,7 @@ Key benefits:
   * Solve both stiff and non-stiff equations
   * Handle complex multi-equation ODE systems
   * Debug equations easily
+  * Export models to Markdown or LaTeX for documentation and publishing
 * **For organizations**
   * Store and share all ODE models in one, centralized hub
   * Convert models to scripts to extend functionality or integrate with other Datagrok tools
@@ -35,32 +36,33 @@ Key benefits:
 
 ## Working with models
 
-Launch Diff Studio from **Apps** > **Diff Studio**. The app opens with your recent model, or a default template if it's your first time.
+Launch Diff Studio from **Apps** > **Diff Studio**. The app opens the **Model Gallery**, where you can start a model from **Library**, **Templates**, or **Recent**.
 
-To load an existing model, click the <i class="fas fa-folder-open"></i> **Open** icon and choose:
+Click the <i class="fas fa-folder-open"></i> **Open** icon and choose:
 
 * **Import...** to import local IVP files (or simply drag-and-drop)
-* **Library** to open a production model from the [catalog](models.md)
-* **Templates** to start with a model template
 * **My Models** to open a model from your platform files (**Browse > Files > My files**)
-* **Recent** to open your recent models
+
+Use the <i class="fas fa-arrow-to-bottom"></i> **Download** icon to:
+
+* Save the model as an IVP file (editable in any text editor)
+* Export to Markdown
+* Export to LaTeX
 
 Once loaded, explore models by adjusting parameters, [fitting to experimental data](function-analysis.md#parameter-optimization), or [running sensitivity analysis](function-analysis.md#sensitivity-analysis). Share specific model runs by copying and sharing the URL with colleagues.
 
 ![Run Diff Studio](pics/diff-studio-run.gif)
 
-Download models using the <i class="fas fa-arrow-to-bottom"></i> **Download** icon as IVP files, which you can edit in any text editor. To store a model in Datagrok, click the **SAVE** button and specify the location.
-
 Analyze your model:
 
-* [Parameter Optimization](function-analysis.md#parameter-optimization): Click the **Fit** icon on the top panel to find input conditions that satisfy output constraints.
-* [Sensitivity Analysis](function-analysis.md#sensitivity-analysis): Click the **Sensitivity** icon to explore the relationship between inputs and outputs of your model.
+* [Parameter Optimization](function-analysis.md#parameter-optimization): Click the **Fit** icon on the top panel to find input conditions that satisfy output constraints
+* [Sensitivity Analysis](function-analysis.md#sensitivity-analysis): Click the **Sensitivity** icon to explore the relationship between inputs and outputs of your model
 
 ![Run Sens Analysis](pics/diff-studio-run-fitting.gif)
 
 ## Creating models
 
-Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
+Turn on the **Edit** toggle on the top panel. The equations editor opens. Edit formulas or add new ones.
 Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
 ![Edit model](pics/diff-studio-edit-model.gif)
@@ -152,7 +154,7 @@ This block defines mathematical functions using `#parameters`, `#constants`,
 `#argument`, and other functions. These are direct calculations (no ODEs involved). Use them to break
 down complex calculations and simplify your equations.
 
-* `#expressions`
+* `#expressions`: Define auxiliary calculations
 
    ```python
    #expressions:
@@ -186,7 +188,7 @@ Use the `#loop` block for cyclic processes. Set `count` for number of cycles and
 
 Use the `#update` block to construct models with multiple sequential processes (stages):
 
-1. First stage is always defined in the `#argument` block. Add the stage name:
+1. The first stage is always defined in the `#argument` block. Add the stage name:
 
      ```python
      #argument: t, 1-st stage
@@ -195,7 +197,7 @@ Use the `#update` block to construct models with multiple sequential processes (
        h = 0.01
      ```
 
-1. Subsequent stages are defined in the `#update` blocks. Specify:
+1. Subsequent stages are defined in `#update` blocks. Specify:
    1. Stage name
    1. Stage duration
    1. Parameter modifications. To define parameters, use any valid mathematical expression.
@@ -206,7 +208,7 @@ Use the `#update` block to construct models with multiple sequential processes (
       p = p * 2  
     ```
 
-You can add any number of `#update` blocks to create simulation stages. Each stage appears in distinct color on the line chart:
+You can add any number of `#update` blocks to create simulation stages. Each stage appears in a distinct color on the line chart:
 
 ![Multi-stage model - update](pics/diff-studio-update.gif)
 
@@ -225,7 +227,7 @@ Diff Studio automatically generates the UI, but you can use the following option
        step = 0.01 {caption: Calculation step}
      ```
 
-  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses the variable name
+  * `#output`: Customize column headers in the solution table. If no caption is provided, Diff Studio uses the variable name
 
      ```python
      #output:
@@ -292,7 +294,7 @@ Diff Studio automatically generates the UI, but you can use the following option
 Use this syntax to define the ODE solver configuration and improve performance:
 
 * `#meta.solver`: Defines numerical solver settings:
-  * **Method**: Choose from the following solvers:    
+  * **Method**: Choose from the following solvers:
     * Implicit methods (for stiff ODEs) - [Rosenbrock-Wanner](https://doi.org/10.1016/j.cam.2015.03.010) type:
       * The ROS34PRw method (`ros34prw`, default)
       * The ROS3PRw method (`ros3prw`)
@@ -301,10 +303,10 @@ Use this syntax to define the ODE solver configuration and improve performance:
       * The [Bogacki-Shampine](https://en.wikipedia.org/wiki/Bogacki%E2%80%93Shampine_method) 3(2) method (`rk3`)
       * The [Runge-Kutta-Fehlberg](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method) 4(5) method (`rk4`)
       * The [Dormand-Prince](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method) 5(4) method (`rkdp`)
-      * The [Adams](https://en.wikipedia.org/wiki/Linear_multistep_method) multistep predictor-correctors methods of order 4 and 5 (`ab4`, `ab5`)
+      * The [Adams](https://en.wikipedia.org/wiki/Linear_multistep_method) multistep predictor-corrector methods of order 4 and 5 (`ab4`, `ab5`)
     * Adaptive solvers:
-      * [LSODA](https://doi.org/10.1137/0904010) (`lsoda`) – automatic switching between Adams (non-stiff) and BDF (stiff)
-      * [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) (`cvode`) – variable-order Adams and BDF solver from the SUNDIALS suite  
+      * [LSODA](https://doi.org/10.1137/0904010) (`lsoda`) - automatic switching between Adams (non-stiff) and BDF (stiff)
+      * [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) (`cvode`) - variable-order Adams and BDF solver from the SUNDIALS suite
   * **Performance limits**
     * `maxTimeMs`: computation time, in milliseconds (default: 5000ms)
     * `maxIterations`: iteration count for debugging
@@ -321,26 +323,32 @@ Use this syntax to define the ODE solver configuration and improve performance:
 
 ## Platform integration
 
-You can convert Diff Studio models to Datagrok scripts. This allows you to:
+### Model catalog
 
-* Add your models to a Model Hub.
-* Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
+Use Diff Studio as a centralized hub for all ODE-based models.
 
-Click the <i class="fas fa-layer-plus"></i> **Save to Model Hub** icon on the top panel to add your model to Model Hub:
+Click the <i class="fas fa-layer-plus"></i> **Save to Library** icon on the top panel to add your model to the Library:
 
- ![model-hub](pics/diff-studio-model-hub.gif)
+![model-hub](pics/diff-studio-model-hub.gif)
 
-Export your model to JavaScript script:
+Once your model is in the Library:
+
+* Right-click to copy a shareable link
+* Attach a help page with model documentation
+
+### Scripting
+
+Convert a Diff Studio model to a JavaScript script to unlock advanced platform features and rich UI ([learn more](compute.md)):
 
 1. Toggle **Edit** and click the `</>` icon
-2. Add metadata for catalog:
-  
+2. Add metadata for the catalog:
+
    ```javascript
    //tags: model
    //description: Brief description
    ```
 
-3. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
+3. Click **SAVE**. The script appears in **Browse** > **Platform** > **Functions** > **Scripts**, with all input annotations preserved for the UI.
 
 ## Syntax reference
 
@@ -357,7 +365,7 @@ Diff Studio lets you define a model in a declarative form using simple syntax:
 |**#constants**|Model constants|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [bioreactor](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/bioreactor.ivp) model|
 |**#loop**|Multiple simulation [cycles](#cyclic-processes)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk-pd.ivp) simulation|
 |**#update**|Additional modeling [stage](#multistage-processes)|[Gluconic acid](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) production modeling|
-|**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/nimotuzumab.ivp) disposition model|
+|**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/nimotuzumab.ivp) disposition model, the [Lotka-Volterra](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/lotka-volterra.ivp) predator–prey model|
 |**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [pollution](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pollution.ivp) model|
 |**#meta.inputs**|CSV file with inputs [lookup table](#user-interface-options)|[Bioreactor](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/bioreactor.ivp) model|
 |**#meta.solver**|ODEs solver [settings](#solver-configuration)|[Pharmacokinetics](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk.ivp) simulation|
@@ -373,11 +381,16 @@ To improve UI, annotate model inputs using:
 |**units**|Input measure units|[Mass-action](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/chem-react.ivp) kinetics simulation|
 |**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|[Extended](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/extended.ivp) template|
 
+## Publications
+
+* [Diff Studio: Ecosystem for Interactive Modeling by Ordinary Differential Equations](https://doi.org/10.21105/joss.09090) - *Journal of Open Source Software* (2026). Covers **Diff Grok**, the open-source engine behind Diff Studio.
+* [Diff Studio: Web-Based Environment for Interactive Modeling with Ordinary Differential Equations](https://link.springer.com/chapter/10.1007/978-3-032-22236-7_31) - *Springer, CoMeSySo 2025 Proceedings* (Lecture Notes in Networks and Systems, vol. 1901). Foundational paper.
+
 ## See also
 
 * [Function analysis](function-analysis.md)
 * [Tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 * [Community](https://community.datagrok.ai/t/solving-differential-equations/878)
-* Videos:
+* Video:
   
   [![UGM](pics/diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)

@@ -1,5 +1,17 @@
 # Ketcher Sketcher changelog
 
+## 2.4.6 (2026-05-19)
+
+* Fixed "couldnt find ketcher instance N" error when clicking OK on the cell editor dialog: the `change` handler now bails out if the sketcher is detached while a `getMolfile()` call is still in flight
+
+## 2.4.5 (2026-05-13)
+
+* Workaround to fix multiple setMolecule calls, caused by bug in js-api (multiple subsribtions to copy-paste into sketcher string input field)
+
+## 2.4.4 (2026-05-13)
+
+* Hid Extended Table generic-atom buttons that can't be translated to RDKit-compatible V2000 query features from the substructure filter sketcher only — full set remains available in other sketcher contexts.
+
 ## 2.4.3 (2026-05-12)
 
 * Deferred Ketcher's React Editor mount until ketcher-host has non-zero dimensions (ResizeObserver-gated) so RulerArea can resolve the canvas SVG's relative-unit sizes on its first render — adopted from PR #3789 (CLAUDE-159)

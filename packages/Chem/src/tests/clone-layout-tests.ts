@@ -783,7 +783,7 @@ category('clone and layout tests', async () => {
     const tvInitial = await createTableView(df);
     const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
     await initializeFilter(filter1);
-    await filterByStructure(df, filter1, molFileForCloneTest1, 5); ;
+    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
     const layout = await saveLayout(tvInitial);
     await changeFilterBeforeApplyLayout(tvInitial, 'Structure', molFileForCloneTest2, df, 32, true);
     await applyLayout(tvInitial, layout, df, 5);

@@ -499,7 +499,7 @@ export namespace funcs {
   }
 
   /**
-  SI-RNA sequences, molecular structures, curves and assay data
+  siRNA sequences, molecular structures, curves and assay data
   */
   export async function demoBioSiRNA(): Promise<void> {
     return await grok.functions.call('Bio:DemoBioSiRNA', {});

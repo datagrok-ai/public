@@ -1,0 +1,21 @@
+name,smiles,description
+note,,"Draw the bond as 'Any' (type 8) or 'Single/Aromatic' (type 6) to match aromatic targets; default single bond will skip benzene/furan/etc."
+methane,C,one atom — negative control; matches nothing
+ethane,CC,single C-C
+propane,CCC,single C-C-C
+ethanol,CCO,single C-C and C-O (acyclic)
+methylamine,CN,single C-N (acyclic heteroatom)
+chloromethane,CCl,single C-Cl (halogen)
+bromoethane,CCBr,single C-C and C-Br
+benzene,c1ccccc1,aromatic ring — single-bond C-X queries WILL NOT match
+cyclohexane,C1CCCCC1,single-bonded saturated ring
+toluene,Cc1ccccc1,acyclic methyl on aromatic ring; methyl-ring bond is single
+piperidine,C1CCNCC1,saturated ring with N; all single bonds
+N-methylpiperidine,CN1CCCCC1,acyclic methyl on ring N; all single bonds
+furan,c1ccoc1,aromatic ring with O — single-bond C-X queries WILL NOT match
+chlorobenzene,Clc1ccccc1,Cl on aromatic ring; C-Cl is single but ring is aromatic
+methyllithium,C[Li],single C-Li (organolithium)
+methylmagnesium chloride,C[Mg]Cl,single C-Mg and Mg-Cl (Grignard)
+diethylzinc,CC[Zn]CC,single C-Zn bonds (organozinc)
+explicit-H methane,[H]C([H])([H])[H],"C has 4 explicit H neighbors only — matches MH/XH/ABH/AHH but NOT M/X/ABC/AHC"
+explicit-H methanol,[H]C([H])([H])O,"C has 3 explicit H + 1 O — matches ABH (via H), AHH (via H or O), Q/AHC (via O)"

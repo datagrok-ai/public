@@ -1,0 +1,13 @@
+name,smiles,description
+methane,C,negative control — no neighbors
+ethane,CC,normal C-C; no isotopes; no charges
+chloroform,ClC(Cl)Cl,normal H on C; should not match C-D or C-T
+deuterochloroform,[2H]C(Cl)(Cl)Cl,one explicit D on C; should match C-D
+d3-methanol,[2H]C([2H])([2H])O,three Ds on C; multiple C-D matches
+d6-acetone,[2H]C([2H])([2H])C(=O)C([2H])([2H])[2H],six Ds across two carbons
+d2o,[2H]O[2H],D on O — no C-D match (no C in target)
+tritiated methanol,[3H]C([3H])([3H])O,three Ts on C; should match C-T but not C-D
+ammonium,[NH4+],N-H+ but no C — should not match C-H+
+methylammonium,C[NH3+],C bonded to N which carries +1; positive charge is on N not H
+methanide,[CH3-],carbon with negative charge — irrelevant to H+
+hydroxide,[OH-],OH negative — irrelevant

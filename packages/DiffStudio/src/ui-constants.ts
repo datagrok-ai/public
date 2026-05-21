@@ -12,8 +12,12 @@ export enum HINT {
   HELP = 'Open help in a new tab',
   OPEN = 'Open model',
   SAVE_MODEL = 'Save model',
-  SAVE_LOC = 'Save model to local file',
   SAVE_MY = 'Save model to My files',
+  DOWNLOAD = 'Save or export model',
+  SAVE_IVP_ITEM = 'Save current model as a Diff Studio .ivp file. Can be re-opened in Diff Studio later.',
+  EXPORT_LATEX_ITEM = 'Convert equations to LaTeX. Opens a dialog with format options, preview, and download.',
+  EXPORT_MARKDOWN_ITEM = 'Convert equations to Markdown with LaTeX math. Opens a dialog with format options, preview, and download.',
+  NO_MODEL_LOADED = 'No model loaded',
   LOAD = 'Load model from local file',
   BASIC = 'Basic template',
   ADV = 'Advanced template',
@@ -27,6 +31,7 @@ export enum HINT {
   NIM = 'Nimotuzumab disposition model',
   BIO = 'Bioreactor simulation',
   POLL = 'The chemical reaction part of the air pollution model',
+  LV = 'Predator-prey model',
   CLEAR = 'Clear model',
   TO_JS = 'Open in script editor',
   APP = 'Export model to platform application with user interface',
@@ -38,14 +43,17 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
+  DBL_CLICK_RUN = `Double-click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
   NO_MY_MODELS = 'No models in My files',
   FAILED_TO_LOAD_MY_MODELS = 'Failed to load models from My files: file system error',
   NO_RECENT_MODELS = 'No recent models',
   FAILED_TO_LOAD_RECENT_MODELS = 'Failed to load recent models: file system error',
   CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
+  LOADING = 'Loading…',
   EDIT = 'Edit',
   UPDATE = 'Apply all changes to the current file',
+  SAVE_TO_LIB = 'Save model to Library',
 }; // HINT
 
 /** UI titles */
@@ -57,6 +65,9 @@ export enum TITLE {
   MY_FILES = 'My files...',
   TO_MY_FILES = 'Save to My Files...',
   AS_LOCAL = 'Save as Local File...',
+  SAVE_IVP = 'As IVP',
+  EXPORT_LATEX = 'As LaTeX...',
+  EXPORT_MARKDOWN = 'As Markdown...',
   TEMPL = 'Templates',
   BASIC = 'Basic',
   ADV = 'Advanced',
@@ -72,6 +83,7 @@ export enum TITLE {
   NIM = 'Nimotuzumab',
   BIO = 'Bioreactor',
   POLL = 'Pollution',
+  LV = 'Lotka-Volterra',
   CLEAR = 'Clear',
   TO_JS = 'js',
   MISC = 'Misc',
@@ -102,7 +114,7 @@ export enum TITLE {
 export const TEMPLATE_TITLES = [TITLE.BASIC, TITLE.ADV, TITLE.EXT];
 
 /** Titles of example models */
-export const EXAMPLE_TITLES = [TITLE.CHEM, TITLE.ROB, TITLE.FERM, TITLE.PK,
+export const EXAMPLE_TITLES = [TITLE.CHEM, TITLE.ROB, TITLE.LV, TITLE.FERM, TITLE.PK,
   TITLE.PKPD, TITLE.ACID, TITLE.NIM, TITLE.BIO, TITLE.POLL];
 
 /** Models' tooltips map */
@@ -119,6 +131,7 @@ export const MODEL_HINT = new Map([
   [TITLE.NIM, HINT.NIM],
   [TITLE.BIO, HINT.BIO],
   [TITLE.POLL, HINT.POLL],
+  [TITLE.LV, HINT.LV],
 ]);
 
 /** Help links */
@@ -137,6 +150,7 @@ export enum LINK {
   ROBERTSON = `${MODELS}#robertson-model`,
   BIOREACTOR = `${MODELS}#bioreactor`,
   POLLUTION = `${MODELS}#pollution`,
+  LOTKA_VOLT = `${MODELS}#lotka-volterra`,
   COMPUTE = 'https://datagrok.ai/help/compute',
   LOAD_SAVE = `${DIF_STUDIO_REL}#working-with-models`,
   MODEL_COMPONENTS = `${DIF_STUDIO_REL}#model-components-and-syntax`,
@@ -205,6 +219,7 @@ export enum WARNING {
   CHECK = 'Show this warning',
   OVERWRITE_MODEL = 'Overwrite the current model?',
   OVERWRITE_FILE = 'Overwrite existing file?',
+  MODEL_IN_LIBRARY = 'Model is already in Library. Save a duplicate?',
   CONTINUE = 'Continue?',
   CHECK_PERF = 'Check time',
   TIME_LIM = 'Time limit',
@@ -259,8 +274,8 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
-# Catalog
-Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**.
+# Library
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Library**.
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
@@ -289,6 +304,9 @@ export enum PATH {
   SYSTEM = 'System',
   FILE = 'file',
   SLASH = '/',
+  LIBRARY_FOLDER = 'System:AppData/DiffStudio/library',
+  EXTERNAL_MODELS_JSON = 'external-models.json',
+  APP_DATA_MATCH = 'system.appdata/diffstudio',
 };
 
 /** UI time constants */
@@ -303,6 +321,8 @@ export enum UI_TIME {
   WGT_CLICK = 10,
   FACET_DOCKING = 100,
   TITLE_REMOVING = 500,
+  DBL_CLICK_DELAY = 250,
+  SOLVE_DEBOUNCE_MS = 1,
 };
 
 /** Numerical methods names */
@@ -329,6 +349,9 @@ export const MAX_RECENT_COUNT = 10;
 
 export const CUSTOM_MODEL_IMAGE_LINK = 'images/custom.png';
 
+/** Custom event name — fired whenever external-models.json is modified */
+export const LIBRARY_CHANGED_EVENT = 'diff-studio:library-changed';
+
 /** Model image link */
 export const modelImageLink = new Map([
   [TITLE.BASIC, 'images/basic.png'],
@@ -343,6 +366,24 @@ export const modelImageLink = new Map([
   [TITLE.NIM, 'images/nimotuzumab.png'],
   [TITLE.BIO, 'images/bioreactor.png'],
   [TITLE.POLL, 'images/pollution.png'],
+  [TITLE.LV, 'images/lotka-volterra.png'],
+]);
+
+/** Model icon path (files/icons/) */
+export const MODEL_ICON = new Map([
+  [TITLE.BASIC, 'icons/template.png'],
+  [TITLE.ADV, 'icons/advanced.png'],
+  [TITLE.EXT, 'icons/extended.png'],
+  [TITLE.CHEM, 'icons/chem-react.png'],
+  [TITLE.ROB, 'icons/robertson.png'],
+  [TITLE.FERM, 'icons/fermentation.png'],
+  [TITLE.PK, 'icons/pk.png'],
+  [TITLE.PKPD, 'icons/pkpd.png'],
+  [TITLE.ACID, 'icons/ga-production.png'],
+  [TITLE.NIM, 'icons/nimotuzumab.png'],
+  [TITLE.BIO, 'icons/_bioreactor.png'],
+  [TITLE.POLL, 'icons/pollution.png'],
+  [TITLE.LV, 'icons/lotka-volterra.png'],
 ]);
 
 /** Inputs table constants */

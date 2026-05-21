@@ -95,7 +95,7 @@ export class PackageFunctions {
     meta: { demoPath: 'Visualization | Data Flow and Hierarchy | Tree', demoWait: '4000' },
   })
   static async treeViewerDemo() {
-    await viewerDemo('Tree', {left: '40px', right: '75px'});
+    await viewerDemo('Tree', {left: '40px', right: '75px', sizeColumnName: 'HEIGHT', showCounts: true});
   }
 
   @grok.decorators.demo({
