@@ -1,9 +1,11 @@
 # EDA Playwright tests
 
 End-to-end coverage for Test Track scenarios under
-`public/packages/UsageAnalysis/files/TestTrack/EDA/`. Tests are UI-first; JS API is used
-only when the UI path is verifiably blocked (canvas-rendered controls, Dart-side dialog
-state that does not surface to JS, missing test data, etc.).
+`public/packages/UsageAnalysis/files/TestTrack/EDA/`. The ML *interaction* under test is
+driven through the UI (Top-Menu navigation, analysis dialogs, RUN); **data loading and
+between-test cleanup go through the JS API** (see "Shared page" below). The API is also used
+where a UI path is verifiably blocked (canvas-rendered controls, Dart-side dialog state not
+exposed to JS, missing test data).
 
 Created 2026-05-18. Green 13/13 both locally against `https://dev.datagrok.ai` and on the
 Jenkins **Test-Playwright** CI (the `ui_tests` stack) — no skips, no `test.fail`.
@@ -25,6 +27,30 @@ public/playwright-public/EDA/
     ├── xgboost1.test.ts             # XGBoost classification on iris.csv
     └── xgboost2.test.ts             # XGBoost regression on cars.csv
 ```
+
+## Shared page + API data load (why the suite is fast)
+
+The suite reuses **one logged-in page for the whole worker** instead of a fresh browser
+context per test. `helpers.ts` exports a custom `test` whose worker-scoped fixture boots the
+Datagrok SPA exactly once (a single navigation to `BASE`), then overrides Playwright's
+built-in `page`, so every `async ({ page }) => …` body transparently receives that shared
+page — no test bodies had to change.
+
+Within each test there is **no full-page navigation**:
+
+* `openDemoCsv(page, name)` loads data via `grok.dapi.files.readCsv` + `grok.shell.addTableView`
+  (~0.4 s). The ML menu attaches to the new TableView exactly as for a UI-opened file.
+* `resetShell(page)` (in `afterEach`) calls `grok.shell.closeAll()` to drop views/tables in
+  place — no reload.
+
+This removed the two ~3 s reloads that previously dominated each test (a Files-browser
+navigation to open the CSV + a home navigation to reset). Result: **~2.5 min → ~47 s**
+locally (dev) and **~3.0 min → ~1.5 min** on CI — ~13 tests at ~2.6 s each (PCA ~5.7 s: it
+runs two analysis passes).
+
+Because the page is shared, the files use `test.describe.serial` (a failure skips the rest
+of that file instead of running against dirtied state). Keep `closeAll()` for reset — don't
+reintroduce per-test `page.goto()`.
 
 ## Running
 
@@ -91,30 +117,30 @@ on timeout) plus a single trailing `expect`, keeping the error count at `0`.
 
 ## Last results
 
-13 passed in ~3.1 min against dev:
+13 passed — **~47 s locally (dev), ~1.5 min on CI** (`ui_tests`). Per-test (CI build #56):
 
 | # | Scenario | Result | Time |
 |---|----------|--------|------|
-| 1 | ANOVA on demog.csv (Box plot + Analysis + F-test tabs)                          | PASS | 10s |
-| 2 | Linear Regression on cars.csv predicting price                                  | PASS | 9s |
-| 3 | PLS Regression on cars.csv with 3 components predicting price                   | PASS | 19s |
-| 4 | Softmax on iris.csv predicting Species (numeric features only)                  | PASS | 19s |
-| 5 | XGBoost classification on iris.csv predicting Species                           | PASS | 10s |
-| 6 | XGBoost regression on cars.csv predicting price                                 | PASS | 20s |
-| 7 | MVA on cars.csv (Grid + 3 Scatter + 2 Bar)                                      | PASS | 10s |
-| 8 | Pareto cars-with-missing — empty + string columns excluded from Min/Max         | PASS | 9s |
-| 9 | Pareto cars.csv — auto-select `model` as Label                                  | PASS | 8s |
-| 10 | Pareto demog.csv — auto-select `USUBJID` as Label                              | PASS | 24s |
-| 11 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 23s |
-| 12 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 13s |
-| 13 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3  | PASS | 10s |
+| 1 | ANOVA on demog.csv (Box plot + Analysis + F-test tabs)                          | PASS | 2.6s |
+| 2 | Linear Regression on cars.csv predicting price                                  | PASS | 2.7s |
+| 3 | PLS Regression on cars.csv with 3 components predicting price                   | PASS | 2.6s |
+| 4 | Softmax on iris.csv predicting Species (numeric features only)                  | PASS | 2.6s |
+| 5 | XGBoost classification on iris.csv predicting Species                           | PASS | 2.7s |
+| 6 | XGBoost regression on cars.csv predicting price                                 | PASS | 2.6s |
+| 7 | MVA on cars.csv (Grid + 3 Scatter + 2 Bar)                                      | PASS | 3.9s |
+| 8 | Pareto cars-with-missing — empty + string columns excluded from Min/Max         | PASS | 2.7s |
+| 9 | Pareto cars.csv — auto-select `model` as Label                                  | PASS | 2.6s |
+| 10 | Pareto demog.csv — auto-select `USUBJID` as Label                              | PASS | 3.0s |
+| 11 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 2.7s |
+| 12 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 5.7s |
+| 13 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3  | PASS | 2.8s |
 
 ## UI vs API split per scenario
 
-Every test opens its CSV through `openDemoCsv` — UI navigation to
-`/files/System.DemoFiles/?browse=files` + dblclick the file label. The helper falls back
-to `grok.dapi.files.readCsv` only when the dblclick does not produce a TableView within
-~25 s (e.g. file absent from the tile or overlay intercepts the click).
+Every test loads its CSV through `openDemoCsv`, which calls `grok.dapi.files.readCsv` +
+`grok.shell.addTableView` on the shared page — no navigation, no dblclick (see "Shared page"
+above). The *analysis* itself stays in the UI (menu → dialog → RUN) wherever the platform
+allows it; the table below lists where each scenario falls back to the API and why.
 
 | Scenario | Menu nav | Dialog/View | Inputs | Trigger | Verification |
 |----------|----------|-------------|--------|---------|--------------|
@@ -208,10 +234,11 @@ rather than `shell.tv`.
 
 | Function | Purpose |
 |----------|---------|
+| `test` (custom) | Extends `@playwright/test` with a worker-scoped shared logged-in page; overrides the built-in `page` fixture. Import `test`/`expect` from `./helpers`, not `@playwright/test` |
 | `BASE` | `process.env.DATAGROK_URL` |
 | `inputHost(safeName)` | `[name="input-host-…"]` selector |
 | `inputEditor(safeName)` | `${inputHost(safeName)} .ui-input-editor` |
-| `openDemoCsv(page, fileName)` | UI-first file open with JS API fallback after timeout |
+| `openDemoCsv(page, fileName)` | Load CSV via `grok.dapi.files.readCsv` + `addTableView` (no navigation) |
 | `waitForCurrentTableView(page, timeoutMs)` | Wait until `grok.shell.tv.dataFrame.columns.length > 0` |
 | `clickTopMenuLeaf(page, nameAttr)` | DOM-level menu click with hover-chain for nested submenus |
 | `waitForDialog(page, title, timeoutMs)` | Wait for `.d4-dialog .d4-dialog-title` (substring, case-insensitive) |
@@ -226,7 +253,7 @@ rather than `shell.tv`.
 | `currentViewerTypes(page)` | `Array.from(shell.tv.viewers).map(v => v.type)` |
 | `visibleTabLabels(page)` | Text of every `.d4-tab-host .d4-tab-header` |
 | `isPrimaryEnabled(page, candidates)` | True if any candidate primary button is enabled |
-| `resetShell(page)` | Escape → `grok.shell.closeAll()` → home |
+| `resetShell(page)` | Escape → `grok.shell.closeAll()` (no navigation; resets the shared page in place) |
 | `visibleErrorBalloons(page)` | Visible `.d4-balloon-error` text |
 | `openTrainModelView(page)` | `ML > Models > Train Model...` + wait for `PredictiveModel` view |
 | `setPredictColumn(page, column)` | Synthetic `mousedown` on Predict editor + type + Enter |
@@ -243,7 +270,6 @@ rather than `shell.tv`.
 | Dialog title | `.d4-dialog .d4-dialog-title` |
 | Primary buttons | `[name="button-OK"]`, `[name="button-Run"]`, `[name="button-RUN"]`, `[name="button-CANCEL"]` |
 | Column picker All/None | `.d4-dialog [name="label-All"]`, `.d4-dialog [name="label-None"]` |
-| Files browser file label | `label:has-text("cars.csv")` (case-insensitive substring) |
 | Tabs | `.d4-tab-host .d4-tab-header` |
 
 ### Casing inconsistency to remember
