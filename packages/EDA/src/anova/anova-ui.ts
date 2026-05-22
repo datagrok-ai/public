@@ -29,6 +29,12 @@ enum DEFAULT {
 
 type Method = 'Welch' | 'Fisher';
 
+const LEARN_MORE_URL = {
+  Fisher: 'https://en.wikipedia.org/wiki/F-test',
+  Welch: 'https://en.wikipedia.org/wiki/Welch%27s_t-test',
+} as const;
+
+
 /** Add one-way ANOVA results */
 function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
   report: OneWayAnovaReport): void {
@@ -58,7 +64,7 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   const altHypoMd = ui.markdown(`**Alternative Hypothesis:** at least one group mean differs significantly.`);
   ui.tooltip.bind(altHypoMd, `The "${factorsName}" factor produces a significant difference in the "${featuresName}" feature.`);
 
-  const testMd = ui.markdown(`**Conclusion:** ${test ?
+  const conclusionMd = ui.markdown(`**Conclusion:** ${test ?
     'significant differences exist between groups.' :
     'no significant differences detected.'}`,
   );
@@ -75,27 +81,29 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
       ui.h2('There is no significant difference among sample averages.'),
     ]);
 
-  ui.tooltip.bind(testMd, () => tooltipDiv);
+  ui.tooltip.bind(conclusionMd, () => tooltipDiv);
 
   const divResult = ui.divV([
     nullHypoMd,
     altHypoMd,
-    testMd,
+    conclusionMd,
     ui.link('Learn more',
-      () => window.open('https://en.wikipedia.org/wiki/F-test', '_blank'),
+      () => window.open(LEARN_MORE_URL[report.method], '_blank'),
       'Click to open in a new tab.',
     ),
   ]);
-  divResult.style.marginLeft = '20px';
 
+  const analysisTitle = report.method === 'Welch' ?
+    "One-Way ANOVA (Welch's)" :
+    "One-Way ANOVA (Fisher's)";
   const reportViewer = getAnovaGrid(report);
   const tabControl = ui.tabControl({
-    'Analysis': ui.panel([reportViewer.root]),
-    'F-test': ui.panel([divResult]),
+    'Analysis': ui.panel([ui.h2(analysisTitle), reportViewer.root]),
+    'Conclusion': ui.panel([divResult]),
   });
 
   ui.tooltip.bind(tabControl.getPane('Analysis').header, 'ANOVA results summary.');
-  ui.tooltip.bind(tabControl.getPane('F-test').header, 'Null hypothesis testing.');
+  ui.tooltip.bind(tabControl.getPane('Conclusion').header, 'Null hypothesis testing.');
 
 
   view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
@@ -146,23 +154,29 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
   return grid;
 } // getFisherGrid
 
-/** Welch ANOVA results (1x5: F, df1, df2, F-critical, p-value).
- *  Welch's W-test does not have a SS/MS decomposition. */
+/** Welch ANOVA results (1x6: Source / F / df₁ / df₂ / F-critical / p-value).
+ *  Welch's W-test does not have a SS/MS decomposition. p-value is rendered
+ *  in APA style ('< .001', '.04') via a STRING column. */
 function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number): DG.Grid {
+  const DF1 = 'df₁';
+  const DF2 = 'df₂';
+
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('Source of variance', ['Between groups']),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F', [anova.fStat]),
-    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'df1', [anova.dfBn]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'df2', [anova.dfWn]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, DF1, [anova.dfBn]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, DF2, [anova.dfWn]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-critical', [fCritical]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue]),
   ]));
 
   const tooltip = new Map([
-    ['F', `Welch's W-statistic. Robust to unequal variances across groups.`],
-    ['df1', 'Numerator degrees of freedom: k - 1 (number of groups minus one).'],
-    ['df2', 'Welch-Satterthwaite denominator degrees of freedom (fractional).'],
-    ['F-critical', `${significance}-critical value of F-statistics.`],
-    ['p-value', `Probability of observing this result if groups have equal means.`],
+    ['Source of variance', 'List of the explored variation sources.'],
+    ['F', `F-statistic. Ratio of weighted between-group variance to within-group variance (Welch's W).`],
+    [DF1, 'Numerator degrees of freedom (k − 1, where k is the number of groups).'],
+    [DF2, 'Welch–Satterthwaite-adjusted denominator degrees of freedom. Fractional by design.'],
+    ['F-critical', `${significance}-critical value of F-statistic with Welch's df.`],
+    ['p-value', 'Probability of observing this result if group means are equal.'],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {
@@ -385,4 +399,10 @@ export function runOneWayAnova(): void {
   updateRunButtonState();
 
   dlg.show();
+
+  // Strip auto-focus from the Method radio: when the dialog opens, focus
+  // lands on the first focusable input and a focus-ring is drawn around
+  // the selected Welch option — visually distracting since the user
+  // hasn't interacted yet.
+  setTimeout(() => (document.activeElement as HTMLElement | null)?.blur(), 0);
 } // runOneWayAnova
