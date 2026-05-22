@@ -76,8 +76,8 @@ fetchProxy(id, '/path')                ──►  Datlas /docker/containers/prox
 ## Image lifecycle
 
 The `DockerImage` entity tracks one image (one `Dockerfile` from one package). Its lifecycle
-is driven by a Datlas timer (`processImages` in `docker_service.dart`) calling
-`grok_spawner`'s `POST /validate/{host}/{service}/{tag}` endpoint.
+is driven by a Datlas timer (`processImages`) calling `grok_spawner`'s
+`POST /validate/{host}/{service}/{tag}` endpoint.
 
 ```
 PENDING_VALIDATION ──► VALIDATING ──► READY
@@ -290,27 +290,13 @@ to match (the AWS internal ALB ships with 300 s for this reason).
 
 ### Docker Compose (single-machine / development)
 
-Bring up the spawner alongside Datlas with the `grok_spawner` profile. The compose file
-mounts the Docker socket, so containers are sibling to the spawner on the host.
+The [local Docker Compose install](../../deploy/docker-compose/docker-compose.mdx) brings
+up `grok_spawner` alongside the rest of the stack. The compose file mounts the host's
+Docker socket, so plugin containers run as siblings to the spawner.
 
-```bash
-cd core/server/datlas/resources/compose
-docker compose -f deps.docker-compose.yaml -p datagrok-dev \
-  --profile grok_spawner up -d
-```
-
-This stand does **not** need a registry — every plugin container is built against
-Docker Hub. To host custom images locally, also start `grok_registry`:
-
-```bash
-docker compose -f deps.docker-compose.yaml -p datagrok-dev \
-  --profile grok_registry up -d
-```
-
-…and point Datagrok at it with `registryProxyHost=grok_registry`.
-
-See [Docker Compose deployment](../../deploy/docker-compose/docker-compose.mdx) and the
-advanced variant for the full compose configuration.
+A Compose stand does **not** require a registry — plugin images pulled from Docker Hub or
+already present on the host work out of the box. Hosting your own custom plugin images on
+a Compose stand needs a V2 registry reachable from both your workstation and the spawner.
 
 ### Kubernetes / Helm
 
