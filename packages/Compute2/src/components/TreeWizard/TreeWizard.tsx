@@ -653,7 +653,7 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
-        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+        { isTreeReady.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
           <RibbonMenu groupName={category} view={currentView.value}>
             {
               actions.map((action) => Vue.withDirectives(<span onClick={() => runActionWithConfirmation(action.uuid)}>
@@ -759,6 +759,7 @@ export const TreeWizard = Vue.defineComponent({
                 validationStates={states.validations[chosenStepUuid.value]}
                 consistencyStates={states.consistency[chosenStepUuid.value]}
                 isReadonly={chosenStepState.value.isReadonly}
+                isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
                 onUpdate:funcCall={onFuncCallChange}
                 onActionRequested={runActionWithConfirmation}

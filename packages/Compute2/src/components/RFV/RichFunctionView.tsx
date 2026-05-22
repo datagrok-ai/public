@@ -234,6 +234,10 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
     localValidation: {
       type: Boolean,
       default: false,
@@ -309,7 +313,8 @@ export const RichFunctionView = Vue.defineComponent({
     const runLabel = Vue.ref('Run');
     const formAsTab = Vue.ref(false);
 
-    const isLocked = Vue.ref(false);
+    const isFittingActive = Vue.ref(false);
+    const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
@@ -523,9 +528,9 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     const runFitting = async () => {
-      if (isLocked.value)
+      if (isFittingActive.value)
         return;
-      isLocked.value = true;
+      isFittingActive.value = true;
       try {
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
@@ -536,7 +541,7 @@ export const RichFunctionView = Vue.defineComponent({
         if (call)
           emit('update:funcCall', Vue.markRaw(call));
       } finally {
-        isLocked.value = false;
+        isFittingActive.value = false;
       }
     };
 
@@ -547,7 +552,7 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && exports.value?.length > 1 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length > 1 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
             exports.value.map(({ name, handler }) =>
@@ -589,19 +594,19 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { !isOutputOutdated.value && exports.value?.length === 1 && <IconFA
+          { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
             name='arrow-to-bottom'
             onClick={exports.value[0].handler}
             tooltip='Generate report for the current step'
           /> }
-          { isFittingEnabled.value && <IconImage
+          { isFittingEnabled.value && !uiBlocked.value && <IconImage
             name='fitting'
             path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
             onClick={runFitting}
             tooltip='Fit inputs'
             style={{width: '24px', height: '24px'}}
           /> }
-          { isSAenabled.value && <IconImage
+          { isSAenabled.value && !uiBlocked.value && <IconImage
             name='sa'
             path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
             onClick={runSA}
@@ -754,7 +759,7 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isLocked.value]])
+      </div>, [[ifOverlapping, isFittingActive.value]])
     );
   },
 });
