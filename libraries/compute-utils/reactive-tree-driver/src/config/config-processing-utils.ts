@@ -167,6 +167,7 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration): Pipelin
     id: conf.id,
     type: 'static',
     friendlyName: conf.friendlyName,
+    description: conf.description,
     tags: conf.tags,
     steps: [],
     links: [],

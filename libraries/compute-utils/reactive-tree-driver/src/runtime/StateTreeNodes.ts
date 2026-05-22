@@ -354,6 +354,7 @@ export class PipelineNodeBase implements IStoreProvider {
       version: this.config.version,
       nqName: this.config.nqName,
       friendlyName: this.config.friendlyName,
+      description: this.config.description,
       isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)

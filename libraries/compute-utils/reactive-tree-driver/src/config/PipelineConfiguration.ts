@@ -216,6 +216,7 @@ export type PipelineConfigurationBase<S> = {
   nqName?: NqName;
   version?: string;
   friendlyName?: string;
+  description?: string;
   links?: PipelineLinkConfiguration<LinkOf<S>>[];
   actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   onInit?: PipelineInitConfiguration<LinkOf<S>>;
