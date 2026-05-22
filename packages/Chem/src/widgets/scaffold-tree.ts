@@ -1780,6 +1780,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const {colorCodedNodes, scaffoldColorMap} = this.collectNodes();
 
+    if (colorCodedNodes.length === 0) {
+      this.removeFragmentsColumn();
+      this.updateLabelsColumn(colorCodedNodes, scaffoldColorMap);
+      return;
+    }
+
     const {column: fragmentsCol} = this.ensureColumn(
       'colors', this.fragmentsColumn, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
     this.fragmentsColumn = fragmentsCol;
