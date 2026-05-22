@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler, indexFromEnd} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
@@ -162,7 +162,7 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
   return {...conf, viewersHook, io, links, actions, states};
 }
 
-function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {
+function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedItemContext): PipelineConfigurationStaticProcessed {
   return {
     id: conf.id,
     type: 'static',
@@ -174,6 +174,9 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration): Pipelin
     actions: [],
     disableHistory: true,
     isActionStep: true,
+    disableUIAdding: conf.disableUIAdding,
+    disableUIDragging: conf.disableUIDragging,
+    disableUIRemoving: conf.disableUIRemoving,
   } as PipelineConfigurationStaticProcessed;
 }
 
