@@ -138,7 +138,8 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
       formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
     else
       formattedScalarValue = scalarValue.toFixed(DEFAULT_FLOAT_PRECISION);
-  }
+  } else if (typeof scalarValue === 'boolean')
+    formattedScalarValue = String(scalarValue);
   const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
 
   return [scalarValue, formattedScalarValue, units] as const;
