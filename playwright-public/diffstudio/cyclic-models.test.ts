@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/diff-studio';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import { canvasHash } from './helpers/canvas-hash';

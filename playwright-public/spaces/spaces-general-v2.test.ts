@@ -147,19 +147,23 @@ async function openSpaceViaTree(page: Page, spaceName: string) {
 }
 
 async function dragFileToSpaceNode(page: Page, fileName: string, spaceName: string) {
-  // Navigate to DemoFiles, retry once if page doesn't load properly
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
-    const loaded = await page.locator('.d4-link-label label').first()
-      .waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
-    if (loaded) break;
-  }
+  // Navigate to DemoFiles and wait for the SPECIFIC target file to render. The root has
+  // ~30 files that paint progressively; when only the first label is visible the target
+  // (further down the list) may not be in the DOM yet — counting immediately raced and
+  // threw "not found" intermittently. Wait for the file's own label instead.
   const fileLabel = page.locator('.d4-link-label label')
     .filter({ hasText: new RegExp(`^${fileName}$`) }).first();
-  const fileCount = await fileLabel.count();
-  if (fileCount === 0) {
+  let found = false;
+  for (let attempt = 0; attempt < 3 && !found; attempt++) {
+    await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
+    await page.locator('.d4-link-label label').first()
+      .waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+    found = await fileLabel.waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true).catch(() => false);
+  }
+  if (!found) {
     const allFiles = await page.locator('.d4-link-label label').allTextContents();
-    throw new Error(`File "${fileName}" not found in DemoFiles. Available files: ${allFiles.slice(0, 20).join(', ')}`);
+    throw new Error(`File "${fileName}" not found in DemoFiles. Available files: ${allFiles.join(', ')}`);
   }
   await fileLabel.scrollIntoViewIfNeeded();
   await expect(fileLabel).toBeVisible({ timeout: 5_000 });

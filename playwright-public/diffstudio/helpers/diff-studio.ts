@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { test as base, expect, type Page, type BrowserContext } from '@playwright/test';
 
 export const BASE = process.env.DATAGROK_URL!;
 
@@ -8,6 +8,42 @@ export const inputHost = (safeName: string): string => `[name="input-host-${safe
 /** Editor inside an input host. */
 export const inputEditor = (safeName: string): string => `${inputHost(safeName)} input.ui-input-editor`;
 
+/**
+ * Shared, already-authenticated context + page reused across every test in the worker.
+ * `e2e/global-setup.ts` logs in and writes `e2e/.auth.json`; we boot the Datagrok SPA exactly
+ * once here, then each test re-enters Diff Studio through a single model-load navigation
+ * (`openModelFromLibrary`) instead of the previous two full reloads (`openDiffStudio` + model).
+ * Reusing one context keeps the HTTP cache warm, so those navigations are fast.
+ */
+export const test = base.extend<{}, { sharedContext: BrowserContext; sharedPage: Page }>({
+  sharedContext: [async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'e2e/.auth.json',
+      viewport: { width: 1920, height: 1080 },
+    });
+    await use(context);
+    await context.close();
+  }, { scope: 'worker' }],
+  sharedPage: [async ({ sharedContext }, use) => {
+    const page = await sharedContext.newPage();
+    await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null,
+      undefined, { timeout: 120_000 });
+    await page.locator('.d4-ribbon').first().waitFor({ timeout: 60_000 });
+    await use(page);
+  }, { scope: 'worker' }],
+  // Override the built-in test-scoped `context`/`page` so existing `async ({ page }) => …`
+  // and `async ({ page, context }) => …` bodies transparently receive the shared worker pair.
+  context: async ({ sharedContext }, use) => {
+    await use(sharedContext);
+  },
+  page: async ({ sharedPage }, use) => {
+    await use(sharedPage);
+  },
+});
+
+export { expect };
+
 /** Navigate to Datagrok home and wait for the main ribbon to mount. */
 export async function openHome(page: Page): Promise<void> {
   await page.goto(BASE);
@@ -15,14 +51,13 @@ export async function openHome(page: Page): Promise<void> {
 }
 
 /**
- * Open the Diff Studio app via URL navigation; waits for the ribbon to mount.
- * Whether the landing page or a previously-loaded model is shown depends on platform
- * routing state — both are acceptable signals that the app is up.
+ * Ensure the Datagrok SPA is up (ribbon mounted). The worker `sharedPage` fixture already
+ * booted the platform once, so this is a fast readiness check rather than a full
+ * `/apps/DiffStudio` reload — the single per-test page load happens in `openModelFromLibrary`,
+ * which navigates straight to the model. Kept as a named step so test bodies read unchanged.
  */
 export async function openDiffStudio(page: Page): Promise<void> {
-  await page.goto(`${BASE}/apps/DiffStudio`);
-  await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-  await page.waitForTimeout(2000);
+  await page.locator('.d4-ribbon').first().waitFor({ timeout: 30_000 });
 }
 
 /**
@@ -68,13 +103,17 @@ export async function openModelFromLibrary(page: Page, modelTitle: string): Prom
 }
 
 /**
- * Reset the shell between scenarios — close any dialogs, balloons, then go home.
- * Pure UI: presses Escape to dismiss popups, then navigates away.
+ * Reset the shell between scenarios — Escape to dismiss popups, then `grok.shell.closeAll()`
+ * to drop views/tables in-place. No navigation: the shared worker page stays booted, and the
+ * next test's `openModelFromLibrary` re-enters Diff Studio with a single model-load reload.
  */
 export async function resetShell(page: Page): Promise<void> {
   await page.keyboard.press('Escape').catch(() => {});
-  await page.goto(BASE);
-  await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
+  await page.evaluate(() => {
+    const g = (window as any).grok;
+    g?.shell?.closeAll?.();
+  }).catch(() => {});
+  await page.waitForTimeout(200);
 }
 
 /**
@@ -222,6 +261,24 @@ export async function setInputValue(page: Page, safeName: string, value: string)
   await ed.fill(value);
   await page.keyboard.press('Tab');
   await page.waitForTimeout(1500);
+}
+
+/**
+ * Resolve the real `input-host-<safeName>` whose safeName equals `caption` ignoring case, and
+ * return that safeName (or '' if absent). The native library view names hosts by the lowercase
+ * variable (e.g. `dose`), while a model reopened from Model Hub names them by caption (e.g.
+ * `Dose`). Callers that touch Model-Hub-opened models use this so the casing difference doesn't
+ * break selectors.
+ */
+export async function resolveInputHostName(page: Page, caption: string): Promise<string> {
+  return await page.evaluate((cap) => {
+    const want = `input-host-${cap}`.toLowerCase();
+    for (const h of Array.from(document.querySelectorAll('[name^="input-host-"]'))) {
+      const name = h.getAttribute('name') ?? '';
+      if (name.toLowerCase() === want) return name.replace(/^input-host-/, '');
+    }
+    return '';
+  }, caption);
 }
 
 /** Click the +/- clicker for a numeric input. The icons live inside the input host. */

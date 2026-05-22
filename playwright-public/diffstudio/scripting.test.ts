@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/diff-studio';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
@@ -134,8 +134,10 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
     expect(await modelHubCardCount(page, 'Bioreactor')).toBeGreaterThan(0);
     await openModelHubCard(page, 'Bioreactor');
 
-    // Strong assertion: opening the card navigates the shell to the Bioreactor view.
-    await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Bioreactor',
+    // Opening a script-model card mounts a Compute2 RichFunctionView embedded in the Model Hub
+    // view — `grok.shell.v.name` stays "Model Hub", so assert on the input form mounting
+    // instead of the view name (it never flips to "Bioreactor" for the saved-script path).
+    await page.waitForFunction(() => document.querySelectorAll('[name^="input-host-"]').length > 2,
       null, { timeout: 30_000 });
     await page.waitForTimeout(1500);
 

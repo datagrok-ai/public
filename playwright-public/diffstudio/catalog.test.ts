@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/diff-studio';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
   openDiffStudio, openModelFromLibrary, openModelHub, openModelHubCard,
-  modelHubCardCount, waitForModelScript,
+  modelHubCardCount, resolveInputHostName,
   setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
@@ -30,18 +30,15 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
 
     await softStep('Step 2: Click "Save to Model Hub" icon', async () => {
       await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
-      // The platform shows a balloon notification on success.
-      // `saveToModelHub()` in DiffStudio/src/app.ts calls `grok.shell.info('Saved to Model Hub')`
-      // — the visible text we should match.
+      // The platform shows a balloon on success. "Save to Model Hub" writes a *file*
+      // (e.g. "Saved to Library as PK-PD(14).ivp"), not a tagged script — so match that
+      // text and do NOT poll `grok.dapi.scripts` (the .ivp never appears there).
       const balloon = page.locator('.d4-balloon, .grok-notification').filter({
-        hasText: /Saved to Model Hub/i,
+        hasText: /Saved to Library/i,
       });
       await expect(balloon.first()).toBeVisible({ timeout: 15_000 });
-      // `saveToModelHub()` fires `grok.dapi.scripts.save(script)` WITHOUT awaiting
-      // the round-trip — the balloon shows before the POST returns. The next step
-      // does `page.goto(BASE)`, which would abort that in-flight XHR. Block here
-      // until the server confirms the script exists with tag `model`.
-      await waitForModelScript(page, 'PK-PD');
+      // Let the file-save POST settle before the next step navigates the shell.
+      await page.waitForTimeout(2000);
     });
 
     await softStep('Step 3: Open the Model Hub (Apps → Compute → Model Hub) — PK-PD is listed', async () => {
@@ -73,18 +70,25 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
       const count = await modelHubCardCount(page, 'PK-PD');
       expect(count).toBeGreaterThan(0);
       await openModelHubCard(page, 'PK-PD');
-      await page.locator(inputHost('dose')).waitFor({ timeout: 30_000 });
-      await expect(page.locator(inputHost('count'))).toBeVisible({ timeout: 10_000 });
+      // The reopened model is a Diff Studio TableView whose input hosts are named by CAPTION
+      // (`input-host-Dose`, `input-host-Count`), not the lowercase variable safeNames of the
+      // native library view. Wait for the form to mount, then resolve the real host names.
+      await page.waitForFunction(() => document.querySelectorAll('[name^="input-host-"]').length > 3,
+        null, { timeout: 30_000 });
+      const doseHost = await resolveInputHostName(page, 'dose');
+      const countHost = await resolveInputHostName(page, 'count');
+      expect(doseHost.length).toBeGreaterThan(0);
+      expect(countHost.length).toBeGreaterThan(0);
+      await expect(page.locator(inputHost(doseHost))).toBeVisible({ timeout: 10_000 });
     });
 
     await softStep('Step 6: Modify dose input; value updates live', async () => {
-      // Models opened via Model Hub run inside a Compute2 RichFunctionView. Its URL does NOT
-      // mirror inputs and its chart is wrapped in Vue components that hide the canvas from
-      // every selector strategy tried (.d4-viewer, .echarts, .rfv-chart, broad screenshots).
-      // Chart redraw verification therefore stays manual — see ui-only.md M-1.7.
-      const ed = page.locator(inputEditor('dose'));
+      // Reopened-from-Model-Hub model uses caption-cased host names — resolve `dose` again here.
+      const doseHost = await resolveInputHostName(page, 'dose');
+      expect(doseHost.length).toBeGreaterThan(0);
+      const ed = page.locator(inputEditor(doseHost));
       const before = await ed.inputValue();
-      await setInputValue(page, 'dose', '5000');
+      await setInputValue(page, doseHost, '5000');
       const after = await ed.inputValue();
       expect(after).toBe('5000');
       expect(after).not.toBe(before);

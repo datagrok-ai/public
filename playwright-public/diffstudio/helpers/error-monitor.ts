@@ -3,6 +3,14 @@ import { Page } from '@playwright/test';
 export interface CapturedError { source: string; text: string; }
 
 /**
+ * Listeners registered by the last `attachErrorMonitor` call on a given page. The worker
+ * `sharedPage` is reused across tests, so each test re-attaches a fresh monitor — we detach
+ * the previous test's listeners first to avoid pile-up (and Node's MaxListeners warning) and
+ * to keep capture scoped to the current test.
+ */
+const priorMonitors = new WeakMap<Page, Array<{ event: string; fn: (...args: any[]) => void }>>();
+
+/**
  * Subscribe to console errors, uncaught page errors, failing network requests, and
  * `.d4-balloon-error` toasts. Returns a collector with `errors` (read on demand) and
  * `assertNone()` which throws an aggregated error if anything was captured.
@@ -14,6 +22,13 @@ export function attachErrorMonitor(page: Page): {
   assertNone: () => void;
 } {
   const errors: CapturedError[] = [];
+
+  // Detach the previous test's monitor from this (shared) page before wiring a fresh one.
+  const prev = priorMonitors.get(page);
+  if (prev) {
+    for (const { event, fn } of prev) page.off(event as any, fn as any);
+  }
+  const registered: Array<{ event: string; fn: (...args: any[]) => void }> = [];
 
   /**
    * Errors that originate outside DiffStudio / Compute2 and should not fail our tests.
@@ -52,28 +67,36 @@ export function attachErrorMonitor(page: Page): {
     // away mid-fetch. Not a DiffStudio failure.
     if (text.includes('WebAssembly compilation aborted')) return true;
     if (text.includes('Response body loading was aborted')) return true;
+    // Benign streaming-compile fallback: when `WebAssembly.instantiateStreaming` can't be used
+    // (MIME/cache), the glue retries via ArrayBuffer and logs this at error level. Not a failure.
+    if (text.includes('falling back to ArrayBuffer instantiation')) return true;
     return false;
   };
 
-  page.on('console', (msg) => {
+  const onConsole = (msg: { type: () => string; text: () => string }): void => {
     if (msg.type() === 'error') {
       const text = msg.text();
       if (!isNoise(text)) errors.push({ source: 'console.error', text });
     }
-  });
-
-  page.on('pageerror', (err) => {
+  };
+  const onPageError = (err: { message: string }): void => {
     if (!isNoise(err.message)) errors.push({ source: 'pageerror', text: err.message });
-  });
-
-  page.on('response', (resp) => {
+  };
+  const onResponse = (resp: { status: () => number; url: () => string; request: () => { method: () => string } }): void => {
     const status = resp.status();
     if (status < 500) return;
     const url = resp.url();
     // Ignore 5xx from unrelated packages
     if (isNoise(url)) return;
     errors.push({ source: `network ${status}`, text: `${resp.request().method()} ${url}` });
-  });
+  };
+
+  page.on('console', onConsole as any);
+  page.on('pageerror', onPageError as any);
+  page.on('response', onResponse as any);
+  registered.push({ event: 'console', fn: onConsole }, { event: 'pageerror', fn: onPageError },
+    { event: 'response', fn: onResponse });
+  priorMonitors.set(page, registered);
 
   const assertNone = (): void => {
     if (errors.length === 0) return;
