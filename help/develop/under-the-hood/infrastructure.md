@@ -38,7 +38,7 @@ and external integrations. The infrastructure includes the following key compone
 ---
 
 ### 5. Plugin & Docker Container Management
-- **Grok Spawner**: Manages the deployment of Docker Containers that are delivered within [Datagrok Plugins](../packages/extensions).
+- **Grok Spawner**: Manages the deployment of Docker Containers that are delivered within [Datagrok Plugins](../packages/extensions). See [Docker containers (under the hood)](docker-containers.md) for the full lifecycle, registry setup, and per-deployment configuration.
 - **Plugin Docker Containers**: There are various specialized containers for AI, Bioinformatics, Machine Learning, Cheminformatics and Jupyter Notebooks that are supplied within Datagrok Plugins.
 
 ---

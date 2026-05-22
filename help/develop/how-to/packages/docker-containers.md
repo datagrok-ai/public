@@ -19,7 +19,36 @@ This system is cloud-agnostic and works with local instances using Docker Compos
 The only requirement is that the grok-spawner container must be running in the same environment. 
 You can access the container via HTTP, but only one EXPOSE $PORT is allowed in the image.
 
-Below is an example of how to build, deploy, and use the docker container from the plugin. 
+Below is an example of how to build, deploy, and use the docker container from the plugin.
+
+## How it works
+
+`grok publish` builds the image on your workstation, pushes it to the Datagrok registry, and
+uploads the package ZIP. On the server side, Datagrok's `grok_spawner` validates the image
+and — when a user starts the container — deploys it on the configured orchestrator (Docker,
+Docker Swarm, AWS ECS, or Kubernetes). Plugin code reaches the running container through
+[`grok.dapi.docker.dockerContainers.fetchProxy`](#31-http-request); the container is never
+exposed to the network directly.
+
+The image and the container are tracked as separate entities with their own state machines:
+
+```
+DockerImage:      PENDING_VALIDATION ─► VALIDATING ─► READY
+                                                    └► ERROR
+
+DockerContainer:  PENDING_START ─► STARTING ─► STARTED ─► PENDING_STOP ─► STOPPED
+                                            └► ERROR
+```
+
+A container with `shutdown_timeout` set is moved to `SYSTEM_STOPPED` automatically after
+idling, and is re-started by the next call to `fetchProxy`.
+
+For the full architecture — registry proxy, JWT auth, orchestrator backends, state machine
+timing, and the admin-side configuration each deployment path needs — see
+[Docker containers (under the hood)](../../under-the-hood/docker-containers.md). For how
+plugin containers fit into the broader platform, see
+[Infrastructure](../../under-the-hood/infrastructure.md); for deployment paths see
+[Deployment](../../../deploy/deploy.md).
 
 ## 1. Create a dockerfile
 
@@ -173,6 +202,8 @@ open the Property pane, and select **Logs** (for containers) or **Build logs** (
 > the corresponding card.
 
 See also:
+- [Docker containers (under the hood)](../../under-the-hood/docker-containers.md) — architecture, registry, and admin-side setup
 - [Packages](../../develop.md#packages)
 - [Connecting to database inside package Docker container](../db/access-data.md)
 - [Python functions](python-functions.md)
+- [Deployment](../../../deploy/deploy.md)
