@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Analysis of Variances (ANOVA) - UI
 
 import * as grok from 'datagrok-api/grok';
@@ -14,7 +15,7 @@ const ANOVA_HELP_URL = '/help/explore/anova';
 /** Significance const */
 enum SIGNIFICANCE {
   DEFAULT = 0.05,
-  MIN = 0.01,
+  MIN = 0.0001,
   MAX = 0.99,
   INFIMUM = 0,
   SUPREMUM = 1,
@@ -29,7 +30,8 @@ enum DEFAULT {
 type Method = 'Welch' | 'Fisher';
 
 /** Add one-way ANOVA results */
-function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string, report: OneWayAnovaReport): void {
+function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
+  report: OneWayAnovaReport): void {
   const view = grok.shell.getTableView(df.name);
   grok.shell.v = view;
 
@@ -48,7 +50,7 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
     autoLayout: false,
   });
 
-  let node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
+  const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
   const nullHypoMd = ui.markdown(`**Null Hypothesis:** all group means are equal.`);
   ui.tooltip.bind(nullHypoMd, `The "${factorsName}" factor does not produce a significant difference in the "${featuresName}" feature.`);
@@ -249,7 +251,7 @@ export function runOneWayAnova(): void {
     table: df,
     value: factor,
     tooltipText: 'Column with factor values',
-    onValueChanged: (col) => { factor = col; updateRunButtonState(); },
+    onValueChanged: (col) => {factor = col; updateRunButtonState();},
     filter: (col: DG.Column) => factorColNames.includes(col.name),
     nullable: false,
   });
@@ -262,7 +264,7 @@ export function runOneWayAnova(): void {
     table: df,
     value: feature,
     tooltipText: 'Column with feature values',
-    onValueChanged: (col) => { feature = col; updateRunButtonState(); },
+    onValueChanged: (col) => {feature = col; updateRunButtonState();},
     filter: (col: DG.Column) => featureColNames.includes(col.name),
     nullable: false,
   });
@@ -282,16 +284,23 @@ export function runOneWayAnova(): void {
     updateRunButtonState();
   });
 
-  const methodTooltip = ui.divV([
-    ui.h2('Method'),
-    ui.markdown(
-      'Fisher — classical ANOVA. Assumes **equal variances** across groups; ' +
-      'more powerful when this assumption holds.\n\n' +
-      'Welch — robust to **unequal variances** across groups. ' +
-      'Recommended as the default when group variances are unknown or differ.',
-    ),
-  ]);
-  ui.tooltip.bind(methodInput.root, () => methodTooltip);
+  const methodTooltip = ui.markdown(
+    'Set the method for analysis:\n\n' +
+    '* **Welch** — robust to **unequal variances** across groups. ' +
+      'Recommended as the default when group variances are unknown or differ.\n\n' +
+    '* **Fisher** — classical ANOVA. Assumes **equal variances** across groups; ' +
+      'more powerful when this assumption holds.\n\n',
+  );
+  ui.tooltip.bind(methodInput.captionLabel, () => methodTooltip);
+
+  const FISHER_UNEQUAL_VAR_MSG =
+    'Variances differ significantly between groups. ' +
+    `Fisher's ANOVA requires equal variances — switch Method to Welch.`;
+  const fisherWarningIcon = ui.iconFA('info-circle', null, FISHER_UNEQUAL_VAR_MSG);
+  fisherWarningIcon.style.color = 'var(--red-3, #EB6767)';
+  fisherWarningIcon.style.marginLeft = '12px';
+  fisherWarningIcon.style.display = 'none';
+  methodInput.root.append(fisherWarningIcon);
 
   let significance = SIGNIFICANCE.DEFAULT;
   const signInput = ui.input.float('Alpha', {
@@ -336,6 +345,8 @@ export function runOneWayAnova(): void {
   const runBtn = dlg.getButton('Run');
 
   function updateRunButtonState(): void {
+    fisherWarningIcon.style.display = 'none';
+
     if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
       runBtn.disabled = true;
       ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1.');
@@ -356,12 +367,9 @@ export function runOneWayAnova(): void {
     }
 
     if (currentMethod === 'Fisher' && !varEqual) {
+      fisherWarningIcon.style.display = '';
       runBtn.disabled = true;
-      ui.tooltip.bind(
-        runBtn,
-        'Variances differ significantly between groups. ' +
-        `Fisher's ANOVA requires equal variances — switch Method to Welch.`,
-      );
+      ui.tooltip.bind(runBtn, FISHER_UNEQUAL_VAR_MSG);
       return;
     }
 
