@@ -137,8 +137,8 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
     ['SS', 'Sum of squares (SS). Measure of total variation in the data.'],
     ['DF', 'Degrees of freedom (DF). Number of independent values that can vary.'],
     ['MS', 'Mean square (MS). Sum of squares divided by degrees of freedom.'],
-    ['F', 'F-statistics (F). Ratio of between-group to within-group variance.'],
-    ['F-critical', `${report.significance}-critical value of F-statistics.`],
+    ['F', 'F-statistic (F). Ratio of between-group to within-group variance.'],
+    ['F-critical', `Critical F-value at α = ${report.significance}.`],
     ['p-value', `Probability of observing this result if groups have equal means.`],
   ]);
 
@@ -155,8 +155,7 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
 } // getFisherGrid
 
 /** Welch ANOVA results (1x6: Source / F / df₁ / df₂ / F-critical / p-value).
- *  Welch's W-test does not have a SS/MS decomposition. p-value is rendered
- *  in APA style ('< .001', '.04') via a STRING column. */
+ *  Welch's W-test does not have a SS/MS decomposition. */
 function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number): DG.Grid {
   const DF1 = 'df₁';
   const DF2 = 'df₂';
@@ -175,7 +174,7 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
     ['F', `F-statistic. Ratio of weighted between-group variance to within-group variance (Welch's W).`],
     [DF1, 'Numerator degrees of freedom (k − 1, where k is the number of groups).'],
     [DF2, 'Welch–Satterthwaite-adjusted denominator degrees of freedom. Fractional by design.'],
-    ['F-critical', `${significance}-critical value of F-statistic with Welch's df.`],
+    ['F-critical', `Critical F-value at α = ${significance}, with Welch's df.`],
     ['p-value', 'Probability of observing this result if group means are equal.'],
   ]);
 
@@ -199,7 +198,7 @@ function getWarning(msg: string): HTMLElement {
     ${msg}`),
     ui.link('Learn more',
       () => window.open('https://en.wikipedia.org/wiki/Analysis_of_variance#Assumptions', '_blank'),
-      'Click to open in a new tab',
+      'Click to open in a new tab.',
     ),
   ]);
 }
