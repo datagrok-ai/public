@@ -33,7 +33,7 @@ category('AI: Viewers: ScatterPlot extras', () => {
   test('zoomAndFilter four-value choices round-trip + getProperties choices', async () => {
     const c = v();
     const values = ['no action', 'filter by zoom', 'zoom by filter', 'pack and zoom by filter'];
-    for (var val of values)
+    for (const val of values)
       expectRoundTrip(c, {zoomAndFilter: val});
     expectChoices(c, 'zoomAndFilter', values);
   });
@@ -41,7 +41,7 @@ category('AI: Viewers: ScatterPlot extras', () => {
   test('xAxisLabelOrientation four-value choices including 45 degrees round-trip', async () => {
     const c = v();
     const values = ['Auto', 'Horz', 'Vert', '45 degrees'];
-    for (var val of values)
+    for (const val of values)
       expectRoundTrip(c, {xAxisLabelOrientation: val});
     expectChoices(c, 'xAxisLabelOrientation', values);
   });
@@ -49,7 +49,7 @@ category('AI: Viewers: ScatterPlot extras', () => {
   test('showXHistogram + showYHistogram + histogramBins (5..100) round-trip', async () => {
     const c = v();
     expectRoundTrip(c, {showXHistogram: true, showYHistogram: true, histogramBins: 25});
-    for (var n of [5, 100])
+    for (const n of [5, 100])
       expectRoundTrip(c, {histogramBins: n});
     expectRoundTrip(c, {showXHistogram: false, showYHistogram: false});
   });
@@ -96,10 +96,10 @@ category('AI: Viewers: ScatterPlot extras', () => {
     // one for X and one for Y at attach time; swapping xColumnName to the
     // other triple must move the X whiskers to the matching min/max.
     const d = df([
-      ['a',     'double', [1, 2, 3, 4, 5, 6, 7, 8]],
+      ['a', 'double', [1, 2, 3, 4, 5, 6, 7, 8]],
       ['a min', 'double', [0.8, 1.7, 2.6, 3.5, 4.4, 5.3, 6.2, 7.1]],
       ['a max', 'double', [1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8, 8.9]],
-      ['b',     'double', [10, 20, 30, 40, 50, 60, 70, 80]],
+      ['b', 'double', [10, 20, 30, 40, 50, 60, 70, 80]],
       ['b min', 'double', [9, 18, 28, 38, 48, 58, 68, 78]],
       ['b max', 'double', [11, 22, 32, 42, 52, 62, 72, 82]],
     ]);

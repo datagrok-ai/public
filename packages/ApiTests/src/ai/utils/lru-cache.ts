@@ -82,11 +82,17 @@ category('AI: Utils: LRU cache', () => {
 
   test('getOrCreate returns cached on hit and invokes factory on miss', async () => {
     const c = new DG.LruCache<string, number>(4);
-    var calls = 0;
-    const v1 = c.getOrCreate('k', (k) => { calls++; return k.length + 100; });
+    let calls = 0;
+    const v1 = c.getOrCreate('k', (k) => {
+      calls++;
+      return k.length + 100;
+    });
     expect(v1, 101);
     expect(calls, 1);
-    const v2 = c.getOrCreate('k', (_k) => { calls++; return 999; });
+    const v2 = c.getOrCreate('k', (_k) => {
+      calls++;
+      return 999;
+    });
     expect(v2, 101);
     expect(calls, 1);
     expect(c.has('k'), true);

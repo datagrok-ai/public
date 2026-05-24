@@ -28,7 +28,7 @@ category('AI: Viewers: DensityPlot JS API', () => {
 
   test('bins integer round-trip within 1-200 range', async () => {
     const c = v();
-    for (var n of [120, 1, 200])
+    for (const n of [120, 1, 200])
       expectRoundTrip(c, {bins: n});
   });
 

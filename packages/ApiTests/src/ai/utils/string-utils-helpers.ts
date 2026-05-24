@@ -20,10 +20,10 @@ category('AI: Utils: string-utils helpers', () => {
 
   test('hashCode is deterministic and discriminates inputs', async () => {
     const samples = ['hello', 'world', 'datagrok', 'a', 'ab', 'ba'];
-    for (var s of samples)
+    for (const s of samples)
       expect(DG.StringUtils.hashCode(s), DG.StringUtils.hashCode(s));
     const set = new Set<number>();
-    for (var s of samples)
+    for (const s of samples)
       set.add(DG.StringUtils.hashCode(s));
     expect(set.size, samples.length);
   });

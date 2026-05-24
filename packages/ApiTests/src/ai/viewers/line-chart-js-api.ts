@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectPropAndLook, expectRoundTripPropAndLook, findProp, look, subscribeAll, withAttachedViewer} from '../helpers';
+import {
+  demog, expectPropAndLook, expectRoundTripPropAndLook, findProp, look, subscribeAll, withAttachedViewer,
+} from '../helpers';
 
 // JS API source: public/js-api/src/viewer.ts:243 (DG.Viewer.lineChart),
 // public/js-api/src/viewer.ts:577 (DG.LineChartViewer).

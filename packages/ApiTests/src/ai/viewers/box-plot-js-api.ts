@@ -49,9 +49,13 @@ category('AI: Viewers: BoxPlot JS API', () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT,
       {valueColumnName: 'age', category1ColumnName: 'race'}, (v, tv) => {
         expect(v instanceof DG.BoxPlot, true);
-        var found: DG.Viewer | undefined;
-        for (var x of tv.viewers)
-          if (x.type === DG.VIEWER.BOX_PLOT) { found = x; break; }
+        let found: DG.Viewer | undefined;
+        for (const x of tv.viewers) {
+          if (x.type === DG.VIEWER.BOX_PLOT) {
+            found = x;
+            break;
+          }
+        }
         expect(found instanceof DG.BoxPlot, true);
       });
   });

@@ -74,7 +74,7 @@ category('AI: Color: static helpers', () => {
     expect(palette.length > 0, true);
     const n = palette.length;
     const indices = [0, n - 1, n, 2 * n + 3];
-    for (var i of indices)
+    for (const i of indices)
       expect(DG.Color.getCategoricalColor(i), palette[i % n]);
   });
 });

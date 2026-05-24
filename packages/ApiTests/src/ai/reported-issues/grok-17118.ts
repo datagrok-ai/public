@@ -36,12 +36,18 @@ category('AI: GROK-17118: Density plot binShape + axis column type', () => {
     const c = v();
     // Discover valid binShape values via getProperties().choices when available.
     const p = findProp(c, 'binShape');
-    var choices: string[] | null = null;
-    try { choices = p?.choices ?? null; }
-    catch (_e) { /* property may not expose choices */ }
+    let choices: string[] | null = null;
+    try {
+      choices = p?.choices ?? null;
+    } catch (_e) {/* property may not expose choices */}
     const candidates = choices != null && choices.length > 0 ? choices : ['hex', 'rectangle'];
-    var picked: string = 'hex';
-    for (var ch of candidates) if (ch !== 'rectangle') { picked = ch; break; }
+    let picked: string = 'hex';
+    for (const ch of candidates) {
+      if (ch !== 'rectangle') {
+        picked = ch;
+        break;
+      }
+    }
     expectRoundTrip(c, {binShape: picked});
     expectNoThrow(() => c.setOptions({binShape: 'rectangle'}));
     expect(look(c)['binShape'], 'rectangle');
@@ -50,8 +56,11 @@ category('AI: GROK-17118: Density plot binShape + axis column type', () => {
   test('getProperties lists binShape/xColumnName/yColumnName (best-effort)', async () => {
     const c = v(20);
     const wanted = ['binShape', 'xColumnName', 'yColumnName'];
-    var foundCount = 0;
-    for (var n of wanted) if (findProp(c, n) != null) foundCount++;
+    let foundCount = 0;
+    for (const n of wanted) {
+      if (findProp(c, n) !=
+        null) foundCount++;
+    }
     if (foundCount < wanted.length)
       expectRoundTrip(c, {binShape: 'rectangle', xColumnName: 'age', yColumnName: 'height'});
     else

@@ -28,7 +28,7 @@ category('AI: GROK-19511: Scatter plot linesBy independent of color', () => {
     const v = DG.Viewer.scatterPlot(demog(), {x: 'age', y: 'height', color: 'race', linesBy: 'sex'});
     expectNoThrow(() => v.setOptions({linesByColumnName: 'race'}));
     expectPropAndLook(v, {linesByColumnName: 'race'});
-    expectNoThrow(() => { v.props['linesByColumnName'] = 'site'; });
+    expectNoThrow(() => {v.props['linesByColumnName'] = 'site';});
     expectPropAndLook(v, {linesByColumnName: 'site'});
     expect(v.props['colorColumnName'], 'race');
   });

@@ -12,7 +12,7 @@ category('AI: GROK-19649: Bar chart orientation and category width', () => {
 
   test('orientation flips between horizontal and vertical', async () => {
     const c = v();
-    for (var o of ['horizontal', 'vertical'])
+    for (const o of ['horizontal', 'vertical'])
       expectRoundTripPropAndLook(c, {orientation: o});
   });
 
@@ -26,9 +26,11 @@ category('AI: GROK-19649: Bar chart orientation and category width', () => {
 
   test('getProperties carries orientation/category-width/showCategoryValues (best-effort)', async () => {
     const c = v();
-    var foundCount = 0;
-    for (var name of ['orientation', 'maxCategoryWidth', 'categoryValueWidth', 'showCategoryValues'])
-      if (findProp(c, name) != null) foundCount++;
+    let foundCount = 0;
+    for (const name of ['orientation', 'maxCategoryWidth', 'categoryValueWidth', 'showCategoryValues']) {
+      if (findProp(c, name) !=
+        null) foundCount++;
+    }
     // Best-effort: at least one of the four must be runtime-registered.
     expect(foundCount > 0, true);
   });

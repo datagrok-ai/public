@@ -27,7 +27,7 @@ category('AI: Viewers: LineChart extras', () => {
 
   test('xAxisLabelOrientation choices Auto/Horz/Vert round-trip + getProperties choices', async () => {
     const c = v();
-    for (var o of ['Horz', 'Vert', 'Auto'])
+    for (const o of ['Horz', 'Vert', 'Auto'])
       expectRoundTrip(c, {xAxisLabelOrientation: o});
     expectChoices(c, 'xAxisLabelOrientation', ['Auto', 'Horz', 'Vert']);
   });
@@ -51,11 +51,11 @@ category('AI: Viewers: LineChart extras', () => {
 
   test('markerOpacity 0..100 boundary round-trip', async () => {
     const c = v();
-    for (var n of [0, 50, 100])
+    for (const n of [0, 50, 100])
       expectRoundTrip(c, {markerOpacity: n});
   });
 
-  test('packCategories/yGlobalScale/axesFollowFilter/showCurrentRowLine/showMouseOverCategory combined bool round-trip', async () => {
+  test('packCategories/yGlobalScale/axesFollowFilter/showCurrentRowLine/showMouseOverCategory bools', async () => {
     const c = v();
     expectRoundTrip(c, {packCategories: false, yGlobalScale: true,
       axesFollowFilter: false, showCurrentRowLine: true, showMouseOverCategory: false});

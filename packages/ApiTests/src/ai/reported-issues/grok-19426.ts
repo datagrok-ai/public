@@ -10,7 +10,8 @@ import {demog, expectBoolToggle, expectLook, expectNoThrow, findProp, look} from
 // and (best-effort) that `getProperties()` lists both with non-empty
 // descriptions.
 category('AI: GROK-19426: Pie chart showValue and showPercentage', () => {
-  const v = (n: number = 50): DG.PieChartViewer => DG.Viewer.pieChart(demog(n), {category: 'race'}) as DG.PieChartViewer;
+  const v = (n: number = 50): DG.PieChartViewer =>
+    DG.Viewer.pieChart(demog(n), {category: 'race'}) as DG.PieChartViewer;
 
   test('showValue round-trips through props and look across toggle steps', async () => {
     expectBoolToggle(v(), 'showValue');
@@ -35,7 +36,7 @@ category('AI: GROK-19426: Pie chart showValue and showPercentage', () => {
 
   test('getProperties lists showValue and showPercentage (best-effort)', async () => {
     const c = v(20);
-    for (var name of ['showValue', 'showPercentage']) {
+    for (const name of ['showValue', 'showPercentage']) {
       const p = findProp(c, name);
       if (p != null && typeof p.description === 'string')
         expect(p.description.trim().length > 0, true);
@@ -47,9 +48,11 @@ category('AI: GROK-19426: Pie chart showValue and showPercentage', () => {
   test('legacy showInnerPercent is absent or does not surface in look (rename)', async () => {
     const c = v();
     const aliased = look(c)['showInnerPercent'] !== undefined;
-    if (!aliased) expect(look(c)['showInnerPercent'] === undefined, true);
+    if (!aliased)
+      expect(look(c)['showInnerPercent'] === undefined, true);
     c.props['showPercentage'] = true;
     expectLook(c, {showPercentage: true});
-    if (!aliased) expect(look(c)['showInnerPercent'] === undefined, true);
+    if (!aliased)
+      expect(look(c)['showInnerPercent'] === undefined, true);
   });
 });

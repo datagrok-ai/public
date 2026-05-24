@@ -57,13 +57,12 @@ category('AI: Utils: static helpers', () => {
     expect(DG.Utils.getJsonValueType(42), DG.TYPE.FLOAT);
     expect(DG.Utils.getJsonValueType(-1.5), DG.TYPE.FLOAT);
     expect(DG.Utils.getJsonValueType(true), DG.TYPE.BOOL);
-    for (var falsy of [null, undefined, '', 0, false])
+    for (const falsy of [null, undefined, '', 0, false])
       expect(DG.Utils.getJsonValueType(falsy), null);
     let threw = false;
     try {
       DG.Utils.getJsonValueType({});
-    }
-    catch (_e) {
+    } catch (_e) {
       threw = true;
     }
     expect(threw, true);
