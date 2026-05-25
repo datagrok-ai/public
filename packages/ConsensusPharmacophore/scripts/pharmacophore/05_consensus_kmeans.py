@@ -75,6 +75,17 @@ else:
             if n_distinct < min_size:
                 continue
             centroid = km.cluster_centers_[lbl]
+            # Cluster spread: max distance from centroid to any feature that
+            # contributed to this cluster. Renderer uses this to size the
+            # consensus sphere so the visualization shows BOTH the conserved
+            # position AND the dispersion across input ligands. Clamped to
+            # [0.8, 3.5] Å — under 0.8 Å is essentially a point (no visible
+            # spread); over 3.5 Å is a "diffuse" cluster that probably should
+            # have been split (a warning rather than a meaningful single point).
+            cluster_coords = coords[mask]
+            distances = np.linalg.norm(cluster_coords - centroid, axis=1)
+            cluster_radius_a = float(np.max(distances))
+            cluster_radius_a = max(0.8, min(3.5, cluster_radius_a))
             clusters.append({
                 'family': family,
                 'x': float(centroid[0]),
@@ -82,6 +93,7 @@ else:
                 'z': float(centroid[2]),
                 'frequency': n_distinct / max(1, total_ligands),
                 'n_ligands': int(n_distinct),
+                'cluster_radius_a': cluster_radius_a,
                 '_size': int(mask.sum()),
             })
 
@@ -97,7 +109,8 @@ else:
     if out_rows:
         consensus_model = pd.DataFrame(out_rows)
     else:
-        consensus_model = pd.DataFrame(columns=['family', 'x', 'y', 'z', 'frequency', 'n_ligands'])
+        consensus_model = pd.DataFrame(columns=[
+            'family', 'x', 'y', 'z', 'frequency', 'n_ligands', 'cluster_radius_a'])
 
 print(f'Stage 5a: emitting {len(consensus_model)} consensus rows across ' +
       f'{consensus_model["family"].nunique() if len(consensus_model) else 0} families')

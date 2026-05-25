@@ -1,0 +1,422 @@
+/*
+ * Consensus Pharmacophore — styles for the orchestrator UI, cluster picker,
+ * legend bar, and per-PDB detail panel.
+ *
+ * About 36 `cp-*` selectors are referenced from src/orchestrator.ts and
+ * src/cluster-picker-dialog.ts. This file defines all of them. Imported
+ * from src/package.ts so webpack bundles it via the style-loader rule
+ * already wired in webpack.config.js. Inline `el.style.X = ...` is still
+ * used in a few places (where the value is data-driven, e.g. the family
+ * chip color) — those win over these rules.
+ */
+
+/* --- input panel ----------------------------------------------------- */
+
+.cp-input-panel {
+  padding: 10px 12px 18px 12px;
+  font-size: 13px;
+}
+
+.cp-input-panel h2 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1976D2;
+}
+
+.cp-input-panel h3 {
+  margin: 14px 0 4px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 2px;
+}
+
+.cp-demo-label {
+  font-size: 11px;
+  color: #1976D2;
+  font-style: italic;
+  margin: 2px 0 6px 0;
+}
+
+.cp-demo-link-row {
+  font-size: 11px;
+  margin: 4px 0 0 0;
+}
+
+.cp-demo-hero-btn {
+  width: 100%;
+  margin: 6px 0 4px 0;
+  background: #1976D2 !important;
+  color: white !important;
+  border: none;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cp-demo-hero-btn:hover {
+  background: #1565C0 !important;
+}
+
+/* --- target-lookup row + dialog -------------------------------------- */
+
+.cp-target-lookup-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  margin-bottom: 2px;
+}
+
+.cp-target-lookup-row .ui-input-root {
+  flex: 1;
+}
+
+.cp-target-lookup-btn {
+  white-space: nowrap;
+}
+
+.cp-target-lookup-status {
+  font-size: 11px;
+  color: #777;
+  margin-top: 4px;
+  min-height: 14px;
+  line-height: 1.3;
+}
+
+.cp-target-picker-hint {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  max-width: 380px;
+}
+
+.cp-target-picker-tooltip {
+  font-size: 11px;
+  color: #555;
+  margin-top: 6px;
+  max-width: 380px;
+  white-space: normal;
+}
+
+/* --- PDB-status line under the textarea ------------------------------ */
+
+.cp-pdb-status {
+  font-size: 11px;
+  margin-top: 2px;
+  min-height: 14px;
+}
+
+/* --- Advanced options accordion -------------------------------------- */
+
+.cp-advanced-toggle {
+  cursor: pointer;
+  color: #1976D2;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 0 4px 0;
+  user-select: none;
+}
+
+.cp-advanced-toggle:hover {
+  color: #1565C0;
+}
+
+.cp-advanced-body {
+  padding-left: 8px;
+  border-left: 2px solid #eee;
+}
+
+/* --- preview buttons + done state ------------------------------------ */
+
+.cp-preview-hint {
+  font-size: 11px;
+  color: #777;
+  margin-bottom: 4px;
+  font-style: italic;
+}
+
+.cp-preview-btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cp-preview-btn-col button {
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1976D2;
+}
+
+.cp-preview-btn-col button:hover {
+  background: #eef5ff;
+  border-color: #b3d4f0;
+}
+
+.cp-preview-btn-col button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Tier-1 reviewer fix #4: visible "✓ done" marker on previously-run stages.
+   The class is set by orchestrator's makePreviewBtn after a successful run
+   and cleared when the user edits the PDB textarea (invalidating the cache). */
+.cp-preview-btn-done {
+  background: #E8F5E9 !important;
+  border-color: #81C784 !important;
+  color: #2E7D32 !important;
+}
+
+.cp-preview-btn-done::before {
+  content: '✓ ';
+  font-weight: bold;
+  color: #2E7D32;
+}
+
+.cp-preview-btn-done:hover {
+  background: #C8E6C9 !important;
+}
+
+.cp-reset-btn {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #666;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.cp-reset-btn:hover {
+  background: #f5f5f5;
+  color: #c62828;
+  border-color: #c62828;
+}
+
+/* --- stage-progress badges (top header) ------------------------------ */
+
+.cp-stage-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  align-items: center;
+}
+
+.cp-stage-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background 0.15s, border 0.15s, color 0.15s;
+}
+
+.cp-stage-pending {
+  background: #f5f5f5;
+  border-color: #ddd;
+  color: #999;
+}
+
+.cp-stage-running {
+  background: #E3F2FD;
+  border-color: #64B5F6;
+  color: #1565C0;
+  animation: cp-pulse 1s ease-in-out infinite;
+}
+
+@keyframes cp-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+.cp-stage-done {
+  background: #E8F5E9;
+  border-color: #81C784;
+  color: #2E7D32;
+}
+
+.cp-stage-error {
+  background: #FFEBEE;
+  border-color: #E57373;
+  color: #C62828;
+}
+
+/* --- legend bar above Mol* ------------------------------------------- */
+
+.cp-legend-bar {
+  padding: 0;
+}
+
+.cp-molstar-caption {
+  font-size: 12px;
+  color: #444;
+  font-style: italic;
+  padding: 4px 10px 2px 10px;
+  line-height: 1.3;
+}
+
+.cp-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 10px 4px 10px;
+  align-items: center;
+}
+
+.cp-legend-item {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 11px;
+  color: #444;
+}
+
+/* --- Mol* viewer placeholder ----------------------------------------- */
+
+.cp-viewer-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+  font-style: italic;
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* --- per-PDB interaction-detail dock --------------------------------- */
+
+.cp-pdb-detail-panel {
+  padding: 8px 10px;
+  min-width: 240px;
+  font-size: 12px;
+  overflow-y: auto;
+  background: #fafafa;
+  border-left: 1px solid #eee;
+}
+
+.cp-pdb-detail-header {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.cp-pdb-detail-warn {
+  color: #FFA000;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.cp-pdb-detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cp-pdb-detail-chip {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cp-pdb-detail-list {
+  display: grid;
+  grid-template-columns: 12px 1fr auto auto;
+  column-gap: 6px;
+  row-gap: 3px;
+  align-items: center;
+}
+
+.cp-pdb-detail-res {
+  font-family: monospace;
+  font-size: 11px;
+  color: #555;
+}
+
+.cp-pdb-detail-empty {
+  font-style: italic;
+  color: #888;
+  font-size: 11px;
+  padding: 6px 0;
+}
+
+/* --- cluster-picker dialog ------------------------------------------- */
+
+.cp-cluster-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
+  align-items: stretch;
+}
+
+.cp-cluster-card {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-width: 180px;
+  max-width: 220px;
+  background: #fff;
+  cursor: pointer;
+  transition: border 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.cp-cluster-card:hover {
+  border-color: #64B5F6;
+  background: #f5fafe;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.cp-cluster-card.cp-cluster-card-selected {
+  border-color: #1976D2;
+  border-width: 2px;
+  padding: 9px 11px;
+  background: #E3F2FD;
+}
+
+.cp-cluster-card-header {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #1976D2;
+}
+
+.cp-cluster-card-meta {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.cp-cluster-card-ligands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* --- Mol* overlay structures (chain F / chain P) --------------------- */
+
+/* No visual style — these classes are markers used by orchestrator's
+   cleanup loop to find and remove stale overlay structures from the
+   Mol* state tree. Kept here for grep-ability. */

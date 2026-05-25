@@ -25,6 +25,8 @@ import {DEFAULT_OPTIONS, PipelineOptions, PocketMethod, PocketRep} from './orche
 import {enrichPdbList} from './rcsb-client';
 import {applyPdbTransform, concatPdbStructures, fetchPdbBlock, IDENTITY_4X4,
   ligandFeaturesToOverlayBlock, stripCofactorsFromPdb} from './pdb-utils';
+import {fetchUniProtById, getPdbIdsForAccession, isUniProtAccession,
+  searchUniProt, UniProtHit} from './uniprot-client';
 
 // ---------------------------------------------------------------------------
 // Result types
@@ -68,6 +70,10 @@ export class ConsensusPharmacophoreApp {
   private pdbDetailNode?: DG.DockNode;
   private pdbDetailHost?: HTMLElement;
   private pdbDetailSub?: {unsubscribe: () => void};
+  // Caption element shown above the Mol* viewer; rewritten by each preview to
+  // explain what the user is looking at (e.g. "Chain F = ProLIF interaction
+  // sites; CPK colors = pharmacophore family"). Always visible after init().
+  private molstarCaptionEl?: HTMLElement;
 
   async init(pdbIds?: string[]): Promise<DG.TableView> {
     // Start with an empty placeholder DataFrame; the docked viewer + dock layout
@@ -84,9 +90,21 @@ export class ConsensusPharmacophoreApp {
     // option to `df.plot.fromType('Biostructure', ...)` is unverified at the time
     // of writing. We dock a placeholder div instead.
 
-    // Stage-progress header (top, thin)
-    const header = this.buildStageHeader();
-    this.tableView.dockManager.dock(header, DG.DOCK_TYPE.TOP, null, 'Pipeline progress', 0.05);
+    // Stage-progress header has been retired — the same status is already
+    // conveyed three other ways: (a) preview buttons gain a green ✓ class
+    // after each stage finishes, (b) the task-bar progress indicator at the
+    // bottom-left shows the active stage label, (c) success and error toasts
+    // appear on completion. Two TOP docks were also crowding the legend on
+    // typical (≤900px) browser windows. The buildStageHeader / setStageStatus
+    // methods are retained for now — the `this.stageBadges` map is just empty,
+    // which makes setStageStatus a no-op (its `if (!el) return;` guard
+    // already handles that).
+
+    // Family legend + Mol* caption strip — single top row, always visible so
+    // users have a persistent reference for the 7 family CPK colors and a
+    // one-line hint of what the right pane is currently showing.
+    const legendBar = this.buildLegendBar();
+    this.tableView.dockManager.dock(legendBar, DG.DOCK_TYPE.TOP, null, 'Legend & view', 0.09);
 
     // Input panel (left)
     const panel = this.buildInputPanel(pdbIds);
@@ -99,7 +117,108 @@ export class ConsensusPharmacophoreApp {
     this.viewerPlaceholderNode = this.tableView.dockManager.dock(
       this.viewerPlaceholder, DG.DOCK_TYPE.RIGHT, null, 'Mol*', 0.4);
 
+    // Family cell color — any `family` cell in the central grid (which is
+    // re-bound to a different DataFrame at each pipeline stage) gets painted
+    // with the canonical FAMILY_MAP color, so the grid mirrors the 3D legend.
+    // Works across consensus_model, ligand_features, pdb_interaction_summary —
+    // all of which carry a `family` column.
+    this.installFamilyCellRenderer();
+
     return this.tableView;
+  }
+
+  /**
+   * Hook grid.onCellRender to paint any cell in a column named `family`
+   * with FAMILY_MAP[code].hexColor. Single registration on the persistent
+   * tableView.grid — survives `view.dataFrame = newDf` swaps the
+   * orchestrator does between stages, so the consensus-model grid, the
+   * Stage-4 ligand_features detail grid, and the per-PDB summary grid all
+   * get the same family coloring without per-stage wiring.
+   */
+  private installFamilyCellRenderer(): void {
+    if (!this.tableView) return;
+    this.tableView.grid.onCellRender.subscribe((args) => {
+      const col = args.cell.gridColumn?.column;
+      if (!col || col.name !== 'family') return;
+      const value = args.cell.cell.value;
+      if (value == null) return;
+      const fam = resolveFamily(String(value));
+      const g = args.g;
+      const b = args.bounds;
+      // Paint a subtle background tinted by family. Pure hexColor would be
+      // too saturated to keep the cell text readable, so we mix in white
+      // at the cell-renderer level by drawing the chip + then drawing the
+      // text at the platform default color.
+      g.fillStyle = fam.hexColor + '33'; // ~20% alpha hex suffix
+      g.fillRect(b.x, b.y, b.width, b.height);
+      // Family color dot, left-aligned in the cell.
+      g.beginPath();
+      g.fillStyle = fam.hexColor;
+      const cy = b.y + b.height / 2;
+      const r = Math.min(4, b.height / 3);
+      g.arc(b.x + 8, cy, r, 0, Math.PI * 2);
+      g.fill();
+      // Family name, default text color, offset past the dot.
+      g.fillStyle = '#222';
+      g.font = '12px sans-serif';
+      g.textBaseline = 'middle';
+      g.fillText(String(value), b.x + 18, cy + 0.5);
+      args.preventDefault();
+    });
+  }
+
+  /**
+   * Build the persistent legend + caption strip docked at the top. Two rows:
+   *   row 1: caption ("Run the pipeline ..." until a preview rewrites it)
+   *   row 2: 7 colored chips, one per pharmacophore family, generated from
+   *          family-map.ts so renaming/recoloring a family in one place
+   *          updates the legend automatically.
+   */
+  private buildLegendBar(): HTMLElement {
+    const captionEl = ui.divText(
+      'Run a preview or Build to render the consensus pharmacophore.',
+      'cp-molstar-caption');
+    captionEl.style.fontSize = '12px';
+    captionEl.style.color = '#444';
+    captionEl.style.padding = '4px 10px 2px 10px';
+    captionEl.style.fontStyle = 'italic';
+    this.molstarCaptionEl = captionEl;
+
+    const chipRow = ui.divH([], 'cp-legend-row');
+    chipRow.style.flexWrap = 'wrap';
+    chipRow.style.gap = '8px';
+    chipRow.style.padding = '0 10px 4px 10px';
+    chipRow.style.alignItems = 'center';
+    for (const code of FAMILY_CODES) {
+      const fam = FAMILY_MAP[code];
+      const item = ui.divH([], 'cp-legend-item');
+      item.style.gap = '4px';
+      item.style.alignItems = 'center';
+      item.style.fontSize = '11px';
+      const dot = ui.div();
+      dot.style.width = '10px';
+      dot.style.height = '10px';
+      dot.style.borderRadius = '50%';
+      dot.style.background = fam.hexColor;
+      dot.style.border = '1px solid rgba(0,0,0,0.2)';
+      const label = ui.divText(`${code} · ${fam.name}`);
+      label.style.color = '#444';
+      item.append(dot, label);
+      item.title = `Family ${code} (${fam.name}) — rendered as element ${fam.element} in CPK colors`;
+      chipRow.append(item);
+    }
+
+    const wrapper = ui.divV([captionEl, chipRow], 'cp-legend-bar');
+    wrapper.style.padding = '0';
+    return wrapper;
+  }
+
+  /** Rewrite the persistent Mol* caption. Each preview calls this with text
+   *  appropriate to what's about to render (or just rendered). Used so a new
+   *  user looking at the right pane understands what the spheres represent. */
+  private setMolstarCaption(text: string): void {
+    if (!this.molstarCaptionEl) return;
+    this.molstarCaptionEl.textContent = text;
   }
 
   // -------------------------------------------------------------------------
@@ -162,18 +281,160 @@ export class ConsensusPharmacophoreApp {
     });
     const refPdbInput = ui.input.string('Reference PDB (optional)', {value: ''});
 
+    // Stage 5a consensus knobs — exposed so the user can re-cluster without
+    // editing the Python script. kq trades cluster count for cluster size;
+    // minClusterSizeFraction is the support threshold (0.5 = "at least half
+    // the ligands"); topClusterNumber caps clusters per family so a
+    // pathological run with many small clusters doesn't flood the grid.
+    const kqInput = ui.input.int('Avg features per cluster (kq)',
+      {value: DEFAULT_OPTIONS.kq, min: 1, max: 30});
+    kqInput.root.title = 'k-means n_clusters = ceil(n_features / kq). Lower = more, smaller clusters; ' +
+      'higher = fewer, fatter clusters. Default 7 matches TeachOpenCADD T009.';
+    const minFracInput = ui.input.float('Min ligand fraction',
+      {value: DEFAULT_OPTIONS.minClusterSizeFraction, min: 0.0, max: 1.0});
+    minFracInput.root.title = 'A cluster is kept only if at least this fraction of distinct ligands ' +
+      'contributed a feature to it. Drop to 0.5 to surface less-conserved (but still meaningful) hotspots.';
+    const topClusterInput = ui.input.int('Max clusters per family',
+      {value: DEFAULT_OPTIONS.topClusterNumber, min: 1, max: 10});
+    topClusterInput.root.title = 'After filtering by min ligand fraction, keep at most N clusters per ' +
+      'family (sorted by number of contributing ligands, then by cluster size).';
+
     const demoLabel = ui.label('Demo: 5 active-state EGFR kinase structures',
       {classes: 'cp-demo-label'});
     demoLabel.style.display = seedPdbIds && seedPdbIds.length ? 'block' : 'none';
 
-    // Clear the demo label as soon as the user edits the input area.
-    pdbInput.onChanged.subscribe(() => { demoLabel.style.display = 'none'; });
+    // Status line under the textarea — shows accepted/ignored token counts and
+    // the first few ignored tokens by name so the user is never surprised by a
+    // silent filter (e.g. pasting "EGFR, kinase, 1XKK" used to keep only 1XKK).
+    const pdbStatus = ui.divText('', 'cp-pdb-status');
+    pdbStatus.style.fontSize = '11px';
+    pdbStatus.style.color = '#777';
+    pdbStatus.style.marginTop = '2px';
+    pdbStatus.style.minHeight = '14px';
+
+    const refreshPdbStatus = (): void => {
+      const {accepted, rejected} = parsePdbIdsDetailed(pdbInput.value ?? '');
+      if (accepted.length === 0 && rejected.length === 0) {
+        pdbStatus.textContent = '';
+        pdbStatus.style.color = '#777';
+        return;
+      }
+      let msg = `${accepted.length} PDB ID${accepted.length === 1 ? '' : 's'} accepted`;
+      if (rejected.length > 0) {
+        const shown = rejected.slice(0, 3).join(', ');
+        const more = rejected.length > 3 ? `, +${rejected.length - 3} more` : '';
+        msg += ` · ${rejected.length} ignored (${shown}${more})`;
+        pdbStatus.style.color = '#B26A00';
+      } else {
+        pdbStatus.style.color = '#4CAF50';
+      }
+      pdbStatus.textContent = msg;
+    };
+
+    // Clear the demo label and refresh the status line as soon as the user
+    // edits the input area.
+    pdbInput.onChanged.subscribe(() => {
+      demoLabel.style.display = 'none';
+      refreshPdbStatus();
+    });
+
+    // Hero demo button. Bigger, more prominent than the old text link so a
+    // first-time visitor's path to a result is one obvious click. The small
+    // text link is kept below the textarea as a discreet fallback for users
+    // who already edited the textarea and want to revert.
+    const demoHero = ui.bigButton('Load EGFR demo (5 PDBs)', async () => {
+      const ids = await loadDemoPdbIds();
+      pdbInput.value = ids.join('\n');
+      demoLabel.style.display = 'block';
+      this.previewCache = null;
+      refreshPdbStatus();
+    });
+    demoHero.classList.add('cp-demo-hero-btn');
+    demoHero.title = '1XKK / 3W2S / 4WKQ / 5HG5 / 5HG8 — five active-state EGFR ' +
+      'kinase structures bound to known inhibitors. Use this for a fast first run.';
 
     const demoLink = ui.link('Use demo input', async () => {
       const ids = await loadDemoPdbIds();
       pdbInput.value = ids.join('\n');
       demoLabel.style.display = 'block';
+      this.previewCache = null;
+      refreshPdbStatus();
     });
+
+    // Target lookup — UniProt accession OR gene/protein name. Resolved
+    // PDB IDs replace the textarea contents (per the user's preference).
+    // Name lookups that map to multiple species open a picker dialog so
+    // the user disambiguates human / mouse / Drosophila / etc. before
+    // we commit the resolved PDB list.
+    const lookupStatus = ui.divText('', 'cp-target-lookup-status');
+    lookupStatus.style.fontSize = '11px';
+    lookupStatus.style.color = '#777';
+    lookupStatus.style.marginTop = '4px';
+    lookupStatus.style.minHeight = '14px';
+    const lookupInput = ui.input.string('Target', {
+      value: '',
+      nullable: true,
+    });
+    (lookupInput.root.querySelector('input') as HTMLInputElement | null)?.setAttribute(
+      'placeholder', 'UniProt ID or name (e.g. P00533, egfr)');
+    const lookupBtn = ui.button('Find PDBs', async () => {
+      const query = (lookupInput.value ?? '').trim();
+      if (!query) {
+        grok.shell.warning('Enter a UniProt accession (e.g. P00533) or a gene/protein name (e.g. egfr).');
+        return;
+      }
+      lookupBtn.disabled = true;
+      lookupStatus.textContent = 'Searching UniProt...';
+      try {
+        const hit = await pickUniProtHit(query, lookupStatus);
+        if (!hit) {
+          lookupStatus.textContent = 'No target selected.';
+          return;
+        }
+        lookupStatus.textContent =
+          `Fetching PDB cross-references for ${hit.accession}...`;
+        const pdbIds = await getPdbIdsForAccession(hit.accession);
+        if (pdbIds.length === 0) {
+          lookupStatus.textContent =
+            `No PDB structures cross-referenced from ${hit.accession}.`;
+          grok.shell.warning(
+            `UniProt ${hit.accession} (${hit.organism}) has no PDB cross-references.`);
+          return;
+        }
+        pdbInput.value = pdbIds.join('\n');
+        demoLabel.style.display = 'none';
+        this.previewCache = null;
+        const orgShort = hit.organism.split(' ').slice(0, 2).join(' ');
+        lookupStatus.textContent =
+          `${hit.accession} · ${orgShort} · ${pdbIds.length} PDBs — listed below.`;
+        grok.shell.info(`${hit.accession} ${hit.geneName || hit.proteinName} ` +
+          `(${hit.organism}): ${pdbIds.length} PDB ID${pdbIds.length === 1 ? '' : 's'} ` +
+          `loaded. Edit the list below if you want a subset.`);
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
+        lookupStatus.textContent = `Lookup failed: ${msg.slice(0, 120)}`;
+        grok.shell.error(`Target lookup failed: ${msg}`);
+      } finally {
+        lookupBtn.disabled = false;
+      }
+    }, 'Resolve a UniProt accession or gene/protein name to the list of PDB ' +
+       'structures cross-referenced from that entry. Multi-species hits open ' +
+       'a picker so you choose human/mouse/etc.');
+    lookupBtn.classList.add('cp-target-lookup-btn');
+    // Enter in the Target input triggers Find PDBs — saves the round-trip
+    // to the button for keyboard users. We bind on the raw <input> rather
+    // than ui.input.string's onChanged because the latter only fires on
+    // value commit (focus loss), which would miss the Enter intent.
+    const lookupInputEl = lookupInput.root.querySelector('input') as HTMLInputElement | null;
+    lookupInputEl?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !lookupBtn.disabled) {
+        e.preventDefault();
+        lookupBtn.click();
+      }
+    });
+    const lookupRow = ui.divH([lookupInput.root, lookupBtn], 'cp-target-lookup-row');
+    lookupRow.style.alignItems = 'flex-end';
+    lookupRow.style.gap = '6px';
 
     const readIds = (): string[] => parsePdbIds(pdbInput.value ?? '');
     const readOpts = (): PipelineOptions => ({
@@ -184,27 +445,42 @@ export class ConsensusPharmacophoreApp {
       pocketRadius:  pocketRadiusInput.value ?? DEFAULT_OPTIONS.pocketRadius,
       pocketRep:     (pocketRepInput.value as PocketRep) ?? DEFAULT_OPTIONS.pocketRep,
       refPdbId:      (refPdbInput.value ?? '').trim() || undefined,
+      kq:                     kqInput.value ?? DEFAULT_OPTIONS.kq,
+      minClusterSizeFraction: minFracInput.value ?? DEFAULT_OPTIONS.minClusterSizeFraction,
+      topClusterNumber:       topClusterInput.value ?? DEFAULT_OPTIONS.topClusterNumber,
     });
 
-    // Three incremental preview buttons — each shows progressively more of the
-    // pipeline output without committing to the full Build.
+    // Five incremental preview buttons — each shows progressively more of the
+    // pipeline output without committing to the full Build. After a successful
+    // run the button gets a green `.cp-preview-btn-done` class with a "✓ "
+    // prefix so the user can see at a glance which stages they've already
+    // exercised (mirrors the stage-badge done state at the top of the view).
+    // The class is cleared on textarea edits because that invalidates the
+    // previewCache — subsequent clicks recompute from scratch.
     const makePreviewBtn = (
       label: string, tooltip: string, run: (ids: string[], opts: PipelineOptions) => Promise<void>,
-    ): HTMLButtonElement => ui.button(label, async () => {
-      const ids = readIds();
-      if (ids.length === 0) {
-        grok.shell.warning('Paste at least one PDB ID, or click "Use demo input".');
-        return;
-      }
-      previewButtons.forEach((b) => { b.disabled = true; });
-      buildBtn.disabled = true;
-      try {
-        await run(ids, readOpts());
-      } finally {
-        previewButtons.forEach((b) => { b.disabled = false; });
-        buildBtn.disabled = false;
-      }
-    }, tooltip);
+    ): HTMLButtonElement => {
+      const btn = ui.button(label, async () => {
+        const ids = readIds();
+        if (ids.length === 0) {
+          grok.shell.warning('Paste at least one PDB ID, or click "Load EGFR demo".');
+          return;
+        }
+        previewButtons.forEach((b) => { b.disabled = true; });
+        buildBtn.disabled = true;
+        try {
+          await run(ids, readOpts());
+          btn.classList.add('cp-preview-btn-done');
+        } catch (_e) {
+          // Failed runs don't get the green check — the existing toast +
+          // error stage badge already report the problem.
+        } finally {
+          previewButtons.forEach((b) => { b.disabled = false; });
+          buildBtn.disabled = false;
+        }
+      }, tooltip);
+      return btn;
+    };
 
     const fetchBtn = makePreviewBtn('1. Fetch PDBs',
       'Download the input PDBs from RCSB and show them in their native crystallographic frames.',
@@ -223,10 +499,10 @@ export class ConsensusPharmacophoreApp {
       (ids, opts) => this.previewConsensus(ids, opts));
     const previewButtons: HTMLButtonElement[] = [fetchBtn, alignBtn, pocketBtn, featuresBtn, consensusBtn];
 
-    const buildBtn = ui.bigButton('Build', async () => {
+    const buildBtn = ui.bigButton('Run full pipeline', async () => {
       const ids = readIds();
       if (ids.length === 0) {
-        grok.shell.warning('Paste at least one PDB ID, or click "Use demo input".');
+        grok.shell.warning('Paste at least one PDB ID, or click "Load EGFR demo".');
         return;
       }
       buildBtn.disabled = true;
@@ -238,15 +514,42 @@ export class ConsensusPharmacophoreApp {
         previewButtons.forEach((b) => { b.disabled = false; });
       }
     });
+    buildBtn.title = 'Run all stages end-to-end. Unlike the preview buttons, ' +
+      'this also opens the cluster picker (between Stage 2a and Stage 3) so ' +
+      'you can drop conformationally mixed PDBs before pocket isolation.';
 
     // Editing the PDB list invalidates any cached intermediate results.
-    pdbInput.onChanged.subscribe(() => { this.previewCache = null; });
+    // Also clear the `.cp-preview-btn-done` checkmarks so a stale green tick
+    // doesn't suggest a finding that no longer reflects the (now-different)
+    // PDB list — next click recomputes the whole stage from scratch.
+    pdbInput.onChanged.subscribe(() => {
+      this.previewCache = null;
+      previewButtons.forEach((b) => b.classList.remove('cp-preview-btn-done'));
+    });
 
-    return ui.divV([
-      ui.h2('Consensus Pharmacophore'),
-      demoLabel,
-      pdbInput.root,
-      ui.div([demoLink], 'cp-demo-link-row'),
+    // Stage 5a knob changes invalidate ONLY the consensus_model cache —
+    // Stage 1-4 outputs (pdbQc, aligned, pocketAtoms, ligandFeatures) are
+    // unaffected so we don't want a full previewCache wipe (which would
+    // force a re-run of the 30s ProLIF step). Same for the consensusBtn's
+    // ✓ done marker so the user knows their last consensus is stale.
+    const invalidateConsensus = () => {
+      if (this.previewCache) this.previewCache.consensusModel = undefined;
+      consensusBtn.classList.remove('cp-preview-btn-done');
+    };
+    kqInput.onChanged.subscribe(invalidateConsensus);
+    minFracInput.onChanged.subscribe(invalidateConsensus);
+    topClusterInput.onChanged.subscribe(invalidateConsensus);
+
+    const resetBtn = this.buildResetBtn(
+      pdbInput, lookupInput, pdbStatus, lookupStatus, previewButtons, demoLabel);
+
+    // Initial paint of the status line for the seeded demo PDB list (if any).
+    refreshPdbStatus();
+
+    // Advanced options — collapsed by default. New users only see the
+    // textarea + target lookup + preview/run buttons; power users open the
+    // accordion to tune the QC / pocket / reference-PDB knobs.
+    const advancedBody = ui.divV([
       ui.h3('QC'),
       resolutionInput.root,
       requireXrayInput.root,
@@ -255,12 +558,86 @@ export class ConsensusPharmacophoreApp {
       pocketMethodInput.root,
       pocketRadiusInput.root,
       pocketRepInput.root,
+      ui.h3('Consensus'),
+      kqInput.root,
+      minFracInput.root,
+      topClusterInput.root,
       ui.h3('Output'),
       refPdbInput.root,
-      ui.h3('Preview'),
+    ], 'cp-advanced-body');
+    const advancedToggle = ui.divText('▸ Advanced options', 'cp-advanced-toggle');
+    advancedToggle.style.cursor = 'pointer';
+    advancedToggle.style.color = '#1976D2';
+    advancedToggle.style.fontSize = '12px';
+    advancedToggle.style.fontWeight = 'bold';
+    advancedToggle.style.padding = '8px 0 4px 0';
+    advancedToggle.style.userSelect = 'none';
+    advancedBody.style.display = 'none';
+    advancedToggle.addEventListener('click', () => {
+      const open = advancedBody.style.display === 'none';
+      advancedBody.style.display = open ? 'block' : 'none';
+      advancedToggle.textContent = open ? '▾ Advanced options' : '▸ Advanced options';
+    });
+
+    // Caption above the preview-stage column — answers "what's the
+    // difference between these 5 buttons and the big Run button below?".
+    const previewHint = ui.divText(
+      'Click any stage to preview just up to that point.', 'cp-preview-hint');
+    previewHint.style.fontSize = '11px';
+    previewHint.style.color = '#777';
+    previewHint.style.marginBottom = '4px';
+
+    return ui.divV([
+      ui.h2('Consensus Pharmacophore'),
+      demoLabel,
+      demoHero,
+      ui.h3('Target lookup'),
+      lookupRow,
+      lookupStatus,
+      ui.h3('PDB IDs'),
+      pdbInput.root,
+      pdbStatus,
+      ui.div([demoLink], 'cp-demo-link-row'),
+      advancedToggle,
+      advancedBody,
+      ui.h3('Preview stages'),
+      previewHint,
       ui.divV([fetchBtn, alignBtn, pocketBtn, featuresBtn, consensusBtn], 'cp-preview-btn-col'),
+      ui.h3('Run'),
       buildBtn,
+      resetBtn,
     ], 'cp-input-panel');
+  }
+
+  /** Build the reset button. Clears textarea + lookup field + status lines,
+   *  resets stage badges, invalidates the preview cache, removes any
+   *  preview "✓ done" markers, and closes the detail panel. Mol* state is
+   *  left as-is — the next preview/run will overwrite it. */
+  private buildResetBtn(
+    pdbInput: DG.InputBase<string | null>,
+    lookupInput: DG.InputBase<string | null>,
+    pdbStatus: HTMLElement,
+    lookupStatus: HTMLElement,
+    previewButtons: HTMLButtonElement[],
+    demoLabel: HTMLElement,
+  ): HTMLButtonElement {
+    const btn = ui.button('Reset', () => {
+      pdbInput.value = '';
+      lookupInput.value = '';
+      pdbStatus.textContent = '';
+      lookupStatus.textContent = '';
+      demoLabel.style.display = 'none';
+      this.previewCache = null;
+      previewButtons.forEach((b) => b.classList.remove('cp-preview-btn-done'));
+      this.resetStageStatuses();
+      this.closePdbDetailPanel();
+      this.setMolstarCaption(
+        'Reset — paste PDB IDs (or use Load EGFR demo / target lookup) and ' +
+        'click a preview button or Run full pipeline.');
+    }, 'Clear the PDB list, target lookup, stage badges, and preview ' +
+       'cache. Leaves the 3D viewer at its last state until you run again.');
+    btn.classList.add('cp-reset-btn');
+    return btn;
   }
 
   // -------------------------------------------------------------------------
@@ -272,6 +649,9 @@ export class ConsensusPharmacophoreApp {
     this.aborted = false;
     this.resetStageStatuses();
     this.closePdbDetailPanel();
+    this.setMolstarCaption(
+      'Running full pipeline — cluster picker will open after Stage 2a to let ' +
+      'you drop conformationally mixed PDBs before pocket isolation.');
 
     const pi = DG.TaskBarProgressIndicator.create('Consensus Pharmacophore: running...');
     try {
@@ -339,7 +719,7 @@ export class ConsensusPharmacophoreApp {
       // Stage 5a — k-means consensus
       this.setStageStatus('stage5a', 'running');
       pi.update(85, 'Stage 5a: computing per-family consensus...');
-      const consensus = await runStage5aConsensusKmeans(ligandFeatures);
+      const consensus = await runStage5aConsensusKmeans(ligandFeatures, options);
       this.tableView.dataFrame = consensus;
       consensus.name = 'consensus_model';
       this.setStageStatus('stage5a', 'done');
@@ -472,11 +852,11 @@ export class ConsensusPharmacophoreApp {
     bindingSiteRep?: 'spacefill' | 'gaussian-surface' | 'ball-and-stick' | null;
     bindingSiteAlpha?: number;
     solventAlpha?: number;
-  } = {}): Promise<void> {
-    if (!this.viewer) return;
+  } = {}): Promise<{nCartoon: number; nBinding: number; nSolvent: number}> {
+    if (!this.viewer) return {nCartoon: 0, nBinding: 0, nSolvent: 0};
     const v = this.viewer as any;
     const plugin = v.viewer?.plugin;
-    if (!plugin) return;
+    if (!plugin) return {nCartoon: 0, nBinding: 0, nSolvent: 0};
     const cartoonAlpha = opts.cartoonAlpha ?? 1.0;
     const bindingSiteRep = opts.bindingSiteRep ?? null;
     const bindingSiteAlpha = opts.bindingSiteAlpha ?? 1.0;
@@ -529,6 +909,32 @@ export class ConsensusPharmacophoreApp {
     console.log(`[Mol* style] cartoonAlpha=${cartoonAlpha} (${nCartoon}), ` +
       `bindingSiteRep=${bindingSiteRep ?? '(none)'} alpha=${bindingSiteAlpha} (${nBinding}), ` +
       `solventAlpha=${solventAlpha} (${nSolvent})`);
+    return {nCartoon, nBinding, nSolvent};
+  }
+
+  /**
+   * Retry setMolstarStyle with increasing delay until it finds the expected
+   * number of cartoon cells. The plain setMolstarStyle race-loses against
+   * Mol*'s async cell refresh especially after addPerRowOverlay adds many
+   * structures back-to-back — the cartoon cell from the original protein
+   * structure is momentarily absent while the state tree is being rebuilt.
+   * This wrapper polls until we hit at least one cartoon cell or give up.
+   */
+  private async setMolstarStyleWithRetry(opts: {
+    cartoonAlpha?: number;
+    bindingSiteRep?: 'spacefill' | 'gaussian-surface' | 'ball-and-stick' | null;
+    bindingSiteAlpha?: number;
+    solventAlpha?: number;
+  }, maxAttempts = 6): Promise<void> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const result = await this.setMolstarStyle(opts);
+      if (result.nCartoon > 0) return;
+      // Cell tree wasn't ready yet — back off and try again. Each retry
+      // doubles the wait (100, 200, 400, 800, ...) up to ~3s total.
+      await new Promise((r) => setTimeout(r, 100 * Math.pow(2, attempt)));
+    }
+    console.warn(`[Mol* style] retried ${maxAttempts}× without finding a ` +
+      `cartoon cell — protein may render at full opacity`);
   }
 
   /**
@@ -575,8 +981,23 @@ export class ConsensusPharmacophoreApp {
       try { await cleanup.commit(); } catch (e) { console.warn('[overlay] cleanup failed', e); }
     }
 
-    // Load as new structure + spacefill rep. Each builder step labels the
-    // cell with the `cp-overlay-*` prefix so the next call can clean us up.
+    // Per-row sizing path: when the features dataframe carries a
+    // `cluster_radius_a` column (Stage 5a output), each row gets its own
+    // Mol* structure + spacefill rep so the rendered sphere diameter can
+    // approximate the cluster's actual spatial spread. This is the
+    // "consensus pharmacophore" mode — the sphere visually covers the
+    // positions of the features that voted for that cluster, instead of
+    // being a constant blob bigger than the pocket.
+    const radCol = features.col('cluster_radius_a');
+    if (radCol != null) {
+      await this.addPerRowOverlay(features, chain);
+      return;
+    }
+
+    // Constant-size path (Stage 4 chain-F overlay): single Mol* structure
+    // holding all atoms, one spacefill rep with one global sizeFactor. Lighter
+    // on the state tree than the per-row path; sufficient when every point
+    // represents the same kind of thing (a single interaction site).
     try {
       const data = await plugin.builders.data.rawData(
         {data: fullBlock, label: 'cp-overlay-data'});
@@ -602,6 +1023,97 @@ export class ConsensusPharmacophoreApp {
     } catch (e) {
       console.error('[overlay] failed to add Mol* overlay structure:', e);
     }
+  }
+
+  /**
+   * Per-row chain-P consensus overlay. For each row of `features` (which
+   * MUST carry `cluster_radius_a`), build a single-atom PDB, load it as its
+   * own Mol* structure, and apply a spacefill rep whose sizeFactor is tuned
+   * so the rendered sphere's WORLD-SPACE radius approximates the cluster's
+   * max-distance-from-centroid value in Å. The rep is half-transparent
+   * (alpha 0.5) so spheres overlap visibly instead of occluding each other
+   * and the underlying drug ligands.
+   *
+   * Mol*'s spacefill rep multiplies `sizeFactor` by the element's vdW radius
+   * (Å). For our family→element mapping (Donor→N 1.55, Acceptor→O 1.52,
+   * Aromatic→S 1.8, Hydrophobic→C 1.7, Positive→Na 2.27, Negative→Cl 1.75,
+   * Halogen→Br 1.85), we precompute sizeFactor = clusterRadiusA / vdw so the
+   * rendered radius lands at clusterRadiusA Å. Falls back to vdW 1.7 (C) for
+   * unknown elements.
+   */
+  private async addPerRowOverlay(
+    features: DG.DataFrame, chain: string,
+  ): Promise<void> {
+    if (!this.viewer) return;
+    const plugin = (this.viewer as any).viewer?.plugin;
+    if (!plugin) return;
+    const famCol = features.col('family');
+    const xCol = features.col('x');
+    const yCol = features.col('y');
+    const zCol = features.col('z');
+    const radCol = features.col('cluster_radius_a');
+    if (!famCol || !xCol || !yCol || !zCol || !radCol) return;
+
+    // Approximate vdW radii (Å) used by Mol*'s default spacefill size theme.
+    const VDW: Record<string, number> = {
+      N: 1.55, O: 1.52, S: 1.8, C: 1.7,
+      NA: 2.27, CL: 1.75, BR: 1.85, I: 1.98,
+    };
+    let nDrawn = 0;
+    for (let i = 0; i < features.rowCount; i++) {
+      const famName = String(famCol.get(i) ?? '');
+      const fam = resolveFamily(famName);
+      const x = Number(xCol.get(i));
+      const y = Number(yCol.get(i));
+      const z = Number(zCol.get(i));
+      const clusterRadius = Number(radCol.get(i));
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z))
+        continue;
+      const vdw = VDW[fam.element.toUpperCase()] ?? 1.7;
+      // sizeFactor lower clamp 1.0 so the smallest sphere is at least vdw Å
+      // radius (~1.5-2 Å, clearly visible on a 50 Å protein). Lower clamps
+      // produced spheres too tiny to spot inside the kinase pocket when the
+      // protein cartoon failed to dim (race condition with Mol*'s async cell
+      // refresh). Upper clamp 2.5 keeps the largest spheres from filling the
+      // pocket. Dynamic range now ~1.5–4 Å rendered radius across the
+      // clamped clusterRadius input range of 0.8–3.5 Å.
+      const sizeFactor = Math.max(1.0, Math.min(2.5,
+        (Number.isFinite(clusterRadius) ? clusterRadius : 1.5) / vdw));
+
+      // Single-atom PDB. resName/element come from FAMILY_MAP so the rep's
+      // CPK coloring picks up the right family hue.
+      const atomNameField = fam.element.length === 2
+        ? fam.element.padEnd(4)
+        : ' ' + fam.element.padEnd(3);
+      const f = (v: number) => v.toFixed(3).padStart(8);
+      const block =
+        `REMARK   Consensus point ${i + 1} (${fam.name}, radius ${clusterRadius.toFixed(2)} Å)\n` +
+        `HETATM    1 ${atomNameField} ${fam.resName.padEnd(3)} ${chain}   1    ` +
+        f(x) + f(y) + f(z) +
+        '  1.00  1.00          ' + fam.element.padStart(2) + '\nEND\n';
+
+      try {
+        const data = await plugin.builders.data.rawData(
+          {data: block, label: `cp-overlay-row-${i}-data`});
+        const trajectory = await plugin.builders.structure.parseTrajectory(data, 'pdb');
+        const model = await plugin.builders.structure.createModel(trajectory);
+        const structure = await plugin.builders.structure.createStructure(model);
+        const component = await plugin.builders.structure.tryCreateComponentStatic(
+          structure, 'ligand', {label: `cp-overlay-row-${i}-component`});
+        if (component) {
+          await plugin.builders.structure.representation.addRepresentation(component, {
+            type: 'spacefill',
+            typeParams: {sizeFactor, alpha: 0.5},
+            color: 'element-symbol',
+          });
+          nDrawn += 1;
+        }
+      } catch (e) {
+        console.error(`[overlay] per-row overlay failed for row ${i}:`, e);
+      }
+    }
+    console.log(`[overlay] added ${nDrawn} chain-${chain} consensus spheres ` +
+      `(sized by cluster_radius_a, alpha=0.5)`);
   }
 
   /**
@@ -883,13 +1395,13 @@ export class ConsensusPharmacophoreApp {
 
   /** Run Stage 5a (or use cached) — k-means consensus. */
   private async ensureConsensusModel(
-    cache: PreviewCache, pi: DG.ProgressIndicator,
+    cache: PreviewCache, pi: DG.ProgressIndicator, opts: PipelineOptions,
   ): Promise<DG.DataFrame> {
     if (cache.consensusModel) return cache.consensusModel;
     if (!cache.ligandFeatures) throw new Error('ensureConsensusModel: ligandFeatures missing');
     this.setStageStatus('stage5a', 'running');
     pi.update(92, 'Stage 5a: k-means consensus...');
-    const consensus = await runStage5aConsensusKmeans(cache.ligandFeatures);
+    const consensus = await runStage5aConsensusKmeans(cache.ligandFeatures, opts);
     consensus.name = 'consensus_model (preview)';
     this.setStageStatus('stage5a', 'done');
     cache.consensusModel = consensus;
@@ -904,6 +1416,8 @@ export class ConsensusPharmacophoreApp {
     if (!this.tableView) throw new Error('previewFetch called before init()');
     this.resetStageStatuses();
     this.closePdbDetailPanel();
+    this.setMolstarCaption(
+      'Fetched PDBs shown in their native crystallographic frames (no alignment yet).');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Fetch PDBs: starting...');
     try {
@@ -952,6 +1466,9 @@ export class ConsensusPharmacophoreApp {
     if (!this.tableView) throw new Error('previewAlign called before init()');
     this.resetStageStatuses();
     this.closePdbDetailPanel();
+    this.setMolstarCaption(
+      'Stage 2a: structures superimposed on global Cα via Kabsch. Each PDB now ' +
+      'shares a common frame; the first one is the reference.');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Align: starting...');
     try {
@@ -999,6 +1516,9 @@ export class ConsensusPharmacophoreApp {
     if (!this.tableView) throw new Error('previewPocket called before init()');
     this.resetStageStatuses();
     this.closePdbDetailPanel();
+    this.setMolstarCaption(
+      `Stage 3: pocket residues highlighted (within ${options.pocketRadius} Å of any drug ligand). ` +
+      'Cartoon translucent; drug ligand kept as the binding-site seed.');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Pocket: starting...');
     try {
@@ -1070,6 +1590,9 @@ export class ConsensusPharmacophoreApp {
   async previewFeatures(pdbIds: string[], options: PipelineOptions): Promise<void> {
     if (!this.tableView) throw new Error('previewFeatures called before init()');
     this.resetStageStatuses();
+    this.setMolstarCaption(
+      'Stage 4: chain-F spheres = ProLIF protein-ligand interactions (one per ' +
+      'detected contact). CPK colors map to pharmacophore family (see legend).');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Features: starting...');
     try {
@@ -1120,6 +1643,12 @@ export class ConsensusPharmacophoreApp {
       // atom — clearly bigger than what the binding site used to render at.
       pi.update(98, 'Adding interaction overlay...');
       await this.addInteractionOverlay(features, 2.5);
+      // Re-apply the cartoon dim AFTER the overlay (same race-mitigation as in
+      // previewConsensus — see the comment there for the full reasoning).
+      // Use the retry wrapper because a single setMolstarStyle pass can
+      // still race-lose when many per-row overlay structures are being
+      // added concurrently.
+      await this.setMolstarStyleWithRetry({cartoonAlpha: 0.25, solventAlpha: 0.0});
       pi.update(100, 'Done.');
       grok.shell.info(`Features: ${features.rowCount} ProLIF interactions ` +
         `across ${summary.rowCount} PDB(s). ` +
@@ -1143,6 +1672,10 @@ export class ConsensusPharmacophoreApp {
     if (!this.tableView) throw new Error('previewConsensus called before init()');
     this.resetStageStatuses();
     this.closePdbDetailPanel();
+    this.setMolstarCaption(
+      'Stage 5a: chain-P spheres = consensus pharmacophore (k-means centroids ' +
+      'per family). Sphere radius = max spread of contributing features in Å ' +
+      '(small = tight consensus across ligands; large = loose spatial cluster).');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Consensus: starting...');
     try {
@@ -1154,7 +1687,7 @@ export class ConsensusPharmacophoreApp {
       // the chain-P consensus HETATMs sit inside the pocket, not next to it.
       const alignedV2 = await this.ensureAlignedV2(cache, pi);
       await this.ensureLigandFeatures(cache, pi);
-      const consensus = await this.ensureConsensusModel(cache, pi);
+      const consensus = await this.ensureConsensusModel(cache, pi, options);
       this.tableView.dataFrame = consensus;
 
       // Same separate-structure overlay path as previewFeatures: load proteins
@@ -1177,6 +1710,13 @@ export class ConsensusPharmacophoreApp {
       // (B-factor coloring kicks in if a Mol* color scheme other than
       // element-symbol is selected by the user).
       await this.addInteractionOverlay(consensus, 3.0, {chain: 'P'});
+      // Re-apply style with polling retry. Per-row overlays add many
+      // structures back-to-back, and a single setMolstarStyle pass
+      // race-loses (consistently observed: nCartoon=0 in console). The
+      // wrapper retries with exponential backoff (100..3200ms) until at
+      // least one cartoon cell is found and dimmed. Tier 2 fix: render
+      // queue.
+      await this.setMolstarStyleWithRetry({cartoonAlpha: 0.25, solventAlpha: 0.0});
       pi.update(100, 'Done.');
       grok.shell.info(`Consensus: ${consensus.rowCount} consensus pharmacophore points ` +
         `across ${countDistinct(consensus, 'family')} families. ` +
@@ -1222,14 +1762,89 @@ export class ConsensusPharmacophoreApp {
  * so adding a family elsewhere doesn't drift this mapping silently.
  */
 const SUMMARY_FAMILY_COL: Readonly<Record<string, string>> = {
-  D: 'n_hbond_donor',
-  A: 'n_hbond_acceptor',
-  a: 'n_pistacking',
+  D: 'n_donor',
+  A: 'n_acceptor',
+  a: 'n_aromatic',
   H: 'n_hydrophobic',
-  P: 'n_cationic',
-  N: 'n_anionic',
-  X: 'n_xbond',
+  P: 'n_positive',
+  N: 'n_negative',
+  X: 'n_halogen',
 };
+
+/**
+ * Resolve the user's target-lookup query to a single UniProt hit. If the
+ * query is a syntactically valid accession, fetch it directly. Otherwise
+ * search by gene/protein name and either (a) auto-pick the only hit, or
+ * (b) open a small ui.dialog with a radio list so the user disambiguates
+ * across species (human / mouse / fly / ...). Returns `null` only if the
+ * user cancels the dialog; throws on network / API errors.
+ *
+ * The `status` element is updated in place with brief progress text so the
+ * user sees what's happening on long-running searches.
+ */
+async function pickUniProtHit(
+  query: string, status: HTMLElement,
+): Promise<UniProtHit | null> {
+  // Fast path — query is already a UniProt accession.
+  if (isUniProtAccession(query)) {
+    status.textContent = `Fetching ${query.toUpperCase()} from UniProt...`;
+    const hit = await fetchUniProtById(query);
+    if (!hit) throw new Error(`UniProt accession ${query} not found.`);
+    return hit;
+  }
+
+  status.textContent = `Searching UniProt for "${query}"...`;
+  const hits = await searchUniProt(query);
+  if (hits.length === 0)
+    throw new Error(`No SwissProt entries matched "${query}". Try a UniProt accession instead.`);
+  if (hits.length === 1) return hits[0];
+
+  // Multi-hit picker. Build a label-keyed map so ui.input.choice (which
+  // works in string space) can round-trip back to the chosen `UniProtHit`.
+  const labelOf = (h: UniProtHit): string =>
+    `${h.organism || '?'} · ${h.geneName || '(no gene)'} · ` +
+    `${h.accession}${h.pdbCount > 0 ? ` (${h.pdbCount} PDB)` : ''}`;
+  const labels = hits.map(labelOf);
+  const byLabel = new Map<string, UniProtHit>(hits.map((h, i) => [labels[i], h]));
+  const choice = ui.input.choice<string>('Target', {
+    value: labels[0],
+    items: labels,
+  });
+  // Tooltip carries the full protein name so the user can disambiguate
+  // ambiguous gene names without leaving the dialog.
+  const tooltipRow = ui.divText('', 'cp-target-picker-tooltip');
+  tooltipRow.style.fontSize = '11px';
+  tooltipRow.style.color = '#555';
+  tooltipRow.style.marginTop = '6px';
+  tooltipRow.style.maxWidth = '380px';
+  tooltipRow.style.whiteSpace = 'normal';
+  const updateTooltip = () => {
+    const h = byLabel.get((choice.value ?? '') as string);
+    tooltipRow.textContent = h?.proteinName ?? '';
+  };
+  updateTooltip();
+  choice.onChanged.subscribe(updateTooltip);
+  const body = ui.divV([
+    ui.divText(`Found ${hits.length} SwissProt entries matching "${query}". ` +
+      'Pick one — the species matters because PDB structures differ across ' +
+      'orthologs.', 'cp-target-picker-hint'),
+    choice.root,
+    tooltipRow,
+  ]);
+  const dlg = ui.dialog({title: 'Choose target organism'});
+  dlg.add(body);
+  status.textContent = 'Waiting for organism choice...';
+  return new Promise<UniProtHit | null>((resolve) => {
+    let picked: UniProtHit | null = null;
+    dlg.onOK(() => {
+      picked = byLabel.get((choice.value ?? '') as string) ?? null;
+    });
+    dlg.onCancel(() => { picked = null; });
+    dlg.onClose.subscribe(() => resolve(picked));
+    dlg.show();
+  });
+}
+
 
 /**
  * Aggregate Stage 4 `ligand_features` into a per-PDB summary. One row per
@@ -1399,10 +2014,35 @@ function countPocketResidues(pocketAtoms: DG.DataFrame): number {
 }
 
 function parsePdbIds(raw: string): string[] {
-  return raw
-    .split(/[\s,;]+/)
-    .map((s) => s.trim().toUpperCase())
-    .filter((s) => /^[0-9][A-Z0-9]{3}$/.test(s));
+  return parsePdbIdsDetailed(raw).accepted;
+}
+
+/**
+ * Parse the PDB-ID textarea into `accepted` (valid 4-char tokens, uppercased
+ * and deduped) and `rejected` (non-empty tokens that didn't match the PDB
+ * format — e.g. "EGFR", "kinase", "1AB" too-short). The orchestrator surfaces
+ * the rejected list under the textarea so silent token drops don't confuse
+ * the user (e.g. pasting "EGFR, kinase, 1XKK" used to leave only "1XKK" on
+ * screen without any explanation).
+ */
+export function parsePdbIdsDetailed(raw: string): {accepted: string[]; rejected: string[]} {
+  const accepted: string[] = [];
+  const rejected: string[] = [];
+  const seen = new Set<string>();
+  for (const rawToken of raw.split(/[\s,;]+/)) {
+    const t = rawToken.trim();
+    if (!t) continue;
+    const upper = t.toUpperCase();
+    if (/^[0-9][A-Z0-9]{3}$/.test(upper)) {
+      if (!seen.has(upper)) {
+        seen.add(upper);
+        accepted.push(upper);
+      }
+    } else {
+      rejected.push(t);
+    }
+  }
+  return {accepted, rejected};
 }
 
 function currentRunningStage(badges: Map<string, HTMLElement>): string | null {
@@ -1679,18 +2319,23 @@ async function stubStage4ExtractFeatures(
 }
 
 /**
- * Stage 5a — per-family k-means consensus. Calls FN.STAGE5A. The defaults pinned
- * here match TeachOpenCADD T009: kq=7, top_cluster_number=4, min size fraction 0.75,
- * random_state=42, n_init=10. Falls back to the TS stub on failure.
+ * Stage 5a — per-family k-means consensus. Calls FN.STAGE5A. Defaults come
+ * from TeachOpenCADD T009 (kq=7, top_cluster_number=4, min_cluster_size_fraction=0.75)
+ * but the orchestrator now passes the live PipelineOptions values so the user
+ * can tune them from the Advanced options accordion. Falls back to the TS
+ * stub on failure.
  */
-async function runStage5aConsensusKmeans(ligandFeatures: DG.DataFrame): Promise<DG.DataFrame> {
-  console.log(`[Stage 5a] calling ${FN.STAGE5A} with ${ligandFeatures.rowCount} feature rows`);
+async function runStage5aConsensusKmeans(
+  ligandFeatures: DG.DataFrame, opts: PipelineOptions,
+): Promise<DG.DataFrame> {
+  console.log(`[Stage 5a] calling ${FN.STAGE5A} with ${ligandFeatures.rowCount} feature rows ` +
+    `(kq=${opts.kq}, min_frac=${opts.minClusterSizeFraction}, top=${opts.topClusterNumber})`);
   try {
     const result = await grok.functions.call(FN.STAGE5A, {
       ligand_features: ligandFeatures,
-      kq: 7,
-      top_cluster_number: 4,
-      min_cluster_size_fraction: 0.75,
+      kq: opts.kq,
+      top_cluster_number: opts.topClusterNumber,
+      min_cluster_size_fraction: opts.minClusterSizeFraction,
       kmeans_random_state: 42,
     });
     const df = (result instanceof DG.DataFrame) ? result : (result as any)?.consensus_model;

@@ -143,13 +143,24 @@ export async function enrichPdbList(
   let droppedSmiles = 0;
   let droppedMw = 0;
 
-  for (const rawId of pdbIds) {
-    const pdbId = rawId.toUpperCase();
-    let entry: EntryInfo | null;
-    try {
-      entry = await executeEntryInfo(pdbId);
-    } catch (e) {
-      grok.shell.warning(`${pdbId}: enrichment failed (${(e as Error).message}). Skipped.`);
+  // Fetch all PDB entries in parallel — the previous sequential `for...await`
+  // serialized 5 EGFR demo PDBs into 5 sequential RCSB GraphQL round-trips
+  // (~5s total instead of ~1s). Each fetch settles independently so one
+  // 404 / network error doesn't take the batch down with it; failures are
+  // tracked alongside successes and surfaced via the same warning toast.
+  const upper = pdbIds.map((s) => s.toUpperCase());
+  const entries: Array<{pdbId: string; entry: EntryInfo | null; error?: Error}> =
+    await Promise.all(upper.map(async (pdbId) => {
+      try {
+        return {pdbId, entry: await executeEntryInfo(pdbId)};
+      } catch (e) {
+        return {pdbId, entry: null, error: e as Error};
+      }
+    }));
+
+  for (const {pdbId, entry, error} of entries) {
+    if (error) {
+      grok.shell.warning(`${pdbId}: enrichment failed (${error.message}). Skipped.`);
       dropped++;
       continue;
     }
