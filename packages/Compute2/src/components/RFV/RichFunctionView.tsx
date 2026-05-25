@@ -246,6 +246,12 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    // per-step history mode: adds a save-to-history icon (emits `saveToHistory`) and limits the
+    // history panel to runs explicitly saved for this step
+    stepHistory: {
+      type: Boolean,
+      default: false,
+    },
     showRunButton: {
       type: Boolean,
       default: true,
@@ -264,6 +270,7 @@ export const RichFunctionView = Vue.defineComponent({
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
+    'saveToHistory': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -585,7 +592,7 @@ export const RichFunctionView = Vue.defineComponent({
             <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
             { !helpHidden.value && <IconFA name='check'/>}
           </span> }
-          { props.historyEnabled && <span
+          { (props.historyEnabled || props.stepHistory) && <span
             onClick={() => historyHidden.value = !historyHidden.value}
             class={'flex justify-between'}
           >
@@ -613,17 +620,22 @@ export const RichFunctionView = Vue.defineComponent({
             tooltip='Run sensitivity analysis'
             style={{width: '24px', height: '24px'}}
           /> }
+          { props.stepHistory && !uiBlocked.value && <IconFA
+            name='cloud-upload-alt'
+            tooltip='Save this step to history'
+            onClick={() => emit('saveToHistory', currentCall.value)}
+          /> }
+          { (props.historyEnabled || props.stepHistory) && <IconFA
+            name='history'
+            tooltip='Open history panel'
+            onClick={() => historyHidden.value = !historyHidden.value}
+            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
+          /> }
           { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
             onClick={() => helpHidden.value = !helpHidden.value}
             style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-          /> }
-          { props.historyEnabled && <IconFA
-            name='history'
-            tooltip='Open history panel'
-            onClick={() => historyHidden.value = !historyHidden.value}
-            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           /> }
         </RibbonPanel>
         <DockManager class='block h-full'
@@ -633,10 +645,11 @@ export const RichFunctionView = Vue.defineComponent({
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
-          { !historyHidden.value && props.historyEnabled &&
+          { !historyHidden.value && (props.historyEnabled || props.stepHistory) &&
             <History
               key="__HISTORY__"
               func={currentCall.value.func}
+              savedOnly={props.stepHistory}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               allowCompare={true}
               forceHideInputs={false}
