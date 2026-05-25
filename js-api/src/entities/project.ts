@@ -24,13 +24,13 @@ export class Project extends Entity {
     super(dart);
 
     this.options = new MapProxy(api.grok_Project_Get_Options(this.dart), 'options');
-    this.meta = new MapProxy(api.grok_Project_Get_Meta(this.dart), 'meta');
+    this.meta = new MapProxy(api.grok_Project_Get_Meta(this.dart), 'meta') as any;
   }
 
   public options: any;
 
   /** Project metadata (`metaParams`) — user-facing key:value bag, e.g. `demoPath`. */
-  public meta: any;
+  public meta: {[key: string]: string};
 
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
