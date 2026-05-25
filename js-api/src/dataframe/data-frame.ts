@@ -397,6 +397,11 @@ export class DataFrame {
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
+  /** Clears all active filters and unsets the filter bitset. */
+  resetFilter(): void {
+    api.grok_DataFrame_ResetFilter(this.dart);
+  }
+
   /**
    * Appends two tables ('union' in SQL).
    * @param {DataFrame} t2

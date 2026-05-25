@@ -6,6 +6,7 @@ import './utils/string-utils-helpers';
 import './utils/utils-static-helpers';
 
 // Viewer JS API
+import './viewers/annotation-regions-cross-viewer';
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';
 import './viewers/bar-chart-legend-visibility';

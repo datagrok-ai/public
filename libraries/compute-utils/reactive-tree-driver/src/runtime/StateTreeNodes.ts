@@ -168,6 +168,7 @@ export class FuncCallNode implements IStoreProvider {
       funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
       viewersHook: this.config.viewersHook,
+      enableHistory: this.config.enableHistory,
       actions,
     };
     if (options.disableNodesUUID)

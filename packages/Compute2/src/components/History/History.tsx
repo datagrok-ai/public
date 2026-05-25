@@ -15,6 +15,10 @@ import {watchExtractedObservable} from '@vueuse/rxjs';
 
 const GRID_INITED_EVENT = 'd4-grid-initialized';
 
+// Explicit marker set on a FuncCall when it is saved as per-step history (see TreeWizard).
+// When `savedOnly` is set, the panel shows only runs carrying this flag.
+export const STEP_HISTORY_OPTION = 'compute2StepHistory';
+
 export const History = Vue.defineComponent({
   name: 'History',
   props: {
@@ -45,6 +49,11 @@ export const History = Vue.defineComponent({
     fallbackText: {
       type: String,
       default: 'No historical runs found',
+    },
+    // when true, show only runs explicitly saved as per-step history (carrying STEP_HISTORY_OPTION)
+    savedOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: {
@@ -82,7 +91,10 @@ export const History = Vue.defineComponent({
         );
         historicalRuns.value.clear();
 
-        newHistoricalRuns.reduce((acc, run) => {
+        const visibleRuns = props.savedOnly ?
+          newHistoricalRuns.filter((run) => run.options[STEP_HISTORY_OPTION] === 'true') :
+          newHistoricalRuns;
+        visibleRuns.reduce((acc, run) => {
           acc.set(run.id, run);
           return acc;
         }, historicalRuns.value);

@@ -202,6 +202,8 @@ export type PipelineStepConfiguration<S> = {
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
   viewersHook?: ViewersHook;
+  // Per-step opt-in: when true, TreeWizard shows save-to-history and a history panel for this step.
+  enableHistory?: boolean;
   io?: S;
 };
 

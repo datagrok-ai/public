@@ -466,3 +466,52 @@ export async function MockWrapper5(params: any) {
   };
   return config2;
 }
+
+//input: object params
+//output: object result
+export async function MockWrapperAction(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelineAct',
+    nqName: 'LibTests:MockWrapperAction',
+    version: '1.0',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2',
+      },
+      {
+        id: 'act1',
+        type: 'action',
+        friendlyName: 'My action',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+  };
+  return c;
+}
+
+//input: object params
+//output: object result
+export async function MockWrapperDF(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelineDF',
+    nqName: 'LibTests:MockWrapperDF',
+    version: '1.0',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestDF1',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestDF1',
+      },
+    ],
+  };
+  return c;
+}

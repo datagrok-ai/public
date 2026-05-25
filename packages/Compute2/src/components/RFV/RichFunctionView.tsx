@@ -234,11 +234,21 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
     localValidation: {
       type: Boolean,
       default: false,
     },
     historyEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    // per-step history mode: adds a save-to-history icon (emits `saveToHistory`) and limits the
+    // history panel to runs explicitly saved for this step
+    stepHistory: {
       type: Boolean,
       default: false,
     },
@@ -260,6 +270,7 @@ export const RichFunctionView = Vue.defineComponent({
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
+    'saveToHistory': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -309,7 +320,8 @@ export const RichFunctionView = Vue.defineComponent({
     const runLabel = Vue.ref('Run');
     const formAsTab = Vue.ref(false);
 
-    const isLocked = Vue.ref(false);
+    const isFittingActive = Vue.ref(false);
+    const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
@@ -523,9 +535,9 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     const runFitting = async () => {
-      if (isLocked.value)
+      if (isFittingActive.value)
         return;
-      isLocked.value = true;
+      isFittingActive.value = true;
       try {
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
@@ -536,7 +548,7 @@ export const RichFunctionView = Vue.defineComponent({
         if (call)
           emit('update:funcCall', Vue.markRaw(call));
       } finally {
-        isLocked.value = false;
+        isFittingActive.value = false;
       }
     };
 
@@ -547,7 +559,7 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && exports.value?.length > 1 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length > 1 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
             exports.value.map(({ name, handler }) =>
@@ -580,7 +592,7 @@ export const RichFunctionView = Vue.defineComponent({
             <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
             { !helpHidden.value && <IconFA name='check'/>}
           </span> }
-          { props.historyEnabled && <span
+          { (props.historyEnabled || props.stepHistory) && <span
             onClick={() => historyHidden.value = !historyHidden.value}
             class={'flex justify-between'}
           >
@@ -589,36 +601,41 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { !isOutputOutdated.value && exports.value?.length === 1 && <IconFA
+          { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
             name='arrow-to-bottom'
             onClick={exports.value[0].handler}
             tooltip='Generate report for the current step'
           /> }
-          { isFittingEnabled.value && <IconImage
+          { isFittingEnabled.value && !uiBlocked.value && <IconImage
             name='fitting'
             path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
             onClick={runFitting}
             tooltip='Fit inputs'
             style={{width: '24px', height: '24px'}}
           /> }
-          { isSAenabled.value && <IconImage
+          { isSAenabled.value && !uiBlocked.value && <IconImage
             name='sa'
             path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
             onClick={runSA}
             tooltip='Run sensitivity analysis'
             style={{width: '24px', height: '24px'}}
           /> }
+          { props.stepHistory && !uiBlocked.value && <IconFA
+            name='cloud-upload-alt'
+            tooltip='Save this step to history'
+            onClick={() => emit('saveToHistory', currentCall.value)}
+          /> }
+          { (props.historyEnabled || props.stepHistory) && <IconFA
+            name='history'
+            tooltip='Open history panel'
+            onClick={() => historyHidden.value = !historyHidden.value}
+            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
+          /> }
           { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
             onClick={() => helpHidden.value = !helpHidden.value}
             style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-          /> }
-          { props.historyEnabled && <IconFA
-            name='history'
-            tooltip='Open history panel'
-            onClick={() => historyHidden.value = !historyHidden.value}
-            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           /> }
         </RibbonPanel>
         <DockManager class='block h-full'
@@ -628,10 +645,11 @@ export const RichFunctionView = Vue.defineComponent({
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
-          { !historyHidden.value && props.historyEnabled &&
+          { !historyHidden.value && (props.historyEnabled || props.stepHistory) &&
             <History
               key="__HISTORY__"
               func={currentCall.value.func}
+              savedOnly={props.stepHistory}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               allowCompare={true}
               forceHideInputs={false}
@@ -754,7 +772,7 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isLocked.value]])
+      </div>, [[ifOverlapping, isFittingActive.value]])
     );
   },
 });

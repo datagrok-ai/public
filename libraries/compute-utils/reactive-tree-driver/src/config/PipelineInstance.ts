@@ -111,6 +111,7 @@ export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   viewersHook?: ViewersHook;
   actions?: ViewAction[];
+  enableHistory?: boolean;
 } & StepFunCallStateBase;
 
 // pipeline base
