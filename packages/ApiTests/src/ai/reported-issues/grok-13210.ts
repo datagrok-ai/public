@@ -15,8 +15,8 @@ category('AI: GROK-13210: Trellis Box plot bin color schema', () => {
   });
 
   test('inner Box plot accepts binColor* in innerViewerLook and round-trips', async () => {
-    var v: DG.Viewer | undefined;
-    expectNoThrow(() => { v = makeTrellis({binColorColumnName: 'race', binColorAggrType: 'avg'}); });
+    let v: DG.Viewer | undefined;
+    expectNoThrow(() => {v = makeTrellis({binColorColumnName: 'race', binColorAggrType: 'avg'});});
     try {
       expect(v!.type, DG.VIEWER.TRELLIS_PLOT);
       // Schema-level tripwire: the look JSON envelope must include innerViewerLook.
@@ -24,8 +24,7 @@ category('AI: GROK-13210: Trellis Box plot bin color schema', () => {
       // under different names — what we guard against is the whole structure
       // becoming unreachable. Per-key value pinning is intentionally NOT done.
       expect(look(v!).innerViewerLook != null, true);
-    }
-    finally {
+    } finally {
       v!.detach();
     }
   });
@@ -33,12 +32,11 @@ category('AI: GROK-13210: Trellis Box plot bin color schema', () => {
   test('toggling binColorAggrType through all aggregate variants survives setOptions', async () => {
     const v = makeTrellis();
     try {
-      for (var aggr of ['sum', 'avg', 'min', 'max', 'count', 'med', 'q1', 'q3', 'stdev']) {
+      for (const aggr of ['sum', 'avg', 'min', 'max', 'count', 'med', 'q1', 'q3', 'stdev']) {
         expectNoThrow(() => v.setOptions({innerViewerLook: {binColorAggrType: aggr, binColorColumnName: 'race'}}));
         expect(look(v).innerViewerLook != null, true);
       }
-    }
-    finally {
+    } finally {
       v.detach();
     }
   });

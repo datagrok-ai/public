@@ -13,7 +13,7 @@ import {demog, expectLook, expectNoThrow, look} from '../helpers';
 const AGGRS = ['avg', 'sum', 'min', 'max', 'count', 'med', 'q1', 'q3', 'stdev'];
 
 function innerLook(aggr: string): {[k: string]: any} {
-  return {'#type': 'BarChartLook', valueColumnName: 'age', valueAggrType: aggr, splitColumnName: 'race'};
+  return {'#type': 'BarChartLook', 'valueColumnName': 'age', 'valueAggrType': aggr, 'splitColumnName': 'race'};
 }
 
 function makeTrellis(): DG.Viewer {
@@ -25,8 +25,8 @@ function makeTrellis(): DG.Viewer {
 
 category('AI: GROK-19466: Trellis Bar chart global scale + aggr', () => {
   test('construct trellis Bar chart with globalScale=true', async () => {
-    var v: DG.Viewer | null = null;
-    expectNoThrow(() => { v = makeTrellis(); });
+    let v: DG.Viewer | null = null;
+    expectNoThrow(() => {v = makeTrellis();});
     expect(v!.type, DG.VIEWER.TRELLIS_PLOT);
     expectLook(v!, {viewerType: DG.VIEWER.BAR_CHART, globalScale: true});
     expect(look(v!)['innerViewerLook']['valueAggrType'], 'avg');
@@ -41,7 +41,7 @@ category('AI: GROK-19466: Trellis Bar chart global scale + aggr', () => {
 
   test('cycle through every aggr type under globalScale=true', async () => {
     const v = makeTrellis();
-    for (var aggr of AGGRS) {
+    for (const aggr of AGGRS) {
       expectNoThrow(() => v.setOptions({innerViewerLook: innerLook(aggr)}));
       expect(look(v)['innerViewerLook']['valueAggrType'], aggr);
     }
@@ -49,12 +49,14 @@ category('AI: GROK-19466: Trellis Bar chart global scale + aggr', () => {
 
   test('toggle globalScale between true/false after each aggr change', async () => {
     const v = makeTrellis();
-    var scale = true;
-    for (var aggr of AGGRS) {
+    let scale = true;
+    for (const aggr of AGGRS) {
       expectNoThrow(() => {
         v.setOptions({innerViewerLook: innerLook(aggr)});
-        scale = !scale; v.setOptions({globalScale: scale});
-        scale = !scale; v.setOptions({globalScale: scale});
+        scale = !scale;
+        v.setOptions({globalScale: scale});
+        scale = !scale;
+        v.setOptions({globalScale: scale});
       });
       expectLook(v, {globalScale: scale});
       expect(look(v)['innerViewerLook']['valueAggrType'], aggr);

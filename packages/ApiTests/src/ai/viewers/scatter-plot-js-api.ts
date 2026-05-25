@@ -54,7 +54,7 @@ category('AI: Viewers: ScatterPlot JS API', () => {
       {xColumnName: 'age', yColumnName: 'height'}, (v) => {
         v.zoom(20, 150, 60, 200);
         const l = look(v);
-        for (var k of ['xMin', 'xMax', 'yMin', 'yMax'])
+        for (const k of ['xMin', 'xMax', 'yMin', 'yMax'])
           expect(k in l, true);
       });
   });

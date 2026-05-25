@@ -58,7 +58,10 @@ category('AI: GROK-16994: Scatter plot whiskers columns', () => {
       nums('alpha', [1, 2, 3, 4, 5, 6, 7, 8]), nums('beta', [10, 20, 30, 40, 50, 60, 70, 80]),
       nums('lo', [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5]), nums('hi', [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5]),
     ]), {x: 'alpha', y: 'beta', xWhiskerMinColumnName: 'lo', xWhiskerMaxColumnName: 'hi'});
-    expectPropAndLook(v, {xColumnName: 'alpha', yColumnName: 'beta', xWhiskerMinColumnName: 'lo', xWhiskerMaxColumnName: 'hi'});
+    expectPropAndLook(v, {
+      xColumnName: 'alpha', yColumnName: 'beta',
+      xWhiskerMinColumnName: 'lo', xWhiskerMaxColumnName: 'hi',
+    });
     v.setOptions({xWhiskerMinColumnName: 'hi', xWhiskerMaxColumnName: 'lo'});
     expectPropAndLook(v, {xWhiskerMinColumnName: 'hi', xWhiskerMaxColumnName: 'lo'});
   });

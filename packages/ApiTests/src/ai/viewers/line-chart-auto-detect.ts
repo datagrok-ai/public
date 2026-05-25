@@ -55,15 +55,15 @@ category('AI: Viewers: LineChart auto-detect', () => {
 
   // [keyword, columnName, dartType, values]
   const starts: Array<[string, string, string, any[]]> = [
-    ['time',      'time_seconds',  'double', [10, 20, 30, 40, 50]],
-    ['date',      'date_index',    'double', [10, 20, 30, 40, 50]],
-    ['year',      'year_value',    'int',    [2020, 2021, 2022, 2023, 2024]],
-    ['day',       'day_index',     'int',    [1, 2, 3, 4, 5]],
-    ['week',      'week_number',   'int',    [1, 2, 3, 4, 5]],
+    ['time', 'time_seconds', 'double', [10, 20, 30, 40, 50]],
+    ['date', 'date_index', 'double', [10, 20, 30, 40, 50]],
+    ['year', 'year_value', 'int', [2020, 2021, 2022, 2023, 2024]],
+    ['day', 'day_index', 'int', [1, 2, 3, 4, 5]],
+    ['week', 'week_number', 'int', [1, 2, 3, 4, 5]],
     ['timestamp', 'timestamp_utc', 'double', [1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9]],
-    ['offset',    'offset_ms',     'double', [10, 20, 30, 40, 50]],
+    ['offset', 'offset_ms', 'double', [10, 20, 30, 40, 50]],
   ];
-  for (var s of starts) {
+  for (const s of starts) {
     const [kw, name, type, values] = s;
     test(`keyword "${kw}" at start picks numeric column as X`, async () =>
       expectAutoX([alphaRow, [name, type, values]], name));
@@ -72,15 +72,15 @@ category('AI: Viewers: LineChart auto-detect', () => {
   // === Per-keyword endsWith coverage (suffix at end) ===
 
   const ends: Array<[string, string, string, any[]]> = [
-    ['time',      'elapsed_time',       'double', [10, 20, 30, 40, 50]],
-    ['date',      'birthdate',          'double', [10, 20, 30, 40, 50]],
-    ['year',      'fiscal_year',        'int',    [2020, 2021, 2022, 2023, 2024]],
-    ['day',       'birth_day',          'int',    [1, 2, 3, 4, 5]],
-    ['week',      'this_week',          'int',    [1, 2, 3, 4, 5]],
+    ['time', 'elapsed_time', 'double', [10, 20, 30, 40, 50]],
+    ['date', 'birthdate', 'double', [10, 20, 30, 40, 50]],
+    ['year', 'fiscal_year', 'int', [2020, 2021, 2022, 2023, 2024]],
+    ['day', 'birth_day', 'int', [1, 2, 3, 4, 5]],
+    ['week', 'this_week', 'int', [1, 2, 3, 4, 5]],
     ['timestamp', 'creation_timestamp', 'double', [1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9]],
-    ['offset',    'utc_offset',         'double', [10, 20, 30, 40, 50]],
+    ['offset', 'utc_offset', 'double', [10, 20, 30, 40, 50]],
   ];
-  for (var e of ends) {
+  for (const e of ends) {
     const [kw, name, type, values] = e;
     test(`keyword "${kw}" at end picks numeric column as X`, async () =>
       expectAutoX([alphaRow, [name, type, values]], name));
@@ -110,9 +110,9 @@ category('AI: Viewers: LineChart auto-detect', () => {
 
   test('no keyword/DateTime → first numerical column wins (stage-4 fallback)', async () =>
     expectAutoX([
-      ['name',   'string', ['a', 'b', 'c', 'd', 'e']],
+      ['name', 'string', ['a', 'b', 'c', 'd', 'e']],
       ['salary', 'double', [100, 200, 300, 400, 500]],
-      ['bonus',  'double', [10, 20, 30, 40, 50]],
+      ['bonus', 'double', [10, 20, 30, 40, 50]],
     ], 'salary'));
 
   test('keyword as middle substring does NOT match (must be prefix or suffix)', async () =>
@@ -120,7 +120,7 @@ category('AI: Viewers: LineChart auto-detect', () => {
 
   test('non-keyword name with numeric-only chars does not falsely match', async () =>
     expectAutoX([
-      ['value',  'double', [1, 2, 3, 4, 5]],
+      ['value', 'double', [1, 2, 3, 4, 5]],
       ['amount', 'double', [10, 20, 30, 40, 50]],
     ], 'value'));
 
@@ -171,9 +171,9 @@ category('AI: Viewers: LineChart auto-detect', () => {
 
   test('string column with keyword-matching name is ignored (predicate is over numerical)', async () =>
     expectAutoX([
-      ['time',  'string', ['t1', 't2', 't3', 't4', 't5']],
+      ['time', 'string', ['t1', 't2', 't3', 't4', 't5']],
       ['alpha', 'double', [1, 2, 3, 4, 5]],
-      ['beta',  'double', [10, 20, 30, 40, 50]],
+      ['beta', 'double', [10, 20, 30, 40, 50]],
     ], 'alpha'));
 
 }, {owner: 'agolovko@datagrok.ai'});
@@ -197,25 +197,30 @@ const trellisAlpha: [string, string, number[]] = ['alpha', 'double', [1, 2, 3, 4
 const trellisSplit: [string, string, string[]] = ['split', 'string', ['a', 'b', 'a', 'b', 'a', 'b']];
 
 function trellisInnerX(rows: Array<[string, string, any[]]>): any {
-  return look(DG.Viewer.trellisPlot(df(rows), {viewerType: DG.VIEWER.LINE_CHART, xColumnNames: ['split']}))['innerViewerLook']['xColumnName'];
+  const tv = DG.Viewer.trellisPlot(df(rows), {viewerType: DG.VIEWER.LINE_CHART, xColumnNames: ['split']});
+  return look(tv)['innerViewerLook']['xColumnName'];
 }
 
 category('AI: Viewers: LineChart auto-detect (as trellis inner viewer)', () => {
 
   test('keyword "time" at start picks numeric column as X (trellis inner)', async () =>
-    expect(trellisInnerX([trellisAlpha, ['time_seconds', 'double', [10, 20, 30, 40, 50, 60]], trellisSplit]), 'time_seconds'));
+    expect(trellisInnerX(
+      [trellisAlpha, ['time_seconds', 'double', [10, 20, 30, 40, 50, 60]], trellisSplit]), 'time_seconds'));
 
   test('keyword "date" at end picks numeric column as X (trellis inner)', async () =>
-    expect(trellisInnerX([trellisAlpha, ['birthdate', 'double', [10, 20, 30, 40, 50, 60]], trellisSplit]), 'birthdate'));
+    expect(trellisInnerX(
+      [trellisAlpha, ['birthdate', 'double', [10, 20, 30, 40, 50, 60]], trellisSplit]), 'birthdate'));
 
   test('case-insensitive uppercase keyword match (trellis inner)', async () =>
-    expect(trellisInnerX([trellisAlpha, ['TIMESTAMP_UTC', 'double', [1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9, 1.5e9]], trellisSplit]), 'TIMESTAMP_UTC'));
+    expect(trellisInnerX(
+      [trellisAlpha, ['TIMESTAMP_UTC', 'double', [1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9, 1.5e9]], trellisSplit]),
+    'TIMESTAMP_UTC'));
 
   test('no keyword/DateTime → first numerical wins (stage-4 fallback, trellis inner)', async () =>
     expect(trellisInnerX([
-      ['name',   'string', ['a', 'b', 'c', 'a', 'b', 'c']],
+      ['name', 'string', ['a', 'b', 'c', 'a', 'b', 'c']],
       ['salary', 'double', [100, 200, 300, 400, 500, 600]],
-      ['bonus',  'double', [10, 20, 30, 40, 50, 60]],
+      ['bonus', 'double', [10, 20, 30, 40, 50, 60]],
       trellisSplit,
     ]), 'salary'));
 
@@ -223,7 +228,8 @@ category('AI: Viewers: LineChart auto-detect (as trellis inner viewer)', () => {
     const d = df([['alpha', 'double', [1, 2, 3, 4, 5]]]);
     addEventCol(d);
     d.columns.add(DG.Column.fromList('string', 'split', ['a', 'b', 'a', 'b', 'a']));
-    expect(look(DG.Viewer.trellisPlot(d, {viewerType: DG.VIEWER.LINE_CHART, xColumnNames: ['split']}))['innerViewerLook']['xColumnName'], 'event_at');
+    const tv = DG.Viewer.trellisPlot(d, {viewerType: DG.VIEWER.LINE_CHART, xColumnNames: ['split']});
+    expect(look(tv)['innerViewerLook']['xColumnName'], 'event_at');
   });
 
 }, {owner: 'agolovko@datagrok.ai'});

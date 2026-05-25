@@ -22,7 +22,8 @@ category('AI: GROK-18550: PC plot normalizeEachColumn stability', () => {
     // logColumnsColumnNames should still carry 'age'. Accept either an
     // explicit array or a missing key on the look bag.
     const logs = look(c)['logColumnsColumnNames'] as string[] | undefined;
-    if (logs !== undefined) expectArray(logs, ['age']);
+    if (logs !== undefined)
+      expectArray(logs, ['age']);
   });
 
   test('with empty logColumnsColumnNames: toggle normalizeEachColumn survives', async () => {
@@ -35,7 +36,8 @@ category('AI: GROK-18550: PC plot normalizeEachColumn stability', () => {
     });
     expectLook(c, {normalizeEachColumn: false});
     const logs = look(c)['logColumnsColumnNames'] as string[] | undefined;
-    if (logs !== undefined) expect(logs.length, 0);
+    if (logs !== undefined)
+      expect(logs.length, 0);
   });
 
   test('getProperties (best-effort) lists normalizeEachColumn and logColumnsColumnNames', async () => {

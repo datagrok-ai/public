@@ -31,7 +31,7 @@ category('AI: Viewers: BarChart JS API', () => {
 
   test('resetView does not throw on attached BarChart', async () => {
     await withAttachedViewer<DG.BarChartViewer>(demog(), DG.VIEWER.BAR_CHART, {value: 'age', split: 'race'},
-      (v) => { expect(v.resetView() === undefined, true); });
+      (v) => {expect(v.resetView() === undefined, true);});
   });
 
   test('onCategoryClicked and onCategoryHovered are rxjs Observables', async () => {

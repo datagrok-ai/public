@@ -50,7 +50,9 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
 
   test('two numerical columns pick distinct X and Y', async () => {
     // Auto-pick sorts numerical columns by ColumnHistogram bin diversity desc.
-    const c = df([nums('alpha', [1, 2, 3, 4, 5, 6, 7, 8]), nums('beta', [10, 20, 30, 40, 50, 60, 70, 80])]).plot.scatter() as DG.ScatterPlotViewer;
+    const c = df([
+      nums('alpha', [1, 2, 3, 4, 5, 6, 7, 8]), nums('beta', [10, 20, 30, 40, 50, 60, 70, 80]),
+    ]).plot.scatter() as DG.ScatterPlotViewer;
     expectAxisPair(c, ['alpha', 'beta']);
   });
 
@@ -114,7 +116,7 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
     ]);
   }
 
-  for (var s of [' whisker', ' error']) {
+  for (const s of [' whisker', ' error']) {
     const suffix = s;
     test(`suffix "${suffix} min" / "${suffix} max" auto-detected`, async () => {
       const c = buildMinMax(suffix + ' min', suffix + ' max').plot.scatter() as DG.ScatterPlotViewer;
@@ -126,7 +128,7 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
     });
   }
 
-  for (var r of [' whisker range', ' error range']) {
+  for (const r of [' whisker range', ' error range']) {
     const suffix = r;
     test(`suffix "${suffix}" auto-detected (no min/max)`, async () => {
       const c = buildPair(suffix).plot.scatter() as DG.ScatterPlotViewer;
@@ -138,7 +140,7 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
     });
   }
 
-  for (var sd of [' std', ' stddev']) {
+  for (const sd of [' std', ' stddev']) {
     const suffix = sd;
     test(`bare "${suffix}" suffix folded into range`, async () => {
       // Per utils.dart: bare ' std' / ' stddev' are deposited into rangeColumns (not min/max).
@@ -213,7 +215,8 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
 const splitRow: [string, string, string[]] = ['split', 'string', ['s', 't', 's', 't', 's', 't', 's', 't']];
 
 function trellisInner(d: DG.DataFrame): {[k: string]: any} {
-  return look(DG.Viewer.trellisPlot(d, {viewerType: DG.VIEWER.SCATTER_PLOT, xColumnNames: ['split']}))['innerViewerLook'];
+  const tv = DG.Viewer.trellisPlot(d, {viewerType: DG.VIEWER.SCATTER_PLOT, xColumnNames: ['split']});
+  return look(tv)['innerViewerLook'];
 }
 
 function expectInnerAxisPair(inner: {[k: string]: any}, candidates: [string, string]): {xBase: string, yBase: string} {
@@ -228,7 +231,9 @@ function expectInnerAxisPair(inner: {[k: string]: any}, candidates: [string, str
 category('AI: Viewers: ScatterPlot auto-detect (as trellis inner viewer)', () => {
 
   test('two numerical columns pick distinct X and Y (trellis inner)', async () => {
-    const inner = trellisInner(df([nums('alpha', [1, 2, 3, 4, 5, 6, 7, 8]), nums('beta', [10, 20, 30, 40, 50, 60, 70, 80]), splitRow]));
+    const inner = trellisInner(df([
+      nums('alpha', [1, 2, 3, 4, 5, 6, 7, 8]), nums('beta', [10, 20, 30, 40, 50, 60, 70, 80]), splitRow,
+    ]));
     expectInnerAxisPair(inner, ['alpha', 'beta']);
   });
 

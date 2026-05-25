@@ -12,11 +12,12 @@ import {demog, expectNoThrow, withTableView} from '../helpers';
 category('AI: GROK-19207: Annotation regions after delete', () => {
   test('enable region drawing, close attached viewer, add new line chart', async () => {
     await withTableView(demog(), async (tv) => {
-      const v1 = tv.addViewer(DG.VIEWER.LINE_CHART, {xColumnName: 'age', yColumnNames: ['height']}) as DG.LineChartViewer;
+      const v1 = tv.addViewer(DG.VIEWER.LINE_CHART,
+        {xColumnName: 'age', yColumnNames: ['height']}) as DG.LineChartViewer;
       v1.enableAnnotationRegionDrawing();
       v1.disableAnnotationRegionDrawing();
       v1.close();
-      var v2: DG.LineChartViewer | undefined;
+      let v2: DG.LineChartViewer | undefined;
       expectNoThrow(() => {
         v2 = tv.addViewer(DG.VIEWER.LINE_CHART, {xColumnName: 'age', yColumnNames: ['weight']}) as DG.LineChartViewer;
       });
@@ -27,7 +28,8 @@ category('AI: GROK-19207: Annotation regions after delete', () => {
 
   test('meta.annotationRegions.add survives close and re-open on the same tv', async () => {
     await withTableView(demog(), async (tv) => {
-      const v1 = tv.addViewer(DG.VIEWER.LINE_CHART, {xColumnName: 'age', yColumnNames: ['height']}) as DG.LineChartViewer;
+      const v1 = tv.addViewer(DG.VIEWER.LINE_CHART,
+        {xColumnName: 'age', yColumnNames: ['height']}) as DG.LineChartViewer;
       const ar = v1.meta.annotationRegions;
       expect(ar.items.length, 0);
       ar.add({header: 'GROK-19207 region', description: 'lifecycle pin', opacity: 50});
@@ -35,7 +37,7 @@ category('AI: GROK-19207: Annotation regions after delete', () => {
       const parsed = JSON.parse(v1.props['annotationRegions']);
       expect(parsed.length, 1);
       v1.close();
-      var v2: DG.LineChartViewer | undefined;
+      let v2: DG.LineChartViewer | undefined;
       expectNoThrow(() => {
         v2 = tv.addViewer(DG.VIEWER.LINE_CHART, {xColumnName: 'age', yColumnNames: ['weight']}) as DG.LineChartViewer;
       });
@@ -51,7 +53,7 @@ category('AI: GROK-19207: Annotation regions after delete', () => {
       v1.enableAnnotationRegionDrawing();
       v1.disableAnnotationRegionDrawing();
       v1.close();
-      var v2: DG.LineChartViewer | undefined;
+      let v2: DG.LineChartViewer | undefined;
       expectNoThrow(() => {
         v2 = df.plot.line({xColumnName: 'age', yColumnNames: ['weight']}) as DG.LineChartViewer;
         tv.dockManager.dock(v2!, DG.DOCK_TYPE.RIGHT);

@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectPropAndLook, expectRoundTripPropAndLook, findProp, subscribeAll, withAttachedViewer} from '../helpers';
+import {
+  demog, expectChoices, expectPropAndLook, expectRoundTripPropAndLook, findProp, subscribeAll, withAttachedViewer,
+} from '../helpers';
 
 // JS API source: public/js-api/src/viewer.ts:279 (DG.Viewer.pieChart),
 // public/js-api/src/viewer.ts:696 (PieChartViewer),
@@ -39,7 +41,7 @@ category('AI: Viewers: PieChart JS API', () => {
 
   test('getProperties exposes pie-specific properties', async () => {
     const v = DG.Viewer.pieChart(demog(20), {category: 'race'});
-    for (var name of ['categoryColumnName', 'pieSortType', 'pieSortOrder',
+    for (const name of ['categoryColumnName', 'pieSortType', 'pieSortOrder',
       'segmentAngleColumnName', 'segmentLengthColumnName', 'includeNulls'])
       expect(findProp(v, name) != null, true);
     expectChoices(v, 'pieSortType', ['by value', 'by category']);

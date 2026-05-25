@@ -6,7 +6,8 @@ import {demog, expectNoThrow, wait, withTableView} from '../helpers';
 // `fromMap` to migrate legacy property names when loading an old layout JSON.
 // Source (Dart):
 //   core/client/d4/lib/src/viewers/box_plot/box_plot_look.dart    (categoryColumnName -> categoryColumnNames)
-//   core/client/d4/lib/src/viewers/pie_chart/pie_chart_look.dart  (showInnerPercent -> showPercentage, showInnerLabel -> showLabel)
+//   core/client/d4/lib/src/viewers/pie_chart/pie_chart_look.dart
+//     (showInnerPercent -> showPercentage, showInnerLabel -> showLabel)
 //   core/client/d4/lib/src/viewers/scatterplot/scatterplot_look.dart (labelFormColumnNames -> labelColumnNames)
 //
 // The migration path is only triggered when the layout JSON is fed through
@@ -29,8 +30,13 @@ function buildLayoutJson(viewerType: string, look: {[k: string]: any}, tableName
         'state': {'width': 1000, 'height': 800, 'documentManager': true},
         'children': [{
           'containerType': 'panel',
-          'state': {'width': 1000, 'height': 800,
-            'element': {'id': '00000000-0000-0000-0000-000000000001', 'type': viewerType, 'look': look, 'title': viewerType}},
+          'state': {
+            'width': 1000, 'height': 800,
+            'element': {
+              'id': '00000000-0000-0000-0000-000000000001',
+              'type': viewerType, 'look': look, 'title': viewerType,
+            },
+          },
           'children': [],
         }],
       }],
@@ -42,8 +48,10 @@ function buildLayoutJson(viewerType: string, look: {[k: string]: any}, tableName
 }
 
 function findViewer(tv: DG.TableView, type: string): DG.Viewer | null {
-  for (var v of tv.viewers)
-    if (v.type === type) return v;
+  for (const v of tv.viewers) {
+    if (v.type === type)
+      return v;
+  }
   return null;
 }
 

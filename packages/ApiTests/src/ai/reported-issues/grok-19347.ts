@@ -27,9 +27,11 @@ category('AI: GROK-19347: Density plot xMin/xMax/yMin/yMax', () => {
   test('getProperties lists xMin/xMax/yMin/yMax (best-effort)', async () => {
     const c = DG.Viewer.densityPlot(demog(20), {x: 'age', y: 'height'});
     const wanted = ['xMin', 'xMax', 'yMin', 'yMax'];
-    var foundCount = 0;
-    for (var n of wanted)
-      if (findProp(c, n) != null) foundCount++;
+    let foundCount = 0;
+    for (const n of wanted) {
+      if (findProp(c, n) !=
+        null) foundCount++;
+    }
     // Older descriptors may not list newly-added props; fall back to a look-bag
     // round-trip so the regression check is still meaningful.
     if (foundCount < wanted.length)

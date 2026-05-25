@@ -29,8 +29,10 @@ category('AI: GROK-18169: PC plot showMin and showMax', () => {
     // or it may keep them internal behind showMinMax. Either is acceptable;
     // round-trip them only when present so the test is robust to either shape.
     const c = v(20);
-    if (findProp(c, 'showMin') != null) expectBoolToggle(c, 'showMin', [true, false]);
-    if (findProp(c, 'showMax') != null) expectBoolToggle(c, 'showMax', [true, false]);
+    if (findProp(c, 'showMin') !=
+      null) expectBoolToggle(c, 'showMin', [true, false]);
+    if (findProp(c, 'showMax') !=
+      null) expectBoolToggle(c, 'showMax', [true, false]);
   });
 
   test('showLabels and showDensity toggle independently', async () => {

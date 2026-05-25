@@ -20,7 +20,7 @@ category('AI: GROK-19610: Box plot zoom-values-by-filter toggle', () => {
     const c = df.plot.box({value: 'height', category: 'race'});
     expectNoThrow(() => {
       c.props['zoomValuesByFilter'] = true;
-      for (var i = 0; i < df.rowCount; i++)
+      for (let i = 0; i < df.rowCount; i++)
         df.filter.set(i, i % 2 === 0);
       c.props['zoomValuesByFilter'] = false;
       c.props['zoomValuesByFilter'] = true;

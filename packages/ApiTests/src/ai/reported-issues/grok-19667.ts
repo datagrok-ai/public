@@ -31,11 +31,14 @@ category('AI: GROK-19667: Bar chart axisType log scale stability', () => {
     });
     expectLook(c, {axisType: 'logarithmic'});
     const l = look(c);
-    if (l['valueMin'] !== undefined) expect(typeof l['valueMin'] === 'number', true);
-    if (l['valueMax'] !== undefined) expect(typeof l['valueMax'] === 'number', true);
+    if (l['valueMin'] !== undefined)
+      expect(typeof l['valueMin'] === 'number', true);
+    if (l['valueMax'] !== undefined)
+      expect(typeof l['valueMax'] === 'number', true);
   });
 
   test('getProperties() exposes axisType with non-empty description (best-effort)', async () => {
-    expect(findProp(demog(20).plot.bar({value: 'age', split: 'race', valueAggrType: 'count'}), 'axisType') != null, true);
+    const v = demog(20).plot.bar({value: 'age', split: 'race', valueAggrType: 'count'});
+    expect(findProp(v, 'axisType') != null, true);
   });
 });

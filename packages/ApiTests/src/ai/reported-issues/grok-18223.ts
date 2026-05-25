@@ -1,4 +1,3 @@
-import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectNoThrow, findProp, look} from '../helpers';
 
@@ -13,12 +12,13 @@ import {demog, expectNoThrow, findProp, look} from '../helpers';
 category('AI: GROK-18223: Histogram bins range stability', () => {
   test('sweeping bins through low and high values does not throw', async () => {
     const v = demog().plot.histogram({value: 'age'});
-    var lastApplied: number | null = null;
+    let lastApplied: number | null = null;
     expectNoThrow(() => {
-      for (var n of [1, 2, 50, 200, 500, 1000]) {
+      for (const n of [1, 2, 50, 200, 500, 1000]) {
         v.setOptions({bins: n});
         const stored = look(v)['bins'];
-        if (typeof stored === 'number') lastApplied = stored;
+        if (typeof stored === 'number')
+          lastApplied = stored;
       }
     });
     expect(typeof lastApplied === 'number' && lastApplied! > 0 && Number.isFinite(lastApplied!), true);
@@ -35,7 +35,8 @@ category('AI: GROK-18223: Histogram bins range stability', () => {
     // Platform behaviour observed: setOptions({bins: 0}) is accepted into
     // look without throwing — the value rides through. We don't pin the
     // stored value because the platform doesn't auto-clamp 0.
-    if (typeof stored === 'number') expect(Number.isFinite(stored), true);
+    if (typeof stored === 'number')
+      expect(Number.isFinite(stored), true);
   });
 
   test('getProperties() exposes bins with a non-empty description', async () => {

@@ -10,7 +10,7 @@ import {category, expect, expectFloat, test} from '@datagrok-libraries/test/src/
 // JS side (not '' as the raw Dart QNum.qualifier does).
 category('AI: Qnum: static helpers', () => {
   test('exact / less / greater set qualifier', async () => {
-    for (var v of [0, 1.5, -3.25, 1e-6, 1234567.89]) {
+    for (const v of [0, 1.5, -3.25, 1e-6, 1234567.89]) {
       const ex = DG.Qnum.exact(v);
       const lt = DG.Qnum.less(v);
       const gt = DG.Qnum.greater(v);
@@ -24,7 +24,7 @@ category('AI: Qnum: static helpers', () => {
   });
 
   test('exact / less / greater equal create with constant', async () => {
-    for (var v of [0, 1.5, -3.25, 100]) {
+    for (const v of [0, 1.5, -3.25, 100]) {
       expect(DG.Qnum.exact(v), DG.Qnum.create(v, DG.QNUM_EXACT));
       expect(DG.Qnum.less(v), DG.Qnum.create(v, DG.QNUM_LESS));
       expect(DG.Qnum.greater(v), DG.Qnum.create(v, DG.QNUM_GREATER));

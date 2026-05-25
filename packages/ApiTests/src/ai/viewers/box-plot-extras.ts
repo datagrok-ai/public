@@ -30,7 +30,7 @@ category('AI: Viewers: BoxPlot extras', () => {
   test('violin bins int round-trip within 20-1000', async () => {
     const c = v();
     c.setOptions({plotStyle: 'violin'});
-    for (var n of [100, 20, 1000])
+    for (const n of [100, 20, 1000])
       expectRoundTrip(c, {bins: n});
   });
 
@@ -62,13 +62,17 @@ category('AI: Viewers: BoxPlot extras', () => {
 
   test('markerOpacity 0..100 boundary round-trip', async () => {
     const c = v();
-    for (var n of [0, 50, 100])
+    for (const n of [0, 50, 100])
       expectRoundTrip(c, {markerOpacity: n});
   });
 
   test('showInsideValues/showOutsideValues/showPValue/showEmptyCategories combined bool round-trip', async () => {
     const c = v();
-    expectRoundTrip(c, {showInsideValues: false, showOutsideValues: false, showPValue: false, showEmptyCategories: false});
-    expectRoundTrip(c, {showInsideValues: true, showOutsideValues: true, showPValue: true, showEmptyCategories: true});
+    expectRoundTrip(c, {
+      showInsideValues: false, showOutsideValues: false, showPValue: false, showEmptyCategories: false,
+    });
+    expectRoundTrip(c, {
+      showInsideValues: true, showOutsideValues: true, showPValue: true, showEmptyCategories: true,
+    });
   });
 }, {owner: 'agolovko@datagrok.ai'});
