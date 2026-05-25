@@ -39,6 +39,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'raw') return handleRaw(dapi, verb, rest, output);
     if (entity === 'describe') return handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return handleHealthcheck(dapi, argv, output);
+    if (entity === 'sync') return handleSync(dapi, verb, rest, argv, output);
     if (entity === 'functions' && verb === 'run') return handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return handleFunctionsList(dapi, argv, limit, offset, filter, output);
     if (entity === 'files' && verb === 'list') {
@@ -243,6 +244,80 @@ async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: strin
   const result = await dapi.raw(method, path);
   printOutput(result, output);
   return true;
+}
+
+async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  // `grok s sync` subcommands. Mirrors the API surface in
+  // core/server/datlas/lib/src/routers/sync.dart — pairs / setups /
+  // runs are read-only here; `run` triggers an actual push and prints
+  // the per-item summary. Full reference in
+  // core/docs/plans/instance-sync.md (Phase 7 / operational polish).
+  //
+  // `_callSync` does dual-path routing: tries `/api/sync/...` first
+  // (nginx-fronted deployments) and falls back to `/sync/...` (bare
+  // datlas on :8082). Same approach as the server-side handshake
+  // code so the CLI works against either layout.
+  const verb = rest[0];
+  const callSync = async (method: string, path: string, body?: any): Promise<any> => {
+    for (const prefix of ['/api', '']) {
+      const r: any = body !== undefined
+        ? await dapi.raw(method, `${prefix}${path}`, body)
+        : await dapi.raw(method, `${prefix}${path}`);
+      // raw() returns `null` for 404, but the server returns HTML for
+      // 404 too — treat anything that isn't a sync-shaped object/array
+      // as a miss and fall through to the alternate prefix.
+      if (r && (Array.isArray(r) || typeof r === 'object') && r['#type'] !== 'ApiError') return r;
+    }
+    return null;
+  };
+  if (subject === 'pairs' && verb === 'list') {
+    const status = argv.status ? `?status=${encodeURIComponent(argv.status)}` : '';
+    const pairs = await callSync('GET', `/sync/pairs${status}`);
+    printOutput(pairs, output);
+    return true;
+  }
+  if (subject === 'setups' && verb === 'list') {
+    const pairId = argv.pair ?? rest[1];
+    if (!pairId) { printError(new Error('Usage: grok s sync setups list --pair <pair-id>')); return false; }
+    const setups = await callSync('GET', `/sync/pairs/${encodeURIComponent(pairId)}/setups`);
+    printOutput(setups, output);
+    return true;
+  }
+  if (subject === 'setup' && verb === 'get') {
+    const id = rest[1];
+    if (!id) { printError(new Error('Usage: grok s sync setup get <setup-id>')); return false; }
+    const setup = await callSync('GET', `/sync/setups/${encodeURIComponent(id)}`);
+    printOutput(setup, output);
+    return true;
+  }
+  if (subject === 'run') {
+    // grok s sync run <setup-id>
+    const id = rest[1] ?? verb;
+    if (!id) { printError(new Error('Usage: grok s sync run <setup-id>')); return false; }
+    const result = await callSync('POST', `/sync/setups/${encodeURIComponent(id)}/run`, {});
+    if (output === 'json' || output === 'csv') { printOutput(result, output); return true; }
+    if (output === 'quiet') { console.log(result?.runId ?? ''); return true; }
+    if (!result) { printError(new Error(`Sync setup ${id} not found, or server has no /sync routes.`)); return false; }
+    console.log(`Run ${result?.runId} → ${result?.remoteUrl} (${result?.status})`);
+    if (result?.counts) {
+      const cs = Object.keys(result.counts).filter(k => (result.counts[k] ?? 0) > 0)
+        .map(k => `${result.counts[k]} ${k}`).join(', ');
+      if (cs) console.log(`  ${cs}`);
+    }
+    const items = Array.isArray(result?.items) ? result.items : [];
+    if (items.length) {
+      console.log('\nItems:');
+      printOutput(items, 'table');
+    }
+    return true;
+  }
+  printError(new Error(
+    'Usage:\n' +
+    '  grok s sync pairs list [--status active|pending|revoked]\n' +
+    '  grok s sync setups list --pair <pair-id>\n' +
+    '  grok s sync setup get <setup-id>\n' +
+    '  grok s sync run <setup-id>'));
+  return false;
 }
 
 async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
@@ -621,6 +696,10 @@ Special commands:
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array
   grok s batch manifest.json                          Run a workflow manifest
+  grok s sync pairs list [--status <s>]               List cross-instance sync pairs (status: active|pending|revoked)
+  grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
+  grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
+  grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
 
 Options:
   --host <alias|url>    Server alias from config or full URL

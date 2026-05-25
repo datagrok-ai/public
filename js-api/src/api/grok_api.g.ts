@@ -384,7 +384,16 @@ export interface IDartApi {
   grok_LineChartViewer_WorldToScreen(l: any, x: Num, y: Num, chartIndex: Num): any;
   grok_LineChartViewer_ScreenToWorld(l: any, x: Num, y: Num): any;
   grok_BarChartViewer_ResetView(b: any): any;
+  grok_BarChartViewer_GetAggregatedValueColumn(b: any): any;
+  grok_BarChartViewer_EnableAnnotationRegionDrawing(b: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_BarChartViewer_DisableAnnotationRegionDrawing(b: any): any;
+  grok_HistogramViewer_EnableAnnotationRegionDrawing(h: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_HistogramViewer_DisableAnnotationRegionDrawing(h: any): any;
   grok_BoxPlotViewer_ResetView(b: any): any;
+  grok_BoxPlotViewer_EnableAnnotationRegionDrawing(b: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_BoxPlotViewer_DisableAnnotationRegionDrawing(b: any): any;
+  grok_DensityPlotViewer_EnableAnnotationRegionDrawing(d: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_DensityPlotViewer_DisableAnnotationRegionDrawing(d: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;

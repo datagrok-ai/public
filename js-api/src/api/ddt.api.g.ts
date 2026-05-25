@@ -31,6 +31,8 @@ export class Tags {
 
   static ColorCodingText = '.color-coding-text';
 
+  static ColorCodingTextBackground = '.color-coding-text-background';
+
   static ColorCodingLinear = '.color-coding-linear';
 
   static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
@@ -208,6 +210,8 @@ export class Tags {
   static CreationScript = '.script';
 
   static DataSync = '.data-sync';
+
+  static UrlParams = '.url-params';
 
   static IsDbEntity = '.db.entity';
 
