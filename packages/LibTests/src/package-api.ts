@@ -103,4 +103,12 @@ export namespace funcs {
   export async function mockWrapper5(params: any ): Promise<any> {
     return await grok.functions.call('LibTests:MockWrapper5', { params });
   }
+
+  export async function mockWrapperAction(params: any ): Promise<any> {
+    return await grok.functions.call('LibTests:MockWrapperAction', { params });
+  }
+
+  export async function mockWrapperDF(params: any ): Promise<any> {
+    return await grok.functions.call('LibTests:MockWrapperDF', { params });
+  }
 }
