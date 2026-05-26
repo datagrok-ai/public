@@ -11,6 +11,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -288,8 +289,8 @@ export const TreeNode = Vue.defineComponent({
                 caption={ui.iconFA('plus')}
                 rightAligned
                 items={props.stat.data.stepTypes
-                  .filter((stepType) => !stepType.disableUIAdding)
-                  .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
+                  .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
+                  .map((stepType: StepDynamicDescription) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
