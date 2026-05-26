@@ -269,8 +269,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
-    if (!molecules || this._requestTerminated)
+  async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false,
+    opId?: string): Promise<string[]> {
+    if (!molecules || this.isOpTerminated(opId))
       return [];
     let addedToCache = false;
     const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
@@ -281,7 +282,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       //every N molecules check for termination flag
       if (i % this._terminationCheckDelay === 0)
         await new Promise((r) => setTimeout(r, 0));
-      if (this._requestTerminated)
+      if (this.isOpTerminated(opId))
         return results;
       const item = molecules[i];
       if (!item || item === '') {
@@ -411,8 +412,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 
-  async rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string):
-    Promise<IRGroupAnalysisResult> {
+  async rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string,
+    opId?: string): Promise<IRGroupAnalysisResult> {
     let mols: MolList | null = null;
     let res: RGroupDecomp | null = null;
     let core: RDMol | null = null;
@@ -428,7 +429,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     const emptyResult = (): IRGroupAnalysisResult =>
       ({colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []});
     try {
-      if (this._requestTerminated)
+      if (this.isOpTerminated(opId))
         return emptyResult();
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
@@ -449,7 +450,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       for (let i = 0; i < molecules.length; i ++) {
         if (i % this._terminationCheckDelay === 0)
           await new Promise((r) => setTimeout(r, 0));
-        if (this._requestTerminated)
+        if (this.isOpTerminated(opId))
           return emptyResult();
         const match = res!.add(mols!.at(i));
         if (match == -1)
@@ -458,7 +459,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
       res!.process();
 
-      if (this._requestTerminated)
+      if (this.isOpTerminated(opId))
         return emptyResult();
 
       cols = res!.get_rgroups_as_columns();
@@ -478,7 +479,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           for (let j = 0; j < molecules.length; j++) {
             if (j % this._terminationCheckDelay === 0)
               await new Promise((r) => setTimeout(r, 0));
-            if (this._requestTerminated)
+            if (this.isOpTerminated(opId))
               return emptyResult();
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);

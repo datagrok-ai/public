@@ -31,14 +31,16 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   getCoordGenCoords = async (molecules: string[]): Promise<string[]> =>
     this.call(WORKER_CALL.GET_COORDGEN_COORDS, [molecules]);
 
-  convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false) =>
-    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize]);
+  convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false,
+    opId?: string) =>
+    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize, opId]);
 
   getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, molecules?: string[]) =>
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);
 
-  rGroupAnalysis = async (molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string) =>
-    this.call(WORKER_CALL.R_GROUP_ANALYSIS, [molecules, coreMolecule, coreIsQMol, options]);
+  rGroupAnalysis = async (molecules: string[], coreMolecule: string, coreIsQMol: boolean,
+    options?: string, opId?: string) =>
+    this.call(WORKER_CALL.R_GROUP_ANALYSIS, [molecules, coreMolecule, coreIsQMol, options, opId]);
 
   mmpGetFragments = async (molecules: string[]) =>
     this.call(WORKER_CALL.MMP_GET_FRAGMENTS, [molecules]);
@@ -52,6 +54,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   invalidateCache = async () => this.call(WORKER_CALL.INVALIDATE_CACHE);
 
   setTerminateFlag = async (flag: boolean) => this.call(WORKER_CALL.SET_TERMINATE_FLAG, [flag]);
+
+  setOpTerminate = async (opId: string, flag: boolean) =>
+    this.call(WORKER_CALL.SET_OP_TERMINATE, [opId, flag]);
 
   mostCommonStructure = async (
     molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,

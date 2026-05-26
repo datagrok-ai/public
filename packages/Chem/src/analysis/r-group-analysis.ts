@@ -245,6 +245,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
   let progressBar: DG.TaskBarProgressIndicator | undefined;
   let cancelSub: Subscription | undefined;
+  const opId = `rgroup-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   try {
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
@@ -260,7 +261,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
     cancelSub = progressBar.onCanceled.subscribe(async () => {
       const svc = await getRdKitService();
-      await svc.setTerminateFlag(true);
+      await svc.setOpTerminate(opId, true);
     });
 
     const rGroupOptions = {
@@ -271,10 +272,9 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
     if (progressBar.canceled) return;
 
-    const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+    const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions, opId);
 
     if (progressBar.canceled) return;
-    (await getRdKitService()).setTerminateFlag(false);
 
     const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
@@ -358,19 +358,19 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
   } finally {
     cancelSub?.unsubscribe();
     progressBar?.close();
-    getRdKitService().then((svc) => svc.setTerminateFlag(false)).catch(() => {});
+    getRdKitService().then((svc) => svc.setOpTerminate(opId, false)).catch(() => {});
   }
 }
 
 
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
-    { [key: string]: string | boolean }): Promise<RGroupsRes> {
+    { [key: string]: string | boolean }, opId?: string): Promise<RGroupsRes> {
   if (!coreMolecule)
     throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
-      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
+      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '', opId);
   const resCols: DG.Column<string>[] = [];
   for (let i = 0; i < res.colNames.length; i++) {
     const col = DG.Column.string(res.colNames[i], molecules.length).init((j) => res.smiles[i][j]);

@@ -474,11 +474,12 @@ export class RdKitService {
     return res;
   }
 
-  async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation, kekulize = false): Promise<string[]> {
+  async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation, kekulize = false,
+    opId?: string): Promise<string[]> {
     const t = this;
     const res =
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
+        t.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize, opId),
       (data: string[][]) => {
         return ([] as string[]).concat(...data);
       });
@@ -504,8 +505,8 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
-    Promise<IRGroupAnalysisResult> {
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean,
+    options?: string, opId?: string): Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       t.parallelWorkers[i].rGroupAnalysis(segment, coreMolecule, coreIsQMol, options),
@@ -520,7 +521,7 @@ export class RdKitService {
     }); */
 
     // R group analysis does not support parallelization, so we will use the first worker
-    const res = await this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
+    const res = await this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options, opId);
     return res;
   }
 
@@ -540,6 +541,17 @@ export class RdKitService {
     this._doParallel(
       (i: number) => {
         return t.parallelWorkers[i].setTerminateFlag(flag);
+      },
+      (_: any) => {
+        return;
+      });
+  }
+
+  async setOpTerminate(opId: string, flag: boolean): Promise<void> {
+    const t = this;
+    this._doParallel(
+      (i: number) => {
+        return t.parallelWorkers[i].setOpTerminate(opId, flag);
       },
       (_: any) => {
         return;

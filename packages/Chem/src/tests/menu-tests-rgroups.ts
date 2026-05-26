@@ -201,15 +201,27 @@ M  END
 
   test('rgroups.cancel.workerRespectsFlag', async () => {
     const svc = await chemCommonRdKit.getRdKitService();
-    await svc.setTerminateFlag(true);
-    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    const opId = 'rgroups-test-cancel';
+    const smiles = sampleTable.col('smiles')!;
+
+    await svc.setOpTerminate(opId, true);
+    const res = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts, opId);
     const emptyResult = res.rGroups.length === 0 ||
       res.rGroups.every((c) => c.toList().every((v) => !v));
-    expect(emptyResult, true, 'Expected empty result when terminate flag is pre-set');
+    expect(emptyResult, true, 'Expected empty result when opId terminate is pre-set');
 
-    await svc.setTerminateFlag(false);
-    const res2 = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
-    expect(res2.rGroups.length > 0, true, 'Expected results after flag reset');
+    await svc.setOpTerminate(opId, false);
+    const res2 = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts, opId);
+    expect(res2.rGroups.length > 0, true, 'Expected results after opId reset');
+
+    // Regression guard: the legacy global flag must not cancel R-Group.
+    await svc.setTerminateFlag(true);
+    try {
+      const res3 = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts);
+      expect(res3.rGroups.length > 0, true, 'R-Group must ignore the legacy global flag');
+    } finally {
+      await svc.setTerminateFlag(false);
+    }
   }, {timeout: 30000});
 });
 
