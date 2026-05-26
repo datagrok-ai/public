@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.5 (2026-05-26)
+
+Implement Welch ANOVA
+
 ## 1.5.4 (2026-05-16)
 
 Updated the Multivariate Analysis demo
