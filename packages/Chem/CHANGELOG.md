@@ -6,6 +6,9 @@
 * Chem Space: Guard editor entry against null current dataFrame / missing Molecule column to prevent `NullError: method not found: 'dart' on null` from `setColumnInputTable`
 * Chem: Toxicity Risks: Avoid 'Column already exists' crash on repeat invocation by using `getUnusedName` before adding risk columns
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* Scaffold tree: Fixed severe load/scroll slowdown on large dataframes — molecule rendering and substructure searches now run only for on-screen nodes (IntersectionObserver rooted at the actual scroll container) instead of the entire tree
+* Scaffold tree: Deduplicated per-node bitset computation (reuses in-flight and completed searches) and added a one-time shared fingerprint warm-up, eliminating redundant full-column searches on load
+* Scaffold tree: Debounced scroll-driven substructure searches so fast scrolling no longer spawns a search for every node scrolled past
 
 ## 1.17.8 (2026-05-12)
 

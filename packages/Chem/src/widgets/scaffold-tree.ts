@@ -21,6 +21,7 @@ let attached = false;
 let scaffoldTreeId = 0;
 const SCAFFOLD_TREE_SKETCHER_ACTION = 'scaffold-tree-sketcher-action';
 const EXCLUDE_FROM_FILTER_COLUMN_SELECT = '.exclude-from-filter-column-select';
+const SCROLL_SEARCH_DEBOUNCE_MS = 200;
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -59,6 +60,8 @@ interface ITreeNode {
   parentColor?: string;
   colorOn?: boolean;
   bitsetCalculated?: boolean;
+  bitsetPromise?: Promise<DG.BitSet | null> | null;
+  bitsetGen?: number;
   label?: string;
   labelElement?: HTMLDivElement;
 }
@@ -236,7 +239,8 @@ function getVisibleNodes(thisViewer: ScaffoldTreeViewer, includeExpanded: boolea
   const visibleNodes: Array<TreeViewGroup> = [];
   fillVisibleNodes(thisViewer.tree, visibleNodes, includeExpanded);
 
-  const {scrollTop, offsetHeight: viewerHeight, scrollHeight} = thisViewer.tree.root;
+  const container = thisViewer.tree.root.parentElement ?? thisViewer.tree.root;
+  const {scrollTop, offsetHeight: viewerHeight, scrollHeight} = container;
   const nodeHeight = thisViewer.sizesMap[thisViewer.size].height;
 
   const scrollableHeight = scrollHeight - viewerHeight;
@@ -249,6 +253,40 @@ function getVisibleNodes(thisViewer: ScaffoldTreeViewer, includeExpanded: boolea
   end = Math.min(visibleNodes.length - 1, end);
 
   return visibleNodes.slice(start, end + 10);
+}
+
+function ensureNodeBitset(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, forceRecalc: boolean): Promise<DG.BitSet | null> {
+  const v = value(group);
+
+  if (forceRecalc)
+    v.bitsetCalculated = false;
+  else {
+    if (v.bitsetCalculated)
+      return Promise.resolve(v.bitset ?? null);
+    if (v.bitsetPromise)
+      return v.bitsetPromise;
+  }
+
+  const gen = (v.bitsetGen ?? 0) + 1;
+  v.bitsetGen = gen;
+
+  const p: Promise<DG.BitSet | null> = (async () => {
+    let bitset: DG.BitSet | null = null;
+    try {
+      await thisViewer.ensureFpsWarm();
+      bitset = await handleMalformedStructures(thisViewer.molColumn!, v.smiles);
+    } finally {
+      if (v.bitsetGen === gen) {
+        v.bitset = bitset;
+        v.bitsetCalculated = true;
+        v.bitsetPromise = null;
+      }
+    }
+    return bitset;
+  })();
+
+  v.bitsetPromise = p;
+  return p;
 }
 
 function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, updateBitset: boolean = false): Promise<void> {
@@ -276,11 +314,7 @@ function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, updat
         try {
           bitset = thisViewer.molColumn === null ?
             null :
-            await handleMalformedStructures(thisViewer.molColumn, v.smiles);
-
-          v.bitset = bitset;
-
-          v.bitsetCalculated = true;
+            await ensureNodeBitset(thisViewer, group, updateBitset);
 
           updateNodeHitsLabel(group, bitset ? bitset.trueCount.toString() : '0');
 
@@ -400,6 +434,10 @@ async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, 
 function disconnectExistingObservers(viewer: ScaffoldTreeViewer) {
   viewer.intersectionObserver?.disconnect?.();
   viewer.resizeObserver?.disconnect?.();
+  if (viewer.scrollSearchTimeout !== null) {
+    clearTimeout(viewer.scrollSearchTimeout);
+    viewer.scrollSearchTimeout = null;
+  }
 }
 
 export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
@@ -439,26 +477,36 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     });
   }
 
-  function handleVisibleGroup(group: DG.TreeViewGroup) {
-    const groupVal = value(group);
-    renderMoleculeAsync(group, groupVal, thisViewer);
-    const updateBitset = thisViewer.updateBitset(group);
-    updateLabel(thisViewer, group, updateBitset);
+  function renderGroup(group: DG.TreeViewGroup) {
+    renderMoleculeAsync(group, value(group), thisViewer);
+  }
+
+  function runVisibleSearch() {
+    thisViewer.scrollSearchTimeout = null;
+    visibleNodes.forEach((group) => {
+      if (isOrphans(group))
+        return;
+      updateLabel(thisViewer, group, thisViewer.updateBitset(group));
+    });
   }
 
   function scheduleGroupUpdate(group: DG.TreeViewGroup) {
-    if (pendingGroups.has(group)) return;
     if (isOrphans(group)) return;
 
-    pendingGroups.add(group);
-    if (!frameRequested) {
-      frameRequested = true;
-      requestAnimationFrame(() => {
-        pendingGroups.forEach(handleVisibleGroup);
-        pendingGroups.clear();
-        frameRequested = false;
-      });
+    if (!pendingGroups.has(group)) {
+      pendingGroups.add(group);
+      if (!frameRequested) {
+        frameRequested = true;
+        requestAnimationFrame(() => {
+          pendingGroups.forEach(renderGroup);
+          pendingGroups.clear();
+          frameRequested = false;
+        });
+      }
     }
+    if (thisViewer.scrollSearchTimeout !== null)
+      clearTimeout(thisViewer.scrollSearchTimeout);
+    thisViewer.scrollSearchTimeout = window.setTimeout(runVisibleSearch, SCROLL_SEARCH_DEBOUNCE_MS);
   }
 
   function setupIntersectionObserver(viewer: ScaffoldTreeViewer, groupMap: Map<HTMLElement, DG.TreeViewGroup>, visibleSet: Set<DG.TreeViewGroup>, scheduleUpdate: (group: DG.TreeViewGroup) => void) {
@@ -475,7 +523,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
           visibleSet.delete(group);
       });
     }, {
-      root: viewer.tree.root,
+      root: viewer.tree.root.parentElement,
       rootMargin: '50px',
       threshold: 0,
     });
@@ -674,7 +722,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   _iconUpload: HTMLElement | null = null;
   _bitOpInput: InputBase | null = null;
   skipAutoGenerate: boolean = false;
-  workersInit: boolean = false;
+  fpWarmPromise: Promise<void> | null = null;
   progressBar: DG.TaskBarProgressIndicator | null = null;
   moleculeColumnName: string;
   molColPropObserver: MutationObserver | null = null;
@@ -698,6 +746,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
   intersectionObserver: IntersectionObserver | undefined;
   resizeObserver: ResizeObserver | undefined;
+  scrollSearchTimeout: number | null = null;
 
   // not to make chem dependent on unreleased js-api version with group.addNode
   enableNodeRearangement: boolean = true;
@@ -893,10 +942,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (currentCancelled)
       return;
 
-    if (!this.workersInit) {
-      await _initWorkers(this.molColumn);
-      this.workersInit = true;
-    }
+    await this.ensureFpsWarm();
 
     if (currentCancelled)
       return;
@@ -1004,7 +1050,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     thisViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, colorOn: boolean | null, checked: boolean, isNot: boolean, expanded: boolean, orphansBitset: DG.BitSet) => {
       return thisViewer.createGroup(molStr, rootGroup, chosenColor, parentColor, colorOn, checked, isNot, expanded, orphansBitset);
     });
-
 
     ui.setUpdateIndicator(this.root, false);
     if (this.progressBar !== null)
@@ -1334,7 +1379,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.moveNodeTo(node, direction === 'down' ? siblingIdx + 1 : siblingIdx);
   }
 
+  ensureFpsWarm(): Promise<void> {
+    if (this.fpWarmPromise)
+      return this.fpWarmPromise;
+    if (!this.molColumn)
+      return Promise.resolve();
+    this.fpWarmPromise = _initWorkers(this.molColumn).then(() => {}).catch(() => {});
+    return this.fpWarmPromise;
+  }
+
   clear() {
+    this.fpWarmPromise = null;
     this.clearFilters();
     this.clearTree();
 
