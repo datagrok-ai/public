@@ -289,6 +289,22 @@ export class SubstructureFilter extends DG.Filter {
         }
       }));
 
+    // Re-run the search when cells in our column are edited (e.g. via the in-cell sketcher);
+    // otherwise the cached bitset stays stale and edited rows keep their old match state.
+    // Only the active filter recomputes — peers sync via FILTER_SYNC_EVENT.
+    this.subs.push(this.dataFrame!.onValuesChanged
+      .pipe(filter((args: any) => {
+        const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
+        return this.isFiltering &&
+          args?.args?.column?.name === this.columnName &&
+          args?.args?.indexes?.length &&
+          (!active || active.filterId === -1 || active.filterId === this.filterId);
+      }))
+      .subscribe(async () => {
+        this.recalculateFilter = true;
+        await this._onSketchChanged();
+      }));
+
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
       this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
