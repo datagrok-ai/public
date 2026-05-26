@@ -172,7 +172,7 @@ This release introduces non-backward-compatible database changes. You can upgrad
 * Fixed:
   * [#3668](https://github.com/datagrok-ai/public/issues/3668): Scrolling in plugin Credentials frame
 
-### [JS API](https://datagrok.ai/help/develop/js-api)
+### [JS API](https://datagrok.ai/help/develop/packages/js-api)
 
 * Views and UI:
   * Added `Shell.preview` getter/setter
@@ -486,7 +486,7 @@ running Python functions as Celery tasks in isolated containers while the platfo
 * Browse tree navigation improvements: the selected directory is now sticky, so it stays in view when you navigate between sections, making it easier to keep your context while browsing
 * Redesigned Docker UX with added **Resources**, **Logs**, and **Build logs** sections for easier container management and monitoring
 
-### [JS API](https://datagrok.ai/help/develop/js-api)
+### [JS API](https://datagrok.ai/help/develop/packages/js-api)
 
 * Added the alias for 'memberships', addressing the previous limitation that required using group.parents in the JavaScript API. For details, see [how to get a list of users](https://community.datagrok.ai/t/how-to-delete-users-from-grok-server/613/7)
 
@@ -1831,7 +1831,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * The ability to configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
-* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/function_results_cache#client-side-cache)
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/functions/cache-function-results#client-side-cache)
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.

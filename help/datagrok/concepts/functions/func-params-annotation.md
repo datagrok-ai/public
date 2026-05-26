@@ -809,7 +809,7 @@ The annotation works with different output types:
 
 #### Example: Murcko scaffolds (Python)
 
-The [Murcko Scaffolds](https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds) function from the Chem package
+The [Murcko Scaffolds](https://datagrok.ai/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds) function from the Chem package
 extracts molecular scaffolds and joins them to the input table:
 
 ```python
