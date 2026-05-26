@@ -2,7 +2,7 @@
 //language: javascript
 //description: RichFunctionView custom input and df input
 //input: dataframe df
-//input: string data { input: Libtests:CustomInputMock; inputOptions: { "arg1": 1, "arg2": "test", "arg3": true } }
+//input: string data { input: Compute:CustomInputMock; inputOptions: { "arg1": 1, "arg2": "test", "arg3": true } }
 //output: dataframe dfout
 //output: string dataout
 //editor: Compute:RichFunctionViewEditor

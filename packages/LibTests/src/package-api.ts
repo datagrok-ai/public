@@ -8,26 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function customInputMock(params: any ): Promise<any> {
-    return await grok.functions.call('LibTests:CustomInputMock', { params });
-  }
-
-  export async function rangeValidatorFactory(params: any ): Promise<any> {
-    return await grok.functions.call('LibTests:RangeValidatorFactory', { params });
-  }
-
-  export async function asyncValidatorDemoFactory(params: any ): Promise<any> {
-    return await grok.functions.call('LibTests:AsyncValidatorDemoFactory', { params });
-  }
-
-  export async function globalValidatorDemoFactory(params: any ): Promise<any> {
-    return await grok.functions.call('LibTests:GlobalValidatorDemoFactory', { params });
-  }
-
-  export async function validatorActionsDemoFactory(params: any ): Promise<any> {
-    return await grok.functions.call('LibTests:ValidatorActionsDemoFactory', { params });
-  }
-
   export async function testViewerComponent(): Promise<void> {
     return await grok.functions.call('LibTests:TestViewerComponent', {});
   }
