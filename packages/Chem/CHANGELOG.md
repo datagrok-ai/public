@@ -1,6 +1,6 @@
 # Chem changelog
 
-## v.next
+## 1.17.9 (2026-05-26)
 
 * Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")
 * Chem Space: Guard editor entry against null current dataFrame / missing Molecule column to prevent `NullError: method not found: 'dart' on null` from `setColumnInputTable`
