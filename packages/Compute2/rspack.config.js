@@ -19,7 +19,7 @@ const SOURCE_LIBS = [
   '@datagrok-libraries/arrow',
   '@datagrok-libraries/dock-spawn-dg',
   '@datagrok-libraries/test',
-  'diff-grok', // ships .ts source; transitive dep of compute-utils
+  'diff-grok',
 ].map(realLib).filter(Boolean);
 
 module.exports = (env = {}) => {
@@ -42,25 +42,28 @@ module.exports = (env = {}) => {
     jsc: {...swcCommon.jsc, parser: {...swcCommon.jsc.parser, tsx: false}},
   };
 
-  const swcTsx = {
-    ...swcCommon,
-    jsc: {
-      ...swcCommon.jsc,
-      parser: {...swcCommon.jsc.parser, tsx: true},
-      experimental: {
-        plugins: [['swc-plugin-vue-jsx', {customElementPatterns: ['^dg-', '^dock-spawn-ts$']}]],
-      },
-    },
+  // .tsx → babel (@vue/babel-plugin-jsx is the reference Vue JSX transform; the
+  // SWC port has known bugs e.g. undeclared _slot at runtime). Babel only runs
+  // on .tsx files (~15 of ~40 source files), SWC still handles all .ts.
+  const babelTsx = {
+    babelrc: false,
+    configFile: false,
+    cacheDirectory: false,
+    presets: [
+      ['@babel/preset-typescript', {isTSX: true, allExtensions: true}],
+    ],
+    plugins: [
+      ['@vue/babel-plugin-jsx', {isCustomElement: (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts'}],
+    ],
   };
 
-  const swcJsx = {
-    jsc: {
-      target: 'es2015',
-      parser: {syntax: 'ecmascript', jsx: true},
-      experimental: {
-        plugins: [['swc-plugin-vue-jsx', {customElementPatterns: ['^dg-', '^dock-spawn-ts$']}]],
-      },
-    },
+  const babelJsx = {
+    babelrc: false,
+    configFile: false,
+    cacheDirectory: false,
+    plugins: [
+      ['@vue/babel-plugin-jsx', {isCustomElement: (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts'}],
+    ],
   };
 
   const includePaths = [path.resolve(__dirname, 'src'), ...SOURCE_LIBS];
@@ -74,9 +77,7 @@ module.exports = (env = {}) => {
     },
     experiments: {css: false},
     resolve: {
-      // .ts first → deep imports into linked libs resolve to source; npm deps still fall through to .js because their .ts doesn't exist
       extensions: ['.wasm', '.ts', '.tsx', '.mjs', '.js', '.jsx', '.json'],
-      // 'source' field comes first → top-level package imports go to ./index.ts
       mainFields: ['source', 'browser', 'module', 'main'],
       alias: {
         ...(ENABLE_VUE_DEV_TOOLS ? {'vue': path.resolve('node_modules/vue/dist/vue.esm-bundler.js')} : {}),
@@ -84,9 +85,9 @@ module.exports = (env = {}) => {
     },
     module: {
       rules: [
-        {test: /\.tsx$/, include: includePaths, loader: 'builtin:swc-loader', options: swcTsx},
+        {test: /\.tsx$/, include: includePaths, loader: 'babel-loader', options: babelTsx},
         {test: /\.ts$/, include: includePaths, loader: 'builtin:swc-loader', options: swcTs},
-        {test: /\.jsx$/, loader: 'builtin:swc-loader', options: swcJsx},
+        {test: /\.jsx$/, loader: 'babel-loader', options: babelJsx},
         {test: /\.css$/, use: ['style-loader', 'css-loader', 'postcss-loader'], type: 'javascript/auto'},
         {test: /\.(mjs|js)$/, enforce: 'pre', use: ['source-map-loader']},
       ],
