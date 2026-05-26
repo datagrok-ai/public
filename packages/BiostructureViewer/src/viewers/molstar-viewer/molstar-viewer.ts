@@ -1137,7 +1137,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
           type: type
         });
-        components.applyOrUpdate(StateElements.SequenceVisual, StateTransforms.Representation.StructureRepresentation3D, repr);
+        components.applyOrUpdate(`${StateElements.SequenceVisual}-${ref}`, StateTransforms.Representation.StructureRepresentation3D, repr);
         await components.commit();
       }
     });

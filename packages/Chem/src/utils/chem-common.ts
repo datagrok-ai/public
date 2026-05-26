@@ -1,4 +1,3 @@
-import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getMolSafe} from './mol-creation_rdkit';
 import {MolList, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -68,7 +67,6 @@ export function hasNewLines(s: string): boolean {
   return s.includes('\n') || s.includes('\r');
 }
 
-/** @deprecated Use DG.Color.hexToPercentRgb */
 export function hexToPercentRgb(hex: string): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -129,7 +127,7 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
       if (mol) {
         let rdKol: number[] | null = null;
         if (col)
-          rdKol = DG.Color.hexToPercentRgb(col);
+          rdKol = hexToPercentRgb(col);
         const uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
         const uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
         if (mcsMol) {

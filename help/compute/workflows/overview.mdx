@@ -33,17 +33,19 @@ field's canonical reference:
 ## Configuration — the central artifact
 
 A workflow is fully described by a single TypeScript object of type
-`PipelineConfiguration`. The configuration is a tree: pipelines contain
-steps; steps are either script nodes, nested pipelines, or references to
-other workflows. Every node has an `id`. The `type` field discriminates
-pipelines (`static`, `dynamic`, `action`, `ref`); leaves are scripts
+`PipelineConfiguration` — in code the type and its runtime cousins use
+the `Pipeline*` prefix; throughout these docs the prose calls it a
+*workflow*. The configuration is a tree: workflows contain steps; steps
+are either script nodes, nested workflows, or references to other
+workflows. Every node has an `id`. The `type` field discriminates
+workflows (`static`, `dynamic`, `action`, `ref`); leaves are scripts
 (`type: 'step'`, or omitted). See [Configuration](./configuration) for
 the full field-by-field reference.
 
-Links live alongside steps inside a pipeline and propagate data between
+Links live alongside steps inside a workflow and propagate data between
 IOs. Data flow is forward-only, in depth-first order through the tree.
 Some link roles target virtual outputs rather than script IOs —
-`validator` for per-IO validation, `pipelineValidator` for pipeline-level
+`validator` for per-IO validation, `pipelineValidator` for workflow-level
 checks, `meta` for UI hints, plus the user-triggered `action`. See
 [Link types](./link-types) for the catalogue and
 [Link Query Language](./link-query-language) for how `from`/`to` paths

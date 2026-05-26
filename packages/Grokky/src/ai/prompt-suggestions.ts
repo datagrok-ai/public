@@ -3,68 +3,89 @@ import * as jsyaml from 'js-yaml';
 
 import {_package} from '../package';
 
-interface PromptSuggestion {
+type Scope = 'column' | 'view' | 'global';
+type Context = 'powerSearch' | 'panel';
+
+export interface Suggestion {
   label?: string;
   prompt: string;
+  prefer?: Record<string, string>;
 }
 
-type Scope = 'column' | 'viewer' | 'view' | 'global';
-
-interface ScopeBlock {
+export interface Block {
+  context: Context;
   scope: Scope;
   key: string;
   match?: {semType?: string; type?: string};
   label: string;
   icon?: string;
-  suggestions: PromptSuggestion[];
+  suggestions: Suggestion[];
 }
 
-interface SuggestionsFile {
-  powerSearch: Record<string, PromptSuggestion[]>;
-  context: ScopeBlock[];
-}
+// TODO: LLM-curated suggestions vs current human + view-agnostic heuristics?
+const SLOT = /\{(\w+):([^}]+)}/g;
+let _cache: Block[] | null = null;
 
-export interface ResolvedScope {
-  key?: string;
-  label: string;
-  icon?: string;
-  suggestions: PromptSuggestion[];
-}
-
-let _cache: SuggestionsFile | null = null;
-
-async function loadSuggestions(): Promise<SuggestionsFile> {
-  if (_cache)
-    return _cache;
-  const text = await _package.files.readAsText('suggestions.yaml');
-  _cache = jsyaml.load(text) as SuggestionsFile;
+async function load(): Promise<Block[]> {
+  if (!_cache)
+    _cache = jsyaml.load(await _package.files.readAsText('suggestions.yaml')) as Block[];
   return _cache;
 }
 
-export async function resolveContextScopes(view: DG.ViewBase | null): Promise<ResolvedScope[]> {
-  const tv = view instanceof DG.TableView ? view : null;
-  const blocks = (await loadSuggestions()).context;
-  const out: ResolvedScope[] = [];
-  for (const b of blocks) {
-    const hasCol = b.scope === 'column' && !!tv?.dataFrame?.columns.bySemType(b.match?.semType ?? '');
-    const ok =
-      b.scope === 'global' ||
-      hasCol ||
-      (b.scope === 'viewer' && !!tv && Array.from(tv.viewers).some((v) => v.type === b.match?.type)) ||
-      (b.scope === 'view' && view?.type === b.match?.type);
-    if (ok)
-      out.push({key: b.key, label: b.label, icon: b.icon, suggestions: b.suggestions});
+function colMatches(c: DG.Column, filter: string): boolean {
+  if (filter === 'numerical')
+    return c.isNumerical;
+  if (filter === 'categorical')
+    return c.isCategorical;
+  if (filter.startsWith('semType='))
+    return c.semType === filter.slice(8);
+  return false;
+}
+
+function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
+  const picked: Record<string, string> = {};
+  const taken = new Set<string>();
+  let cols: DG.Column[] | null = null;
+
+  for (const [, name, filter] of `${s.label ?? ''}\n${s.prompt}`.matchAll(SLOT)) {
+    if (name in picked) continue;
+    if (!df) return null;
+    if (!cols) cols = df.columns.toList();
+    const candidates = cols.filter((c) => !taken.has(c.name) && colMatches(c, filter));
+    if (!candidates.length) return null;
+
+    const prefer = s.prefer?.[name];
+    const re = prefer ? new RegExp(prefer.match(/name~="([^"]+)"/)?.[1] ?? prefer, 'i') : null;
+    const pick = (re && candidates.find((c) => re.test(c.name))) || candidates[0];
+    picked[name] = pick.name;
+    taken.add(pick.name);
+  }
+
+  const fill = (t: string): string => t.replace(SLOT, (_, n) => picked[n]);
+  return {label: s.label ? fill(s.label) : undefined, prompt: fill(s.prompt)};
+}
+
+export async function resolveScopes(context: Context, view: DG.ViewBase | null = null): Promise<Block[]> {
+  const df = view instanceof DG.TableView ? view.dataFrame ?? null : null;
+  const out: Block[] = [];
+  for (const b of await load()) {
+    if (b.context !== context) continue;
+    const applies = b.scope === 'global' ||
+      (b.scope === 'view' && view?.type === b.match?.type) ||
+      (b.scope === 'column' && !!df?.columns.bySemType(b.match?.semType ?? ''));
+    if (!applies) continue;
+
+    const suggestions = b.suggestions
+      .map((s) => resolveSuggestion(s, df))
+      .filter((s): s is Suggestion => !!s);
+    if (suggestions.length)
+      out.push({...b, suggestions});
   }
   return out;
 }
 
-export async function loadPowerSearchScopes(): Promise<ResolvedScope[]> {
-  const data = (await loadSuggestions()).powerSearch;
-  return Object.entries(data).map(([label, suggestions]) => ({label, suggestions}));
-}
-
 export function showSuggestionsMenu(
-  scopes: ResolvedScope[],
+  scopes: Block[],
   onSelect: (prompt: string) => void,
   causedBy?: MouseEvent,
 ): void {

@@ -10,7 +10,7 @@ import {isPipelineStepConfig} from '../config/config-utils';
 import {FuncCallAdapter} from './FuncCallAdapters';
 import {saveFuncCall, saveInstanceState} from './funccall-utils';
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
-import {indexFromEnd} from '../utils';
+import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
 import {GranularMutationOp, ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
@@ -498,8 +498,12 @@ export class StateTree {
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
 
+      const curTags = item.nodeDescription.getState<Record<string, string[]>>('tags') ?? {};
+      const nextTags = pruneByKeys(curTags, currentLinkIds);
+      if (nextTags)
+        item.nodeDescription.setState('tags', nextTags);
+
       if (!isFuncCallNode(item)) {
-        item.clearOldTags(currentLinkIds);
         item.clearOldPipelineValidations(currentLinkIds);
         return acc;
       }
@@ -582,3 +586,4 @@ export class StateTree {
     });
   }
 }
+

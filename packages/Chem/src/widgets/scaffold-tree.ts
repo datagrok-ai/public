@@ -1670,7 +1670,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   private getPeerViewers(): ScaffoldTreeViewer[] {
-    return (Array.from(grok.shell.tv?.viewers) ?? []).filter(
+    return Array.from(grok.shell.tv?.viewers ?? []).filter(
       (v) => v !== this && v.type === ScaffoldTreeViewer.TYPE &&
         (v as ScaffoldTreeViewer).molColumn?.name === this.molColumn?.name,
     ) as ScaffoldTreeViewer[];
@@ -1779,6 +1779,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
 
     const {colorCodedNodes, scaffoldColorMap} = this.collectNodes();
+
+    if (colorCodedNodes.length === 0) {
+      this.removeFragmentsColumn();
+      this.updateLabelsColumn(colorCodedNodes, scaffoldColorMap);
+      return;
+    }
 
     const {column: fragmentsCol} = this.ensureColumn(
       'colors', this.fragmentsColumn, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');

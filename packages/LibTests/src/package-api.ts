@@ -68,6 +68,22 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestMultiarg5', { a, b, c, d, e });
   }
 
+  export async function testIONamesA(seed: number ): Promise<{x: number, y: number}> {
+    return await grok.functions.call('LibTests:TestIONamesA', { seed });
+  }
+
+  export async function testIONamesB(x: number , y: number ): Promise<number> {
+    return await grok.functions.call('LibTests:TestIONamesB', { x, y });
+  }
+
+  export async function testIONamesBReversed(y: number , x: number ): Promise<number> {
+    return await grok.functions.call('LibTests:TestIONamesBReversed', { y, x });
+  }
+
+  export async function testIONamesAExtra(seed: number ): Promise<{x: number, y: number, z: number}> {
+    return await grok.functions.call('LibTests:TestIONamesAExtra', { seed });
+  }
+
   export async function mockWrapper1(params: any ): Promise<any> {
     return await grok.functions.call('LibTests:MockWrapper1', { params });
   }
@@ -86,5 +102,13 @@ export namespace funcs {
 
   export async function mockWrapper5(params: any ): Promise<any> {
     return await grok.functions.call('LibTests:MockWrapper5', { params });
+  }
+
+  export async function mockWrapperAction(params: any ): Promise<any> {
+    return await grok.functions.call('LibTests:MockWrapperAction', { params });
+  }
+
+  export async function mockWrapperDF(params: any ): Promise<any> {
+    return await grok.functions.call('LibTests:MockWrapperDF', { params });
   }
 }

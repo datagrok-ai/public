@@ -10,7 +10,7 @@ import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {RestrictionType, ValidationResult} from '../data/common-types';
+import {isDynamicType, RestrictionType, ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {customDeepEqual, mergeValidationResults, pruneByKeys} from '../utils';
 
@@ -168,6 +168,7 @@ export class FuncCallNode implements IStoreProvider {
       funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
       viewersHook: this.config.viewersHook,
+      enableHistory: this.config.enableHistory,
       actions,
     };
     if (options.disableNodesUUID)
@@ -332,13 +333,6 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  clearOldTags(currentIds: Set<string>) {
-    const cur = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? {};
-    const next = pruneByKeys(cur, currentIds);
-    if (next)
-      this.nodeDescription.setState('tags', next);
-  }
-
   setPipelineValidation(uuid: string, r?: ValidationResult) {
     const cur = {...this.pipelineValidations$.value};
     if (r === undefined)
@@ -361,6 +355,7 @@ export class PipelineNodeBase implements IStoreProvider {
       version: this.config.version,
       nqName: this.config.nqName,
       friendlyName: this.config.friendlyName,
+      description: this.config.description,
       isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)
@@ -451,15 +446,6 @@ export class DynamicPipelineNode extends PipelineNodeBase {
   }
 }
 
-/** @deprecated Use DynamicPipelineNode */
-export type ParallelPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export type SequentialPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export const ParallelPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export const SequentialPipelineNode = DynamicPipelineNode;
-
 export type StateTreeNode = FuncCallNode | StaticPipelineNode | DynamicPipelineNode;
 
 export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
@@ -471,13 +457,8 @@ export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelin
 }
 
 export function isDynamicPipelineNode(node: StateTreeNode): node is DynamicPipelineNode {
-  return node.nodeType === 'dynamic';
+  return isDynamicType(node.nodeType);
 }
-
-/** @deprecated Use isDynamicPipelineNode */
-export const isParallelPipelineNode = isDynamicPipelineNode;
-/** @deprecated Use isDynamicPipelineNode */
-export const isSequentialPipelineNode = isDynamicPipelineNode;
 
 function getStepTypes(conf: PipelineConfigurationDynamicProcessed) {
   return conf.stepTypes.map((s) => {

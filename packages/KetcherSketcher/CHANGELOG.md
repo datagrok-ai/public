@@ -1,5 +1,9 @@
 # Ketcher Sketcher changelog
 
+## 2.4.6 (2026-05-19)
+
+* Fixed "couldnt find ketcher instance N" error when clicking OK on the cell editor dialog: the `change` handler now bails out if the sketcher is detached while a `getMolfile()` call is still in flight
+
 ## 2.4.5 (2026-05-13)
 
 * Workaround to fix multiple setMolecule calls, caused by bug in js-api (multiple subsribtions to copy-paste into sketcher string input field)

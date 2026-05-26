@@ -153,17 +153,19 @@ export class PackageFunctions {
     const demoView = new DemoView(!hasPath);
     if (hasPath) {
       const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
-      const node = demoView.tree.items.find((node) => {
-        const nodeText = node.text.replaceAll('-', ' ');
-        return nodeText === pathElements[pathElements.length - 1];
-      })?.root;
+      const findNode = () => demoView.tree.items.find((node) =>
+        node.text.replaceAll('-', ' ') === pathElements[pathElements.length - 1])?.root;
       const closeSub = grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v?.root !== demoView.root) {
           closeSub.unsubscribe();
           demoView.close();
         }
       });
-      node?.click();
+      const initialNode = findNode();
+      if (initialNode)
+        initialNode.click();
+      else
+        demoView.projectsReady.then(() => findNode()?.click());
     }
     return demoView;
   }
@@ -337,7 +339,7 @@ export class PackageFunctions {
     'description': 'A network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.'
   })
   static async _networkDiagramDemo() : Promise<void> {
-    await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
+    await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', 'edgeColorColumnName': 'OverallRelationship', useGoogleImage: true} as DG.INetworkDiagramSettings);
   }
 
 
@@ -444,6 +446,9 @@ export class PackageFunctions {
     'description': 'Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer or as a row template of the Tile Viewer.'
   })
   static async _formDemo() : Promise<void> {
+    // The Form layout binds a Sketch field to the `smiles` column, which needs Chem's Molecule
+    // cell renderer registered before the grid is created in viewerDemo.
+    await grok.functions.call('Chem:initChemAutostart');
     await viewerDemo(DG.VIEWER.FORM);
   }
 

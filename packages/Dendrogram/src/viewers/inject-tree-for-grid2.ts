@@ -115,6 +115,10 @@ export function injectTreeForGridUI2(
   }
 
   function alignGridWithTree(): void {
+    // grid.dataFrame is null once the table view is closed; deferred callers
+    // (onFilterChanged / onRowsResized via setTimeout) may run after that.
+    if (!grid.dataFrame)
+      return;
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
 

@@ -1,5 +1,14 @@
 # Datagrok-tools changelog
 
+## 6.2.5 (2026-05-21)
+
+* `grok report read` — renamed `--extract-actions` to `--extract-client-log`; sidecar is now `<stem>_client_log.json`. The old flag is no longer accepted.
+* `grok report read` — legacy `actions` field in pre-consolidation report zips is folded into `clientLog` at read time (stderr warning emitted), so downstream consumers see one canonical field. Companion to the platform-side merge that drops `reports_data.actions` in favor of `client_log`.
+
+## 6.2.4 (2026-05-13)
+
+* GROK-20097: package template — replaced deprecated `"moduleResolution": "node"` in `tsconfig.json` with `"bundler"`, suppressing the TypeScript warning for new packages.
+
 ## 6.2.3 (2026-05-06)
 
 * `grok test` — added `--skip-puppeteer` flag (symmetric counterpart of `--skip-playwright`). Bypasses `loadPackages()` and the Puppeteer/`DG.Test` runner so Playwright-only test directories (e.g. `public/playwright-public`) can run end-to-end via `grok test --skip-puppeteer` without tripping the Dart/JS package loader.

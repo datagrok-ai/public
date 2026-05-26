@@ -2,11 +2,15 @@
 
 ## v.next
 
+* Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")
+* Chem Space: Guard editor entry against null current dataFrame / missing Molecule column to prevent `NullError: method not found: 'dart' on null` from `setColumnInputTable`
+* Chem: Toxicity Risks: Avoid 'Column already exists' crash on repeat invocation by using `getUnusedName` before adding risk columns
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
 
 ## 1.17.8 (2026-05-12)
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Chem: Scaffold Tree: Fixed `Array.from(undefined)` crash in `getPeerViewers` when the active view is not a TableView
 * Reaction enumerator: Reworked UI — replaced the preview with side-by-side reaction templates and building blocks grids that subset the enumeration via row selection; renamed inputs and the full-config button for clarity
 * Reaction enumerator: Right pane is now a tabbed view (Reaction templates, Building blocks, Reagents, Preview); preview tab re-runs lazily on activation
 * Reaction enumerator: Added reagents-mode enumeration — when a reagents file/column are provided, each step uses exactly one BB or earlier-round product plus reagents in every remaining slot (produces derivatives of each BB across rounds)

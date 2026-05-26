@@ -226,4 +226,32 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       });
     });
   });
+
+  test('Remove obsolete tags on funcCall node', async () => {
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.linksState.forceInitialMetaRun = true;
+      tree.init().subscribe();
+      const stepNode = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        (stepNode.getItem() as FuncCallNode).nodeDescription.setState('tags', {'1234': ['tag1', 'tag2']});
+      });
+      cold('10ms a').subscribe(() => {
+        tree.runMutateTree().subscribe();
+      });
+      expectObservable((stepNode.getItem() as FuncCallNode).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
+        a: undefined,
+        b: {
+          '1234': [
+            'tag1',
+            'tag2',
+          ],
+        },
+        c: {},
+      });
+    });
+  });
 });

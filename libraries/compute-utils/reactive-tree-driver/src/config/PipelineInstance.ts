@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
-import {ActionInfo, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
+import {DynamicPipelineType, isDynamicType, ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
+import {ActionInfoBase, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -12,11 +12,6 @@ export type StepDynamicInitialConfig = {
   inputRestrictions?: Record<string, RestrictionType>;
 }
 
-/** @deprecated Use StepDynamicInitialConfig */
-export type StepParallelInitialConfig = StepDynamicInitialConfig;
-/** @deprecated Use StepDynamicInitialConfig */
-export type StepSequentialInitialConfig = StepDynamicInitialConfig;
-
 export type StepFunCallInitialConfig = {
   id: ItemId;
   initialValues?: Record<string, any>;
@@ -27,7 +22,23 @@ export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
 } & C;
 
+export type InstanceConfRecInput<C> = {
+  steps?: Array<ItemId | InstanceConfRecInput<C>>;
+} & C;
+
 export type PipelineInstanceConfig = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
+export type PipelineInstanceConfigInput = InstanceConfRecInput<StepDynamicInitialConfig | StepFunCallInitialConfig>;
+
+export function normalizeIdRef<T extends {id: ItemId}>(s: ItemId | T): T {
+  return typeof s === 'string' ? ({id: s} as T) : s;
+}
+
+export function normalizePipelineInstanceConfig(c: PipelineInstanceConfigInput): PipelineInstanceConfig {
+  return {
+    ...c,
+    steps: c.steps?.map((s) => normalizePipelineInstanceConfig(normalizeIdRef(s))),
+  };
+}
 
 
 //
@@ -59,34 +70,28 @@ export function isStaticPipelineState(state: PipelineState): state is PipelineSt
 }
 
 export function isDynamicPipelineState(state: PipelineState): state is PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
-  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
+  return isDynamicType(state.type);
 }
-
-/** @deprecated Use isDynamicPipelineState */
-export const isParallelPipelineState = isDynamicPipelineState;
-/** @deprecated Use isDynamicPipelineState */
-export const isSequentialPipelineState = isDynamicPipelineState;
 
 export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
   return state.type === 'static';
 }
 
 export function isDynamicSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
-  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
+  return isDynamicType(state.type);
 }
-
-/** @deprecated Use isDynamicSerializedPipelineState */
-export const isParallelSerializedPipelineState = isDynamicSerializedPipelineState;
-/** @deprecated Use isDynamicSerializedPipelineState */
-export const isSequentialSerializedPipelineState = isDynamicSerializedPipelineState;
 
 export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDynamic<S, T> | S;
 
 // funccall
 
-export type ViewAction = {
+export type ViewAction = ActionInfoBase & {
   uuid: string;
-} & ActionInfo;
+  /** Result of evaluating showWhen / hideWhen against the current tree.
+   *  `true` when no condition is set. Compute2 uses this to decide whether
+   *  to render the action; RTD itself does not filter or gate on it. */
+  visible: boolean;
+};
 
 export type StepFunCallStateBase = {
   type: 'funccall';
@@ -106,6 +111,7 @@ export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   viewersHook?: ViewersHook;
   actions?: ViewAction[];
+  enableHistory?: boolean;
 } & StepFunCallStateBase;
 
 // pipeline base
@@ -125,6 +131,7 @@ export type PipelineInstanceBase<I, T> = {
   configId: string;
   isReadonly: boolean;
   friendlyName: string | undefined;
+  description: string | undefined;
   version: string | undefined;
   nqName: string | undefined;
 } & I & T;
@@ -148,20 +155,7 @@ export type StepDynamicDescription = {
 export type StepDynamicState<S, T> = PipelineStateRec<S, T> & StepDynamicDescription;
 
 export type PipelineStateDynamic<S, T> = PipelineInstanceBase<{
-  type: 'dynamic' | 'parallel' | 'sequential';
+  type: DynamicPipelineType;
   steps: StepDynamicState<S, T>[];
   stepTypes: StepDynamicDescription[];
 }, T>;
-
-/** @deprecated Use StepDynamicDescription */
-export type StepSequentialDescription = StepDynamicDescription;
-/** @deprecated Use StepDynamicDescription */
-export type StepParallelDescription = StepDynamicDescription;
-/** @deprecated Use StepDynamicState */
-export type StepSequentialState<S, T> = StepDynamicState<S, T>;
-/** @deprecated Use StepDynamicState */
-export type StepParallelState<S, T> = StepDynamicState<S, T>;
-/** @deprecated Use PipelineStateDynamic */
-export type PipelineStateSequential<S, T> = PipelineStateDynamic<S, T>;
-/** @deprecated Use PipelineStateDynamic */
-export type PipelineStateParallel<S, T> = PipelineStateDynamic<S, T>;

@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.10.24 (2026-05-19)
+
+* Removed redundant demos
+
 ## 1.10.23 (2026-05-15)
 
 * OligoNucleotide renderer: adaptive chip sizing (no hard max cap), 10px vertical breathing room, base-pair indicators (G-C 3 lines, A-U/A-T 2 lines, mismatches dashed), size-proportional chip corners.

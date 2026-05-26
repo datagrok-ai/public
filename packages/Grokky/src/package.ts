@@ -30,6 +30,8 @@ export class PackageFunctions {
     setupScriptsAIPanelUI();
     setupAgentScriptsUI();
     PackageFunctions.ensureAgentsFolder();
+    // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
+    ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
     PackageFunctions.subscribeToSyncEvents();
   }
 

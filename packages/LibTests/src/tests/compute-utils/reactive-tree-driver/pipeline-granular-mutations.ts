@@ -191,6 +191,51 @@ const emptyDynamicConfig: PipelineConfiguration = {
   ],
 };
 
+const overlapConfig: PipelineConfiguration = {
+  id: 'root',
+  type: 'static',
+  steps: [
+    {
+      id: 'outerPipe',
+      type: 'dynamic',
+      stepTypes: [
+        {
+          id: 'innerPipe',
+          type: 'dynamic',
+          stepTypes: [{id: 'leaf', nqName: 'LibTests:TestAdd2'}],
+          initialSteps: [{id: 'leaf'}],
+        },
+      ],
+      initialSteps: [{id: 'innerPipe'}],
+    },
+  ],
+  actions: [
+    {
+      id: 'outer-replace-and-inner-add',
+      type: 'pipeline',
+      from: [],
+      to: ['outer:outerPipe', 'inner:outerPipe/first(innerPipe)'],
+      position: 'none',
+      handler({controller}) {
+        controller.setPipelineState('outer', {id: 'outerPipe', steps: []});
+        controller.addStep('inner', 'leaf');
+      },
+    },
+    {
+      id: 'outer-remove-and-inner-add',
+      type: 'pipeline',
+      from: [],
+      to: ['outer:outerPipe', 'inner:outerPipe/first(innerPipe)'],
+      position: 'none',
+      handler({controller}) {
+        const outerSteps = controller.getSteps('outer');
+        controller.removeStep('outer', outerSteps[0]);
+        controller.addStep('inner', 'leaf');
+      },
+    },
+  ],
+};
+
 // --- Helpers ---
 
 function getAction(tree: StateTree, actionId: string) {
@@ -458,6 +503,52 @@ category('ComputeUtils: Driver pipeline granular: exclusivity', async () => {
         // Tree should be unchanged since the handler errored
         const children = getAnalysesNode(tree).getChildren();
         expectDeepEqual(children.length, 2, {prefix: 'Tree unchanged after exclusivity error'});
+      });
+    });
+  });
+});
+
+category('ComputeUtils: Driver pipeline granular: overlap', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('Outer setPipelineState + inner addStep is rejected', async () => {
+    const pconf = await getProcessedConfig(overlapConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const action = getAction(tree, 'outer-replace-and-inner-add');
+      const outerNode = tree.nodeTree.getNode([{idx: 0}]);
+      const innerBefore = outerNode.getChildren().length;
+      cold('-a').subscribe(() => {
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('--a').subscribe(() => {
+        const after = tree.nodeTree.getNode([{idx: 0}]).getChildren();
+        expectDeepEqual(after.length, innerBefore, {prefix: 'Tree unchanged after overlap rejection'});
+        expectDeepEqual(after[0].id, 'innerPipe', {prefix: 'innerPipe still present'});
+      });
+    });
+  });
+
+  test('Outer removeStep + inner addStep is rejected', async () => {
+    const pconf = await getProcessedConfig(overlapConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const action = getAction(tree, 'outer-remove-and-inner-add');
+      const outerNode = tree.nodeTree.getNode([{idx: 0}]);
+      const innerBefore = outerNode.getChildren().length;
+      cold('-a').subscribe(() => {
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('--a').subscribe(() => {
+        const after = tree.nodeTree.getNode([{idx: 0}]).getChildren();
+        expectDeepEqual(after.length, innerBefore, {prefix: 'Tree unchanged after overlap rejection'});
+        expectDeepEqual(after[0].id, 'innerPipe', {prefix: 'innerPipe still present'});
       });
     });
   });

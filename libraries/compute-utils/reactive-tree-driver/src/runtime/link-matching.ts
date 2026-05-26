@@ -159,6 +159,23 @@ function getRefOrigin(
   return refOrigin;
 }
 
+export function isActionVisible(
+  rnode: TreeNode<StateTreeNode>,
+  spec: ActionSpec,
+): boolean {
+  const currentIO: Record<string, MatchedNodePaths> = {};
+  for (const io of spec.hideWhen ?? []) {
+    const paths = matchLinkIO(rnode, currentIO, io, true, false);
+    if (paths.length > 0) return false;
+  }
+  for (const io of spec.showWhen ?? []) {
+    if (io.flags?.includes('optional')) continue;
+    const paths = matchLinkIO(rnode, currentIO, io, true, false);
+    if (paths.length === 0) return false;
+  }
+  return true;
+}
+
 function matchLinkIO(
   rnode: TreeNode<StateTreeNode>,
   currentIO: Record<string, MatchedNodePaths>,

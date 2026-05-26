@@ -122,7 +122,7 @@ prefixing it with `#`. Tag arguments combine with **AND** (`&`), unlike id
 arguments which combine with **OR** (`|`), because the same node can carry
 multiple tags. Tag matching also crosses nesting boundaries — a `#all(metric)`
 query finds every descendant tagged `metric`, no matter how deep — but never
-travels upward past the link's host pipeline.
+travels upward past the link's host workflow.
 
 ![tag selectors on a nested tree](pics/tag_selectors.svg)
 
@@ -183,6 +183,30 @@ Template expansion is permitted only in the **last** segment — the script IO
 name — never in the path leading to the script. The expanded query name is
 the template name concatenated with the IO name (`in_output1`, `in_output2`,
 …); use `_(template)` if you want no prefix.
+
+#### Wildcard IO selectors: `outputs(nqName)` / `inputs(nqName)` {#wildcard-selectors}
+
+Alias for the bare-list form. The argument is the script's `nqName`; an
+optional pipe-separated second argument excludes IOs. Expansion happens
+at config-processing time.
+
+```
+from: "in_(template):script1/outputs(MyPkg:Script1)"
+to:   "out_(template):script2/inputs(MyPkg:Script2, debug|verbose)"
+```
+
+`outputs(...)` always pulls outputs, `inputs(...)` always pulls inputs,
+regardless of which side it appears on.
+
+**`_(template)`.** No prefix — expanded link-io names equal the script
+IO ids verbatim (`a`, `b` instead of `in_a`, `in_b`). The slot id is
+then the operator's 0-based index on its side, so multiple anonymous
+templates stay addressable without colliding with string-named ones.
+
+How template slots propagate at runtime is covered under the
+[default handler](./link-types#default-handler); the controller
+primitives custom handlers can use are listed under
+[Data links](./link-types#data-links).
 
 ---
 

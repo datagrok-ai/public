@@ -178,7 +178,7 @@ export class PlateWidget extends DG.Widget {
       .subscribe((event: MouseEvent) => {
         const gridCell = this.grid.hitTest(event.offsetX, event.offsetY);
 
-        if (!gridCell || !gridCell.isTableCell || gridCell.gridColumn.idx === 0)
+        if (!gridCell || (gridCell.gridRow ?? -1) < 0 || gridCell.gridColumn.idx === 0)
           return;
 
         const gridRow = gridCell.gridRow;
@@ -199,7 +199,7 @@ export class PlateWidget extends DG.Widget {
 
   private setupHoverEvents(grid: DG.Grid) {
     grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
-      if (gc.isTableCell) {
+      if (gc.gridRow !== null && gc.gridRow >= 0 && gc.gridColumn?.dart && gc.gridColumn?.idx > 0) {
         gc.grid.root.style.cursor = 'pointer';
         this.hoveredCell = {row: gc.gridRow!, col: gc.gridColumn.idx - 1};
         grid.invalidate();
@@ -230,7 +230,7 @@ export class PlateWidget extends DG.Widget {
     return PlateWidget.detailedView(plate);
   }
 
-  static detailedView(plate: Plate): PlateWidget {
+  static detailedView(plate: Plate, showTabs = true): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
 
@@ -241,14 +241,14 @@ export class PlateWidget extends DG.Widget {
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
 
     const mainContainer = ui.divH([
-      pw.tabs.root,
+      showTabs ? pw.tabs.root : pw.grid.root,
       pw.detailsDiv,
     ], 'assay-plates--plate-widget__main-container');
-
+    pw.root.innerHTML = '';
     pw.root.appendChild(mainContainer);
 
     pw.grid.onCurrentCellChanged
-      .pipe(filter((gc) => gc.isTableCell && gc.gridRow !== null))
+      .pipe(filter((gc) => gc.gridRow !== null && gc.gridRow >= 0 && gc.gridColumn?.dart && gc.gridColumn?.idx > 0))
       .subscribe((gc) => {
         if (pw.wellDetailsDiv) {
           ui.empty(pw.wellDetailsDiv);

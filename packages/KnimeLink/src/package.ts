@@ -172,8 +172,9 @@ export class PackageFunctions {
       errors.push(`Failed to load cached functions: ${e?.message ?? e}`);
     }
 
-    // Phase 2: Refresh from live API with progress
-    const pi = DG.TaskBarProgressIndicator.create('Updating KNIME deployments...');
+    // Phase 2: Refresh from live API with an inline tree-node loader
+    const loader = ui.loader();
+    treeNode.root.children[0].appendChild(loader);
     try {
       const deployments = await client.listDeployments('rest');
       const liveNames = new Set(deployments.map((d) => d.name));
@@ -205,7 +206,7 @@ export class PackageFunctions {
       errors.push(e?.message ?? e);
     }
     finally {
-      pi.close();
+      loader.remove();
     }
     if (errors.length > 0)
       grok.shell.warning(`KNIME: Failed to load some workflows:\n${errors.join('\n')}`);

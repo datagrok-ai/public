@@ -10,6 +10,7 @@ import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {Subscription} from 'rxjs';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   followCurrentRow: boolean;
@@ -20,6 +21,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
   cutoff: number;
+  searchAsYouSketch: boolean;
+  sketcherDebounceMs: number;
   targetMoleculeIdx: number = 0;
 
   get targetMolecule(): string {
@@ -33,25 +36,52 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.followCurrentRow = this.bool('followCurrentRow', true,
       {description: 'Re-compute similarity search when changing current row'});
+    this.searchAsYouSketch = this.bool('searchAsYouSketch', true, {
+      description: 'Re-run similarity search dynamically while drawing in the sketcher (debounced)',
+    });
+    this.sketcherDebounceMs = this.int('sketcherDebounceMs', 100, {
+      min: 50,
+      max: 2000,
+      description: 'Debounce delay (ms) for search-as-you-sketch updates',
+    });
     this.sketchButton = ui.icons.edit(() => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
+      const savedIsEditedFromSketcher = this.isEditedFromSketcher;
+      const savedSketchedMolecule = this.sketchedMolecule;
       sketcher.setMolecule(this.targetMolecule);
-      ui.dialog()
+
+      const applySketcherState = (isEdited: boolean, mol: string) => {
+        this.isEditedFromSketcher = isEdited;
+        this.sketchedMolecule = mol;
+        this.gridSelect = false;
+        this.render();
+      };
+
+      let liveSub: Subscription | null = null;
+      if (this.searchAsYouSketch) {
+        liveSub = DG.debounce(sketcher.onChanged, this.sketcherDebounceMs).subscribe(() => {
+          const mol = sketcher.getMolFile();
+          if (DG.chem.Sketcher.isEmptyMolfile(mol))
+            return;
+          applySketcherState(true, mol);
+        });
+      }
+
+      const dialog = ui.dialog()
         .add(sketcher.root)
         .onOK(() => {
-          this.isEditedFromSketcher = true;
           const editedMolecule = sketcher.getMolFile();
           if (DG.chem.Sketcher.isEmptyMolfile(editedMolecule)) {
             grok.shell.error(`Empty molecule cannot be used for similarity search`);
+            this.isEditedFromSketcher = true;
             this.sketchedMolecule = savedMolecule;
-          } else {
-            this.sketchedMolecule = sketcher.getMolFile();
-            this.gridSelect = false;
-            this.render();
-          }
+          } else
+            applySketcherState(true, editedMolecule);
         })
-        .show();
+        .onCancel(() => applySketcherState(savedIsEditedFromSketcher, savedSketchedMolecule));
+      dialog.show();
+      dialog.onClose.subscribe(() => liveSub?.unsubscribe());
     }, 'Edit');
     this.sketchButton.classList.add('chem-similarity-search-edit');
     this.sketchButton.classList.add('chem-mol-view-icon');
