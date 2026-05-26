@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.5.5 (2026-05-22)
+## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA
 
