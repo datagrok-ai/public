@@ -198,6 +198,19 @@ M  END
     expect(['smiles', 'Core', 'R1', 'r-groups-highlight_0', 'isMatch']
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
+
+  test('rgroups.cancel.workerRespectsFlag', async () => {
+    const svc = await chemCommonRdKit.getRdKitService();
+    await svc.setTerminateFlag(true);
+    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    const emptyResult = res.rGroups.length === 0 ||
+      res.rGroups.every((c) => c.toList().every((v) => !v));
+    expect(emptyResult, true, 'Expected empty result when terminate flag is pre-set');
+
+    await svc.setTerminateFlag(false);
+    const res2 = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    expect(res2.rGroups.length > 0, true, 'Expected results after flag reset');
+  }, {timeout: 30000});
 });
 
 const sampleTable = DG.DataFrame.fromCsv(`smiles
