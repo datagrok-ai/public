@@ -260,6 +260,18 @@ export function runOneWayAnova(): void {
     return;
   }
 
+  const ALL_UNIQUE_MSG =
+    'Every value is unique — no groups to compare. ' +
+    'Pick a column with at least one repeated category.';
+
+  /** True when every non-null value in `col` appears exactly once
+   *  (each potential group has size 1 — ANOVA is impossible). */
+  const isFactorAllUnique = (col: DG.Column): boolean => {
+    const uniqueCount = col.stats.uniqueCount;
+    const nonNullCount = col.length - col.stats.missingValueCount;
+    return uniqueCount >= 2 && uniqueCount === nonNullCount;
+  };
+
   const factorInput = ui.input.column('Category', {
     table: df,
     value: factor,
@@ -267,6 +279,13 @@ export function runOneWayAnova(): void {
     onValueChanged: (col) => {factor = col; updateRunButtonState();},
     filter: (col: DG.Column) => factorColNames.includes(col.name),
     nullable: false,
+  });
+
+  factorInput.addValidator(() => {
+    const col = factorInput.value;
+    if (col != null && isFactorAllUnique(col))
+      return ALL_UNIQUE_MSG;
+    return null;
   });
 
   let feature = df.col(DEFAULT.FEATURE);
@@ -366,6 +385,12 @@ export function runOneWayAnova(): void {
       return;
     }
 
+    if (factor != null && isFactorAllUnique(factor)) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, ALL_UNIQUE_MSG);
+      return;
+    }
+
     let varEqual: boolean;
     try {
       const uniqueCount = factor!.stats.uniqueCount;
@@ -396,6 +421,7 @@ export function runOneWayAnova(): void {
     .add(signInput);
 
   updateRunButtonState();
+  factorInput.validate();
 
   dlg.show();
 
