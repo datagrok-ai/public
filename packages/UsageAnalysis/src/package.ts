@@ -294,6 +294,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.app({
+    'url': '/',
+    'browsePath': 'Admin',
+    'name': 'Metrics',
+  })
+  static metricsApp(): DG.ViewBase | null {
+    return PackageFunctions.usageAnalysisApp('/metrics');
+  }
+
+  @grok.decorators.app({
     'url': '/tests/manager',
     'browsePath': 'Admin',
     'name': 'Test Track',

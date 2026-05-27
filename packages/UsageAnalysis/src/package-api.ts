@@ -546,6 +546,10 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn });
   }
 
+  export async function metricsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:MetricsApp', {});
+  }
+
   export async function testTrackApp(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:TestTrackApp', {});
   }
