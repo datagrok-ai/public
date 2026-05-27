@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -18,6 +19,7 @@ type ParamConfig = {
   label: string;
   fallback: () => number;
   transform?: (v: number) => number;
+  logDisplay?: boolean; /// on a log scale, show 10^value and store log10(input) — for x-position params
 };
 
 function sectionHeader(text: string): HTMLElement {
@@ -89,6 +91,7 @@ export class DesirabilityModeDialog {
     const subs: Subscription[] = [];
 
     let modeInputRoot: HTMLElement | undefined;
+    let scaleInputRoot: HTMLElement | undefined;
 
     const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
       if (v === this.prop.functionType)
@@ -125,18 +128,26 @@ export class DesirabilityModeDialog {
       }});
 
       const configs: ParamConfig[] = [
-        {key: 'min', label: 'Min', fallback: () => previewEditor.getMinX()},
-        {key: 'max', label: 'Max', fallback: () => previewEditor.getMaxX()},
-        {key: 'mean', label: 'Mean', fallback: () => previewEditor.getDefaultMean()},
+        {key: 'min', label: 'Min', fallback: () => previewEditor.getMinX(), logDisplay: true},
+        {key: 'max', label: 'Max', fallback: () => previewEditor.getMaxX(), logDisplay: true},
+        {key: 'mean', label: 'Mean', fallback: () => previewEditor.getDefaultMean(), logDisplay: true},
         {key: 'sigma', label: 'Sigma', fallback: () => previewEditor.getDefaultSigma(), transform: (v) => Math.max(0.01, v)},
-        {key: 'x0', label: 'x0', fallback: () => previewEditor.getDefaultX0()},
+        {key: 'x0', label: 'x0', fallback: () => previewEditor.getDefaultX0(), logDisplay: true},
         {key: 'k', label: 'k', fallback: () => previewEditor.getDefaultK(), transform: (v) => Math.max(0.1, v)},
       ];
 
+      const isLog = () => prop.xScale === 'log';
+      const toDisplay = (cfg: ParamConfig, stored: number) => cfg.logDisplay && isLog() ? Math.pow(10, stored) : stored;
+      const toStored = (cfg: ParamConfig, shown: number) => cfg.logDisplay && isLog() ? Math.log10(shown) : shown;
+
       const inputs = new Map<string, DG.InputBase>();
       for (const cfg of configs) {
-        inputs.set(cfg.key, ui.input.float(cfg.label, {value: prop[cfg.key] ?? cfg.fallback(), format: '#0.000', onValueChanged: (v) => {
-          const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
+        inputs.set(cfg.key, ui.input.float(cfg.label, {value: toDisplay(cfg, prop[cfg.key] ?? cfg.fallback()), format: '#0.000', onValueChanged: (shown) => {
+          if (shown != null && cfg.logDisplay && isLog() && shown <= 0)
+            return;
+          let value = shown == null ? cfg.fallback() : toStored(cfg, shown);
+          if (cfg.transform)
+            value = cfg.transform(value);
           prop[cfg.key] = value;
           this.onUpdate({[cfg.key]: value} as any);
           previewEditor.redrawAll(false);
@@ -145,7 +156,7 @@ export class DesirabilityModeDialog {
 
       const syncInputs = () => {
         for (const cfg of configs)
-          inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
+          inputs.get(cfg.key)!.value = toDisplay(cfg, prop[cfg.key] ?? cfg.fallback());
       };
 
       inputs.get('min')!.setTooltip('Minimum property value');
@@ -166,6 +177,19 @@ export class DesirabilityModeDialog {
       };
 
       updateParams();
+
+      const scaleInput = ui.input.choice('X scale', {items: ['linear', 'log'], value: prop.xScale ?? 'linear', onValueChanged: (v) => {
+        const scale = (v ?? 'linear') as 'linear' | 'log';
+        if (scale === 'log' && this.mappedCol?.isNumerical && this.mappedCol.min <= 0)
+          grok.shell.warning(`${this.mappedCol.name} has non-positive values; they are treated as missing on a log scale.`);
+        previewEditor.setXScale(scale);
+        this.onUpdate({xScale: scale} as any);
+        syncInputs();
+        updateParams();
+      }});
+      scaleInput.setTooltip('Design the curve against a log10 x-axis (for concentration-like properties such as ' +
+        'IC50, Ki, solubility). Non-positive values are treated as missing.');
+      scaleInputRoot = scaleInput.root;
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
@@ -203,6 +227,7 @@ export class DesirabilityModeDialog {
       dispose();
       ui.empty(contentPanel);
       modeInputRoot = undefined;
+      scaleInputRoot = undefined;
 
       if (isNumerical(this.prop))
         buildNumericalContent();
@@ -214,6 +239,8 @@ export class DesirabilityModeDialog {
         headerItems.push(typeInput.root);
       if (modeInputRoot)
         headerItems.push(modeInputRoot);
+      if (scaleInputRoot)
+        headerItems.push(scaleInputRoot);
       if (headerItems.length > 0)
         contentPanel.prepend(ui.divH(headerItems, 'statistics-mpo-dialog-header-row'));
 

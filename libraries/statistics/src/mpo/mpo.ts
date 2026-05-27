@@ -28,6 +28,10 @@ export type NumericalDesirability = BasePropertyDesirability & {
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
 
+  /// When 'log', the x-domain (line x-coords, min/max, mean/x0) is stored in log10 units, so the curve is
+  /// designed and evaluated against a log10 x-axis; non-positive raw values count as missing. Absent → linear.
+  xScale?: 'linear' | 'log';
+
   mode?: DesirabilityMode;
 
   /// Gaussian mode parameters
@@ -163,7 +167,7 @@ export type MpoResult = {
 /// MpoCalculator cache key so editing one property's curve only recomputes that one column.
 export function desirabilityKey(d: PropertyDesirability): string {
   return isNumerical(d) ?
-    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
+    `n|${d.xScale ?? 'linear'}|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -201,6 +205,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   const segN = line ? line.length : 0;
   const loX = segN ? line![0][0] : 0;
   const hiX = segN ? line![segN - 1][0] : 0;
+  const logScale = !isCat && (h.template as NumericalDesirability).xScale === 'log';
   const mv = h.template.missingValues;
   const excludeMissing = !mv || mv.strategy === 'exclude';
   const skipMissing = mv?.strategy === 'skip';
@@ -210,7 +215,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
 
   for (let i = 0; i < rowCount; i++) {
-    const isMissing = isCat ? col.isNone(i) : raw[i] === valNull;
+    const isMissing = isCat ? col.isNone(i) : (raw[i] === valNull || (logScale && raw[i] <= 0));
     if (isMissing) {
       if (excludeMissing) {
         (state ??= new Uint8Array(rowCount))[i] = 2;
@@ -235,7 +240,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       continue;
     }
     // Inlined desirabilityScore over the column's line.
-    const x = raw[i];
+    const x = logScale ? Math.log10(raw[i]) : raw[i];
     let score = 0;
     if (segN !== 0 && x >= loX && x <= hiX) {
       for (let k = 0; k < segN - 1; k++) {
