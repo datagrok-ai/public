@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {Subject, Subscription} from 'rxjs';
 import {
-  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
+  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST, NORMALIZED_AGGREGATIONS, requiresWeightNormalization,
   DesirabilityProfile, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isNumerical, migrateDesirability,
 } from './mpo';
@@ -18,6 +18,10 @@ import {MPO_SCORE_CHANGED_EVENT} from './utils';
 
 const MAX_CATEGORICAL_CATEGORIES = 20;
 const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
+
+const AGG_TOOLTIP_DEFAULT = 'Score aggregation method';
+const AGG_TOOLTIP_RESTRICTED = 'Only weight-normalized aggregations (Average, Geomean) are available because ' +
+  'a property reads weights from a column or skips missing values, so the weights no longer sum to 1';
 
 export class MpoProfileEditor {
   readonly root = ui.div([]);
@@ -35,6 +39,11 @@ export class MpoProfileEditor {
   private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
+  /// Guards reentrancy while reconcileAggregation() rewrites the aggregation input.
+  private syncingAggregation = false;
+  /// Whether the aggregation choice is currently restricted to the weight-normalized set.
+  private aggregationRestricted = false;
+
   constructor(dataFrame?: DG.DataFrame, design = false, preview = false) {
     this.dataFrame = dataFrame;
     this.design = design;
@@ -44,12 +53,14 @@ export class MpoProfileEditor {
       value: DEFAULT_AGGREGATION,
       nullable: false,
       onValueChanged: (v) => {
+        if (this.syncingAggregation)
+          return;
         if (this.profile)
           this.profile.aggregation = v;
         this.emitChange();
       },
     });
-    this.aggregationInput.setTooltip('Score aggregation method');
+    this.aggregationInput.setTooltip(AGG_TOOLTIP_DEFAULT);
   }
 
   private newRowId(): string {
@@ -81,6 +92,7 @@ export class MpoProfileEditor {
       this.rowIds[name] = this.newRowId();
 
     this.render();
+    this.reconcileAggregation();
     this.runAllComputeFunctions();
   }
 
@@ -461,6 +473,8 @@ export class MpoProfileEditor {
         const p = this.profile?.properties[name];
         if (p)
           Object.assign(p, patch);
+        if ('missingValues' in patch)
+          this.reconcileAggregation();
         editor.redrawAll();
       },
       (newProp) => {
@@ -609,7 +623,40 @@ export class MpoProfileEditor {
     await f.apply({...prop.computeFunction.args, [tablePropName]: this.dataFrame, [colPropName]: molCol.name});
   }
 
+  /// Keeps the aggregation choice consistent with the profile: when weights vary per row (a weight column
+  /// or a 'skip' missing-value strategy), restricts the options to the weight-normalized set and switches a
+  /// raw aggregation (Sum/Product/Min/Max) to the default; otherwise restores the full list. Never emits —
+  /// the caller's emitChange() (or setProfile) propagates the resulting state.
+  private reconcileAggregation(): void {
+    if (this.syncingAggregation)
+      return;
+
+    const restricted = !!this.profile && requiresWeightNormalization(this.profile);
+    const current = this.aggregationInput.value;
+    const needsSwitch = restricted && !!current && !NORMALIZED_AGGREGATIONS.includes(current);
+    const itemsChanged = restricted !== this.aggregationRestricted;
+    if (!itemsChanged && !needsSwitch)
+      return;
+
+    this.syncingAggregation = true;
+    try {
+      if (itemsChanged) {
+        this.aggregationInput.items = restricted ? NORMALIZED_AGGREGATIONS : WEIGHTED_AGGREGATIONS_LIST;
+        this.aggregationRestricted = restricted;
+        this.aggregationInput.setTooltip(restricted ? AGG_TOOLTIP_RESTRICTED : AGG_TOOLTIP_DEFAULT);
+      }
+      // Rebuilding items resets the selection, so re-assert it (switching off a now-disallowed aggregation).
+      const value = needsSwitch ? DEFAULT_AGGREGATION : (current ?? DEFAULT_AGGREGATION);
+      this.aggregationInput.value = value;
+      if (this.profile)
+        this.profile.aggregation = value;
+    } finally {
+      this.syncingAggregation = false;
+    }
+  }
+
   private emitChange(): void {
+    this.reconcileAggregation();
     this.onChanged.next();
     grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
   }

@@ -3,6 +3,7 @@
 ## v.next
 
 * Chem: MPO: Optimized score calculation for large datasets — a column-major typed-array compute pipeline (one `getRawData()` per column instead of per-cell `get()`/`isNone()`) with per-column desirability caching, so interactive profile edits recompute only the changed property
+* Chem: MPO: Restrict the aggregation to weight-normalized methods (Average, Geomean) when a property reads weights from a column or skips missing values, so scores stay comparable across rows when weights don't sum to 1
 
 ## 1.17.9 (2026-05-26)
 
