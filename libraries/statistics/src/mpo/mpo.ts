@@ -2,6 +2,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {TemplateFunction} from '../compute-functions/types';
+import {AggregationCode, AGG_CODE, ColumnDesirability, HoistedColumn} from './mpo-types';
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
@@ -145,6 +146,265 @@ export type MpoResult = {
   desirabilityColumns?: DG.Column[];
 }
 
+/// Fingerprint of the per-cell desirability mapping for a property — the line/categories and missing-value
+/// handling, but NOT weight/weightColumn (those feed the reduction, not the mapping). Used as the
+/// MpoCalculator cache key so editing one property's curve only recomputes that one column.
+export function desirabilityKey(d: PropertyDesirability): string {
+  return isNumerical(d) ?
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
+    `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
+}
+
+/// Hoists all column access out of the per-row loops: one getRawData() per column instead of per-cell
+/// get()/isNone() (which cross the JS↔Dart boundary). The template is read from the 'desirabilityTemplate' tag.
+export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): HoistedColumn[] {
+  const hoisted: HoistedColumn[] = [];
+  for (const col of columns) {
+    const template = migrateDesirability(JSON.parse(col.getTag('desirabilityTemplate')));
+    const isCat = !isNumerical(template);
+    const wc = template.weightColumn ? dataFrame.col(template.weightColumn) : null;
+    hoisted.push({
+      col,
+      template,
+      raw: col.getRawData(),
+      valNull: col.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL,
+      isCat,
+      cats: isCat ? col.categories : null,
+      catScore: isCat ?
+        new Map((template as CategoricalDesirability).categories.map((c) => [c.name, c.desirability])) : null,
+      staticW: template.weight,
+      rawW: wc ? wc.getRawData() : null,
+      wNull: wc && wc.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL,
+    });
+  }
+  return hoisted;
+}
+
+/// The expensive, cacheable phase: maps one column's values to desirability scores. Column-major sweep of
+/// the contiguous raw array, with desirabilityScore inlined (no per-cell function call). Depends only on the
+/// column data + line + missing-value handling — never on weight/aggregation — so its result is cacheable.
+export function mapColumnDesirability(h: HoistedColumn, rowCount: number): ColumnDesirability {
+  const {raw, valNull, isCat, cats, catScore, col} = h;
+  const line = isCat ? null : (h.template as NumericalDesirability).line;
+  const segN = line ? line.length : 0;
+  const loX = segN ? line![0][0] : 0;
+  const hiX = segN ? line![segN - 1][0] : 0;
+  const mv = h.template.missingValues;
+  const excludeMissing = !mv || mv.strategy === 'exclude';
+  const skipMissing = mv?.strategy === 'skip';
+  const defaultScore = mv && mv.strategy === 'default' ? mv.score : 0;
+
+  const D = new Float32Array(rowCount);
+  let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
+
+  for (let i = 0; i < rowCount; i++) {
+    const isMissing = isCat ? col.isNone(i) : raw[i] === valNull;
+    if (isMissing) {
+      if (excludeMissing) {
+        (state ??= new Uint8Array(rowCount))[i] = 2;
+        D[i] = NaN;
+      }
+      else if (skipMissing) {
+        (state ??= new Uint8Array(rowCount))[i] = 1;
+        D[i] = NaN;
+      }
+      else
+        D[i] = defaultScore;
+      continue;
+    }
+    if (isCat) {
+      const s = catScore!.get(cats![raw[i]]);
+      if (s == null) {
+        (state ??= new Uint8Array(rowCount))[i] = 2;
+        D[i] = NaN;
+      }
+      else
+        D[i] = s;
+      continue;
+    }
+    // Inlined desirabilityScore over the column's line.
+    const x = raw[i];
+    let score = 0;
+    if (segN !== 0 && x >= loX && x <= hiX) {
+      for (let k = 0; k < segN - 1; k++) {
+        const x1 = line![k][0];
+        const x2 = line![k + 1][0];
+        if (x >= x1 && x <= x2) {
+          const y1 = line![k][1];
+          score = x1 === x2 ? y1 : y1 + (line![k + 1][1] - y1) * (x - x1) / (x2 - x1);
+          break;
+        }
+      }
+    }
+    D[i] = score;
+  }
+  return {D, state};
+}
+
+/// The cheap phase (always re-run; depends on weights + aggregation): folds the per-column desirabilities
+/// into the final score, column-major into per-row accumulators.
+export function reduceMpo(
+  maps: ColumnDesirability[], hoisted: HoistedColumn[], aggregation: WeightedAggregation, rowCount: number,
+): Float64Array {
+  const aggCode = AGG_CODE[aggregation];
+  if (aggCode === undefined)
+    throw new Error(`Unknown aggregation type: ${aggregation}`);
+
+  const needWeightSum = aggCode === AggregationCode.Average || aggCode === AggregationCode.Geomean;
+  const out = new Float64Array(rowCount); // final per-row score
+  const bail = new Uint8Array(rowCount); // 1 → 'exclude' missing or unmatched category → null score
+  const cnt = new Int32Array(rowCount); // contributing columns (0 → no data → null score)
+  const acc1 = new Float64Array(rowCount); // primary accumulator
+  const acc2 = needWeightSum ? new Float64Array(rowCount) : null; // Σweight (Average) / total weight (Geomean)
+
+  if (aggCode === AggregationCode.Product || aggCode === AggregationCode.Geomean)
+    acc1.fill(1);
+  else if (aggCode === AggregationCode.Min)
+    acc1.fill(Infinity);
+  else if (aggCode === AggregationCode.Max)
+    acc1.fill(-Infinity);
+
+  for (let j = 0; j < maps.length; j++) {
+    const D = maps[j].D;
+    const st = maps[j].state;
+    const rw = hoisted[j].rawW;
+    const wN = hoisted[j].wNull;
+    const sw = hoisted[j].staticW;
+
+    for (let i = 0; i < rowCount; i++) {
+      if (bail[i])
+        continue;
+      if (st !== null) {
+        const s = st[i];
+        if (s === 2) {
+          bail[i] = 1;
+          continue;
+        }
+        if (s === 1)
+          continue;
+      }
+      const score = D[i];
+      const w = rw && rw[i] !== wN ? (rw[i] < 0 ? 0 : rw[i] > 1 ? 1 : rw[i]) : sw;
+      cnt[i]++;
+      switch (aggCode) {
+      case AggregationCode.Sum:
+        acc1[i] += score * w;
+        break;
+      case AggregationCode.Average:
+        acc1[i] += score * w;
+        acc2![i] += w;
+        break;
+      case AggregationCode.Product:
+        acc1[i] *= Math.pow(score, w);
+        break;
+      case AggregationCode.Geomean:
+        acc1[i] *= Math.pow(score, w);
+        acc2![i] += w;
+        break;
+      case AggregationCode.Min:
+        acc1[i] = Math.min(acc1[i], Math.pow(score, w));
+        break;
+      case AggregationCode.Max:
+        acc1[i] = Math.max(acc1[i], Math.pow(score, w));
+        break;
+      }
+    }
+  }
+
+  for (let i = 0; i < rowCount; i++) {
+    if (bail[i] || cnt[i] === 0)
+      out[i] = DG.FLOAT_NULL;
+    else if (aggCode === AggregationCode.Average)
+      out[i] = acc1[i] / acc2![i];
+    else if (aggCode === AggregationCode.Geomean)
+      out[i] = Math.pow(acc1[i], 1 / acc2![i]); // (Π sᵏ^wᵏ)^(1/Σw) ≡ Π sᵏ^(wᵏ/Σw)
+    else
+      out[i] = acc1[i];
+  }
+  return out;
+}
+
+/// Builds the per-property desirability output columns from the mapping results (state 1/2 rows → null).
+export function buildDesirabilityColumns(
+  columns: DG.Column[], maps: ColumnDesirability[], profileName: string, rowCount: number,
+): DG.Column[] {
+  const result: DG.Column[] = [];
+  for (let j = 0; j < columns.length; j++) {
+    const {D, state} = maps[j];
+    const dvals = new Float32Array(rowCount);
+    for (let i = 0; i < rowCount; i++)
+      dvals[i] = state && state[i] !== 0 ? DG.FLOAT_NULL : D[i];
+    const c = DG.Column.float(`${columns[j].name} (${profileName} desirability)`, rowCount);
+    c.setRawData(dvals, false);
+    result.push(c);
+  }
+  return result;
+}
+
+interface CacheEntry {
+  lineKey: string;
+  D: Float32Array;
+  state: Uint8Array | null;
+}
+
+/// Stateful MPO engine for the interactive preview path. Same compute() contract as the stateless mpo(),
+/// but caches each column's desirability mapping — the expensive phase — keyed by df.id|column and validated
+/// by the line/missing-value fingerprint. Editing one property's curve therefore recomputes only that column;
+/// the others are reused and only the cheap reduction re-runs. Hold one per editing session and call release()
+/// on teardown (dialog close / dataframe switch) to drop the cached arrays.
+export class MpoCalculator {
+  private cache = new Map<string, CacheEntry>();
+
+  compute(
+    dataFrame: DG.DataFrame,
+    columns: DG.Column[],
+    profileName: string,
+    aggregation: WeightedAggregation,
+    isDifferent: boolean = false,
+    createDesirabilityColumns: boolean = false,
+  ): MpoResult {
+    if (columns.length === 0)
+      throw new Error('No columns provided for MPO calculation.');
+
+    const rowCount = columns[0].length;
+    const resultColumn = isDifferent ?
+      DG.Column.float(profileName, rowCount) :
+      (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
+
+    const hoisted = hoistColumns(dataFrame, columns);
+    const maps: ColumnDesirability[] = [];
+    for (const h of hoisted) {
+      const lineKey = desirabilityKey(h.template);
+      const key = `${dataFrame.id}|${h.col.name}`;
+      const hit = this.cache.get(key);
+      if (hit && hit.lineKey === lineKey && hit.D.length === rowCount) {
+        maps.push({D: hit.D, state: hit.state});
+        continue;
+      }
+      const m = mapColumnDesirability(h, rowCount);
+      this.cache.set(key, {lineKey, D: m.D, state: m.state});
+      maps.push(m);
+    }
+
+    resultColumn.setRawData(reduceMpo(maps, hoisted, aggregation, rowCount), false);
+    resultColumn.fireValuesChanged();
+
+    const desirabilityColumns = createDesirabilityColumns ?
+      buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;
+    if (desirabilityColumns) {
+      for (const c of desirabilityColumns)
+        c.fireValuesChanged();
+    }
+
+    return {scoreColumn: resultColumn, desirabilityColumns};
+  }
+
+  /// Drops all cached desirability arrays. Call on dialog close / dataframe switch.
+  release(): void {
+    this.cache = new Map();
+  }
+}
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
   dataFrame: DG.DataFrame,
@@ -154,94 +414,6 @@ export function mpo(
   isDifferent: boolean = false,
   createDesirabilityColumns: boolean = false,
 ): MpoResult {
-  if (columns.length === 0)
-    throw new Error('No columns provided for MPO calculation.');
-
-  const rowCount = columns[0].length;
-  const resultColumn = isDifferent ?
-    DG.Column.float(profileName, rowCount) :
-    (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
-
-  const desirabilityTemplates: PropertyDesirability[] = [];
-  const weightColumns: (DG.Column | null)[] = [];
-  for (const column of columns) {
-    const tag = column.getTag('desirabilityTemplate');
-    const d = migrateDesirability(JSON.parse(tag));
-    desirabilityTemplates.push(d);
-    weightColumns.push(d.weightColumn ? dataFrame.col(d.weightColumn) ?? null : null);
-  }
-
-  const desirabilityColumns = createDesirabilityColumns ?
-    columns.map((col) => DG.Column.float(`${col.name} (${profileName} desirability)`, rowCount)) : undefined;
-
-  resultColumn.init((i) => {
-    const scores: number[] = [];
-    const weights: number[] = [];
-
-    for (let j = 0; j < columns.length; j++) {
-      const desirability = desirabilityTemplates[j];
-      const value = columns[j].get(i);
-
-      let score: number | null;
-
-      if (columns[j].isNone(i)) {
-        const mv = desirability.missingValues;
-        if (!mv || mv.strategy === 'exclude')
-          return NaN;
-        if (mv.strategy === 'skip')
-          continue;
-        score = mv.score;
-      }
-      else {
-        score = isNumerical(desirability) ?
-          desirabilityScore(value, desirability.line) :
-          categoricalDesirabilityScore(String(value), desirability);
-      }
-
-      if (score === null)
-        return NaN;
-
-      if (createDesirabilityColumns)
-        desirabilityColumns![j].set(i, score, false);
-
-      scores.push(score);
-      const wCol = weightColumns[j];
-      const w = wCol && !wCol.isNone(i) ? Math.max(0, Math.min(1, wCol.get(i))) : desirability.weight;
-      weights.push(w);
-    }
-
-    if (scores.length === 0)
-      return NaN;
-
-    return aggregate(scores, weights, aggregation);
-  });
-
-  return {scoreColumn: resultColumn, desirabilityColumns};
-}
-
-export function aggregate(scores: number[], weights: number[], aggregation: WeightedAggregation): number {
-  switch (aggregation) {
-  case 'Sum':
-    return scores.reduce((sum, s, idx) => sum + s * weights[idx], 0);
-
-  case 'Average':
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-    return scores.reduce((sum, s, idx) => sum + s * weights[idx], 0) / totalWeight;
-
-  case 'Product':
-    return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx]), 1);
-
-  case 'Geomean':
-    const totalW = weights.reduce((sum, w) => sum + w, 0);
-    return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx] / totalW), 1);
-
-  case 'Min':
-    return Math.min(...scores.map((s, idx) => Math.pow(s, weights[idx])));
-
-  case 'Max':
-    return Math.max(...scores.map((s, idx) => Math.pow(s, weights[idx])));
-
-  default:
-    throw new Error(`Unknown aggregation type: ${aggregation}`);
-  }
+  return new MpoCalculator()
+    .compute(dataFrame, columns, profileName, aggregation, isDifferent, createDesirabilityColumns);
 }

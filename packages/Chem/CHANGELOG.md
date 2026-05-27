@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Chem: MPO: Optimized score calculation for large datasets — a column-major typed-array compute pipeline (one `getRawData()` per column instead of per-cell `get()`/`isNone()`) with per-column desirability caching, so interactive profile edits recompute only the changed property
+
 ## 1.17.9 (2026-05-26)
 
 * Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")

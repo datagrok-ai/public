@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DesirabilityProfile, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, MpoCalculator, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {MpoScoreViewer} from './mpo-scores-viewer';
 import {computeMpo} from './utils';
@@ -22,6 +22,19 @@ export class MpoContextPanel {
   private currentRowChangedSub: Subscription | null = null;
   private panelMouseDown = false;
   private scoreViewerInteraction = false;
+  // Caches per-column desirability across preview renders so editing one property's line recomputes
+  // only that column. Released on close / dataframe switch.
+  private calculator = new MpoCalculator();
+
+  private static readonly RENDER_DEBOUNCE_MS = 150;
+  private renderTimer: ReturnType<typeof setTimeout> | null = null;
+  private rendering = false;
+  private rerenderQueued = false;
+  private latestArgs: {
+    profile: DesirabilityProfile;
+    columnMapping: Record<string, string | null>;
+    aggregation?: WeightedAggregation;
+  } | null = null;
 
   // Uncomment to disable interactivity
   // showCurrentRow: false,
@@ -82,18 +95,50 @@ export class MpoContextPanel {
     return viewer;
   }
 
-  async render(
+  render(
     profile: DesirabilityProfile,
     columnMapping: Record<string, string | null>,
     aggregation?: WeightedAggregation,
-  ) {
+  ): void {
     if (!profile)
       return;
+    this.latestArgs = {profile, columnMapping, aggregation};
+    if (this.renderTimer)
+      clearTimeout(this.renderTimer);
+    this.renderTimer = setTimeout(() => void this.renderNow(), MpoContextPanel.RENDER_DEBOUNCE_MS);
+  }
 
+  // Coalesce bursts of profile edits: debounce, and never run two renders concurrently —
+  // an edit arriving mid-render queues exactly one more pass with the latest values.
+  private async renderNow(): Promise<void> {
+    if (this.rendering) {
+      this.rerenderQueued = true;
+      return;
+    }
+    this.rendering = true;
+    try {
+      do {
+        this.rerenderQueued = false;
+        const args = this.latestArgs;
+        if (!args)
+          break;
+        await this.renderInternal(args.profile, args.columnMapping, args.aggregation);
+      } while (this.rerenderQueued);
+    } finally {
+      this.rendering = false;
+    }
+  }
+
+  private async renderInternal(
+    profile: DesirabilityProfile,
+    columnMapping: Record<string, string | null>,
+    aggregation?: WeightedAggregation,
+  ): Promise<void> {
     if (grok.shell.o !== this.root)
       this.show();
 
-    const scoreColumnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true, true);
+    const scoreColumnNames =
+      await computeMpo(this.df, profile, columnMapping, aggregation, true, true, false, true, this.calculator);
     if (!scoreColumnNames.length)
       return;
 
@@ -116,8 +161,8 @@ export class MpoContextPanel {
       this.panel.addPane('Worst scores', () => this.worstScoreViewer!.root, true);
     }
 
-    this.bestScoreViewer.render();
-    this.worstScoreViewer.render();
+    await this.bestScoreViewer.render();
+    await this.worstScoreViewer.render();
   }
 
   private attachCurrentObjectChanging(): void {
@@ -140,12 +185,17 @@ export class MpoContextPanel {
   }
 
   release(): void {
+    if (this.renderTimer) {
+      clearTimeout(this.renderTimer);
+      this.renderTimer = null;
+    }
     this.currentObjectChangingSub?.unsubscribe();
     this.currentRowChangedSub?.unsubscribe();
     this.currentObjectChangingSub = null;
     this.currentRowChangedSub = null;
     this.panelMouseDown = false;
     this.scoreViewerInteraction = false;
+    this.calculator.release();
   }
 
   close(): void {
@@ -158,6 +208,7 @@ export class MpoContextPanel {
 
   updateDataFrame(df: DG.DataFrame): void {
     this.df = df;
+    this.calculator.release();
     this.resetViewers();
   }
 

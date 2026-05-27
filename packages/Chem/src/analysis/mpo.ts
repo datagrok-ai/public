@@ -177,11 +177,11 @@ export class MpoProfileDialog {
   }
 
   private listenForProfileChanges(): void {
-    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(() => {
       this.updateSaveButtonVisibility();
       this.updateOkButtonState();
       if (this.currentProfile && this.mpoContextPanel) {
-        await this.mpoContextPanel.render(
+        this.mpoContextPanel.render(
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
           this.mpoProfileEditor.aggregationInput.value ?? undefined,
