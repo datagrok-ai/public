@@ -8,13 +8,36 @@ SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
 --connection: System:Datagrok
 --meta.cache: all
 --meta.cache.invalidateOn: 0 */5 * * * *
+WITH summary AS (
+  SELECT
+    pg_database_size(current_database()) AS db_size_bytes,
+    pg_size_pretty(pg_database_size(current_database())) AS db_size_pretty,
+    COALESCE(round(100.0 * sum(blks_hit)::numeric / NULLIF(sum(blks_hit) + sum(blks_read), 0), 2), 0)::float AS cache_hit_pct,
+    max(stats_reset) AS stats_reset
+  FROM pg_stat_database
+  WHERE datname = current_database()
+),
+offenders AS (
+  SELECT
+    schemaname || '.' || relname AS offender_table,
+    ROUND((100.0 * (heap_blks_hit + idx_blks_hit)
+      / NULLIF(heap_blks_hit + idx_blks_hit + heap_blks_read + idx_blks_read, 0))::numeric, 1)::float
+      AS offender_hit_pct,
+    (heap_blks_read + idx_blks_read)::bigint AS offender_disk_reads
+  FROM pg_statio_user_tables
+  WHERE heap_blks_read + idx_blks_read >= 1000
+    AND (100.0 * (heap_blks_hit + idx_blks_hit)
+      / NULLIF(heap_blks_hit + idx_blks_hit + heap_blks_read + idx_blks_read, 0)) < 95
+  ORDER BY (100.0 * (heap_blks_hit + idx_blks_hit)
+    / NULLIF(heap_blks_hit + idx_blks_hit + heap_blks_read + idx_blks_read, 0)) ASC
+  LIMIT 5
+)
 SELECT
-  pg_database_size(current_database()) AS db_size_bytes,
-  pg_size_pretty(pg_database_size(current_database())) AS db_size_pretty,
-  COALESCE(round(100.0 * sum(blks_hit)::numeric / NULLIF(sum(blks_hit) + sum(blks_read), 0), 2), 0)::float AS cache_hit_pct,
-  max(stats_reset) AS stats_reset
-FROM pg_stat_database
-WHERE datname = current_database();
+  s.db_size_bytes, s.db_size_pretty, s.cache_hit_pct, s.stats_reset,
+  o.offender_table, o.offender_hit_pct, o.offender_disk_reads
+FROM summary s
+LEFT JOIN offenders o ON true
+ORDER BY o.offender_hit_pct ASC NULLS LAST;
 --end
 
 
@@ -96,12 +119,6 @@ ORDER BY blocks DESC, age_sec DESC
 LIMIT @limit;
 --end
 
-
--- pg_stat_statements scope. Excluded:
---   - self-referential diagnostic queries
---   - explicit BEGIN/COMMIT/ROLLBACK (top-level so PSS records them)
---   - driver keepalive `select $1`
---   - scoped to current database via dbid
 
 --name: MetricsTopSlowestQueries
 --input: int limit = 10
@@ -302,6 +319,8 @@ LIMIT @limit;
 --name: MetricsErrorsCount
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
+--meta.cache: all
+--meta.cache.invalidateOn: 0 */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -310,7 +329,10 @@ dates AS (
 )
 SELECT
   count(*) FILTER (WHERE e.event_time >= d.min_date) AS errors_now,
-  count(*) FILTER (WHERE e.event_time < d.min_date) AS errors_prev
+  count(*) FILTER (WHERE e.event_time < d.min_date) AS errors_prev,
+  (SELECT min_date      FROM dates) AS window_start,
+  (SELECT max_date      FROM dates) AS window_end,
+  (SELECT min_prev_date FROM dates) AS prev_window_start
 FROM events e
 CROSS JOIN dates d
 WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
@@ -322,6 +344,8 @@ WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
 --name: MetricsSessionsCount
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
+--meta.cache: all
+--meta.cache.invalidateOn: 0 */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -330,16 +354,15 @@ dates AS (
 )
 SELECT
   count(DISTINCT s.id) FILTER (WHERE s.started >= d.min_date) AS sessions_now,
-  count(DISTINCT s.id) FILTER (WHERE s.started < d.min_date) AS sessions_prev
+  count(DISTINCT s.id) FILTER (WHERE s.started < d.min_date) AS sessions_prev,
+  (SELECT min_date      FROM dates) AS window_start,
+  (SELECT max_date      FROM dates) AS window_end,
+  (SELECT min_prev_date FROM dates) AS prev_window_start
 FROM users_sessions s
 CROSS JOIN dates d
 WHERE s.started BETWEEN d.min_prev_date AND d.max_date;
 --end
 
-
--- HTTP latency metrics. Sourced from `http-request` USAGE events emitted by the
--- main server's logRequests middleware (errors.dart). Each event carries `method`,
--- `route` (UUID/numeric segments replaced with `{id}`), `status`, and `ms` params.
 
 --name: MetricsLatency
 --input: string date {pattern: datetime}

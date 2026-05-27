@@ -289,15 +289,63 @@ export class MetricsView extends UaView {
   }
 
   private async loadDbStats(): Promise<void> {
+    const card = this.card('db');
+    ui.tooltip.bind(card.root, null);
     const df = await MetricsView.safeCall(() => queries.metricsDbStats(), 'MetricsDbStats');
     if (!df || df.rowCount === 0) {
       this.setCard('db', '—', 'unavailable', 'info');
       return;
     }
     const sizePretty = df.get('db_size_pretty', 0) as string;
-    const hit = (df.get('cache_hit_pct', 0) as number) ?? 0;
+    const hit = Number(df.get('cache_hit_pct', 0) ?? 0);
     this.setCard('db', sizePretty ?? '—', `hit ${hit.toFixed(0)}%`,
       hit >= THRESH.cacheHit.green ? 'green' : hit >= THRESH.cacheHit.orange ? 'orange' : 'red');
+    ui.tooltip.bind(card.root, () => MetricsView.buildDbStatsTooltip(df, hit, sizePretty));
+  }
+
+  private static buildDbStatsTooltip(df: DG.DataFrame, hit: number, sizePretty: string): HTMLElement {
+    const statsReset = df.get('stats_reset', 0) as dayjs.Dayjs | null;
+    const lines: HTMLElement[] = [];
+    lines.push(ui.divText(`${sizePretty ?? '—'} · cache hit ${hit.toFixed(2)}%`));
+    lines.push(ui.divText(
+      'Cache hit = share of heap-block reads served from shared_buffers instead of disk. ' +
+      '>99% is healthy for OLTP; lower means more disk I/O.',
+      'ua-metrics-tt-dim'));
+    if (statsReset)
+      lines.push(ui.divText(`Stats since ${statsReset.format('YYYY-MM-DD HH:mm')} · ${formatAgo(statsReset)}`,
+        'ua-metrics-tt-dim'));
+
+    const hasOffenders = df.rowCount > 0 && df.get('offender_table', 0) != null;
+    if (hasOffenders) {
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      lines.push(ui.divText('Top tables by cache misses (hit ratio < 95%):'));
+      const rows: HTMLElement[] = [
+        ui.divH([
+          ui.divText('table', 'ua-metrics-tt-col-prefix ua-metrics-tt-head'),
+          ui.divText('hit %', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
+          ui.divText('disk reads', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
+        ]),
+      ];
+      for (let i = 0; i < df.rowCount; i++) {
+        const name = df.get('offender_table', i);
+        if (name == null)
+          continue;
+        rows.push(ui.divH([
+          ui.divText(name as string, 'ua-metrics-tt-col-prefix'),
+          ui.divText(`${Number(df.get('offender_hit_pct', i) ?? 0).toFixed(1)}%`, 'ua-metrics-tt-col-num'),
+          ui.divText(formatCount(Number(df.get('offender_disk_reads', i) ?? 0)), 'ua-metrics-tt-col-num'),
+        ]));
+      }
+      lines.push(ui.div(rows, 'ua-metrics-tt-table'));
+      lines.push(ui.divText('Hit % includes heap + index blocks. Filtered to tables with ≥1K disk reads.',
+        'ua-metrics-tt-dim'));
+    }
+    else {
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      lines.push(ui.divText('No user tables with notable traffic below 95% hit ratio.',
+        'ua-metrics-tt-dim'));
+    }
+    return ui.div(lines, 'ua-metrics-tt');
   }
 
   private async loadTableHealthSummary(): Promise<void> {
@@ -494,30 +542,100 @@ export class MetricsView extends UaView {
 
   private async loadErrors(): Promise<void> {
     const filter = this.uaToolbox.getFilter();
+    const card = this.card('errors');
+    ui.tooltip.bind(card.root, null);
     const df = await MetricsView.safeCall(() => queries.metricsErrorsCount(filter.date!), 'MetricsErrorsCount');
     if (!df || df.rowCount === 0) {
       this.setCard('errors', '0', 'no errors', 'info');
       return;
     }
-    const now = (df.get('errors_now', 0) as number) ?? 0;
-    const prev = (df.get('errors_prev', 0) as number) ?? 0;
+    const now = Number(df.get('errors_now', 0) ?? 0);
+    const prev = Number(df.get('errors_prev', 0) ?? 0);
     const delta = now - prev;
     const sub = delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`;
-    this.setCard('errors', `${now}`, sub, now > 0 ? 'red' : 'info');
+    const color: CardColor = now === 0 ? 'info'
+      : delta > 0 ? 'red'
+      : delta < 0 ? 'green'
+      : 'orange';
+    this.setCard('errors', `${now}`, sub, color);
+    const winStart = df.get('window_start', 0) as dayjs.Dayjs | null;
+    const winEnd = df.get('window_end', 0) as dayjs.Dayjs | null;
+    const prevStart = df.get('prev_window_start', 0) as dayjs.Dayjs | null;
+    ui.tooltip.bind(card.root, () => MetricsView.buildErrorsTooltip({now, prev, delta, color, winStart, winEnd, prevStart}));
+  }
+
+  private static buildErrorsTooltip(d: {
+    now: number, prev: number, delta: number, color: CardColor,
+    winStart: dayjs.Dayjs | null, winEnd: dayjs.Dayjs | null, prevStart: dayjs.Dayjs | null,
+  }): HTMLElement {
+    const lines: HTMLElement[] = [];
+    lines.push(ui.divText(
+      `${d.now.toLocaleString()} error event${d.now === 1 ? '' : 's'} logged in this window.`));
+    lines.push(ui.divText('An error event = one row in events with event_types.source = \'error\'.',
+      'ua-metrics-tt-dim'));
+    if (d.winStart && d.winEnd)
+      lines.push(ui.divText(formatRange(d.winStart, d.winEnd), 'ua-metrics-tt-dim'));
+    if (d.prevStart && d.winStart) {
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      const pct = d.prev > 0 ? ` (${d.delta > 0 ? '+' : ''}${Math.round((d.delta / d.prev) * 100)}%)` : '';
+      const change = d.delta === 0 ? 'no change'
+        : `${d.delta > 0 ? '+' : ''}${d.delta}${pct} vs previous window`;
+      lines.push(ui.divText(`Previous window: ${d.prev.toLocaleString()} error${d.prev === 1 ? '' : 's'} · ${change}`));
+      lines.push(ui.divText(formatRange(d.prevStart, d.winStart), 'ua-metrics-tt-dim'));
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      const trend = d.color === 'red' ? 'Red = more errors than the previous window.'
+        : d.color === 'green' ? 'Green = fewer errors than the previous window.'
+        : d.color === 'orange' ? 'Orange = same error count as the previous window.'
+        : '"vs prev" compares to the immediately preceding window of equal length.';
+      lines.push(ui.divText(trend, 'ua-metrics-tt-dim'));
+    }
+    return ui.div(lines, 'ua-metrics-tt');
   }
 
   private async loadSessions(): Promise<void> {
     const filter = this.uaToolbox.getFilter();
+    const card = this.card('sessions');
+    ui.tooltip.bind(card.root, null);
     const df = await MetricsView.safeCall(() => queries.metricsSessionsCount(filter.date!), 'MetricsSessionsCount');
     if (!df || df.rowCount === 0) {
       this.setCard('sessions', '—', 'unavailable', 'info');
       return;
     }
-    const now = (df.get('sessions_now', 0) as number) ?? 0;
-    const prev = (df.get('sessions_prev', 0) as number) ?? 0;
+    const now = Number(df.get('sessions_now', 0) ?? 0);
+    const prev = Number(df.get('sessions_prev', 0) ?? 0);
     const delta = now - prev;
     const sub = delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`;
     this.setCard('sessions', `${now}`, sub, 'info');
+    const winStart = df.get('window_start', 0) as dayjs.Dayjs | null;
+    const winEnd = df.get('window_end', 0) as dayjs.Dayjs | null;
+    const prevStart = df.get('prev_window_start', 0) as dayjs.Dayjs | null;
+    ui.tooltip.bind(card.root, () => MetricsView.buildSessionsTooltip({now, prev, delta, winStart, winEnd, prevStart}));
+  }
+
+  private static buildSessionsTooltip(d: {
+    now: number, prev: number, delta: number,
+    winStart: dayjs.Dayjs | null, winEnd: dayjs.Dayjs | null, prevStart: dayjs.Dayjs | null,
+  }): HTMLElement {
+    const lines: HTMLElement[] = [];
+    lines.push(ui.divText(
+      `${d.now.toLocaleString()} distinct user session${d.now === 1 ? '' : 's'} started in this window.`));
+    lines.push(ui.divText('A session = one users_sessions row (one browser tab login).',
+      'ua-metrics-tt-dim'));
+    if (d.winStart && d.winEnd)
+      lines.push(ui.divText(formatRange(d.winStart, d.winEnd), 'ua-metrics-tt-dim'));
+    if (d.prevStart && d.winStart) {
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      const pct = d.prev > 0 ? ` (${d.delta > 0 ? '+' : ''}${Math.round((d.delta / d.prev) * 100)}%)` : '';
+      const change = d.delta === 0 ? 'no change'
+        : `${d.delta > 0 ? '+' : ''}${d.delta}${pct} vs previous window`;
+      lines.push(ui.divText(`Previous window: ${d.prev.toLocaleString()} session${d.prev === 1 ? '' : 's'} · ${change}`));
+      lines.push(ui.divText(formatRange(d.prevStart, d.winStart), 'ua-metrics-tt-dim'));
+      lines.push(ui.div([], {style: {height: '6px'}}));
+      lines.push(ui.divText(
+        '"vs prev" compares to the immediately preceding window of equal length.',
+        'ua-metrics-tt-dim'));
+    }
+    return ui.div(lines, 'ua-metrics-tt');
   }
 
   private async loadStorage(): Promise<void> {
