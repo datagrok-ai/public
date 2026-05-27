@@ -391,10 +391,27 @@ export class AdminDataSource {
    * Sends email
    * @param email - message that will be sent using configured SMTP service
    */
-  sendEmail(email: Email): Promise<void> {
+  async sendEmail(email: Email): Promise<void> {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
-    return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
+    const fd = new FormData();
+    fd.append('subject', email.subject);
+    fd.append('to', email.to.join(','));
+    if (email.text)
+      fd.append('text', email.text);
+    if (email.html)
+      fd.append('html', email.html);
+    if (email.bcc && email.bcc.length)
+      fd.append('bcc', email.bcc.join(','));
+    const toBlob = (a: EmailAttachment) => a.data instanceof Blob ? a.data : new Blob([a.data], { type: a.contentType ?? 'application/octet-stream' });
+    for (const a of email.attachments ?? [])
+      fd.append('attachment', toBlob(a), a.name);
+    for (const a of email.inlines ?? [])
+      fd.append('inline', toBlob(a), a.name);
+    const r = await fetch(`${api.grok_Dapi_Root()}/admin/email`,
+        { method: 'POST', body: fd, credentials: 'include' });
+    if (!r.ok)
+      throw new Error(await r.text());
   }
 
   /** Sends a message to the specified browser client
@@ -402,6 +419,16 @@ export class AdminDataSource {
   pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
     return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
   }
+}
+
+/** Attachment for an [Email]. */
+export interface EmailAttachment {
+  /** Filename shown in the recipient's mail client. */
+  name: string,
+  /** Attachment bytes. Blob is streamed natively; Uint8Array is wrapped in a Blob. */
+  data: Blob | Uint8Array,
+  /** Optional MIME type override; defaults to Blob.type or 'application/octet-stream'. */
+  contentType?: string,
 }
 
 /** Email that can be sent using the configured SMTP service */
@@ -420,6 +447,12 @@ export interface Email {
 
   /** Blind carbon copy */
   bcc?: string [],
+
+  /** Files attached to the message. */
+  attachments?: EmailAttachment[],
+
+  /** Inline images referenced by cid in the html body (Mailgun only). */
+  inlines?: EmailAttachment[],
 }
 
 export interface ServiceInfo {
