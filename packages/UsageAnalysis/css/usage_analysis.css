@@ -406,3 +406,28 @@
   width: 50px;
   text-align: right;
 }
+
+.ua-metrics-tt-wide {
+  max-width: 560px;
+}
+
+.ua-metrics-tt-col-state {
+  width: 110px;
+}
+
+.ua-metrics-tt-col-app {
+  width: 110px;
+}
+
+.ua-metrics-tt-col-user {
+  width: 80px;
+}
+
+.ua-metrics-tt-col-query {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}

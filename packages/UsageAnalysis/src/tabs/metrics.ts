@@ -203,10 +203,12 @@ export class MetricsView extends UaView {
     return root;
   }
 
+  private card(id: string): {root: HTMLElement, value: HTMLElement, sub: HTMLElement} {
+    return this.cards.get(id)!;
+  }
+
   private setCard(id: string, value: string, sub: string, color: CardColor): void {
-    const card = this.cards.get(id);
-    if (!card)
-      return;
+    const card = this.card(id);
     card.value.textContent = value;
     card.sub.textContent = sub;
     card.sub.className = `ua-metrics-card-sub ua-metrics-${color}`;
@@ -299,9 +301,8 @@ export class MetricsView extends UaView {
   }
 
   private async loadTableHealthSummary(): Promise<void> {
-    const card = this.cards.get('tblHealth');
-    if (card)
-      ui.tooltip.bind(card.root, null);
+    const card = this.card('tblHealth');
+    ui.tooltip.bind(card.root, null);
     const df = await MetricsView.safeCall(() => queries.metricsTableHealthSummary(DASHBOARD_LIMIT),
       'MetricsTableHealthSummary');
     if (!df) {
@@ -312,8 +313,7 @@ export class MetricsView extends UaView {
     const maxDead = df.rowCount === 0 ? 0 : ((df.get('max_dead_pct', 0) as number) ?? 0);
     this.setCard('tblHealth', `${count}`, count > 0 ? `dead ${maxDead}%` : 'healthy',
       count <= THRESH.tableHealthCount.green ? 'green' : count <= THRESH.tableHealthCount.orange ? 'orange' : 'red');
-    if (card)
-      ui.tooltip.bind(card.root, () => MetricsView.buildTableHealthTooltip(count, maxDead, df));
+    ui.tooltip.bind(card.root, () => MetricsView.buildTableHealthTooltip(count, maxDead, df));
   }
 
   private static buildTableHealthTooltip(count: number, maxDead: number, df: DG.DataFrame): HTMLElement {
@@ -354,16 +354,142 @@ export class MetricsView extends UaView {
   }
 
   private async loadConnections(): Promise<void> {
-    const df = await MetricsView.safeCall(() => queries.metricsConnections(), 'MetricsConnections');
-    if (!df || df.rowCount === 0) {
+    const card = this.card('connections');
+    ui.tooltip.bind(card.root, null);
+    const summary = await MetricsView.safeCall(() => queries.metricsConnections(), 'MetricsConnections');
+    if (!summary || summary.rowCount === 0) {
       this.setCard('connections', '—', 'unavailable', 'info');
       return;
     }
-    const total = (df.get('total', 0) as number) ?? 0;
-    const idleX = (df.get('idle_in_xact', 0) as number) ?? 0;
-    const oldestSec = (df.get('oldest_idle_xact_seconds', 0) as number) ?? 0;
+    const total = (summary.get('total', 0) as number) ?? 0;
+    const idleX = (summary.get('idle_in_xact', 0) as number) ?? 0;
+    const oldestSec = (summary.get('oldest_idle_xact_seconds', 0) as number) ?? 0;
     this.setCard('connections', `${total}`, idleX > 0 ? `${idleX} idle xact` : 'no idle xact',
       oldestSec >= THRESH.idleXactSec.orange ? 'red' : oldestSec >= THRESH.idleXactSec.green ? 'orange' : 'green');
+
+    let offenders: DG.DataFrame | null = null;
+    let pending = true;
+    ui.tooltip.bind(card.root, () => MetricsView.buildConnectionsTooltip(summary, offenders, pending));
+    setTimeout(async () => {
+      offenders = await MetricsView.safeCall(
+        () => queries.metricsConnectionsOffenders(DASHBOARD_LIMIT, THRESH.idleXactSec.green, 30),
+        'MetricsConnectionsOffenders');
+      pending = false;
+    }, 500);
+  }
+
+  private static formatDuration(sec: number): string {
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m < 60) return s === 0 ? `${m}m` : `${m}m ${s}s`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return rm === 0 ? `${h}h` : `${h}h ${rm}m`;
+  }
+
+  private static buildConnectionsTooltip(
+    summary: DG.DataFrame, offenders: DG.DataFrame | null, pending: boolean): HTMLElement {
+    const total = (summary.get('total', 0) as number) ?? 0;
+    const active = (summary.get('active', 0) as number) ?? 0;
+    const idle = (summary.get('idle', 0) as number) ?? 0;
+    const idleX = (summary.get('idle_in_xact', 0) as number) ?? 0;
+    const waiting = (summary.get('waiting_on_lock', 0) as number) ?? 0;
+    const oldestSec = (summary.get('oldest_idle_xact_seconds', 0) as number) ?? 0;
+
+    const lines: HTMLElement[] = [];
+    const headline = idleX > 0
+      ? `${total} connections · ${idleX} idle in transaction · oldest ${MetricsView.formatDuration(oldestSec)} ago`
+      : `${total} connections`;
+    lines.push(ui.divText(headline));
+    lines.push(ui.divText(
+      `${active} active · ${idle} idle · ${idleX} idle in transaction · ${waiting} waiting on lock`,
+      'ua-metrics-tt-dim'));
+
+    if (pending) {
+      lines.push(ui.div([], {style: {height: '4px'}}));
+      lines.push(ui.divText('Loading session details…', 'ua-metrics-tt-dim'));
+      return ui.div(lines, 'ua-metrics-tt');
+    }
+    if (!offenders) {
+      lines.push(ui.div([], {style: {height: '4px'}}));
+      lines.push(ui.divText('Session details unavailable.', 'ua-metrics-tt-dim'));
+      return ui.div(lines, 'ua-metrics-tt');
+    }
+    const rowCount = offenders.rowCount;
+    if (rowCount === 0) {
+      lines.push(ui.div([], {style: {height: '4px'}}));
+      lines.push(ui.divText('All sessions look healthy.'));
+      return ui.div(lines, 'ua-metrics-tt');
+    }
+
+    const states: string[] = [];
+    const waitEvtTypes: string[] = [];
+    let maxBlocks = 0;
+    for (let i = 0; i < rowCount; i++) {
+      states.push(offenders.get('state', i) as string ?? '');
+      waitEvtTypes.push(offenders.get('wait_event_type', i) as string ?? '');
+      maxBlocks = Math.max(maxBlocks, (offenders.get('blocks', i) as number) ?? 0);
+    }
+    const hasIdleXact = states.some((s) => s === 'idle in transaction');
+    const hasActiveLock = states.some((s, i) => s === 'active' && waitEvtTypes[i] === 'Lock');
+    const showBlocks = maxBlocks > 0;
+
+    if (hasIdleXact) {
+      lines.push(ui.div([], {style: {height: '4px'}}));
+      lines.push(ui.divText(
+        'Idle in transaction = client opened BEGIN but hasn\'t sent COMMIT/ROLLBACK. ' +
+        'These block VACUUM and hold row locks until they close.',
+        'ua-metrics-tt-dim'));
+    }
+
+    const header: HTMLElement[] = [
+      ui.divText('state', 'ua-metrics-tt-col-state ua-metrics-tt-head'),
+      ui.divText('age', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
+      ui.divText('app', 'ua-metrics-tt-col-app ua-metrics-tt-head'),
+      ui.divText('user', 'ua-metrics-tt-col-user ua-metrics-tt-head'),
+      ui.divText('query', 'ua-metrics-tt-col-query ua-metrics-tt-head'),
+    ];
+    if (showBlocks)
+      header.push(ui.divText('blocks', 'ua-metrics-tt-col-num ua-metrics-tt-head'));
+    const rows: HTMLElement[] = [ui.divH(header)];
+    for (let i = 0; i < rowCount; i++) {
+      const state = offenders.get('state', i) as string ?? '';
+      const wet = offenders.get('wait_event_type', i) as string ?? '';
+      const stateLabel = state === 'idle in transaction' ? 'idle in xact'
+        : state === 'active' && wet === 'Lock' ? 'active (Lock)'
+        : state;
+      const cells: HTMLElement[] = [
+        ui.divText(stateLabel, 'ua-metrics-tt-col-state'),
+        ui.divText(MetricsView.formatDuration((offenders.get('age_sec', i) as number) ?? 0),
+          'ua-metrics-tt-col-num'),
+        ui.divText((offenders.get('application_name', i) as string) || '—', 'ua-metrics-tt-col-app'),
+        ui.divText((offenders.get('usename', i) as string) || '—', 'ua-metrics-tt-col-user'),
+        ui.divText((offenders.get('query', i) as string) || '—', 'ua-metrics-tt-col-query'),
+      ];
+      if (showBlocks)
+        cells.push(ui.divText(`${(offenders.get('blocks', i) as number) ?? 0}`, 'ua-metrics-tt-col-num'));
+      rows.push(ui.divH(cells));
+    }
+    lines.push(ui.div(rows, 'ua-metrics-tt-table'));
+
+    if (hasActiveLock) {
+      lines.push(ui.divText(
+        'active (Lock) = running a query but waiting for another session\'s lock.',
+        'ua-metrics-tt-dim'));
+    }
+    if (showBlocks) {
+      lines.push(ui.divText(
+        '"blocks N" = N other sessions are queued behind this one\'s locks.',
+        'ua-metrics-tt-dim'));
+    }
+
+    lines.push(ui.div([], {style: {height: '6px'}}));
+    lines.push(ui.divText(
+      'Run SELECT pg_terminate_backend(pid) to drop a session; ' +
+      'fix missing COMMIT/ROLLBACK in the app for repeat offenders.',
+      'ua-metrics-tt-dim'));
+    return ui.div(lines, 'ua-metrics-tt ua-metrics-tt-wide');
   }
 
   private async loadErrors(): Promise<void> {
@@ -395,9 +521,8 @@ export class MetricsView extends UaView {
   }
 
   private async loadStorage(): Promise<void> {
-    const card = this.cards.get('storage');
-    if (card)
-      ui.tooltip.bind(card.root, null);
+    const card = this.card('storage');
+    ui.tooltip.bind(card.root, null);
     const stats = await MetricsView.safeCall(async () => {
       const raw = await grok.functions.call('StorageStats') as string;
       return JSON.parse(raw);
@@ -410,8 +535,7 @@ export class MetricsView extends UaView {
     const sub = `${stats.type} · ${more}${formatCount(stats.objectCount)} obj`;
     this.setCard('storage', `${more}${formatBytes(stats.totalBytes)}`, sub, 'info');
     const coords = await this.loadStorageCoords();
-    if (card)
-      ui.tooltip.bind(card.root, () => MetricsView.buildStorageTooltip(stats, coords));
+    ui.tooltip.bind(card.root, () => MetricsView.buildStorageTooltip(stats, coords));
   }
 
   private async loadStorageCoords(): Promise<string[]> {
@@ -459,9 +583,8 @@ export class MetricsView extends UaView {
   }
 
   private async loadDisk(): Promise<void> {
-    const card = this.cards.get('disk');
-    if (card)
-      ui.tooltip.bind(card.root, null);
+    const card = this.card('disk');
+    ui.tooltip.bind(card.root, null);
     const s = await MetricsView.safeCall(async () => {
       const raw = await grok.functions.call('DiskStats') as string;
       return JSON.parse(raw) as DiskStat | null;
@@ -471,8 +594,7 @@ export class MetricsView extends UaView {
       return;
     }
     this.setCard('disk', formatBytes(s.freeBytes), `${s.usedPct}% used`, MetricsView.diskColor(s));
-    if (card)
-      ui.tooltip.bind(card.root, () => MetricsView.buildDiskTooltip(s));
+    ui.tooltip.bind(card.root, () => MetricsView.buildDiskTooltip(s));
   }
 
   private static diskColor(s: DiskStat): CardColor {
@@ -497,9 +619,8 @@ export class MetricsView extends UaView {
     const filter = this.uaToolbox.getFilter();
     const df = await MetricsView.safeCall(() => grok.data.query('UsageAnalysis:MetricsLatency', {date: filter.date!}),
       'MetricsLatency');
-    const card = this.cards.get('latency');
-    if (card)
-      ui.tooltip.bind(card.root, null);
+    const card = this.card('latency');
+    ui.tooltip.bind(card.root, null);
     if (!df || df.rowCount === 0 || (df.get('count_now', 0) as number) === 0) {
       this.setCard('latency', '—', 'no traffic', 'info');
       return;
@@ -520,8 +641,7 @@ export class MetricsView extends UaView {
       : p95 < THRESH.latencyMs.orange ? 'orange' : 'red';
     this.setCard('latency', `${p95}`, sub, color);
 
-    if (card)
-      ui.tooltip.bind(card.root, () => MetricsView.buildLatencyTooltip({
+    ui.tooltip.bind(card.root, () => MetricsView.buildLatencyTooltip({
         p50, p95, p99, p95Prev, countNow, countPrev, winStart, winEnd, prevStart, color,
       }));
   }

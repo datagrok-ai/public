@@ -46,13 +46,54 @@ LIMIT @limit;
 --connection: System:Datagrok
 SELECT
   count(*) AS total,
+  count(*) FILTER (WHERE state = 'active') AS active,
+  count(*) FILTER (WHERE state = 'idle') AS idle,
   count(*) FILTER (WHERE state = 'idle in transaction') AS idle_in_xact,
+  count(*) FILTER (WHERE wait_event_type = 'Lock') AS waiting_on_lock,
   COALESCE(
     EXTRACT(EPOCH FROM (now() - min(state_change) FILTER (WHERE state = 'idle in transaction')))::int,
     0
   ) AS oldest_idle_xact_seconds
 FROM pg_stat_activity
-WHERE datname = current_database();
+WHERE datname = current_database()
+  AND backend_type = 'client backend';
+--end
+
+
+--name: MetricsConnectionsOffenders
+--input: int limit = 10
+--input: int idleXactSec = 60
+--input: int activeSec = 30
+--connection: System:Datagrok
+WITH a AS (
+  SELECT
+    pid,
+    state,
+    wait_event_type,
+    wait_event,
+    application_name,
+    usename,
+    client_addr::text AS client_addr,
+    query,
+    EXTRACT(EPOCH FROM (now() - state_change))::int AS state_age_sec,
+    EXTRACT(EPOCH FROM (now() - query_start))::int AS query_age_sec,
+    cardinality(pg_blocking_pids(pid)) AS blocks
+  FROM pg_stat_activity
+  WHERE datname = current_database()
+    AND backend_type = 'client backend'
+    AND pid <> pg_backend_pid()
+)
+SELECT
+  pid, state, wait_event_type, wait_event, application_name, usename, client_addr,
+  substring(query, 1, 200) AS query,
+  CASE WHEN state = 'idle in transaction' THEN state_age_sec ELSE query_age_sec END AS age_sec,
+  blocks
+FROM a
+WHERE (state = 'idle in transaction' AND state_age_sec >= @idleXactSec)
+   OR (state = 'active' AND query_age_sec >= @activeSec)
+   OR blocks > 0
+ORDER BY blocks DESC, age_sec DESC
+LIMIT @limit;
 --end
 
 

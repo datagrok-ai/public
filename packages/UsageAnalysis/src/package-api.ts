@@ -272,6 +272,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsConnections', {});
   }
 
+  export async function metricsConnectionsOffenders(limit: number , idleXactSec: number , activeSec: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsConnectionsOffenders', { limit, idleXactSec, activeSec });
+  }
+
   export async function metricsTopSlowestQueries(limit: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueries', { limit });
   }
