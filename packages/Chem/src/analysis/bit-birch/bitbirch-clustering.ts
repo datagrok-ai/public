@@ -52,11 +52,10 @@ export async function bitbirchWorker(
             reject(new Error(`BitBIRCH worker error: ${error}`));
             return;
           }
-          const result = DG.Column.int('Cluster (BitBIRCH)', rowCount);
-          result.init((_i) => DG.INT_NULL);
+          const data = new Int32Array(rowCount).fill(DG.INT_NULL);
           for (let j = 0; j < validCount; j++)
-            result.set(validIndices[j], assignments[j]);
-          resolve(result);
+            data[validIndices[j]] = assignments[j];
+          resolve(DG.Column.fromInt32Array('Cluster (BitBIRCH)', data));
         } catch (e) {
           reject(e instanceof Error ? e : new Error(String(e)));
         }
