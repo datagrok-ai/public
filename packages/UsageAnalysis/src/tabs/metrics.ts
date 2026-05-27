@@ -13,6 +13,7 @@ type PssMode = 'modern' | 'legacy' | 'unavailable';
 
 const DASHBOARD_LIMIT = 10;
 const FULL_VIEW_LIMIT = 100000;
+const EMAIL_LIMIT = 100;
 
 const THRESH = {
   cacheHit: {green: 99, orange: 97},
@@ -142,7 +143,7 @@ export class MetricsView extends UaView {
 
     const refreshBtn = ui.button(ui.span([ui.iconFA('sync-alt'), ' Refresh']), () => this.refresh());
     refreshBtn.classList.add('ua-metrics-btn');
-    const sendBtn = ui.button(ui.span([ui.iconFA('envelope'), ' Send to Datagrok ', ui.iconFA('caret-down')]),
+    const sendBtn = ui.button(ui.span([ui.iconFA('envelope'), ' Send to Datagrok']),
       () => this.sendToDatagrok());
     sendBtn.classList.add('ua-metrics-btn');
 
@@ -983,7 +984,77 @@ export class MetricsView extends UaView {
     }
   }
 
-  private sendToDatagrok(): void {
-    grok.shell.info('Send-to-Datagrok preview not yet implemented.');
+  private async sendToDatagrok(): Promise<void> {
+    const progress = DG.TaskBarProgressIndicator.create('Preparing snapshot...');
+    let files: DG.FileInfo[];
+    try {
+      files = await this.collectSnapshotAttachments();
+    } catch (e) {
+      grok.shell.error(`Failed to prepare snapshot: ${e}`);
+      return;
+    } finally {
+      progress.close();
+    }
+
+    const reportEmail = await MetricsView.safeCall(() => grok.dapi.admin.getReportEmail(), 'getReportEmail');
+    const subject = `Datagrok metrics — ${window.location.host} — ${dayjs().format('YYYY-MM-DD HH:mm')}`;
+    ui.composeEmail({
+      title: 'Send to Datagrok', subject, to: reportEmail ? reportEmail.split(/[,;\s]+/).filter((s) => s) : [],
+      bcc: [], attachments: files,
+      onSend: async (r) => {
+        await grok.dapi.admin.sendEmail({
+          subject: r.subject,
+          to: r.to,
+          bcc: r.bcc,
+          html: r.html,
+          text: r.text,
+          attachments: r.attachments.map((fi) => ({name: fi.name, data: fi.data})),
+        });
+        grok.shell.info('Metrics snapshot sent.');
+      },
+    }).show();
+  }
+
+  private async collectSnapshotAttachments(): Promise<DG.FileInfo[]> {
+    const filter = this.uaToolbox.getFilter();
+    const date = filter.date!;
+    const pssMode = await this.detectPssMode();
+    const useLegacy = pssMode === 'legacy';
+
+    type Src = {name: string, fn: () => Promise<DG.DataFrame | string | null>};
+    const sources: Src[] = [
+      {name: 'db_summary.csv',           fn: () => queries.metricsDbStats()},
+      {name: 'table_health.csv',         fn: () => queries.metricsTableHealth(EMAIL_LIMIT)},
+      {name: 'largest_tables.csv',       fn: () => queries.metricsLargestTables(20)},
+      {name: 'connections.csv',          fn: () => queries.metricsConnections()},
+      {name: 'connections_offenders.csv', fn: () => queries.metricsConnectionsOffenders(20, 60, 30)},
+      {name: 'http_routes.csv',          fn: () => queries.metricsHttpRoutes(date, EMAIL_LIMIT)},
+      {name: 'errors.csv',               fn: () => queries.metricsErrorsCount(date)},
+      {name: 'latency.csv',              fn: () => queries.metricsLatency(date)},
+      {name: 'sessions.csv',             fn: () => queries.metricsSessionsCount(date)},
+    ];
+    if (pssMode !== 'unavailable') {
+      sources.push(
+        {name: 'slowest_queries.csv',    fn: () => useLegacy ? queries.metricsTopSlowestQueriesPg12(EMAIL_LIMIT) : queries.metricsTopSlowestQueries(EMAIL_LIMIT)},
+        {name: 'most_called_queries.csv', fn: () => useLegacy ? queries.metricsTopMostCalledQueriesPg12(EMAIL_LIMIT) : queries.metricsTopMostCalledQueries(EMAIL_LIMIT)},
+        {name: 'worst_cache_hit.csv',    fn: () => useLegacy ? queries.metricsWorstCacheHitQueriesPg12(EMAIL_LIMIT) : queries.metricsWorstCacheHitQueries(EMAIL_LIMIT)},
+      );
+    }
+    sources.push(
+      {name: 'storage.json',             fn: () => grok.functions.call('StorageStats') as Promise<string>},
+      {name: 'disk.json',                fn: () => grok.functions.call('DiskStats') as Promise<string>},
+    );
+
+    const results = await Promise.all(sources.map((s) => MetricsView.safeCall(s.fn, s.name)));
+
+    const files: DG.FileInfo[] = [];
+    for (let i = 0; i < sources.length; i++) {
+      const r = results[i];
+      if (r == null)
+        continue;
+      const csv = typeof r === 'string' ? r : (r as DG.DataFrame).toCsv();
+      files.push(DG.FileInfo.fromString(sources[i].name, csv));
+    }
+    return files;
   }
 }

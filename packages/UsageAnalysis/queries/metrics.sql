@@ -7,7 +7,7 @@ SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
 --name: MetricsDbStats
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH summary AS (
   SELECT
     pg_database_size(current_database()) AS db_size_bytes,
@@ -45,7 +45,7 @@ ORDER BY o.offender_hit_pct ASC NULLS LAST;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH unhealthy AS (
   SELECT
     schemaname || '.' || relname AS table_name,
@@ -288,7 +288,7 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   pg_size_pretty(pg_total_relation_size(relid)) AS total,
@@ -304,7 +304,7 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   COALESCE(round((100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0))::numeric, 0), 0)::int AS dead_pct,
@@ -320,7 +320,7 @@ LIMIT @limit;
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -345,7 +345,7 @@ WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
