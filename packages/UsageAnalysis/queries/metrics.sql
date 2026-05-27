@@ -19,18 +19,26 @@ WHERE datname = current_database();
 
 
 --name: MetricsTableHealthSummary
+--input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
 --meta.cache.invalidateOn: 0 */5 * * * *
+WITH unhealthy AS (
+  SELECT
+    schemaname || '.' || relname AS table_name,
+    (100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0))::int AS dead_pct,
+    GREATEST(last_vacuum, last_autovacuum) AS last_vacuum
+  FROM pg_stat_user_tables
+  WHERE n_live_tup >= 10000
+    AND (100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0)) > 40
+)
 SELECT
-  count(*) FILTER (
-    WHERE n_live_tup >= 10000
-      AND (100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0)) > 40
-  ) AS unhealthy_count,
-  COALESCE(max((100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0))::int) FILTER (
-    WHERE n_live_tup >= 10000 AND (100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0)) > 40
-  ), 0) AS max_dead_pct
-FROM pg_stat_user_tables;
+  table_name, dead_pct, last_vacuum,
+  COUNT(*) OVER () AS unhealthy_count,
+  MAX(dead_pct) OVER () AS max_dead_pct
+FROM unhealthy
+ORDER BY dead_pct DESC
+LIMIT @limit;
 --end
 
 

@@ -264,8 +264,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
   }
 
-  export async function metricsTableHealthSummary(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', {});
+  export async function metricsTableHealthSummary(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', { limit });
   }
 
   export async function metricsConnections(): Promise<DG.DataFrame> {

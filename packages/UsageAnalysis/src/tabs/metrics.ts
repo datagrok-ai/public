@@ -299,15 +299,58 @@ export class MetricsView extends UaView {
   }
 
   private async loadTableHealthSummary(): Promise<void> {
-    const df = await MetricsView.safeCall(() => queries.metricsTableHealthSummary(), 'MetricsTableHealthSummary');
-    if (!df || df.rowCount === 0) {
+    const card = this.cards.get('tblHealth');
+    if (card)
+      ui.tooltip.bind(card.root, null);
+    const df = await MetricsView.safeCall(() => queries.metricsTableHealthSummary(DASHBOARD_LIMIT),
+      'MetricsTableHealthSummary');
+    if (!df) {
       this.setCard('tblHealth', '—', 'unavailable', 'info');
       return;
     }
-    const count = (df.get('unhealthy_count', 0) as number) ?? 0;
-    const maxDead = (df.get('max_dead_pct', 0) as number) ?? 0;
+    const count = df.rowCount === 0 ? 0 : ((df.get('unhealthy_count', 0) as number) ?? 0);
+    const maxDead = df.rowCount === 0 ? 0 : ((df.get('max_dead_pct', 0) as number) ?? 0);
     this.setCard('tblHealth', `${count}`, count > 0 ? `dead ${maxDead}%` : 'healthy',
       count <= THRESH.tableHealthCount.green ? 'green' : count <= THRESH.tableHealthCount.orange ? 'orange' : 'red');
+    if (card)
+      ui.tooltip.bind(card.root, () => MetricsView.buildTableHealthTooltip(count, maxDead, df));
+  }
+
+  private static buildTableHealthTooltip(count: number, maxDead: number, df: DG.DataFrame): HTMLElement {
+    const lines: HTMLElement[] = [];
+    if (count === 0) {
+      lines.push(ui.divText('All user tables under the dead-tuple threshold.'));
+      lines.push(ui.divText('"Unhealthy" = ≥10K live rows and >40% dead tuples.', 'ua-metrics-tt-dim'));
+      return ui.div(lines, 'ua-metrics-tt');
+    }
+    lines.push(ui.divText(
+      `${count} table${count === 1 ? '' : 's'} above 40% dead tuples (max ${maxDead}%).`));
+    lines.push(ui.divText('Bloat slows scans and stales planner statistics.', 'ua-metrics-tt-dim'));
+    if (df.rowCount > 0) {
+      const rows: HTMLElement[] = [
+        ui.divH([
+          ui.divText('table', 'ua-metrics-tt-col-prefix ua-metrics-tt-head'),
+          ui.divText('dead %', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
+          ui.divText('last vacuum', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
+        ]),
+      ];
+      for (let i = 0; i < df.rowCount; i++) {
+        const lastVac = df.get('last_vacuum', i) as dayjs.Dayjs | null;
+        rows.push(ui.divH([
+          ui.divText(df.get('table_name', i) as string, 'ua-metrics-tt-col-prefix'),
+          ui.divText(`${df.get('dead_pct', i)}%`, 'ua-metrics-tt-col-num'),
+          ui.divText(formatAgo(lastVac), 'ua-metrics-tt-col-num'),
+        ]));
+      }
+      lines.push(ui.div(rows, 'ua-metrics-tt-table'));
+      if (count > df.rowCount)
+        lines.push(ui.divText(`showing ${df.rowCount} of ${count}`, 'ua-metrics-tt-dim'));
+    }
+    lines.push(ui.div([], {style: {height: '6px'}}));
+    lines.push(ui.divText(
+      'Run VACUUM ANALYZE; if last vacuum is recent, lower autovacuum_vacuum_scale_factor for these tables.',
+      'ua-metrics-tt-dim'));
+    return ui.div(lines, 'ua-metrics-tt');
   }
 
   private async loadConnections(): Promise<void> {
