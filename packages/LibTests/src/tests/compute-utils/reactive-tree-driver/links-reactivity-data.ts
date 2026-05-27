@@ -284,6 +284,146 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
     });
   });
 
+  test('clearRestriction drops a previously set restriction', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        handler({controller}) {
+          controller.clearRestriction('out1');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      const outBridge = outNode.getItem().getStateStore() as FuncCallInstancesBridge;
+      outBridge.setRestriction('a', 2, 'restricted');
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable(outBridge.inputRestrictions$, '^ 1000ms !').toBe('a b', {
+        a: {a: {type: 'restricted', assignedValue: 2}},
+        b: {a: undefined},
+      });
+    });
+  });
+
+  test('clearRestriction without prior restriction is a no-op', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        handler({controller}) {
+          controller.clearRestriction('out1');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a', {a: {}});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
+    });
+  });
+
+  test('clearRestriction after setAll wins in the same handler', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        handler({controller}) {
+          controller.setAll('out1', 7, 'restricted');
+          controller.clearRestriction('out1');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a', {a: {}});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
+    });
+  });
+
+  test('setAll after clearRestriction wins in the same handler', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        handler({controller}) {
+          controller.clearRestriction('out1');
+          controller.setAll('out1', 7, 'restricted');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a b', {
+        a: {},
+        b: {a: {type: 'restricted', assignedValue: 7}},
+      });
+    });
+  });
+
   test('Propagate restriction info in a custom handler', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',

@@ -60,4 +60,13 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
       g.stroke();
     }
   }
+
+  toSvg(molString: string, w: number, h: number): string | null {
+    try {
+      const mol = this.molCache.getOrCreate(molString, () => oclMol(molString));
+      return mol.toSVG(w, h);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -750,30 +750,9 @@ M  END
     if (hit) return hit;
 
     try {
-      // Mol is owned by molCache — DO NOT delete it.
-      const molRenderingInfo = this._fetchMol(molString, [], false, false, {}, false);
-      const mol = molRenderingInfo.molCtx.mol;
-      if (!mol || !mol.is_valid()) return null;
-
-      const details: {[k: string]: any} = {};
-      for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
-        details[k] = RDKIT_COMMON_RENDER_OPTS[k];
-      details.width = w;
-      details.height = h;
-      details.atoms = [];
-      details.bonds = [];
-      details.highlightAtomColors = {};
-      details.highlightBondColors = {};
-      // Mirror kekulize / molBlockWedging from drawRdKitMoleculeToOffscreenCanvas
-      // so the SVG layout matches the canvas layout exactly.
-      if (!molRenderingInfo.molCtx.kekulize) details.kekulize = false;
-      if (molRenderingInfo.molCtx.useMolBlockWedging) {
-        details.useMolBlockWedging = true;
-        details.wedgeBonds = false;
-        details.addChiralHs = false;
-      }
-
-      const svgString = mol.get_svg_with_highlights(JSON.stringify(details));
+      const svgString = this.drawMoleculeToSvg(molString, w, h);
+      if (svgString === null)
+        return null;
       // Attach to document so getBBox() works (requires layout context).
       const host = document.createElement('div');
       host.style.position = 'absolute';
@@ -800,6 +779,39 @@ M  END
     } catch {
       return null;
     }
+  }
+
+  private drawMoleculeToSvg(molString: string, w: number, h: number): string | null {
+    // Mol is owned by molCache — DO NOT delete it.
+    const molRenderingInfo = this._fetchMol(molString, [], false, false, {}, false);
+    const mol = molRenderingInfo.molCtx.mol;
+    if (!mol || !mol.is_valid())
+      return null;
+
+    const details: {[k: string]: any} = {};
+    for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
+      details[k] = RDKIT_COMMON_RENDER_OPTS[k];
+    details.width = w;
+    details.height = h;
+    details.atoms = [];
+    details.bonds = [];
+    details.highlightAtomColors = {};
+    details.highlightBondColors = {};
+    // Mirror kekulize / molBlockWedging from drawRdKitMoleculeToOffscreenCanvas
+    // so the SVG layout matches the canvas layout exactly.
+    if (!molRenderingInfo.molCtx.kekulize)
+      details.kekulize = false;
+    if (molRenderingInfo.molCtx.useMolBlockWedging) {
+      details.useMolBlockWedging = true;
+      details.wedgeBonds = false;
+      details.addChiralHs = false;
+    }
+
+    return mol.get_svg_with_highlights(JSON.stringify(details));
+  }
+
+  toSvg(molString: string, w: number, h: number): string | null {
+    return this.drawMoleculeToSvg(molString, w, h);
   }
 }
 

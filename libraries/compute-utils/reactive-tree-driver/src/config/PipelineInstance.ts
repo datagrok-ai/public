@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {DynamicPipelineType, isDynamicType, ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
-import {ActionInfo, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
+import {ActionInfoBase, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -85,9 +85,13 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDy
 
 // funccall
 
-export type ViewAction = {
+export type ViewAction = ActionInfoBase & {
   uuid: string;
-} & ActionInfo;
+  /** Result of evaluating showWhen / hideWhen against the current tree.
+   *  `true` when no condition is set. Compute2 uses this to decide whether
+   *  to render the action; RTD itself does not filter or gate on it. */
+  visible: boolean;
+};
 
 export type StepFunCallStateBase = {
   type: 'funccall';
@@ -107,6 +111,7 @@ export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   viewersHook?: ViewersHook;
   actions?: ViewAction[];
+  enableHistory?: boolean;
 } & StepFunCallStateBase;
 
 // pipeline base
@@ -126,6 +131,7 @@ export type PipelineInstanceBase<I, T> = {
   configId: string;
   isReadonly: boolean;
   friendlyName: string | undefined;
+  description: string | undefined;
   version: string | undefined;
   nqName: string | undefined;
 } & I & T;

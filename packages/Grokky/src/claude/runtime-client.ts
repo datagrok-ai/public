@@ -21,6 +21,7 @@ export class ClaudeRuntimeClient {
   private ws: WebSocket | null = null;
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
+  private _connectPromise: Promise<void> | null = null;
 
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
@@ -47,8 +48,13 @@ export class ClaudeRuntimeClient {
   }
 
   async ensureConnected(): Promise<void> {
-    if (!this.connected)
-      await this.connect();
+    if (this.connected)
+      return;
+    if (!this._connectPromise) {
+      this._connectPromise = this.connect()
+        .finally(() => { this._connectPromise = null; });
+    }
+    return this._connectPromise;
   }
 
   async connect(): Promise<void> {
@@ -56,17 +62,21 @@ export class ClaudeRuntimeClient {
       return;
 
     try {
-      const [runtimeContainers, mcpContainers] = await Promise.all([
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
-      ]);
-      if (runtimeContainers.length > 0) {
-        this.containerId = runtimeContainers[0].id;
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
+      if (!this.containerId || !this.mcpServerUrl) {
+        const [runtimeContainers, mcpContainers] = await Promise.all([
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
+        ]);
+        this.containerId = runtimeContainers[0]?.id ?? null;
+        this.mcpServerUrl = mcpContainers[0] ?
+          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
+          null;
       }
-      if (mcpContainers.length > 0)
-        this.mcpServerUrl = `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp`;
+      if (this.containerId)
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
     } catch (e) {
+      this.containerId = null;
+      this.mcpServerUrl = null;
       console.error('Failed to connect to Claude runtime:', e);
     }
 
@@ -77,8 +87,7 @@ export class ClaudeRuntimeClient {
       let data: any;
       try {
         data = JSON.parse(event.data);
-      }
-      catch {
+      } catch {
         console.error('ClaudeRuntimeClient: failed to parse message', event.data);
         return;
       }

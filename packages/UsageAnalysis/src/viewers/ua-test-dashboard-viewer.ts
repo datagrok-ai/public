@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import { IndexPredicate } from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { _properties } from '../package';
+import { _package, _properties } from '../package';
+
+const MANUAL_TICKETS_FILE = 'manual-tickets.json';
 
 class Priority {
   static BLOCKER: string = 'BLOCKER';
@@ -90,7 +91,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       let verdicts: Verdict[] = [];
       verdicts.push(...this.verdictsOnCorrectness(dataFrame));
       verdicts.push(...this.verdictsOnPerformance());
-      // verdicts.push(...(await this.unaddressedTests(dataFrame)));
+      verdicts.push(...(await this.verdictsForTickets()));
       verdicts.push(...this.getBuildInfos(dataFrame));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
@@ -109,7 +110,6 @@ export class TestDashboardWidget extends DG.JsViewer {
 
       let list: HTMLElement = this.composeResultList(verdicts);
       d.append(list);
-      // d.style.maxWidth = '300px';
       return d;
     }));
   }
@@ -131,21 +131,9 @@ export class TestDashboardWidget extends DG.JsViewer {
     verdicts.push(...this.performanceDowngrades(df));
     return verdicts;
   }
-  verdictsOnTestTrack(): Verdict[] {
-    let verdicts: Verdict[] = [];
-    let df = grok.shell.tables.find((df) => df.name.match(/Test.*Track/));
-    if (df == null)
-      return verdicts;
-    for (let col of df.columns) {
-      if (col.name.startsWith('ticket'))
-        this.jiraTickets(col);
-    }
-    verdicts.push(...this.testTrackDowngrades(df));
-    return verdicts;
-  }
   jiraTickets(jiraCol: DG.Column<string>): Verdict[] {
     try {
-      for (var i = 0; i < jiraCol.length; i++)
+      for (let i = 0; i < jiraCol.length; i++)
         if ((jiraCol.getString(i)?.length ?? 0) > 0)
           jiraCol.getString(i).split(',').forEach((ticket, _) => {
             let match = ticket.match(/GROK\-\d+/);
@@ -163,7 +151,6 @@ export class TestDashboardWidget extends DG.JsViewer {
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
       let packageList = [...(new Set(df.col('test')?.categories.map(e => e.split(':')[0]) ?? []))];
-      // let packageList = ['datlas', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
       let testColumn: DG.Column = df.col('test')!;
       let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let brokenPackages: Map<string, string[]> = new Map();
@@ -217,7 +204,6 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   getBuildInfos(df: DG.DataFrame): Verdict[] {
     try {
-      debugger
       let builds = ['1', '2', '3', '4', '5'];
       builds.sort((a, b) => parseInt(a) - parseInt(b));
       let res = ui.table(builds, (build, idx) => {
@@ -238,83 +224,12 @@ export class TestDashboardWidget extends DG.JsViewer {
       ]))];
     }
   }
-  // async unaddressedTests(df: DG.DataFrame): Promise<Verdict[]> {
-  //   try {
-  //     let verdicts: Verdict[] = [];
-  //     let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
-  //     let jiraCol = df.col('jira')!;
-  //     let testColumn: DG.Column = df.col('test')!;
-  //     let ownerColumn: DG.Column = df.col('owner')!;
-
-  //     let unaddressedTests: { [owner: string]: string[] } = {};
-  //     let predicate: IndexPredicate = (row) => {
-  //       return failingColumn.get(row)! && (!jiraCol.getString(row) || jiraCol.getString(row).trim() === '');
-  //     };
-
-  //     for (let i = 0; i < df.rowCount; i++) {
-  //       if (predicate(i)) {
-  //         let owner = ownerColumn.getString(i) || 'unknown';
-  //         if (!unaddressedTests[owner])
-  //           unaddressedTests[owner] = [];
-  //         unaddressedTests[owner].push(testColumn.getString(i));
-  //       }
-  //     }
-
-  //     if (Object.keys(unaddressedTests).length > 0) {
-  //       let summary = ui.div([ui.span(['Owners with failing tests:\n'])]);
-  //       for (const [owner, tests] of Object.entries(unaddressedTests)) {
-  //         const login: string = owner.match(/\w+@datagrok.ai/) ? owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0]! : owner
-  //         let userIcon : HTMLElement | undefined;
-  //         if (login == null) {
-  //           userIcon = ui.span([owner]);
-  //         } else {
-  //           const user = await grok.dapi.users.filter(`login="${login}"`).first();
-  //           if (user == undefined)
-  //             userIcon = ui.span([login]);
-  //           else
-  //             userIcon = ui.render(user.toMarkup());
-  //         }
-  //         let widget: DG.Widget = DG.Widget.fromRoot(ui.div([userIcon, ui.span([`: ${tests.length} tests`])]));
-  //         widget.root.onclick = (ev: MouseEvent) => {
-  //           df.filter.init((row) => ownerColumn.getString(row)?.includes(login));
-  //           df.selection.init((row) => ownerColumn.getString(row)?.includes(login) && (failingColumn.get(row) ?? false));
-  //         };
-  //         ui.tooltip.bind(widget.root, 'Click to filter');
-  //         summary.appendChild(widget.root);
-  //       }
-  //       verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
-  //         ui.span([summary]),
-  //         // ui.button('Copy to Clipboard', () => {
-  //         //   let slackMessage = '';
-  //         //   for (const [owner, tests] of Object.entries(unaddressedTests)) {
-  //         //     const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
-  //         //     slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
-  //         //   }
-      
-  //         //   navigator.clipboard.writeText(slackMessage).then(() => {
-  //         //     grok.shell.info('Summary copied to clipboard');
-  //         //   });
-  //         // })
-  //       ])));
-  //     }
-  //     return verdicts;
-  //   } catch (x) {
-  //     return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
-  //       ui.span(['Failed to gather unaddressed tests']),
-  //       ui.span([x])
-  //     ]))];
-  //   }
-  // }
-
   ignoredTests(df: DG.DataFrame): Verdict[] {
     let verdicts: Verdict[] = [];
     let testColumn: DG.Column = df.col('test')!;
     let ignoreColumn: DG.Column = df.col('ignore?')!;
-    let ignoreReasonColumn: DG.Column = df.col('ignoreReason')!;
-    let ignoreVersionColumn: DG.Column = df.col('ignoreReason')!;
     let widgets: DG.Widget[] = [];
-    let testCol = grok.shell.tv.grid.dataFrame.getCol('test');
-    for (var i = 0; i < df.rowCount; i++) {
+    for (let i = 0; i < df.rowCount; i++) {
       if (ignoreColumn.get(i)) {
         widgets.push(DG.Widget.fromRoot(ui.div([testColumn.getString(i)],{style: {marginBottom: '5px'}})));
         let test = testColumn.getString(i);
@@ -332,7 +247,7 @@ export class TestDashboardWidget extends DG.JsViewer {
         }
       }
     }
-    for (var i = 0; i < widgets.length; i++)
+    for (let i = 0; i < widgets.length; i++)
       verdicts.push(new Verdict(Priority.INFO, `Ignored tests - ${widgets.length} items`, widgets[i].root));
     return verdicts;
   }
@@ -355,15 +270,11 @@ export class TestDashboardWidget extends DG.JsViewer {
       let performanceObjects= [];
       for (let i = 0; i < df.rowCount; i++) {
         if (df.col('has_suspicious')!.get(i)) {
-          df.col('1 avg(duration)')?.isNone(i);
           let lastDuration: number = getLastDuration(df, i) ?? 0;
           let minDuration: number = df.col('min')!.get(i) ?? 0;
-          let maxDuration: number = df.col('max')!.get(i) ?? 0;
-          let percentage: number = Number(((lastDuration / minDuration)).toFixed(2)); 
+          let percentage: number = Number(((lastDuration / minDuration)).toFixed(2));
           if (percentage > 0.20)
             performanceObjects.push({ 'increased(times)': percentage, test: df.col('test')!.getString(i), from: minDuration, to:  lastDuration});
-          
-          //verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
         }
       }
       let verdictDF = DG.DataFrame.fromObjects(performanceObjects);
@@ -386,33 +297,21 @@ export class TestDashboardWidget extends DG.JsViewer {
     }
   }
   
-  testTrackDowngrades(df: DG.DataFrame): Verdict[] {
-    try {
-      let verdicts: Verdict[] = [];
-      let widgets: DG.Widget[] = [];
-      for (let i = 0; i < df.rowCount; i++) {
-        if ((df.col('1')?.getString(i) ?? 'passed') != 'passed') {
-          widgets.push(DG.Widget.fromRoot(ui.span([df.col('test')!.getString(i) + ` is failed`])));
-        }
-      }
-      for (let i = 0; i < widgets.length; i++)
-        verdicts.push(new Verdict(Priority.ERROR, `Test Track failures - ${widgets.length} items`, widgets[i].root));
-
-      return verdicts;
-    } catch (x) {
-      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
-        ui.span(['Failed to gather test track downgrades']),
-        ui.span([x])
-      ]))];
-    }
+  async loadManualTickets(): Promise<void> {
+    if (!await _package.files.exists(MANUAL_TICKETS_FILE))
+      return;
+    const stored: string[] = JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE));
+    for (let i = 0; i < stored.length; i++)
+      this.tickets.add(stored[i]);
   }
 
-  async loadManualTickets(): Promise<void> {
-    let tickets: DG.DataFrame = await grok.functions.call('ManualTicketFetch');
-    for (var i = 0; i < tickets.rowCount; i++) {
-      const ticket = tickets.col('name')?.getString(i);
-      if (ticket != null)
-        this.tickets.add(ticket);
+  async addManualTicket(name: string): Promise<void> {
+    const stored: string[] = await _package.files.exists(MANUAL_TICKETS_FILE)
+      ? JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE))
+      : [];
+    if (!stored.includes(name)) {
+      stored.push(name);
+      await _package.files.writeAsText(MANUAL_TICKETS_FILE, JSON.stringify(stored));
     }
   }
 
@@ -460,7 +359,7 @@ export class TestDashboardWidget extends DG.JsViewer {
         ticketColumn: jiraCol,
         field: 'fixVersions:0:name'
       });
-      for (var i = 0; i < jiraCol.length; i++) {
+      for (let i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
         if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')
           priority = Priority.RESOLVED;
@@ -513,7 +412,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   composeResultList(verdicts: Verdict[]): HTMLElement {
     let res: DG.Accordion = ui.accordion('');
     let lastAccordion: HTMLDivElement | null;
-    for (var i = 0; i < verdicts.length; i++) {
+    for (let i = 0; i < verdicts.length; i++) {
       if (i == 0 || verdicts[i - 1].priority != verdicts[i].priority || verdicts[i - 1].category != verdicts[i].category) {
         let accordionToShow = ui.div([]);
         let pane = res.addPane(verdicts[i].category, () => accordionToShow);
@@ -531,7 +430,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       dialog.onOK(async () => {
         let match = ticketInput.value.match(/GROK\-\d+/);
         if (match != null && match[0] != undefined)
-          await grok.functions.call('ManualTicketCreation', {'name': match[0]});
+          await this.addManualTicket(match[0]);
         else
           (new DG.Balloon()).warning('Cpuldn\'t recognize a ticket name in ' + ticketInput.value);
       });

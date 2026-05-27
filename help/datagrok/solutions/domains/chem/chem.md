@@ -98,7 +98,7 @@ The following cartridges are widely deployed and work with Datagrok queries:
 | PostgreSQL | [RDKit](https://www.rdkit.org/docs/Cartridge.html)                                       | Open-source RDKit | BSD                 |
 | PostgreSQL | [JChem (JPC)](https://docs.chemaxon.com/display/docs/JChem+PostgreSQL+Cartridge)         | Chemaxon | Commercial          |
 | PostgreSQL | [Bingo](https://lifescience.opensource.epam.com/bingo/bingo-postgres.html)               | EPAM | Apache 2.0          |
-| PostgreSQL | [Sachem](https://github.com/IOCB-MS/sachem)                                              | IOCB Prague | Open source         |
+| PostgreSQL | [Sachem](https://bioinfo.uochb.cas.cz/sachem/)                                              | IOCB Prague | Open source         |
 | PostgreSQL | [pgchem::tigress](https://github.com/ergo70/pgchem_tigress)                              | Open-source (OpenBabel-based) | Open source         |
 | SQL Server | [Bingo](https://lifescience.opensource.epam.com/bingo/bingo-sqlserver.html)              | EPAM | Apache 2.0          |
 | SQL Server | BIOVIA Direct                                                                            | Dassault Systèmes BIOVIA | Commercial          |

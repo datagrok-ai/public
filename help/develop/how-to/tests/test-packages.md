@@ -131,7 +131,7 @@ If you do not have any datagrok instance run locally, you can use [docker-compos
 
 If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
 
-1. Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
+1. Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml)
 2. Run the Workflow:
     * Click on `Run workflow`.
     * Set the list of packages you want to test, separating them with spaces (e.g., `Demo Tutorials`).

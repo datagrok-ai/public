@@ -31,6 +31,7 @@ export const DockManager = Vue.defineComponent({
   methods: {
     'saveLayout': (): string => '',
     'loadLayout': async (_a: string) => void(0),
+    'setActivePanel': (_t: string | null | undefined) => void(0),
   },
   setup(props, {slots, emit, expose}) {
     Vue.onRenderTriggered((event) => {
@@ -42,8 +43,11 @@ export const DockManager = Vue.defineComponent({
 
     const saveLayout = () => dockSpawnRef.value?.saveLayout();
     const loadLayout = (layout: string) => dockSpawnRef.value?.loadLayout(layout);
+    const setActivePanel = (t: string | null | undefined) => {
+      if (dockSpawnRef.value && t != null) dockSpawnRef.value.activePanelTitle = t;
+    };
 
-    expose({saveLayout, loadLayout});
+    expose({saveLayout, loadLayout, setActivePanel});
 
     const onManagerInitFinished = (ev: any) => {
       const manager = ev.detail;

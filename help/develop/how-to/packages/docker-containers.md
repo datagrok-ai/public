@@ -19,7 +19,36 @@ This system is cloud-agnostic and works with local instances using Docker Compos
 The only requirement is that the grok-spawner container must be running in the same environment. 
 You can access the container via HTTP, but only one EXPOSE $PORT is allowed in the image.
 
-Below is an example of how to build, deploy, and use the docker container from the plugin. 
+Below is an example of how to build, deploy, and use the docker container from the plugin.
+
+## How it works
+
+`grok publish` builds the image on your workstation, pushes it to the Datagrok registry, and
+uploads the package ZIP. On the server side, Datagrok's `grok_spawner` validates the image
+and — when a user starts the container — deploys it on the configured orchestrator (Docker,
+Docker Swarm, AWS ECS, or Kubernetes). Plugin code reaches the running container through
+[`grok.dapi.docker.dockerContainers.fetchProxy`](#31-http-request); the container is never
+exposed to the network directly.
+
+The image and the container are tracked as separate entities with their own state machines:
+
+```
+DockerImage:      PENDING_VALIDATION ─► VALIDATING ─► READY
+                                                    └► ERROR
+
+DockerContainer:  PENDING_START ─► STARTING ─► STARTED ─► PENDING_STOP ─► STOPPED
+                                            └► ERROR
+```
+
+A container with `shutdown_timeout` set is moved to `SYSTEM_STOPPED` automatically after
+idling, and is re-started by the next call to `fetchProxy`.
+
+For the full architecture — registry proxy, JWT auth, orchestrator backends, state machine
+timing, and the admin-side configuration each deployment path needs — see
+[Docker containers (under the hood)](../../under-the-hood/docker-containers.md). For how
+plugin containers fit into the broader platform, see
+[Infrastructure](../../under-the-hood/infrastructure.md); for deployment paths see
+[Deployment](../../../deploy/deploy.md).
 
 ## 1. Create a dockerfile
 
@@ -140,7 +169,98 @@ ws.addEventListener("message", onMessage);
 setTimeout(() => ws.close(), 3000);
 ```
 
-## 4. Build and publish
+## 4. Configure the registry in grok config
+
+`grok publish` builds the image locally and, when a registry is configured for the target
+server, tags the image as `<registry>/datagrok/<package>-<container>:<version>` and pushes
+it before uploading the package ZIP. Without a registry the image is built but stays on
+your workstation, and `grok publish` prints:
+
+```
+No registry configured. Image tagged locally only. Run `grok config --registry` to configure.
+```
+
+Registries are stored per-server in `~/.grok/config.yaml` alongside the URL and developer
+key. The full shape is:
+
+```yaml
+default: 'dev'
+servers:
+  dev:
+    url: 'https://dev.datagrok.ai/api'
+    key: 'your-dev-key'
+    registry: 'registry.dev.datagrok.ai'
+  public:
+    url: 'https://public.datagrok.ai/api'
+    key: 'your-public-key'
+    registry: 'registry.datagrok.ai'
+  localhost:
+    url: 'http://localhost:8080/api'
+    key: 'admin'
+    # no registry — images stay local for the host Docker daemon
+```
+
+The `registry` field is the hostname only — no scheme, no path. The convention is
+`registry.<datagrok-host>`, served by `grok_registry_proxy`. For localhost stands the
+registry is normally empty (the spawner reads images from the host Docker daemon).
+
+### Set the registry interactively
+
+`grok config --registry` walks every server already in the file and asks for its
+registry, pre-filling `registry.<hostname-from-url>` as the default:
+
+```shell
+grok config --registry
+# > Docker registry for dev: (registry.dev.datagrok.ai)
+# > Docker registry for public: (registry.datagrok.ai)
+```
+
+Press ENTER to accept the default, type a different hostname, or leave blank to clear
+the field.
+
+### Add a server with a registry non-interactively
+
+Use `grok config add` to script the setup. `--registry` with no value falls back to the
+hostname-derived default; passing a value sets it explicitly:
+
+```shell
+# Use the default registry.<hostname>
+grok config add --alias dev \
+  --server https://dev.datagrok.ai/api \
+  --key your-dev-key -k your-dev-key \
+  --registry
+
+# Override the registry hostname
+grok config add --alias dev \
+  --server https://dev.datagrok.ai/api \
+  --key your-dev-key -k your-dev-key \
+  --registry registry.dev.example.com
+```
+
+### How `grok publish` uses the registry
+
+When a registry is set on the target server, `grok publish`:
+
+1. Runs `docker login <registry> -u any -p <devKey>` — the dev key is the password. The
+   registry proxy validates it against the Datagrok server and returns a short-lived JWT,
+   so no credentials are stored on your workstation.
+2. Builds the image with `--platform linux/amd64` (cross-built for the server
+   architecture) and tags it `<registry>/datagrok/<package>-<container>:<version>`.
+3. Pushes the tagged image to `<registry>`. The registry proxy forwards it to the
+   backing registry (ECR, Docker Hub, or self-hosted) using Datagrok's credentials.
+4. Uploads the package ZIP. The server picks up the new image via the spawner's
+   validation loop.
+
+If the registry hostname matches `localhost` or an IP address, `grok publish` skips the
+`--platform linux/amd64` flag so the image is built for the local Docker daemon. Use
+this for single-machine Compose stands where the developer and the server share a
+Docker host.
+
+For the registry side of this picture (what `grok_registry_proxy` does, how to host
+your own registry, and how images are validated server-side), see
+[Docker containers (under the hood)](../../under-the-hood/docker-containers.md#how-images-get-to-the-registry).
+
+## 5. Build and publish
 
 Run webpack and [publish](../../develop.md#publishing) your package to one of the
  Datagrok instances:
@@ -152,7 +272,7 @@ grok publish dev
 
 The return code should be `0` to indicate a successful deployment.
 
-## 5. Managing docker containers and images
+## 6. Managing docker containers and images
 
 You can check available Docker containers and images using **Browse**. Go to Datagrok and open `Platform -> Dockers`.  
 The opened view has two sections: Docker Containers (top) and Docker Images (bottom). Each section contains cards 
@@ -173,6 +293,8 @@ open the Property pane, and select **Logs** (for containers) or **Build logs** (
 > the corresponding card.
 
 See also:
+- [Docker containers (under the hood)](../../under-the-hood/docker-containers.md) — architecture, registry, and admin-side setup
 - [Packages](../../develop.md#packages)
 - [Connecting to database inside package Docker container](../db/access-data.md)
 - [Python functions](python-functions.md)
+- [Deployment](../../../deploy/deploy.md)

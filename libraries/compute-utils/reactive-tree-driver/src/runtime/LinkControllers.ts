@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController, TemplateInfo, TemplateId} from '../RuntimeControllers';
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
@@ -16,10 +16,13 @@ export interface ControllerBaseArgs {
   callInputs: Set<string>;
   id: string;
   scopeInfo?: ScopeInfo;
+  inputTemplates?: TemplateInfo[];
+  outputTemplates?: TemplateInfo[];
 }
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
   actions: Record<string, Map<string, string>>;
+  actionsVisibility: ReadonlyMap<string, boolean>;
   baseNode?: TreeNode<StateTreeNode>;
 }
 
@@ -102,20 +105,76 @@ export class ControllerBase<T> {
 }
 
 export class LinkController extends ControllerBase<[any, RestrictionType]> implements IRuntimeLinkController {
+  public inputTemplates: TemplateInfo[];
+  public outputTemplates: TemplateInfo[];
+  public consistencyResets = new Set<string>();
+
+  constructor(args: ControllerBaseArgs) {
+    super(args);
+    this.inputTemplates = args.inputTemplates ?? [];
+    this.outputTemplates = args.outputTemplates ?? [];
+  }
+
   setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
+    this.consistencyResets.delete(name);
     this.outputs[name] = [state, restriction] as const;
+  }
+
+  clearRestriction(name: string) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    delete this.outputs[name];
+    this.consistencyResets.add(name);
+  }
+
+  getInputTemplates(): TemplateInfo[] {
+    this.checkIsClosed();
+    return this.inputTemplates;
+  }
+
+  getOutputTemplates(): TemplateInfo[] {
+    this.checkIsClosed();
+    return this.outputTemplates;
+  }
+
+  propagateTemplatePair(
+    inputTemplate: TemplateId,
+    outputTemplate: TemplateId,
+    defaultRestrictions?: Record<string, RestrictionType> | RestrictionType,
+  ) {
+    this.checkIsClosed();
+    const inTpl = this.inputTemplates.find((t) => t.name === inputTemplate);
+    if (!inTpl)
+      throw new Error(`Handler for Link ${this.id} called propagateTemplatePair with unknown input template "${String(inputTemplate)}"`);
+    const outTpl = this.outputTemplates.find((t) => t.name === outputTemplate);
+    if (!outTpl)
+      throw new Error(`Handler for Link ${this.id} called propagateTemplatePair with unknown output template "${String(outputTemplate)}"`);
+    const inByScriptId = new Map<string, string>();
+    for (const io of inTpl.ios)
+      inByScriptId.set(io.scriptIoId, io.ioName);
+    for (const outIo of outTpl.ios) {
+      const inIoName = inByScriptId.get(outIo.scriptIoId);
+      if (inIoName == null) continue;
+      if (this.callInputs.has(inIoName)) continue;
+      const restriction = typeof defaultRestrictions === 'string' ?
+        defaultRestrictions :
+        (defaultRestrictions?.[outIo.ioName] ?? defaultRestrictions?.['*']);
+      this.setAll(outIo.ioName, this.getFirst(inIoName), restriction);
+    }
   }
 }
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
   public actions: Record<string, Map<string, string>>;
+  public actionsVisibility: ReadonlyMap<string, boolean>;
   public baseNode?: TreeNode<StateTreeNode>;
 
   constructor(args: ValidatorControllerArgs) {
     super(args);
     this.actions = args.actions;
+    this.actionsVisibility = args.actionsVisibility;
     this.baseNode = args.baseNode;
   }
 
@@ -124,6 +183,13 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     const actions = this.actions[name];
     const actionUUID = actions?.get(actionId);
     return actionUUID;
+  }
+
+  isActionVisible(name: string, actionId: string): boolean {
+    this.checkIsClosed();
+    const uuid = this.actions[name]?.get(actionId);
+    if (!uuid) return false;
+    return this.actionsVisibility.get(uuid) ?? true;
   }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {

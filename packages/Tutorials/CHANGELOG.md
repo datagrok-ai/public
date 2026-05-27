@@ -7,6 +7,7 @@
 * Demo app: Made the "Updating..." overlay clearly readable during demo loading — scoped CSS (`.demo-app-loading > .d4-update-shadow`) gives the overlay a solid translucent white background with a subtle backdrop blur and renders the label/loader at full opacity, so widget text underneath no longer bleeds through
 * Demo app: Fixed view leak when reopening a multi-table demo (e.g. Table Linking) — newly opened views are tagged via `view.temp['demoApp']` and all of them are closed on the next demo switch, instead of only `currentView`
 * Tutorials: Updated the Diff Studio tutorial with respect to the main app modifications
+* GROK-20145: Demo | Form viewer: Error on URL direct opening
 
 ## 1.11.2 (2026-04-10)
 

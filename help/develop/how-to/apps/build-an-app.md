@@ -364,12 +364,12 @@ There we create a new dataframe from columns, add a column and a row, delete a r
 
 A good overview of dataframes capabilities is available in our
 [API Samples](https://dev.datagrok.ai/js/samples/data-frame/). Also check the API reference
-at [this link](https://datagrok.ai/api/js/api/dg/classes/DataFrame).
+at [this link](https://datagrok.ai/api/js/dg/classes/DataFrame).
 
 *References:*
 
 * [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
-* [Dataframe API reference](https://datagrok.ai/api/js/api/dg/classes/DataFrame)
+* [Dataframe API reference](https://datagrok.ai/api/js/dg/classes/DataFrame)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
 #### Iterating over a dataframe

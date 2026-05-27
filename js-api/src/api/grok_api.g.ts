@@ -1072,6 +1072,7 @@ export interface IDartApi {
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
+  grok_EntitiesDataSource_GetFavoritesForGroups(s: any, groups: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;
@@ -1179,6 +1180,7 @@ export interface IDartApi {
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
   grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool, saveTags: Bool): any;
+  grok_DataFrame_ResetFilter(t: any): any;
   grok_DataFrame_OnFilterChanged(t: any, f: any): any;
   grok_DataFrame_OnSelectionChanged(t: any, f: any): any;
   grok_DataFrame_OnDataChanged(t: any, f: any): any;

@@ -184,6 +184,30 @@ name — never in the path leading to the script. The expanded query name is
 the template name concatenated with the IO name (`in_output1`, `in_output2`,
 …); use `_(template)` if you want no prefix.
 
+#### Wildcard IO selectors: `outputs(nqName)` / `inputs(nqName)` {#wildcard-selectors}
+
+Alias for the bare-list form. The argument is the script's `nqName`; an
+optional pipe-separated second argument excludes IOs. Expansion happens
+at config-processing time.
+
+```
+from: "in_(template):script1/outputs(MyPkg:Script1)"
+to:   "out_(template):script2/inputs(MyPkg:Script2, debug|verbose)"
+```
+
+`outputs(...)` always pulls outputs, `inputs(...)` always pulls inputs,
+regardless of which side it appears on.
+
+**`_(template)`.** No prefix — expanded link-io names equal the script
+IO ids verbatim (`a`, `b` instead of `in_a`, `in_b`). The slot id is
+then the operator's 0-based index on its side, so multiple anonymous
+templates stay addressable without colliding with string-named ones.
+
+How template slots propagate at runtime is covered under the
+[default handler](./link-types#default-handler); the controller
+primitives custom handlers can use are listed under
+[Data links](./link-types#data-links).
+
 ---
 
 Next: see the [LQL reference](./link-query-language-reference) for the full

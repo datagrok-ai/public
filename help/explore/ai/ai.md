@@ -135,7 +135,7 @@ the smart assistant:
 
 Learn more
 - [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)
-- For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)
+- For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/db/register-identifiers)
 
 ## 2. Parameterized SQL with metadata annotations
 

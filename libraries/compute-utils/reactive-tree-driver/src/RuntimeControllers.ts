@@ -11,8 +11,23 @@ export interface IControllerBase {
   hasCall(name: string): boolean;
 }
 
+export type TemplateId = string | number;
+
+export type TemplateInfo = {
+  name: TemplateId;
+  ios: {ioName: string, scriptIoId: string}[];
+};
+
 export interface IRuntimeLinkController extends IControllerBase {
   setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
+  clearRestriction(name: string): void;
+  getInputTemplates(): TemplateInfo[];
+  getOutputTemplates(): TemplateInfo[];
+  propagateTemplatePair(
+    inputTemplate: TemplateId,
+    outputTemplate: TemplateId,
+    defaultRestrictions?: Record<string, RestrictionType> | RestrictionType,
+  ): void;
 }
 
 export interface IRuntimeReturnController extends IControllerBase {
@@ -22,6 +37,11 @@ export interface IRuntimeReturnController extends IControllerBase {
 export interface IRuntimeValidatorController extends IControllerBase {
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   getValidationAction(id: string, actionId: string): string | undefined;
+  /** True when the action has no `showWhen`/`hideWhen` or its condition currently matches.
+   *  Returns false if the action is not visible OR the name/actionId pair is not known.
+   *  This is a pure query — `getValidationAction` is not gated by visibility, so a validator
+   *  can still surface hidden actions in its result if it chooses to. */
+  isActionVisible(name: string, actionId: string): boolean;
 }
 
 export interface IRuntimePipelineValidatorController extends IControllerBase {
