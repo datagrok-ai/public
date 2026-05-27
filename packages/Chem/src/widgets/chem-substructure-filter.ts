@@ -9,7 +9,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
-import {initRdKitService} from '../utils/chem-common-rdkit';
+import {getRdKitModule, initRdKitService} from '../utils/chem-common-rdkit';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {Subject, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
@@ -289,9 +290,9 @@ export class SubstructureFilter extends DG.Filter {
         }
       }));
 
-    // Re-run the search when cells in our column are edited (e.g. via the in-cell sketcher);
-    // otherwise the cached bitset stays stale and edited rows keep their old match state.
-    // Only the active filter recomputes — peers sync via FILTER_SYNC_EVENT.
+    // Patch only the changed rows' bits when cells are edited — O(k) instead of full re-scan.
+    // Falls back to a full recompute when the cache can't help (no bitset, search in flight,
+    // or a search mode that needs precomputation: IS_SIMILAR, STEREO_AGNOSTIC).
     this.subs.push(this.dataFrame!.onValuesChanged
       .pipe(filter((args: any) => {
         const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
@@ -300,9 +301,17 @@ export class SubstructureFilter extends DG.Filter {
           args?.args?.indexes?.length &&
           (!active || active.filterId === -1 || active.filterId === this.filterId);
       }))
-      .subscribe(async () => {
-        this.recalculateFilter = true;
-        await this._onSketchChanged();
+      .subscribe(async (args: any) => {
+        const searching = this.batchResultObservable && !this.batchResultObservable.closed;
+        const canPatch = this.bitset != null && !searching &&
+          this.searchType !== SubstructureSearchType.IS_SIMILAR &&
+          this.searchType !== SubstructureSearchType.STEREO_AGNOSTIC;
+        if (canPatch)
+          this._patchChangedRows(args.args.indexes);
+        else {
+          this.recalculateFilter = true;
+          await this._onSketchChanged();
+        }
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
@@ -450,6 +459,48 @@ export class SubstructureFilter extends DG.Filter {
       color: this.sketcher.highlight ? undefined : '#00000000',
     }]);
     grok.shell.tv?.grid?.invalidate();
+  }
+
+  /** Re-evaluate just the changed rows and patch the cached bitset in place.
+   * Safe only for substructure search types — see the onValuesChanged guard. */
+  _patchChangedRows(indexes: Int32Array | number[]): void {
+    const rdkit = getRdKitModule();
+    const queryMol = getQueryMolSafe(this.currentMolecule, this.currentMolecule, rdkit);
+    if (!queryMol) return;
+    try {
+      for (const idx of indexes) {
+        const mol = getMolSafe(this.column!.get(idx) ?? '', {}, rdkit).mol;
+        let match = false;
+        try {
+          if (mol) {
+            switch (this.searchType) {
+            case SubstructureSearchType.CONTAINS:
+              match = mol.get_substruct_match(queryMol) !== '{}'; break;
+            case SubstructureSearchType.NOT_CONTAINS:
+              match = mol.get_substruct_match(queryMol) === '{}'; break;
+            case SubstructureSearchType.INCLUDED_IN:
+              match = queryMol.get_substruct_match(mol) !== '{}'; break;
+            case SubstructureSearchType.NOT_INCLUDED_IN:
+              match = queryMol.get_substruct_match(mol) === '{}'; break;
+            case SubstructureSearchType.EXACT_MATCH:
+              match = mol.get_substruct_match(queryMol) !== '{}' &&
+                queryMol.get_substruct_match(mol) !== '{}'; break;
+            }
+          }
+        } finally {
+          mol?.delete();
+        }
+        this.bitset!.set(idx, match, false);
+      }
+    } finally {
+      queryMol.delete();
+    }
+    this.dataFrame!.rows.requestFilter();
+    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+      bitset: this.bitset, molblock: this.currentMolecule, colName: this.columnName,
+      filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
+      simCutOff: this.similarityCutOff, fp: this.fp,
+    });
   }
 
   applyFilter(): void {
