@@ -260,6 +260,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
   }
 
+  export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
+  }
+
   export async function metricsDbStats(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
   }

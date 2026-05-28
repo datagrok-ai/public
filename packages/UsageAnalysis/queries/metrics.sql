@@ -4,6 +4,12 @@ SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
 --end
 
 
+--name: MetricsResetPgStatStatements
+--connection: System:DatagrokAdmin
+SELECT pg_stat_statements_reset();
+--end
+
+
 --name: MetricsDbStats
 --connection: System:Datagrok
 --meta.cache: all

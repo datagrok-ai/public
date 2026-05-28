@@ -224,4 +224,8 @@ export class UaToolbox {
   togglePackagesInput(visible: boolean): void {
     ui.setDisplay(this.packagesInput.field.root, visible);
   }
+
+  toggleGroupsInput(visible: boolean): void {
+    ui.setDisplay(this.groupsInput.field.root, visible);
+  }
 }

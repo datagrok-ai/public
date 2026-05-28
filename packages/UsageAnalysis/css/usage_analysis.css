@@ -315,6 +315,23 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   cursor: pointer;
 }
 
+.ua-metrics-reset-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ua-metrics-btn-danger {
+  color: var(--red-3) !important;
+}
+
+.ua-metrics-btn-danger:hover {
+  color: var(--red-4) !important;
+}
+
 .ua-metrics-mode-toggle.d4-toggle-button-group {
   display: inline-flex;
   flex-direction: row;

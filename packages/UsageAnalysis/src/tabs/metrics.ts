@@ -142,8 +142,8 @@ export class MetricsView extends UaView {
 
     const refreshBtn = ui.bigButton('Refresh', () => this.refresh());
     refreshBtn.prepend(ui.iconFA('sync-alt'), ' ');
-    refreshBtn.classList.add('ua-metrics-btn');
-    const sendBtn = ui.bigButton('Send to Datagrok', () => this.sendToDatagrok());
+    refreshBtn.classList.add('ua-metrics-btn-secondary');
+    const sendBtn = ui.bigButton('Share...', () => this.sendToDatagrok());
     sendBtn.prepend(ui.iconFA('envelope'), ' ');
     sendBtn.classList.add('ua-metrics-btn-secondary');
 
@@ -215,12 +215,15 @@ export class MetricsView extends UaView {
     card.sub.className = `ua-metrics-card-sub ua-metrics-${color}`;
   }
 
-  private static buildPanel(title: string, host: HTMLElement, onOpenFull?: () => void, extraHeader?: HTMLElement): HTMLElement {
+  private static buildPanel(title: string, host: HTMLElement, onOpenFull?: () => void,
+    extraHeader?: HTMLElement, actions?: HTMLElement): HTMLElement {
     const headerChildren: HTMLElement[] = [ui.divText(title, 'ua-metrics-panel-title')];
     if (extraHeader)
       headerChildren.push(extraHeader);
     headerChildren.push(ui.div([], {style: {flex: '1'}}));
-    if (onOpenFull) {
+    if (actions)
+      headerChildren.push(actions);
+    else if (onOpenFull) {
       const addIcon = ui.iconFA('plus', onOpenFull, 'Add to workspace');
       addIcon.classList.add('ua-metrics-add-icon');
       headerChildren.push(addIcon);
@@ -246,13 +249,49 @@ export class MetricsView extends UaView {
     });
     const toggle = ui.toggleButtonGroup(buttons);
     toggle.classList.add('ua-metrics-mode-toggle');
-    return MetricsView.buildPanel('Queries', this.queriesGridHost,
-      () => {
+
+    const more = ui.iconFA('ellipsis-h', (e: MouseEvent) => {
+      e.stopImmediatePropagation();
+      const menu = DG.Menu.popup();
+      menu.item('Add to workspace', () => {
         const q = PSS_QUERIES[this.queriesMode];
         const name = this.pssMode === 'legacy' ? q.fullViewQuery.legacy : q.fullViewQuery.modern;
         const fn = this.pssMode === 'legacy' ? q.legacy : q.modern;
         this.openFullView(fn, name, 'pg_stat_statements');
-      }, toggle);
+      });
+      menu.item('Reset stats', () => this.confirmResetPgStats());
+      menu.show({causedBy: e});
+    }, 'More actions');
+    more.classList.add('ua-metrics-add-icon');
+
+    return MetricsView.buildPanel('Queries', this.queriesGridHost, undefined, toggle, more);
+  }
+
+  private confirmResetPgStats(): void {
+    const body = ui.div([
+      ui.divText(
+        'This calls pg_stat_statements_reset() — it clears accumulated query stats for ' +
+        'all administrators, not just your view. It can\'t be undone.'),
+      ui.divText('The slowest-query rankings will be empty until traffic rebuilds them.'),
+    ], 'ua-metrics-reset-body');
+
+    const dialog = ui.dialog({title: 'Reset query statistics?'}).add(body);
+    dialog.onOK(async () => {
+      try {
+        await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements');
+        grok.shell.info('pg_stat_statements stats reset.');
+        await this.loadQueries();
+      } catch (e) {
+        grok.shell.error(`Failed to reset stats: ${e}`);
+      }
+    });
+    dialog.show();
+
+    const okBtn = dialog.getButton('OK');
+    if (okBtn) {
+      okBtn.textContent = 'Reset stats';
+      okBtn.classList.add('ua-metrics-btn-danger');
+    }
   }
 
   private async refresh(): Promise<void> {
@@ -1007,7 +1046,7 @@ export class MetricsView extends UaView {
     const reportEmail = await MetricsView.safeCall(() => grok.dapi.admin.getReportEmail(), 'getReportEmail');
     const subject = `Datagrok metrics — ${window.location.host} — ${dayjs().format('YYYY-MM-DD HH:mm')}`;
     ui.composeEmail({
-      title: 'Send to Datagrok', subject, to: reportEmail ? reportEmail.split(/[,;\s]+/).filter((s) => s) : [],
+      title: 'Share metrics', subject, to: reportEmail ? reportEmail.split(/[,;\s]+/).filter((s) => s) : [],
       bcc: [], attachments: files,
       onSend: async (r) => {
         await grok.dapi.admin.sendEmail({
