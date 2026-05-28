@@ -1049,7 +1049,7 @@ export class MetricsView extends UaView {
       );
     }
     sources.push(
-      {name: 'storage.json',             fn: () => grok.functions.call('StorageStats') as Promise<string>},
+      {name: 'storage.json',             fn: async () => JSON.stringify(await grok.dapi.info.getStorageStats())},
       {name: 'disk.json',                fn: () => grok.functions.call('DiskStats') as Promise<string>},
     );
 
