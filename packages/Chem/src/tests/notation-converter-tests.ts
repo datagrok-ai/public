@@ -1,4 +1,4 @@
-import {category, expectArray, test, before, awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {category, expectArray, test, before, awaitCheck, expect} from './_timed-test';
 import {_package} from '../package-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';

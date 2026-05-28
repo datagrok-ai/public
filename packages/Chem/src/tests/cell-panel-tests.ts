@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, before, awaitCheck} from './_timed-test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';

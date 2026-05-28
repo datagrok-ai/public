@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test} from './_timed-test';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 

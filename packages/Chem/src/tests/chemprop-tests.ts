@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, before, expect} from './_timed-test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package, PackageFunctions} from '../package';
 import {CONTAINER_TIMEOUT, readDataframe} from './utils';

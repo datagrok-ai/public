@@ -1,4 +1,4 @@
-import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from './_timed-test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, before, after, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, before, after, expect} from './_timed-test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';

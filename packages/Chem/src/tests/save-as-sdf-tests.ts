@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from './_timed-test';
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';

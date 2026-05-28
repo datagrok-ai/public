@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {awaitCheck, delay, expect, testEvent} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, delay, expect, testEvent} from './_timed-test';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 

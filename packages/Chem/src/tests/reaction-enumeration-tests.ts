@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 import * as DG from 'datagrok-api/dg';
-import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from './_timed-test';
 import {_package} from '../package-test';
 import {cloneConfig, DEFAULT_CONFIG} from '../utils/reaction-enumeration/config';
 import {
