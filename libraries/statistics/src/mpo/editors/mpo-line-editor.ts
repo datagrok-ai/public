@@ -800,7 +800,8 @@ export class MpoDesirabilityLineEditor {
 
     for (const p of this._prop.line)
       p[0] = conv(p[0]);
-    if (this._prop.freeformLine) {
+    // In freeform mode redrawFn aliases line and freeformLine to one array — convert it only once.
+    if (this._prop.freeformLine && this._prop.freeformLine !== this._prop.line) {
       for (const p of this._prop.freeformLine)
         p[0] = conv(p[0]);
     }
