@@ -98,8 +98,8 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/',
-    'browsePath': 'Admin',
     'name': 'Usage Analysis',
+    'meta': {'role': 'adminApp'},
   })
   static usageAnalysisApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
@@ -295,8 +295,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/',
-    'browsePath': 'Admin',
     'name': 'Metrics',
+    'icon': 'images/icons/metrics.svg',
+    'meta': {'role': 'adminApp'},
   })
   static metricsApp(): DG.ViewBase | null {
     return PackageFunctions.usageAnalysisApp('/metrics');
@@ -304,8 +305,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/tests/manager',
-    'browsePath': 'Admin',
     'name': 'Test Track',
+    'icon': 'images/icons/test-track.svg',
+    'meta': {'role': 'adminApp'},
   })
   static testTrackApp(): void {
     if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
@@ -317,8 +319,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/reports',
-    'browsePath': 'Admin',
     'name': 'Reports',
+    'icon': 'images/icons/reports.svg',
+    'meta': {'role': 'adminApp'},
   })
   static async reportsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
@@ -331,8 +334,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/service-logs',
-    'browsePath': 'Admin',
     'name': 'Service Logs',
+    'icon': 'images/icons/service-logs.svg',
+    'meta': {'role': 'adminApp'},
   })
   static serviceLogsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
