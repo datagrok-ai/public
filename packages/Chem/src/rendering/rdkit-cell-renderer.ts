@@ -743,8 +743,8 @@ M  END
     if (hit) return hit;
 
     try {
-      const svgString = this.drawMoleculeToSvg(molString, w, h);
-      if (svgString === null)
+      const svgString = this._molToSvg(molString, w, h);
+      if (!svgString)
         return null;
       // Attach to document so getBBox() works (requires layout context).
       const host = document.createElement('div');
@@ -774,9 +774,11 @@ M  END
     }
   }
 
-  private drawMoleculeToSvg(molString: string, w: number, h: number): string | null {
+  _molToSvg(
+    molString: string, w: number, h: number, scaffolds: IColoredScaffold[] = [], alignByFirstSubstructure = false,
+  ): string | null {
     // Mol is owned by molCache — DO NOT delete it.
-    const molRenderingInfo = this._fetchMol(molString, [], false, false, {}, false);
+    const molRenderingInfo = this._fetchMol(molString, scaffolds, false, false, {}, alignByFirstSubstructure);
     const mol = molRenderingInfo.molCtx.mol;
     if (!mol || !mol.is_valid())
       return null;
@@ -786,10 +788,12 @@ M  END
       details[k] = RDKIT_COMMON_RENDER_OPTS[k];
     details.width = w;
     details.height = h;
-    details.atoms = [];
-    details.bonds = [];
-    details.highlightAtomColors = {};
-    details.highlightBondColors = {};
+    // Scaffold-derived highlights (substructure filter, align, scaffold tree, highlight-by-scaffold).
+    const substruct = scaffolds.length ? molRenderingInfo.substruct : null;
+    details.atoms = substruct?.atoms ?? [];
+    details.bonds = substruct?.bonds ?? [];
+    details.highlightAtomColors = substruct?.highlightAtomColors ?? {};
+    details.highlightBondColors = substruct?.highlightBondColors ?? {};
     // Mirror kekulize / molBlockWedging from drawRdKitMoleculeToOffscreenCanvas
     // so the SVG layout matches the canvas layout exactly.
     if (!molRenderingInfo.molCtx.kekulize)
@@ -803,8 +807,12 @@ M  END
     return mol.get_svg_with_highlights(JSON.stringify(details));
   }
 
-  toSvg(molString: string, w: number, h: number): string | null {
-    return this.drawMoleculeToSvg(molString, w, h);
+  toSvg(gridCell: DG.GridCell, w: number, h: number): string | null {
+    const highlightInfo = gridCell.cell.column != null ?
+      this.getHighlightTagInfo(gridCell.cell.column.temp, gridCell) :
+      undefined;
+    return this._molToSvg(gridCell.cell.value, w, h,
+      highlightInfo?.scaffolds ?? [], highlightInfo?.alignByFirstSubstructure ?? false);
   }
 }
 
