@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
+
 ## 1.17.10 (2026-05-28)
 
 * Chem: Record all generated reaction results in the enumerator
