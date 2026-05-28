@@ -494,6 +494,27 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
+ * Creates a toggle button (`d4-toggle-button`). When clicked, marks itself as current
+ * (`d4-current`) and clears that class from sibling toggle buttons under the same parent.
+ * Wrap a set of these in {@link toggleButtonGroup} to get the group container styling.
+ * @param caption  Button text.
+ * @param handler  Invoked on click after the active state is updated.
+ * @param tooltip  Tooltip shown on hover.
+ */
+export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
+  return api.grok_UI_ToggleButton(caption, handler, tooltip);
+}
+
+/**
+ * Wraps a list of {@link toggleButton}s in a vertical `d4-toggle-button-group` container.
+ * @param buttons      Toggle buttons to group.
+ * @param toggleFirst  If true, marks the first button as `d4-current`.
+ */
+export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolean = false): HTMLDivElement {
+  return api.grok_UI_ToggleButtonGroup(buttons, toggleFirst);
+}
+
+/**
  * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
