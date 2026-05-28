@@ -142,7 +142,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_exec_time DESC
+ORDER BY mean_exec_time DESC
 LIMIT @limit;
 --end
 
@@ -194,7 +194,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;
@@ -225,7 +225,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_time DESC
+ORDER BY mean_time DESC
 LIMIT @limit;
 --end
 
@@ -277,7 +277,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;

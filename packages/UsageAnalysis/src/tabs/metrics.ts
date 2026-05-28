@@ -124,7 +124,6 @@ export class MetricsView extends UaView {
   private largestTablesHost!: HTMLElement;
   private tableHealthHost!: HTMLElement;
   private httpRoutesHost!: HTMLElement;
-  private modeButtons: HTMLButtonElement[] = [];
   private refreshing = false;
   private pssMode: PssMode | null = null;
 
@@ -141,11 +140,12 @@ export class MetricsView extends UaView {
     this.tableHealthHost = ui.div([], 'ua-metrics-grid-host');
     this.httpRoutesHost = ui.div([], 'ua-metrics-grid-host');
 
-    const refreshBtn = ui.button(ui.span([ui.iconFA('sync-alt'), ' Refresh']), () => this.refresh());
+    const refreshBtn = ui.bigButton('Refresh', () => this.refresh());
+    refreshBtn.prepend(ui.iconFA('sync-alt'), ' ');
     refreshBtn.classList.add('ua-metrics-btn');
-    const sendBtn = ui.button(ui.span([ui.iconFA('envelope'), ' Send to Datagrok']),
-      () => this.sendToDatagrok());
-    sendBtn.classList.add('ua-metrics-btn');
+    const sendBtn = ui.bigButton('Send to Datagrok', () => this.sendToDatagrok());
+    sendBtn.prepend(ui.iconFA('envelope'), ' ');
+    sendBtn.classList.add('ua-metrics-btn-secondary');
 
     const header = ui.divH([
       this.asOfLabel,
@@ -173,7 +173,7 @@ export class MetricsView extends UaView {
       () => this.openFullView(queries.metricsLargestTables, 'MetricsLargestTables', 'Largest tables'));
     const tableHealthPanel = MetricsView.buildPanel('Table health', this.tableHealthHost,
       () => this.openFullView(queries.metricsTableHealth, 'MetricsTableHealth', 'Table health'));
-    const httpRoutesPanel = MetricsView.buildPanel('HTTP routes by p95', this.httpRoutesHost,
+    const httpRoutesPanel = MetricsView.buildPanel('HTTP routes', this.httpRoutesHost,
       () => this.openFullHttpRoutes());
 
     const tablesRow = ui.divH([largestTablesPanel, tableHealthPanel], 'ua-metrics-tables-row');
@@ -220,32 +220,33 @@ export class MetricsView extends UaView {
     if (extraHeader)
       headerChildren.push(extraHeader);
     headerChildren.push(ui.div([], {style: {flex: '1'}}));
-    if (onOpenFull)
-      headerChildren.push(ui.link('Open full view', onOpenFull, '', 'ua-metrics-link'));
+    if (onOpenFull) {
+      const addIcon = ui.iconFA('plus', onOpenFull, 'Add to workspace');
+      addIcon.classList.add('ua-metrics-add-icon');
+      headerChildren.push(addIcon);
+    }
     const header = ui.divH(headerChildren, 'ua-metrics-panel-header');
     return ui.div([header, host], 'ua-metrics-panel');
   }
 
   private buildQueriesPanel(): HTMLElement {
-    const makeModeBtn = (label: string, mode: QueriesMode): HTMLButtonElement => {
-      const b = ui.button(label, () => {
+    const modes: Array<[string, QueriesMode]> = [
+      ['slowest', 'slowest'],
+      ['most called', 'most-called'],
+      ['worst cache hit', 'worst-hit'],
+    ];
+    const buttons = modes.map(([label, mode]) => {
+      const btn = ui.toggleButton(label, () => {
         this.queriesMode = mode;
-        this.modeButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.mode === mode));
         this.loadQueries();
-      }) as HTMLButtonElement;
-      b.dataset.mode = mode;
-      b.classList.add('ua-metrics-mode-btn');
+      });
       if (mode === this.queriesMode)
-        b.classList.add('active');
-      this.modeButtons.push(b);
-      return b;
-    };
-    const toggle = ui.divH([
-      makeModeBtn('slowest', 'slowest'),
-      makeModeBtn('most called', 'most-called'),
-      makeModeBtn('worst cache hit', 'worst-hit'),
-    ], 'ua-metrics-mode-toggle');
-    return MetricsView.buildPanel('Queries · pg_stat_statements', this.queriesGridHost,
+        btn.classList.add('d4-current');
+      return btn;
+    });
+    const toggle = ui.toggleButtonGroup(buttons);
+    toggle.classList.add('ua-metrics-mode-toggle');
+    return MetricsView.buildPanel('Queries', this.queriesGridHost,
       () => {
         const q = PSS_QUERIES[this.queriesMode];
         const name = this.pssMode === 'legacy' ? q.fullViewQuery.legacy : q.fullViewQuery.modern;
@@ -427,16 +428,6 @@ export class MetricsView extends UaView {
     }, 500);
   }
 
-  private static formatDuration(sec: number): string {
-    if (sec < 60) return `${sec}s`;
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    if (m < 60) return s === 0 ? `${m}m` : `${m}m ${s}s`;
-    const h = Math.floor(m / 60);
-    const rm = m % 60;
-    return rm === 0 ? `${h}h` : `${h}h ${rm}m`;
-  }
-
   private static buildConnectionsTooltip(
     summary: DG.DataFrame, offenders: DG.DataFrame | null, pending: boolean): HTMLElement {
     const total = (summary.get('total', 0) as number) ?? 0;
@@ -448,7 +439,7 @@ export class MetricsView extends UaView {
 
     const lines: HTMLElement[] = [];
     const headline = idleX > 0
-      ? `${total} connections · ${idleX} idle in transaction · oldest ${MetricsView.formatDuration(oldestSec)} ago`
+      ? `${total} connections · ${idleX} idle in transaction · oldest ${DG.Utils.formatDuration(oldestSec)} ago`
       : `${total} connections`;
     lines.push(ui.divText(headline));
     lines.push(ui.divText(
@@ -510,7 +501,7 @@ export class MetricsView extends UaView {
         : state;
       const cells: HTMLElement[] = [
         ui.divText(stateLabel, 'ua-metrics-tt-col-state'),
-        ui.divText(MetricsView.formatDuration((offenders.get('age_sec', i) as number) ?? 0),
+        ui.divText(DG.Utils.formatDuration((offenders.get('age_sec', i) as number) ?? 0),
           'ua-metrics-tt-col-num'),
         ui.divText((offenders.get('application_name', i) as string) || '—', 'ua-metrics-tt-col-app'),
         ui.divText((offenders.get('usename', i) as string) || '—', 'ua-metrics-tt-col-user'),
@@ -642,11 +633,8 @@ export class MetricsView extends UaView {
   private async loadStorage(): Promise<void> {
     const card = this.card('storage');
     ui.tooltip.bind(card.root, null);
-    const stats = await MetricsView.safeCall(async () => {
-      const raw = await grok.functions.call('StorageStats') as string;
-      return JSON.parse(raw);
-    }, 'StorageStats');
-    if (!stats) {
+    const stats = await MetricsView.safeCall(() => grok.dapi.info.getStorageStats(), 'getStorageStats');
+    if (!stats || Object.keys(stats).length === 0) {
       this.setCard('storage', '—', 'unavailable', 'info');
       return;
     }
@@ -756,8 +744,10 @@ export class MetricsView extends UaView {
 
     const delta = p95 - p95Prev;
     const sub = `p95 ms · ${delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`}`;
-    const color: CardColor = p95 < THRESH.latencyMs.green ? 'green'
-      : p95 < THRESH.latencyMs.orange ? 'orange' : 'red';
+    const color: CardColor = p95 === 0 ? 'info'
+      : delta > 0 ? 'red'
+      : delta < 0 ? 'green'
+      : 'orange';
     this.setCard('latency', `${p95}`, sub, color);
 
     ui.tooltip.bind(card.root, () => MetricsView.buildLatencyTooltip({
@@ -831,6 +821,7 @@ export class MetricsView extends UaView {
     const queryCol = grid.col('query');
     if (queryCol)
       queryCol.width = 700;
+    MetricsView.formatMsColumns(grid, ['total_ms', 'mean_ms']);
     grid.onCellPrepare((gc) => MetricsView.colorQueriesCell(gc));
     MetricsView.fitGrid(grid, this.queriesGridHost);
   }
@@ -885,6 +876,15 @@ export class MetricsView extends UaView {
     const routeCol = grid.col('route');
     if (routeCol)
       routeCol.width = 360;
+    MetricsView.formatMsColumns(grid, ['p50', 'p95', 'p99']);
+    for (const p of ['p50', 'p95', 'p99']) {
+      const c = grid.col(p);
+      if (c)
+        c.name = `${p}, ms`;
+    }
+    const errPctCol = grid.col('err_pct');
+    if (errPctCol)
+      errPctCol.format = '#0.##';
     grid.onCellPrepare((gc) => MetricsView.colorHttpRoutesCell(gc));
     MetricsView.fitGrid(grid, this.httpRoutesHost);
   }
@@ -909,6 +909,14 @@ export class MetricsView extends UaView {
 
   private static degradedMessage(text: string): HTMLElement {
     return ui.div([ui.iconFA('info-circle'), ' ', text], 'ua-metrics-degraded');
+  }
+
+  private static formatMsColumns(grid: DG.Viewer, names: string[]): void {
+    for (const name of names) {
+      const col = (grid as any).col(name);
+      if (col)
+        col.format = '#,##0';
+    }
   }
 
   private static fitGrid(grid: DG.Viewer, host: HTMLElement): void {
@@ -948,9 +956,9 @@ export class MetricsView extends UaView {
     const v = gc.cell.value as number;
     if (v == null)
       return;
-    if (name === 'p95')
+    if (name === 'p95, ms')
       gc.style.textColor = thresholdColor(v, THRESH.routeP95Ms, false);
-    else if (name === 'p99')
+    else if (name === 'p99, ms')
       gc.style.textColor = thresholdColor(v, THRESH.routeP99Ms, false);
     else if (name === 'err_pct')
       gc.style.textColor = thresholdColor(v, THRESH.routeErrPct, false);
