@@ -6,19 +6,29 @@ import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
 import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} from './mmpa-misc';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 /**
 * Runs parallel fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
 export async function getMmpFrags(molecules: string[]): Promise<[MmpFragments, string[]]> {
+  _tsLog(`[getMmpFrags] entering, molecules=${molecules.length}, calling getRdKitService`);
   const service = await getRdKitService();
+  _tsLog('[getMmpFrags] got RdKit service, calling mmpGetFragments');
   const res = await service.mmpGetFragments(molecules);
-  return [encodeFragments(res), res.smiles];
+  _tsLog(`[getMmpFrags] mmpGetFragments returned, frags=${res?.frags?.length}, ` +
+    `smiles=${res?.smiles?.length}, encoding`);
+  const encoded = encodeFragments(res);
+  _tsLog(`[getMmpFrags] encoded, idToName=${encoded.idToName.length}`);
+  return [encoded, res.smiles];
 }
 
 export async function getMmpRules(
   fragsOut: MmpFragments, fragmentCutoff: number, gpu: boolean, strictCPU = false):
   Promise<[MmpRules, number, boolean]> {
+  _tsLog(`[getMmpRules] entering, fragCodes.length=${fragsOut.fragCodes.length}, ` +
+    `fragmentCutoff=${fragmentCutoff}, gpu=${gpu}, strictCPU=${strictCPU}`);
   let rules: MmpRules | null = null;
   let allCaseesNumber = 0;
   let useGpu = false;
@@ -28,10 +38,15 @@ export async function getMmpRules(
       if (fragsOut.fragCodes.length > MMP_CONSTRICTIONS.CPU)
         throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
 
+      _tsLog('[getMmpRules] taking CPU path');
       [rules, allCaseesNumber, useGpu] = getMmpRulesCPU(fragsOut, fragmentCutoff);
+      _tsLog(`[getMmpRules] CPU path done, rules=${rules?.rules?.length}, cases=${allCaseesNumber}`);
     } else {
       useGpu = true;
+      _tsLog('[getMmpRules] taking GPU path (webGPUMMP)');
       [rules, allCaseesNumber, useGpu] = await getMmpRulesGPU(fragsOut, fragmentCutoff);
+      _tsLog(`[getMmpRules] GPU path done, rules=${rules?.rules?.length}, ` +
+        `cases=${allCaseesNumber}, useGpu=${useGpu}`);
     }
   } catch (e: any) {
     const eMsg: string = e instanceof Error ? e.message : e.toString();

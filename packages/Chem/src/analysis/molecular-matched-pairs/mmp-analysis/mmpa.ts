@@ -11,6 +11,8 @@ import {getPlainData} from './mmpa-differences';
 import {calculateGenerations} from './mmpa-generations';
 import {SortData} from '../mmp-viewer/mmp-viewer';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 export class MMPA {
   initData: MmpInitData;
   gpu: boolean;
@@ -45,22 +47,34 @@ export class MMPA {
   static async init(molName: string, molecules: string[], fragmentCutoff: number,
     activities: Float32Array[], activitiesNames: string[], diffTypes: string[],
     fragSortingInfo: SortData): Promise<MMPA> {
+    _tsLog(`[MMPA.init] entering, molecules=${molecules.length}, fragmentCutoff=${fragmentCutoff}, ` +
+      `activities=${activitiesNames.length}`);
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length, diffTypes};
 
+    _tsLog('[MMPA.init] calling getGPUDevice');
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
+    _tsLog(`[MMPA.init] getGPUDevice returned, gpu=${gpu}`);
 
     if (!gpu && molecules.length > MMP_CONSTRICTIONS.CPU)
       throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
     else if (molecules.length > MMP_CONSTRICTIONS.GPU)
       throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
 
+    _tsLog('[MMPA.init] calling getMmpFrags');
     const [frags, canonical] = await getMmpFrags(molecules);
+    _tsLog(`[MMPA.init] getMmpFrags returned, frags.idToName.length=${frags?.idToName?.length}, ` +
+      `canonical.length=${canonical?.length}`);
     initData.molecules = canonical;
+    _tsLog('[MMPA.init] calling getMmpRules');
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
+    _tsLog(`[MMPA.init] getMmpRules returned, rules.rules.length=${rules?.rules?.length}, ` +
+      `smilesFrags=${rules?.smilesFrags?.length}, allCasesNumber=${allCasesNumber}`);
 
+    _tsLog('[MMPA.init] calling getPlainData');
     const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
+    _tsLog('[MMPA.init] getPlainData returned, constructing MMPA');
 
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
@@ -68,11 +82,14 @@ export class MMPA {
   static async fromData(molName: string, data: string, molecules: string[],
     activities: Float32Array[], activitiesNames: string[], diffTypes: string[],
     fragSortingInfo: SortData): Promise<MMPA> {
+    _tsLog(`[MMPA.fromData] entering, data.length=${data?.length}, molecules=${molecules.length}`);
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length, diffTypes};
 
+    _tsLog('[MMPA.fromData] calling getGPUDevice');
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
+    _tsLog(`[MMPA.fromData] getGPUDevice returned, gpu=${gpu}, parsing JSON`);
 
     const totalParsed = JSON.parse(data);
 
@@ -95,6 +112,8 @@ export class MMPA {
       generationResult.prediction = new Float32Array(Object.values(generationResult.prediction));
     }
 
+    _tsLog(`[MMPA.fromData] done, rules.rules.length=${rules?.rules?.length}, ` +
+      `chemSpaceResult=${!!chemSpaceResult}, generationResult=${!!generationResult}`);
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased,
       chemSpaceResult, generationResult, gpu);
   }

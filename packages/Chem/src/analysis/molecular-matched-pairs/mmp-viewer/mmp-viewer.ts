@@ -30,6 +30,8 @@ import {MmpPairedGrids} from './mmp-grids';
 import {PackageFunctions} from '../../../package';
 import {getZoomCoordinates} from '../../../utils/ui-utils';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 export type MmpInput = {
   table: DG.DataFrame,
   molecules: DG.Column,
@@ -133,6 +135,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   constructor() {
     super();
+    _tsLog('[MMPA-VIEWER] constructor: entering');
     this.parentTableView = grok.shell.tv;
     DG.debounce(this.onPropertyChangedObs, 1000).subscribe(this.onPropertyChangedDebounced.bind(this));
     //properties
@@ -145,12 +148,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: true});
     this.diffTypes = this.stringList('diffTypes', [], {userEditable: false, includeInLayout: true, nullable: false});
     this.scalings = this.stringList('scalings', [], {userEditable: false, includeInLayout: true, nullable: false});
+    _tsLog('[MMPA-VIEWER] constructor: done');
   }
 
   onPropertyChangedDebounced() {
-    if (!this.dataFrame)
+    _tsLog(`[MMPA-VIEWER] onPropertyChangedDebounced: entering, ` +
+      `dataFrame=${!!this.dataFrame}, totalDataUpdated=${this.totalDataUpdated}, ` +
+      `moleculesColumnName=${this.moleculesColumnName}, activities=${JSON.stringify(this.activities)}, ` +
+      `fragmentCutoff=${this.fragmentCutoff}`);
+    if (!this.dataFrame) {
+      _tsLog('[MMPA-VIEWER] onPropertyChangedDebounced: no dataFrame, returning');
       return;
+    }
     if (this.totalDataUpdated && this.moleculesColumnName) {
+      _tsLog('[MMPA-VIEWER] onPropertyChangedDebounced: totalData branch, calling render()');
       this.moleculesCol = this.dataFrame.col(this.moleculesColumnName);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
       this.render();
@@ -160,9 +171,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.moleculesCol = this.dataFrame.col(this.moleculesColumnName!);
     this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
     if (this.moleculesColumnName && this.activities && this.fragmentCutoff && this.scalings) {
+      _tsLog('[MMPA-VIEWER] onPropertyChangedDebounced: all props set, calling render()');
       this.render();
       return;
     }
+    _tsLog('[MMPA-VIEWER] onPropertyChangedDebounced: props incomplete, returning without render');
   }
 
   onPropertyChanged(property: DG.Property | null): void {
@@ -181,6 +194,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async render() {
+    _tsLog('[MMPA-VIEWER] render: entering');
     $(this.root).empty();
     if (this.dataFrame) {
       const loader = ui.div(ui.loader());
@@ -189,24 +203,31 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       const progressMMP = DG.TaskBarProgressIndicator.create(`Running MMP analysis...`);
 
       try {
+        _tsLog('[MMPA-VIEWER] render: calling runMMP');
         await this.runMMP(
           {table: this.dataFrame,
             molecules: this.moleculesCol!,
             activities: this.activitiesCols!,
             fragmentCutoff: this.fragmentCutoff!,
           });
+        _tsLog('[MMPA-VIEWER] render: runMMP returned');
       } catch (e: any) {
         const errMsg = e instanceof Error ? e.message : e.toString();
+        _tsLog(`[MMPA-VIEWER] render: runMMP threw: ${errMsg}`);
         grok.log.error(e);
         grok.shell.error(errMsg);
       } finally {
+        _tsLog(`[MMPA-VIEWER] render: finalizing, tabs=${!!this.tabs}`);
         $(this.root).empty();
         if (this.tabs)
           this.root.appendChild(this.tabs.root);
         else
           this.close();
         progressMMP.close();
+        _tsLog('[MMPA-VIEWER] render: done');
       }
+    } else {
+      _tsLog('[MMPA-VIEWER] render: no dataFrame, skipping');
     }
   }
 
@@ -1044,6 +1065,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   async runMMP(mmpInput: MmpInput) {
     //console.profile('MMP');
+    _tsLog(`[MMPA-VIEWER] runMMP: entering, molecules.length=${mmpInput.molecules.length}, ` +
+      `activities=${mmpInput.activities.length}, fragmentCutoff=${mmpInput.fragmentCutoff}, ` +
+      `totalDataUpdated=${this.totalDataUpdated}`);
     const showHints = grok.userSettings.getValue(STORAGE_NAME, KEY);
     if (showHints === 'false')
       this.showHints = false;
@@ -1055,22 +1079,29 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       activitiesArrays[i] = mmpInput.activities.byIndex(i).asDoubleList();
       activitiesNames[i] = mmpInput.activities.byIndex(i).name;
     }
+    _tsLog(`[MMPA-VIEWER] runMMP: prepared arrays, names=${JSON.stringify(activitiesNames)}`);
 
     let mmpa: MMPA;
 
     try {
       if (this.totalDataUpdated) {
+        _tsLog('[MMPA-VIEWER] runMMP: calling MMPA.fromData');
         mmpa = await MMPA.fromData(
           mmpInput.molecules.name, this.totalData, moleculesArray,
           activitiesArrays, activitiesNames, this.diffTypes!, this.fragSortingInfo);
+        _tsLog('[MMPA-VIEWER] runMMP: MMPA.fromData returned');
         this.totalDataUpdated = false;
       } else {
+        _tsLog('[MMPA-VIEWER] runMMP: calling MMPA.init');
         mmpa = await MMPA.init(
           mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff,
           activitiesArrays, activitiesNames, this.diffTypes!, this.fragSortingInfo);
+        _tsLog(`[MMPA-VIEWER] runMMP: MMPA.init returned, rules=${mmpa.rules?.rules?.length}, ` +
+          `smilesFrags=${mmpa.rules?.smilesFrags?.length}, gpu=${mmpa.gpu}`);
       }
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
+      _tsLog(`[MMPA-VIEWER] runMMP: MMPA.init/fromData threw: ${errMsg}`);
       grok.log.error(err);
       grok.shell.error(errMsg);
       throw new Error(errMsg);
@@ -1084,12 +1115,16 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }
 
     //Transformations tab
+    _tsLog('[MMPA-VIEWER] runMMP: constructing MmpPairedGrids');
     const pairedGrids = new MmpPairedGrids(this.subs, mmpInput, mmpa, activityMeanNames, palette);
+    _tsLog('[MMPA-VIEWER] runMMP: MmpPairedGrids constructed, calling fillAll');
 
 
     this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, pairedGrids, activityMeanNames);
+    _tsLog('[MMPA-VIEWER] runMMP: fillAll returned, serializing mmpa.toJSON()');
 
     this.totalData = mmpa.toJSON();
+    _tsLog('[MMPA-VIEWER] runMMP: done');
     //console.profileEnd('MMP');
   }
 
