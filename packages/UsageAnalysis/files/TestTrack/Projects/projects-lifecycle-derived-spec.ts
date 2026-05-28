@@ -105,7 +105,8 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       const shareR = await evalJs<{shared: boolean; reason?: string}>(page, `(async () => {
         try {
           const users = await grok.dapi.users.list({limit: 50});
-          const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
+          const me = (await grok.dapi.users.current()).login;
+          const target = users.find(u => u.login !== me && u.login !== 'system');
           if (!target) return {shared: false, reason: 'no recipient'};
           const p = await grok.dapi.projects.find('${saved.projectId}');
           await grok.dapi.permissions.grant(p, target, false);

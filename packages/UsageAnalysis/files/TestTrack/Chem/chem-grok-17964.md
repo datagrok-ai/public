@@ -125,8 +125,8 @@ de-coupling the spec from conversion-output-naming behavior.
   column-Actions pane. The bug-library repro says "click Convert Notations
   in the context panel" — the actionable label lives on the column-context
   pane, not the cell-context tabs.
-- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, qa-pw
-  user, Chem package v1.17.6).** All seven steps pass on the current build:
+- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, test
+  account, Chem package v1.17.6).** All seven steps pass on the current build:
   baseline=1, post-CANCEL=1, post-OK on original=1, on new column=1, post
   multi-cancel=1. GROK-17964 is `status: fixed` per bug-library;
   test exercises the post-fix invariant as a regression-lock. No

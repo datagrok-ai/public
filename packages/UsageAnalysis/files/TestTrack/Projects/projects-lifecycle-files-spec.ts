@@ -69,7 +69,8 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       const r = await evalJs<{skipped: boolean; reason?: string}>(page, `(async () => {
         try {
           const users = await grok.dapi.users.list({limit: 50});
-          const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
+          const me = (await grok.dapi.users.current()).login;
+          const target = users.find(u => u.login !== me && u.login !== 'system');
           if (!target) return {skipped: true, reason: 'no recipient'};
           const p = await grok.dapi.projects.find('${saved.projectId}');
           await grok.dapi.permissions.grant(p, target, false);

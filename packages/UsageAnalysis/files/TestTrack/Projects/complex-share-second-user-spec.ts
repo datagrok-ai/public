@@ -6,10 +6,9 @@ sub_features_covered: [projects.shell.share-via-context-menu, projects.api.names
 //   projects.md:232 — SAVE ribbon button is the reliable Save Project trigger
 //   projects.md:118-144 — Sharing via JS API: grok.dapi.permissions.grant(p, user, edit)
 //     where edit=false → View-and-Use, edit=true → Full
-//   projects.md:146-165 — Re-auth pattern is documented but JS API is TBD
-//     stub; UI logout+login-as-different-user path is the only functional
-//     re-auth and requires helpers.playwright.session.logoutAndLoginAs
-//     (Helper 3, NOT yet registered).
+//   projects.md:146-165 — Re-auth via helpers.playwright.session.logoutAndLoginAs
+//     (token-based; switches the authenticated session by re-injecting the
+//     second-user token — requires DATAGROK_AUTH_TOKEN_2).
 //
 // Wave 1b/2C complex-split: covers Step (share with second user +
 // recipient open) sub-bullet of complex.md scenario — specifically
@@ -34,13 +33,12 @@ sub_features_covered: [projects.shell.share-via-context-menu, projects.api.names
 //
 // Scope reductions (documented):
 //   * Step 13 (log in as second user, navigate to Browse > Dashboards,
-//     locate the shared project, open it) is DEFERRED — requires the
-//     helpers.playwright.session.logoutAndLoginAs helper which is not
-//     yet registered. Per Wave 1b prompt step 6 autonomous decision,
-//     this sub-spec scope is reduced rather than inlining a minimal
-//     re-auth implementation. Recipient-side open verification gap is
-//     flagged for follow-up — when Helper 3 is registered, extend this
-//     spec OR write a new re-auth-focused spec to close the gap.
+//     locate the shared project, open it) is DEFERRED — the
+//     helpers.playwright.session.logoutAndLoginAs helper is available
+//     (token-based, needs DATAGROK_AUTH_TOKEN_2), but the recipient-side
+//     open flow is not yet wired into this spec. Recipient-side open
+//     verification gap is flagged for follow-up — extend this spec OR
+//     write a new re-auth-focused spec to close the gap.
 //   * Step 12 right-click Share dialog UI is replaced with
 //     grok.dapi.permissions.grant JS API per projects.md:28 documented
 //     preferred default (and projects.md:242 — context menu items have
@@ -50,7 +48,7 @@ sub_features_covered: [projects.shell.share-via-context-menu, projects.api.names
 //     is PARTIAL: the share + datasync touch points are exercised, but
 //     the cross-user open verification requires re-auth.
 //   * Defensive skip-with-note pattern for both grant levels (matches
-//     share-project-spec). On dev qa-pw user lookup may fail with FK
+//     share-project-spec). On dev the recipient-user lookup may fail with FK
 //     violation on permissions table — defensive handling absorbs it.
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
@@ -134,7 +132,8 @@ test('Projects / Complex share-second-user: dual-level grant via JS API (Step 12
       const result = await evalJs(page, `(async () => {
         try {
           const users = await grok.dapi.users.list({limit: 50});
-          const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
+          const me = (await grok.dapi.users.current()).login;
+          const target = users.find(u => u.login !== me && u.login !== 'system');
           if (!target) return { skipped: true, reason: 'no other user found' };
           const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
           await grok.dapi.permissions.grant(p, target, false);
@@ -171,7 +170,8 @@ test('Projects / Complex share-second-user: dual-level grant via JS API (Step 12
       const result = await evalJs(page, `(async () => {
         try {
           const users = await grok.dapi.users.list({limit: 50});
-          const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
+          const me = (await grok.dapi.users.current()).login;
+          const target = users.find(u => u.login !== me && u.login !== 'system');
           if (!target) return { skipped: true, reason: 'no other user found' };
           const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
           await grok.dapi.permissions.grant(p, target, true);
@@ -188,10 +188,10 @@ test('Projects / Complex share-second-user: dual-level grant via JS API (Step 12
     });
 
     // Step 13 (log in as second user, open shared project) is DEFERRED —
-    // see header SR documentation. Helpers.playwright.session.logoutAndLoginAs
-    // is not yet registered; reduce-scope path chosen per Wave 1b prompt
-    // step 6 autonomous decision. When the helper is registered, this test
-    // can be extended (or a sister spec written) to exercise recipient open.
+    // see header SR documentation. helpers.playwright.session.logoutAndLoginAs
+    // is available (token-based, needs DATAGROK_AUTH_TOKEN_2) but the
+    // recipient-side open flow is not yet wired here. This test can be
+    // extended (or a sister spec written) to exercise recipient open.
   } finally {
     await deleteProjectByName(page, projectName).catch(() => {});
     await closeAll(page);

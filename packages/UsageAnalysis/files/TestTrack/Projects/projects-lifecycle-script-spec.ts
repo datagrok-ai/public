@@ -82,7 +82,8 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       const r = await evalJs<{shared: boolean; reason?: string}>(page, `(async () => {
         try {
           const users = await grok.dapi.users.list({limit: 50});
-          const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
+          const me = (await grok.dapi.users.current()).login;
+          const target = users.find(u => u.login !== me && u.login !== 'system');
           if (!target) return {shared: false, reason: 'no recipient'};
           const p = await grok.dapi.projects.find('${saved.projectId}');
           await grok.dapi.permissions.grant(p, target, false);
@@ -93,8 +94,8 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       })()`);
       if (!r.shared) console.warn('Share skipped: ' + r.reason);
       // GROK-19403 invariant assertion (recipient open with explicit-error-vs-silent-null
-      // discrimination) is gated on Helper 3 (logoutAndLoginAs) which is manual-password
-      // headed-only — deferred per complex-share-second-user-spec SR pattern.
+      // discrimination) needs second-user re-auth via logoutAndLoginAs (token-based,
+      // needs DATAGROK_AUTH_TOKEN_2) — deferred per complex-share-second-user-spec SR pattern.
     });
   } finally {
     if (saved)

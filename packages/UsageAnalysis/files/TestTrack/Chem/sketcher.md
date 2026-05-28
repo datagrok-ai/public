@@ -121,11 +121,11 @@ Per chain `ui_coverage_responsibility` entry `chem-sketcher-backend-selection-ha
 the sketcher cell editor exposes a backend-switcher entry in its hamburger menu
 ("Sketcher type" / equivalent label) that lists every installed sketcher backend package
 (OCL is always present; Ketcher / Marvin / ChemDraw are opportunistic — only available when
-the corresponding plugin package is installed on the target qa-pw environment).
+the corresponding plugin package is installed on the target test environment).
 
 - **OCL**: required (platform fallback) — exercised in full by the previous scenario block.
 - **Ketcher / Marvin / ChemDraw**: opportunistic. When the backend is installed on the
-  qa-pw environment, the Automator MAY repeat steps 2-11 with that backend selected via the
+  test environment, the Automator MAY repeat steps 2-11 with that backend selected via the
   hamburger menu's backend switcher (assertion: the sketcher modal closes and reopens on
   the selected backend; the Favorites add + Recent list + Copy-as cycle + paste round-trip
   all complete on the alternate backend without console errors). When the backend is not

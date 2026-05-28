@@ -119,8 +119,8 @@ content cleanly OR no tooltip without crash.
   viewer; tooltip-rendered-with-molecule-content is a stronger claim left
   to `info-panels.md` (cell render via Context Panel) and a future
   `chem.rendering.molecule-tooltip` cross-viewer spec if needed.
-- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, qa-pw
-  user, Chem package v1.17.6).** Box Plot rendering with smiles.csv produces
+- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, test
+  account, Chem package v1.17.6).** Box Plot rendering with smiles.csv produces
   no `rdkit-cell-renderer` console errors on initial render. GROK-16870 is
   `status: fixed`, `fixed_in: 1.22.0` per bug-library; spec exercises the
   post-fix invariant as a regression-lock. No `test.fixme()` — enabled.

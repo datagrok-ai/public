@@ -3,10 +3,6 @@ import {defineConfig, devices} from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*-spec.ts',
-  // helpers/session-spec.ts requires manual password entry in a visible
-  // browser; it would hang any headless run. Opt-in via HEADED_MANUAL=1 +
-  // explicit file path (the in-file `test.skip` handles the runtime guard).
-  testIgnore: ['**/helpers/session-spec.ts'],
   // Run all eligible tests in parallel — within and across files. Specs that
   // share UI state across multiple test() blocks should opt out per-file
   // with `test.describe.configure({mode: 'serial'})`.

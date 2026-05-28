@@ -302,7 +302,7 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   // recipient input `input[placeholder="User, group, or email"]`; access-level
   // `[name="div-share-selector"] select.ui-input-editor`; OK `[name="button-OK"]`.
   // Recipient placeholder per scenario `<RECIPIENT_GROUP_USERNAME_TBD>` — until
-  // resolved at Automator stage, fall back to the qa-pw user's own group via
+  // resolved at Automator stage, fall back to the current user's own group via
   // grok.dapi.users.current().group; this lets the dialog flow run without a
   // hardcoded second-user dependency.
   await softStep('Step 5-6: right-click tile → Share → fill recipient → OK', async () => {
@@ -314,7 +314,7 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
     await menu.locator('[name="div-Share..."]').click();
     const shareDlg = page.locator('.d4-dialog').filter({hasText: new RegExp(`^Share ${actualName}`)});
     await shareDlg.waitFor({timeout: 15_000});
-    // Recipient: own group (qa-pw user) as a TBD-resolution fallback
+    // Recipient: own group (current user) as a TBD-resolution fallback
     const recipient = await evalJs<string>(page,
       `grok.shell.user?.group?.friendlyName || grok.shell.user?.login || ''`);
     await shareDlg.locator('input[placeholder="User, group, or email"]').fill(recipient);

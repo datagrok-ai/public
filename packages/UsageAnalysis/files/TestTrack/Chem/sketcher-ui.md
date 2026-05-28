@@ -23,7 +23,7 @@ this is a visual-fidelity invariant that requires human visual comparison of ste
 rendering before/after a Highlights structure is applied. The Migrator carries the
 invariant verbatim; the Automator does **not** turn this into a playwright spec (any
 attempt to verify "stereochemistry kept" via DOM assertions would require a structural
-render-comparison library outside the qa-pw harness's standard helper surface — flagged
+render-comparison library outside the test harness's standard helper surface — flagged
 as a future-work atlas-curator candidate, not in scope here).
 
 ## Setup

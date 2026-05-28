@@ -113,8 +113,8 @@ TableView A's.
   step 2 above). If the platform later changes this default, Step 3's
   pre-condition assert catches the setup regression cleanly before the
   Scaffold Tree invocation.
-- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, qa-pw
-  user, Chem package v1.17.6).** Two table views open, smiles-50-copy as
+- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, test
+  account, Chem package v1.17.6).** Two table views open, smiles-50-copy as
   active. Top-menu Chem | Analyze | Scaffold Tree → viewer added → bound
   to smiles-50-copy (active table). github-3004 fix verified on current
   build. Spec exercises the post-fix invariant as a regression-lock.

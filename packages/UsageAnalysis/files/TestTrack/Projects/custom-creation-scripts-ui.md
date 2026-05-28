@@ -12,7 +12,7 @@ moved_to_ui_reason: |
   Step 4 mutate System:DemoFiles/chem, Step 5 verify dynamic-data-
   resolution on reopen) had only environmental/infra blockers per D3
   classification (registered server function, per-test scratch folder,
-  qa-pw write perms on shared System: paths). Per 2026-05-01
+  test-account write perms on shared System: paths). Per 2026-05-01
   decision: rather than tracking these as bucket-a gaps and waiting
   for env/helper backlog to close, mark the entire scenario as
   UI-only manual — the dynamic-data-resolution behavior is most
@@ -64,7 +64,7 @@ folder afterwards (see Cleanup section below).
    the folder to a known state in Cleanup.
 3. **Browser session authentication:** test-user session with
    read+write access to `System:DemoFiles/chem` and project-creation
-   rights (qa-pw on dev currently lacks write access — manual run
+   rights (the test account on dev currently lacks write access — manual run
    may require elevated credentials).
 
 ## Manual scenario

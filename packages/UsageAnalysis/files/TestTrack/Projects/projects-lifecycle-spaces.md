@@ -41,9 +41,9 @@ UI coverage delegated to `projects-ui-smoke.md`.
 2. Project name: `lifecycle-spaces-${Date.now()}`.
 3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
 4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
-   (NOT YET REGISTERED).
+   (token-based; needs DATAGROK_AUTH_TOKEN_2).
 5. **Environment dependencies:**
-   - SPGIs Space accessible to `qa-pw` test account. Skip-with-
+   - SPGIs Space accessible to the test account. Skip-with-
      logged-warning if not provisioned.
    - Recipient must have access to the Space (or the share path
      fails on a different bug — un-shared deps).

@@ -11,9 +11,9 @@ generated_from: projects-lifecycle-spaces.md
 // `source_class=spaces × dep_lifecycle_op=save_with_sync_on`.
 //
 // GROK-18345 recipient-open invariant (share + datasync under a different
-// user identity) requires `helpers.playwright.session.logoutAndLoginAs`,
-// which is not yet registered. That part of the scenario is deferred to a
-// future cycle once Helper 3 lands.
+// user identity) requires `helpers.playwright.session.logoutAndLoginAs`
+// (token-based, needs DATAGROK_AUTH_TOKEN_2). That part of the scenario is
+// deferred — the recipient-side open flow is not yet wired into this spec.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {

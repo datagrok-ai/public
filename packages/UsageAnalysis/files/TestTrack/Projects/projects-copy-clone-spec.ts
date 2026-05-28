@@ -341,8 +341,9 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       // provisioned).
       const recipient = await evalJs<string | null>(page, `(async () => {
         const users = await grok.dapi.users.list({limit: 50});
+        const me = (await grok.dapi.users.current()).login;
         for (const u of users) {
-          if (u.login === 'qa-pw' || u.login === 'system') continue;
+          if (u.login === me || u.login === 'system') continue;
           const full = await grok.dapi.users.find(u.id);
           if (full && full.group && full.group.id)
             return full.group.friendlyName || full.login || full.group.name || null;

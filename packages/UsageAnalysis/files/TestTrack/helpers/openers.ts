@@ -35,7 +35,7 @@
  * file / re-running the query / re-running the script, depending on the
  * source class.
  *
- * Verified live against dev.datagrok.ai 2026-05-05 (qa-pw). MCP capture
+ * Verified live against dev.datagrok.ai 2026-05-05. MCP capture
  * findings + per-source `.script` regex patterns: see
  * `.claude/diagnostics/mcp-capture-{files,db,scripts}.md`.
  *
