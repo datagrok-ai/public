@@ -836,6 +836,8 @@ export interface IDartApi {
   grok_UI_DivH(elements: any, className: String): any;
   grok_UI_Button(content: any, handler: any, tooltip: String): any;
   grok_UI_BigButton(content: any, handler: any, tooltip: String): any;
+  grok_UI_ToggleButton(caption: String, handler: any, tooltip: String): any;
+  grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
   grok_UI_List(items: any, maxRows: Num): any;
@@ -1067,6 +1069,8 @@ export interface IDartApi {
   grok_Dapi_Entities_GetEntities(ids: any): Promise<any>;
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_PushMessage(adminClient: any, messageType: String, message: any, sessionIds: any): Promise<any>;
+  grok_Dapi_Info(): any;
+  grok_Dapi_Info_GetStorageStats(c: any): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any, favoritesOnly: Bool): any;
   grok_Dapi_LogTypes(): any;

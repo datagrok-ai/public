@@ -220,6 +220,12 @@ export class Dapi {
     return new AdminDataSource(api.grok_Dapi_Admin());
   }
 
+  /** Server info API endpoint
+   *  @type {InfoDataSource} */
+  get info(): InfoDataSource {
+    return new InfoDataSource(api.grok_Dapi_Info());
+  }
+
   /** Logging API endpoint
    *  @type {HttpDataSource<LogEvent>} */
   get log(): LogDataSource {
@@ -422,6 +428,19 @@ export class AdminDataSource {
    * See also {@link ServerMessageTypes} */
   pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
     return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
+  }
+}
+
+export class InfoDataSource {
+  dart: any;
+  /** @constructs InfoDataSource */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns the latest storage usage snapshot, refreshed hourly on the server. */
+  getStorageStats(): Promise<{[key: string]: any}> {
+    return api.grok_Dapi_Info_GetStorageStats(this.dart);
   }
 }
 
