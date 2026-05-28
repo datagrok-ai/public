@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.10 (2026-05-28)
+
+* Chem: Record all generated reaction results in the enumerator
+
 ## 1.17.9 (2026-05-26)
 
 * Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")
