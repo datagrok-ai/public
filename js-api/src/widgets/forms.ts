@@ -99,6 +99,15 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
     return __obs('d4-dialog-closed', this.dart);
   }
 
+  /** Fires before the OK handler runs. */
+  get onBeforeOK(): Observable<any> { return __obs('d4-dialog-before-ok', this.dart); }
+
+  /** Fires after the OK handler completes successfully. */
+  get onAfterOK(): Observable<any> { return __obs('d4-dialog-after-ok', this.dart); }
+
+  /** Fires when the dialog requests to save the current history snapshot. */
+  get onSaveHistoryRequest(): Observable<any> { return __obs('d4-dialog-save-history-request', this.dart); }
+
   // Using __obs is a recommended method. The below are obsolete and shall not be used:
   // onClose(handler) { api.grok_Dialog_OnClose(this.dart, handler); return this; }
   // onClose(handler) { let s = _sub(api.grok_Dialog_OnClose(this.dart, () => { handler(); s.cancel(); })); return this; }

@@ -37,6 +37,18 @@ export function expectRoundTripPropAndLook(v: DG.Viewer, opts: {[k: string]: any
   expectPropAndLook(v, opts);
 }
 
+// Round-trip a plain boolean get/set accessor (false -> true -> restore original).
+// For widget accessors like `acc.autoHideTabHeader`; use expectBoolToggle for `v.props[name]`.
+export function expectBoolGetSet(obj: {[k: string]: any}, name: string): void {
+  const original = obj[name];
+  obj[name] = false;
+  expect(obj[name], false);
+  obj[name] = true;
+  expect(obj[name], true);
+  obj[name] = original;
+  expect(obj[name], original);
+}
+
 // Toggle a boolean prop via `v.props[name] = ...` and check props+look mirror.
 export function expectBoolToggle(v: DG.Viewer, name: string, sequence: boolean[] = [true, false, true]): void {
   for (const b of sequence) {
