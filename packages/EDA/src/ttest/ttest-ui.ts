@@ -73,7 +73,7 @@ function fmt(x: number): string {
   return x.toFixed(4);
 }
 
-/** Qualitative magnitude of a standardized effect size (Cohen's conventions). */
+/** Qualitative magnitude of a standardized effect size (Cohen's conventions; domain may dictate different cutoffs). */
 function effectMagnitude(g: number): string {
   const a = Math.abs(g);
   if (a < 0.2) return 'negligible';
@@ -83,9 +83,12 @@ function effectMagnitude(g: number): string {
 }
 
 /** One-row results grid: t, df, p-value, mean difference, 95% CI, effect size. */
-function getTTestGrid(res: TwoSampleTTest, factorName: string): DG.Grid {
-  const ciCaption = `${Math.round((1 - res.alpha) * 100)}% CI`;
-  const effectCaption = res.method === 'Welch' ? 'g_s*' : 'Hedges\' g';
+function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.Grid {
+  const ciLevel = Math.round((1 - res.alpha) * 100);
+  const ciCaption = `${ciLevel}% CI`;
+  // Single user-facing header for both methods; tooltip explains the pooled vs non-pooled distinction.
+  const effectCaption = 'Hedges\' g';
+  const diffDescription = `mean("${label1}") − mean("${label0}")`;
 
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 't', [res.t]),
@@ -99,20 +102,24 @@ function getTTestGrid(res: TwoSampleTTest, factorName: string): DG.Grid {
   ]));
 
   const tooltip = new Map<string, string>([
-    ['t', 'Two-sample t-statistic (signed; group 1 − group 0).'],
+    ['t', `Two-sample t-statistic. Positive when mean("${label1}") > mean("${label0}").`],
     ['df', res.method === 'Welch' ?
-      'Welch–Satterthwaite degrees of freedom (fractional by design).' :
+      'Welch–Satterthwaite degrees of freedom. Non-integer values are normal for Welch.' :
       'Degrees of freedom (n0 + n1 − 2).'],
-    ['p-value', 'Two-sided probability of observing this result if the group means are equal.'],
-    ['Mean difference', `Difference of the two group means (group 1 − group 0) in the "${factorName}" split.`],
-    [`${ciCaption} low`, `Lower bound of the ${ciCaption} for the mean difference.`],
-    [`${ciCaption} high`, `Upper bound of the ${ciCaption} for the mean difference.`],
+    ['p-value',
+      'Probability of seeing a difference at least as extreme as the observed one, ' +
+      'assuming the two group means are actually equal. Smaller p = stronger evidence against equality.'],
+    ['Mean difference', `${diffDescription}, in the original units of the feature.`],
+    [`${ciCaption} low`, `Lower bound of the ${ciCaption} (confidence interval) for ${diffDescription}.`],
+    [`${ciCaption} high`, `Upper bound of the ${ciCaption} (confidence interval) for ${diffDescription}.`],
     ['Cohen\'s d', res.method === 'Welch' ?
-      'Standardized mean difference (d_s) using the non-pooled SD √((v0+v1)/2).' :
-      'Standardized mean difference using the pooled SD.'],
+      'Standardized mean difference. For Welch, uses the average of the two group SDs (non-pooled, per Delacre et al. 2021).' :
+      'Standardized mean difference, using the pooled SD across the two groups.'],
     [effectCaption, res.method === 'Welch' ?
-      'Bias-corrected effect size (Hedges\' g_s*), non-pooled SD.' :
-      'Bias-corrected effect size (Hedges\' g), pooled SD.'],
+      `Hedges' g_s* — Cohen's d corrected for small-sample bias. Companion effect size to Welch's t-test (Delacre et al. 2021). ` +
+      `Rules of thumb (Cohen 1988): |g| < 0.2 negligible, < 0.5 small, < 0.8 medium, ≥ 0.8 large.` :
+      `Hedges' g — Cohen's d corrected for small-sample bias. ` +
+      `Rules of thumb (Cohen 1988): |g| < 0.2 negligible, < 0.5 small, < 0.8 medium, ≥ 0.8 large.`],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {
@@ -130,7 +137,7 @@ function getTTestGrid(res: TwoSampleTTest, factorName: string): DG.Grid {
   return grid;
 } // getTTestGrid
 
-/** Lay out the t-test results: box plot + Analysis/Conclusion tab control. */
+/** Lay out the t-test results: box plot + Analysis/Conclusion tab control (mirrors ANOVA). */
 function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
   res: TwoSampleTTest): void {
   const view = grok.shell.getTableView(df.name);
@@ -141,44 +148,57 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   const label1 = labelOf(factor, res.code1);
 
   const shortConclusion = significant ?
-    `"${feature.name}" differs significantly between "${factor.name}" groups` :
-    `"${feature.name}" shows no significant difference between "${factor.name}" groups`;
+    `"${feature.name}" differs between "${label0}" and "${label1}"` :
+    `"${feature.name}" doesn't differ between "${label0}" and "${label1}"`;
 
   const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factor.name],
     valueColumnName: feature.name,
-    showPValue: true,
-    showStatistics: true,
+    // No on-plot statistics or p-value (as in ANOVA); all numbers live in the Analysis/Conclusion tabs.
+    showPValue: false,
+    showStatistics: false,
     description: shortConclusion,
+    descriptionVisibilityMode: 'Always',
     showColorSelector: false,
     autoLayout: false,
   });
 
   const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'T-Test');
 
-  // Conclusion: "p = …, effect = …, 95% CI […]" — not a bare reject/fail.
-  const effectCaption = res.method === 'Welch' ? 'g_s*' : 'Hedges\' g';
+  const effectCaption = res.method === 'Welch' ? 'Hedges\' g_s*' : 'Hedges\' g';
   const ciCaption = `${Math.round((1 - res.alpha) * 100)}% CI`;
 
-  const verdictMd = ui.markdown(`**Result:** ${significant ?
-    `a significant difference between "${label0}" and "${label1}".` :
-    `no significant difference between "${label0}" and "${label1}".`}`);
+  const nullHypoMd = ui.markdown(`**Null Hypothesis:** the two group means are equal.`);
+  ui.tooltip.bind(nullHypoMd, `The mean of "${feature.name}" is the same for "${label0}" and "${label1}".`);
 
-  const summaryMd = ui.markdown(
-    `**p** = ${fmt(res.pValue)} ${significant ? '<' : '≥'} α = ${res.alpha}  ·  ` +
-    `**effect** (${effectCaption}) = ${fmt(res.hedgesG)} (${effectMagnitude(res.hedgesG)})  ·  ` +
-    `**${ciCaption}** for the mean difference = [${fmt(res.ciLow)}, ${fmt(res.ciHigh)}]`,
+  const altHypoMd = ui.markdown(`**Alternative Hypothesis:** the two group means differ.`);
+  ui.tooltip.bind(altHypoMd, `The mean of "${feature.name}" differs between "${label0}" and "${label1}".`);
+
+  const conclusionMd = ui.markdown(`**Conclusion:** ${significant ?
+    'a significant difference between the group means.' :
+    'no significant difference between the group means.'}`,
   );
 
-  const meanDiffMd = ui.markdown(
-    `Mean difference (mean("${label1}") − mean("${label0}")) = ${fmt(res.meanDiff)} ` +
-    `(t = ${fmt(res.t)}, df = ${fmt(res.df)}).`,
-  );
+  const tooltipDiv = significant ?
+    ui.divV([
+      ui.p(`Reject the null hypothesis, since p < α: ${fmt(res.pValue)} < ${res.alpha}.`),
+      ui.p(`Effect size (${effectCaption}) = ${fmt(res.hedgesG)} (${effectMagnitude(res.hedgesG)}); ` +
+        `${ciCaption} for the mean difference = [${fmt(res.ciLow)}, ${fmt(res.ciHigh)}].`),
+      ui.h2('There is a significant difference between the group means.'),
+    ]) :
+    ui.divV([
+      ui.p(`Fail to reject the null hypothesis, since p ≥ α: ${fmt(res.pValue)} ≥ ${res.alpha}.`),
+      ui.p(`Effect size (${effectCaption}) = ${fmt(res.hedgesG)} (${effectMagnitude(res.hedgesG)}); ` +
+        `${ciCaption} for the mean difference = [${fmt(res.ciLow)}, ${fmt(res.ciHigh)}].`),
+      ui.h2('There is no significant difference between the group means.'),
+    ]);
+
+  ui.tooltip.bind(conclusionMd, () => tooltipDiv);
 
   const divResult = ui.divV([
-    verdictMd,
-    summaryMd,
-    meanDiffMd,
+    nullHypoMd,
+    altHypoMd,
+    conclusionMd,
     ui.link('Learn more',
       () => window.open(LEARN_MORE_URL[res.method], '_blank'),
       'Click to open in a new tab.',
@@ -188,7 +208,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   const analysisTitle = res.method === 'Welch' ?
     'Two-Sample t-test (Welch\'s)' :
     'Two-Sample t-test (Student\'s)';
-  const reportViewer = getTTestGrid(res, factor.name);
+  const reportViewer = getTTestGrid(res, label0, label1);
 
   const tabControl = ui.tabControl({
     'Analysis': ui.panel([ui.h2(analysisTitle), reportViewer.root]),
@@ -196,7 +216,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   });
 
   ui.tooltip.bind(tabControl.getPane('Analysis').header, 't-test results summary.');
-  ui.tooltip.bind(tabControl.getPane('Conclusion').header, 'Significance and effect size.');
+  ui.tooltip.bind(tabControl.getPane('Conclusion').header, 'Null hypothesis testing.');
 
   view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
 
@@ -289,8 +309,11 @@ export function runTwoSampleTTest(): void {
 
   const methodTooltip = ui.markdown(
     'Set the method for the test:\n\n' +
-    '* **Welch** — robust to **unequal variances**. Recommended default.\n\n' +
-    '* **Student** — assumes **equal variances**; more powerful when that holds.\n\n',
+    '* **Welch** — does **not** assume equal group variances. Recommended default; ' +
+    'controls error rates correctly whether variances are equal or not, ' +
+    'with negligible power loss when they are.\n\n' +
+    '* **Student** — assumes **equal variances** across the two groups. ' +
+    'Slightly more powerful when that assumption truly holds; otherwise its p-value is unreliable.\n\n',
   );
   ui.tooltip.bind(methodInput.captionLabel, () => methodTooltip);
 
@@ -338,7 +361,7 @@ export function runTwoSampleTTest(): void {
     onValueChanged: (value) => {significance = value; updateRunButtonState();},
   });
 
-  const dlg = ui.dialog({title: 't-test', helpUrl: T_TEST_HELP_URL});
+  const dlg = ui.dialog({title: 'Two-sample t-test', helpUrl: T_TEST_HELP_URL});
   const view = grok.shell.getTableView(df.name);
   view.root.appendChild(dlg.root);
 
