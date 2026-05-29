@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chem: MPO: Optimized score calculation for large datasets — a column-major typed-array compute pipeline (one `getRawData()` per column instead of per-cell `get()`/`isNone()`) with per-column desirability caching, so interactive profile edits recompute only the changed property
 * [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
 * Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
 
