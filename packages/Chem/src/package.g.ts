@@ -894,6 +894,15 @@ export function copyAsImage(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsImage(value);
 }
 
+//name: Export as SVG
+//description: Exports structure as SVG
+//input: semantic_value value { semType: Molecule }
+//meta.action: Export as SVG
+//meta.exclude-actions-panel: true
+export function exportAsSvg(value: DG.SemanticValue) : void {
+  PackageFunctions.exportAsSvg(value);
+}
+
 //input: string s 
 //output: bool result
 export function isSmiles(s: string) : boolean {

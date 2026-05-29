@@ -681,6 +681,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:CopyAsImage', { value });
   }
 
+  /**
+  Exports structure as SVG
+  */
+  export async function exportAsSvg(value: any ): Promise<void> {
+    return await grok.functions.call('Chem:ExportAsSvg', { value });
+  }
+
   export async function isSmiles(s: string ): Promise<boolean> {
     return await grok.functions.call('Chem:IsSmiles', { s });
   }

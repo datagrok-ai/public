@@ -11,9 +11,11 @@ import {chem} from 'datagrok-api/grok';
 import {InputBase, toJs, TreeViewGroup, TreeViewNode} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {_package, PackageFunctions} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
+import {SCAFFOLD_TREE_HIGHLIGHT, SubstructureSearchType} from '../constants';
+import {Fingerprint} from '../utils/chem-common';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
@@ -270,11 +272,18 @@ function ensureNodeBitset(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, 
   const gen = (v.bitsetGen ?? 0) + 1;
   v.bitsetGen = gen;
 
+  const parent = group.parent;
+  const parentVal = parent ? value(parent) : null;
+  // mask by the parent only when it is genuinely a substructure of this node (child ⊆ parent)
+  const hasScaffoldParent = !!parent && !isOrphans(parent) && !!parentVal?.smiles &&
+    ScaffoldTreeViewer.validateNodes(v.smiles, parentVal.smiles);
+
   const p: Promise<DG.BitSet | null> = (async () => {
     let bitset: DG.BitSet | null = null;
     try {
       await thisViewer.ensureFpsWarm();
-      bitset = await handleMalformedStructures(thisViewer.molColumn!, v.smiles);
+      const parentBitset = hasScaffoldParent ? await ensureNodeBitset(thisViewer, parent as TreeViewGroup, false) : null;
+      bitset = await handleMalformedStructures(thisViewer.molColumn!, v.smiles, parentBitset);
     } finally {
       if (v.bitsetGen === gen) {
         v.bitset = bitset;
@@ -673,11 +682,16 @@ function isNotBitOperation(group: TreeViewGroup) : boolean {
   return isNot;
 }
 
-async function handleMalformedStructures(molColumn: DG.Column, smiles: string): Promise<DG.BitSet> {
+async function handleMalformedStructures(molColumn: DG.Column, smiles: string,
+  parentBitset: DG.BitSet | null = null): Promise<DG.BitSet> {
   let bitset;
   try {
     const smarts = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, _rdKitModule);
-    const result = await chemSubstructureSearchLibrary(molColumn, smiles, smarts, FILTER_TYPES.scaffold);
+    const includeMask = parentBitset ?
+      new BitArray(new Uint32Array(parentBitset.getBuffer().buffer), parentBitset.length) :
+      null;
+    const result = await chemSubstructureSearchLibrary(molColumn, smiles, smarts, FILTER_TYPES.scaffold,
+      false, true, SubstructureSearchType.CONTAINS, 0.8, Fingerprint.Morgan, includeMask);
     bitset = DG.BitSet.fromBytes(result.buffer.buffer as ArrayBuffer, molColumn.length);
   } catch (e) {
     console.log(e);

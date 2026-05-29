@@ -220,6 +220,12 @@ export class Dapi {
     return new AdminDataSource(api.grok_Dapi_Admin());
   }
 
+  /** Server info API endpoint
+   *  @type {InfoDataSource} */
+  get info(): InfoDataSource {
+    return new InfoDataSource(api.grok_Dapi_Info());
+  }
+
   /** Logging API endpoint
    *  @type {HttpDataSource<LogEvent>} */
   get log(): LogDataSource {
@@ -387,6 +393,12 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
+  /** Returns the configured report email address from admin settings.
+   * Used as the default recipient for error reports and admin notifications. */
+  async getReportEmail(): Promise<string> {
+    return JSON.parse(await api.grok_Dapi_Admin_GetReportEmail(this.dart));
+  }
+
   /**
    * Sends email
    * @param email - message that will be sent using configured SMTP service
@@ -403,11 +415,9 @@ export class AdminDataSource {
       fd.append('html', email.html);
     if (email.bcc && email.bcc.length)
       fd.append('bcc', email.bcc.join(','));
-    const toBlob = (a: EmailAttachment) => a.data instanceof Blob ? a.data : new Blob([a.data], { type: a.contentType ?? 'application/octet-stream' });
+    const toBlob = (a: EmailAttachment) => a.data instanceof Blob ? a.data : new Blob([a.data as BlobPart], { type: a.contentType ?? 'application/octet-stream' });
     for (const a of email.attachments ?? [])
       fd.append('attachment', toBlob(a), a.name);
-    for (const a of email.inlines ?? [])
-      fd.append('inline', toBlob(a), a.name);
     const r = await fetch(`${api.grok_Dapi_Root()}/admin/email`,
         { method: 'POST', body: fd, credentials: 'include' });
     if (!r.ok)
@@ -418,6 +428,19 @@ export class AdminDataSource {
    * See also {@link ServerMessageTypes} */
   pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
     return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
+  }
+}
+
+export class InfoDataSource {
+  dart: any;
+  /** @constructs InfoDataSource */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns the latest storage usage snapshot, refreshed hourly on the server. */
+  getStorageStats(): Promise<{[key: string]: any}> {
+    return api.grok_Dapi_Info_GetStorageStats(this.dart);
   }
 }
 
@@ -450,9 +473,6 @@ export interface Email {
 
   /** Files attached to the message. */
   attachments?: EmailAttachment[],
-
-  /** Inline images referenced by cid in the html body (Mailgun only). */
-  inlines?: EmailAttachment[],
 }
 
 export interface ServiceInfo {

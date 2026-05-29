@@ -4,10 +4,16 @@ SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
 --end
 
 
+--name: MetricsResetPgStatStatements
+--connection: System:DatagrokAdmin
+SELECT pg_stat_statements_reset();
+--end
+
+
 --name: MetricsDbStats
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH summary AS (
   SELECT
     pg_database_size(current_database()) AS db_size_bytes,
@@ -45,7 +51,7 @@ ORDER BY o.offender_hit_pct ASC NULLS LAST;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH unhealthy AS (
   SELECT
     schemaname || '.' || relname AS table_name,
@@ -142,7 +148,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_exec_time DESC
+ORDER BY mean_exec_time DESC
 LIMIT @limit;
 --end
 
@@ -194,7 +200,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;
@@ -225,7 +231,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_time DESC
+ORDER BY mean_time DESC
 LIMIT @limit;
 --end
 
@@ -277,7 +283,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;
@@ -288,7 +294,7 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   pg_size_pretty(pg_total_relation_size(relid)) AS total,
@@ -304,7 +310,7 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   COALESCE(round((100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0))::numeric, 0), 0)::int AS dead_pct,
@@ -320,7 +326,7 @@ LIMIT @limit;
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -345,7 +351,7 @@ WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),

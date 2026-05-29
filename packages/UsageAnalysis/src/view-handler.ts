@@ -58,7 +58,8 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(urlTab !== 'Projects');
+    toolbox.togglePackagesInput(urlTab !== 'Projects' && urlTab !== 'Metrics');
+    toolbox.toggleGroupsInput(urlTab !== 'Metrics');
 
     const paramsHaveDate = date != undefined;
     const paramsHaveUsers = groups != undefined;
@@ -133,7 +134,8 @@ export class ViewHandler {
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(view.name !== 'Projects');
+      toolbox.togglePackagesInput(view.name !== 'Projects' && view.name !== 'Metrics');
+      toolbox.toggleGroupsInput(view.name !== 'Metrics');
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
       if (view instanceof UaView) {

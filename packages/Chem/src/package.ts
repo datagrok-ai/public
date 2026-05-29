@@ -2082,6 +2082,28 @@ export class PackageFunctions {
     });
   }
 
+  @grok.decorators.func({
+    name: 'Export as SVG',
+    description: 'Exports structure as SVG',
+    meta: {'action': 'Export as SVG', 'exclude-actions-panel': 'true'},
+  })
+  static exportAsSvg(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const gridCell = value?.gridCell;
+    const bounds = gridCell?.bounds;
+    if (!value?.value || !bounds)
+      return;
+
+    const width = 600;
+    const height = bounds.height * (width / bounds.width);
+    const svg = _rdRenderer.toSvg(gridCell, width, height);
+    if (!svg) {
+      grok.shell.warning('Failed to export structure as SVG');
+      return;
+    }
+    DG.Utils.download('molecule.svg', svg, 'image/svg+xml');
+  }
+
   @grok.decorators.func()
   static isSmiles(
     @grok.decorators.param({type: 'string'}) s: string): boolean {
