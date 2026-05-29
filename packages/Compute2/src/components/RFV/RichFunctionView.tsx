@@ -10,6 +10,7 @@ import {
   ifOverlapping,
   IconImage,
   useUnwrappedCallMeta,
+  DEFAULT_FLOAT_FORMAT,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -116,8 +117,6 @@ const getEmptyTabToProperties = () => ({
   outputs: new Map() as TabContent,
 });
 
-const DEFAULT_FLOAT_PRECISION = 4;
-
 const isEmptyScalar = (v: any) =>
   v == null || v === '' || v === DG.FLOAT_NULL || v === DG.INT_NULL;
 
@@ -137,7 +136,7 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
     else if (prop.options.precision)
       formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
     else
-      formattedScalarValue = scalarValue.toFixed(DEFAULT_FLOAT_PRECISION);
+      formattedScalarValue = DG.format(scalarValue, DEFAULT_FLOAT_FORMAT);
   } else if (typeof scalarValue === 'boolean')
     formattedScalarValue = String(scalarValue);
   const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
