@@ -13,6 +13,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
+import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
 import {ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -280,4 +281,17 @@ function getExportName(
 
 export function setDifference<T>(a: Set<T>, b: Set<T>) {
   return new Set(Array.from(a).filter((item) => !b.has(item)));
+}
+
+export function applyDefaultGridFloatFormat(viewer: DG.Viewer | undefined, type: string) {
+  if (!viewer || type !== DG.VIEWER.GRID) return;
+  const grid = viewer as DG.Grid;
+  for (let i = 0; i < grid.columns.length; i++) {
+    const gc = grid.columns.byIndex(i);
+    const col = gc?.column;
+    if (!col || col.type !== DG.COLUMN_TYPE.FLOAT) continue;
+    if (gc!.format) continue;
+    if (col.tags?.['format']) continue;
+    gc!.format = DEFAULT_FLOAT_FORMAT;
+  }
 }

@@ -28,7 +28,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, getViewers} from '../../utils';
 
 
 interface ScalarsState {
@@ -730,7 +730,12 @@ export const RichFunctionView = Vue.defineComponent({
                         options={options}
                         dataFrame={tabContent.df.value}
                         class='w-full'
-                        onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
+                        onViewerChanged={(v) => {
+                          setViewerRef(v, tabContent.name, options['type'] as string);
+                          applyDefaultGridFloatFormat(v, options['type'] as string);
+                        }}
+                        onViewerDataFrameChanged={(v) =>
+                          applyDefaultGridFloatFormat(v, options['type'] as string)}
                       />
                     }
                   </div>;

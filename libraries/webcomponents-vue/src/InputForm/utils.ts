@@ -99,7 +99,7 @@ export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
   return arg?.setStatus && isFuncCallInput(arg);
 }
 
-export const DEFAULT_FLOAT_FORMAT = '#0.######';
+export const DEFAULT_FLOAT_FORMAT = '#0.###';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
   for (const param of call.inputParams.values()) {
