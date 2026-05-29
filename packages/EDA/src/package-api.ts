@@ -180,6 +180,13 @@ export namespace funcs {
   }
 
   /**
+  Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.
+  */
+  export async function tTest(): Promise<void> {
+    return await grok.functions.call('EDA:TTest', {});
+  }
+
+  /**
   Missing values imputation using the k-nearest neighbors method (KNN)
   */
   export async function kNNImputation(): Promise<void> {

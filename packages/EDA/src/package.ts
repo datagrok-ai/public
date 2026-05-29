@@ -14,6 +14,7 @@ import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
+import {runTwoSampleTTest} from './ttest/ttest-ui';
 
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
@@ -648,12 +649,22 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'ML | Analyze | ANOVA...',
+    'top-menu': 'ML | Analyze | Compare means | ANOVA...',
     'name': 'ANOVA',
     'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
   })
   static anova(): void {
     runOneWayAnova();
+  }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Compare means | t-test...',
+    'name': 'T-test',
+    'description': 'Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.',
+  })
+  static tTest(): void {
+    runTwoSampleTTest();
   }
 
 

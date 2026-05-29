@@ -5,6 +5,7 @@ import './tests/linear-methods-tests';
 import './tests/classifiers-tests';
 import './tests/mis-vals-imputation-tests';
 import './tests/anova-tests';
+import './tests/ttest-tests';
 import './tests/pmpo-tests';
 import './tests/pareto-tests';
 
