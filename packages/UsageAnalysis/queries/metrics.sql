@@ -299,6 +299,7 @@ SELECT
   schemaname || '.' || relname AS table_name,
   pg_size_pretty(pg_total_relation_size(relid)) AS total,
   pg_size_pretty(pg_indexes_size(relid)) AS "index",
+  n_live_tup AS "#rows",
   pg_total_relation_size(relid) AS total_bytes
 FROM pg_stat_user_tables
 ORDER BY pg_total_relation_size(relid) DESC

@@ -878,6 +878,9 @@ export class MetricsView extends UaView {
     const totalBytesCol = grid.col('total_bytes');
     if (totalBytesCol)
       totalBytesCol.visible = false;
+    const rowsCol = grid.col('#rows');
+    if (rowsCol)
+      rowsCol.format = '#,##0';
     MetricsView.fitGrid(grid, this.largestTablesHost);
   }
 
