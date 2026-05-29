@@ -39,9 +39,9 @@ interface DiskStat {
   usedPct: number;
 }
 
-const COLOR_GREEN = 0xFF3CB173;
+const COLOR_GREEN = DG.Color.success;
 const COLOR_ORANGE = 0xFFFFA24A;
-const COLOR_RED = 0xFFEB6767;
+const COLOR_RED = DG.Color.failure;
 
 const PSS_QUERIES: Record<QueriesMode, {modern: (n: number) => Promise<DG.DataFrame>, legacy: (n: number) => Promise<DG.DataFrame>, fullViewQuery: {modern: string, legacy: string}}> = {
   'slowest': {
@@ -61,18 +61,35 @@ const PSS_QUERIES: Record<QueriesMode, {modern: (n: number) => Promise<DG.DataFr
   },
 };
 
+function num(df: DG.DataFrame, col: string, row = 0): number {
+  return Number(df.get(col, row) ?? 0);
+}
+
+function dts(df: DG.DataFrame, col: string, row = 0): dayjs.Dayjs | null {
+  return df.get(col, row) as dayjs.Dayjs | null;
+}
+
 function formatTime(d: Date): string {
   return d.toTimeString().substring(0, 5);
 }
 
-function thresholdColor(v: number, t: {green: number, orange: number}, higherIsBetter: boolean): number {
+function thresholdBand(v: number, t: {green: number, orange: number}, higherIsBetter: boolean): CardColor {
   const isGreen = higherIsBetter ? v >= t.green : v < t.green;
   const isOrange = higherIsBetter ? v >= t.orange : v < t.orange;
-  if (isGreen)
-    return COLOR_GREEN;
-  if (isOrange)
-    return COLOR_ORANGE;
-  return COLOR_RED;
+  return isGreen ? 'green' : isOrange ? 'orange' : 'red';
+}
+
+function thresholdColor(v: number, t: {green: number, orange: number}, higherIsBetter: boolean): number {
+  const band = thresholdBand(v, t, higherIsBetter);
+  return band === 'green' ? COLOR_GREEN : band === 'orange' ? COLOR_ORANGE : COLOR_RED;
+}
+
+function deltaSub(delta: number): string {
+  return delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`;
+}
+
+function deltaColor(now: number, delta: number): CardColor {
+  return now === 0 ? 'info' : delta > 0 ? 'red' : delta < 0 ? 'green' : 'orange';
 }
 
 function formatRange(start: dayjs.Dayjs, end: dayjs.Dayjs): string {
@@ -257,8 +274,7 @@ export class MetricsView extends UaView {
       menu.item('Add to workspace', () => {
         const q = PSS_QUERIES[this.queriesMode];
         const name = this.pssMode === 'legacy' ? q.fullViewQuery.legacy : q.fullViewQuery.modern;
-        const fn = this.pssMode === 'legacy' ? q.legacy : q.modern;
-        this.openFullView(fn, name, 'pg_stat_statements');
+        this.openFullView((limit) => this.pssFn(this.queriesMode, limit), name, 'pg_stat_statements');
       });
       menu.item('Reset stats', () => this.confirmResetPgStats());
       menu.show({causedBy: e});
@@ -339,9 +355,9 @@ export class MetricsView extends UaView {
       return;
     }
     const sizePretty = df.get('db_size_pretty', 0) as string;
-    const hit = Number(df.get('cache_hit_pct', 0) ?? 0);
+    const hit = num(df, 'cache_hit_pct');
     this.setCard('db', sizePretty ?? '—', `hit ${hit.toFixed(0)}%`,
-      hit >= THRESH.cacheHit.green ? 'green' : hit >= THRESH.cacheHit.orange ? 'orange' : 'red');
+      thresholdBand(hit, THRESH.cacheHit, true));
     ui.tooltip.bind(card.root, () => MetricsView.buildDbStatsTooltip(df, hit, sizePretty));
   }
 
@@ -451,11 +467,11 @@ export class MetricsView extends UaView {
       this.setCard('connections', '—', 'unavailable', 'info');
       return;
     }
-    const total = (summary.get('total', 0) as number) ?? 0;
-    const idleX = (summary.get('idle_in_xact', 0) as number) ?? 0;
-    const oldestSec = (summary.get('oldest_idle_xact_seconds', 0) as number) ?? 0;
+    const total = num(summary, 'total');
+    const idleX = num(summary, 'idle_in_xact');
+    const oldestSec = num(summary, 'oldest_idle_xact_seconds');
     this.setCard('connections', `${total}`, idleX > 0 ? `${idleX} idle xact` : 'no idle xact',
-      oldestSec >= THRESH.idleXactSec.orange ? 'red' : oldestSec >= THRESH.idleXactSec.green ? 'orange' : 'green');
+      thresholdBand(oldestSec, THRESH.idleXactSec, false));
 
     let offenders: DG.DataFrame | null = null;
     let pending = true;
@@ -470,12 +486,12 @@ export class MetricsView extends UaView {
 
   private static buildConnectionsTooltip(
     summary: DG.DataFrame, offenders: DG.DataFrame | null, pending: boolean): HTMLElement {
-    const total = (summary.get('total', 0) as number) ?? 0;
-    const active = (summary.get('active', 0) as number) ?? 0;
-    const idle = (summary.get('idle', 0) as number) ?? 0;
-    const idleX = (summary.get('idle_in_xact', 0) as number) ?? 0;
-    const waiting = (summary.get('waiting_on_lock', 0) as number) ?? 0;
-    const oldestSec = (summary.get('oldest_idle_xact_seconds', 0) as number) ?? 0;
+    const total = num(summary, 'total');
+    const active = num(summary, 'active');
+    const idle = num(summary, 'idle');
+    const idleX = num(summary, 'idle_in_xact');
+    const waiting = num(summary, 'waiting_on_lock');
+    const oldestSec = num(summary, 'oldest_idle_xact_seconds');
 
     const lines: HTMLElement[] = [];
     const headline = idleX > 0
@@ -581,19 +597,35 @@ export class MetricsView extends UaView {
       this.setCard('errors', '0', 'no errors', 'info');
       return;
     }
-    const now = Number(df.get('errors_now', 0) ?? 0);
-    const prev = Number(df.get('errors_prev', 0) ?? 0);
+    const now = num(df, 'errors_now');
+    const prev = num(df, 'errors_prev');
     const delta = now - prev;
-    const sub = delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`;
-    const color: CardColor = now === 0 ? 'info'
-      : delta > 0 ? 'red'
-      : delta < 0 ? 'green'
-      : 'orange';
-    this.setCard('errors', `${now}`, sub, color);
-    const winStart = df.get('window_start', 0) as dayjs.Dayjs | null;
-    const winEnd = df.get('window_end', 0) as dayjs.Dayjs | null;
-    const prevStart = df.get('prev_window_start', 0) as dayjs.Dayjs | null;
+    const color = deltaColor(now, delta);
+    this.setCard('errors', `${now}`, deltaSub(delta), color);
+    const winStart = dts(df, 'window_start');
+    const winEnd = dts(df, 'window_end');
+    const prevStart = dts(df, 'prev_window_start');
     ui.tooltip.bind(card.root, () => MetricsView.buildErrorsTooltip({now, prev, delta, color, winStart, winEnd, prevStart}));
+  }
+
+  // The "Previous window: N nouns · ±delta (pct) vs previous window" block shared by the
+  // errors and sessions cards. `trend` is the closing dim explainer (color-specific for errors).
+  private static prevCountBlock(d: {
+    noun: string, prev: number, delta: number, trend: string,
+    prevStart: dayjs.Dayjs | null, winStart: dayjs.Dayjs | null,
+  }): HTMLElement[] {
+    if (!(d.prevStart && d.winStart))
+      return [];
+    const pct = d.prev > 0 ? ` (${d.delta > 0 ? '+' : ''}${Math.round((d.delta / d.prev) * 100)}%)` : '';
+    const change = d.delta === 0 ? 'no change'
+      : `${d.delta > 0 ? '+' : ''}${d.delta}${pct} vs previous window`;
+    return [
+      ui.div([], {style: {height: '6px'}}),
+      ui.divText(`Previous window: ${d.prev.toLocaleString()} ${d.noun}${d.prev === 1 ? '' : 's'} · ${change}`),
+      ui.divText(formatRange(d.prevStart, d.winStart), 'ua-metrics-tt-dim'),
+      ui.div([], {style: {height: '6px'}}),
+      ui.divText(d.trend, 'ua-metrics-tt-dim'),
+    ];
   }
 
   private static buildErrorsTooltip(d: {
@@ -607,20 +639,12 @@ export class MetricsView extends UaView {
       'ua-metrics-tt-dim'));
     if (d.winStart && d.winEnd)
       lines.push(ui.divText(formatRange(d.winStart, d.winEnd), 'ua-metrics-tt-dim'));
-    if (d.prevStart && d.winStart) {
-      lines.push(ui.div([], {style: {height: '6px'}}));
-      const pct = d.prev > 0 ? ` (${d.delta > 0 ? '+' : ''}${Math.round((d.delta / d.prev) * 100)}%)` : '';
-      const change = d.delta === 0 ? 'no change'
-        : `${d.delta > 0 ? '+' : ''}${d.delta}${pct} vs previous window`;
-      lines.push(ui.divText(`Previous window: ${d.prev.toLocaleString()} error${d.prev === 1 ? '' : 's'} · ${change}`));
-      lines.push(ui.divText(formatRange(d.prevStart, d.winStart), 'ua-metrics-tt-dim'));
-      lines.push(ui.div([], {style: {height: '6px'}}));
-      const trend = d.color === 'red' ? 'Red = more errors than the previous window.'
-        : d.color === 'green' ? 'Green = fewer errors than the previous window.'
-        : d.color === 'orange' ? 'Orange = same error count as the previous window.'
-        : '"vs prev" compares to the immediately preceding window of equal length.';
-      lines.push(ui.divText(trend, 'ua-metrics-tt-dim'));
-    }
+    const trend = d.color === 'red' ? 'Red = more errors than the previous window.'
+      : d.color === 'green' ? 'Green = fewer errors than the previous window.'
+      : d.color === 'orange' ? 'Orange = same error count as the previous window.'
+      : '"vs prev" compares to the immediately preceding window of equal length.';
+    lines.push(...MetricsView.prevCountBlock(
+      {noun: 'error', prev: d.prev, delta: d.delta, prevStart: d.prevStart, winStart: d.winStart, trend}));
     return ui.div(lines, 'ua-metrics-tt');
   }
 
@@ -633,14 +657,13 @@ export class MetricsView extends UaView {
       this.setCard('sessions', '—', 'unavailable', 'info');
       return;
     }
-    const now = Number(df.get('sessions_now', 0) ?? 0);
-    const prev = Number(df.get('sessions_prev', 0) ?? 0);
+    const now = num(df, 'sessions_now');
+    const prev = num(df, 'sessions_prev');
     const delta = now - prev;
-    const sub = delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`;
-    this.setCard('sessions', `${now}`, sub, 'info');
-    const winStart = df.get('window_start', 0) as dayjs.Dayjs | null;
-    const winEnd = df.get('window_end', 0) as dayjs.Dayjs | null;
-    const prevStart = df.get('prev_window_start', 0) as dayjs.Dayjs | null;
+    this.setCard('sessions', `${now}`, deltaSub(delta), 'info');
+    const winStart = dts(df, 'window_start');
+    const winEnd = dts(df, 'window_end');
+    const prevStart = dts(df, 'prev_window_start');
     ui.tooltip.bind(card.root, () => MetricsView.buildSessionsTooltip({now, prev, delta, winStart, winEnd, prevStart}));
   }
 
@@ -655,18 +678,9 @@ export class MetricsView extends UaView {
       'ua-metrics-tt-dim'));
     if (d.winStart && d.winEnd)
       lines.push(ui.divText(formatRange(d.winStart, d.winEnd), 'ua-metrics-tt-dim'));
-    if (d.prevStart && d.winStart) {
-      lines.push(ui.div([], {style: {height: '6px'}}));
-      const pct = d.prev > 0 ? ` (${d.delta > 0 ? '+' : ''}${Math.round((d.delta / d.prev) * 100)}%)` : '';
-      const change = d.delta === 0 ? 'no change'
-        : `${d.delta > 0 ? '+' : ''}${d.delta}${pct} vs previous window`;
-      lines.push(ui.divText(`Previous window: ${d.prev.toLocaleString()} session${d.prev === 1 ? '' : 's'} · ${change}`));
-      lines.push(ui.divText(formatRange(d.prevStart, d.winStart), 'ua-metrics-tt-dim'));
-      lines.push(ui.div([], {style: {height: '6px'}}));
-      lines.push(ui.divText(
-        '"vs prev" compares to the immediately preceding window of equal length.',
-        'ua-metrics-tt-dim'));
-    }
+    lines.push(...MetricsView.prevCountBlock({
+      noun: 'session', prev: d.prev, delta: d.delta, prevStart: d.prevStart, winStart: d.winStart,
+      trend: '"vs prev" compares to the immediately preceding window of equal length.'}));
     return ui.div(lines, 'ua-metrics-tt');
   }
 
@@ -768,27 +782,23 @@ export class MetricsView extends UaView {
       'MetricsLatency');
     const card = this.card('latency');
     ui.tooltip.bind(card.root, null);
-    if (!df || df.rowCount === 0 || (df.get('count_now', 0) as number) === 0) {
+    if (!df || df.rowCount === 0 || num(df, 'count_now') === 0) {
       this.setCard('latency', '—', 'no traffic', 'info');
       return;
     }
-    const p50 = (df.get('p50_now', 0) as number) ?? 0;
-    const p95 = (df.get('p95_now', 0) as number) ?? 0;
-    const p99 = (df.get('p99_now', 0) as number) ?? 0;
-    const p95Prev = (df.get('p95_prev', 0) as number) ?? 0;
-    const countNow = (df.get('count_now', 0) as number) ?? 0;
-    const countPrev = (df.get('count_prev', 0) as number) ?? 0;
-    const winStart = df.get('window_start', 0) as dayjs.Dayjs | null;
-    const winEnd = df.get('window_end', 0) as dayjs.Dayjs | null;
-    const prevStart = df.get('prev_window_start', 0) as dayjs.Dayjs | null;
+    const p50 = num(df, 'p50_now');
+    const p95 = num(df, 'p95_now');
+    const p99 = num(df, 'p99_now');
+    const p95Prev = num(df, 'p95_prev');
+    const countNow = num(df, 'count_now');
+    const countPrev = num(df, 'count_prev');
+    const winStart = dts(df, 'window_start');
+    const winEnd = dts(df, 'window_end');
+    const prevStart = dts(df, 'prev_window_start');
 
     const delta = p95 - p95Prev;
-    const sub = `p95 ms · ${delta === 0 ? 'no change' : `${delta > 0 ? '+' : ''}${delta} vs prev`}`;
-    const color: CardColor = p95 === 0 ? 'info'
-      : delta > 0 ? 'red'
-      : delta < 0 ? 'green'
-      : 'orange';
-    this.setCard('latency', `${p95}`, sub, color);
+    const color = deltaColor(p95, delta);
+    this.setCard('latency', `${p95}`, `p95 ms · ${deltaSub(delta)}`, color);
 
     ui.tooltip.bind(card.root, () => MetricsView.buildLatencyTooltip({
         p50, p95, p99, p95Prev, countNow, countPrev, winStart, winEnd, prevStart, color,
@@ -835,6 +845,11 @@ export class MetricsView extends UaView {
     return this.pssMode;
   }
 
+  private pssFn(mode: QueriesMode, limit: number): Promise<DG.DataFrame> {
+    const q = PSS_QUERIES[mode];
+    return (this.pssMode === 'legacy' ? q.legacy : q.modern)(limit);
+  }
+
   private static resetHost(host: HTMLElement): void {
     host.innerHTML = '';
     host.append(ui.loader());
@@ -849,9 +864,8 @@ export class MetricsView extends UaView {
         'Ensure the extension is installed and the System:Datagrok role has pg_read_all_stats.'));
       return;
     }
-    const q = PSS_QUERIES[this.queriesMode];
-    const fn = mode === 'legacy' ? q.legacy : q.modern;
-    const df = await MetricsView.safeCall(() => fn(DASHBOARD_LIMIT), 'pg_stat_statements query');
+    const df = await MetricsView.safeCall(() => this.pssFn(this.queriesMode, DASHBOARD_LIMIT),
+      'pg_stat_statements query');
     this.queriesGridHost.innerHTML = '';
     if (!df) {
       this.queriesGridHost.append(MetricsView.degradedMessage('pg_stat_statements query failed.'));
@@ -1070,7 +1084,6 @@ export class MetricsView extends UaView {
     const filter = this.uaToolbox.getFilter();
     const date = filter.date!;
     const pssMode = await this.detectPssMode();
-    const useLegacy = pssMode === 'legacy';
 
     type Src = {name: string, fn: () => Promise<DG.DataFrame | string | null>};
     const sources: Src[] = [
@@ -1086,9 +1099,9 @@ export class MetricsView extends UaView {
     ];
     if (pssMode !== 'unavailable') {
       sources.push(
-        {name: 'slowest_queries.csv',    fn: () => useLegacy ? queries.metricsTopSlowestQueriesPg12(EMAIL_LIMIT) : queries.metricsTopSlowestQueries(EMAIL_LIMIT)},
-        {name: 'most_called_queries.csv', fn: () => useLegacy ? queries.metricsTopMostCalledQueriesPg12(EMAIL_LIMIT) : queries.metricsTopMostCalledQueries(EMAIL_LIMIT)},
-        {name: 'worst_cache_hit.csv',    fn: () => useLegacy ? queries.metricsWorstCacheHitQueriesPg12(EMAIL_LIMIT) : queries.metricsWorstCacheHitQueries(EMAIL_LIMIT)},
+        {name: 'slowest_queries.csv',     fn: () => this.pssFn('slowest', EMAIL_LIMIT)},
+        {name: 'most_called_queries.csv', fn: () => this.pssFn('most-called', EMAIL_LIMIT)},
+        {name: 'worst_cache_hit.csv',     fn: () => this.pssFn('worst-hit', EMAIL_LIMIT)},
       );
     }
     sources.push(

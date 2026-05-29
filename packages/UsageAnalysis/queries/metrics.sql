@@ -374,7 +374,15 @@ WHERE s.started BETWEEN d.min_prev_date AND d.max_date;
 --name: MetricsLatency
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
-WITH _dates AS (
+--meta.cache: all
+--meta.cache.invalidateOn: */5 * * * *
+WITH ht AS (
+  SELECT id FROM event_types WHERE source = 'usage' AND friendly_name = 'http-request'
+),
+ms_param AS (
+  SELECT id FROM event_parameters WHERE name = 'ms' AND event_type_id = (SELECT id FROM ht)
+),
+_dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
 dates AS (
@@ -382,13 +390,10 @@ dates AS (
 ),
 http_events AS (
   SELECT e.event_time, epv.value::int AS ms
-  FROM events e
-  CROSS JOIN dates d
-  JOIN event_types et ON et.id = e.event_type_id
-    AND et.source = 'usage' AND et.friendly_name = 'http-request'
-  JOIN event_parameters ep ON ep.event_type_id = et.id AND ep.name = 'ms'
-  JOIN event_parameter_values epv ON epv.event_id = e.id AND epv.parameter_id = ep.id
-  WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
+  FROM dates d
+  JOIN events e ON e.event_time BETWEEN d.min_prev_date AND d.max_date
+  JOIN event_parameter_values epv ON epv.event_id = e.id
+    AND epv.parameter_id = (SELECT id FROM ms_param)
 )
 SELECT
   COALESCE(round(percentile_cont(0.50) WITHIN GROUP (ORDER BY ms)
@@ -412,20 +417,26 @@ FROM http_events;
 --input: string date {pattern: datetime}
 --input: int limit = 10
 --connection: System:Datagrok
-WITH http_events AS (
+--meta.cache: all
+--meta.cache.invalidateOn: */5 * * * *
+WITH ht AS (
+  SELECT id FROM event_types WHERE source = 'usage' AND friendly_name = 'http-request'
+),
+p AS (
+  SELECT name, id FROM event_parameters
+  WHERE event_type_id = (SELECT id FROM ht) AND name IN ('method', 'route', 'status', 'ms')
+),
+http_events AS (
   SELECT
-    e.id,
-    max(epv.value) FILTER (WHERE ep.name = 'method')          AS method,
-    max(epv.value) FILTER (WHERE ep.name = 'route')           AS route,
-    max(epv.value::int) FILTER (WHERE ep.name = 'status')     AS status,
-    max(epv.value::int) FILTER (WHERE ep.name = 'ms')         AS ms
+    epv.event_id AS id,
+    max(epv.value) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'method'))      AS method,
+    max(epv.value) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'route'))       AS route,
+    max(epv.value::int) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'status')) AS status,
+    max(epv.value::int) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'ms'))     AS ms
   FROM events e
-  JOIN event_types et ON et.id = e.event_type_id
-    AND et.source = 'usage' AND et.friendly_name = 'http-request'
-  JOIN event_parameter_values epv ON epv.event_id = e.id
-  JOIN event_parameters ep ON ep.id = epv.parameter_id
-  WHERE @date(e.event_time)
-  GROUP BY e.id
+  JOIN event_parameter_values epv ON epv.event_id = e.id AND epv.parameter_id IN (SELECT id FROM p)
+  WHERE e.event_type_id = (SELECT id FROM ht) AND @date(e.event_time)
+  GROUP BY epv.event_id
 )
 SELECT
   method || ' ' || route AS route,
