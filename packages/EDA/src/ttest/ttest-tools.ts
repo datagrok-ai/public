@@ -85,9 +85,18 @@ export interface TwoSampleTTestOptions {
   alpha?: number,
 }
 
-/** Hedges' small-sample bias correction factor J ≈ 1 − 3 / (4·df − 1), with df = n0 + n1 − 2. */
-function hedgesCorrection(n0: number, n1: number): number {
-  return 1 - 3 / (4 * (n0 + n1) - 9);
+/**
+ * Hedges' small-sample bias correction factor, exact Γ form:
+ *   J = Γ(df/2) / (√(df/2) · Γ((df−1)/2)) = exp(lgamma(df/2) − ½·ln(df/2) − lgamma((df−1)/2)).
+ *
+ * Evaluated at the degrees of freedom of the test itself: n0 + n1 − 2 for Student, and the
+ * fractional Welch–Satterthwaite ν for Welch. Using ν (not n0 + n1 − 2) in the Welch branch is
+ * what makes the corrected effect size the g_s* of Delacre et al. 2021 [4]; it matches
+ * `effectsize::hedges_g(..., pooled_sd = FALSE)` and TOSTER. The exact Γ form (vs. the classic
+ * `1 − 3/(4·df − 1)` approximation) matters most at the small fractional df Welch can produce.
+ */
+function hedgesCorrection(df: number): number {
+  return Math.exp(jStat.gammaln(df / 2) - 0.5 * Math.log(df / 2) - jStat.gammaln((df - 1) / 2));
 }
 
 /**
@@ -157,7 +166,7 @@ export function twoSampleTTest(categories: CatCol, values: NumCol, uniqueCount: 
   const ciHigh = meanDiff + tCrit * se;
 
   const cohenD = meanDiff / stdForEffect;
-  const hedgesG = cohenD * hedgesCorrection(n0, n1);
+  const hedgesG = cohenD * hedgesCorrection(df);
 
   return {
     method,
