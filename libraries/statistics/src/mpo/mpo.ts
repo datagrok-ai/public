@@ -112,18 +112,6 @@ export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AG
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
-/// Aggregations that divide by the per-row weight sum (Σw), so scores stay comparable across rows even
-/// when the effective weights don't sum to 1. Sum/Product/Min/Max fold in the raw weights, so they become
-/// incomparable once weights vary per row — see requiresWeightNormalization().
-export const NORMALIZED_AGGREGATIONS: WeightedAggregation[] = ['Average', 'Geomean'];
-
-/// True when any property's effective weight set can differ from row to row — a per-row weight column or a
-/// 'skip' missing-value strategy. In that case Σw is not constant, so only NORMALIZED_AGGREGATIONS keep
-/// scores comparable; callers should restrict the aggregation choice accordingly.
-export function requiresWeightNormalization(profile: DesirabilityProfile): boolean {
-  return Object.values(profile.properties).some((p) => !!p.weightColumn || p.missingValues?.strategy === 'skip');
-}
-
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line
 /// Otherwise, returns the y value of the desirability line at x
