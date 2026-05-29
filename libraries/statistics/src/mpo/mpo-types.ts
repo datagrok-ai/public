@@ -24,10 +24,6 @@ export type NumericalDesirability = BasePropertyDesirability & {
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
 
-  /// When 'log', the x-domain (line x-coords, min/max, mean/x0) is stored in log10 units, so the curve is
-  /// designed and evaluated against a log10 x-axis; non-positive raw values count as missing. Absent → linear.
-  xScale?: 'linear' | 'log';
-
   mode?: DesirabilityMode;
 
   /// Gaussian mode parameters

@@ -284,8 +284,7 @@ export class MpoDesirabilityLineEditor {
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
           const dataCoords = mapper.toDataCoords(pos.x, pos.y);
-          const xDisplay = this.isLog() ? this.toDisplayX(dataCoords.x).toPrecision(3) : dataCoords.x.toFixed(2);
-          const tooltipText = `X: ${xDisplay}, Y: ${dataCoords.y.toFixed(2)}<br><br>Drag to move, double-click to edit, right-click to delete`;
+          const tooltipText = `X: ${dataCoords.x.toFixed(2)}, Y: ${dataCoords.y.toFixed(2)}<br><br>Drag to move, double-click to edit, right-click to delete`;
           ui.tooltip.show(tooltipText, evt.evt.clientX, evt.evt.clientY);
         });
 
@@ -431,8 +430,8 @@ export class MpoDesirabilityLineEditor {
         stroke: axisColor,
         strokeWidth: 1,
       }),
-      new _konva!.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: this.formatAxisLabel(minX), fontSize: 9, fill: 'grey'}),
-      new _konva!.Text({x: width - EDITOR_PADDING.right - 15, y: height - EDITOR_PADDING.bottom + 3, text: this.formatAxisLabel(maxX), fontSize: 9, fill: 'grey'}),
+      new _konva!.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: minX.toFixed(1), fontSize: 9, fill: 'grey'}),
+      new _konva!.Text({x: width - EDITOR_PADDING.right - 15, y: height - EDITOR_PADDING.bottom + 3, text: maxX.toFixed(1), fontSize: 9, fill: 'grey'}),
     );
   }
 
@@ -442,30 +441,6 @@ export class MpoDesirabilityLineEditor {
 
   getMaxX(): number {
     return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0])) ?? 1;
-  }
-
-  private isLog(): boolean {
-    return this._prop.xScale === 'log';
-  }
-
-  /// Stored x (log10 units on a log scale) → the raw value shown to the user.
-  private toDisplayX(x: number): number {
-    return this.isLog() ? Math.pow(10, x) : x;
-  }
-
-  /// Raw value entered by the user → stored x (log10 units on a log scale).
-  private toStoredX(x: number): number {
-    return this.isLog() ? Math.log10(x) : x;
-  }
-
-  private formatAxisLabel(x: number): string {
-    const v = this.toDisplayX(x);
-    if (!this.isLog())
-      return v.toFixed(1);
-    const abs = Math.abs(v);
-    if (abs !== 0 && (abs >= 1000 || abs < 0.01))
-      return v.toExponential(0);
-    return v.toPrecision(3);
   }
 
   getDefaultMean(): number {
@@ -555,10 +530,7 @@ export class MpoDesirabilityLineEditor {
     const binWidth = Math.max(1e-9, (maxX - minX) / numBins);
     const bins = new Array(numBins).fill(0);
 
-    (this.barValues ?? []).forEach((raw) => {
-      if (this.isLog() && !(raw > 0))
-        return;
-      const v = this.isLog() ? Math.log10(raw) : raw;
+    (this.barValues ?? []).forEach((v) => {
       const idx = Math.min(Math.floor((v - minX) / binWidth), numBins - 1);
       ++bins[idx];
     });
@@ -716,7 +688,7 @@ export class MpoDesirabilityLineEditor {
 
   private showPointEditor(dataIndex: number, clientX: number, clientY: number): void {
     const point = this._prop.line[dataIndex];
-    const xInput = ui.input.float('X', {value: this.toDisplayX(point[0]), min: this.toDisplayX(this.getMinX()), max: this.toDisplayX(this.getMaxX()), format: '#0.00', step: 0.01});
+    const xInput = ui.input.float('X', {value: point[0], min: this.getMinX(), max: this.getMaxX(), format: '#0.00', step: 0.01});
     const yInput = ui.input.float('Y', {value: point[1], min: 0, max: 1, format: '#0.00', step: 0.01});
 
     const close = () => {
@@ -725,11 +697,11 @@ export class MpoDesirabilityLineEditor {
     };
 
     const apply = () => {
-      const xRaw = xInput.value;
+      const x = xInput.value;
       const y = yInput.value;
-      if (xRaw == null || y == null || isNaN(xRaw) || isNaN(y) || (this.isLog() && xRaw <= 0))
+      if (x == null || y == null || isNaN(x) || isNaN(y))
         return;
-      this._prop.line[dataIndex] = [this.toStoredX(xRaw), y];
+      this._prop.line[dataIndex] = [x, y];
       this.redrawAll();
     };
 
@@ -782,44 +754,6 @@ export class MpoDesirabilityLineEditor {
     this._prop.max = max;
     this.updateDragScales();
     this.redrawAll(false);
-  }
-
-  /// Switches the x-axis scale, remapping the stored x-domain (line/freeform x-coords, min/max, mean, x0)
-  /// between raw and log10 units so the curve keeps its meaning at each raw value. Non-positive values are
-  /// clamped to a floor before the log; sigma/k reset to sensible defaults for the new space.
-  setXScale(scale: 'linear' | 'log'): void {
-    const current = this._prop.xScale ?? 'linear';
-    if (current === scale)
-      return;
-
-    const toLog = scale === 'log';
-    const min = this.getMinX();
-    const max = this.getMaxX();
-    const floor = min > 0 ? min : (max > 0 ? max / 1e6 : 1e-6);
-    const conv = (x: number): number => toLog ? Math.log10(Math.max(x, floor)) : Math.pow(10, x);
-
-    for (const p of this._prop.line)
-      p[0] = conv(p[0]);
-    // In freeform mode redrawFn aliases line and freeformLine to one array — convert it only once.
-    if (this._prop.freeformLine && this._prop.freeformLine !== this._prop.line) {
-      for (const p of this._prop.freeformLine)
-        p[0] = conv(p[0]);
-    }
-    if (this._prop.min != null)
-      this._prop.min = conv(this._prop.min);
-    if (this._prop.max != null)
-      this._prop.max = conv(this._prop.max);
-    if (this._prop.mean != null)
-      this._prop.mean = conv(this._prop.mean);
-    if (this._prop.x0 != null)
-      this._prop.x0 = conv(this._prop.x0);
-
-    this._prop.sigma = undefined;
-    this._prop.k = undefined;
-    this._prop.xScale = scale;
-
-    this.updateDragScales();
-    this.redrawAll();
   }
 
   setColumn(col: DG.Column | null): void {

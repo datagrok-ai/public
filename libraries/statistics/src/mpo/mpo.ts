@@ -81,7 +81,7 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 /// weight). Validates the MpoCalculator cache so editing one curve only recomputes that column.
 export function desirabilityKey(d: PropertyDesirability): string {
   return isNumerical(d) ?
-    `n|${d.xScale ?? 'linear'}|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -120,7 +120,6 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   const segN = line ? line.length : 0;
   const loX = segN ? line![0][0] : 0;
   const hiX = segN ? line![segN - 1][0] : 0;
-  const logScale = !isCat && (h.template as NumericalDesirability).xScale === 'log';
   const mv = h.template.missingValues;
   // The RowState a missing value resolves to (Bail/Skip mark the row; Contribute means substitute defaultScore).
   const missState = !mv || mv.strategy === 'exclude' ? RowState.Bail :
@@ -131,7 +130,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
 
   for (let i = 0; i < rowCount; ++i) {
-    if (raw[i] === valNull || (logScale && raw[i] <= 0)) {
+    if (raw[i] === valNull) {
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
         D[i] = NaN;
@@ -151,7 +150,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       continue;
     }
     // Inlined desirabilityScore over the column's line.
-    const x = logScale ? Math.log10(raw[i]) : raw[i];
+    const x = raw[i];
     let score = 0;
     if (segN !== 0 && x >= loX && x <= hiX) {
       for (let k = 0; k < segN - 1; ++k) {
