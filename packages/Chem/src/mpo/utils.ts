@@ -112,10 +112,8 @@ export async function computeMpo(
 
   const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
 
-  // Preview path (interactive context panel): compute directly via the shared helpers, skipping the
-  // two DG.Func.prepare().call() round-trips + the join(df) action. The OK path below keeps the
-  // function-call machinery so the transform stays recorded/replayable. A passed-in calculator caches
-  // per-column desirability across edits; one-shot callers get a transient one.
+  // Preview path: compute directly via the shared helpers, skipping the two DG.Func.call() round-trips that the
+  // OK path below uses to stay recorded/replayable. A passed-in calculator caches desirability across edits.
   if (preview) {
     const columns = applyDesirabilityTags(df, mappedProperties, true);
     if (columns.length > 0) {
@@ -249,7 +247,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
     if (count >= MAX_MPO_PROPERTIES)
       break;
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
-    count++;
+    ++count;
   }
   return {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
 }
@@ -282,7 +280,7 @@ export function deepEqual<T>(current: T, original: T): boolean {
   if (Array.isArray(original)) {
     if (!Array.isArray(current) || current.length !== original.length)
       return false;
-    for (let i = 0; i < original.length; i++) {
+    for (let i = 0; i < original.length; ++i) {
       if (!deepEqual(current[i], original[i]))
         return false;
     }

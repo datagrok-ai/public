@@ -391,7 +391,7 @@ export class MpoDesirabilityLineEditor {
     const n = 60;
     const line: DesirabilityLine = [];
 
-    for (let i = 0; i <= n; i++) {
+    for (let i = 0; i <= n; ++i) {
       const x = minX + (maxX - minX) * (i / n);
       let y = 0;
 
@@ -560,7 +560,7 @@ export class MpoDesirabilityLineEditor {
         return;
       const v = this.isLog() ? Math.log10(raw) : raw;
       const idx = Math.min(Math.floor((v - minX) / binWidth), numBins - 1);
-      bins[idx]++;
+      ++bins[idx];
     });
 
     const maxCount = Math.max(...bins) || 1;

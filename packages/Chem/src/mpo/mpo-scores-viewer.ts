@@ -116,12 +116,12 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     const ranksFirst = (a: number, b: number): boolean => best ? scores[a] >= scores[b] : scores[a] <= scores[b];
     // O(n) partial selection of the top `rowCount` indices — avoids sorting all rows.
     const sortedRows: number[] = [];
-    for (let i = 0; i < scores.length; i++) {
+    for (let i = 0; i < scores.length; ++i) {
       if (sortedRows.length === rowCount && ranksFirst(sortedRows[rowCount - 1], i))
         continue;
       let pos = 0;
       while (pos < sortedRows.length && ranksFirst(sortedRows[pos], i))
-        pos++;
+        ++pos;
       sortedRows.splice(pos, 0, i);
       if (sortedRows.length > rowCount)
         sortedRows.pop();
