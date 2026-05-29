@@ -128,13 +128,36 @@ function validateAndWeigh(rdkit: {get_mol: (s: string) => any}, smiles: string):
  * them. v1.5 can add them via a second query if Stage 5a's enrichment relies on
  * the values.
  */
+/**
+ * Per-PDB record explaining why one of the input IDs did NOT make it into
+ * the accepted pdb_qc DataFrame. The wizard's Step 1 panel renders this
+ * as a "Dropped" section so users see explicitly what their filters
+ * removed and at what RCSB-reported value.
+ */
+export interface DroppedPdb {
+  pdb_id: string;
+  /** Plain-English reason (e.g. "Resolution 2.60 Å > max 2.50 Å"). */
+  reason: string;
+  /** Best-effort metadata from RCSB before the drop (for the table). */
+  resolution: number | null;
+  method: string;
+}
+
+/** Result envelope returned by enrichPdbList: the accepted rows as a
+ *  DataFrame plus a list of dropped PDBs with reasons. */
+export interface EnrichResult {
+  accepted: DG.DataFrame;
+  dropped: DroppedPdb[];
+}
+
 export async function enrichPdbList(
   pdbIds: string[], options: PipelineOptions,
-): Promise<DG.DataFrame> {
+): Promise<EnrichResult> {
   const cofactors = await loadCofactorDenylist();
   const rdkit = await getRdKitModule();
 
   const rows: Record<string, any>[] = [];
+  const droppedList: DroppedPdb[] = [];
   let dropped = 0;
   let droppedResolution = 0;
   let droppedXray = 0;
@@ -161,20 +184,50 @@ export async function enrichPdbList(
   for (const {pdbId, entry, error} of entries) {
     if (error) {
       grok.shell.warning(`${pdbId}: enrichment failed (${error.message}). Skipped.`);
+      droppedList.push({pdb_id: pdbId, reason: `RCSB fetch failed: ${error.message}`,
+        resolution: null, method: ''});
       dropped++;
       continue;
     }
-    if (!entry) { dropped++; continue; }
+    if (!entry) {
+      droppedList.push({pdb_id: pdbId, reason: 'RCSB returned no entry record',
+        resolution: null, method: ''});
+      dropped++; continue;
+    }
 
     const resolution = entry.rcsb_entry_info?.resolution_combined?.[0];
     const method = entry.rcsb_entry_info?.experimental_method ?? '';
     if (typeof resolution === 'number' && resolution > options.maxResolution) {
+      droppedList.push({pdb_id: pdbId,
+        reason: `Resolution ${resolution.toFixed(2)} Å > max ${options.maxResolution.toFixed(2)} Å`,
+        resolution, method});
       droppedResolution++; dropped++; continue;
     }
-    // RCSB returns 'X-ray' (sentence-cased, hyphenated) for X-ray diffraction
-    // entries via this field. Substring match also covers legacy 'X-RAY DIFFRACTION'.
-    const isXray = method.toLowerCase().includes('x-ray');
-    if (options.requireXray && !isXray) { droppedXray++; dropped++; continue; }
+    // Classify the experimental method from the RCSB record. The string
+    // varies in case across entries — substring match keeps the rules robust:
+    //  - "X-ray" / "X-RAY DIFFRACTION" → X-ray
+    //  - "Solution NMR" / "Solid-state NMR" / "NMR" → NMR
+    //  - "Electron microscopy" / "Cryo-EM" → cryo-EM
+    //  - "Computational" / "Predicted" / "AlphaFold" → predicted model
+    const m = method.toLowerCase();
+    const isXray = m.includes('x-ray');
+    const isNmr = m.includes('nmr');
+    const isCryoEm = m.includes('electron microscopy') || m.includes('cryo-em');
+    const isAlphaFold = m.includes('alphafold') || m.includes('predicted') ||
+                        m.includes('computational') || m.includes('computed');
+    const allowed =
+      (isXray && options.allowXray) ||
+      (isNmr && options.allowNmr) ||
+      (isCryoEm && options.allowCryoEm) ||
+      (isAlphaFold && options.allowAlphaFold);
+    if (!allowed) {
+      const methodLabel = isXray ? 'X-ray' : isNmr ? 'NMR' :
+        isCryoEm ? 'Cryo-EM' : isAlphaFold ? 'AI predicted' : (method || 'unknown');
+      droppedList.push({pdb_id: pdbId,
+        reason: `Method "${methodLabel}" not enabled in the filter`,
+        resolution: resolution ?? null, method});
+      droppedXray++; dropped++; continue;
+    }
 
     let ligandsEmitted = 0;
     for (const ne of entry.nonpolymer_entities ?? []) {
@@ -204,7 +257,12 @@ export async function enrichPdbList(
       });
       ligandsEmitted++;
     }
-    if (ligandsEmitted === 0) { droppedNoLigand++; dropped++; }
+    if (ligandsEmitted === 0) {
+      droppedList.push({pdb_id: pdbId,
+        reason: 'No usable ligand (cofactors / unparseable SMILES / below MW cutoff)',
+        resolution: resolution ?? null, method});
+      droppedNoLigand++; dropped++;
+    }
   }
 
   if (dropped > 0) {
@@ -236,5 +294,5 @@ export async function enrichPdbList(
     ]);
   const smilesCol = df.col('ligand_smiles');
   if (smilesCol) smilesCol.semType = DG.SEMTYPE.MOLECULE;
-  return df;
+  return {accepted: df, dropped: droppedList};
 }

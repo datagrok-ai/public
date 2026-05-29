@@ -212,12 +212,17 @@ export function concatPdbStructures(
  */
 export function pocketAtomsToOverlayBlock(
   pocketAtoms: DG.DataFrame,
-  options: {chain?: string; resName?: string; cAlphaOnly?: boolean; serialStart?: number} = {},
+  options: {chain?: string; resName?: string; cAlphaOnly?: boolean;
+    serialStart?: number; pdbIdFilter?: string} = {},
 ): string {
   const chain = (options.chain ?? 'P').charAt(0);
   const resName = (options.resName ?? 'POC').padEnd(3).slice(0, 3);
   const cAlphaOnly = options.cAlphaOnly ?? true;
   let serial = options.serialStart ?? 1;
+  // When set, only emit atoms whose `pdb_id` matches (case-insensitive). Used
+  // by per-PDB pocket overlay rendering in Step 3 so each PDB's pocket becomes
+  // an independently-toggleable Mol* structure (mirrors the Step 4 path).
+  const pdbIdFilter = options.pdbIdFilter ? options.pdbIdFilter.toUpperCase() : null;
 
   const cols = {
     pdb: pocketAtoms.col('pdb_id'),
@@ -232,6 +237,10 @@ export function pocketAtomsToOverlayBlock(
 
   const lines: string[] = ['REMARK   Pocket overlay (Stage 3)'];
   for (let i = 0; i < pocketAtoms.rowCount; i++) {
+    if (pdbIdFilter && cols.pdb) {
+      const rowPdb = String(cols.pdb.get(i) ?? '').toUpperCase();
+      if (rowPdb !== pdbIdFilter) continue;
+    }
     const isSeed = cols.seed ? Boolean(cols.seed.get(i)) : false;
     const atomName = String(cols.atomName.get(i) ?? '');
     if (cAlphaOnly && !isSeed && atomName !== 'CA') continue;
@@ -267,10 +276,19 @@ export function pocketAtomsToOverlayBlock(
  */
 export function ligandFeaturesToOverlayBlock(
   features: DG.DataFrame,
-  options: {chain?: string; serialStart?: number} = {},
+  options: {chain?: string; serialStart?: number; pdbIdFilter?: string;
+    familyFilter?: string} = {},
 ): string {
   const chain = (options.chain ?? 'F').charAt(0);
   let serial = options.serialStart ?? 1;
+  // When set, only emit features whose `pdb_id` matches (case-insensitive).
+  // Used by per-PDB overlay rendering in Step 4 so each PDB's interactions
+  // become an independently-toggleable Mol* structure.
+  const pdbIdFilter = options.pdbIdFilter ? options.pdbIdFilter.toUpperCase() : null;
+  // When set, only emit features of this family CODE (D/A/a/H/P/N/X). Used by
+  // Step 4 to build one uniform-colored Mol* structure per (PDB, family) so
+  // each family's spheres get the exact legend hex color (not the CPK proxy).
+  const familyFilter = options.familyFilter ? options.familyFilter.trim() : null;
 
   const cols = {
     family: features.col('family'),
@@ -278,13 +296,19 @@ export function ligandFeaturesToOverlayBlock(
     y: features.col('y'),
     z: features.col('z'),
     skip: features.col('skip_reason'),
+    pdbId: features.col('pdb_id'),
   };
   if (!cols.family || !cols.x || !cols.y || !cols.z) return '';
 
   const lines: string[] = ['REMARK   Ligand features overlay (Stage 4)'];
   for (let i = 0; i < features.rowCount; i++) {
     if (cols.skip && String(cols.skip.get(i) ?? '').trim() !== '') continue;
+    if (pdbIdFilter && cols.pdbId) {
+      const rowPdb = String(cols.pdbId.get(i) ?? '').toUpperCase();
+      if (rowPdb !== pdbIdFilter) continue;
+    }
     const fam = resolveFamily(String(cols.family.get(i) ?? ''));
+    if (familyFilter && fam.code !== familyFilter) continue;
     const x = Number(cols.x.get(i));
     const y = Number(cols.y.get(i));
     const z = Number(cols.z.get(i));

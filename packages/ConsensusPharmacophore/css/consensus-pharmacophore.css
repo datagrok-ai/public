@@ -85,8 +85,14 @@
   font-size: 11px;
   color: #777;
   margin-top: 4px;
-  min-height: 14px;
   line-height: 1.3;
+}
+
+/* Collapse the status div when empty so the wizard doesn't reserve ~14 px
+ * of dead space between "Target lookup" and "PDB IDs". */
+.cp-target-lookup-status:empty {
+  display: none;
+  margin: 0;
 }
 
 .cp-target-picker-hint {
@@ -303,7 +309,7 @@
 
 .cp-pdb-detail-panel {
   padding: 8px 10px;
-  min-width: 240px;
+  min-width: 320px;
   font-size: 12px;
   overflow-y: auto;
   background: #fafafa;
@@ -420,3 +426,704 @@
 /* No visual style — these classes are markers used by orchestrator's
    cleanup loop to find and remove stale overlay structures from the
    Mol* state tree. Kept here for grep-ability. */
+
+/* =====================================================================
+ * Wizard shell — added in the wizard refactor (task #61-67).
+ *
+ * Outer layout: a flex column inside the DG.View root.
+ *   .cp-wizard-shell
+ *     .cp-wizard-header       (32 px legend + caption strip)
+ *     .cp-wizard-ribbon       (30 px action buttons)
+ *     .cp-wizard-stale-banner (visible only when stale-cascade is active)
+ *     .cp-wizard-rail         (48 px step indicators)
+ *     .cp-wizard-content-area (flex row, fills remaining height)
+ *       .cp-wizard-content-left   (460 px step-specific content)
+ *       .cp-wizard-content-center (flex:1 persistent Mol* mount)
+ *       .cp-wizard-content-right  (320 px PDB detail panel, hidden on steps 1-3,5)
+ *     .cp-wizard-footer       (44 px Prev / status / Next)
+ * ===================================================================== */
+
+.cp-wizard-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* --- header (legend + caption) --------------------------------------- */
+
+.cp-wizard-header {
+  background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e0e0e0;
+  padding: 6px 16px 6px 20px;
+  flex-shrink: 0;
+}
+
+.cp-wizard-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976D2;
+  margin-right: 16px;
+  display: inline-block;
+}
+
+.cp-wizard-header-caption {
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+  margin-left: 12px;
+}
+
+/* --- ribbon (Run / Save / Export / Reset) ---------------------------- */
+
+.cp-wizard-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+  min-height: 30px;
+}
+
+.cp-wizard-ribbon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+}
+
+.cp-wizard-ribbon-btn:hover {
+  background: #e8e8e8;
+  border-color: #d0d0d0;
+}
+
+.cp-wizard-ribbon-btn-primary {
+  background: #E3F2FD;
+  color: #1565C0;
+  border-color: #90CAF9;
+  font-weight: 600;
+}
+
+.cp-wizard-ribbon-btn-primary:hover {
+  background: #BBDEFB;
+  border-color: #64B5F6;
+}
+
+.cp-wizard-ribbon-btn-stale {
+  background: #FFF8E1;
+  color: #B26A00;
+  border-color: #FFC107;
+}
+
+.cp-wizard-ribbon-btn-stale:hover {
+  background: #FFE082;
+  border-color: #FFA000;
+}
+
+.cp-wizard-ribbon-btn.cp-wizard-ribbon-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  /* Hover allowed so the title tooltip fires on disabled state. */
+}
+
+.cp-wizard-ribbon-sep {
+  width: 1px;
+  height: 18px;
+  background: #ddd;
+  margin: 0 4px;
+}
+
+.cp-wizard-ribbon-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.cp-wizard-ribbon-spacer {
+  flex: 1;
+}
+
+.cp-wizard-ribbon-step-indicator {
+  font-size: 11px;
+  color: #888;
+  margin-right: 4px;
+}
+
+/* --- stale banner (between ribbon and rail) -------------------------- */
+
+.cp-wizard-stale-banner {
+  background: #FFF8E1;
+  border-bottom: 2px solid #FFB300;
+  padding: 8px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cp-wizard-stale-banner-icon {
+  font-size: 16px;
+  color: #FFA000;
+  line-height: 1.2;
+}
+
+.cp-wizard-stale-banner-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #E65100;
+  margin: 0 0 2px 0;
+}
+
+.cp-wizard-stale-banner-body {
+  font-size: 11px;
+  color: #6D4C41;
+  line-height: 1.45;
+}
+
+.cp-wizard-stale-banner-action {
+  margin-left: auto;
+  font-size: 11px;
+  color: #1976D2;
+  cursor: pointer;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.cp-wizard-stale-banner-action:hover {
+  color: #0D47A1;
+}
+
+/* --- step rail (numbered circles + labels) --------------------------- */
+
+.cp-wizard-rail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  min-height: 56px;
+}
+
+.cp-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: default;
+  user-select: none;
+}
+
+.cp-wizard-step.cp-step-done,
+.cp-wizard-step.cp-step-stale {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cp-wizard-step.cp-step-done:hover,
+.cp-wizard-step.cp-step-stale:hover {
+  background: #f0f4f8;
+}
+
+.cp-wizard-step-circle-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cp-wizard-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  background: #f5f5f5;
+  border: 1.5px solid #d0d0d0;
+  color: #9e9e9e;
+}
+
+.cp-wizard-step-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.cp-wizard-step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+}
+
+.cp-wizard-step-sublabel {
+  font-size: 10px;
+  color: #999;
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+.cp-wizard-step-connector {
+  flex: 0 1 32px;
+  height: 2px;
+  background: #e0e0e0;
+  margin: 0 4px;
+}
+
+.cp-wizard-step-connector.cp-wizard-step-connector-done {
+  background: #388E3C;
+}
+
+.cp-wizard-step-connector.cp-wizard-step-connector-stale {
+  background: linear-gradient(90deg, #388E3C 30%, #FFB300 100%);
+}
+
+/* per-status circle skins */
+.cp-step-pending .cp-wizard-step-circle {
+  background: #f5f5f5;
+  border: 1.5px solid #d0d0d0;
+  color: #9e9e9e;
+}
+
+.cp-step-active .cp-wizard-step-circle {
+  background: #1976D2;
+  color: #fff;
+  border: 1.5px solid #1976D2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.22);
+}
+
+.cp-step-running .cp-wizard-step-circle {
+  background: #1976D2;
+  color: #fff;
+  border: 1.5px solid #1976D2;
+  animation: cp-wizard-ring-pulse 1.2s linear infinite;
+}
+
+.cp-step-done .cp-wizard-step-circle {
+  background: #388E3C;
+  color: #fff;
+  border: 1.5px solid #388E3C;
+}
+
+.cp-step-stale .cp-wizard-step-circle {
+  background: #388E3C;
+  color: #fff;
+  border: 1.5px solid #388E3C;
+  opacity: 0.70;
+}
+
+.cp-step-stale:hover .cp-wizard-step-circle {
+  opacity: 0.90;
+}
+
+.cp-step-error .cp-wizard-step-circle {
+  background: #D32F2F;
+  color: #fff;
+  border: 1.5px solid #D32F2F;
+}
+
+/* per-status label skins */
+.cp-step-pending .cp-wizard-step-label { color: #9e9e9e; }
+.cp-step-active .cp-wizard-step-label  { color: #1976D2; font-weight: 600; }
+.cp-step-running .cp-wizard-step-label { color: #1976D2; font-weight: 600; }
+.cp-step-done .cp-wizard-step-label    { color: #388E3C; }
+.cp-step-stale .cp-wizard-step-label   { color: #7B7B3A; opacity: 0.80; }
+.cp-step-error .cp-wizard-step-label   { color: #D32F2F; font-weight: 600; }
+
+.cp-step-running .cp-wizard-step-sublabel { color: #1976D2; }
+.cp-step-done .cp-wizard-step-sublabel    { color: #388E3C; }
+.cp-step-stale .cp-wizard-step-sublabel   { color: #B8860B; }
+.cp-step-error .cp-wizard-step-sublabel   { color: #D32F2F; }
+
+.cp-step-stale-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 11px;
+  height: 11px;
+  background: #FFB300;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+@keyframes cp-wizard-ring-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(25, 118, 210, 0.45); }
+  50%  { box-shadow: 0 0 0 6px rgba(25, 118, 210, 0.10); }
+  100% { box-shadow: 0 0 0 0   rgba(25, 118, 210, 0.00); }
+}
+
+/* --- content area (3-column flex row) -------------------------------- */
+
+.cp-wizard-content-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cp-wizard-content-left {
+  width: 460px;
+  flex-shrink: 0;
+  border-right: 1px solid #e8e8e8;
+  background: #fafafa;
+  overflow-y: auto;
+  padding: 16px 20px 12px 20px;
+}
+
+.cp-wizard-content-center {
+  flex: 1;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cp-wizard-content-right {
+  width: 320px;
+  flex-shrink: 0;
+  border-left: 1px solid #e8e8e8;
+  background: #fafafa;
+  overflow-y: auto;
+}
+
+/* --- Mol* placeholder + stale overlay -------------------------------- */
+
+.cp-wizard-molstar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  padding: 24px;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.cp-wizard-molstar-placeholder-icon {
+  font-size: 48px;
+  opacity: 0.25;
+  margin-bottom: 12px;
+  color: #1976D2;
+}
+
+.cp-wizard-molstar-stale-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 179, 0, 0.10);
+  border: 2px solid rgba(255, 179, 0, 0.40);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cp-wizard-molstar-stale-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 248, 225, 0.95);
+  color: #B26A00;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid #FFB300;
+  text-align: center;
+  pointer-events: none;
+  white-space: pre-line;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+}
+
+/* --- footer (Prev / status / Next) ----------------------------------- */
+
+.cp-wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  border-top: 1px solid #e0e0e0;
+  padding: 0 20px;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.cp-wizard-footer-status {
+  font-size: 11px;
+  color: #888;
+}
+
+.cp-wizard-footer-step-indicator {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: #f0f4f8;
+  border-radius: 10px;
+}
+
+.cp-wizard-footer-status-stale {
+  color: #F57F17;
+  font-weight: 600;
+}
+
+.cp-wizard-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.cp-wizard-footer-btn:hover {
+  background: #f0f0f0;
+  border-color: #aaa;
+}
+
+.cp-wizard-footer-btn-primary {
+  background: #1976D2;
+  color: #fff;
+  border-color: #1976D2;
+}
+
+.cp-wizard-footer-btn-primary:hover {
+  background: #1565C0;
+  border-color: #1565C0;
+}
+
+.cp-wizard-footer-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  /* No pointer-events:none — we need hover so the native `title` tooltip
+   * fires when the user mouses over a disabled button. The click handler
+   * checks the disabled class and short-circuits with a warning toast. */
+}
+
+.cp-wizard-footer-btn-hidden {
+  visibility: hidden;
+}
+
+/* --- per-step content panels ----------------------------------------- */
+
+.cp-step-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Trim the default browser margins on section headings inside the step
+ * panel — the flex gap already provides the right vertical rhythm. */
+.cp-step-panel h3 {
+  margin: 4px 0 2px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 2px;
+}
+
+.cp-step-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976D2;
+  margin: 0 0 4px 0;
+}
+
+.cp-step-panel-description {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+}
+
+/* Stats strip used in steps 2-5 */
+.cp-wizard-stat-strip {
+  display: flex;
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cp-wizard-stat-item {
+  flex: 1;
+  padding: 6px 8px;
+  border-right: 1px solid #eee;
+  text-align: center;
+}
+
+.cp-wizard-stat-item:last-child {
+  border-right: none;
+}
+
+.cp-wizard-stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1976D2;
+  line-height: 1.1;
+}
+
+.cp-wizard-stat-label {
+  font-size: 9px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Compact HTML table for step result panels */
+.cp-step-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: #fff;
+  border: 1px solid #eee;
+}
+
+.cp-step-table th {
+  background: #f5f5f5;
+  text-align: left;
+  font-weight: 600;
+  color: #444;
+  padding: 4px 6px;
+  border-bottom: 1px solid #ddd;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cp-step-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.cp-step-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cp-step-table tr:hover td {
+  background: #f8f9fa;
+}
+
+/* Step 2 RMSD table — row clickable to isolate a PDB in Mol*. */
+.cp-step-table tr.cp-rmsd-row {
+  cursor: pointer;
+}
+
+.cp-step-table tr.cp-rmsd-row:hover td {
+  background: #e8f0f7;
+}
+
+.cp-step-table tr.cp-rmsd-row.cp-rmsd-row-isolated td {
+  background: #BBDEFB;
+  font-weight: 600;
+}
+
+.cp-step-table tr.cp-rmsd-row.cp-rmsd-row-isolated:hover td {
+  background: #90CAF9;
+}
+
+.cp-rmsd-hint {
+  user-select: none;
+}
+
+/* Family chip inside step tables — matches family-map.ts hex colors */
+.cp-family-chip {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  border: 1px solid rgba(0,0,0,0.18);
+  vertical-align: -1px;
+}
+
+/* Step 5: completion banner + export strip */
+.cp-wizard-completion-banner {
+  background: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 100%);
+  border: 1px solid #A5D6A7;
+  border-radius: 4px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cp-wizard-completion-banner-icon {
+  font-size: 18px;
+  color: #2E7D32;
+}
+
+.cp-wizard-completion-banner-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1B5E20;
+}
+
+.cp-wizard-completion-banner-body {
+  font-size: 11px;
+  color: #33691E;
+  margin-top: 2px;
+}
+
+.cp-wizard-export-strip {
+  background: #F1F8E9;
+  border: 1px solid #A5D6A7;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.cp-wizard-export-strip-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1B5E20;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cp-wizard-export-strip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cp-wizard-export-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: #fff;
+  border: 1px solid #A5D6A7;
+  border-radius: 3px;
+  color: #2E7D32;
+  cursor: pointer;
+}
+
+.cp-wizard-export-btn:hover {
+  background: #C8E6C9;
+}

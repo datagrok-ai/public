@@ -47,7 +47,7 @@ category('Pharmacophore', () => {
       return;
     }
     // Pinned EGFR PDBs known to pass at default QC (all <= 2.0 A, X-ray, drug ligand).
-    const df = await enrichPdbList(['3W2S', '4WKQ', '5HG8'], DEFAULT_OPTIONS);
+    const {accepted: df} = await enrichPdbList(['3W2S', '4WKQ', '5HG8'], DEFAULT_OPTIONS);
     expect(df.rowCount > 0, true, 'enrichPdbList returns at least one row for known EGFR PDBs');
     for (const colName of REQUIRED_PDB_QC_COLS)
       expect(df.col(colName) !== null, true, `pdb_qc has column ${colName}`);
@@ -145,7 +145,7 @@ category('Pharmacophore', () => {
     // diagnostic logs but not surfaced in the output schema, so we settle for
     // the simpler "pass-2 rmsd_to_ref is finite and smaller than pass-1 on
     // average" check.)
-    const pdbQc = await enrichPdbList(['3W2S', '4WKQ', '5HG8'], DEFAULT_OPTIONS);
+    const {accepted: pdbQc} = await enrichPdbList(['3W2S', '4WKQ', '5HG8'], DEFAULT_OPTIONS);
     if (pdbQc.rowCount === 0) {
       console.warn('stage2b: enrichPdbList returned 0 rows; skipping.');
       return;
@@ -204,7 +204,7 @@ category('Pharmacophore', () => {
     // 1A6M (myoglobin) carries HEM. 1HWW (pancreatic ribonuclease) carries multiple
     // glycosylation NAG / BMA entries. Both should be filtered to zero usable ligand
     // rows when only HEM/NAG/BMA are present and nothing else qualifies.
-    const df = await enrichPdbList(['1A6M'], DEFAULT_OPTIONS);
+    const {accepted: df} = await enrichPdbList(['1A6M'], DEFAULT_OPTIONS);
     const compCol = df.col('ligand_comp_id');
     if (compCol) {
       for (let i = 0; i < df.rowCount; i++) {

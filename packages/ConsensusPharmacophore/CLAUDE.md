@@ -37,9 +37,52 @@ to keep string drift from `#name:` directives silent-fail-proof.
 5. **External HTTP** — only `grok.dapi.fetchProxy(...)`. Never raw `fetch()` (CORS).
 6. **Python scripts** — every script reuses BSV's `#environment:` line verbatim (Datagrok caches the conda env
    by MD5 of the env string; exact match shares the env with BSV). Append `scikit-learn>=1.3` for Stage 5a.
-7. **Single `DG.TableView`** for the whole pipeline. Replace `view.dataFrame = newDf` between stages; the
-   docked Mol\* viewer survives the swap (verified in Phase 0 V2). Defensive `viewer.setOptions({pdb: ...})`
-   re-assertion after each swap.
+7. **Custom wizard view, not a shared TableView**. The app entry returns a `WizardShell` (subclass of
+   `DG.ViewBase`); per-step content panels in `src/wizard-steps.ts` read from the orchestrator's
+   `previewCache` rather than from a `view.dataFrame`. Mol\* lives in a dedicated wizard content region
+   and is **force-rebuilt** on every meaningful options change — BSV's `setOptions` is not race-safe
+   (see the `molstar-via-bsv` skill for details).
+
+## Architecture quick reference
+
+### Wizard shell (`src/wizard-shell.ts`, `src/wizard-state.ts`, `src/wizard-steps.ts`)
+
+- `WizardShell extends DG.ViewBase` — header (title + family legend), step rail (5 numbered circles),
+  three-column content (left = step content, center = persistent Mol\*, right = detail panel for Step 4),
+  footer (Back / Reset / Run full pipeline · Step N of 5 · Run step / Next).
+- State lives in `WizardState`, a small class that holds per-step status (`pending | active | running |
+  done | stale | error`) and publishes changes through an RxJS `Subject<StepSnapshot>`. The shell
+  subscribes and re-renders the step rail and footer-button enable/disable on each emission.
+- Editing any input at step N marks step N..5 stale via `WizardState.markStaleFrom(step)` — the stale
+  cascade pattern. Stale messages tell the user "Run step", not "Run pipeline" (these are different
+  actions).
+- Run buttons are disabled when no PDB IDs are entered, with a hover tooltip explaining why. Implemented
+  via the `disabled` attribute + a class-based click-guard — **not** `pointer-events: none` (that kills
+  the tooltip).
+
+### Per-fingerprint cache (`orchestrator.ts`)
+
+- `previewFingerprint(pdbIds, options)` produces a stable string key from the PDB list + **every**
+  user-visible option. Stage results (`pdbQc`, `aligned`, `pocketAtoms`, `alignedV2`, `ligandFeatures`,
+  `consensusModel`) are cached per fingerprint inside `previewCache`.
+- **Footgun:** any option that affects pipeline output must be in the fingerprint. The `refPdbId`
+  bug — user changed the reference, cache returned stale results — is the canonical example. When
+  adding a new option, update both `PipelineOptions` AND `previewFingerprint`.
+- Wizard `Reset` calls `orchestrator.resetWizardState()` which drops the cache, closes the BSV viewer
+  instance, clears tracked structure refs, and unsubscribes the per-PDB detail panel.
+
+### Mol\* multi-structure + per-PDB isolation
+
+Stage 2 loads each aligned PDB as a **separate** Mol\* structure (via `renderAlignedStructuresMulti`)
+so the RMSD table can isolate one PDB by hiding the others — no viewer rebuild. The hide/show goes
+through `plugin.managers.structure.hierarchy.toggleVisibility(refs, 'hide'|'show')`. See the
+`molstar-via-bsv` skill for the full set of patterns, footguns, and the plugin-path trap.
+
+### Python script directives
+
+Caption text containing `;` breaks Datagrok's directive parser. Use parentheticals or commas instead
+(`#caption: pocket Cα (pass 2)` — not `#caption: pocket Cα; pass 2`). See
+`.claude/rules/function-metadata.md`.
 
 ## Pharmacophore family taxonomy (single source of truth)
 

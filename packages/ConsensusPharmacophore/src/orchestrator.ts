@@ -22,9 +22,9 @@ import {renderConsensusPharmacophore} from './renderer';
 import {pickClusterViaDialog} from './cluster-picker-dialog';
 import {_package} from './package';
 import {DEFAULT_OPTIONS, PipelineOptions, PocketMethod, PocketRep} from './orchestrator-types';
-import {enrichPdbList} from './rcsb-client';
+import {enrichPdbList, DroppedPdb} from './rcsb-client';
 import {applyPdbTransform, concatPdbStructures, fetchPdbBlock, IDENTITY_4X4,
-  ligandFeaturesToOverlayBlock, stripCofactorsFromPdb} from './pdb-utils';
+  ligandFeaturesToOverlayBlock, pocketAtomsToOverlayBlock, stripCofactorsFromPdb} from './pdb-utils';
 import {fetchUniProtById, getPdbIdsForAccession, isUniProtAccession,
   searchUniProt, UniProtHit} from './uniprot-client';
 
@@ -53,6 +53,12 @@ interface PreviewCache {
   alignedV2?: DG.DataFrame;            // Stage 2b output (refined transforms)
   ligandFeatures?: DG.DataFrame;       // Stage 4 output
   consensusModel?: DG.DataFrame;       // Stage 5a output
+  // Signature of the consensus-only inputs (k-means knobs + the user's PDB /
+  // interaction exclusions) that produced `consensusModel`. These are NOT in
+  // the global `fingerprint` (changing them must not re-run Stages 1-4), so we
+  // self-invalidate the consensus when this signature changes — see
+  // `ensureConsensusModel`.
+  consensusSignature?: string;
 }
 
 export class ConsensusPharmacophoreApp {
@@ -60,6 +66,9 @@ export class ConsensusPharmacophoreApp {
   private viewer?: DG.Viewer;
   private viewerPlaceholder?: HTMLElement;
   private viewerPlaceholderNode?: DG.DockNode;
+  // Cached dock node for the Mol* viewer — used by refreshDockedViewer to
+  // tear down the previous viewer reliably before creating a new one.
+  private viewerDockNode?: DG.DockNode;
   private aborted = false;
   // Stage badges rendered in the top header — flipped from grey to green as stages complete.
   private stageBadges = new Map<string, HTMLElement>();
@@ -74,6 +83,202 @@ export class ConsensusPharmacophoreApp {
   // explain what the user is looking at (e.g. "Chain F = ProLIF interaction
   // sites; CPK colors = pharmacophore family"). Always visible after init().
   private molstarCaptionEl?: HTMLElement;
+
+  // --- wizard integration -------------------------------------------------
+  // When the WizardShell instantiates this app, it injects DOM mount points
+  // for the Mol* viewer and the per-PDB detail panel via the attach* methods
+  // below. With these set, refreshDockedViewer mounts the viewer directly
+  // into the wizard's centerl content slot (no dock manager), and the detail
+  // panel renders straight into the wizard's right content slot. When the
+  // mount points are unset (legacy path through init()), refreshDockedViewer
+  // falls back to the old dock-manager behaviour.
+  private _externalMolstarHost?: HTMLElement;
+  private _externalDetailHost?: HTMLElement;
+  /** Hooks the wizard installs so the (orchestrator-rendered) Step 4 detail
+   *  panel can read/toggle the per-interaction consensus selection that lives
+   *  in the wizard's PipelineOptions.consensusExcludedInteractions. */
+  private _consensusSelectionHooks?: {
+    isInteractionExcluded: (key: string) => boolean;
+    toggleInteraction: (key: string) => void;
+    /** Whether a whole PDB is excluded via the Step 4 "Use" checkbox. Drives
+     *  both the consensus filter AND the Mol* per-PDB visibility (un-ticking a
+     *  PDB hides it in 3D — see setPdbHidden / applyPdbExclusionsToViewer). */
+    isPdbExcluded: (pdbId: string) => boolean;
+    /** Whether a PDB is un-ticked in Step 1's Accepted PDBs table. Stronger
+     *  than isPdbExcluded — these PDBs are dropped before Stage 2, so they
+     *  never enter alignment. For Mol* visibility, both predicates trigger
+     *  a hide; the input exclusion is the only one that also gates the
+     *  pipeline (see filterPdbQcByInputExclusion). */
+    isInputPdbExcluded: (pdbId: string) => boolean;
+  };
+  /** consensusFeatureKey of the interaction the user last clicked in the Step 4
+   *  detail panel — its sphere is marked in Mol* and its row is highlighted.
+   *  Cleared on every viewer rebuild (the marker lives in the viewer). */
+  private _highlightedInteractionKey?: string;
+  // Cached Stage 4 summary DataFrame so the wizard's Step 4 panel can read it.
+  private _summaryDf?: DG.DataFrame;
+  /** Per-input PDB drop record from Stage 1. Updated whenever enrichPdbList
+   *  is called. Persists across previewCache rebuilds for the same input
+   *  set so the wizard can show the "Dropped" section. */
+  private _droppedPdbs: DroppedPdb[] = [];
+  /**
+   * Map of PDB id (uppercase) -> Mol* structure ref. Reserved for a future
+   * native-visibility-toggle implementation. Currently unused — see
+   * `_cachedAlignedBlocks` for the active approach.
+   */
+  private _alignedStructureRefs: Map<string, string> = new Map();
+  /**
+   * Map of PDB id (uppercase) -> Mol* structure ref for the chain-F
+   * interaction overlay. Populated by Step 4's per-PDB overlay rendering;
+   * empty in stages that don't use the overlay (Step 2, 3, 5). Toggled
+   * alongside the protein structures by `isolatePdb` so isolating one PDB
+   * also hides every other PDB's interaction spheres.
+   */
+  // pdbId → list of overlay structure refs. Step 4 mounts ONE structure per
+  // (PDB × family) so each family can be uniform-colored with its legend hex;
+  // Step 3's pocket overlay mounts a single structure per PDB ([oneRef]). The
+  // isolation logic hides/shows every ref under a PDB in lockstep.
+  private _alignedInteractionRefs: Map<string, string[]> = new Map();
+  /** consensusFeatureKey → that interaction's Mol* structure ref, and the
+   *  reverse. Step 4 mounts ONE structure per interaction (not per family) so
+   *  an individual contact can be hidden when the user un-ticks it. Populated
+   *  by addInteractionOverlayPerPdb; consumed by setInteractionHidden and by
+   *  isolatePdb (to keep un-ticked interactions hidden when showing a PDB). */
+  private _interactionRefByKey: Map<string, string> = new Map();
+  private _interactionKeyByRef: Map<string, string> = new Map();
+  /**
+   * Per-PDB transformed blocks from the last Step 2 alignment, in the
+   * same order as `_cachedAlignedLabels`. Used by `isolatePdb` to rebuild
+   * the Mol* viewer with just one PDB (or all of them) without a Python
+   * round-trip. Cleared whenever the alignment cache becomes stale.
+   */
+  private _cachedAlignedBlocks: string[] = [];
+  private _cachedAlignedLabels: string[] = [];
+
+  /** Inject the wizard's Mol* content panel as the Mol* viewer mount point.
+   *  Must be called BEFORE any preview* method runs. */
+  attachMolstarHost(el: HTMLElement): void {
+    this._externalMolstarHost = el;
+  }
+
+  /** Inject the wizard's PDB-detail content panel. The orchestrator
+   *  will render Stage 4 detail content directly here. */
+  attachDetailHost(el: HTMLElement): void {
+    this._externalDetailHost = el;
+    this.pdbDetailHost = el;
+  }
+
+  /** Wire the per-interaction consensus-selection checkboxes (rendered in the
+   *  Step 4 detail panel by `renderPdbDetail`) to the wizard's option state. */
+  attachConsensusSelectionHooks(hooks: {
+    isInteractionExcluded: (key: string) => boolean;
+    toggleInteraction: (key: string) => void;
+    isPdbExcluded: (pdbId: string) => boolean;
+    isInputPdbExcluded: (pdbId: string) => boolean;
+  }): void {
+    this._consensusSelectionHooks = hooks;
+  }
+
+  /** How many interactions / PDBs the current options' exclusions leave for the
+   *  consensus. Drives the Step 4 + Step 5 "consensus will use N / M" counts.
+   *  Counts non-diagnostic feature rows after `filterFeaturesForConsensus`. */
+  consensusUsedCount(opts: PipelineOptions): {interactions: number; pdbs: number} {
+    const feats = this.previewCache?.ligandFeatures;
+    if (!feats) return {interactions: 0, pdbs: 0};
+    const filtered = filterFeaturesForConsensus(feats, opts);
+    const skipCol = filtered.col('skip_reason');
+    const pdbCol = filtered.col('pdb_id');
+    const pdbs = new Set<string>();
+    let n = 0;
+    for (let i = 0; i < filtered.rowCount; i++) {
+      if (skipCol && String(skipCol.get(i) ?? '').trim() !== '') continue;
+      n += 1;
+      if (pdbCol) pdbs.add(String(pdbCol.get(i) ?? '').toUpperCase());
+    }
+    return {interactions: n, pdbs: pdbs.size};
+  }
+
+  /** Drop the per-fingerprint cache. Called by the wizard when the user
+   *  edits the PDB list or options (stale-cascade). */
+  invalidatePreviewCache(): void {
+    this.previewCache = null;
+  }
+
+  /** Full reset: drop the cache, close the BSV viewer instance, drop the
+   *  cached summary DataFrame, unsubscribe from any per-PDB detail panel
+   *  updates, and clear the detail panel content. Called by the wizard's
+   *  Reset ribbon button. The wizard separately clears its own DOM regions
+   *  (contentCenter, contentRight) and re-shows the placeholder. */
+  resetWizardState(): void {
+    this.previewCache = null;
+    this._summaryDf = undefined;
+    this._droppedPdbs = [];
+    this._alignedStructureRefs.clear();
+    this.clearOverlayRefs();
+    this._cachedAlignedBlocks = [];
+    this._cachedAlignedLabels = [];
+    // Close the BSV viewer instance — without this, the Mol* plugin keeps
+    // its WebGL context and old structures live in memory.
+    if (this.viewer) {
+      try { (this.viewer as any).close?.(); } catch (_e) { /* */ }
+      this.viewer = undefined;
+    }
+    // Unsubscribe the per-PDB detail panel from its current summary df.
+    if (this.pdbDetailSub) {
+      try { this.pdbDetailSub.unsubscribe(); } catch (_e) { /* */ }
+      this.pdbDetailSub = undefined;
+    }
+    // Clear the detail panel contents (the wizard host element is kept; we
+    // just remove what was rendered into it).
+    if (this.pdbDetailHost) ui.empty(this.pdbDetailHost);
+  }
+
+  /** Close the BSV viewer instance and empty the mounted host WITHOUT
+   *  dropping the preview cache. Used by the wizard when navigating to a
+   *  step that has no 3D content (Step 1 / Fetch) so a leftover render from
+   *  a later step doesn't linger. Lighter than `resetWizardState`, which
+   *  also wipes the cache and detail panel. The wizard re-adds its own
+   *  placeholder element to the host after calling this. */
+  clearViewer(): void {
+    if (this.viewer) {
+      try { (this.viewer as any).close?.(); } catch (_e) { /* */ }
+      this.viewer = undefined;
+    }
+    this.viewerDockNode = undefined;
+    this._alignedStructureRefs.clear();
+    this.clearOverlayRefs();
+    if (this._externalMolstarHost) ui.empty(this._externalMolstarHost);
+  }
+
+  /** Read-only view of the current preview cache (DataFrames per stage).
+   *  Used by the wizard's per-step panels to render result tables without
+   *  going through grok.shell.tableView. Returns null when no fingerprint
+   *  has been computed yet. */
+  previewCacheView(): PreviewCache | null {
+    return this.previewCache;
+  }
+
+  /** Latest Stage 4 summary DataFrame (one row per PDB · ligand). Returns
+   *  null until previewFeatures has run at least once for the current
+   *  fingerprint. */
+  previewSummaryDataFrame(): DG.DataFrame | null {
+    return this._summaryDf ?? null;
+  }
+
+  /** Per-PDB drop records from the last Stage 1 run (resolution / method /
+   *  ligand filters). Empty until Stage 1 has actually executed. */
+  previewDroppedPdbs(): DroppedPdb[] {
+    return this._droppedPdbs;
+  }
+
+  /** Assign the active DataFrame to the legacy TableView, if one exists.
+   *  In the wizard path there is no TableView — the per-step panels in
+   *  wizard-steps.ts pull their data from the preview cache directly via
+   *  previewCacheView() and previewSummaryDataFrame(). */
+  private setActiveDataFrame(df: DG.DataFrame): void {
+    if (this.tableView) this.tableView.dataFrame = df;
+  }
+
 
   async init(pdbIds?: string[]): Promise<DG.TableView> {
     // Start with an empty placeholder DataFrame; the docked viewer + dock layout
@@ -115,7 +320,26 @@ export class ConsensusPharmacophoreApp {
       'Run the pipeline to render the consensus pharmacophore.',
       'cp-viewer-placeholder');
     this.viewerPlaceholderNode = this.tableView.dockManager.dock(
-      this.viewerPlaceholder, DG.DOCK_TYPE.RIGHT, null, 'Mol*', 0.4);
+      this.viewerPlaceholder, DG.DOCK_TYPE.RIGHT, null, 'Mol*', 0.55);
+
+    // Pre-dock the PDB-detail panel at root-level RIGHT (null neighbor) so
+    // the dock manager splits the right area into Mol* on the left and the
+    // detail panel on the far right. Reserving this space at init time
+    // guarantees Mol*'s width is identical across Fetch / Align / Pocket /
+    // Features / Consensus — previously Mol* shrank at Stage 4 when the
+    // detail panel was docked late.
+    //
+    // Earlier attempts:
+    //  - DG.DOCK_TYPE.RIGHT relative to viewerPlaceholderNode → detail was
+    //    rendered as a TOP horizontal strip above Mol* (Datagrok's nested
+    //    splits interpret RIGHT in the container's secondary axis).
+    //  - Skipping init-time dock → Mol* width changed at Stage 4.
+    this.pdbDetailHost = ui.div([], 'cp-pdb-detail-panel');
+    this.pdbDetailHost.append(ui.divText(
+      'Per-PDB interaction detail — click 4. Features to populate.',
+      'cp-pdb-detail-empty'));
+    this.pdbDetailNode = this.tableView.dockManager.dock(
+      this.pdbDetailHost, DG.DOCK_TYPE.RIGHT, null, 'PDB detail', 0.25);
 
     // Family cell color — any `family` cell in the central grid (which is
     // re-bound to a different DataFrame at each pipeline stage) gets painted
@@ -260,7 +484,10 @@ export class ConsensusPharmacophoreApp {
   private buildInputPanel(seedPdbIds?: string[]): HTMLElement {
     const initial = (seedPdbIds ?? []).join('\n');
 
-    const pdbInput = ui.input.textArea('PDB IDs', {
+    // Empty label — the section header "PDB IDs" above the textarea already
+    // serves as the visible label; ui.input's own inline label would
+    // duplicate it.
+    const pdbInput = ui.input.textArea('', {
       value: initial,
       size: {width: 240, height: 120},
     });
@@ -440,6 +667,13 @@ export class ConsensusPharmacophoreApp {
     const readOpts = (): PipelineOptions => ({
       maxResolution: resolutionInput.value ?? DEFAULT_OPTIONS.maxResolution,
       requireXray:   requireXrayInput.value ?? DEFAULT_OPTIONS.requireXray,
+      // Legacy UI exposes a single "X-ray only" checkbox; map it to the new
+      // 4-flag scheme: if X-ray-only is true, accept only X-ray; otherwise
+      // accept all 3 experimental methods. AlphaFold stays off.
+      allowXray: true,
+      allowNmr: !(requireXrayInput.value ?? DEFAULT_OPTIONS.requireXray),
+      allowCryoEm: !(requireXrayInput.value ?? DEFAULT_OPTIONS.requireXray),
+      allowAlphaFold: false,
       minLigandMw:   mwInput.value ?? DEFAULT_OPTIONS.minLigandMw,
       pocketMethod:  (pocketMethodInput.value as PocketMethod) ?? DEFAULT_OPTIONS.pocketMethod,
       pocketRadius:  pocketRadiusInput.value ?? DEFAULT_OPTIONS.pocketRadius,
@@ -645,7 +879,8 @@ export class ConsensusPharmacophoreApp {
   // -------------------------------------------------------------------------
 
   async runPipeline(pdbIds: string[], options: PipelineOptions): Promise<PipelineResult | null> {
-    if (!this.tableView) throw new Error('runPipeline called before init()');
+    // tableView may be undefined in the wizard path — that's OK because
+    // setActiveDataFrame() guards every dataFrame assignment.
     this.aborted = false;
     this.resetStageStatuses();
     this.closePdbDetailPanel();
@@ -653,17 +888,24 @@ export class ConsensusPharmacophoreApp {
       'Running full pipeline — cluster picker will open after Stage 2a to let ' +
       'you drop conformationally mixed PDBs before pocket isolation.');
 
+    // Wizard integration: populate previewCache as we go so the per-step
+    // panels in wizard-steps.ts can render result tables for stages 1–5.
+    const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
+
     const pi = DG.TaskBarProgressIndicator.create('Consensus Pharmacophore: running...');
     try {
       // Stage 1 — Enrich PDB metadata (RCSB-backed; replaces stubStage1)
       this.setStageStatus('stage1', 'running');
       pi.update(5, 'Stage 1: enriching PDB metadata...');
-      const pdbQc = await enrichPdbList(pdbIds, options);
+      const stage1 = await enrichPdbList(pdbIds, options);
+      const pdbQc = stage1.accepted;
       if (pdbQc.rowCount === 0)
         throw new Error('No usable PDB entries after QC filtering. ' +
           'Check the PDB IDs, loosen the resolution cap, or disable the X-ray filter.');
-      this.tableView.dataFrame = pdbQc;
+      this.setActiveDataFrame(pdbQc);
       pdbQc.name = 'pdb_qc';
+      cache.pdbQc = pdbQc;
+      this._droppedPdbs = stage1.dropped;
       this.setStageStatus('stage1', 'done');
       if (this.aborted) return null;
 
@@ -671,8 +913,9 @@ export class ConsensusPharmacophoreApp {
       this.setStageStatus('stage2a', 'running');
       pi.update(20, 'Stage 2a: aligning structures (pass 1)...');
       const aligned1 = await runStage2aAlign(pdbQc, options);
-      this.tableView.dataFrame = aligned1;
+      this.setActiveDataFrame(aligned1);
       aligned1.name = 'aligned_structures (pass 1)';
+      cache.aligned = aligned1;
       this.setStageStatus('stage2a', 'done');
       if (this.aborted) return null;
 
@@ -693,8 +936,9 @@ export class ConsensusPharmacophoreApp {
       this.setStageStatus('stage3', 'running');
       pi.update(40, 'Stage 3: isolating pocket...');
       const pocketAtoms = await runStage3IsolatePocket(aligned1, pick.clusterIds, options);
-      this.tableView.dataFrame = pocketAtoms;
+      this.setActiveDataFrame(pocketAtoms);
       pocketAtoms.name = 'pocket_atoms';
+      cache.pocketAtoms = pocketAtoms;
       this.setStageStatus('stage3', 'done');
       if (this.aborted) return null;
 
@@ -702,8 +946,9 @@ export class ConsensusPharmacophoreApp {
       this.setStageStatus('stage2b', 'running');
       pi.update(55, 'Stage 2b: re-aligning on pocket Calpha...');
       const aligned2 = await runStage2bAlignPocket(aligned1, pocketAtoms, pick.selectedPdbIds);
-      this.tableView.dataFrame = aligned2;
+      this.setActiveDataFrame(aligned2);
       aligned2.name = 'aligned_structures (pass 2)';
+      cache.alignedV2 = aligned2;
       this.setStageStatus('stage2b', 'done');
       if (this.aborted) return null;
 
@@ -711,17 +956,24 @@ export class ConsensusPharmacophoreApp {
       this.setStageStatus('stage4', 'running');
       pi.update(70, 'Stage 4: detecting protein-ligand interactions (ProLIF, ~15-30s/PDB)...');
       const ligandFeatures = await runStage4ExtractFeatures(aligned2, pocketAtoms, pick.selectedPdbIds);
-      this.tableView.dataFrame = ligandFeatures;
+      this.setActiveDataFrame(ligandFeatures);
       ligandFeatures.name = 'ligand_features';
+      cache.ligandFeatures = ligandFeatures;
+      // Cache the per-PDB summary so the wizard's Step 4 panel can render it.
+      const smilesByPdb = cache.pdbQc ? ligandSmilesMap(cache.pdbQc) : undefined;
+      this._summaryDf = aggregateFeaturesByPdb(ligandFeatures, smilesByPdb);
+      this._summaryDf.name = 'pdb_interaction_summary';
       this.setStageStatus('stage4', 'done');
       if (this.aborted) return null;
 
-      // Stage 5a — k-means consensus
+      // Stage 5a — k-means consensus (honor any PDB/interaction exclusions)
       this.setStageStatus('stage5a', 'running');
       pi.update(85, 'Stage 5a: computing per-family consensus...');
-      const consensus = await runStage5aConsensusKmeans(ligandFeatures, options);
-      this.tableView.dataFrame = consensus;
+      const consensus = await runStage5aConsensusKmeans(
+        filterFeaturesForConsensus(ligandFeatures, options), options);
+      this.setActiveDataFrame(consensus);
       consensus.name = 'consensus_model';
+      cache.consensusModel = consensus;
       this.setStageStatus('stage5a', 'done');
       if (this.aborted) return null;
 
@@ -757,22 +1009,100 @@ export class ConsensusPharmacophoreApp {
     pdbBlock: string,
     extraOptions: Record<string, unknown> = {},
   ): Promise<void> {
-    if (!this.tableView) return;
     const allOptions = {pdb: pdbBlock, ...extraOptions};
-    if (!this.viewer) {
-      // First render — create the Mol* viewer with the consensus PDB, dock it on the right,
-      // remove the placeholder.
-      this.viewer = await this.tableView.dataFrame.plot.fromType(
+
+    // The viewer is about to be torn down + rebuilt. Any cached Mol* state
+    // refs (per-PDB aligned structures + per-PDB interaction overlays)
+    // become invalid once the old viewer is closed — clear both maps
+    // proactively so isolatePdb doesn't try to mutate dead refs.
+    this._alignedStructureRefs.clear();
+    this.clearOverlayRefs();
+
+    // --- Wizard path: mount the Mol* viewer directly into the injected
+    // host element, no dock manager. The host is the wizard's
+    // .cp-wizard-content-center div, mounted ONCE for the lifetime of the
+    // view — only the viewer child changes between stages.
+    if (this._externalMolstarHost) {
+      // Force-rebuild (same rationale as the legacy path — BSV's setOptions
+      // viewSyncer reshuffle leaves cells in an inconsistent state).
+      if (this.viewer) {
+        try { (this.viewer as any).close?.(); } catch (_e) { /* */ }
+        this.viewer = undefined;
+      }
+      ui.empty(this._externalMolstarHost);
+      // A throw-away DataFrame so plot.fromType can be called. We could use
+      // this.tableView.dataFrame here, but the wizard path has no tableView,
+      // and plot.fromType is happy with a 1-column 1-row DataFrame.
+      const tempDf = DG.DataFrame.fromColumns([
+        DG.Column.fromStrings('pdb_id', ['']),
+      ]);
+      this.viewer = await tempDf.plot.fromType(
         'Biostructure', allOptions) as DG.Viewer;
-      this.tableView.dockManager.dock(
-        this.viewer as unknown as DG.Viewer, DG.DOCK_TYPE.RIGHT, null, 'Mol*', 0.4);
-      if (this.viewerPlaceholderNode) {
-        this.tableView.dockManager.close(this.viewerPlaceholderNode);
-        this.viewerPlaceholderNode = undefined;
+      const vroot = (this.viewer as any).root ?? (this.viewer as DG.Viewer).root;
+      if (vroot) {
+        // Make the viewer fill its host. Without this, BSV's default sizing
+        // produces a small canvas in the upper-left corner of the dark host.
+        (vroot as HTMLElement).style.width = '100%';
+        (vroot as HTMLElement).style.height = '100%';
+        (vroot as HTMLElement).style.position = 'absolute';
+        (vroot as HTMLElement).style.inset = '0';
+        this._externalMolstarHost.append(vroot);
       }
       return;
     }
-    (this.viewer as any).setOptions(allOptions);
+
+    if (!this.tableView) return;
+
+    // Force-rebuild the Mol* viewer on every refresh. BSV's setOptions
+    // performs an asynchronous viewSyncer reshuffle when `showBindingSite`
+    // changes — empirically that leaves plugin.state.data.cells in a state
+    // where iterating for cartoon/binding-site cells finds none (verified by
+    // a [Mol* style] (0) console line that then retried 6× and gave up,
+    // leaving the protein at full opacity and hiding the chain-F overlays
+    // inside it). Tearing down and re-creating the viewer guarantees a
+    // clean state tree and is only ~1–2 s of wall time on a 5-PDB demo.
+    if (this.viewer && this.viewerDockNode) {
+      try {
+        const oldViewer = this.viewer;
+        this.tableView.dockManager.close(this.viewerDockNode);
+        try { (oldViewer as any).close?.(); } catch (_e) { /* */ }
+      } catch (e) {
+        console.warn('[refresh] failed to tear down old viewer cleanly:', e);
+      }
+      this.viewer = undefined;
+      this.viewerDockNode = undefined;
+    }
+
+    // Close the empty-state placeholder BEFORE docking the new viewer.
+    // Otherwise the dock manager has to fit three things in the right area
+    // (placeholder + new viewer + detail), which leaves the input panel
+    // squeezed to ~80 px wide and pushes detail past the viewport edge.
+    if (this.viewerPlaceholderNode) {
+      this.tableView.dockManager.close(this.viewerPlaceholderNode);
+      this.viewerPlaceholderNode = undefined;
+    }
+    this.viewer = await this.tableView.dataFrame.plot.fromType(
+      'Biostructure', allOptions) as DG.Viewer;
+    // Dock the new viewer to the LEFT of the detail panel (which was
+    // pre-docked at init time at root-level RIGHT). Using the detail node
+    // as the neighbor keeps the layout stable: grid | Mol* | detail panel.
+    // If we instead dock at root-level RIGHT with null neighbor, the dock
+    // manager makes the new viewer the FAR-right sibling of the detail
+    // panel, displacing detail into the middle (observed empirically).
+    //
+    // Ratio = 0.6 gives Mol* ~60% of the (Mol* + detail) horizontal area,
+    // detail ~40%. The Stage-4 detail panel shows a 5-column grid (PDB ID,
+    // ligand, residue, family, interaction) — at 40% of the available width
+    // every row is visible without horizontal scrolling.
+    if (this.pdbDetailNode) {
+      this.viewerDockNode = this.tableView.dockManager.dock(
+        this.viewer as unknown as DG.Viewer,
+        DG.DOCK_TYPE.LEFT, this.pdbDetailNode, 'Mol*', 0.6);
+    } else {
+      // Fallback if detail node somehow wasn't created (defensive).
+      this.viewerDockNode = this.tableView.dockManager.dock(
+        this.viewer as unknown as DG.Viewer, DG.DOCK_TYPE.RIGHT, null, 'Mol*', 0.55);
+    }
   }
 
   /**
@@ -950,6 +1280,224 @@ export class ConsensusPharmacophoreApp {
    * Each call clears any previous `consensus-features` structure first so
    * repeated Features/Consensus clicks don't pile overlays up.
    */
+  /**
+   * Mount the chain-F interaction overlay as N separate Mol* structures
+   * (one per PDB), tracking each ref in `_alignedInteractionRefs`. Used by
+   * Step 4 (Features) so the row-click isolation flow can hide the overlay
+   * of every PDB except the clicked one — without rebuilding the viewer.
+   *
+   * Cleans up any previous overlay structures (cells whose label starts
+   * with `cp-overlay`) before mounting new ones. Each PDB gets its own
+   * Data → Trajectory → Model → Structure → ligand component → spacefill
+   * rep subtree, identical to the single-overlay path in
+   * `addInteractionOverlay` but filtered to one PDB at a time.
+   */
+  private async addInteractionOverlayPerPdb(
+    features: DG.DataFrame, sizeFactor = 2.5, chainLetter = 'F',
+  ): Promise<void> {
+    this.clearOverlayRefs();
+    if (!this.viewer) return;
+    const plugin = (this.viewer as any).viewer?.plugin;
+    if (!plugin) {
+      console.warn('[overlay] plugin not reachable; per-PDB overlay skipped');
+      return;
+    }
+
+    // Clean up stale overlay cells (from a previous Step 4 / Step 5 run).
+    const stale: string[] = [];
+    for (const [ref, cell] of plugin.state.data.cells) {
+      const label = cell?.transform?.params?.label ?? cell?.obj?.label;
+      if (typeof label === 'string' && label.startsWith('cp-overlay'))
+        stale.push(ref);
+    }
+    if (stale.length > 0) {
+      const cleanup = plugin.build();
+      for (const ref of stale) cleanup.delete(ref);
+      try { await cleanup.commit(); } catch (e) { console.warn('[overlay] cleanup failed', e); }
+    }
+
+    const pdbIdCol = features.col('pdb_id');
+    if (!pdbIdCol) {
+      console.warn('[overlay] features has no pdb_id column; falling back to single-overlay path');
+      await this.addInteractionOverlay(features, sizeFactor, {chain: chainLetter});
+      return;
+    }
+    const famCol = features.col('family');
+    const xCol = features.col('x');
+    const yCol = features.col('y');
+    const zCol = features.col('z');
+    const skipCol = features.col('skip_reason');
+    const f = (v: number): string => v.toFixed(3).padStart(8);
+
+    // ONE overlay structure PER INTERACTION (not per family). Mol*'s
+    // toggleVisibility works at structure granularity, so a single shared
+    // per-family structure could not hide an individual contact — un-ticking
+    // one interaction in the detail panel calls setInteractionHidden(key),
+    // which hides exactly that structure. Each sphere is still uniform-colored
+    // with its family's legend hex so the 3D view matches the legend chips.
+    // Every interaction structure is tracked under its PDB id (for row-click
+    // isolation) AND keyed by consensusFeatureKey (for per-interaction hide and
+    // the isolate path's interaction-exclusion check).
+    let totalAtoms = 0;
+    for (let i = 0; i < features.rowCount; i++) {
+      if (skipCol && String(skipCol.get(i) ?? '').trim() !== '') continue;
+      const pdbId = String(pdbIdCol.get(i) ?? '').toUpperCase().trim();
+      if (!pdbId) continue;
+      const x = Number(xCol?.get(i));
+      const y = Number(yCol?.get(i));
+      const z = Number(zCol?.get(i));
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+      const fam = resolveFamily(String(famCol?.get(i) ?? ''));
+      // Legend hex '#RRGGBB' → Mol* Color int (0xRRGGBB).
+      const colorInt = parseInt(fam.hexColor.slice(1), 16);
+      // Single-atom HETATM block (same column layout as the working consensus
+      // overlay): element/resName from FAMILY_MAP drive the vdW sphere size.
+      const atomNameField = fam.element.length === 2
+        ? fam.element.padEnd(4)
+        : ' ' + fam.element.padEnd(3);
+      const block =
+        `REMARK   Interaction ${pdbId} #${i} (${fam.name})\n` +
+        `HETATM    1 ${atomNameField} ${fam.resName.padEnd(3)} ${chainLetter}   1    ` +
+        f(x) + f(y) + f(z) +
+        '  1.00  1.00          ' + fam.element.padStart(2) + '\nEND\n';
+      const key = consensusFeatureKey(features, i);
+      try {
+        const data = await plugin.builders.data.rawData(
+          {data: block, label: `cp-overlay-${pdbId}-${i}`});
+        const trajectory = await plugin.builders.structure.parseTrajectory(data, 'pdb');
+        const model = await plugin.builders.structure.createModel(trajectory);
+        const structure = await plugin.builders.structure.createStructure(model);
+        const component = await plugin.builders.structure.tryCreateComponentStatic(
+          structure, 'ligand', {label: `cp-overlay-component-${pdbId}-${i}`});
+        if (component) {
+          await plugin.builders.structure.representation.addRepresentation(component, {
+            type: 'spacefill',
+            // Slightly transparent so the spheres read as feature "clouds"
+            // and the ligand/pocket behind them stays visible.
+            typeParams: {sizeFactor, alpha: 0.7},
+            color: 'uniform',
+            colorParams: {value: colorInt},
+          });
+        }
+        // Track the ROOT structure's ref directly from the builder return.
+        const ref = (structure as any).ref;
+        if (ref) {
+          if (!this._alignedInteractionRefs.has(pdbId))
+            this._alignedInteractionRefs.set(pdbId, []);
+          this._alignedInteractionRefs.get(pdbId)!.push(ref);
+          this._interactionRefByKey.set(key, ref);
+          this._interactionKeyByRef.set(ref, key);
+          totalAtoms += 1;
+        }
+      } catch (e) {
+        console.error(`[overlay] failed for ${pdbId} interaction ${i}:`, e);
+      }
+    }
+    console.log(`[overlay] tracked ${this._alignedInteractionRefs.size} PDB(s), ` +
+      `${this._interactionRefByKey.size} per-interaction spheres (family-colored)`);
+  }
+
+  /**
+   * Mount the Stage-3 pocket atoms as N separate Mol* structures (one per
+   * PDB), tracking each ref in `_alignedInteractionRefs`. Used by Step 3
+   * (Pocket) so the row-click isolation flow can hide the pocket overlay of
+   * every PDB except the clicked one — exactly mirrors
+   * `addInteractionOverlayPerPdb`, but draws Cα + ligand-seed pocket atoms
+   * (chain P) instead of chain-F interactions. The rep type follows the
+   * user's Pocket-rep choice (spacefill dots vs gaussian-surface).
+   *
+   * Reusing `_alignedInteractionRefs` is safe: only one step's overlays exist
+   * at a time because navigation rebuilds the viewer (`syncViewerToStep`).
+   */
+  private async addPocketOverlayPerPdb(
+    // `sizeFactor` multiplies each atom's vdW radius in Mol*'s spacefill rep.
+    // ~0.5 renders the pocket Cα + ligand-seed atoms as fine "dots" (the look
+    // the user asked to bring back); 1.6 made chunky, overlapping spheres that
+    // read as a blob rather than dots. Bump back up for a denser spacefill.
+    pocketAtoms: DG.DataFrame, rep: PocketRep, sizeFactor = 0.5,
+  ): Promise<void> {
+    this.clearOverlayRefs();
+    if (!this.viewer) return;
+    const plugin = (this.viewer as any).viewer?.plugin;
+    if (!plugin) {
+      console.warn('[pocket-overlay] plugin not reachable; per-PDB overlay skipped');
+      return;
+    }
+
+    // Clean up stale overlay cells (cp-overlay*) from a previous step's render.
+    const stale: string[] = [];
+    for (const [ref, cell] of plugin.state.data.cells) {
+      const label = cell?.transform?.params?.label ?? cell?.obj?.label;
+      if (typeof label === 'string' && label.startsWith('cp-overlay')) stale.push(ref);
+    }
+    if (stale.length > 0) {
+      const cleanup = plugin.build();
+      for (const ref of stale) cleanup.delete(ref);
+      try { await cleanup.commit(); } catch (e) { console.warn('[pocket-overlay] cleanup failed', e); }
+    }
+
+    const pdbIdCol = pocketAtoms.col('pdb_id');
+    if (!pdbIdCol) {
+      console.warn('[pocket-overlay] pocket_atoms has no pdb_id column; skipping per-PDB overlay');
+      return;
+    }
+    const uniqueIds = new Set<string>();
+    for (let i = 0; i < pocketAtoms.rowCount; i++) {
+      const id = String(pdbIdCol.get(i) ?? '').toUpperCase().trim();
+      if (id) uniqueIds.add(id);
+    }
+
+    const knownRefs = new Set<string>();
+    for (const [ref, cell] of plugin.state.data.cells) {
+      const tname = cell?.obj?.type?.name;
+      if (tname === 'Structure' || tname === 'Molecular Structure') knownRefs.add(ref);
+    }
+
+    const isSurface = rep === 'gaussian-surface';
+    let serial = 1;
+    let totalAtoms = 0;
+    for (const pdbId of uniqueIds) {
+      const overlay = pocketAtomsToOverlayBlock(pocketAtoms, {
+        chain: 'P', serialStart: serial, pdbIdFilter: pdbId,
+      });
+      if (!overlay) continue;
+      const atomLines = overlay.split('\n').filter((l) => l.startsWith('HETATM')).length;
+      serial += atomLines;
+      totalAtoms += atomLines;
+      const fullBlock = `REMARK   Pocket overlay for ${pdbId} (chain P)\n` + overlay + '\nEND\n';
+      try {
+        const data = await plugin.builders.data.rawData(
+          {data: fullBlock, label: `cp-overlay-${pdbId}`});
+        const trajectory = await plugin.builders.structure.parseTrajectory(data, 'pdb');
+        const model = await plugin.builders.structure.createModel(trajectory);
+        const structure = await plugin.builders.structure.createStructure(model);
+        const component = await plugin.builders.structure.tryCreateComponentStatic(
+          structure, 'ligand', {label: `cp-overlay-component-${pdbId}`});
+        if (component) {
+          await plugin.builders.structure.representation.addRepresentation(component, {
+            type: isSurface ? 'gaussian-surface' : 'spacefill',
+            typeParams: isSurface ? {alpha: 0.55} : {sizeFactor, alpha: 1.0},
+            color: 'element-symbol',
+          });
+        }
+        for (const [ref, cell] of plugin.state.data.cells) {
+          const tname = cell?.obj?.type?.name;
+          if ((tname === 'Structure' || tname === 'Molecular Structure') &&
+              !knownRefs.has(ref) && !this._alignedInteractionRefs.has(pdbId)) {
+            // Pocket overlay = one structure per PDB → single-element array.
+            this._alignedInteractionRefs.set(pdbId, [ref]);
+            knownRefs.add(ref);
+            break;
+          }
+        }
+      } catch (e) {
+        console.error(`[pocket-overlay] failed for ${pdbId}:`, e);
+      }
+    }
+    console.log(`[pocket-overlay] tracked ${this._alignedInteractionRefs.size} per-PDB ` +
+      `pocket overlays, ${totalAtoms} atoms total (rep: ${rep})`);
+  }
+
   private async addInteractionOverlay(
     features: DG.DataFrame, sizeFactor = 2.5, opts: {chain?: string} = {},
   ): Promise<void> {
@@ -1125,18 +1673,16 @@ export class ConsensusPharmacophoreApp {
    * per PDB) — only `summary.onCurrentRowChanged` drives the panel updates.
    */
   private setupPdbDetailPanel(features: DG.DataFrame, summary: DG.DataFrame): void {
-    if (!this.tableView) return;
+    // The dock node + host are pre-created in init() so Mol*'s width stays
+    // constant across stages. If init() hasn't run yet, defensively create
+    // them here. In the wizard path, _externalDetailHost was assigned to
+    // pdbDetailHost via attachDetailHost(), and there is no dock node.
     if (!this.pdbDetailHost) {
       this.pdbDetailHost = ui.div([], 'cp-pdb-detail-panel');
-      this.pdbDetailHost.style.padding = '8px 10px';
-      this.pdbDetailHost.style.minWidth = '240px';
-      this.pdbDetailHost.style.fontSize = '12px';
-      this.pdbDetailHost.style.overflowY = 'auto';
     }
-    // Dock on first call. ratio 0.2 = ~20% of remaining width — leaves Mol* room.
-    if (!this.pdbDetailNode) {
+    if (!this.pdbDetailNode && this.tableView && !this._externalDetailHost) {
       this.pdbDetailNode = this.tableView.dockManager.dock(
-        this.pdbDetailHost, DG.DOCK_TYPE.RIGHT, null, 'PDB detail', 0.2);
+        this.pdbDetailHost, DG.DOCK_TYPE.RIGHT, this.viewerDockNode, 'PDB detail', 0.4);
     }
 
     // Re-subscribe to onCurrentRowChanged on the NEW summary DataFrame.
@@ -1160,15 +1706,136 @@ export class ConsensusPharmacophoreApp {
    * stale content.
    */
   private closePdbDetailPanel(): void {
+    // Unsubscribe from the previous summary's onCurrentRowChanged stream so
+    // the old summary DataFrame doesn't pin live update callbacks. The dock
+    // node itself stays (pre-created in init for layout stability) — we just
+    // restore the empty-state hint.
     if (this.pdbDetailSub) {
       try { this.pdbDetailSub.unsubscribe(); } catch (_e) { /* */ }
       this.pdbDetailSub = undefined;
     }
-    if (this.pdbDetailNode && this.tableView) {
-      try { this.tableView.dockManager.close(this.pdbDetailNode); } catch (_e) { /* */ }
-      this.pdbDetailNode = undefined;
+    if (this.pdbDetailHost) {
+      ui.empty(this.pdbDetailHost);
+      this.pdbDetailHost.append(ui.divText(
+        'Per-PDB interaction detail — click 4. Features to populate.',
+        'cp-pdb-detail-empty'));
     }
-    this.pdbDetailHost = undefined;
+  }
+
+  /** Zoom the Mol* camera in on a single interaction's position — the same
+   *  effect as clicking that atom in Mol*. Reachable purely through the
+   *  runtime plugin (`plugin.managers.camera`), so no Mol* internals are
+   *  bundled (hard rule #4). Pair with `resetCameraView()` to zoom back out
+   *  when the user de-selects the interaction. */
+  async focusInteraction(x: number, y: number, z: number): Promise<void> {
+    if (!this.viewer) return;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return;
+    const camera = (this.viewer as any).viewer?.plugin?.managers?.camera;
+    if (!camera) return;
+    try {
+      // focusSphere frames a sphere of radius max(radius + extraRadius,
+      // minRadius). radius 0 + a tight minRadius gives a close-up centred on
+      // the feature (~9 Å of context around the contact point).
+      camera.focusSphere({center: [x, y, z], radius: 0},
+        {durationMs: 350, minRadius: 9, extraRadius: 2});
+    } catch (e) {
+      console.warn('[focus] focusSphere failed:', e);
+    }
+  }
+
+  /** Zoom the Mol* camera back out to frame the whole scene — the "de-select"
+   *  / standard-view counterpart to `focusInteraction()`. */
+  async resetCameraView(): Promise<void> {
+    if (!this.viewer) return;
+    const camera = (this.viewer as any).viewer?.plugin?.managers?.camera;
+    if (!camera) return;
+    try {
+      camera.reset(undefined, 350);
+    } catch (e) {
+      console.warn('[focus] camera reset failed:', e);
+    }
+  }
+
+  /** Show or hide ALL of one PDB's structures (protein + its per-family
+   *  interaction overlays) in Mol* without a viewer rebuild. Wired to the
+   *  Step 4 "Use" checkbox: un-ticking a PDB removes it from the 3D view as
+   *  well as from the Step 5 consensus. No-op when the fast-path refs aren't
+   *  tracked yet. Uses the same single-transaction hierarchy.toggleVisibility
+   *  path as `isolatePdb`. */
+  async setPdbHidden(pdbId: string, hidden: boolean): Promise<void> {
+    if (!this.viewer) return;
+    const plugin = (this.viewer as any).viewer?.plugin;
+    const hierarchy = plugin?.managers?.structure?.hierarchy;
+    if (!plugin || !hierarchy?.current) return;
+    const up = pdbId.toUpperCase();
+    try {
+      const structByRootRef = new Map<string, any>();
+      for (const s of hierarchy.current.structures)
+        structByRootRef.set(s.cell.transform.ref, s);
+      const targets: any[] = [];
+      const protRef = this._alignedStructureRefs.get(up);
+      if (protRef && structByRootRef.has(protRef))
+        targets.push(structByRootRef.get(protRef));
+      for (const ref of (this._alignedInteractionRefs.get(up) ?? []))
+        if (structByRootRef.has(ref)) targets.push(structByRootRef.get(ref));
+      if (targets.length > 0)
+        hierarchy.toggleVisibility(targets, hidden ? 'hide' : 'show');
+    } catch (e) {
+      console.warn('[setPdbHidden] failed:', e);
+    }
+  }
+
+  /** Hide every PDB currently excluded via the Step 4 "Use" checkboxes. Called
+   *  after the Step 4 viewer is (re)built so un-ticked PDBs don't reappear when
+   *  the user navigates away and back (a rebuild starts every structure
+   *  visible). */
+  private async applyPdbExclusionsToViewer(): Promise<void> {
+    const isCons = this._consensusSelectionHooks?.isPdbExcluded;
+    const isInput = this._consensusSelectionHooks?.isInputPdbExcluded;
+    if (!isCons && !isInput) return;
+    for (const id of this._alignedStructureRefs.keys()) {
+      const hide = (isCons && isCons(id)) || (isInput && isInput(id));
+      if (hide) await this.setPdbHidden(id, true);
+    }
+  }
+
+  /** Clear all overlay ref tracking (per-PDB + per-interaction). Called wherever
+   *  the interaction overlay is torn down or rebuilt so stale refs never leak
+   *  into isolatePdb / setInteractionHidden. Loop form so a global
+   *  find-replace of the per-map .clear() calls never rewrites this body. */
+  private clearOverlayRefs(): void {
+    for (const m of [this._alignedInteractionRefs, this._interactionRefByKey,
+      this._interactionKeyByRef]) m.clear();
+  }
+
+  /** Show or hide ONE interaction's sphere in Mol* (no rebuild). Wired to the
+   *  per-interaction "use" checkbox in the Step 4 detail panel: un-ticking a
+   *  contact removes its sphere from the 3D view as well as from the consensus.
+   *  No-op when the interaction's structure ref isn't tracked. */
+  async setInteractionHidden(key: string, hidden: boolean): Promise<void> {
+    if (!this.viewer) return;
+    const plugin = (this.viewer as any).viewer?.plugin;
+    const hierarchy = plugin?.managers?.structure?.hierarchy;
+    if (!plugin || !hierarchy?.current) return;
+    const ref = this._interactionRefByKey.get(key);
+    if (!ref) return;
+    try {
+      let target: any = null;
+      for (const s of hierarchy.current.structures)
+        if (s.cell.transform.ref === ref) { target = s; break; }
+      if (target) hierarchy.toggleVisibility([target], hidden ? 'hide' : 'show');
+    } catch (e) {
+      console.warn('[setInteractionHidden] failed:', e);
+    }
+  }
+
+  /** Hide every interaction the user has un-ticked. Called after the Step 4
+   *  overlay is (re)built so excluded contacts don't reappear on rebuild. */
+  private async applyInteractionExclusionsToViewer(): Promise<void> {
+    const isExcluded = this._consensusSelectionHooks?.isInteractionExcluded;
+    if (!isExcluded) return;
+    for (const key of this._interactionRefByKey.keys())
+      if (isExcluded(key)) await this.setInteractionHidden(key, true);
   }
 
   /** Render the per-PDB detail panel content for the currently-selected
@@ -1232,11 +1899,9 @@ export class ConsensusPharmacophoreApp {
 
     // Detail table — one mini-row per interaction.
     const list = ui.div([], 'cp-pdb-detail-list');
-    list.style.display = 'grid';
-    list.style.gridTemplateColumns = '12px 1fr auto auto';
-    list.style.columnGap = '6px';
-    list.style.rowGap = '3px';
-    list.style.alignItems = 'center';
+    list.style.display = 'flex';
+    list.style.flexDirection = 'column';
+    list.style.rowGap = '2px';
 
     const famCol = features.col('family');
     const intCol = features.col('interaction_type');
@@ -1244,6 +1909,11 @@ export class ConsensusPharmacophoreApp {
     const distCol = features.col('distance');
     const pdbCol = features.col('pdb_id');
     const skipCol = features.col('skip_reason');
+    const xCol = features.col('x');
+    const yCol = features.col('y');
+    const zCol = features.col('z');
+    // Highlighted interaction (clicked) — its row stays marked across renders.
+    const highlightedKey = this._highlightedInteractionKey;
 
     let nShown = 0;
     for (let i = 0; i < features.rowCount && nShown < 200; i++) {
@@ -1251,36 +1921,151 @@ export class ConsensusPharmacophoreApp {
       if (skipCol && String(skipCol.get(i) ?? '').trim() !== '') continue;
       const famName = String(famCol?.get(i) ?? '');
       const fam = resolveFamily(famName);
+      const key = consensusFeatureKey(features, i);
+      // One clickable row per interaction (same 5-col grid template as before:
+      // checkbox · family dot · type · residue · distance), but a single
+      // element so the WHOLE row highlights its Mol* sphere on click.
+      const row = ui.div();
+      row.classList.add('cp-detail-int-row');
+      row.style.display = 'grid';
+      // Fixed widths on the last two columns so independent per-row grids stay
+      // aligned (residue / distance). checkbox=auto, dot=12px, type=1fr.
+      row.style.gridTemplateColumns = 'auto 12px 1fr 88px 58px';
+      row.style.columnGap = '6px';
+      row.style.alignItems = 'center';
+      row.style.cursor = 'pointer';
+      row.style.borderRadius = '3px';
+      row.style.padding = '1px 2px';
+      row.title = 'Click to zoom to this interaction in the 3D viewer. ' +
+        'Click again to zoom back out.';
+      if (key === highlightedKey) row.style.background = 'rgba(33,150,243,0.18)';
+
+      // Per-interaction "use" checkbox (tier 2) — exclude THIS contact from the
+      // Step 5 consensus without dropping the whole PDB. stopPropagation so
+      // ticking it doesn't also fire the row's 3D-highlight click.
+      const selHooks = this._consensusSelectionHooks;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = selHooks ? !selHooks.isInteractionExcluded(key) : true;
+      cb.disabled = !selHooks;
+      cb.title = 'Include this interaction in the Step 5 consensus.';
+      cb.style.cursor = 'pointer';
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        selHooks?.toggleInteraction(key);
+        // Un-ticking also hides this interaction's sphere in Mol* (re-ticking
+        // shows it) — mirrors the per-PDB "Use" box.
+        void this.setInteractionHidden(key, !cb.checked);
+      });
+      row.append(cb);
       const dot = ui.div();
       dot.style.width = '8px';
       dot.style.height = '8px';
       dot.style.borderRadius = '50%';
       dot.style.background = fam.hexColor;
-      list.append(dot);
-      list.append(ui.divText(String(intCol?.get(i) ?? '')));
-      list.append(ui.divText(String(resCol?.get(i) ?? ''), 'cp-pdb-detail-res'));
+      row.append(dot);
+      row.append(ui.divText(String(intCol?.get(i) ?? '')));
+      row.append(ui.divText(String(resCol?.get(i) ?? ''), 'cp-pdb-detail-res'));
       const d = Number(distCol?.get(i));
-      list.append(ui.divText(Number.isFinite(d) ? d.toFixed(2) + ' Å' : ''));
+      row.append(ui.divText(Number.isFinite(d) ? d.toFixed(2) + ' Å' : ''));
+
+      // Click anywhere on the row → zoom the 3D viewer in on this interaction
+      // (like clicking the atom in Mol*). Click the SAME row again to toggle
+      // off — de-select and zoom back out to the standard whole-scene view.
+      const ix = Number(xCol?.get(i));
+      const iy = Number(yCol?.get(i));
+      const iz = Number(zCol?.get(i));
+      row.addEventListener('click', () => {
+        const wasFocused = this._highlightedInteractionKey === key;
+        list.querySelectorAll<HTMLElement>('.cp-detail-int-row')
+          .forEach((el) => { el.style.background = ''; });
+        if (wasFocused) {
+          this._highlightedInteractionKey = undefined;
+          void this.resetCameraView();
+        } else {
+          this._highlightedInteractionKey = key;
+          row.style.background = 'rgba(33,150,243,0.18)';
+          void this.focusInteraction(ix, iy, iz);
+        }
+      });
+      list.append(row);
       nShown += 1;
     }
-    if (nShown === 0)
+    // Surface skip_reason diagnostics for THIS PDB so a 0-interaction result
+    // explains itself (ProLIF conversion / bond-perception failure, ligand not
+    // found, pdbfixer drop, etc.) instead of a bare "(no interactions)". This
+    // is the user-facing "why did 5HG8 break?" answer.
+    const skipReasons: string[] = [];
+    if (skipCol && pdbCol) {
+      const seen = new Set<string>();
+      for (let i = 0; i < features.rowCount; i++) {
+        if (String(pdbCol.get(i)) !== pdbId) continue;
+        const r = String(skipCol.get(i) ?? '').trim();
+        if (r && !seen.has(r)) { seen.add(r); skipReasons.push(r); }
+      }
+    }
+    if (nShown === 0 && skipReasons.length === 0)
       list.append(ui.divText('(no interactions for this PDB)',
         'cp-pdb-detail-empty'));
     this.pdbDetailHost.append(list);
+    if (skipReasons.length > 0) {
+      const diag = ui.div([], 'cp-pdb-detail-skip');
+      diag.style.marginTop = '8px';
+      diag.style.fontSize = '11px';
+      diag.style.color = '#B26A00';
+      diag.append(ui.divText(nShown === 0
+        ? '⚠ No interactions — ProLIF could not process this ligand:'
+        : '⚠ Some ligand/residue rows were skipped:'));
+      for (const r of skipReasons) {
+        const line = ui.divText('• ' + r);
+        line.style.fontFamily = 'monospace';
+        line.style.whiteSpace = 'normal';
+        diag.append(line);
+      }
+      this.pdbDetailHost.append(diag);
+    }
   }
 
   // -------------------------------------------------------------------------
   // Preview cache + per-stage ensures
   // -------------------------------------------------------------------------
 
-  private previewFingerprint(pdbIds: string[], opts: PipelineOptions): string {
+  /** Fingerprint of the inputs + every user-visible option, deterministic across
+   *  reorderings. The wizard calls this to compare the live form state against
+   *  `lastRunFingerprint()` — when they match, displayed stage results are still
+   *  valid and the stale banner should clear. */
+  previewFingerprint(pdbIds: string[], opts: PipelineOptions): string {
+    return this._previewFingerprint(pdbIds, opts);
+  }
+
+  /** Fingerprint of the inputs + options that produced the currently-cached
+   *  stage results. Returns null when the cache is empty (no run yet, or a
+   *  full reset). */
+  lastRunFingerprint(): string | null {
+    return this.previewCache?.fingerprint ?? null;
+  }
+
+  private _previewFingerprint(pdbIds: string[], opts: PipelineOptions): string {
     return JSON.stringify({
       pdbIds: [...pdbIds].sort(),
       maxResolution: opts.maxResolution,
-      requireXray: opts.requireXray,
+      allowXray: opts.allowXray,
+      allowNmr: opts.allowNmr,
+      allowCryoEm: opts.allowCryoEm,
+      allowAlphaFold: opts.allowAlphaFold,
       minLigandMw: opts.minLigandMw,
       pocketMethod: opts.pocketMethod,
       pocketRadius: opts.pocketRadius,
+      // refPdbId is the Stage 2a alignment template. Changing it produces
+      // different RMSDs and a different aligned DataFrame, so it must be
+      // part of the cache key — otherwise switching reference in the UI
+      // would silently return the previous run's aligned result.
+      refPdbId: (opts.refPdbId ?? '').trim().toUpperCase(),
+      // Step 1 "Use" deselections — drop PDBs before Stage 2. Different
+      // exclusion set = different aligned/pocket/features/consensus, so the
+      // whole downstream cache must invalidate when the user toggles a box.
+      excludedInputPdbs: [...(opts.excludedInputPdbs ?? [])]
+        .map((s) => s.toUpperCase()).sort().join(','),
     });
   }
 
@@ -1297,7 +2082,9 @@ export class ConsensusPharmacophoreApp {
     if (cache.pdbQc) return cache.pdbQc;
     this.setStageStatus('stage1', 'running');
     pi.update(10, 'Stage 1: enriching PDB metadata...');
-    const pdbQc = await enrichPdbList(pdbIds, opts);
+    const stage1 = await enrichPdbList(pdbIds, opts);
+    const pdbQc = stage1.accepted;
+    this._droppedPdbs = stage1.dropped;
     if (pdbQc.rowCount === 0)
       throw new Error('No usable PDB entries after QC filtering. ' +
         'Check the PDB IDs, loosen the resolution cap, or disable the X-ray filter.');
@@ -1327,7 +2114,11 @@ export class ConsensusPharmacophoreApp {
     return cache.rawBlocks;
   }
 
-  /** Run Stage 2a (or use cached) and publish aligned_structures. */
+  /** Run Stage 2a (or use cached) and publish aligned_structures. Filters
+   *  cache.pdbQc by the Step 1 "Use" deselections before handing rows to
+   *  Stage 2a — excluded PDBs never enter alignment / pocket / features /
+   *  consensus. The exclusion set is in the fingerprint, so this filtered
+   *  view is consistent with the cache slot. */
   private async ensureAligned(
     cache: PreviewCache, opts: PipelineOptions, pi: DG.ProgressIndicator,
   ): Promise<DG.DataFrame> {
@@ -1335,7 +2126,11 @@ export class ConsensusPharmacophoreApp {
     if (!cache.pdbQc) throw new Error('ensureAligned: pdb_qc missing from cache');
     this.setStageStatus('stage2a', 'running');
     pi.update(50, 'Stage 2a: aligning structures (Kabsch)...');
-    const aligned = await runStage2aAlign(cache.pdbQc, opts);
+    const stage2Input = filterPdbQcByInputExclusion(cache.pdbQc, opts);
+    if (stage2Input.rowCount === 0)
+      throw new Error('All accepted PDBs are un-ticked in Step 1’s "Use" column. ' +
+        'Re-tick at least one PDB to continue.');
+    const aligned = await runStage2aAlign(stage2Input, opts);
     aligned.name = 'aligned_structures (preview)';
     this.setStageStatus('stage2a', 'done');
     cache.aligned = aligned;
@@ -1397,14 +2192,23 @@ export class ConsensusPharmacophoreApp {
   private async ensureConsensusModel(
     cache: PreviewCache, pi: DG.ProgressIndicator, opts: PipelineOptions,
   ): Promise<DG.DataFrame> {
-    if (cache.consensusModel) return cache.consensusModel;
+    // Consensus-only signature = the k-means knobs + the user's PDB/interaction
+    // exclusions. If unchanged and we have a cached model, reuse it. Otherwise
+    // recompute from the FILTERED features. This makes a knob change OR a PDB
+    // toggle re-run ONLY Stage 5a — Stages 1-4 stay cached (they're keyed by
+    // the global fingerprint, which deliberately omits these consensus inputs).
+    const sig = consensusSignature(opts);
+    if (cache.consensusModel && cache.consensusSignature === sig)
+      return cache.consensusModel;
     if (!cache.ligandFeatures) throw new Error('ensureConsensusModel: ligandFeatures missing');
     this.setStageStatus('stage5a', 'running');
     pi.update(92, 'Stage 5a: k-means consensus...');
-    const consensus = await runStage5aConsensusKmeans(cache.ligandFeatures, opts);
+    const features = filterFeaturesForConsensus(cache.ligandFeatures, opts);
+    const consensus = await runStage5aConsensusKmeans(features, opts);
     consensus.name = 'consensus_model (preview)';
     this.setStageStatus('stage5a', 'done');
     cache.consensusModel = consensus;
+    cache.consensusSignature = sig;
     return consensus;
   }
 
@@ -1412,18 +2216,33 @@ export class ConsensusPharmacophoreApp {
    * Preview 1/3 — fetch PDBs from RCSB (no alignment). Structures appear in their
    * native crystallographic frames; useful for sanity-checking the inputs.
    */
-  async previewFetch(pdbIds: string[], options: PipelineOptions): Promise<void> {
-    if (!this.tableView) throw new Error('previewFetch called before init()');
+  async previewFetch(
+    pdbIds: string[], options: PipelineOptions, fetchOpts: {render3d?: boolean} = {},
+  ): Promise<void> {
+    // tableView may be undefined in the wizard path — setActiveDataFrame()
+    // guards the assignment.
     this.resetStageStatuses();
     this.closePdbDetailPanel();
-    this.setMolstarCaption(
-      'Fetched PDBs shown in their native crystallographic frames (no alignment yet).');
     const cache = this.ensurePreviewCache(this.previewFingerprint(pdbIds, options));
     const pi = DG.TaskBarProgressIndicator.create('Fetch PDBs: starting...');
     try {
       const pdbQc = await this.ensurePdbQc(cache, pdbIds, options, pi);
-      this.tableView.dataFrame = pdbQc;
+      this.setActiveDataFrame(pdbQc);
+
+      // Wizard path passes render3d:false — Step 1 (Fetch) is about QC, not
+      // 3D. Showing the structures in their native crystallographic frames
+      // here is actively confusing (each PDB sits at its own origin, so they
+      // scatter across the canvas). The 3D story starts at Step 2 (Align).
+      // Skipping the render also avoids fetching raw PDB blocks until they're
+      // actually needed (Stage 2a fetches them anyway).
+      if (fetchOpts.render3d === false) {
+        pi.update(100, 'Done.');
+        return;
+      }
+
       const rawBlocks = await this.ensureRawBlocks(cache, pdbQc, pi);
+      this.setMolstarCaption(
+        'Fetched PDBs shown in their native crystallographic frames (no alignment yet).');
 
       // Unique pdb_ids preserved in pdb_qc first-occurrence order
       const labels: string[] = [];
@@ -1439,10 +2258,16 @@ export class ConsensusPharmacophoreApp {
       }
 
       pi.update(90, 'Rendering in Mol*...');
-      await this.refreshDockedViewer(
-        concatPdbStructures(blocks, labels).body,
-        {showBindingSite: false},
-      );
+      // Render each PDB as a SEPARATE Mol* structure (same multi-structure path
+      // Step 2 uses) so the Step 1 Accepted PDBs row-click can isolate one and
+      // the "Use" checkbox can hide one — both via the fast toggleVisibility
+      // path against tracked `_alignedStructureRefs`. The legacy concat path
+      // glued all PDBs into a single Mol* structure, which had no per-PDB
+      // visibility handle. Native crystal frames will visually scatter (each
+      // PDB sits at its own origin); the per-PDB selection still works.
+      await this.renderAlignedStructuresMulti(blocks, labels);
+      this._cachedAlignedBlocks = blocks;
+      this._cachedAlignedLabels = labels;
       // Reset to opaque cartoon + show solvent (in case Pocket was clicked previously).
       await this.setMolstarStyle({cartoonAlpha: 1.0, solventAlpha: 1.0});
       pi.update(100, 'Done.');
@@ -1463,7 +2288,7 @@ export class ConsensusPharmacophoreApp {
    * by the Kabsch transform from the Python script.
    */
   async previewAlign(pdbIds: string[], options: PipelineOptions): Promise<void> {
-    if (!this.tableView) throw new Error('previewAlign called before init()');
+    // tableView may be undefined in the wizard path.
     this.resetStageStatuses();
     this.closePdbDetailPanel();
     this.setMolstarCaption(
@@ -1474,7 +2299,7 @@ export class ConsensusPharmacophoreApp {
     try {
       await this.ensurePdbQc(cache, pdbIds, options, pi);
       const aligned = await this.ensureAligned(cache, options, pi);
-      this.tableView.dataFrame = aligned;
+      this.setActiveDataFrame(aligned);
 
       const pdbCol = aligned.col('original_pdb')!;
       const tCol = aligned.col('transform_4x4_json')!;
@@ -1489,10 +2314,16 @@ export class ConsensusPharmacophoreApp {
       }
 
       pi.update(90, 'Rendering in Mol*...');
-      await this.refreshDockedViewer(
-        concatPdbStructures(transformedBlocks, labels).body,
-        {showBindingSite: false},
-      );
+      // Render each PDB as a SEPARATE Mol* structure (not a concat). This
+      // lets Step 2's row clicks toggle per-PDB visibility via Mol*'s
+      // native `isHidden` flag — instant, no rebuild. Uses applyPreset on
+      // each trajectory to match BSV's default cartoon+components setup.
+      await this.renderAlignedStructuresMulti(transformedBlocks, labels);
+      // Keep the cached blocks too — fallback path in case the multi-
+      // structure setup doesn't populate `_alignedStructureRefs` (then
+      // isolatePdb can still rebuild from blocks).
+      this._cachedAlignedBlocks = transformedBlocks;
+      this._cachedAlignedLabels = labels;
       await this.setMolstarStyle({cartoonAlpha: 1.0, solventAlpha: 1.0});
       pi.update(100, 'Done.');
       const refId = String(aligned.col('ref_pdb_id')?.get(0) ?? '?');
@@ -1513,7 +2344,7 @@ export class ConsensusPharmacophoreApp {
    * point cloud around each ligand).
    */
   async previewPocket(pdbIds: string[], options: PipelineOptions): Promise<void> {
-    if (!this.tableView) throw new Error('previewPocket called before init()');
+    // tableView may be undefined in the wizard path.
     this.resetStageStatuses();
     this.closePdbDetailPanel();
     this.setMolstarCaption(
@@ -1528,7 +2359,7 @@ export class ConsensusPharmacophoreApp {
       // but we no longer surface it in the grid — the user-facing output of
       // "Pocket" is the visual, not the atom list.
       const pocketAtoms = await this.ensurePocketAtoms(cache, options, pi);
-      this.tableView.dataFrame = aligned;
+      this.setActiveDataFrame(aligned);
 
       const pdbCol = aligned.col('original_pdb')!;
       const tCol = aligned.col('transform_4x4_json')!;
@@ -1542,36 +2373,29 @@ export class ConsensusPharmacophoreApp {
         transformedBlocks.push(block ? stripCofactorsFromPdb(applyPdbTransform(block, transformJson)) : '');
       }
 
-      // Hand the aligned structures to Mol* and turn on its native binding-site
-      // renderer (BSV's `showBindingSite` flag wires up `applyBindingSiteView()`,
-      // which picks the largest non-cofactor ligand and highlights residues
-      // within `bindingSiteRadius`). No custom HETATM overlay needed.
-      pi.update(90, 'Rendering in Mol*...');
-      const oldRefsKey = this.snapshotBindingSiteRefs();
-      await this.refreshDockedViewer(
-        concatPdbStructures(transformedBlocks, labels).body,
-        {
-          showBindingSite: true,
-          bindingSiteRadius: options.pocketRadius,
-          bindingSiteWholeResidues: true,
-        },
-      );
-      // Wait for BSV to FINISH applying the binding site (clear-then-build runs on a
-      // viewSyncer queue, so we wait until bindingSiteRefs CHANGE from their old
-      // value — otherwise our style edits land on cells BSV is about to destroy).
-      await this.waitForBindingSiteApplied(oldRefsKey);
-      const isSurface = options.pocketRep === 'gaussian-surface';
-      await this.setMolstarStyle({
-        cartoonAlpha: 0.25,
-        bindingSiteRep: options.pocketRep,
-        bindingSiteAlpha: isSurface ? 0.55 : 1.0,
-        solventAlpha: 0.0,
-      });
+      // Render proteins as N SEPARATE structures (same multi-structure path
+      // as Step 2) so Step 3 rows can isolate one protein + its pocket via
+      // hierarchy.toggleVisibility — no rebuild. The pocket "dots" are then
+      // drawn as per-PDB overlays (chain P, Cα + ligand-seed atoms) instead
+      // of BSV's whole-viewer binding-site renderer (which can't be isolated
+      // per structure). See the `molstar-via-bsv` skill for the trade-off.
+      pi.update(90, 'Rendering proteins in Mol*...');
+      await this.renderAlignedStructuresMulti(transformedBlocks, labels);
+      this._cachedAlignedBlocks = transformedBlocks;
+      this._cachedAlignedLabels = labels;
+      // Translucent cartoon so the pocket overlay reads clearly on top.
+      await this.setMolstarStyle({cartoonAlpha: 0.25, solventAlpha: 0.0});
+      pi.update(96, 'Adding pocket overlays...');
+      await this.addPocketOverlayPerPdb(pocketAtoms, options.pocketRep);
+      // Re-assert the translucent cartoon after the overlay (same race
+      // mitigation as previewFeatures).
+      await this.setMolstarStyleWithRetry({cartoonAlpha: 0.25, solventAlpha: 0.0});
       pi.update(100, 'Done.');
       const nResidues = countPocketResidues(pocketAtoms);
       grok.shell.info(`Pocket: ${nResidues} pocket residue(s) detected ` +
         `(${options.pocketMethod}, ${options.pocketRadius.toFixed(1)} A). ` +
-        `Rep: ${options.pocketRep}; cartoon translucent; solvent hidden.`);
+        `Rep: ${options.pocketRep}; cartoon translucent; solvent hidden. ` +
+        'Click a PDB row to isolate it.');
     } catch (e: any) {
       const failing = currentRunningStage(this.stageBadges) ?? 'preview';
       this.setStageStatus(failing, 'error');
@@ -1588,7 +2412,7 @@ export class ConsensusPharmacophoreApp {
    * the Pocket view.
    */
   async previewFeatures(pdbIds: string[], options: PipelineOptions): Promise<void> {
-    if (!this.tableView) throw new Error('previewFeatures called before init()');
+    // tableView may be undefined in the wizard path.
     this.resetStageStatuses();
     this.setMolstarCaption(
       'Stage 4: chain-F spheres = ProLIF protein-ligand interactions (one per ' +
@@ -1613,36 +2437,40 @@ export class ConsensusPharmacophoreApp {
       const smilesByPdb = cache.pdbQc ? ligandSmilesMap(cache.pdbQc) : undefined;
       const summary = aggregateFeaturesByPdb(features, smilesByPdb);
       summary.name = 'pdb_interaction_summary';
-      this.tableView.dataFrame = summary;
+      this._summaryDf = summary;
+      this.setActiveDataFrame(summary);
       this.setupPdbDetailPanel(features, summary);
 
-      // Render proteins ONLY (no chain F splice). Chain F gets added afterward as
-      // a SEPARATE Mol* structure so we can style it with bigger spheres without
-      // colliding with BSV's static-ligand / binding-site partitions.
+      // Render proteins as N SEPARATE Mol* structures (same pattern as
+      // Step 2's `renderAlignedStructuresMulti`) so the Step 4 row click
+      // can isolate one PDB instantly via the hierarchy.toggleVisibility
+      // fast path — no viewer rebuild needed.
       const structureBlocks = this.buildAlignedBlocksFromCache(alignedV2);
-      const concat = concatPdbStructures(structureBlocks.blocks, structureBlocks.labels,
-        {terminate: true});
 
       pi.update(95, 'Rendering proteins in Mol*...');
-      await this.refreshDockedViewer(concat.body, {
-        // Binding site stays OFF — the user only wants the interaction dots,
-        // not the pocket-residue sphere mesh on top of them.
-        showBindingSite: false,
-      });
-      // With showBindingSite:false there's no binding-site refs to wait on,
-      // so we poll for plugin readiness ourselves — otherwise setMolstarStyle
-      // and addInteractionOverlay early-return on a not-yet-initialized plugin.
-      await this.waitForMolstarReady();
+      await this.renderAlignedStructuresMulti(
+        structureBlocks.blocks, structureBlocks.labels);
+      // Keep the per-PDB blocks for the slow-path fallback in `isolatePdb`.
+      this._cachedAlignedBlocks = structureBlocks.blocks;
+      this._cachedAlignedLabels = structureBlocks.labels;
       await this.setMolstarStyle({
         cartoonAlpha: 0.25,
         solventAlpha: 0.0,
       });
-      // Overlay chain F as a separate Mol* structure (big spacefill, no
-      // binding-site interference). sizeFactor 2.5 vs Mol*'s default 1.0 makes
-      // each interaction sphere about 2.5× the radius of a regular spacefill
-      // atom — clearly bigger than what the binding site used to render at.
-      pi.update(98, 'Adding interaction overlay...');
-      await this.addInteractionOverlay(features, 2.5);
+      // Mount the chain-F interaction overlay as N separate structures
+      // (one per PDB). This is what makes Step 4 isolation actually work —
+      // each PDB's interaction spheres get their own ref so we can hide
+      // them in lockstep with the protein.
+      pi.update(98, 'Adding interaction overlays...');
+      // sizeFactor 1.3 → distinct family-colored interaction "dots" rather than
+      // chunky overlapping blobs; each sphere marks one ProLIF contact point.
+      await this.addInteractionOverlayPerPdb(features, 1.3);
+      // Re-apply any per-PDB "Use" exclusions to the freshly-built scene so a
+      // PDB the user un-ticked stays hidden across viewer rebuilds (navigating
+      // away and back to Step 4 rebuilds every structure visible).
+      await this.applyPdbExclusionsToViewer();
+      // Same for individually un-ticked interactions (per-interaction hide).
+      await this.applyInteractionExclusionsToViewer();
       // Re-apply the cartoon dim AFTER the overlay (same race-mitigation as in
       // previewConsensus — see the comment there for the full reasoning).
       // Use the retry wrapper because a single setMolstarStyle pass can
@@ -1669,7 +2497,7 @@ export class ConsensusPharmacophoreApp {
    * Uses the existing Stage 5b renderer.
    */
   async previewConsensus(pdbIds: string[], options: PipelineOptions): Promise<void> {
-    if (!this.tableView) throw new Error('previewConsensus called before init()');
+    // tableView may be undefined in the wizard path.
     this.resetStageStatuses();
     this.closePdbDetailPanel();
     this.setMolstarCaption(
@@ -1688,7 +2516,7 @@ export class ConsensusPharmacophoreApp {
       const alignedV2 = await this.ensureAlignedV2(cache, pi);
       await this.ensureLigandFeatures(cache, pi);
       const consensus = await this.ensureConsensusModel(cache, pi, options);
-      this.tableView.dataFrame = consensus;
+      this.setActiveDataFrame(consensus);
 
       // Same separate-structure overlay path as previewFeatures: load proteins
       // only into the main Mol* structure, then add chain P consensus as a
@@ -1747,6 +2575,223 @@ export class ConsensusPharmacophoreApp {
     return {labels, blocks};
   }
 
+  /**
+   * Render the aligned structures as N SEPARATE Mol* structures (one per
+   * PDB) instead of a single concat'd structure. This is what `previewAlign`
+   * uses so that Step 2 can toggle per-PDB visibility via Mol*'s native
+   * `isHidden` flag — no viewer rebuild needed when the user clicks rows
+   * in the RMSD table.
+   *
+   * Strategy: load the first PDB via BSV (sets up the viewer chrome), then
+   * add each remaining PDB via `plugin.builders.structure.hierarchy.applyPreset`
+   * which is the SAME high-level path BSV uses internally — it creates a
+   * Trajectory → Model → Structure subtree plus the default polymer +
+   * representations automatically. This is more reliable than manually
+   * composing `tryCreateComponentStatic('polymer')` + `addRepresentation`,
+   * which was attempted previously and produced structures that didn't
+   * actually render in the canvas.
+   *
+   * Side effect: populates `this._alignedStructureRefs` with PDB id (upper)
+   * → state ref so `isolatePdb()` can find structures to hide/show.
+   */
+  private async renderAlignedStructuresMulti(blocks: string[], labels: string[]): Promise<void> {
+    if (blocks.length === 0) return;
+    // The viewer is being rebuilt — any interaction-highlight marker is gone,
+    // so clear the tracked key (else the detail row would show as highlighted
+    // with no matching sphere).
+    this._highlightedInteractionKey = undefined;
+    // 1. Mount the viewer chrome with the FIRST PDB via BSV. This sets up
+    //    the full state tree (data, trajectory, model, structure, components,
+    //    representations) using BSV's preset.
+    await this.refreshDockedViewer(blocks[0], {showBindingSite: false});
+    if (!this.viewer) return;
+    await this.waitForMolstarReady();
+
+    // 2. Snapshot the structure refs that exist AFTER BSV's first load.
+    //    Anything new we add after this point will produce a new structure
+    //    ref that we can pair with the corresponding PDB id.
+    //    NOTE: BSV exposes the Mol* PluginContext at `.viewer.plugin`, not
+    //    `.plugin` directly. Getting this wrong returns undefined and
+    //    silently breaks tracking — keep this path consistent with
+    //    `waitForMolstarReady` / `setMolstarStyle`.
+    const plugin = (this.viewer as any).viewer?.plugin;
+    if (!plugin) {
+      console.warn('[renderAlignedStructuresMulti] plugin not reachable; ' +
+        'isolatePdb will fall back to rebuild path');
+      return;
+    }
+    // Pick out ROOT Molecular Structure cells only — i.e. those whose parent
+    // cell is a Model, not another Structure. BSV's default preset, like the
+    // 'default' applyPreset path, creates a fan-out under each root Structure
+    // (polymer / ligand / water / branched component "structures") that also
+    // claim type name 'Molecular Structure'. Tracking the root parent gives
+    // us a single ref per PDB whose `isHidden` toggle propagates to every
+    // descendant — exactly what isolatePdb wants.
+    const collectRootStructRefs = (): Set<string> => {
+      const roots = new Set<string>();
+      for (const [ref, cell] of plugin.state.data.cells) {
+        const tname = cell?.obj?.type?.name;
+        if (tname !== 'Structure' && tname !== 'Molecular Structure') continue;
+        const parentRef = cell?.transform?.parent;
+        const parentCell = parentRef ? plugin.state.data.cells.get(parentRef) : null;
+        const parentType = parentCell?.obj?.type?.name;
+        // A root structure's parent is the Model it was derived from.
+        // Component structures have another Structure as their parent.
+        if (parentType === 'Model' || parentType === 'Molecule.Model') roots.add(ref);
+      }
+      return roots;
+    };
+
+    const preExistingRoots = collectRootStructRefs();
+    this._alignedStructureRefs.clear();
+    // Pair labels[0] with the single root structure BSV produced from blocks[0].
+    if (preExistingRoots.size === 1) {
+      const [firstRef] = preExistingRoots;
+      this._alignedStructureRefs.set(labels[0].toUpperCase(), firstRef);
+    } else {
+      console.warn(`[renderAlignedStructuresMulti] expected exactly 1 root structure ` +
+        `after BSV load, found ${preExistingRoots.size}`);
+    }
+
+    // 3. Add the remaining PDBs via applyPreset — produces the same kind
+    //    of subtree (components + cartoon reps) that BSV created for the
+    //    first PDB.
+    const trackedRoots = new Set(preExistingRoots);
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      const label = labels[i];
+      if (!block) continue;
+      try {
+        const data = await plugin.builders.data.rawData(
+          {data: block, label: `cp-aligned-${label}`});
+        const trajectory = await plugin.builders.structure.parseTrajectory(data, 'pdb');
+        // applyPreset auto-creates Model → Structure → Components → Reps
+        // following the default preset (cartoon for polymer, etc.).
+        await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default');
+        // Find the freshly-created ROOT Structure cell — the one whose
+        // parent is the new Model cell.
+        const rootsNow = collectRootStructRefs();
+        for (const ref of rootsNow) {
+          if (!trackedRoots.has(ref)) {
+            this._alignedStructureRefs.set(label.toUpperCase(), ref);
+            trackedRoots.add(ref);
+            break;
+          }
+        }
+      } catch (e) {
+        console.error(`[renderAlignedStructuresMulti] failed for ${label}:`, e);
+      }
+    }
+    console.log(`[renderAlignedStructuresMulti] tracked ${this._alignedStructureRefs.size} / ` +
+      `${blocks.length} structures: ${Array.from(this._alignedStructureRefs.keys()).join(', ')}`);
+  }
+
+  /**
+   * Show only the named PDB in the Mol* viewer (hide all others), or
+   * release the isolation (`pdbId === null` → show all).
+   *
+   * Fast path: if `_alignedStructureRefs` has all the expected PDBs
+   * tracked, toggle their `isHidden` flag via `plugin.state.data.updateCellState`.
+   * This is a state-tree update with no parser invocation — ~10 ms.
+   *
+   * Slow path: if the refs map is incomplete (e.g. `renderAlignedStructuresMulti`
+   * didn't populate every structure), fall back to a viewer rebuild with
+   * the filtered concat block from the cached aligned data (~1 s).
+   */
+  async isolatePdb(pdbId: string | null): Promise<void> {
+    const blocks = this._cachedAlignedBlocks;
+    const labels = this._cachedAlignedLabels;
+    if (blocks.length === 0) return;
+
+    // Fast path — only valid when EVERY label has a tracked structure ref.
+    const fastPathValid = this.viewer && labels.length > 0 &&
+      labels.every((l) => this._alignedStructureRefs.has(l.toUpperCase()));
+    if (fastPathValid) {
+      // Same `.viewer.plugin` path as renderAlignedStructuresMulti — see
+      // the note there.
+      const plugin = (this.viewer as any).viewer?.plugin;
+      const hierarchy = plugin?.managers?.structure?.hierarchy;
+      if (plugin && hierarchy?.current) {
+        try {
+          // Map our tracked root refs (proteins + per-PDB interaction
+          // overlays) to the hierarchy manager's StructureRef objects.
+          // The hierarchy manager has a toggleVisibility([refs], 'show'|'hide')
+          // API that walks the structure subtree internally and flips
+          // visibility on every component + representation in a SINGLE
+          // state-tree transaction — exactly what we need to avoid per-cell
+          // re-render storms.
+          const structByRootRef = new Map<string, any>();
+          for (const s of hierarchy.current.structures)
+            structByRootRef.set(s.cell.transform.ref, s);
+
+          // Collect (pdbId, rootRef) tuples from BOTH maps. A single PDB
+          // typically contributes 2 structures in Step 4 (protein + overlay);
+          // 1 in Steps 2/3 (protein only). Isolating must hide/show both
+          // in lockstep so the interaction spheres of hidden PDBs don't
+          // hang in space.
+          const allTracked: Array<[string, string]> = [
+            ...this._alignedStructureRefs.entries(),
+          ];
+          // _alignedInteractionRefs maps a PDB → MANY overlay refs (Step 4 has
+          // one per family); flatten so every overlay toggles with its protein.
+          for (const [id, refs] of this._alignedInteractionRefs.entries())
+            for (const ref of refs) allTracked.push([id, ref]);
+          const toHide: any[] = [];
+          const toShow: any[] = [];
+          const isPdbExcl = this._consensusSelectionHooks?.isPdbExcluded;
+          const isInputExcl = this._consensusSelectionHooks?.isInputPdbExcluded;
+          const isIntExcl = this._consensusSelectionHooks?.isInteractionExcluded;
+          for (const [id, rootRef] of allTracked) {
+            const s = structByRootRef.get(rootRef);
+            if (!s) continue;
+            // PDB-level: isolation (pdbId != null) shows only the targeted PDB;
+            // show-all (pdbId == null) keeps PDBs the user un-ticked hidden so
+            // releasing isolation doesn't resurrect an excluded PDB. BOTH the
+            // Step 1 "Use" (input) and Step 4 "Use" (consensus) checkboxes
+            // contribute to hide-on-show-all.
+            let hidden = pdbId != null
+              ? id !== pdbId.toUpperCase()
+              : !!((isPdbExcl && isPdbExcl(id)) ||
+                   (isInputExcl && isInputExcl(id)));
+            // Interaction-level: an un-ticked interaction stays hidden even
+            // when its PDB is shown or isolated.
+            if (!hidden) {
+              const k = this._interactionKeyByRef.get(rootRef);
+              if (k && isIntExcl && isIntExcl(k)) hidden = true;
+            }
+            (hidden ? toHide : toShow).push(s);
+          }
+          if (toHide.length > 0) hierarchy.toggleVisibility(toHide, 'hide');
+          if (toShow.length > 0) hierarchy.toggleVisibility(toShow, 'show');
+          // Auto-reframe the camera on what's NOW visible. Without this the
+          // camera keeps its previous framing (the whole-scene bounding box),
+          // so an isolated PDB sitting at a distant native-frame origin
+          // (Step 1, no alignment yet) ends up off-screen — the user sees an
+          // empty viewport even though the structure is technically rendered.
+          // requestCameraReset() with no snapshot = auto-frame visible content.
+          try { plugin.managers.camera.reset(undefined, 350); } catch (_e) { /* */ }
+          return;
+        } catch (e) {
+          console.warn('[isolatePdb] hierarchy.toggleVisibility failed, falling back:', e);
+        }
+      }
+    }
+
+    // Slow path — rebuild the viewer with all or one PDB.
+    console.log('[isolatePdb] fast path unavailable; falling back to rebuild');
+    if (pdbId == null) {
+      const concat = concatPdbStructures(blocks, labels, {terminate: true});
+      await this.refreshDockedViewer(concat.body, {showBindingSite: false});
+    } else {
+      const idx = labels.findIndex((l) => l.toUpperCase() === pdbId.toUpperCase());
+      if (idx < 0) return;
+      const filtered = concatPdbStructures([blocks[idx]], [labels[idx]], {terminate: true});
+      await this.refreshDockedViewer(filtered.body, {showBindingSite: false});
+    }
+    this._cachedAlignedBlocks = blocks;
+    this._cachedAlignedLabels = labels;
+  }
+
   /** External hook — Phase 6 has no cancel button yet but the orchestrator honours an aborted flag. */
   abort(): void { this.aborted = true; }
 }
@@ -1761,7 +2806,7 @@ export class ConsensusPharmacophoreApp {
  * inside the per-PDB detail panel. Aligned 1:1 with FAMILY_CODES (D/A/a/H/P/N/X)
  * so adding a family elsewhere doesn't drift this mapping silently.
  */
-const SUMMARY_FAMILY_COL: Readonly<Record<string, string>> = {
+export const SUMMARY_FAMILY_COL: Readonly<Record<string, string>> = {
   D: 'n_donor',
   A: 'n_acceptor',
   a: 'n_aromatic',
@@ -1782,7 +2827,7 @@ const SUMMARY_FAMILY_COL: Readonly<Record<string, string>> = {
  * The `status` element is updated in place with brief progress text so the
  * user sees what's happening on long-running searches.
  */
-async function pickUniProtHit(
+export async function pickUniProtHit(
   query: string, status: HTMLElement,
 ): Promise<UniProtHit | null> {
   // Fast path — query is already a UniProt accession.
@@ -2013,7 +3058,7 @@ function countPocketResidues(pocketAtoms: DG.DataFrame): number {
   return seen.size;
 }
 
-function parsePdbIds(raw: string): string[] {
+export function parsePdbIds(raw: string): string[] {
   return parsePdbIdsDetailed(raw).accepted;
 }
 
@@ -2075,13 +3120,18 @@ export async function loadDemoPdbIds(): Promise<string[]> {
 async function runStage2aAlign(
   pdbQc: DG.DataFrame, opts: PipelineOptions,
 ): Promise<DG.DataFrame> {
-  console.log(`[Stage 2a] calling ${FN.STAGE2A} with ${pdbQc.rowCount} input rows`);
+  const refPdbIdArg = (opts.refPdbId ?? '').trim();
+  console.log(`[Stage 2a] calling ${FN.STAGE2A} with ${pdbQc.rowCount} input rows, ` +
+    `reference_pdb_id=${JSON.stringify(refPdbIdArg) || '"" (auto)'}`);
   try {
     const result = await grok.functions.call(FN.STAGE2A, {
       pdb_qc: pdbQc,
       chain_selection: 'auto',
       alt_loc_filter: true,
       min_occupancy: 0.5,
+      // User-overridable reference PDB; empty string = auto-pick (Python
+      // falls back to highest-resolution entry).
+      reference_pdb_id: refPdbIdArg,
     });
     console.log('[Stage 2a] raw result type:', result?.constructor?.name, result);
     const df = (result instanceof DG.DataFrame) ? result : (result as any)?.aligned_structures;
@@ -2316,6 +3366,90 @@ async function stubStage4ExtractFeatures(
   return DG.DataFrame.fromObjects(rows) ?? DG.DataFrame.fromColumns([
     DG.Column.fromStrings('pdb_id', []),
   ]);
+}
+
+/**
+ * Stable identifier for one ProLIF interaction row. Used by BOTH the Step 4
+ * per-interaction selection checkboxes (tier 2) and `filterFeaturesForConsensus`
+ * so the wizard and the orchestrator agree on what "this interaction" means.
+ * Composite of the identifying fields: PDB, protein residue, interaction type,
+ * and the ligand-centroid coords (rounded) to disambiguate multiple contacts
+ * to the same residue.
+ */
+export function consensusFeatureKey(features: DG.DataFrame, i: number): string {
+  const g = (c: string): string => String(features.col(c)?.get(i) ?? '');
+  const n = (c: string): string => {
+    const v = Number(features.col(c)?.get(i));
+    return Number.isFinite(v) ? v.toFixed(2) : '';
+  };
+  return `${g('pdb_id').toUpperCase()}|${g('residue')}|${g('interaction_type')}|` +
+    `${n('x')},${n('y')},${n('z')}`;
+}
+
+/**
+ * Consensus-only cache signature: the Stage 5a k-means knobs plus the user's
+ * PDB and per-interaction exclusions. `ensureConsensusModel` recomputes the
+ * consensus whenever this changes — without invalidating Stages 1-4.
+ */
+function consensusSignature(opts: PipelineOptions): string {
+  return JSON.stringify({
+    kq: opts.kq,
+    minFrac: opts.minClusterSizeFraction,
+    top: opts.topClusterNumber,
+    exclPdbs: [...(opts.consensusExcludedPdbs ?? [])].map((s) => s.toUpperCase()).sort(),
+    exclInts: [...(opts.consensusExcludedInteractions ?? [])].sort(),
+  });
+}
+
+/**
+ * Drop the rows the user excluded from the consensus: whole PDBs
+ * (`consensusExcludedPdbs`) and individual interactions
+ * (`consensusExcludedInteractions`, keyed by `consensusFeatureKey`). Returns
+ * the input unchanged when nothing is excluded. Diagnostic (skip_reason) rows
+ * are left as-is — Stage 5a already ignores them.
+ */
+function filterFeaturesForConsensus(
+  features: DG.DataFrame, opts: PipelineOptions,
+): DG.DataFrame {
+  const exclPdbs = new Set((opts.consensusExcludedPdbs ?? []).map((s) => s.toUpperCase()));
+  const exclInts = new Set(opts.consensusExcludedInteractions ?? []);
+  if (exclPdbs.size === 0 && exclInts.size === 0) return features;
+  const pdbCol = features.col('pdb_id');
+  if (!pdbCol) return features;
+  const keep = new Array<boolean>(features.rowCount);
+  let nKept = 0;
+  for (let i = 0; i < features.rowCount; i++) {
+    const pid = String(pdbCol.get(i) ?? '').toUpperCase();
+    let drop = exclPdbs.has(pid);
+    if (!drop && exclInts.size > 0) drop = exclInts.has(consensusFeatureKey(features, i));
+    keep[i] = !drop;
+    if (keep[i]) nKept++;
+  }
+  if (nKept === features.rowCount) return features;
+  const mask = DG.BitSet.create(features.rowCount, (i) => keep[i]);
+  return features.clone(mask);
+}
+
+/** Drop rows from pdb_qc whose pdb_id appears in opts.excludedInputPdbs (the
+ *  Step 1 "Use" deselections). Returns the original df when nothing is
+ *  excluded so the common case stays zero-cost. Used right before Stage 2a so
+ *  excluded PDBs never enter alignment / pocket / features / consensus. */
+function filterPdbQcByInputExclusion(
+  pdbQc: DG.DataFrame, opts: PipelineOptions,
+): DG.DataFrame {
+  const excl = new Set((opts.excludedInputPdbs ?? []).map((s) => s.toUpperCase()));
+  if (excl.size === 0) return pdbQc;
+  const pdbCol = pdbQc.col('pdb_id');
+  if (!pdbCol) return pdbQc;
+  const keep = new Array<boolean>(pdbQc.rowCount);
+  let nKept = 0;
+  for (let i = 0; i < pdbQc.rowCount; i++) {
+    keep[i] = !excl.has(String(pdbCol.get(i) ?? '').toUpperCase());
+    if (keep[i]) nKept++;
+  }
+  if (nKept === pdbQc.rowCount) return pdbQc;
+  const mask = DG.BitSet.create(pdbQc.rowCount, (i) => keep[i]);
+  return pdbQc.clone(mask);
 }
 
 /**

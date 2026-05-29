@@ -7,6 +7,7 @@
 #input: string chain_selection = "auto" {caption: Chain selection ('auto' picks the chain with the most Calpha atoms)}
 #input: bool alt_loc_filter = true {caption: Drop altLoc != ' '/'A'}
 #input: double min_occupancy = 0.5 {caption: Minimum occupancy}
+#input: string reference_pdb_id = "" {caption: Force this PDB as the alignment template (empty = auto-pick highest-resolution entry)}
 #output: dataframe aligned_structures
 
 # Pure-numpy implementation — no MDAnalysis dependency.
@@ -154,8 +155,26 @@ if not isinstance(pdb_qc, pd.DataFrame) or len(pdb_qc) == 0:
 
 unique_df = pdb_qc.drop_duplicates(subset='pdb_id', keep='first').reset_index(drop=True).copy()
 unique_df['_res_key'] = unique_df['resolution'].apply(_res_key)
-template_idx = unique_df['_res_key'].idxmin()
-template_id = str(unique_df.at[template_idx, 'pdb_id'])
+
+# If the user explicitly picked a reference PDB, honour it (case-insensitive
+# match against the unique PDB list). Otherwise default to the
+# highest-resolution entry.
+_ref_user = (reference_pdb_id or '').strip().upper()
+template_id = None
+if _ref_user:
+    _matches = unique_df[unique_df['pdb_id'].astype(str).str.upper() == _ref_user]
+    if len(_matches) > 0:
+        template_id = str(_matches.iloc[0]['pdb_id'])
+        print(f'Stage 2a: user-selected template = {template_id}')
+    else:
+        print(f'Stage 2a: requested reference {_ref_user} not in pdb_qc; '
+              f'falling back to auto-pick (highest resolution).')
+
+if template_id is None:
+    template_idx = unique_df['_res_key'].idxmin()
+    template_id = str(unique_df.at[template_idx, 'pdb_id'])
+    print(f'Stage 2a: auto-picked template = {template_id} (highest resolution)')
+
 print(f'Stage 2a: {len(unique_df)} unique PDB(s); template = {template_id}')
 
 # Fetch each PDB once.
