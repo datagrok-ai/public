@@ -3,7 +3,7 @@
 import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
-  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityProfile, HoistedColumn, MpoResult,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, HoistedColumn, MpoResult,
   NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
 } from './mpo-types';
 
@@ -50,31 +50,6 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
   }
 
   return raw;
-}
-
-/// Calculates the desirability score for a given x value
-/// Returns 0 if x is outside the range of the desirability line
-/// Otherwise, returns the y value of the desirability line at x
-export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): number {
-  // If the line is empty or x is outside the range, return 0
-  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0])
-    return 0;
-
-  // Find the two points that x lies between
-  for (let i = 0; i < desirabilityLine.length - 1; ++i) {
-    const [x1, y1] = desirabilityLine[i];
-    const [x2, y2] = desirabilityLine[i + 1];
-
-    if (x >= x1 && x <= x2) {
-      // Linear interpolation between the two points
-      if (x1 === x2) return y1;
-      const slope = (y2 - y1) / (x2 - x1);
-      return y1 + slope * (x - x1);
-    }
-  }
-
-  // Should not happen if x is within bounds, but return 0 as fallback
-  return 0;
 }
 
 /// Fingerprint of a property's value→desirability mapping (line/categories + missing-value handling, but NOT
