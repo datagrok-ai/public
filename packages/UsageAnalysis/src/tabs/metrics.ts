@@ -233,16 +233,17 @@ export class MetricsView extends UaView {
   }
 
   private buildQueriesPanel(): HTMLElement {
-    const modes: Array<[string, QueriesMode]> = [
-      ['slowest', 'slowest'],
-      ['most called', 'most-called'],
-      ['worst cache hit', 'worst-hit'],
+    const modes: Array<[string, QueriesMode, string]> = [
+      ['slowest', 'slowest', 'Highest total execution time — biggest aggregate load.'],
+      ['most called', 'most-called', 'Highest call count — small per-call costs add up.'],
+      ['worst cache hit', 'worst-hit',
+        'Lowest cache hit ratio (queries with ≥ 100 calls) — disk reads instead of memory; index or RAM candidates.'],
     ];
-    const buttons = modes.map(([label, mode]) => {
+    const buttons = modes.map(([label, mode, tooltip]) => {
       const btn = ui.toggleButton(label, () => {
         this.queriesMode = mode;
         this.loadQueries();
-      });
+      }, tooltip);
       if (mode === this.queriesMode)
         btn.classList.add('d4-current');
       return btn;
