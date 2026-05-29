@@ -434,6 +434,49 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
+  test('cellEditWhileFilterDisabled', async () => {
+    // Regression for the disable/enable case (PR #3826 review):
+    // editing a cell while the filter is disabled must leave the cached bitset known-stale
+    // so a re-enable triggers a fresh recompute instead of reusing pre-edit match bits.
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    const filter = await createFilter('Structure', df, sketcherDialogs);
+    filter.sketcher.setSmiles('c1ccccc1');
+    await awaitCheck(() => df.filter.trueCount === 32, 'initial benzene filter did not apply', 10000);
+
+    // Find a currently visible (benzene-matching) row.
+    let visIdx = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (df.filter.get(i)) { visIdx = i; break; }
+    }
+    expect(visIdx >= 0, true);
+
+    // Simulate the filter being disabled — both real disable paths (panel checkbox and the
+    // d4-filter-disabled class) resolve to isFiltering === false.
+    Object.defineProperty(filter, 'isFiltering', {get: () => false, configurable: true});
+
+    // Edit the visible row to ethane (no benzene). The subscription must NOT patch the bitset
+    // while disabled (no work to do), but it must mark the cache dirty so the next enable
+    // triggers a recompute.
+    df.col('Structure')!.set(visIdx, 'CC');
+    await awaitCheck(() => filter.recalculateFilter === true,
+      'recalculateFilter was not set when a cell was edited while filter is disabled', 2000);
+
+    // Re-enable the filter and run the filter pipeline.
+    delete (filter as any).isFiltering;
+    df.rows.requestFilter();
+
+    // After the fresh search, the edited row should no longer match — one fewer hit.
+    await awaitCheck(() => df.filter.trueCount === 31 && !df.filter.get(visIdx),
+      'recompute after re-enable did not exclude the edited row', 10000);
+
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+    await delay(1000);
+  });
+
 });
 
 

@@ -9,8 +9,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
-import {getRdKitModule, initRdKitService} from '../utils/chem-common-rdkit';
-import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {getRdKitService, initRdKitService} from '../utils/chem-common-rdkit';
 import {Subject, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
@@ -291,23 +290,32 @@ export class SubstructureFilter extends DG.Filter {
       }));
 
     // Patch only the changed rows' bits when cells are edited — O(k) instead of full re-scan.
-    // Falls back to a full recompute when the cache can't help (no bitset, search in flight,
-    // or a search mode that needs precomputation: IS_SIMILAR, STEREO_AGNOSTIC).
+    // If a full search is in flight, wait for it then patch on top, rather than restarting it.
+    // If the filter is disabled when the edit happens, mark the bitset dirty so a re-enable
+    // triggers a fresh search.
     this.subs.push(this.dataFrame!.onValuesChanged
       .pipe(filter((args: any) => {
-        const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
-        return this.isFiltering &&
-          args?.args?.column?.name === this.columnName &&
-          args?.args?.indexes?.length &&
-          (!active || active.filterId === -1 || active.filterId === this.filterId);
+        const eventArgs = args?.args;
+        return eventArgs?.column?.name === this.columnName && eventArgs?.indexes?.length;
       }))
       .subscribe(async (args: any) => {
-        const searching = this.batchResultObservable && !this.batchResultObservable.closed;
-        const canPatch = this.bitset != null && !searching &&
-          this.searchType !== SubstructureSearchType.IS_SIMILAR &&
-          this.searchType !== SubstructureSearchType.STEREO_AGNOSTIC;
-        if (canPatch)
-          this._patchChangedRows(args.args.indexes);
+        // Filter not currently active (disabled, or empty query): nothing to do now, but the
+        // bitset is stale for this row — mark dirty so the next enable recomputes.
+        if (!this.isFiltering) {
+          this.recalculateFilter = true;
+          return;
+        }
+        // Only the designated active filter does the work; peers sync via FILTER_SYNC_EVENT.
+        const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
+        if (active && active.filterId !== -1 && active.filterId !== this.filterId)
+          return;
+        const indexes = args.args.indexes;
+        const patchable = () => this.bitset != null && !this.recalculateFilter;
+        const searching = () => !!this.batchResultObservable && !this.batchResultObservable.closed;
+        if (patchable() && searching())
+          await awaitCheck(() => !searching(), 'substructure search did not complete', 60000).catch(() => {});
+        if (patchable() && !searching())
+          await this._patchChangedRows(indexes);
         else {
           this.recalculateFilter = true;
           await this._onSketchChanged();
@@ -461,46 +469,41 @@ export class SubstructureFilter extends DG.Filter {
     grok.shell.tv?.grid?.invalidate();
   }
 
-  /** Re-evaluate just the changed rows and patch the cached bitset in place.
+  /** Re-evaluate just the changed rows in a worker and patch the cached bitset in place.
    * Safe only for substructure search types — see the onValuesChanged guard. */
-  _patchChangedRows(indexes: Int32Array | number[]): void {
-    const rdkit = getRdKitModule();
-    const queryMol = getQueryMolSafe(this.currentMolecule, this.currentMolecule, rdkit);
-    if (!queryMol) return;
+  async _patchChangedRows(indexes: Int32Array | number[]): Promise<void> {
+    // Capture the bitset and read the edited cells BEFORE the awaits below — a peer filter's
+    // FILTER_SYNC_EVENT can reassign this.bitset while we're suspended.
+    const bitset = this.bitset;
+    if (!bitset) return;
+    const rows = Array.from(indexes);
+    const molecules = rows.map((i) => this.column!.get(i) ?? '');
+    const smarts = this.moleculeToSmarts(this.currentMolecule);
     try {
-      for (const idx of indexes) {
-        const mol = getMolSafe(this.column!.get(idx) ?? '', {}, rdkit).mol;
-        let match = false;
-        try {
-          if (mol) {
-            switch (this.searchType) {
-            case SubstructureSearchType.CONTAINS:
-              match = mol.get_substruct_match(queryMol) !== '{}'; break;
-            case SubstructureSearchType.NOT_CONTAINS:
-              match = mol.get_substruct_match(queryMol) === '{}'; break;
-            case SubstructureSearchType.INCLUDED_IN:
-              match = queryMol.get_substruct_match(mol) !== '{}'; break;
-            case SubstructureSearchType.NOT_INCLUDED_IN:
-              match = queryMol.get_substruct_match(mol) === '{}'; break;
-            case SubstructureSearchType.EXACT_MATCH:
-              match = mol.get_substruct_match(queryMol) !== '{}' &&
-                queryMol.get_substruct_match(mol) !== '{}'; break;
-            }
-          }
-        } finally {
-          mol?.delete();
-        }
-        this.bitset!.set(idx, match, false);
+      const service = await getRdKitService();
+      const matches = this.searchType === SubstructureSearchType.IS_SIMILAR
+        ? await service.similarityCheckForRows(molecules, this.currentMolecule, this.fp, this.similarityCutOff)
+        : await service.searchSubstructureForRows(molecules, this.currentMolecule, smarts!, this.searchType);
+      // If the filter state changed under us during the awaits (bitset replaced by a peer sync,
+      // or rows added/removed), recompute cleanly instead of patching stale state.
+      if (this.bitset !== bitset || bitset.length !== this.column!.length) {
+        this.recalculateFilter = true;
+        await this._onSketchChanged();
+        return;
       }
-    } finally {
-      queryMol.delete();
+      for (let j = 0; j < rows.length; j++)
+        bitset.set(rows[j], matches.getBit(j), false);
+      this.dataFrame!.rows.requestFilter();
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+        bitset, molblock: this.currentMolecule, colName: this.columnName,
+        filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
+        simCutOff: this.similarityCutOff, fp: this.fp,
+      });
+    } catch (e: any) {
+      _package.logger.error(e?.toString?.() ?? 'Chem | substructure filter incremental patch failed');
+      this.recalculateFilter = true;
+      await this._onSketchChanged();
     }
-    this.dataFrame!.rows.requestFilter();
-    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-      bitset: this.bitset, molblock: this.currentMolecule, colName: this.columnName,
-      filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
-      simCutOff: this.similarityCutOff, fp: this.fp,
-    });
   }
 
   applyFilter(): void {

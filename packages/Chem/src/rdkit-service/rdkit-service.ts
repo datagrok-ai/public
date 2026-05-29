@@ -270,6 +270,50 @@ export class RdKitService {
     () => {});
   }
 
+  /** Pick a worker for short subset calls (e.g. cell-edit patches). Routes off worker[0]
+   * which long-running ops like R-group analysis and MCS occupy, and clears any stale terminate
+   * flag on it — not awaited because postMessage is FIFO, so the worker processes the reset
+   * before any subsequent call sent to it, with no extra round-trip. */
+  private _getLastWorker(): RdKitServiceWorkerClient {
+    const worker = this.parallelWorkers[this.parallelWorkers.length - 1];
+    worker.setTerminateFlag(false).catch(() => {});
+    return worker;
+  }
+
+  /** Substructure-matches a small molecule subset (e.g. cells just edited in the grid) against
+   * {@link query} on a single worker, returning a dense BitArray indexed 0..molecules.length-1.
+   * Used for incremental filter updates, bypassing the striped full-column path.
+   * For IS_SIMILAR use {@link similarityCheckForRows}. */
+  async searchSubstructureForRows(molecules: string[], query: string, queryMolBlockFailover: string,
+    searchType: SubstructureSearchType): Promise<BitArray> {
+    const buffer = await this._getLastWorker()
+      .searchSubstructure(query, queryMolBlockFailover, molecules, searchType) as Uint32Array;
+    return new BitArray(buffer, molecules.length);
+  }
+
+  /** Tanimoto sibling of {@link searchSubstructureForRows} for IS_SIMILAR. Computes the query
+   * FP on the main thread, fetches per-row FPs from the worker, thresholds vs {@link similarityCutOff}.
+   * Returns a dense BitArray indexed 0..molecules.length-1. */
+  async similarityCheckForRows(molecules: string[], query: string, fp: Fingerprint,
+    similarityCutOff: number): Promise<BitArray> {
+    const result = new BitArray(molecules.length);
+    const queryMol = getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol;
+    if (!queryMol) return result;
+    let queryFpBytes: Uint8Array;
+    try { queryFpBytes = getRDKitFpAsUint8Array(queryMol, fp); } finally { queryMol.delete(); }
+    const queryFp = rdKitFingerprintToBitArray(queryFpBytes);
+    if (!queryFp) return result;
+    const fpRes = await this._getLastWorker().getFingerprints(fp, molecules, false) as IFpResult;
+    for (let i = 0; i < molecules.length; i++) {
+      const rowFpBytes = fpRes.fps[i];
+      if (!rowFpBytes) continue;
+      const rowFp = rdKitFingerprintToBitArray(rowFpBytes);
+      if (rowFp && tanimotoSimilarity(queryFp, rowFp) >= similarityCutOff)
+        result.setBit(i, true);
+    }
+    return result;
+  }
+
   /**
    * Filters molecules by substructure
    * @async
