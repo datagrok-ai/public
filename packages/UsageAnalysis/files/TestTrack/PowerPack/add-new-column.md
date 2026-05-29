@@ -41,124 +41,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and carries all four required
-          fields with valid values. feature is powerpack. The
-          sub_features_covered list has two entries (the
-          add-new-column-func and add-new-column ids). target_layer
-          is playwright. coverage_type is smoke. Both sub-feature
-          ids resolve to atlas entries at lines 615 and 622 of
-          feature-atlas/powerpack.yaml.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body carries the H2 Scenarios container and one H3
-          scenario heading (Add a column via the dialog and
-          autofill from Recent Activities). Single-scenario file
-          with no missing headings.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Eight numbered steps (1. through 8.) appear under the
-          scenario heading, covering dialog open, UI sanity, resize,
-          name entry, autocomplete plus drag-n-drop formula
-          composition, OK click, reopen, and Recent Activities
-          autofill verification.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          The single scenario is non-empty; all 8 numbered steps
-          carry concrete actions and verifications, not placeholder
-          bullets or empty markers.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer value playwright is within the allowed enum
-          set (playwright, apitest, manual-only) per verdict-enums
-          derived_enums.target_layer.canonical_values.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type value smoke is within the allowed enum set
-          (smoke, regression, edge, perf) per verdict-enums
-          derived_enums.coverage_type.canonical_values; not a
-          severity-axis (p0..p3) value.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type label set at file-level frontmatter
-          (coverage_type smoke) applies to the file single scenario.
-          No conflicting per-heading marker. Value comes from the
-          unified test-kind enum, not the severity axis.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Setup factored into a Setup section (opening
-          System:DemoFiles/demog.csv) that the scenario implicitly
-          consumes. No duplicated setup steps inside the numbered
-          scenario step list. Single-scenario file so the
-          across-scenarios duplication concern is also trivially
-          satisfied.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer ui-smoke is paired with coverage_type smoke
-          as required by the alignment rule (ui-smoke MUST be smoke).
-          No mismatch.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Body references concrete artifacts only. Demog dataset
-          path System:DemoFiles/demog.csv; real columns HEIGHT and
-          WEIGHT; real Round platform function; real Add new column
-          toolbar icon; real Recent Activities dialog control. The
-          created column name New is a concrete literal. No
-          angle-bracket, square-bracket, or generic stand-in
-          placeholders appear. The parametric-marker exception is
-          inapplicable here.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas known_issues (feature-atlas/powerpack.yaml lines
-          1393-1414) carry GROK-17109 and GROK-17004 with
-          test_coverage.exists false (semantically equivalent to
-          the legacy needed literal) and both affect the scenario
-          sub-features add-new-column and add-new-column-func.
-          Both bugs are addressed under clause (a) by appearing in
-          this scenario related_bugs frontmatter list. Clause (b)
-          is additionally satisfied since the Notes section names
-          both bug ids and explains how the smoke covers the
-          dialog-headline path while delegating the full
-          save+datasync+reopen invariant (GROK-17109) and
-          complex-paste invariant (GROK-17004) to sibling
-          AddNewColumn scenarios and chain-level
-          bug_focused_candidates (confirmed at
-          scenario-chains/powerpack.yaml lines 308-320). Other
-          atlas known_issues entries (GROK-17451, GROK-17269,
-          GROK-18656, etc.) affect formula-lines, power-search and
-          widgets surfaces, not this scenario sub-features, and
-          are owned by sibling scenarios per the chain
-          bug_focused_candidates block.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No step or scenario opted out for effort or complexity
-          reasons. The scope-delegation discussion in Notes cites
-          a real atlas-level dependency (sibling AddNewColumn
-          scenarios and chain-level bug_focused_candidates that
-          own the deferred bug-reproduction invariants), not
-          effort.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No TODO add later or to be done in next phase deferral
-          markers in body or frontmatter. The Notes section
-          explicitly references the prerequisite sibling scenarios
-          (AddNewColumn/add-new-column.md,
-          AddNewColumn/formula-refreshing.md,
-          AddNewColumn/highlight.md) and chain-level
-          bug_focused_candidates as the coverage paths owning the
-          deferred invariants.
   e:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

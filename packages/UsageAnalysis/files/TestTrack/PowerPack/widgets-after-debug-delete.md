@@ -33,110 +33,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML 1.2 and contains all four required keys
-          per the mode-file required list. feature is powerpack;
-          sub_features_covered is a 4-element list (powerpack.widgets,
-          powerpack.lifecycle.init, powerpack.dashboards, powerpack.welcome.view);
-          target_layer is apitest; coverage_type is regression. produced_from
-          is migrated; original_path, migration_date, related_bugs also
-          present. No malformed structure.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains a Setup H2 section, a Scenarios H2 section with three
-          Scenario N H3 subsection headings (Scenario 1 / 2 / 3), and a Notes
-          H2 section. At least one scenario heading exists in body.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each Scenario H3 heading is followed by numbered steps 1 through 5;
-          the Setup H2 section also carries numbered steps 1 through 3. The
-          numbered-step requirement is satisfied under every scenario heading.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios. Scenarios 1, 2, and 3 each carry five
-          substantive numbered steps plus an Expected block. Each step body
-          is concrete and non-vacuous.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer is apitest, one of the canonical enum values per the
-          failure-keys vocabulary (playwright, apitest, manual-only).
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type is regression, one of the canonical enum values per
-          the failure-keys vocabulary (smoke, regression, edge, perf). No
-          severity-axis value (p0..p3) is used in the test-kind position.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type is declared at frontmatter level (regression) and
-          applies uniformly to all three scenarios. The Notes coverage_type
-          rationale block explicitly justifies the choice — bug-focused
-          regression surface for GROK-16915, not smoke, not edge, not perf.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          A dedicated Setup H2 section factors the three shared preconditions
-          (sandbox server connection, baseline widget-registry snapshot,
-          debug-version provisioning). Scenarios 2 and 3 reference Setup Step
-          3 and Scenario 1 Step 1 by name rather than duplicating setup text.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer is documented as bug-focused in the Notes Pyramid
-          layer block but is NOT declared as a frontmatter field. The hard
-          alignment rule fires only when frontmatter carries
-          pyramid_layer=ui-smoke; absent the frontmatter field, the check
-          returns PASS-by-vacuity per the mode-file vacuity clause.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenario body cites real, verifiable identifiers — welcomeView,
-          PowerPack, UsageAnalysis, grok.dapi.packages.delete, DG.Func.find
-          with the DASHBOARD tag, HelpObjectHandler, and the four atlas
-          sub_feature ids (powerpack.widgets, powerpack.lifecycle.init,
-          powerpack.dashboards, powerpack.welcome.view) with exact source
-          paths (public/packages/PowerPack/src/package.ts at L134, L138, and
-          L315). All four sub_feature ids verified against atlas lines 124,
-          58, 102, 87. No angle-bracket, square-bracket, or generic
-          placeholders appear in scenario body or steps.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas powerpack.yaml known_issues uses the structured schema
-          test_coverage.exists (boolean) plus test_coverage.paths (list) for
-          all 10 bug entries; none use the literal A-BUG-01 trigger
-          test_coverage. needed (scalar string). Strict literal reading of
-          the check yields PASS-by-vacuity per the mode-file vacuity clause.
-          As overdelivery, the scenario explicitly addresses bug-library
-          entry GROK-16915 via related_bugs frontmatter and a dedicated Notes
-          Related bug block; atlas lines 1363-1372 list affects_sub_features
-          (powerpack.widgets, powerpack.lifecycle.init, powerpack.dashboards,
-          powerpack.welcome.view) exactly matching the scenario's
-          sub_features_covered.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          target_layer=apitest opt-out from playwright is justified by a real
-          technical dependency — destructive grok.dapi.packages.delete on a
-          shared server risks removing packages other developers depend on.
-          The Notes target_layer rationale block cites the JS API path as
-          equivalent to the UI Delete package control (same dapi call
-          regardless of dispatch surface). No effort or complexity framing
-          appears; the rationale is a concrete platform-isolation hazard.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          The Deferrals block documents a UI-driven manual variant deferral
-          and cites the missing dependency by name — helpers-registry has no
-          installDebugPackageVersion / deleteDebugPackageVersion pair with a
-          sandbox-only environment guard. Lattice Rule 13 satisfied; the
-          deferral cites a concrete missing helper dependency, not a generic
-          later-phase framing.
   e:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

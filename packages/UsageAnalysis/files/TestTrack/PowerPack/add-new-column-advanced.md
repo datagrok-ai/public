@@ -132,226 +132,44 @@ gate_verdicts:
     claims:
       - check_id: E-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Spec file present at the paired path
-          public/packages/UsageAnalysis/files/TestTrack/PowerPack/add-new-column-advanced-spec.ts
-          (sibling of scenario add-new-column-advanced.md). Verified
-          by Glob this cycle (cycle 2026-05-26-powerpack-automate-01).
-          On-disk folder casing is `PowerPack` (PascalCase), matching
-          the public/packages/<Pkg>/ naming convention.
       - check_id: E-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Spec parses as valid TypeScript on read: balanced braces
-          (test arrow open L137 -> finally L644 -> close L654 -> outer
-          close L660), single `test(...)` invocation, all imports are
-          valid TS import declarations referencing existing module
-          paths, no malformed signatures.
       - check_id: E-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          One `test(...)` block at L137: `test('PowerPack: Add New
-          Column — multi-source datasync persistence + formula recalc
-          on rename (GROK-17109)', async ({page}) => {...})`.
       - check_id: E-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          Test name "PowerPack: Add New Column — multi-source datasync
-          persistence + formula recalc on rename (GROK-17109)"
-          substring-matches scenario H3 "Add chained calculated columns,
-          mutate, save with datasync, reopen, verify" via load-bearing
-          keywords "Add", "datasync", "reopen" and the GROK-17109
-          chain-witness role declared in the scenario body L516-523.
       - check_id: E-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          Imports: @playwright/test (canonical) and three sibling-
-          relative TestTrack helper modules (`../spec-login`,
-          `../helpers/openers`, `../helpers/projects`). Sibling-
-          relative-to-TestTrack-helpers convention is the established
-          paradigm across TestTrack spec files; helper-module exports
-          verified by Grep this cycle: spec-login.ts exports
-          `baseUrl`, `specTestOptions`, `StepError`, `stepErrors`,
-          `softStep`, `loginToDatagrok`, `loginAsSecondUser`;
-          helpers/openers.ts exports `openTableFromFile` (L136),
-          `assertProvenanceScript` (L550); helpers/projects.ts
-          exports `saveProjectWithProvenance` (L855),
-          `deleteProjectWithCleanup` (L1060). No imports from
-          arbitrary external NPM paths.
       - check_id: E-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          Spec L1-3 carry the leading frontmatter block
-          `/* --- sub_features_covered: [...] --- */` before any other
-          content (no leading imports or line comments above it). All
-          five ids resolve to atlas entries verified by Grep:
-          powerpack.dialogs (L587), powerpack.dialogs.add-new-column
-          (L615), powerpack.dialogs.add-new-column-func (L622),
-          powerpack.dialogs.prepare-add-column-call (L629),
-          powerpack.formula.is-formula-column (L294). Spec frontmatter
-          mirrors scenario frontmatter exactly (5 ids, same order).
       - check_id: E-TRACE-01
         status: PASS
-        evidence: |
-          Every `softStep(...)` block carries an explicit "Step N: ..."
-          or "Setup:" label tracing to a numbered scenario step or to
-          the scenario Setup section. Login + workspace-reset
-          (L147-156) and `finally` cleanup (L644-654) are clearly
-          delimited setup/cleanup glue (not softSteps, not scenario
-          steps) and do not require `// technical:` markers.
       - check_id: E-TRACE-02
         status: PASS
-        evidence: |
-          All 10 numbered scenario steps covered: Step 1 (L187),
-          Step 2 (L202), Step 3 (L310), Step 4 (L327), Step 5 (L427),
-          Step 6 (L490), Step 7 (L507), Step 8 (L525), Step 9 (L577),
-          Step 10 (L616). Setup steps 1+2 covered by "Setup: open
-          System:DemoFiles/demog.csv with datasync provenance"
-          softStep at L167. The Setup step 1 source-matrix narrowing
-          (5 sources -> 1) is a coverage breadth reduction at the
-          source-class axis, not a numbered-step omission — routed
-          under SCOPE_REDUCTION above, not under E-TRACE-02 FAIL.
       - check_id: E-TRACE-03
         status: PASS
-        evidence: |
-          Verification calls present for each step: Step 2/4 verify
-          column addition via df.columns.names().includes() polling +
-          formula evaluation via expect(check!.diff).toBeCloseTo
-          (100/200, 1) at L304/L405; Step 5 verifies formula tag
-          rewrite via expect(formula.tag).toContain('BaseWeight') at
-          L468; Step 6 verifies server-side persistence via
-          grok.dapi.projects.find(pid) at L498-501; Step 7 verifies
-          tables.length === 0 at L516; Step 8 GROK-17109 INVARIANT
-          verified via expect(reopen.hasWeight2/hasWeight3).toBe(true)
-          + expect(w2Formula/w3Formula.length).toBeGreaterThan(0) at
-          L558-565; Steps 9/10 verify post-reopen formula tag rewrite
-          and recompute deltas at L607-609 and L641-642.
       - check_id: E-SEL-01
         status: PASS
-        evidence: |
-          Verified by Grep against grok-browser/references this cycle:
-          `[name="icon-add-new-column"]` in dialogs-menus.md L73;
-          `[name="viewer-Grid"]` in viewers/grid.md L30 + grid.md L4 +
-          viewers.md L39; column-header Rename context action in
-          grid.md L52-54; Data sync toggle in projects.md L15, L23,
-          L58, L70, L182, L192. Dialog input/button selectors
-          (`[name="input-Add-New-Column---Name"]`,
-          `[name="button-Add-New-Column---OK"]`,
-          `.add-new-column-dialog-cm-div .cm-content`) are documented
-          in spec leading block-comment L52-72 with explicit citation
-          to PowerPack/src/dialogs/add-new-column.ts:344-349
-          (prepareForSeleniumTests — verified by Grep this cycle: the
-          function literally assigns these `name` attributes at
-          L346-349). Qualifies as "documented in the test's local
-          notes with reason" per E-SEL-01 alt path. `.d4-dialog` is
-          the standard Datagrok dialog class.
       - check_id: E-SEL-02
         status: PASS
-        evidence: |
-          No invented selectors. Dialog input/button names come from
-          PowerPack's prepareForSeleniumTests at
-          add-new-column.ts:344-349 (verified); icon-add-new-column
-          verified in grok-browser/references/dialogs-menus.md;
-          viewer-Grid and `.d4-dialog` are platform conventions
-          present across grok-browser/references.
       - check_id: E-SEL-03
         status: PASS
-        evidence: |
-          Dart Name input ([name="input-Add-New-Column---Name"]) driven
-          via native HTMLInputElement.value setter + dispatchEvent
-          ('input')/'change' at L206-213 (Step 2) and L329-336 (Step 4),
-          NOT `.fill()`. CodeMirror composition uses
-          view.dispatch({changes:...}) with keyboard.type() fallback
-          (Step 2 L244 + L259; Step 4 L356 + L367), NOT `.fill()`.
-          Dart-input-fill anti-pattern avoided across all five
-          Dart-input interactions.
       - check_id: E-HELP-01
         status: PASS
-        evidence: |
-          `loginToDatagrok` (helpers-registry.yaml L3663) and `softStep`
-          (L3657) are registered. The remaining imports
-          (`specTestOptions`, `stepErrors`, `openTableFromFile`,
-          `assertProvenanceScript`, `saveProjectWithProvenance`,
-          `deleteProjectWithCleanup`) exist as concrete exports in
-          TestTrack helper modules (verified by Grep this cycle:
-          spec-login.ts L3, L5, L12, L14, L16, L37; helpers/openers.ts
-          L136, L550; helpers/projects.ts L855, L1060). Helpers-
-          registry backfill remains pending — qualifies as "declared
-          as new helper candidate in the migration / design report"
-          alt path. Recommend registry backfill in a separate
-          mechanical batch (does NOT block PASS on E-HELP).
       - check_id: E-HELP-02
         status: PASS
-        evidence: |
-          No reinvention of registered helpers. Login uses
-          loginToDatagrok (registered). File-open uses openTableFromFile
-          (existing helper, not open-coded). Project save uses
-          saveProjectWithProvenance rather than open-coding
-          tables.save + projects.save + uploadDataFrame. Cleanup
-          uses deleteProjectWithCleanup.
       - check_id: E-LAYER-01
         status: PASS
-        evidence: |
-          Scenario frontmatter `target_layer: playwright` aligns with
-          the Playwright spec body (imports @playwright/test, uses
-          `test(...)` from playwright with `page` parameter driving).
       - check_id: E-LAYER-02
         status: NA
-        evidence: |
-          No layer override; E-LAYER-01 passes.
       - check_id: E-LAYER-COMPLIANCE-01
         status: PASS
-        evidence: |
-          target_layer=playwright requires >=1 DOM-driving call; spec
-          has many: page.locator(...).click()/.waitFor() at L188-193,
-          L224-225, L280, L314-318, L341-342, L381; page.keyboard.press
-          /type at L230-231, L259, L345-346, L367; cm.click() at L226,
-          L255, L343, L363. pyramid_layer=bug-focused (NOT ui-smoke) —
-          the JS-API-substitution-forbidden sub-rule does not apply.
-          Step 5 column-rename uses JS API col.name setter (rationale
-          L408-426 cites canvas-based grid context-menu coordinate
-          brittleness under headless Playwright and equivalence of
-          col.name dispatch to context-menu RenameColumn function);
-          Step 6 uses saveProjectWithProvenance JS API path (rationale
-          L478-488 cites Save Project dialog PascalCase normalization
-          anti-pattern). Both substitutions acceptable for the
-          bug-focused paradigm.
       - check_id: E-BOUND-01
         status: PASS
-        evidence: |
-          Spec file path
-          public/packages/UsageAnalysis/files/TestTrack/PowerPack/add-new-column-advanced-spec.ts
-          is under the allowed test-area path
-          public/packages/UsageAnalysis/files/TestTrack/**.
       - check_id: E-BOUND-02
         status: PASS
-        evidence: |
-          No changes to core/** or package source outside src/tests/.
-          Spec lives entirely in the TestTrack test-area.
       - check_id: E-RETRY-IGNORES-GATE-B
         status: NA
-        evidence: |
-          Retry-context detection does NOT fire this cycle. The
-          scenario's gate_verdicts.b block (cycle_id
-          2026-05-26-powerpack-automate-01, the most-recent-prior-cycle
-          of this scenario) records verdict: PASS with failure_keys: []
-          and spec_runs[].result: passed (3/3 attempts, durations
-          38535/36230/50268 ms, errors[] empty, validated against
-          per-attempt Playwright JSON reporter output). The
-          E-RETRY-IGNORES-GATE-B predicate requires
-          `gate_verdicts.b.verdict == "FAIL"`; the recorded Gate B
-          verdict is PASS, so retry context is not active and this key
-          never fires (per failure-keys-vocabulary: "Block absent →
-          not a retry context; this key never fires" — same outcome
-          for a present-but-PASS block). The earlier
-          environment-defect FAIL narrated in the SR prose was from a
-          superseded cycle (-03) and was remediated this cycle
-          (duplicate @playwright/test install removed operator-side),
-          which is why the recorded Gate B is now PASS. Independent of
-          the predicate, the spec source retains no diagnosed-failing
-          code path and proposes no un-backed paradigm pivot, so the
-          ignored-evidence pattern is absent regardless. NA (check
-          vacuous — not in retry context).
   a:
     verdict: PASS
     cycle_id: cycle-2026-05-20-powerpack-add-new-column-subdir
@@ -361,115 +179,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML; required fields present and well-typed:
-          feature=powerpack, sub_features_covered is a 5-element list,
-          target_layer=playwright, coverage_type=regression. All five
-          sub_features_covered entries (powerpack.dialogs.add-new-column,
-          powerpack.dialogs.add-new-column-func,
-          powerpack.dialogs.prepare-add-column-call,
-          powerpack.formula.is-formula-column, powerpack.dialogs) resolve
-          to atlas sub_features[].id entries.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains H2 scenario heading "## Scenarios" with an H3
-          "### Add chained calculated columns, mutate, save with datasync,
-          reopen, verify". The H2 + H3 pattern yields one identifiable
-          scenario in the body.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Under the H3 scenario heading, 10 numbered steps are present
-          (1. Open the Add New Column dialog (first time) through 10.
-          Change values in the source column (post-reopen)). Numbered-step
-          requirement met.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          The single scenario in the body has 10 steps — not empty.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is in the canonical
-          {playwright, apitest, manual-only} enum.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=regression is in the canonical
-          {smoke, regression, edge, perf} enum. Not a severity-axis p0..p3.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type=regression at the file-frontmatter level applies
-          to every scenario in the body (single scenario). Test-kind enum
-          value, not severity axis.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          A ## Setup section factors the 5-source matrix selection and
-          source-column-name binding (WEIGHT) up front so each cycle of
-          the single scenario does not re-state setup. Single scenario
-          in the body means there is no cross-scenario duplication risk.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer=bug-focused (not ui-smoke). The hard alignment
-          rule fires only on pyramid_layer=ui-smoke; bug-focused has no
-          hard alignment constraint per the mode-file note (advisory:
-          bug-focused → usually regression or edge — coverage_type is
-          regression here, consistent with the advisory).
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Steps reference real names. Source 3-5 cite Postgres:Northwind
-          query names (OrdersByEmployee, GetTop100, GetAll) and a real
-          table (products). Source 1-2 cite local storage / Home dir as
-          source kinds — real source-class descriptors, not placeholders.
-          Calculated column names Weight2 and Weight3, and the rename
-          target BaseWeight, are concrete. The string WEIGHT used in
-          formulas is documented in Setup step 2 as a parametric source-
-          column-name binding ("For Northwind `products`, `unitprice` is
-          the natural choice; substitute the column name as needed per
-          source") with explicit per-source substitution guidance — this
-          is a parametric design, not a hallucinated angle-bracket /
-          square-bracket placeholder. Step 3 TODO marker
-          "(TODO: specify which formula to use)" present in the original
-          was resolved during migration to the concrete formulas
-          ${WEIGHT}+100 (Step 2) and ${Weight2}+100 (Step 4) as
-          documented in source_text_fixes. No angle-bracket / square-
-          bracket / generic-stand-in placeholders remain.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas powerpack.yaml known_issues is an empty list
-          (known_issues: [] at line 1224, with the comment "No bug-
-          library file exists for powerpack yet — leaving empty";
-          known_issues has not yet been populated from
-          bug-library/powerpack.yaml). With atlas known_issues empty,
-          A-BUG-01 returns PASS-by-vacuity per the mode-file rule.
-          Separately, the scenario does reference related_bugs:
-          [GROK-17109] in its frontmatter and walks the canonical
-          GROK-17109 reproduction path in Steps 6/8/9 — addressing the
-          bug downstream of A-BUG-01 even when the atlas hook has not
-          yet been wired.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          scope_reductions is an empty list ([]). No scenario step is
-          opted out for effort or complexity reasons; the body walks
-          all 10 steps in full.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No "TODO: add later" / "deferred to next phase" markers
-          remain. The original Step-3 TODO marker was resolved during
-          migration (recorded in source_text_fixes:
-          step-3-todo-resolved-formula-weight-plus-100-column-weight2
-          and step-4-resolved-formula-weight2-plus-100-column-weight3),
-          and the body now carries concrete formulas. The notes section
-          documenting the resolution is descriptive metadata, not a
-          deferral.
   b:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

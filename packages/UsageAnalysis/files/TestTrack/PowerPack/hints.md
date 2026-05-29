@@ -50,85 +50,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML. Required fields all present:
-          feature=powerpack, sub_features_covered=[powerpack.dialogs.add-new-column,
-          powerpack.dialogs.add-new-column-func], target_layer=playwright,
-          coverage_type=smoke.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains a `## Scenarios` section and a scenario-level
-          `### Hover over inserted function name → tooltip with signature
-          appears` heading.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Scenario heading is followed by numbered steps 1. through 4.
-          (Open demog, open Add New Column dialog, Insert function,
-          Hover over inserted function name).
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          The single scenario contains four populated steps; no empty
-          scenarios.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer value playwright is in the allowed enum
-          {playwright, apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type value smoke is in the allowed enum
-          {smoke, regression, edge, perf}.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type label smoke present at frontmatter level; comes
-          from the unified test-kind enum (no severity p0..p3 misuse).
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Single scenario in the file; no repeated setup to factor.
-          A `## Setup` section is present declaring a clean Datagrok
-          session as the only shared setup with depends_on: [].
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer: ui-smoke is paired with coverage_type: smoke
-          per the alignment rule. (Note: body prose at lines 38-40 and
-          91-97 still references regression as a stale carry-over from
-          the prior smoke-witness election; orchestrator pre-emptively
-          corrected the frontmatter, which is what A-LAYER-ALIGN-01
-          evaluates.)
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenarios reference real artifacts: System:DemoFiles/demog.csv,
-          Add New Column dialog, CodeMirror editor, Abs(num) function,
-          Browse > Files / File > Open / Edit > Add New Column menu
-          paths. No angle-bracket or square-bracket placeholders, no
-          generic stand-ins.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas powerpack.yaml `known_issues: []` (line 1224); PASS-by-
-          vacuity. The scenario also explicitly documents bug-library
-          consultation in its Notes section (GROK-17109 and GROK-17004
-          touch the same sub-features but their reproduction surfaces
-          land in sibling scenarios).
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No scenario opt-outs cite effort or complexity alone. The
-          single scenario is fully present with all four numbered steps
-          on the playwright layer.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No `TODO: add later` or unprompted deferrals. No phrases like
-          "to be done in next phase" appear in body or frontmatter.
 ---
 
 # Add New Column dialog — function-hint tooltip

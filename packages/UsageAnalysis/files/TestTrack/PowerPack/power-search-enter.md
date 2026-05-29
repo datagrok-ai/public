@@ -30,134 +30,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses cleanly as YAML and contains all four
-          required fields with the expected types. feature is the
-          scalar string powerpack; sub_features_covered is a 6-item
-          list of dotted atlas IDs (powerpack.search.power,
-          powerpack.search.power.dispatch, powerpack.search.power.init,
-          powerpack.welcome.view, powerpack.welcome.suggestion-nav,
-          powerpack.search); target_layer is playwright; coverage_type
-          is regression.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains the parent H2 ## Scenarios framing plus three
-          H3 scenario headings (### Scenario 1: short-query QA repro,
-          ### Scenario 2: 8-path exercise, ### Scenario 3:
-          suggestion-nav regression guard). The mechanical "starts with
-          ## " match is satisfied by both the parent H2 and the H3
-          children; the framing H2 sections (## Setup, ## Scenarios,
-          ## Notes) bracket the body cleanly.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each of the three scenario headings is followed by numbered
-          steps. Scenario 1 carries 5 numbered steps; Scenario 2 lays
-          out a 4-step probe template (focus, type, press Enter,
-          verify) which is the unit-of-iteration applied to the 5
-          listed query rows; Scenario 3 carries 5 numbered steps.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios. Every scenario carries at least one
-          numbered step (counts 5, 4, 5 respectively).
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer value playwright is a member of the canonical
-          enum {playwright, apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type value regression is a member of the canonical
-          test-kind enum {smoke, regression, edge, perf}. No
-          severity-axis values (p0..p3) appear anywhere in the
-          frontmatter.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type label regression is declared at file-level
-          frontmatter and therefore binds all three scenarios. The
-          label is drawn from the unified test-kind enum shared with
-          atlas interactions[].coverage_type and
-          edge_cases[].coverage_type (the 2026-04-30 unified rename) —
-          not from the severity axis used by atlas
-          critical_paths[].priority or bug-library priority.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Repeated preconditions (open Datagrok with PowerPack
-          installed, navigate to the Welcome view, open the browser
-          DevTools console) are factored into the ## Setup section as
-          three numbered preconditions. Each scenario starts at a
-          focus-the-input step rather than re-doing the page
-          navigation, so the shared preconditions are not duplicated
-          across scenario bodies.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer is absent from the YAML frontmatter (the Notes
-          section discusses pyramid_layer bug-focused in prose as a
-          derivation comment under Rule 3, but does not set it as a
-          frontmatter key). The mode rule
-          "PASS-by-vacuity when pyramid_layer is absent from
-          frontmatter" applies.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenarios use concrete query strings (literal QA, a, new,
-          user, a Project regex pattern, 1+1, dem) and real atlas
-          source paths. Verified against
-          public/packages/PowerPack/src/search/power-search.ts (L21
-          initSearch, L26 powerSearch) and
-          public/packages/PowerPack/src/welcome-view.ts L118
-          suggestionMenuKeyNavigation — all functions exist at the
-          declared lines. All six entries in sub_features_covered
-          resolve to real atlas IDs in
-          references/feature-atlas/powerpack.yaml (powerpack.welcome.view
-          L87, powerpack.welcome.suggestion-nav L94, powerpack.search
-          L310, powerpack.search.power L466, powerpack.search.power.init
-          L473, powerpack.search.power.dispatch L480). No
-          angle-bracket placeholders, no square-bracket placeholders,
-          no generic stand-ins like column1, the column, or
-          some-file.csv.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Single-scenario scope satisfied. Atlas known_issues block at
-          references/feature-atlas/powerpack.yaml lines 1349-1445 carries
-          9 curated bug entries with the schema test_coverage.exists
-          false plus empty test_coverage.paths (the equivalent of the
-          test_coverage needed predicate). GROK-18656 appears at atlas
-          line 1425 with affects_sub_features exactly matching this
-          scenario's six sub_features, and is addressed via the
-          related_bugs frontmatter entry plus explicit body references
-          (the H1 names the bug, the body opening paragraph cites it,
-          and the Notes section describes the reproduction). The
-          remaining 8 known_issues entries target sub_features outside
-          this scenario file (widgets, dashboards, dialogs,
-          formula-lines, add-new-column, io); coverage of those bugs
-          by other scenarios in the section is a chain-level concern
-          owned by Gate F under F-BUG-COVERAGE-01, not Gate A.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No scenario opted out for effort or complexity reasons. The
-          Notes Deferrals line reads None explicitly, and the three
-          scenarios fully cover the bug's reproduction surface
-          (Scenario 1 canonical QA repro, Scenario 2 five additional
-          dispatch shapes, Scenario 3 suggestion-nav regression
-          guard).
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No TODO add later or to be done in next phase deferrals
-          appear anywhere in the body. The Notes Deferrals bullet is
-          the explicit string None. The Coverage-map note records a
-          STEP B fallback (coverage-map for powerpack not present at
-          authoring time) but does not defer scenario work — it
-          documents the absent gap-cross-check artifact only.
   d:
     verdict: PASS
     cycle_id: 2026-05-23-powerpack-migrate-02

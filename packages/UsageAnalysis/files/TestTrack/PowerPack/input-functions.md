@@ -178,87 +178,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and carries all four required fields:
-          feature=powerpack, sub_features_covered=[powerpack.dialogs.add-new-column,
-          powerpack.dialogs.add-new-column-func], target_layer=playwright,
-          coverage_type=smoke.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains a level-2 Scenarios heading and a level-3 scenario
-          heading "Insert functions via + icon and drag-and-drop; auto-bind
-          columns by type match".
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          The scenario heading has 10 numbered steps (1..10).
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          Scenario is non-empty (10 steps with verifications).
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is in the allowed enum
-          {playwright, apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=smoke is in the allowed enum
-          {smoke, regression, edge, perf}.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type=smoke is declared at the frontmatter level and
-          applies to the single scenario in this file. Test-kind axis value,
-          not severity axis.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Single scenario in the file; shared setup is factored into the
-          dedicated Setup section noting the clean Datagrok session, with
-          depends_on:[] per chain rev 1. No duplicated setup steps.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer=ui-smoke and coverage_type=smoke are aligned per
-          the hard rule.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Real names throughout: spgi.csv (System:DemoFiles/chem/SPGI.csv),
-          Structure column, Abs / getCLogP / Chem:getCLogP functions, Id
-          column. No angle-bracket or square-bracket placeholders; no
-          generic stand-ins.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          PASS-by-vacuity. atlas powerpack.yaml line 1224 declares
-          known_issues:[] (empty), so no needed-coverage entries exist.
-          Scenario related_bugs:[] is consistent and Notes section
-          documents bug-library reconnaissance (GROK-17109, GROK-17004
-          cross-cutting candidates considered and excluded as out-of-scope
-          for the plus-icon / drag-and-drop / auto-bind reproduction
-          surface).
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          scope_reductions:[] — no opt-outs claimed. The two entries in
-          unresolved_ambiguities (sort-icon-glyph-described-not-named,
-          id-column-type-classification) cite real technical dependencies:
-          the existing input-functions-spec.ts already carries the
-          selector [name="icon-sort-alt"] and the SPGI Id column type
-          classification is preserved verbatim from the original. Neither
-          cites effort or complexity.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No TODO/deferral language in scenario body or frontmatter. The
-          unresolved_ambiguities entries are surfaced for downstream
-          Automator awareness, not deferred work — selector resolution
-          remains in the on-disk spec and the type-classification call
-          preserves original wording.
   b:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

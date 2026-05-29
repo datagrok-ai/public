@@ -256,86 +256,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and contains all four required fields:
-          feature=powerpack, sub_features_covered=[powerpack.dialogs.add-new-column,
-          powerpack.dialogs.add-new-column-func], target_layer=playwright,
-          coverage_type=smoke.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains a scenario heading at level 3 ("### Functions panel
-          re-sorts by column-input type, then by name, then sticks") under
-          the "## Scenarios" section.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          The single scenario contains six numbered steps (1. through 6.)
-          covering dataset open, dialog open, type-sort by chem column,
-          type-sort by numeric column, switch to By-name sort, and the
-          sticky-sort contract.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          The scenario is non-empty — six numbered steps present with
-          Verify sub-clauses for each.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is in the allowed enum {playwright,
-          apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=smoke is in the allowed enum {smoke, regression,
-          edge, perf}.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type=smoke is set at file-frontmatter level and applies
-          to the single scenario in the body. No severity-axis (p0..p3)
-          value used.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Setup (clean Datagrok session, depends_on=[] per chain) is
-          factored into the "## Setup" section. With only one scenario in
-          the file there is no cross-scenario duplication to flag.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          Frontmatter pyramid_layer=ui-smoke is paired with coverage_type=smoke
-          per the alignment rule. Chain YAML powerpack.yaml line 322 confirms
-          pyramid_layer=ui-smoke for AddNewColumn/functions-sorting.md.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenario references real column names (Structure, Chemical Space X,
-          Chemist), real file path (System:DemoFiles/chem/SPGI.csv), real
-          selector ([name="icon-sort-alt"]), and real function names
-          (canonicalize, convertMolNotation, getCLogP, Abs, Acos, Atan2).
-          No angle-bracket / square-bracket placeholders or generic
-          stand-ins detected.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          PASS-by-vacuity. Atlas powerpack.yaml known_issues field is
-          empty (line 1224: known_issues: []), so no needed-coverage bugs
-          exist for this gate to check. related_bugs=[] in the scenario
-          frontmatter is consistent with this.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No scenario opted out for effort or complexity. The single
-          scenario is fully present with 6 numbered steps.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No unprompted deferrals. The Notes section references a
-          curator candidate for next atlas regen (functions-panel sort-icon
-          menu not currently captured as atlas interactions[] entries) but
-          this is informational about atlas curation, not a deferral of
-          scenario work.
   b:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

@@ -51,94 +51,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and carries all required fields:
-          feature=powerpack, sub_features_covered=[powerpack.dialogs.add-new-column-func,
-          powerpack.dialogs.add-new-column], target_layer=playwright,
-          coverage_type=smoke. Both sub_features_covered entries resolve to
-          atlas sub_features (lines 677 and 709 of powerpack.yaml).
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains "## Setup" and "## Scenarios" level-2 headings plus
-          three "### Autocomplete: ..." scenario sub-headings under
-          ## Scenarios. Scenario headings are present.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each of the three scenario sub-sections has numbered steps
-          starting with "1." (type-triggered tooltip — 6 steps;
-          Ctrl+Space — 2 steps; dollar column-suggestion — 2 steps).
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios. Each of the three scenarios contains at
-          least two numbered steps with concrete actions and a Verify
-          assertion.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is one of the allowed values
-          {playwright, apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=smoke is one of the allowed values
-          {smoke, regression, edge, perf}.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          File-level coverage_type=smoke label is present in frontmatter
-          and applies to all three scenarios in the body. No severity-axis
-          (p0..p3) value present.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Common setup (opening demog.csv and the Add new column dialog)
-          is factored into a single "## Setup" section. The three scenario
-          bodies do not duplicate the setup; they begin from the focused
-          editor state established by Setup.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer=ui-smoke and coverage_type=smoke are aligned per
-          the hard rule (ui-smoke requires smoke). Orchestrator pre-emptive
-          correction from regression to smoke restored alignment before
-          Gate A entry.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenario body uses real names throughout: dataset demog.csv
-          from System:DemoFiles; columns HEIGHT, WEIGHT, AGE; functions
-          Abs, Acos, Avg; selectors [name="icon-add-new-column"],
-          .d4-dialog .cm-content, .cm-tooltip-autocomplete. No
-          angle-bracket placeholders, square-bracket placeholders, or
-          generic stand-ins detected.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas known_issues for powerpack is [] (line 1224 of
-          powerpack.yaml — "Imported from bug-library/powerpack.yaml when
-          curated. No bug-library file exists for powerpack yet").
-          PASS-by-vacuity. Body Notes references GROK-17004 as a
-          cross-cutting bug-focused candidate emitted at chain level —
-          this is informational and does not affect A-BUG-01 since atlas
-          has no needed entries.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No scenarios opted out for effort or complexity. The scenario
-          set covers three distinct autocomplete mechanics (type-triggered
-          function tooltip, Ctrl+Space invocation, dollar column-suggestion)
-          with explicit completion-action variants (Enter and mouse click).
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No "TODO: add later" or deferred-to-next-phase markers in the
-          scenario body or frontmatter. The Notes section explains current
-          scope-split decisions (delegation to add-new-column.md for the
-          basic dialog surface; GROK-17004 at chain level) with explicit
-          rationale citing scenario-chains/powerpack.yaml rev 1.
 ---
 
 # Add New Column — autocomplete (demog)

@@ -27,131 +27,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses cleanly as YAML 1.2 and carries all four required
-          fields. feature=powerpack; sub_features_covered=
-          [powerpack.io.xlsx-file-handler, powerpack.io.exceljs-service,
-          powerpack.io]; target_layer=playwright; coverage_type=regression.
-          All three sub_features_covered ids resolve in the atlas
-          (powerpack.yaml: powerpack.io at line 725, powerpack.io.xlsx-file-handler
-          at line 740, powerpack.io.exceljs-service at line 748). No nested-mapping
-          colon hazards inside the frontmatter body.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains H2 `## Scenarios` (line 192) wrapping six H3 scenario
-          headings: `### Scenario 1: Open XLSX from Browse / My Files`,
-          `### Scenario 2: Open XLSX from Recent files`,
-          `### Scenario 3: ... drag-and-drop`, `### Scenario 4: ... File > Open`,
-          `### Scenario 5: ... Shared with me`, `### Scenario 6: ... sheetName`.
-          Per the refined mode-file reading ("scenario heading specifically"),
-          the H2 + H3 scenario layout satisfies the check — this matches the
-          convention used by sibling section scenarios.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each of the six scenarios opens with numbered steps starting
-          `1. **...**`. Setup section also has three numbered steps. Spot-counts:
-          S1=7 steps, S2=5, S3=4, S4=5, S5=5, S6=4. No scenario heading lacks
-          numbered steps.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios. Every scenario has ≥ 4 numbered steps plus an
-          `Expected:` block, so the body of each scenario is non-trivial.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is in the canonical enum
-          {playwright, apitest, manual-only} per
-          verdict-enums.yaml derived_enums.target_layer.canonical_values.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=regression is in the canonical enum
-          {smoke, regression, edge, perf} per
-          verdict-enums.yaml derived_enums.coverage_type.canonical_values.
-          No severity-axis value (p0..p3) appears in the coverage_type slot.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type=regression is declared at file frontmatter level and
-          inherits to all six scenarios — no per-scenario override deviates.
-          Notes "coverage_type rationale" block explicitly justifies regression
-          (not smoke = not the section golden path; not edge = not a boundary
-          value; not perf = functional, not perf-related).
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Repeated setup (PowerPack install + powerPackInit, XLSX fixture in
-          two locations, DevTools console open) is factored into the
-          `## Setup` section. Scenario 2 chains off Scenario 1 via a
-          `Pre-condition` step rather than re-running setup; Scenarios 3-6
-          reuse the Setup-section fixture references and do not duplicate
-          install / fixture preparation prose.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          Frontmatter does NOT declare a pyramid_layer field (the bug-focused
-          designation appears only in body prose under Notes). Per the
-          mode-file, this rule PASSes by vacuity when pyramid_layer is absent
-          from frontmatter; the hard alignment rule only fires when
-          pyramid_layer=ui-smoke. No mismatch.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenarios reference real artifacts throughout: real source paths
-          (public/packages/PowerPack/src/package.ts#L383, L35, L366), real atlas
-          sub-feature ids, real DOM affordances (Browse, My Files, Recent files,
-          Shared with me, File > Open), real fixture paths
-          (System:DemoFiles/SPGI-linked.xlsx, Home/xlsx-open-test.xlsx),
-          real grok s commands (grok s files save, grok s shares add). No
-          angle-bracket or square-bracket placeholders; no generic
-          column1/some-file.csv stand-ins. The OtherUser:xlsx-shared-test.xlsx
-          token in Scenario 5 is a real Datagrok cross-user fixture path, not
-          a placeholder.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          A-BUG-01 evaluates atlas known_issues with literal `test_coverage:
-          needed`. The powerpack atlas known_issues field (lines 1352-1445)
-          uses the schema-evolved form `test_coverage: { exists: false,
-          paths: [] }` on every entry — there are ZERO entries with the literal
-          `test_coverage: needed` form. PASS-by-vacuity under the strict
-          literal reading of the mode-file rule. Under the semantic reading
-          (exists: false treated as equivalent to "needed"), the only
-          known_issues entry whose affects_sub_features intersects this
-          scenario's sub_features_covered is GROK-19329 (atlas lines
-          1437-1445), and the scenario's related_bugs frontmatter contains
-          [GROK-19329], satisfying clause (a). The other 8 known_issues
-          entries affect unrelated sub-features (widgets, formula-lines,
-          add-new-column, dashboards, welcome.view, search) and are
-          out-of-scope for this single-scenario gate; chain-wide coverage
-          of those bugs is Gate F's responsibility via F-BUG-COVERAGE-01.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          Three deferrals in Notes "Deferrals" block; each cites a real
-          technical or atlas-level dependency, not effort/complexity. (a)
-          apitest slice deferred because "GROK-19329 regression was about
-          UI-path-to-handler routing, not about parser correctness" — real
-          bug-scope citation. (b) 80MB size edge deferred because "scenario
-          fixture is < 1 MB by design (small fixture for CI speed) and the
-          size limit is not part of the GROK-19329 reproduction surface" —
-          real atlas declaration + reproduction-scope citation. (c)
-          Shared-with-me cross-user precondition documented via reference
-          to data-enrichment.md Sub 4 sibling precedent + logoutAndLoginAs
-          helper convention — real precedent citation, not effort opt-out.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No "TODO: add later" / "to be done in next phase" without
-          dependency reference. Deferral language consistently cites a real
-          prerequisite or dependency: "remains a Test Designer follow-up if
-          parser-level regressions surface separately" (parser-level
-          regression surfacing = real prerequisite), "deferred because the
-          scenario fixture is < 1 MB by design" (atlas size limit = real
-          atlas-level dependency). Lattice Rule 13 satisfied.
   e:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

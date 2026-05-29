@@ -63,100 +63,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and carries all four required fields:
-          feature=powerpack, sub_features_covered=[5 entries — all resolve
-          to ids in feature-atlas/powerpack.yaml at lines 325, 643, 677,
-          709, 723], target_layer=playwright, coverage_type=regression.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body has H2 sections `## Setup`, `## Scenarios`, `## Notes`, and
-          four H3 scenario headings under `## Scenarios` (column-name
-          highlight on pasted ${col}; bracket-reference $[col]; autocomplete
-          path; drag-and-drop path).
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each of the four H3 scenarios contains numbered steps (1., 2.,
-          and 3. where applicable). Setup also has numbered steps 1 and 2.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios; every scenario has at least two numbered
-          steps.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer=playwright is in the allowed enum
-          {playwright, apitest, manual-only}.
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type=regression is in the allowed enum
-          {smoke, regression, edge, perf}.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          File-level coverage_type=regression applies to all four
-          scenarios; no per-scenario override carries a severity-axis
-          (p0..p3) value.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Setup steps (open Demog dataset, open Add New Column dialog) are
-          factored into a single `## Setup` section and not duplicated
-          across the four scenarios.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer=bug-focused; the hard alignment rule only fires for
-          pyramid_layer=ui-smoke, so this is PASS-by-vacuity. The advisory
-          mapping (bug-focused → usually regression or edge) is
-          consistent with coverage_type=regression.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Scenarios reference real, concrete names: the Demog dataset at
-          System:DemoFiles/demog.csv, the `age` column, the dialog text
-          field, and the Abs/Avg/Round/Sin function names. The
-          ${<column>} forms in the autocomplete and drag-and-drop step
-          descriptions denote the literal reference-form syntax inserted
-          by the editor (descriptive of inserted syntax, parallel to the
-          ${age} and $[age] literals in the paste scenarios) — not a
-          <TODO> placeholder for unspecified test data.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas known_issues field is empty (powerpack.yaml line 1224:
-          `known_issues: []`); zero entries carry test_coverage=needed.
-          PASS-by-vacuity per the mode-file PASS-by-vacuity clause. The
-          scenario nevertheless cites GROK-17004 in related_bugs and walks
-          its highlight-on-paste regression surface as bonus coverage.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          unresolved_ambiguities entries cite real source/atlas-level
-          dependencies, not effort or complexity:
-          blue-highlight-css-token-not-specified (original TestTrack text
-          omits the CSS token; Automator-level resolution),
-          autocomplete-vs-drag-n-drop-step-5-alternation (original step
-          alternates two distinct paths — the migrator split into 2
-          scenarios to preserve both), and
-          grok-17004-complex-paste-extension-deferred (full GROK-17004
-          repro requires multi-column pIC50-style formulas not specified
-          in the original source — a content-dependency citation).
-          scope_reductions is empty, so there are no opt-outs to evaluate.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No "TODO: add later" or "to be done in next phase" prose.
-          The bug-focused complex-paste extension is surfaced as an
-          unresolved_ambiguity slug with a chain-level note recorded in
-          references/scenario-chains/powerpack.yaml under
-          AddNewColumn/highlight.md.notes (per the Notes section);
-          this is a documented dependency reference, not an unprompted
-          deferral.
 ---
 
 ## Setup

@@ -45,107 +45,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter parses as YAML and contains all four required keys.
-          feature is set to powerpack, sub_features_covered lists 6 atlas
-          ids (powerpack.dialogs.add-new-column,
-          powerpack.dialogs.add-new-column-func,
-          powerpack.dialogs.prepare-add-column-call,
-          powerpack.formula.is-formula-column, powerpack.formula.widget,
-          powerpack.dialogs), target_layer is playwright, coverage_type
-          is regression.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains H2 scenario headings: Setup, Scenarios, Notes.
-          Three H3 scenario blocks under Scenarios (Build a 3-step
-          calculated-column dependency chain, Verify formula dependency
-          recalculation via the Formula info panel, Save the project,
-          reopen it, verify chained columns persist).
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Each scenario heading carries numbered steps. The Build chain
-          block has steps 1-3, the Verify recalculation block has steps
-          1-4, the Save and reopen block has steps 1-4. The Setup block
-          carries one numbered step.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          No empty scenarios. Each of the three H3 scenario blocks under
-          Scenarios has at least three numbered steps with bullet-listed
-          sub-actions and verifications.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer value is playwright, which is one of the allowed
-          enum values (playwright, apitest, manual-only).
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type value is regression, which is one of the allowed
-          enum values (smoke, regression, edge, perf). Severity-axis
-          values (p0..p3) are not used.
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type is set at file frontmatter level as regression
-          and applies to all scenarios in the file. No per-scenario
-          override needed; the unified test-kind enum is honored.
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Repeated dataset-open setup is factored into the dedicated
-          Setup section (one numbered step opening
-          System:DemoFiles/demog.csv). Subsequent scenarios begin from
-          that state rather than duplicating the open step.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          pyramid_layer is bug-focused, not ui-smoke. The hard alignment
-          rule applies only to ui-smoke pyramid_layer; other values
-          (bug-focused here) are not gated. PASS-by-vacuity for the
-          hard rule; advisory chain-analyzer mapping (bug-focused
-          typically maps to regression or edge) is consistent with
-          coverage_type regression.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          All names are real and traceable. Column names Weight2,
-          Weight3, Weight4 and reference column WEIGHT are real Demog
-          dataset columns. Dataset path System:DemoFiles/demog.csv is
-          documented in the chain note (consumes Demog dataset). UI
-          element names (Add New Column dialog, Formula info panel,
-          formula editor, name input, OK button) match atlas sub-feature
-          descriptions for powerpack.dialogs.add-new-column and
-          powerpack.formula.widget. Bug id GROK-17109 is a real
-          bug-library entry. No angle-bracket, square-bracket, or
-          generic stand-in placeholders detected.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas powerpack.yaml known_issues is empty (the atlas notes
-          inline: Imported from bug-library/powerpack.yaml when
-          curated. No bug-library file exists for powerpack yet —
-          leaving empty. known_issues: []). PASS-by-vacuity per the
-          A-BUG-01 PASS-by-vacuity branch. As an aside, the scenario
-          references GROK-17109 both via related_bugs frontmatter and
-          via the body Save and reopen block, which would satisfy the
-          rule had the atlas listed it.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          scope_reductions is empty in frontmatter. No scenario opted
-          out for effort or complexity reasons. The three scenario
-          blocks cover the build chain, the recalc dependency, and
-          the save+reopen persistence flow without deferrals.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          unresolved_ambiguities is empty. No TODO add later or
-          deferred to next phase language appears in the body. The
-          Notes section documents source-text fixes and chain context
-          rather than postponing work. Lattice Rule 13 honored.
   b:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

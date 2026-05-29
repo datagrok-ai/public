@@ -27,147 +27,30 @@ gate_verdicts:
     claims:
       - check: A-STRUCT-MECH-01
         status: PASS
-        evidence: |
-          Frontmatter delimited by leading and trailing `---` fences
-          parses as well-formed YAML. All four required fields are
-          present and well-typed. feature is the string powerpack.
-          sub_features_covered is a list of three ids — each one is
-          resolvable in references/feature-atlas/powerpack.yaml
-          (powerpack.lifecycle.init at line 58, powerpack.welcome.view
-          at line 87, powerpack.dashboards at line 102). target_layer
-          is the string playwright. coverage_type is the string
-          regression. The four Phase 1 sidecar-less keys
-          (source_text_fixes, candidate_helpers, unresolved_ambiguities,
-          scope_reductions) are present as empty inline-flow lists; that
-          is not required by A-STRUCT-MECH-01 but is consistent with
-          the sidecar-less emission contract.
       - check: A-STRUCT-MECH-02
         status: PASS
-        evidence: |
-          Body contains three top-level `## ` headings (Setup,
-          Scenarios, Notes) and two H3 scenario blocks under
-          `## Scenarios`: Scenario 1 direct-link regression repro and
-          Scenario 2 in-app navigation control. A-STRUCT-MECH-02 only
-          requires that at least one `## ` heading exist in body; that
-          is satisfied. The H3 scenario nesting is the established
-          TestTrack convention used by sibling Powerpack files.
       - check: A-STRUCT-MECH-03
         status: PASS
-        evidence: |
-          Both scenario sub-headings carry numbered steps. Scenario 1
-          opens with `1. **Open a fresh browser context.**` and runs
-          through `5. **Verify post-load rendering.**`. Scenario 2
-          opens with `1. **Start from inside Datagrok.**` and runs
-          through `5. **Compare against Scenario 1 outcome.**`. No
-          scenario heading lacks numbered steps.
       - check: A-STRUCT-MECH-04
         status: PASS
-        evidence: |
-          Neither scenario is empty. Scenario 1 exercises fresh-browser
-          direct-link entry with explicit observation of the loading
-          window during page load plus post-load rendering checks.
-          Scenario 2 is the in-app navigation regression-guard control
-          with explicit comparison to Scenario 1's outcome. Both
-          scenarios contain executable verification content far beyond
-          a bare heading.
       - check: A-STRUCT-MECH-05
         status: PASS
-        evidence: |
-          target_layer value is playwright, which is one of the three
-          canonical enum members (playwright, apitest, manual-only).
       - check: A-STRUCT-MECH-06
         status: PASS
-        evidence: |
-          coverage_type value is regression, one of the four canonical
-          enum members (smoke, regression, edge, perf). Not a
-          severity-axis value (p0..p3 belong to the
-          critical_paths/priority axis only and would FAIL the unified
-          test-kind enum).
       - check: A-STRUCT-03
         status: PASS
-        evidence: |
-          coverage_type label is declared at file frontmatter level
-          (regression) and applies uniformly to both scenarios; the
-          mode file explicitly permits file-frontmatter-level
-          declaration. The Notes section justifies the choice
-          (bug-focused regression guard for GROK-18721; smoke lives
-          elsewhere per chain ui_coverage_plan; direct-link entry is a
-          primary user path, not a boundary value, so not edge; not
-          perf).
       - check: A-STRUCT-04
         status: PASS
-        evidence: |
-          Common preconditions are factored into `## Setup` (3 numbered
-          steps): PowerPack installed and user access confirmed; a
-          saved project with a known direct-link URL exists (with a
-          fixture creation fallback via System:DemoFiles/demog.csv and
-          File menu Save As Project); a fresh browser context is
-          available. Neither scenario re-states this material; each
-          starts from its own entry-path-specific step 1.
       - check: A-LAYER-ALIGN-01
         status: PASS
-        evidence: |
-          Frontmatter has no pyramid_layer key (verified across the
-          full preamble block). PASS-by-vacuity applies per the mode
-          file. The prose mention of "bug-focused per Rule 3" in the
-          Notes section is documentation, not a frontmatter field, and
-          the hard alignment rule applies only to the ui-smoke value
-          paired with coverage_type smoke.
       - check: A-CONT-01
         status: PASS
-        evidence: |
-          Concrete names used throughout. Platform entities are cited
-          by name (System:DemoFiles/demog.csv, File menu Save As
-          Project, Browse Projects, Recent Projects widget, project
-          name direct-link-loading-test). Source-file citations were
-          verified against repo state: package.ts line 134 hosts the
-          welcomeView registration with autostartImmediate true, line
-          138 hosts the first `@grok.decorators.dashboard` entry
-          (Spotlight), and line 315 hosts powerPackInit under
-          `@grok.decorators.init`. The URL template uses `<server>`
-          and `<user>` as environment-parametric markers paired with
-          the bug report's concrete example
-          dev.datagrok.ai/p/Opavlenko.Demog_95 — these are not generic
-          stand-ins like `<column>` or `<TODO>`, and no
-          atlas-hallucination patterns are present.
       - check: A-BUG-01
         status: PASS
-        evidence: |
-          Atlas powerpack.yaml known_issues (starts at line 1352) uses
-          the modern schema where each entry carries test_coverage with
-          exists false and paths empty list, rather than the legacy
-          literal `test_coverage: needed`. Under strict literal
-          predicate no entry qualifies, so PASS-by-vacuity. Under the
-          equivalent-modern reading (exists false equates to needed,
-          per the file-level comment at lines 1349 to 1351), the
-          single entry scoped to this scenario is GROK-18721 at lines
-          1373 to 1381, whose affects_sub_features list exactly
-          matches this scenario's sub_features_covered list
-          (powerpack.lifecycle.init, powerpack.welcome.view,
-          powerpack.dashboards). GROK-18721 is addressed via both
-          clause (a) — related_bugs lists GROK-18721 in frontmatter —
-          and clause (b) — body references at the H1 title, the
-          opening prose paragraph, the Related bug Notes entry, and
-          the Chain context Notes entry. The other 8 atlas bugs
-          target different sub-features (formula-lines, add-new-column,
-          search.power, io.xlsx, widgets.recent-projects, …) and are
-          chain-level concerns owned by F-BUG-COVERAGE-01, outside
-          single-scenario Gate A scope.
       - check: A-MERIT-01
         status: PASS
-        evidence: |
-          No effort or complexity opt-outs anywhere. The Notes section
-          closes with an explicit "Deferrals. None." sentence. Both
-          scenarios are fully authored with concrete steps and
-          expected results.
       - check: A-MERIT-02
         status: PASS
-        evidence: |
-          No TODO / later / next-phase markers in body or frontmatter
-          (verified across the full file). The Notes section's
-          Deferrals item explicitly states no deferral is required,
-          citing that the two scenarios cover the bug's reproduction
-          surface plus the regression-guard control.
   d:
     verdict: PASS
     cycle_id: 2026-05-23-powerpack-migrate-02
