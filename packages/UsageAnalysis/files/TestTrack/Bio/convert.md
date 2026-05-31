@@ -1,8 +1,8 @@
 #### Convert
 1. Test for data:
-  - data sample_FASTA.csv,
-  - sample_HELM.csv, 
-  - sample_MSA.csv.
+  - System.AppData/Bio/tests/filter_FASTA.csv,
+  - System.AppData/Bio/tests/filter_HELM.csv, 
+  - System.AppData/Bio/tests/filter_MSA.csv.
 
 2. Go to **Bio**:
    * **Calculate > Get region**

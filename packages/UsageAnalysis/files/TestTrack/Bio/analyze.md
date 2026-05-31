@@ -1,7 +1,7 @@
 All functions should be tested on 
-- sample_FASTA.csv, 
-- sample_HELM.csv, 
-- sample_MSA.csv.
+- System.AppData/Bio/tests/filter_FASTA.csv,
+- System.AppData/Bio/tests/filter_HELM.csv, 
+- System.AppData/Bio/tests/filter_MSA.csv.
 
 1. On the menu ribbon, open **Bio** > **Analyze**:
    * **Sequence Space...** 

@@ -1,4 +1,7 @@
-1. Open sample_FASTA.csv (sample_HELM.csv, sample_MSA.csv).
+1. Test for data:
+  - System.AppData/Bio/tests/filter_FASTA.csv,
+  - System.AppData/Bio/tests/filter_HELM.csv, 
+  - System.AppData/Bio/tests/filter_MSA.csv.
 2. On the menu ribbon, open **Bio** > **Search** > **Sequence Space**. A dialog opens.
 3. Click OK to run a function with default parameters.
 4. On the menu ribbon, open **Bio** > **Search** > **Sequence Space**.

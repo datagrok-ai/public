@@ -1,4 +1,4 @@
-1. The sample_HELM.csv file is too large, so extract a subset of 50 rows
+1. Open System.AppData/Bio/tests/filter_HELM.csv
 2. Add a new column with a formula RandBetween(0,5) - this will be the clusters column.
 3. On the menu ribbon, open **Bio** > **MSA**.
 4. Set Cluster to the new column with a formula (from the step 2).
