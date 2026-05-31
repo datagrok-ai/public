@@ -1,13 +1,182 @@
-1. Open linked datasets
-2. Make sure that each amino acid is rendered with a different color.
-3. Click the peptides column title.
-4. Check that all necessary panels are displayed on the **Context Panel** (**Details**, **Peptides**)**.
-5. On the **Context Panel**, expand each tab.
-6. Make sure the content for each panel is displayed correctly.
 ---
-{
-  "order": 1,
-  "datasets": [
-    "System:DemoFiles/bio/peptides.csv"
-  ]
-}
+feature: peptides
+sub_features_covered:
+  - peptides.panels
+  - peptides.panels.peptides
+  - peptides.rendering
+  - peptides.rendering.monomer
+target_layer: playwright
+coverage_type: smoke
+produced_from: migrated
+realized_as:
+  - info-panels-spec.ts
+original_path: public/packages/UsageAnalysis/files/TestTrack/peptides/info-panels.md
+migration_date: 2026-05-28
+source_text_fixes:
+  - step-4-stray-double-asterisk-and-trailing-period-after-parenthesis
+candidate_helpers: []
+unresolved_ambiguities:
+  - step-6-content-displayed-correctly-no-concrete-invariant
+  - step-2-amino-acid-different-color-no-renderer-key-declared
+scope_reductions:
+  - id: SR-01
+    check: D-SAN-02
+    rationale: >-
+      Original info-panels trace (info-panels-run.md, 2026-04-09) enumerated
+      three Context Panel panes (Details, Peptides, Bioinformatics); migrated
+      scenario verifies only Details + Peptides. The Bioinformatics accordion
+      pane is registered by the Bio package, not Peptides; the peptides.panels.*
+      atlas surface contains only peptides.panels.peptides and
+      peptides.panels.manual-alignment (atlas L133-L154), so the Bioinformatics
+      pane is out of the Peptides feature surface owned by this section and
+      belongs to the Bio chain.
+    verdict_status: null
+  - id: SR-02
+    check: D-STEP-01
+    rationale: >-
+      Original steps 5 (Expand each tab) and 6 (Verify panel content) merge into
+      migrated steps 4 and 5; the original step-6 verification target
+      (Bioinformatics sequence logo + WebLogo chart) is scoped out by SR-01, and
+      the residual per-pane content invariant for Details and Peptides is
+      surfaced as unresolved_ambiguities[step-6-content-displayed-
+      correctly-no-concrete-invariant]. Bookkeeping merge only; the scenario
+      body already constrains step 5 to the two enumerated panes.
+    verdict_status: null
+related_bugs:
+  - GROK-17557
+pyramid_layer: ui-smoke
+ui_coverage_responsibility:
+  - peptides-context-panel-details
+  - peptides-context-panel-peptides-tab
+  - macromolecule-column-monomer-coloring
+ui_coverage_delegated_to: null
+gate_verdicts:
+  a:
+    verdict: PASS
+    cycle_id: 2026-05-29-peptides-migrate-02
+    timestamp: 2026-05-29T00:00:00Z
+    review_round: 1
+    failure_keys: []
+    claims:
+      - check: A-STRUCT-MECH-01
+        status: PASS
+      - check: A-STRUCT-MECH-02
+        status: PASS
+      - check: A-STRUCT-MECH-03
+        status: PASS
+      - check: A-STRUCT-MECH-04
+        status: PASS
+      - check: A-STRUCT-MECH-05
+        status: PASS
+      - check: A-STRUCT-MECH-06
+        status: PASS
+      - check: A-STRUCT-03
+        status: PASS
+      - check: A-STRUCT-04
+        status: PASS
+      - check: A-LAYER-ALIGN-01
+        status: PASS
+      - check: A-CONT-01
+        status: PASS
+      - check: A-BUG-01
+        status: PASS
+      - check: A-MERIT-01
+        status: PASS
+      - check: A-MERIT-02
+        status: PASS
+  b:
+    verdict: PASS
+    cycle_id: 2026-05-30-peptides-automate-02
+    timestamp: 2026-05-30T20:42:00Z
+    spec_runs:
+      - spec: info-panels-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 63
+        failure_keys: []
+  d:
+    verdict: SCOPE_REDUCTION
+    cycle_id: 2026-05-29-peptides-migrate-02
+    timestamp: 2026-05-29T00:00:00Z
+    failure_keys: []
+    scope_reduction_proposal: |
+      Re-judged independently this cycle (2026-05-29-peptides-migrate-02)
+      against the authoritative pre-migration trace (sibling
+      info-panels-run.md, 2026-04-09). That trace carried 6 steps and
+      enumerated three Context Panel accordion panes at step 4 (Details,
+      Peptides, AND Bioinformatics), with step 6 verifying the Bioinformatics
+      sequence logo plus WebLogo chart. The migrated scenario verifies only
+      Details + Peptides (Setup step + 5 scenario steps). The Bioinformatics
+      pane and its step-6 content verification are dropped; the drop is
+      hosted under scope_reductions[] (not silent, not mis-hosted under
+      source_text_fixes), so this is a documented coverage reduction, not a
+      D-SAN-02 FAIL.
+        - SR-01 (D-SAN-02): the Bioinformatics accordion pane is registered
+          by the Bio package, not Peptides. Verified against the atlas
+          sub_features slice this cycle — peptides.panels children are only
+          peptides.panels.peptides (peptidesPanel, Macromolecule column,
+          atlas L140) and peptides.panels.manual-alignment (Monomer cell,
+          L148); there is no Bioinformatics pane in the Peptides feature
+          surface. The original trace describes Bioinformatics as the Bio
+          package initializing after semType detection, consistent with Bio
+          ownership. Relocation to the Bio chain is well-founded.
+        - SR-02 (D-STEP-01): documents the mechanical merge of original
+          steps 5+6 into migrated steps 4+5; the Bioinformatics step-6
+          target is scoped out by SR-01 and the residual per-pane content
+          invariant for Details + Peptides is surfaced as
+          unresolved_ambiguities[step-6-content-displayed-correctly-no-
+          concrete-invariant].
+      Mechanical fail-fast: all 8 required fields present, deprecated
+      migrated_from absent (D-STRUCT-MECH-03 PASS); original_path resolves on
+      disk (D-STRUCT-MECH-05 PASS — lowercase TestTrack/peptides path resolves
+      to on-disk TestTrack/Peptides/info-panels.md under Windows case-folding,
+      confirmed by directory listing); all four Phase 1 fields present and
+      parseable (D-FRONTMATTER-PHASE1-01 PASS); per-field schema clean with no
+      duplicate ids and valid SR object shape, resolving the prior
+      2026-05-27-peptides-migrate-02 D-FRONTMATTER-PHASE1-02 failed_attempt
+      (decision-log entry_id peptides-2026-05-27-...-d-frontmatter-phase1-02)
+      — D-FRONTMATTER-PHASE1-02 PASS. Content: every original step mapped or
+      acknowledged (D-STEP-01/02 PASS); original Expected-result assertions
+      preserved or SR-acknowledged; no edge case lost (D-EDGE-01 PASS —
+      original trace is straight-line smoke); no lost dependency chain
+      (D-STRUCT-01 PASS — chain depends_on []); not a matrix scenario
+      (D-STRUCT-02 NA); no UI-to-JS-API substitution, so D-UI-DELEGATION-01
+      does not fire; SR rationale cites a real cross-feature-surface boundary,
+      not effort (D-MERIT-01 PASS); no unprompted deferral (D-MERIT-02 PASS).
+      Acceptable cross-feature-surface relocation: original content moved out
+      of this section with a cited, atlas-confirmed ownership reason. No body
+      rewrite required.
+  f:
+    verdict: PASS
+    cycle_id: 2026-05-29-peptides-migrate-02
+    timestamp: 2026-05-29T00:00:00Z
+    failure_keys: []
+  e:
+    verdict: PASS
+    cycle_id: 2026-05-30-peptides-automate-02
+    timestamp: 2026-05-30T23:55:00Z
+    failure_keys: []
+---
+
+## Setup
+
+1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
+
+## Scenarios
+
+### Context Panel surfaces Details and Peptides on Macromolecule column
+
+Entry-point smoke for the Peptides info-panel surface. Verifies (a) per-cell amino-acid coloring on the `Macromolecule` column rendered by the Peptides cell-renderer, and (b) that selecting the peptides column reveals the expected accordion panes on the Context Panel — Details (platform-wide pane) and Peptides (the `peptidesPanel` info panel registered by the Peptides package for Macromolecule columns).
+
+1. Verify each amino acid in the `AlignedSequence` column is rendered with a distinct color (the per-cell monomer renderer is installed on the Macromolecule column).
+2. Click the `AlignedSequence` column title — the column becomes the current column and the Context Panel updates to reflect it.
+3. On the Context Panel, confirm both the **Details** pane and the **Peptides** pane are present.
+4. Expand the **Details** pane and the **Peptides** pane.
+5. Confirm each expanded pane renders its expected content (Details — column metadata such as type, semtype, value statistics; Peptides — the SAR analyze UI / Launch SAR entry surface).
+
+## Notes
+
+- Pyramid role: this scenario is the chain's `ui-smoke` residual per `scenario-chains/peptides.yaml :: ui_coverage_plan.smoke_scenario` (no entity create/share/delete in the Peptides feature shape; shortest scenario by step count; lowest `order`). Sibling scenarios `peptides.md`, `sar.md`, `peptide-space.md` delegate the shared `peptides-context-panel-peptides-tab` entry-point flow to this scenario.
+- Bug coverage: cross-cutting bug `GROK-17557` (SAR launched from the Peptides context panel raises "SeqHelper is not initialized") affects the `peptides.panels.peptides` surface this scenario exercises; the dedicated cross-cutting spec is proposed under chain `bug_focused_candidates` as `peptides-grok-17557-spec.ts`. This scenario verifies the panel-rendering smoke; the Launch-SAR-from-panel init-prerequisite invariant lives in the dedicated spec.
+- Renderer-tag mapping: the original source text says "each amino acid is rendered with a different color" without specifying the renderer key. The sibling Playwright spec `info-panels-spec.ts` (test "Peptides — Info Panels") asserts `col.getTag('cell.renderer') === 'sequence'`; this mapping is not declared in the original scenario body and is surfaced as an unresolved ambiguity for downstream resolution.
+- Panel-content verification: step 5 of the original asks for "content for each panel is displayed correctly". The migrated text constrains "each panel" to the two panels explicitly enumerated in step 4 (Details + Peptides) and lists representative content shapes per pane; the absence of a concrete per-pane invariant in the source is surfaced as an unresolved ambiguity.
