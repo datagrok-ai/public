@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, subscribeAll, until, wait, withTableView} from '../helpers';
+import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until, wait, withTableView} from '../helpers';
 
 // The six event observables on the built-in filter panel (DG.FilterGroup).
 category('AI: Viewers: Filters Events', () => {
@@ -62,6 +62,27 @@ category('AI: Viewers: Filters Events', () => {
       await wait(100);
       subscribeAll([fg.onFilterAdded, fg.onFilterRemoved, fg.onFilterCriteriaChanged,
         fg.onFilterEnabledChanged, fg.onFilterSync, fg.onFormulaFilterChanged])();
+    });
+  });
+
+  test('getFilterSummary returns an Element after a filter is added', async () => {
+    await withTableView(demog(), async (tv) => {
+      const fg = tv.getFiltersGroup({createDefaultFilters: false});
+      await wait(100);
+      fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
+      await until(() => fg.filters.length > 0);
+      expect(fg.getFilterSummary() instanceof Element, true);
+    });
+  });
+
+  test('setActive toggles the group without throwing', async () => {
+    await withTableView(demog(), async (tv) => {
+      const fg = tv.getFiltersGroup({createDefaultFilters: false});
+      await wait(100);
+      expectNoThrow(() => {
+        fg.setActive(false);
+        fg.setActive(true);
+      });
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});
