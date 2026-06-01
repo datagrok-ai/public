@@ -344,7 +344,7 @@ export async function visualizeSigmoidKernelSVM(df: DG.DataFrame, targetColumn: 
 }
 
 //name: T-test
-//description: Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.
+//description: Two-sample t-test (Welch or Student) compares the means of a feature between two groups.
 //top-menu: ML | Analyze | Group comparison | T-test...
 export function tTest() : void {
   PackageFunctions.tTest();

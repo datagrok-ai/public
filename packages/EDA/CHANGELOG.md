@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.6 (2026-06-01)
+
+Add two-sample t-test (Welch and Student)
+
 ## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA
