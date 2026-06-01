@@ -480,10 +480,19 @@ export const RichFunctionView = Vue.defineComponent({
     const handlePanelChanged = (name: string | null, oldName: string | null) => {
       // Restore on initial mount OR when an inflight rebuild auto-focused away from
       // the user's saved tab — push the saved tab back if it's still visible.
+      // When formAsTab is on, 'Inputs' is a valid tab even though it's not in tabLabels
+      // (its title is hardcoded on the form panel, not derived from input params).
       if (oldName == null || rebuildInFlight) {
         const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
-        if (savedName && visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
-          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName));
+        const isInputsTab = (n: string) => n === 'Inputs' && formAsTab.value && !formHidden.value;
+        const canRestore = !!savedName && (
+          isInputsTab(savedName) ||
+          (visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
+        );
+        if (canRestore)
+          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName!));
+        else if (formAsTab.value && !formHidden.value)
+          setTimeout(() => dockSpawnRef.value?.setActivePanel('Inputs'));
       }
       if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
