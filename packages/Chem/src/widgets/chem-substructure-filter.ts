@@ -62,6 +62,11 @@ type AlignHighlightSync = {
   tableName: string;
 }
 
+/** The parts of the (untyped) onValuesChanged payload this filter reads. */
+interface ValuesChangedEventArgs {
+  args?: {column?: DG.Column; indexes?: Int32Array | number[]};
+}
+
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
   sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
@@ -289,37 +294,17 @@ export class SubstructureFilter extends DG.Filter {
         }
       }));
 
-    // Patch only the changed rows' bits when cells are edited — O(k) instead of full re-scan.
-    // If a full search is in flight, wait for it then patch on top, rather than restarting it.
-    // If the filter is disabled when the edit happens, mark the bitset dirty so a re-enable
-    // triggers a fresh search.
+    // On cell edits, re-evaluate only the edited rows (O(k), not a full re-scan).
     this.subs.push(this.dataFrame!.onValuesChanged
-      .pipe(filter((args: any) => {
-        const eventArgs = args?.args;
-        return eventArgs?.column?.name === this.columnName && eventArgs?.indexes?.length;
+      .pipe(filter((event: ValuesChangedEventArgs) => { // only this column's edits, with indexes
+        const eventArgs = event?.args;
+        return eventArgs?.column?.name === this.columnName && !!eventArgs?.indexes?.length;
       }))
-      .subscribe(async (args: any) => {
-        // Filter not currently active (disabled, or empty query): nothing to do now, but the
-        // bitset is stale for this row — mark dirty so the next enable recomputes.
-        if (!this.isFiltering) {
-          this.recalculateFilter = true;
-          return;
-        }
-        // Only the designated active filter does the work; peers sync via FILTER_SYNC_EVENT.
-        const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
-        if (active && active.filterId !== -1 && active.filterId !== this.filterId)
-          return;
-        const indexes = args.args.indexes;
-        const patchable = () => this.bitset != null && !this.recalculateFilter;
-        const searching = () => !!this.batchResultObservable && !this.batchResultObservable.closed;
-        if (patchable() && searching())
-          await awaitCheck(() => !searching(), 'substructure search did not complete', 60000).catch(() => {});
-        if (patchable() && !searching())
-          await this._patchChangedRows(indexes);
-        else {
-          this.recalculateFilter = true;
-          await this._onSketchChanged();
-        }
+      .subscribe((event: ValuesChangedEventArgs) => {
+        // sync callback + void: a handler error can't become an unhandled stream rejection
+        const indexes = event.args?.indexes;
+        if (indexes?.length)
+          void this._onCellsEdited(indexes);
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
@@ -469,24 +454,38 @@ export class SubstructureFilter extends DG.Filter {
     grok.shell.tv?.grid?.invalidate();
   }
 
-  /** Re-evaluate just the changed rows in a worker and patch the cached bitset in place.
-   * Safe only for substructure search types — see the onValuesChanged guard. */
-  async _patchChangedRows(indexes: Int32Array | number[]): Promise<void> {
-    // Capture the bitset and read the edited cells BEFORE the awaits below — a peer filter's
-    // FILTER_SYNC_EVENT can reassign this.bitset while we're suspended.
-    const bitset = this.bitset;
-    if (!bitset) return;
-    const rows = Array.from(indexes);
-    const molecules = rows.map((i) => this.column!.get(i) ?? '');
-    const smarts = this.moleculeToSmarts(this.currentMolecule);
+  /** Re-evaluate the edited rows in a worker and patch their bits. Falls back to a full recompute
+   * when patching isn't possible (peer owns the filter, disabled, no cached result, or a search is
+   * still running). */
+  async _onCellsEdited(indexes: Int32Array | number[]): Promise<void> {
     try {
+      // a peer filter owns the search — it patches and syncs the result to us
+      const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
+      if (active && active.filterId !== -1 && active.filterId !== this.filterId)
+        return;
+      // disabled/empty: nothing to apply now — mark dirty so a re-enable recomputes
+      if (!this.isFiltering) {
+        this.recalculateFilter = true;
+        return;
+      }
+      // no cached result yet, or a full search is running -> recompute the whole column
+      const searching = !!this.batchResultObservable && !this.batchResultObservable.closed;
+      if (!this.bitset || this.recalculateFilter || searching) {
+        this.recalculateFilter = true;
+        await this._onSketchChanged();
+        return;
+      }
+      // match just the edited rows, then write their bits into the cached bitset
+      const bitset = this.bitset; // capture before the await — a sketch change/peer sync can replace it
+      const rows = Array.from(indexes);
+      const molecules = rows.map((i) => this.column!.get(i) ?? '');
       const service = await getRdKitService();
       const matches = this.searchType === SubstructureSearchType.IS_SIMILAR
         ? await service.similarityCheckForRows(molecules, this.currentMolecule, this.fp, this.similarityCutOff)
-        : await service.searchSubstructureForRows(molecules, this.currentMolecule, smarts!, this.searchType);
-      // If the filter state changed under us during the awaits (bitset replaced by a peer sync,
-      // or rows added/removed), recompute cleanly instead of patching stale state.
-      if (this.bitset !== bitset || bitset.length !== this.column!.length) {
+        : await service.searchSubstructureForRows(molecules, this.currentMolecule,
+          this.moleculeToSmarts(this.currentMolecule), this.searchType);
+      // bitset was replaced while we computed (new search / peer sync) -> our bits are stale, recompute
+      if (this.bitset !== bitset) {
         this.recalculateFilter = true;
         await this._onSketchChanged();
         return;
@@ -494,15 +493,16 @@ export class SubstructureFilter extends DG.Filter {
       for (let j = 0; j < rows.length; j++)
         bitset.set(rows[j], matches.getBit(j), false);
       this.dataFrame!.rows.requestFilter();
+      // keep peer filters on this column in sync
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
         bitset, molblock: this.currentMolecule, colName: this.columnName,
         filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
         simCutOff: this.similarityCutOff, fp: this.fp,
       });
-    } catch (e: any) {
-      _package.logger.error(e?.toString?.() ?? 'Chem | substructure filter incremental patch failed');
+    } catch (e) {
+      _package.logger.error(e instanceof Error ? e.message : 'Chem | substructure filter cell-edit failed');
       this.recalculateFilter = true;
-      await this._onSketchChanged();
+      await this._onSketchChanged(); // recover from a worker failure instead of leaving the row stale
     }
   }
 

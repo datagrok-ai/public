@@ -434,19 +434,44 @@ M  END
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
+  test('cellEditRefiltersRow', async () => {
+    // Primary regression for GROK-15374 / PR #3826: with an ACTIVE substructure filter, editing a
+    // visible (matching) cell to a non-matching molecule must filter that row out incrementally,
+    // without re-enabling or re-sketching.
+    const {df, filter, sketcherDialogs} = await setupBenzeneFilter(); // benzene filter -> 32 visible
+
+    // Case 1: matching row -> non-matching molecule must drop out (32 -> 31)
+    let matchIdx = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (df.filter.get(i)) { matchIdx = i; break; }
+    }
+    expect(matchIdx >= 0, true);
+    df.col('Structure')!.set(matchIdx, 'CC'); // ethane, no benzene
+    await awaitCheck(() => df.filter.trueCount === 31 && !df.filter.get(matchIdx),
+      'editing a matching cell to a non-matching molecule did not filter the row out', 10000);
+
+    // Case 2: hidden row -> matching molecule must come back (31 -> 32)
+    let hiddenIdx = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (!df.filter.get(i)) { hiddenIdx = i; break; }
+    }
+    expect(hiddenIdx >= 0, true);
+    df.col('Structure')!.set(hiddenIdx, 'c1ccccc1'); // benzene
+    await awaitCheck(() => df.filter.get(hiddenIdx) && df.filter.trueCount === 32,
+      'editing a non-matching cell to a matching molecule did not include the row', 10000);
+
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+    await delay(1000);
+  });
+
   test('cellEditWhileFilterDisabled', async () => {
     // Regression for the disable/enable case (PR #3826 review):
     // editing a cell while the filter is disabled must leave the cached bitset known-stale
     // so a re-enable triggers a fresh recompute instead of reusing pre-edit match bits.
-    const df = await readDataframe('tests/spgi-100.csv');
-    await grok.data.detectSemanticTypes(df);
-    const sketcherDialogs: DG.Dialog[] = [];
+    const {df, filter, sketcherDialogs} = await setupBenzeneFilter(); // benzene filter -> 32 visible
 
-    const filter = await createFilter('Structure', df, sketcherDialogs);
-    filter.sketcher.setSmiles('c1ccccc1');
-    await awaitCheck(() => df.filter.trueCount === 32, 'initial benzene filter did not apply', 10000);
-
-    // Find a currently visible (benzene-matching) row.
+    // first visible (benzene-matching) row to edit
     let visIdx = -1;
     for (let i = 0; i < df.rowCount; i++) {
       if (df.filter.get(i)) { visIdx = i; break; }
@@ -464,13 +489,45 @@ M  END
     await awaitCheck(() => filter.recalculateFilter === true,
       'recalculateFilter was not set when a cell was edited while filter is disabled', 2000);
 
-    // Re-enable the filter and run the filter pipeline.
-    delete (filter as any).isFiltering;
+    // Re-enable the filter — delete the own property installed by Object.defineProperty above so the
+    // prototype getter resumes. The cast narrows to just the deletable property (no `any`).
+    delete (filter as unknown as {isFiltering?: boolean}).isFiltering;
     df.rows.requestFilter();
 
     // After the fresh search, the edited row should no longer match — one fewer hit.
     await awaitCheck(() => df.filter.trueCount === 31 && !df.filter.get(visIdx),
       'recompute after re-enable did not exclude the edited row', 10000);
+
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+    await delay(1000);
+  });
+
+  test('cellEditRefiltersRowSimilarity', async () => {
+    // Exercises the IS_SIMILAR path (similarityCheckForRows: worker FPs + Tanimoto).
+    // Editing a row to a molecule identical to the query gives Tanimoto 1.0, so it must pass
+    // any cutoff regardless of the dataset — a dataset-independent assertion.
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+    const filter = await createFilter('Structure', df, sketcherDialogs);
+
+    filter.searchTypeInput.value = SubstructureSearchType.IS_SIMILAR;
+    filter.sketcher.setSmiles('c1ccccc1');
+    await awaitCheck(() => filter.bitset != null, 'similarity filter did not apply', 15000);
+
+    // a row currently NOT similar enough to benzene
+    let hiddenIdx = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (!df.filter.get(i)) { hiddenIdx = i; break; }
+    }
+    expect(hiddenIdx >= 0, true);
+    const before = df.filter.trueCount;
+
+    // edit it to benzene itself -> identical to the query -> must become visible
+    df.col('Structure')!.set(hiddenIdx, 'c1ccccc1');
+    await awaitCheck(() => df.filter.get(hiddenIdx) && df.filter.trueCount === before + 1,
+      'editing a row to the query molecule did not make it pass the similarity filter', 10000);
 
     sketcherDialogs.forEach((it) => it.close());
     filter.detach();
@@ -508,5 +565,18 @@ async function testOneColumn(dfName: string, colName: string, substructure: stri
   sketcherDialogs.forEach((it) => it.close());
   filter.detach();
   await delay(1000); //for progressBar to be closed and finish detach
+}
+
+type BenzeneFilterSetup = {df: DG.DataFrame, filter: SubstructureFilter, sketcherDialogs: DG.Dialog[]};
+
+/** Shared setup for cell-edit regression tests: spgi-100 filtered by benzene (32 hits). */
+async function setupBenzeneFilter(): Promise<BenzeneFilterSetup> {
+  const df = await readDataframe('tests/spgi-100.csv');
+  await grok.data.detectSemanticTypes(df);
+  const sketcherDialogs: DG.Dialog[] = [];
+  const filter = await createFilter('Structure', df, sketcherDialogs);
+  filter.sketcher.setSmiles('c1ccccc1');
+  await awaitCheck(() => df.filter.trueCount === 32, 'initial benzene filter did not apply', 10000);
+  return {df, filter, sketcherDialogs};
 }
 

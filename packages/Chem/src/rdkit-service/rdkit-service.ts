@@ -270,44 +270,44 @@ export class RdKitService {
     () => {});
   }
 
-  /** Pick a worker for short subset calls (e.g. cell-edit patches). Routes off worker[0]
-   * which long-running ops like R-group analysis and MCS occupy, and clears any stale terminate
-   * flag on it — not awaited because postMessage is FIFO, so the worker processes the reset
-   * before any subsequent call sent to it, with no extra round-trip. */
+  /** Worker for small subset calls (cell-edit patches): the last one, which heavy ops
+   * (R-group, MCS on worker[0]) tend to leave free. NB: with a single worker the "last" worker
+   * IS worker[0], so the terminate-flag reset below can collide with those ops on low-core
+   * machines — acceptable because a k-row patch is cheap and the caller awaits any running search. */
   private _getLastWorker(): RdKitServiceWorkerClient {
     const worker = this.parallelWorkers[this.parallelWorkers.length - 1];
-    worker.setTerminateFlag(false).catch(() => {});
+    worker.setTerminateFlag(false).catch(() => {}); // clear any stale "cancelled" flag before reuse
     return worker;
   }
 
-  /** Substructure-matches a small molecule subset (e.g. cells just edited in the grid) against
-   * {@link query} on a single worker, returning a dense BitArray indexed 0..molecules.length-1.
-   * Used for incremental filter updates, bypassing the striped full-column path.
-   * For IS_SIMILAR use {@link similarityCheckForRows}. */
+  /** Substructure-matches a small edited-cell subset in one worker. For IS_SIMILAR use
+   * {@link similarityCheckForRows}. Returns a BitArray indexed 0..molecules.length-1. */
   async searchSubstructureForRows(molecules: string[], query: string, queryMolBlockFailover: string,
     searchType: SubstructureSearchType): Promise<BitArray> {
+    // worker returns a packed bitmask (one bit per molecule)
     const buffer = await this._getLastWorker()
       .searchSubstructure(query, queryMolBlockFailover, molecules, searchType) as Uint32Array;
     return new BitArray(buffer, molecules.length);
   }
 
-  /** Tanimoto sibling of {@link searchSubstructureForRows} for IS_SIMILAR. Computes the query
-   * FP on the main thread, fetches per-row FPs from the worker, thresholds vs {@link similarityCutOff}.
-   * Returns a dense BitArray indexed 0..molecules.length-1. */
+  /** IS_SIMILAR variant of {@link searchSubstructureForRows}: query FP on the main thread,
+   * per-row FPs from the worker, Tanimoto threshold. Returns a BitArray indexed 0..length-1. */
   async similarityCheckForRows(molecules: string[], query: string, fp: Fingerprint,
     similarityCutOff: number): Promise<BitArray> {
-    const result = new BitArray(molecules.length);
+    const result = new BitArray(molecules.length); // bit i = row i passes the cutoff
     const queryMol = getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol;
-    if (!queryMol) return result;
-    let queryFpBytes: Uint8Array;
-    try { queryFpBytes = getRDKitFpAsUint8Array(queryMol, fp); } finally { queryMol.delete(); }
-    const queryFp = rdKitFingerprintToBitArray(queryFpBytes);
+    if (!queryMol) return result; // unparseable query -> no matches
+    let queryFp: BitArray | null = null;
+    try {
+      queryFp = rdKitFingerprintToBitArray(getRDKitFpAsUint8Array(queryMol, fp));
+    } finally {
+      queryMol.delete(); // free the WASM mol even if FP generation throws
+    }
     if (!queryFp) return result;
+    // the expensive part (parse k mols + build FPs) runs in the worker
     const fpRes = await this._getLastWorker().getFingerprints(fp, molecules, false) as IFpResult;
     for (let i = 0; i < molecules.length; i++) {
-      const rowFpBytes = fpRes.fps[i];
-      if (!rowFpBytes) continue;
-      const rowFp = rdKitFingerprintToBitArray(rowFpBytes);
+      const rowFp = fpRes.fps[i] ? rdKitFingerprintToBitArray(fpRes.fps[i]) : null;
       if (rowFp && tanimotoSimilarity(queryFp, rowFp) >= similarityCutOff)
         result.setBit(i, true);
     }
