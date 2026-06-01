@@ -9,7 +9,7 @@ import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies, hasAnyInconsistency} from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
@@ -102,7 +102,7 @@ const listContributingIos = (
   } else if (status === 'succeeded info')
     consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction === 'info'));
   else if (status === 'succeeded inconsistent')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction !== 'info'));
+    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
   return [...result];
 };
 
@@ -326,7 +326,7 @@ export const TreeNode = Vue.defineComponent({
             /> }
             {
               isRunnable.value && !props.isReadonly &&
-                hasInconsistencies(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
+                hasAnyInconsistency(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
                 <IconFA
                   name='sync'
                   tooltip={'Update this step with consistent values'}

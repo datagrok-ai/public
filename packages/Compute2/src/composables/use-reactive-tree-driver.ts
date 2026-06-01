@@ -154,9 +154,9 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'runStep', uuid});
   };
 
-  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) => {
+  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) => {
     await overlayService?.show();
-    driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested});
+    driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested, includeInfo});
   };
 
   const runAction = (actionUuid: string) => {

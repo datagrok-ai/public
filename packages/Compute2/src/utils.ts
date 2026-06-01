@@ -162,6 +162,22 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
+export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
+  Object.values(consistencyStates || {}).some((v) => v.inconsistent);
+
+export const hasSubtreeAnyInconsistencies = (
+  data: PipelineState,
+  callStates: Record<string, FuncCallStateInfo | undefined>,
+  consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
+) => {
+  return _findTreeNode(
+    [data],
+    (state: PipelineState) => isFuncCallState(state) ?
+      (!state.isReadonly && hasAnyInconsistency(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
+      false,
+  );
+};
+
 export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
   const mappings = await dfToViewerMapping(call);
   if (viewersHook) {

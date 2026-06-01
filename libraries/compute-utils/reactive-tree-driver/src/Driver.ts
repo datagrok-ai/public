@@ -227,7 +227,7 @@ export class Driver {
 
   private runSequence(msg: RunSequence, state?: StateTree) {
     this.checkState(msg, state);
-    return state.runSequence(msg.startUuid, msg.rerunWithConsistent, msg.includeNonNested);
+    return state.runSequence(msg.startUuid, msg.rerunWithConsistent, msg.includeNonNested, msg.includeInfo);
   }
 
   private resetToConsistent(msg: ResetToConsistent, state?: StateTree) {

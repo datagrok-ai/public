@@ -24,7 +24,7 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
   reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -155,9 +155,11 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
+      const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
       ui.dialog(`Update confirmation`)
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
-        .onOK(() => runSequence(startUuid, rerunWithConsistent))
+        .add(includeInfoInput.root)
+        .onOK(() => runSequence(startUuid, rerunWithConsistent, undefined, includeInfoInput.value ?? false))
         .show({center: true, modal: true});
     };
 
@@ -764,7 +766,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
@@ -836,7 +838,7 @@ export const TreeWizard = Vue.defineComponent({
                       }
                       { hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                         <BigButton
-                          onClick={() => runSequence(chosenStepUuid.value!, true)}
+                          onClick={() => runSubtreeWithConfirm(chosenStepUuid.value!, true)}
                         >
                            Update
                         </BigButton>

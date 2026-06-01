@@ -274,11 +274,13 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     });
   }
 
-  overrideToConsistent() {
+  overrideToConsistent(includeInfo = false) {
     return defer(() => {
       for (const [name, restriction] of Object.entries(this.inputRestrictions$.value ?? {})) {
-        if (restriction && (restriction.type === 'restricted' || restriction.type === 'disabled') )
-          this.setState(name, restriction.assignedValue, restriction.type);
+        if (!restriction) continue;
+        const t = restriction.type;
+        if (t === 'restricted' || t === 'disabled' || (includeInfo && t === 'info'))
+          this.setState(name, restriction.assignedValue, t);
       }
       return of(undefined);
     });
