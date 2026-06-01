@@ -2,17 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectLook, expectNoThrow, look} from '../helpers';
 
-// Regression coverage for GROK-18867: PC plot colorMin/colorMax persistence
-// when columns change. The reported defect was that the per-column range
-// slider min/max could be reset incorrectly when the active columns set
-// changed. The internal slider state is not part of the public surface, so
-// we pin the JS-API-visible analog: `colorMin` and `colorMax` on
-// `IPcPlotSettings` (`d4.ts:2716-2718`). The fix shipped in 1.26.3.
-//
-// We assert a tolerant invariant: after a `columnNames` change, the look
-// bag must keep both color bounds *coherent* — either both numerically
-// preserved at the originally pinned values, or both cleared together.
-// Half-set state (one numeric, the other null/undefined) is the bug.
+// Regression coverage for GROK-18867: PC plot colorMin/colorMax persistence when columns change.
 category('AI: GROK-18867: PC plot colorMin/colorMax persistence', () => {
   function coherent(a: any, b: any, av: number, bv: number): boolean {
     const bothNullish = a == null && b == null;

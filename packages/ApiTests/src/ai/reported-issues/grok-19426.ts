@@ -2,13 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectLook, expectNoThrow, findProp, look} from '../helpers';
 
-// Regression coverage for GROK-19426: Pie chart slice labels.
-// `showInnerPercent` was renamed to `showPercentage`, and a new `showValue`
-// boolean was added next to it. We pin the schema-level round-trip via
-// `props[...]` and `getOptions(true).look`, that the two new keys are
-// independent (no cross-talk), that combining them keeps the viewer healthy,
-// and (best-effort) that `getProperties()` lists both with non-empty
-// descriptions.
+// Regression coverage for GROK-19426: Pie chart showValue / showPercentage (renamed from showInnerPercent).
 category('AI: GROK-19426: Pie chart showValue and showPercentage', () => {
   const v = (n: number = 50): DG.PieChartViewer =>
     DG.Viewer.pieChart(demog(n), {category: 'race'}) as DG.PieChartViewer;

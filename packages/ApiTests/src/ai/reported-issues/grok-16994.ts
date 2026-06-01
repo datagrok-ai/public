@@ -2,17 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {df, expectCleared, expectPropAndLook} from '../helpers';
 
-// Regression coverage for GROK-16994: Scatter plot whisker columns
-// (StdDev / errorbars) — public IScatterPlotSettings now exposes
-// xWhisker{Min,Max,Range}ColumnName / yWhisker{Min,Max,Range}ColumnName,
-// and the viewer auto-detects them from name suffixes (` min`, ` max`,
-// ` range`, ` whisker`, ` error`) when the user does not set X/Y
-// columns explicitly. We pin the property bag and the auto-detection
-// behavior. We deliberately do not pass {x, y} when exercising
-// auto-detect: ScatterPlotLook.auto runs the bulk
-// findMatchingErrorBarColumns only when both xColumnName and
-// yColumnName are unset, otherwise the auto path is skipped and the
-// test would falsely fail.
+// Regression coverage for GROK-16994: Scatter plot whisker columns and suffix/tag auto-detection.
 category('AI: GROK-16994: Scatter plot whiskers columns', () => {
   function nums(name: string, vals: number[]): [string, string, number[]] {
     return [name, 'double', vals];

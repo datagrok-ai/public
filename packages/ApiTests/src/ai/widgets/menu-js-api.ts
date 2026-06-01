@@ -1,7 +1,6 @@
-// DG.Menu + DG.Balloon — core/client/d4/lib/src/widgets/menu/menu.dart (scenario: menu-js-api)
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectBoolGetSet, expectNoThrow, subscribeAll, wait} from '../helpers';
+import {demog, expectBoolGetSet, expectNoThrow, subscribeAll, until} from '../helpers';
 
 category('AI: Widgets: Menu JS API', () => {
   test('popup builds fluent chain: item/separator/group/endGroup/colorPalette/fontEditor/col selectors', async () => {
@@ -10,7 +9,6 @@ category('AI: Widgets: Menu JS API', () => {
     expect(m instanceof DG.Menu, true);
     expect(m.item('A', () => {}) instanceof DG.Menu, true);
     expect(m.separator() instanceof DG.Menu, true);
-    // group() returns the nested sub-menu; endGroup() returns its parent (root).
     const sub = m.group('Sub');
     expect(sub instanceof DG.Menu, true);
     expect(sub.item('inner', () => {}) instanceof DG.Menu, true);
@@ -36,7 +34,7 @@ category('AI: Widgets: Menu JS API', () => {
     try {
       expect(m.bind(div) instanceof DG.Menu, true);
       m.show({element: div});
-      await wait(50);
+      await until(() => m.root instanceof HTMLElement);
       expect(m.root instanceof HTMLElement, true);
     } finally {
       expectNoThrow(() => m.hide());
@@ -52,7 +50,6 @@ category('AI: Widgets: Menu JS API', () => {
   test('Balloon.warning does not throw', async () => {
     const b = new DG.Balloon();
     expectNoThrow(() => b.warning('AI test warning'));
-    await wait(50);
     expectNoThrow(() => DG.Balloon.closeAll());
   });
 

@@ -3,14 +3,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectChoices, expectNoThrow, expectPropAndLook, expectRoundTrip,
   expectRoundTripPropAndLook, until, withAttachedViewer} from '../helpers';
 
-// DG.FormViewer — core/client/d4/lib/src/viewers/form/form_core.dart (scenario: form-js-api)
-// Form viewer JS surface (standalone DataFrame Form viewer, NOT the InputForm
-// widget): typed factory returning DG.FormViewer (vs the generic
-// Viewer<IFormSettings> the old factory returned), the editable/designMode
-// sketchForm pair, the show* ribbon-toggle booleans, the syncMode Current /
-// None / Mouse Over choices, the new buildForm/columnNames/row members backed
-// by FormViewer_BuildForm / FormViewer_Get_ColumnNames / FormViewer_Get_Row
-// wraps, and the existing form getter returning a DG.Form bound to a DataFrame.
+// FormViewer JS surface: typed factory, editable/designMode, show* toggles, syncMode, buildForm, row, form getter.
 category('AI: Viewers: Form JS API', () => {
   test('factory DG.Viewer.form returns typed DG.FormViewer; df.plot.form round-trips type', async () => {
     const t = demog();
@@ -70,9 +63,6 @@ category('AI: Viewers: Form JS API', () => {
       v.buildForm(['name', 'age']);
       await until(() => (v.columnNames ?? []).length >= 1);
       const names = v.columnNames ?? [];
-      // buildForm should re-register field handlers; assert it's at least non-empty and
-      // contains one of the requested columns (the SketchForm may dedupe or filter,
-      // so we don't lock down the exact length).
       expect(names.length >= 1, true);
       expect(names.includes('name') || names.includes('age'), true);
     });
@@ -85,8 +75,7 @@ category('AI: Viewers: Form JS API', () => {
       expect(v.row, 3);
 
       v.setOptions({syncMode: 'None'});
-      // In `None` mode the form's row decouples from dataFrame.currentRowIdx
-      // and reflects the internal `_row` field, which defaults to -1.
+      // In None mode the form's row decouples from currentRowIdx and defaults to -1.
       expect(v.row === -1 || v.row !== t.currentRowIdx, true);
     });
   });
@@ -100,8 +89,7 @@ category('AI: Viewers: Form JS API', () => {
   });
 
   test('boundary — single-row DataFrame does not throw on construction or option round-trip', async () => {
-    // NOTE: SketchField._init requires at least one row; truly-empty DataFrame is
-    // documented as an unsupported boundary (would throw `No element`).
+    // SketchField._init requires at least one row; truly-empty DataFrame is an unsupported boundary.
     const one = df([['x', DG.COLUMN_TYPE.INT, [42]]]);
     await withAttachedViewer<DG.FormViewer>(one, DG.VIEWER.FORM, {}, (v) => {
       expect(v instanceof DG.FormViewer, true);

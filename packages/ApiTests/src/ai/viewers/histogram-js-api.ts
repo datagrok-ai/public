@@ -4,16 +4,7 @@ import {
   demog, expectPropAndLook, expectRoundTripPropAndLook, findProp, look, subscribeAll, withAttachedViewer,
 } from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:219 (DG.Viewer.histogram),
-// public/js-api/src/viewer.ts:671 (HistogramViewer),
-// public/js-api/src/dataframe/data-frame.ts:565 (df.plot.histogram).
-// Histogram JS-only surface: typed factory + df.plot.histogram, the
-// includeDefaults flag on getOptions, setOptions round-trip, dataFrame
-// getter/setter swap, getInfo/getProperties shape, the four event
-// Observables (onBinsSelected / onLineSelected / onMouseOverBins /
-// onMouseOverLine), and close() on attached. Note: close() on a
-// never-attached viewer (factory but no addViewer) throws inside
-// grok_Viewer_Close — that's why detached viewers are not close()-d.
+// Histogram JS surface: typed factory, df.plot.histogram, getOptions/setOptions, dataFrame swap, event Observables.
 category('AI: Viewers: Histogram JS API', () => {
   test('factory typed', async () => {
     const v = DG.Viewer.histogram(demog(100), {value: 'age', bins: 15});

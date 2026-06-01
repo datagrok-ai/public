@@ -2,14 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {df, expectNoThrow, wait, withAttachedViewer} from '../helpers';
 
-// Regression coverage for GROK-18395: switching the X axis from a numeric
-// column to a string/categorical column on a Line chart caused
-// `Unsupported operation: NaN.round()` in Axis.vert during paint. The bug
-// only triggers on a real paint, so we attach the viewer to a TableView
-// and wait 300ms after the prop swap so the chart can attempt a repaint.
-// Dart errors propagate via console only — we do not subscribe to global
-// error events; the assertion is "prop swap did not throw + viewer is
-// still a LineChartViewer afterwards".
+// Regression coverage for GROK-18395: Line chart numeric-to-string X-axis swap error during paint.
 category('AI: GROK-18395: Line chart string X-axis error', () => {
   async function runSwap(rows: Array<[string, string, any[]]>): Promise<void> {
     await withAttachedViewer<DG.LineChartViewer>(df(rows), DG.VIEWER.LINE_CHART,

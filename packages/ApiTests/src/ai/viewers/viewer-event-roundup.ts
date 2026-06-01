@@ -2,15 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectFiresWithin, subscribeAll, withAttachedViewer} from '../helpers';
 
-// DG.Viewer / DG.HistogramViewer / DG.ScatterPlotViewer / DG.DensityPlotViewer /
-// DG.TrellisPlotViewer — core/client/d4/lib/src/viewer_base/{data_frame_viewer,canvas_viewer_mixin}.dart
-// + viewers/{histogram,scatterplot,density_plot,trellis_plot}/*_core.dart
-// (scenario: viewer-event-roundup). Round-up of nine event getters reachable via
-// onEvent('...'): the three base-Viewer lifecycle streams (onDataFrameChanged,
-// onResized, onAfterLayout) plus per-viewer streams that previously had no JS
-// binding. onDataFrameChanged fires when the table is replaced; the rest are
-// user-interaction streams not headlessly triggerable, so they are proven to be
-// well-formed rxjs Observables via subscribeAll.
+// Round-up of base-Viewer lifecycle and per-viewer event getters as rxjs Observables.
 category('AI: Viewers: Event Roundup', () => {
   test('Histogram missing-values/filter/visibility events are rxjs Observables', async () => {
     await withAttachedViewer<DG.HistogramViewer>(demog(), DG.VIEWER.HISTOGRAM, {value: 'age'}, (v) => {

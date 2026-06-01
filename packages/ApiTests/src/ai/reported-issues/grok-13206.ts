@@ -2,16 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, findProp, look} from '../helpers';
 
-// Regression coverage for GROK-13206: density plot `backColor` (a number on
-// IDensityPlotSettings — d4.ts:1558) was not being applied. The fix preserves
-// the value through a setOptions/getOptions round-trip on the look bag.
-//
-// This test deliberately scopes itself to a standalone DensityPlot. Some
-// Trellis paths do not preserve `backColor` on `innerViewerLook`, which is
-// out of scope here. Pixel-level rendering is also not asserted.
+// Regression coverage for GROK-13206: density plot backColor round-trips on the look bag.
 category('AI: GROK-13206: Density plot backColor', () => {
-  // ARGB ints can come back sign-coerced (top-bit set => negative when read
-  // as a signed 32-bit int). Compare both the raw value and the |0 form.
+  // ARGB ints can come back sign-coerced, so compare both raw and |0 forms.
   function expectArgb(v: DG.Viewer, argb: number): void {
     const got = look(v)['backColor'];
     expect(got === argb || (got | 0) === (argb | 0), true);
@@ -36,12 +29,8 @@ category('AI: GROK-13206: Density plot backColor', () => {
     expectArgb(v, 0xFFCCEEFF);
   });
 
-  test('getProperties lists backColor (best-effort)', async () => {
+  test('getProperties lists backColor', async () => {
     const v = DG.Viewer.densityPlot(demog(20), {x: 'age', y: 'height'});
-    // Older descriptors may not list this prop; fall back to a look-bag round-trip.
-    if (findProp(v, 'backColor') == null) {
-      v.setOptions({backColor: 0xFFCCEEFF});
-      expectArgb(v, 0xFFCCEEFF);
-    }
+    expect(findProp(v, 'backColor') != null, true);
   });
 });

@@ -2,13 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectCleared, expectRoundTrip, look} from '../helpers';
 
-// DG.LineChartViewer formula-lines reach — covered entirely through the
-// base Viewer.meta.formulaLines helper (viewer.ts: ViewerFormulaLinesHelper)
-// and the `formulaLines` / `showDataframeFormulaLines` / `showViewerFormulaLines`
-// @Props on core/client/d4/lib/src/viewers/line_chart/line_chart_look.dart.
-// No LineChart-specific Dart wraps: meta.formulaLines is inherited from the base
-// Viewer and reads/writes through props['formulaLines'], so the previous
-// FormulaLines_* wraps were redundant and have been removed.
+// LineChart formula-lines via meta.formulaLines and the formulaLines props.
 category('AI: Viewers: LineChart Formula Lines', () => {
   const lineFormula = {title: 'AI test line', formula: '${height} = ${age} + 100', type: 'line'};
   const bandFormula = {title: 'AI test band', formula: '${height} in (160, 180)', type: 'band'};
@@ -22,7 +16,6 @@ category('AI: Viewers: LineChart Formula Lines', () => {
     fl.add(lineFormula);
     expect(fl.items.length, 1);
     expect(fl.items[0].title, 'AI test line');
-    // The helper persists straight into props['formulaLines'] (a @Prop).
     const parsed = JSON.parse(v.props['formulaLines']);
     expect(parsed.length, 1);
     expect(parsed[0].title, 'AI test line');
@@ -54,7 +47,6 @@ category('AI: Viewers: LineChart Formula Lines', () => {
     expectRoundTrip(v, {formulaLines: json});
     expect(v.meta.formulaLines.items.length, 1);
     expect(v.meta.formulaLines.items[0].title, 'AI test line');
-    // props mirror the round-tripped option.
     expect(v.props['formulaLines'], json);
     v.setOptions({formulaLines: ''});
     expectCleared(look(v)['formulaLines']);

@@ -2,13 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectNoThrow, until, withAttachedViewer} from '../helpers';
 
-// DG.ScatterPlotViewer / DG.LineChartViewer — core/client/d4/lib/src/viewers/scatterplot/*.dart,
-// core/client/d4/lib/src/viewers/line_chart/*.dart (scenario: viewer-geometry).
-// Smoke-breadth coverage of the canvas-geometry surface that only resolves after
-// the first render: ScatterPlot xAxisBox/yAxisBox (Rect), worldToScreen/pointToScreen
-// (Point), hitTest (row index or -1), render into an offscreen 2d context, and
-// LineChart's chart-indexed worldToScreen. Getters are null pre-first-render, so
-// every case attaches the viewer via withAttachedViewer and waits for layout.
+// Canvas-geometry surface (axis boxes, worldToScreen, hitTest, render) after first render.
 category('AI: Viewers: Geometry', () => {
   test('xAxisBox / yAxisBox are sane Rects after layout', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
@@ -77,8 +71,7 @@ category('AI: Viewers: Geometry', () => {
         expect(p != null, true);
         expect(Number.isFinite(p.x), true);
         expect(Number.isFinite(p.y), true);
-      // NOTE: an out-of-range chartIdx indexes the chart array and throws — not a
-      // tolerated boundary, so it's intentionally not exercised here.
+        // Out-of-range chartIdx throws, so it's intentionally not exercised here.
       });
   });
 }, {owner: 'agolovko@datagrok.ai'});

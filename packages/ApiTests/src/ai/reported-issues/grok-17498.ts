@@ -2,17 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectLook, expectNoThrow, findProp} from '../helpers';
 
-// Regression coverage for GROK-17498: Pie chart `includeNulls` flag.
-// Pins the property key on `IPieChartSettings`, the round-trip through
-// `props[...]` and `getOptions(true).look`, that the viewer instance
-// survives `setOptions({categoryColumnName: <other>})` while keeping both
-// `includeNulls` and the new `categoryColumnName` coherent in the look
-// bag, and (best-effort) that the runtime descriptor list carries
-// `includeNulls` with a non-empty description.
+// Regression coverage for GROK-17498: Pie chart includeNulls flag.
 category('AI: GROK-17498: Pie chart includeNulls property', () => {
-  // Build a small df with an explicit DG missing value in the category column;
-  // fall back to demog(50) (which has nulls in some columns) if the client
-  // coerces JS `null` to the literal string `'null'`.
+  // Fall back to demog if the client coerces JS null to the string 'null'.
   function makeDf(): DG.DataFrame {
     const cat = DG.Column.fromList('string', 'cat', ['A', null as any, 'B', null as any, 'A']);
     if (cat.stats.missingValueCount > 0)

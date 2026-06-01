@@ -3,14 +3,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectChoices, expectNoThrow, expectPropAndLook, expectRoundTrip,
   expectRoundTripPropAndLook, subscribeAll, withAttachedViewer} from '../helpers';
 
-// DG.CalendarViewer — core/client/d4/lib/src/viewers/calendar/calendar_core.dart (scenario: calendar-js-api)
-// Calendar-only JS surface: typed factory returning DG.CalendarViewer (vs the
-// generic Viewer<ICalendarSettings> the old factory returned), the new
-// dateColumn getter that exposes the auto-detected DateTime column, the
-// onCalendarClicked event, the ICalendarSettings round-trip (header, weekend
-// coloring, filtered-only, month colors, backColor), the RowGroupAction
-// onClick choices, and the dateColumnName friendly-key fallback (`date` →
-// `dateColumnName`) provided by LookAndFeel.setOptions.
+// Calendar JS surface: typed factory, dateColumn getter, onCalendarClicked, look round-trip, onClick choices.
 category('AI: Viewers: Calendar JS API', () => {
   test('factory DG.Viewer.calendar returns typed DG.CalendarViewer; addViewer round-trips type', async () => {
     const t = demog();

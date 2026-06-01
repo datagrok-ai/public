@@ -1,7 +1,6 @@
-// DG.Grid internals — core/client/d4/lib/src/viewers/grid/*.dart, grid/grid_column*.dart (scenario: grid-extras)
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, withTableView, wait, expectNoThrow} from '../helpers';
+import {demog, withTableView, until, expectNoThrow} from '../helpers';
 
 category('AI: Widgets: Grid Extras', () => {
   test('grid cell access + identity', async () => {
@@ -9,7 +8,7 @@ category('AI: Widgets: Grid Extras', () => {
     const colName = 'age';
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell(colName, 0) instanceof DG.GridCell);
       const gc = grid.cell(colName, 0);
       expect(gc instanceof DG.GridCell, true);
       expect(gc.gridRow, 0);
@@ -30,7 +29,7 @@ category('AI: Widgets: Grid Extras', () => {
     const df = demog();
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell('age', 0) instanceof DG.GridCell);
       for (const i of [0, 1, 5, 10]) {
         const g = grid.tableRowToGrid(i);
         expect(typeof g, 'number');
@@ -43,7 +42,7 @@ category('AI: Widgets: Grid Extras', () => {
     const df = demog();
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell('age', 0) instanceof DG.GridCell);
       const cols = grid.columns;
       expect(cols instanceof DG.GridColumnList, true);
       expect(cols.length > df.columns.length, true);
@@ -69,12 +68,12 @@ category('AI: Widgets: Grid Extras', () => {
     const df = demog();
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell('age', 0) instanceof DG.GridCell);
       const a = grid.col('age')!;
       const target = grid.col('race')!.idx;
       expect(a.idx !== target, true);
       a.move(target);
-      await wait();
+      await until(() => grid.col('age')!.idx === target);
       const moved = grid.col('age')!;
       expect(moved.idx, target);
       expect(grid.columns.byIndex(target)!.name, 'age');
@@ -85,7 +84,7 @@ category('AI: Widgets: Grid Extras', () => {
     const df = demog();
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell('age', 0) instanceof DG.GridCell);
       const col = grid.col('age')!;
       const dataWidth = col.getDataWidth();
       expect(typeof dataWidth, 'number');
@@ -101,7 +100,7 @@ category('AI: Widgets: Grid Extras', () => {
     const df = demog(1);
     await withTableView(df, async (tv) => {
       const grid = tv.grid;
-      await wait();
+      await until(() => grid.cell('age', 0) instanceof DG.GridCell);
       let gridCellCount = 0;
       for (const gc of grid.getVisibleCells()) {
         expect(gc instanceof DG.GridCell, true);

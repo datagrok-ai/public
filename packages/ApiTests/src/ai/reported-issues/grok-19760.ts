@@ -2,17 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectLook, expectNoThrow, look} from '../helpers';
 
-// Regression coverage for GROK-19760 (also covers GROK-19581 — same root cause).
-// Setting an inverted, NaN, or zero-range valueMin/valueMax used to crash the
-// histogram. The fix is defensive: the viewer must survive, with no exception
-// escaping setOptions. The exact clamp / rejection policy is intentionally not
-// pinned — we only assert no-throw, viewer liveness, and props↔look round-trip.
+// Regression coverage for GROK-19760 (also GROK-19581): Histogram survives invalid valueMin/valueMax.
 category('AI: GROK-19760: Histogram invalid valueMin/valueMax', () => {
   function assertLive(v: DG.Viewer, rowCount: number): void {
     expect(v.dataFrame != null, true);
     expect(v.dataFrame!.rowCount, rowCount);
     const l = look(v);
-    // Round-trip: props and look agree for both keys (normalised for null/undef).
     expect(v.props['valueMin'] == l['valueMin'] || (v.props['valueMin'] == null && l['valueMin'] == null), true);
     expect(v.props['valueMax'] == l['valueMax'] || (v.props['valueMax'] == null && l['valueMax'] == null), true);
   }

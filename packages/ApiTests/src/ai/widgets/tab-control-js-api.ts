@@ -1,4 +1,3 @@
-// DG.TabControl — core/client/d4/lib/src/widgets/tab_control/tab_control.dart (scenario: tab-control-js-api)
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
@@ -12,7 +11,6 @@ category('AI: Widgets: TabControl JS API', () => {
     expect(alpha instanceof DG.TabPane, true);
     expect(alpha.name, 'alpha');
     expect(tc.panes.length, 1);
-    // First addPane auto-activates the pane (currentPage ??= sheet).
     expect(tc.currentPane != null, true);
     expect(tc.currentPane.name, 'alpha');
   });
@@ -21,7 +19,6 @@ category('AI: Widgets: TabControl JS API', () => {
     const tc = DG.TabControl.create();
     tc.addPane('alpha', () => ui.divText('a'));
     const beta = tc.addPane('beta', () => ui.divText('b'));
-    // currentPane is still alpha (??= does not overwrite); switching to beta is a real change.
     expect(tc.currentPane.name, 'alpha');
     await expectFiresWithin(tc.onTabChanged, () => {tc.currentPane = beta;});
     expect(tc.currentPane.name, 'beta');
@@ -31,7 +28,6 @@ category('AI: Widgets: TabControl JS API', () => {
     const tc = DG.TabControl.create();
     const alpha = tc.addPane('alpha', () => ui.divText('a'));
     tc.addPane('beta', () => ui.divText('b'));
-    // Active pane is alpha; switch back to a different pane to trigger the event.
     tc.currentPane = tc.getPane('beta');
     await expectFiresWithin(tc.onBeforeTabChanged, () => {tc.currentPane = alpha;});
     expect(tc.currentPane.name, 'alpha');
@@ -47,7 +43,6 @@ category('AI: Widgets: TabControl JS API', () => {
   test('onTabRemoved is a healthy Observable', async () => {
     const tc = DG.TabControl.create();
     tc.addPane('alpha', () => ui.divText('a'));
-    // Not cleanly triggerable from JS (no removePane wrapper; clear() does not fire it).
     subscribeAll([tc.onTabRemoved])();
   });
 

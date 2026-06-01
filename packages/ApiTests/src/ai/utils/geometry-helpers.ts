@@ -1,10 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test, expectFloat} from '@datagrok-libraries/test/src/test';
 
-// DG.Rect / DG.Point / DG.SemanticValue — public/js-api/src/grid.ts (Rect 75-491, Point 33-71,
-// SemanticValue 1360-1412). Cases 1-8 are pure-JS geometry (headless); case 9 is Dart-backed (server).
-// Expected values precomputed from the actual method bodies in grid.ts. getGridPart has a latent bug
-// (grid.ts:420 divides height by the `y` INDEX, not `yCount`) — the test pins the as-coded behavior.
+// Tests DG.Rect / DG.Point / DG.SemanticValue geometry helpers.
 category('AI: Utils: Geometry', () => {
   const expectRect = (r: DG.Rect, x: number, y: number, width: number, height: number): void => {
     expect(r.x, x); expect(r.y, y); expect(r.width, width); expect(r.height, height);
@@ -57,9 +54,7 @@ category('AI: Utils: Geometry', () => {
     const r = new DG.Rect(10, 20, 100, 40);
     expectRect(r.getTopPart(4, 1), 10, 30, 100, 10);
     expectRect(r.getLeftPart(4, 1), 35, 20, 25, 40);
-    // SUSPECTED BUG (grid.ts:420): getGridPart height divides by the `y` index, not `yCount`.
-    // For (2, 2, 1, 1) height should be 40/yCount = 20, but the code returns 40/y = 40/1 = 40.
-    // We assert the as-coded value, not the intended one.
+    // getGridPart has a latent bug (height divides by y index, not yCount); pin as-coded behavior.
     expectRect(r.getGridPart(2, 2, 1, 1), 60, 40, 50, 40);
     expectRect(r.getTopScaled(0.25), 10, 20, 100, 10);
     expectRect(r.getLeftScaled(0.25), 10, 20, 25, 40);
@@ -71,9 +66,7 @@ category('AI: Utils: Geometry', () => {
     expectRect(r.inflateSize(10, 10), 10, 20, 110, 50);
     expectRect(r.inflateRel(2, 2), -90, -20, 300, 120);
     expectRect(r.fitSquare(), 40, 20, 40, 40);
-    // width/height (1.0) <= this.width/this.height (2.5) -> else branch, height-driven
     expectRect(r.fit(10, 10), 40, 20, 40, 40);
-    // width/height (4.0) > this.width/this.height (2.5) -> if branch, width-driven
     expectRect(r.fit(40, 10), 10, 27.5, 100, 25);
   });
 

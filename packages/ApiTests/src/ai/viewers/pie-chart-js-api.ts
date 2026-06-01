@@ -4,16 +4,7 @@ import {
   demog, expectChoices, expectPropAndLook, expectRoundTripPropAndLook, findProp, subscribeAll, withAttachedViewer,
 } from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:279 (DG.Viewer.pieChart),
-// public/js-api/src/viewer.ts:696 (PieChartViewer),
-// public/js-api/src/interfaces/d4.ts:2855 (IPieChartSettings).
-// Pie-only JS surface: typed factory, the `category` → `categoryColumnName`
-// alias, look round-trip for pieSortType / pieSortOrder / includeNulls /
-// labelPosition, segmentAngle/Length column round-trip, getProperties()
-// introspection (pieSortType.choices includes 'by value' and 'by category'),
-// onSegmentClicked Observable, and view.addViewer(VIEWER.PIE_CHART) returning
-// a typed PieChartViewer. Note: there is no df.plot.pie shorthand on
-// DataFramePlotHelper.
+// PieChart JS API: factory, category alias, look round-trip, events, addViewer.
 category('AI: Viewers: PieChart JS API', () => {
   test('factory typed', async () => {
     const v = DG.Viewer.pieChart(demog(100), {category: 'race'});

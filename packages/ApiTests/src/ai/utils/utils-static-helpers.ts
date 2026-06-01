@@ -1,12 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
-// JS API source: public/js-api/src/utils.ts:171
-// Pure-JS static helpers on DG.Utils that don't round-trip through Dart:
-// firstOrNull, identity, replaceAll, isEmpty, nullIfEmpty, getJsonValueType,
-// jsonToColumns, randomString. Utils.random(items) is intentionally skipped
-// (non-deterministic). DOM/server-backed helpers (openFile, download,
-// loadJsCss, etc.) belong in widget/file-viewer integration tests.
+// Tests pure-JS static helpers on DG.Utils.
 category('AI: Utils: static helpers', () => {
   test('firstOrNull on empty iterable', async () => {
     expect(DG.Utils.firstOrNull<number>([]), null);

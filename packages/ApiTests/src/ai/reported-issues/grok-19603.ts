@@ -1,12 +1,7 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectLook, expectNoThrow, findProp} from '../helpers';
 
-// Regression coverage for GROK-19603: Histogram per-category distribution lines.
-// When `splitStack` is on, the histogram can overlay per-category distribution
-// lines via the new `showDistributionLines` flag (see d4.ts:1822). Visible
-// drawing differences are out of scope; the test pins the property key,
-// confirms it round-trips through `getOptions(true).look`, and that the
-// descriptor exposes the property.
+// Regression coverage for GROK-19603: Histogram per-category showDistributionLines flag.
 category('AI: GROK-19603: Histogram show distribution lines', () => {
   test('splitStack + showDistributionLines round-trips through props and look', async () => {
     const df = demog();
@@ -29,9 +24,6 @@ category('AI: GROK-19603: Histogram show distribution lines', () => {
 
   test('showDistributionLines is exposed on the property descriptor', async () => {
     const v = demog(20).plot.histogram({value: 'height', splitColumnName: 'race'});
-    if (findProp(v, 'showDistributionLines') == null) {
-      v.props['splitStack'] = true;
-      expectBoolToggle(v, 'showDistributionLines', [true, false]);
-    }
+    expect(findProp(v, 'showDistributionLines') != null, true);
   });
 });

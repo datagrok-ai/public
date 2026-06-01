@@ -3,21 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, withTableView, until, expectNoThrow} from '../helpers';
 
-// DG.JsViewer — public/js-api/src/viewer.ts:379 (members 406-427); Dart host:
-// core/client/d4/lib/src/viewers/js_viewer/js_viewer_host_core.dart (scenario: js-viewer)
-// JsViewer custom-subclass surface: addRowSourceAndFormula() registering the
-// rowSource + filter props in the constructor, and the four lifecycle hooks the
-// host fires — onFrameAttached(df) (which chains onTableAttached()),
-// onTableAttached(), sourceRowsChanged() (which reads the Dart filter then chains
-// onSourceRowsChanged()), and onSourceRowsChanged(). A custom subclass is
-// registered via grok.shell.registerViewer(name, desc, factory) and attached with
-// tv.addViewer(name) — but addViewer returns the HOST wrapper, so the factory
-// closure captures the real subclass instance to assert call counts against.
+// DG.JsViewer custom-subclass surface: addRowSourceAndFormula plus the four lifecycle hooks the host fires.
+// addViewer returns the host wrapper, so the factory closure captures the subclass instance to assert call counts.
 category('AI: Viewers: JsViewer', () => {
   let counter = 0;
   const uniqueName = () => `Ai-Test-JsViewer-${counter++}`;
 
-  // Inline subclass that records how many times each lifecycle hook fires.
   class TestJsViewer extends DG.JsViewer {
     frameAttachedCount = 0;
     tableAttachedCount = 0;
@@ -104,7 +95,6 @@ category('AI: Viewers: JsViewer', () => {
       await until(() => captured != null && captured!.sourceRowsChangedCount >= 1);
       const before = captured!.sourceRowsChangedCount;
       const beforeHook = captured!.onSourceRowsChangedCount;
-      // Toggle the row source so the host re-pushes the filtered rows.
       host.setOptions({rowSource: 'Selected'});
       tv.dataFrame.selection.set(0, true);
       tv.dataFrame.selection.set(1, true);
@@ -115,8 +105,7 @@ category('AI: Viewers: JsViewer', () => {
   });
 
   test('direct-call smoke touches all five members deterministically', async () => {
-    // Attach first so the viewer holds a real DataFrame — sourceRowsChanged()
-    // reads the Dart combinedFilter, which needs an attached frame.
+    // Attach first: sourceRowsChanged() reads the Dart combinedFilter, which needs an attached frame.
     let captured: TestJsViewer | undefined;
     const name = uniqueName();
     grok.shell.registerViewer(name, 'Ai test JsViewer', () => {
@@ -136,7 +125,6 @@ category('AI: Viewers: JsViewer', () => {
         v.onSourceRowsChanged();
         v.addRowSourceAndFormula();
       });
-      // onFrameAttached chains onTableAttached, so both counters advance at least once.
       expect(v.frameAttachedCount >= 1, true);
       expect(v.tableAttachedCount >= 1, true);
       expect(v.sourceRowsChangedCount >= 1, true);

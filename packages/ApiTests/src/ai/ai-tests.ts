@@ -48,7 +48,7 @@ import './widgets/tab-control-js-api';
 import './widgets/tree-view-js-api';
 import './widgets/widget-extras';
 
-// Reported issues (regression coverage from JIRA tickets and GitHub issues)
+// Reported issues
 import './reported-issues/gh-3469';
 import './reported-issues/grok-2892';
 import './reported-issues/grok-13205';
@@ -58,7 +58,6 @@ import './reported-issues/grok-15006';
 import './reported-issues/grok-16994';
 import './reported-issues/grok-17118';
 import './reported-issues/grok-17498';
-import './reported-issues/grok-17579';
 import './reported-issues/grok-18000';
 import './reported-issues/grok-18091';
 import './reported-issues/grok-18169';

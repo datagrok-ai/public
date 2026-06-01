@@ -1,8 +1,7 @@
-// DG.Dialog — core/client/d4/lib/src/widgets/dialog/dialog.dart (scenario: dialog-js-api)
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {expectFiresWithin, subscribeAll, expectNoThrow, wait} from '../helpers';
+import {expectFiresWithin, subscribeAll, expectNoThrow, until} from '../helpers';
 
 function getCancelButton(dlg: DG.Dialog): HTMLButtonElement | null {
   return dlg.getButton('CANCEL') ?? dlg.getButton('Cancel') ?? null;
@@ -18,7 +17,6 @@ category('AI: Widgets: Dialog JS API', () => {
     dlg.helpUrl = 'https://example.org/help2';
     expect(dlg.title, 'D1-renamed');
     expect(dlg.helpUrl, 'https://example.org/help2');
-    // Sanity: showFooter constructor flag does not throw (no public getter).
     const dlg2 = DG.Dialog.create({title: 'D2', showFooter: false});
     expect(dlg2 instanceof DG.Dialog, true);
   });
@@ -44,12 +42,12 @@ category('AI: Widgets: Dialog JS API', () => {
     const dlg = DG.Dialog.create({title: 'Lifecycle'});
     try {
       dlg.show();
-      await wait(50);
+      await until(() => DG.Dialog.getOpenDialogs().length === baseline + 1);
       expect(DG.Dialog.getOpenDialogs().length, baseline + 1);
     } finally {
       dlg.close();
     }
-    await wait(50);
+    await until(() => DG.Dialog.getOpenDialogs().length === baseline);
     expect(DG.Dialog.getOpenDialogs().length, baseline);
   });
 
@@ -59,16 +57,18 @@ category('AI: Widgets: Dialog JS API', () => {
     dlg.onOK(() => {okFired = true;});
     try {
       dlg.show();
-      await wait(50);
+      await until(() => dlg.getButton('OK') != null);
       const okBtn = dlg.getButton('OK');
       expect(okBtn != null, true);
       await expectFiresWithin(dlg.onBeforeOK, () => okBtn.click());
-      await wait(50);
+      await until(() => okFired);
       expect(okFired, true);
-      // onAfterOK fired during the same click; confirm subscription is healthy.
       subscribeAll([dlg.onAfterOK])();
-      // Dialog should have closed on OK (shouldCloseOnOk default = true).
-      await wait(50);
+      await until(() => {
+        for (const d of DG.Dialog.getOpenDialogs())
+          if (d.title === 'OK Flow') return false;
+        return true;
+      });
       const open = DG.Dialog.getOpenDialogs();
       let stillOpen = false;
       for (const d of open) {
@@ -89,11 +89,11 @@ category('AI: Widgets: Dialog JS API', () => {
     dlg.onCancel(() => {cancelFired = true;});
     try {
       dlg.show();
-      await wait(50);
+      await until(() => getCancelButton(dlg) != null);
       const cancelBtn = getCancelButton(dlg);
       expect(cancelBtn != null, true);
       await expectFiresWithin(dlg.onClose, () => cancelBtn!.click());
-      await wait(50);
+      await until(() => cancelFired);
       expect(cancelFired, true);
     } finally {
       try {dlg.close();} catch (_e) {}
@@ -107,12 +107,12 @@ category('AI: Widgets: Dialog JS API', () => {
     expectNoThrow(() => dlg.addContextAction('Reset', () => {}));
     try {
       dlg.show();
-      await wait(50);
+      await until(() => dlg.getButton('APPLY') != null);
       const apply = dlg.getButton('APPLY');
       expect(apply != null, true);
       expect(apply instanceof HTMLElement, true);
       apply!.click();
-      await wait(50);
+      await until(() => applyFired);
       expect(applyFired, true);
     } finally {
       try {dlg.close();} catch (_e) {}
@@ -120,12 +120,11 @@ category('AI: Widgets: Dialog JS API', () => {
   });
 
   test('awaitOnOK resolves on OK; rejects on CANCEL', async () => {
-    // Flow A: resolves on OK
     const dlgOk = DG.Dialog.create({title: 'Await OK'});
     const okPromise = dlgOk.awaitOnOK<number>(async () => 42);
     try {
       dlgOk.show();
-      await wait(50);
+      await until(() => dlgOk.getButton('OK') != null);
       dlgOk.getButton('OK').click();
       const result = await okPromise;
       expect(result, 42);
@@ -133,13 +132,12 @@ category('AI: Widgets: Dialog JS API', () => {
       try {dlgOk.close();} catch (_e) {}
     }
 
-    // Flow B: rejects on CANCEL
     const dlgCancel = DG.Dialog.create({title: 'Await Cancel'});
     const cancelPromise = dlgCancel.awaitOnOK<number>(async () => 1);
     let rejected = false;
     try {
       dlgCancel.show();
-      await wait(50);
+      await until(() => getCancelButton(dlgCancel) != null);
       const cancelBtn = getCancelButton(dlgCancel);
       expect(cancelBtn != null, true);
       cancelBtn!.click();
@@ -161,7 +159,7 @@ category('AI: Widgets: Dialog JS API', () => {
     try {
       a.show();
       b.show();
-      await wait(50);
+      await until(() => DG.Dialog.getOpenDialogs().length >= baseline + 2);
       const open = DG.Dialog.getOpenDialogs();
       expect(open.length >= baseline + 2, true);
       for (const d of open)
@@ -176,7 +174,11 @@ category('AI: Widgets: Dialog JS API', () => {
     const dlg = DG.Dialog.create({title: 'Modal'});
     try {
       dlg.showModal(false);
-      await wait(50);
+      await until(() => {
+        for (const d of DG.Dialog.getOpenDialogs())
+          if (d.title === 'Modal') return true;
+        return false;
+      });
       let found = false;
       for (const d of DG.Dialog.getOpenDialogs()) {
         if (d.title === 'Modal') {
@@ -186,7 +188,11 @@ category('AI: Widgets: Dialog JS API', () => {
       }
       expect(found, true);
       dlg.close();
-      await wait(50);
+      await until(() => {
+        for (const d of DG.Dialog.getOpenDialogs())
+          if (d.title === 'Modal') return false;
+        return true;
+      });
       expectNoThrow(() => dlg.close());
     } finally {
       try {dlg.close();} catch (_e) {}

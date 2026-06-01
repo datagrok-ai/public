@@ -2,13 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectFloat, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until, withAttachedViewer} from '../helpers';
 
-// DG.PcPlot — core/client/d4/lib/src/viewers/pc_plot/pc_plot_core.dart (scenario: pc-plot-extras)
-// Extras layer for the PcPlot JS wrapper: layout-derived getters (chartBox,
-// chartW, getColX, activeFrame), canvas/overlay handles, the rendering side
-// effects (resetView, invalidateCanvas), and the four new observable streams
-// (onResetView, onBeforeDrawOverlay, onAfterDrawOverlay, onViewerRendered).
-// Sibling src/ai/viewers/pc-plot-js-api.ts already covers the factory,
-// columnNames round-trip, and onLineClicked/onLineHovered.
+// PcPlot layout getters, canvas/overlay handles, render side effects, and render events.
 category('AI: Viewers: PcPlot Extras', () => {
   const columns = ['age', 'height', 'weight'];
 

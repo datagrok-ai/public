@@ -2,22 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectChoices, expectRoundTrip} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts (DG.Viewer.boxPlot),
-// public/js-api/src/interfaces/d4.d.ts:136 (IBoxPlotSettings),
-// core/client/d4/lib/src/viewers/box_plot/box_plot_look.dart (BoxPlotLook).
-// Box-plot-only JSON-shape coverage for props the existing
-// src/ai/viewers/box-plot-js-api.ts (factory + statisticsFormat) and
-// reported-issues regression tests don't pin: plotStyle (box/violin),
-// violin bins int, the per-statistic boolean togglers
-// (showMin/showMax/showAvg/showMed/showStdev/showQ1/showQ3),
-// binColorAggrType + choices, axisType (AxisType linear/logarithmic),
-// markerOpacity 0..100 boundary, and the showInside/Outside/PValue/
-// EmptyCategories combined bool envelope. All assertions read state via
-// getOptions(true).look — no first-paint geometry.
+// BoxPlot look-prop round-trips: plotStyle, violin bins, per-statistic togglers, binColorAggrType, axisType, opacity.
 category('AI: Viewers: BoxPlot extras', () => {
-  // no negative case: BoxPlot setOptions has no defined failure mode for
-  // these look props — invalid values are coerced or ignored, not thrown.
-
   const v = (): DG.BoxPlot => DG.Viewer.boxPlot(demog(), {value: 'age', category1: 'race'});
 
   test('plotStyle box/violin round-trip + getProperties choices', async () => {

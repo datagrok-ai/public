@@ -1,20 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectCleared, expectRoundTrip, look, until, wait, withTableView} from '../helpers';
+import {demog, expectChoices, expectCleared, expectRoundTrip, look, until, withTableView} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts (DG.Viewer.lineChart),
-// public/js-api/src/interfaces/d4.d.ts:686 (ILineChartSettings),
-// core/client/d4/lib/src/viewers/line_chart/line_chart_look.dart (LineChartLook).
-// Line-chart-only JSON-shape coverage for props the existing
-// src/ai/viewers/line-chart-js-api.ts (factory aliases, multi-Y arrays,
-// multiAxis + splineTension, events, addViewer + activeFrame) does not pin:
-// xAxisType/yAxisType (AxisType linear/logarithmic), xAxisLabelOrientation
-// choices ('Auto'/'Horz'/'Vert'), the invert/show* axis-and-grid bool
-// envelope, yAxisTitle/y2AxisTitle string round-trip, markerOpacity 0..100
-// boundary, packCategories/yGlobalScale/axesFollowFilter/showCurrentRowLine/
-// showMouseOverCategory combined bool envelope, and overviewColumnName +
-// overviewAggrType combined round-trip. All assertions read state via
-// getOptions(true).look — no first-paint geometry.
+// LineChart prop JSON-shape round-trips not covered by line-chart-js-api.ts.
 category('AI: Viewers: LineChart extras', () => {
   const v = (): DG.LineChartViewer => DG.Viewer.lineChart(demog(), {x: 'age', yColumnNames: ['height']});
 
@@ -72,32 +60,24 @@ category('AI: Viewers: LineChart extras', () => {
     expect(cleared['overviewAggrType'], 'avg');
   });
 
-  // Property-dependency coverage (commit cd5cfcb994, "Line chart: Added
-  // marker opacity adjusting based on whisker visibility"). When
-  // `whiskersType` flips, line_chart_core.dart sets `markerOpacity` to its
-  // optimal value (100 with no whiskers, 35 with whiskers).
+  // whiskersType flip resets markerOpacity to its optimal value.
   test('whiskersType change auto-adjusts markerOpacity', async () => {
     await withTableView(demog(), async (tv) => {
       const c = v();
       tv.addViewer(c);
       c.setOptions({whiskersType: 'None'});
-      await wait(100);
+      await until(() => look(c)['markerOpacity'] === 100);
       expect(look(c)['markerOpacity'], 100);
       c.setOptions({whiskersType: 'Med | Q1, Q3'});
-      await wait(100);
+      await until(() => look(c)['markerOpacity'] !== 100);
       expect(look(c)['markerOpacity'] !== 100, true);
       c.setOptions({whiskersType: 'None'});
-      await wait(100);
+      await until(() => look(c)['markerOpacity'] === 100);
       expect(look(c)['markerOpacity'], 100);
     });
   });
 
-  // Property-dependency coverage. When `autoLayout` flips to true and the
-  // current `markerSize` differs from the chart's optimal size,
-  // line_chart_core.dart resets `markerSize` to optimal. Optimal depends on
-  // `chartsBox.area / dataFrame.rowCount` which is only valid after a layout
-  // pass, so we drive this through a real TableView and assert the *direction*
-  // (user-set value gets overridden), not the exact optimal number.
+  // Optimal markerSize needs a real layout pass, so assert direction (user value overridden), not the exact number.
   test('autoLayout=true overrides a user-set markerSize', async () => {
     await withTableView(demog(), async (tv) => {
       const c = v();

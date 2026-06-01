@@ -4,10 +4,7 @@ import {
   demog, df, expectFiresWithin, expectPropAndLook, expectRoundTripPropAndLook, withAttachedViewer,
 } from '../helpers';
 
-// Regression coverage for GROK-19480: bar chart stacking activation,
-// orientation, negative aggregates, legend ordering. Visual rendering is out
-// of scope here; we pin the state machine (props get set, persist through
-// getOptions(true).look, and the viewer instance does not throw).
+// Regression coverage for GROK-19480: bar chart stacking activation and orientation.
 category('AI: GROK-19480: Bar chart stacking + orientation', () => {
   test('stack activates with negative values in df.plot.bar', async () => {
     const d = df([

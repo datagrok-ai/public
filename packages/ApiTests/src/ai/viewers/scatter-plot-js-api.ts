@@ -2,16 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectPropAndLook, look, subscribeAll, withAttachedViewer} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:611 (ScatterPlotViewer), with
-// the shared meta helper at viewer.ts:769 (ViewerMetaHelper).
-// Scatter-only JS surface: df.plot.scatter shorthand, the meta.formulaLines /
-// meta.annotationRegions add/items/clear API, the typed zoom() method, the
-// seven Scatter event Observables (onZoomed / onResetView / onViewportChanged /
-// onAfterDrawScene / onBeforeDrawScene / onPointClicked / onPointDoubleClicked),
-// and viewBox-family geometry accessors. Asymmetric toJs wrapping observed:
-// viewBox lands as a DG.Rect, but xAxisBox / yAxisBox return raw objects
-// pre-paint. screenToWorld / worldToScreen / pointToScreen are skipped — same
-// pre-paint NaN.floor() risk as LineChartViewer.screenToWorld.
+// ScatterPlot JS API: factory, meta helpers, zoom, events, addViewer geometry.
 category('AI: Viewers: ScatterPlot JS API', () => {
   test('df.plot.scatter shorthand returns typed ScatterPlotViewer', async () => {
     const df = demog();

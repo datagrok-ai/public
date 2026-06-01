@@ -1,10 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
-// DG.LruCache — public/js-api/src/utils.ts:511 (pure JS, no Dart interop)
+// Tests DG.LruCache.
 category('AI: Utils: LRU cache', () => {
-  // no negative case: LruCache has no defined failure mode — get/has on missing
-  // keys return undefined/false and set never throws, so all cases are positive.
   test('set/get/has round-trip and miss returns undefined', async () => {
     const c = new DG.LruCache<string, number>();
     expect(c.has('a'), false);

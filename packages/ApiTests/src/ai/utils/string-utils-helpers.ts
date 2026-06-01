@@ -1,14 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-// JS API source: public/js-api/src/helpers.ts:185
-// Two static helpers on DG.StringUtils: hashCode(s) — pure-JS 32-bit string
-// hash with the (h<<5) - h + chr recurrence — and camelCaseToSentence(s, opts?)
-// — Dart-backed converter that splits a camelCase identifier into a
-// space-separated phrase, with toggles for capitalising the first word and
-// conjunctions (and / or / than / if / but / so / as / that). Note:
-// splitCamelCase uses ASCII A-Z bounds, so unicode behavior is undefined and
-// not asserted.
+// Tests DG.StringUtils.hashCode and camelCaseToSentence.
 category('AI: Utils: string-utils helpers', () => {
   test('hashCode empty string', async () => {
     expect(DG.StringUtils.hashCode(''), 0);

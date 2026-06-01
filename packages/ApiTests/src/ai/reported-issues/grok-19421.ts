@@ -1,11 +1,7 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectLook, expectNoThrow, findProp} from '../helpers';
 
-// Regression coverage for GROK-19421: Histogram `showValues` bin labels.
-// Pins the property key on `IHistogramSettings`, the round-trip through
-// `props[...]` and `getOptions(true).look`, that combining the toggle with
-// `splitColumnName` keeps both keys preserved, and (best-effort) that the
-// runtime descriptor list carries `showValues` with a non-empty description.
+// Regression coverage for GROK-19421: Histogram showValues bin labels.
 category('AI: GROK-19421: Histogram showValues bin labels', () => {
   test('showValues round-trips through props and look across toggle steps', async () => {
     expectBoolToggle(demog().plot.histogram({value: 'age'}), 'showValues');

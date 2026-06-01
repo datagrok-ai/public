@@ -2,25 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectChoices, expectRoundTrip, until} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts (DG.ScatterPlotViewer / df.plot.scatter),
-// public/js-api/src/interfaces/d4.d.ts (IScatterPlotSettings),
-// core/client/d4/lib/src/viewers/scatterplot/scatterplot_look.dart (ScatterPlotLook).
-// Scatter-plot-only JSON-shape coverage for props the existing
-// src/ai/viewers/scatter-plot-js-api.ts (factory aliases, zoom keys, events,
-// formula/annotation helpers, addViewer + viewBox/getInfo) and reported-
-// issues regressions (GROK-16994 whiskers, GROK-19511 linesBy) don't pin:
-// xAxisType/yAxisType (AxisType), zoomAndFilter (4-value enum),
-// xAxisLabelOrientation (4-value, includes '45 degrees'), the histogram-
-// overlay envelope (showXHistogram/showYHistogram/histogramBins 5..100),
-// the regression line family bools, the marker numeric boundary envelope
-// (markerOpacity/jitterSize/jitterSizeY/markerBorderWidth), and the
-// selection visibility bool envelope. All assertions read state via
-// getOptions(true).look — no canvas-geometry getters (round 9's
-// xAxisBox/yAxisBox first-paint pitfall stays clear).
+// ScatterPlot prop JSON-shape round-trips not covered by scatter-plot-js-api.ts.
 category('AI: Viewers: ScatterPlot extras', () => {
-  // no negative case: ScatterPlot setOptions has no defined failure mode for
-  // these look props — invalid values are coerced or ignored, not thrown.
-
   const v = (): DG.ScatterPlotViewer => demog().plot.scatter({x: 'age', y: 'height'}) as DG.ScatterPlotViewer;
 
   test('xAxisType + yAxisType (AxisType) round-trip + getProperties choices on yAxisType', async () => {
@@ -82,19 +65,8 @@ category('AI: Viewers: ScatterPlot extras', () => {
       showMouseOverRowGroup: true, showSelectedRows: true, resetSelectionOnBackgroundClick: true});
   });
 
-  // Property-dependency coverage (commit 8dd87cb743, "Scatter plot whiskers:
-  // Whiskers auto detection optimized for 10k columns, column detection on
-  // axis property change in property panel added"). When the dataframe was
-  // attached without explicit X/Y and the platform auto-picked whisker
-  // columns by suffix (`_whiskersAutoDetected = true` in scatterplot_look.dart),
-  // a later xColumnName / yColumnName change must re-run the per-axis detector
-  // (scatterplot_core.dart `onLookChanged`, lines ~370-395). This is the
-  // companion to the existing GROK-16994 test, which only pins the initial
-  // auto-detect — here we pin the *update on axis change* path.
+  // Changing xColumnName after auto-detect must re-run the per-axis whisker detector.
   test('whiskers re-detect when xColumnName changes after auto-detect', async () => {
-    // Two independent <base, base min, base max> triples. Auto-detect picks
-    // one for X and one for Y at attach time; swapping xColumnName to the
-    // other triple must move the X whiskers to the matching min/max.
     const d = df([
       ['a', 'double', [1, 2, 3, 4, 5, 6, 7, 8]],
       ['a min', 'double', [0.8, 1.7, 2.6, 3.5, 4.4, 5.3, 6.2, 7.1]],

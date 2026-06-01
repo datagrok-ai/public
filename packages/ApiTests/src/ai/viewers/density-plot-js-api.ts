@@ -2,22 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectChoices, expectLook, expectRoundTrip, look} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:259 (DG.Viewer.densityPlot),
-// public/js-api/src/interfaces/d4.d.ts:357 (IDensityPlotSettings),
-// core/client/d4/lib/src/viewers/density_plot/density_plot_look.dart (DensityPlotLook).
-// Comprehensive look round-trip for DensityPlot props not pinned by prior AI
-// regression tests (grok-13206 covers backColor init; grok-17118 covers
-// binShape rectangle/hex + x/yColumnName). Targeted gaps: bins (1-200 slider),
-// linearColorScheme List<int>, invertColorScheme, colorTransformType
-// (AxisType), showColorScale, showXAxis/showYAxis, x/yMin x/yMax, and
-// getProperties choices introspection. All assertions read state via
-// getOptions(true).look — no first-paint geometry.
+// DensityPlot look round-trips: bins, linearColorScheme, invertColorScheme, colorTransformType, axes, x/y bounds.
 category('AI: Viewers: DensityPlot JS API', () => {
-  // no negative case: DensityPlot setOptions has no defined failure mode for
-  // the look props under test — invalid values are coerced or ignored, not
-  // thrown. Negative-mode coverage for binShape vs string columns is already
-  // pinned in src/ai/reported-issues/grok-17118.ts.
-
   const v = (): DG.Viewer => DG.Viewer.densityPlot(demog(), {x: 'age', y: 'height'});
 
   test('factory returns typed Viewer with DENSITY_PLOT type', async () => {

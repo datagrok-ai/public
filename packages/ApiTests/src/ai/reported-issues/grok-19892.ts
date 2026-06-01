@@ -2,14 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectFiresWithin, expectNoThrow, look, withAttachedViewer} from '../helpers';
 
-// Regression coverage for GROK-19892: a box plot's horizontal slider could be
-// dragged so its visible range collapsed to zero, breaking the plot. The fix
-// (1.28.0) prevents zero-range. IBoxPlotSettings does not expose an explicit
-// "horizontal slider" prop on the JS API surface — the range-y props it does
-// expose are the value-axis range (valueMin/valueMax), the color range
-// (colorMin/colorMax) and the marker size range (markerMinSize/markerMaxSize).
-// We fall back to a "viewer survives extreme prop values" smoke test, and
-// pin the resetView / onResetView round-trip.
+// Regression coverage for GROK-19892: Box plot survives zero-range slider/prop values.
 category('AI: GROK-19892: Box plot horizontal slider zero range', () => {
   test('df.plot.box default props snapshot for IBoxPlotSettings', async () => {
     const d = df([

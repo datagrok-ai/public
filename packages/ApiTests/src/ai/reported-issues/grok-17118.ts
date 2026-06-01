@@ -2,18 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectNoThrow, expectRoundTrip, findProp, look} from '../helpers';
 
-// Regression coverage for GROK-17118 (1.23.0): density plot binShape +
-// axis column type compatibility. With binShape='rectangle', switching
-// xColumnName to a string column previously threw. The fix makes the
-// viewer either ignore the invalid assignment or coerce it without
-// crashing. These tests pin:
-//   - binShape='rectangle' is accepted via setOptions and round-trips;
-//   - changing xColumnName to a string column from rectangle state does
-//     not throw, the viewer survives, and look.xColumnName ends up either
-//     unchanged (rejected) or set to the string column (accepted);
-//   - binShape round-trips for at least one non-rectangle valid value;
-//   - getProperties() lists binShape, xColumnName, yColumnName on a
-//     best-effort basis.
+// Regression coverage for GROK-17118: density plot binShape + axis column type compatibility.
 category('AI: GROK-17118: Density plot binShape + axis column type', () => {
   const v = (n: number = 50): DG.Viewer => DG.Viewer.densityPlot(demog(n), {x: 'age', y: 'height'});
 
@@ -34,7 +23,6 @@ category('AI: GROK-17118: Density plot binShape + axis column type', () => {
 
   test('binShape round-trips for a non-rectangle valid value', async () => {
     const c = v();
-    // Discover valid binShape values via getProperties().choices when available.
     const p = findProp(c, 'binShape');
     let choices: string[] | null = null;
     try {

@@ -4,41 +4,32 @@ import {Observable, Subscription} from 'rxjs';
 import {take} from 'rxjs/operators';
 import {expect, expectObject, awaitCheck} from '@datagrok-libraries/test/src/test';
 
-// Shared helpers for AI tests. Keep the surface narrow — only patterns that
-// repeat across at least 3 files. Tests that need bespoke logic should still
-// inline it.
+// Shared helpers for AI tests.
 
 export const demog = (n: number = 50): DG.DataFrame => grok.data.demo.demog(n);
 
-// Shortcut for `v.getOptions(true).look`.
 export const look = (v: DG.Viewer): {[k: string]: any} => v.getOptions(true).look;
 
-// Assert every key in `partial` is present and equal in `v.getOptions(true).look`.
 export function expectLook(v: DG.Viewer, partial: {[k: string]: any}): void {
   expectObject(look(v), partial);
 }
 
-// Assert every key in `partial` is present and equal in both `v.props` and look.
 export function expectPropAndLook(v: DG.Viewer, partial: {[k: string]: any}): void {
   for (const k of Object.keys(partial))
     expect(v.props[k], partial[k]);
   expectObject(look(v), partial);
 }
 
-// setOptions then expect every set key shows up in look.
 export function expectRoundTrip(v: DG.Viewer, opts: {[k: string]: any}): void {
   v.setOptions(opts);
   expectObject(look(v), opts);
 }
 
-// setOptions then expect every set key shows up in both props and look.
 export function expectRoundTripPropAndLook(v: DG.Viewer, opts: {[k: string]: any}): void {
   v.setOptions(opts);
   expectPropAndLook(v, opts);
 }
 
-// Round-trip a plain boolean get/set accessor (false -> true -> restore original).
-// For widget accessors like `acc.autoHideTabHeader`; use expectBoolToggle for `v.props[name]`.
 export function expectBoolGetSet(obj: {[k: string]: any}, name: string): void {
   const original = obj[name];
   obj[name] = false;
@@ -49,7 +40,6 @@ export function expectBoolGetSet(obj: {[k: string]: any}, name: string): void {
   expect(obj[name], original);
 }
 
-// Toggle a boolean prop via `v.props[name] = ...` and check props+look mirror.
 export function expectBoolToggle(v: DG.Viewer, name: string, sequence: boolean[] = [true, false, true]): void {
   for (const b of sequence) {
     (v.props as any)[name] = b;
@@ -58,7 +48,6 @@ export function expectBoolToggle(v: DG.Viewer, name: string, sequence: boolean[]
   }
 }
 
-// Returns true iff the action did not throw.
 export function noThrow(fn: () => void): boolean {
   try {
     fn();
@@ -68,12 +57,10 @@ export function noThrow(fn: () => void): boolean {
   }
 }
 
-// Assert that `fn` does not throw.
 export function expectNoThrow(fn: () => void): void {
   expect(noThrow(fn), true);
 }
 
-// Find a property descriptor by name. Returns null if missing.
 export function findProp(v: DG.Viewer, name: string): DG.Property | null {
   for (const p of v.getProperties() as DG.Property[]) {
     if (p.name === name)
@@ -82,9 +69,7 @@ export function findProp(v: DG.Viewer, name: string): DG.Property | null {
   return null;
 }
 
-// Assert that `propName` exposes the given choices. If the property descriptor
-// is missing (some props aren't surfaced on every build), returns null so the
-// caller can apply a fallback.
+// Returns null if the property descriptor is missing, so the caller can fall back.
 export function expectChoices(v: DG.Viewer, propName: string, required: string[]): DG.Property | null {
   const p = findProp(v, propName);
   if (p == null)
@@ -95,7 +80,6 @@ export function expectChoices(v: DG.Viewer, propName: string, required: string[]
   return p;
 }
 
-// Subscribe to each stream and return a cleanup function. Asserts shape.
 export function subscribeAll(streams: Observable<any>[]): () => void {
   const subs: Subscription[] = [];
   for (const s of streams) {
@@ -111,7 +95,6 @@ export function subscribeAll(streams: Observable<any>[]): () => void {
   };
 }
 
-// Run a body with `addTableView` and close in finally.
 export async function withTableView(df: DG.DataFrame, body: (tv: DG.TableView) => Promise<void> | void): Promise<void> {
   const tv = grok.shell.addTableView(df);
   try {
@@ -121,7 +104,6 @@ export async function withTableView(df: DG.DataFrame, body: (tv: DG.TableView) =
   }
 }
 
-// Attach the given viewer type to a fresh table view and run a body with it.
 export async function withAttachedViewer<T extends DG.Viewer>(
   df: DG.DataFrame, type: string, opts: {[k: string]: any},
   body: (v: T, tv: DG.TableView) => Promise<void> | void): Promise<void> {
@@ -131,7 +113,6 @@ export async function withAttachedViewer<T extends DG.Viewer>(
   });
 }
 
-// Race a one-shot Observable against a timeout. Asserts the event fires.
 export async function expectFiresWithin(
   stream: Observable<any>, trigger: () => void, ms: number = 1500): Promise<void> {
   let sub: Subscription | undefined;
@@ -151,18 +132,13 @@ export async function expectFiresWithin(
   }
 }
 
-// Assert a value is null, undefined, or an empty string — the platform's "cleared" shape.
 export function expectCleared(value: any): void {
   expect(value == null || value === '', true);
 }
 
-// Wrapper around DG.delay so call sites can read as `await wait(300)`.
 export const wait = (ms: number = 300): Promise<void> => DG.delay(ms);
 
-// Poll until `cond()` is true, resolving the instant it holds instead of sleeping
-// a fixed padding. Transient throws from not-yet-rendered getters are swallowed so
-// the condition can reference layout-derived state safely. Replaces conservative
-// `await wait(200/300)` before render/event-dependent assertions.
+// Poll until cond() holds; transient throws from not-yet-rendered getters are swallowed.
 export async function until(cond: () => boolean, ms: number = 2000): Promise<void> {
   await awaitCheck(() => {
     try {
@@ -173,7 +149,7 @@ export async function until(cond: () => boolean, ms: number = 2000): Promise<voi
   }, `until: condition not met within ${ms}ms`, ms, 25);
 }
 
-// Build a small DataFrame from named lists. Each entry: [name, dartType, values].
+// Build a DataFrame from named lists. Each entry: [name, dartType, values].
 export function df(cols: Array<[string, string, any[]]>): DG.DataFrame {
   return DG.DataFrame.fromColumns(cols.map(([n, t, v]) => DG.Column.fromList(t as DG.ColumnType, n, v)));
 }

@@ -2,15 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectChoices, expectPropAndLook, expectRoundTrip} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:682 (BarChartViewer),
-// public/js-api/src/interfaces/d4.ts:786 (IBarChartSettings).
-// Second pass on Bar chart that pins behaviour the bar-chart-js-api suite,
-// the parametric round-trips in src/grid/viewer-set-property.ts, and the
-// Dart-side targeted Bar tests don't already cover: the friendly-key `color`
-// alias on the typed factory, split + stack JSON envelope shape, the
-// barSortType / barSortOrder pair round-trip, choices introspection on
-// barSortType, includeNulls boolean round-trip, and the onClick RowGroupAction
-// enum. Public JS API only — no canvas geometry.
+// BarChart JS API extras: friendly-key aliases, sort pair round-trip, choices, includeNulls, onClick enum.
 category('AI: Viewers: BarChart extras', () => {
   const v = (): DG.BarChartViewer => DG.Viewer.barChart(demog(), {value: 'age', split: 'race'}) as DG.BarChartViewer;
 

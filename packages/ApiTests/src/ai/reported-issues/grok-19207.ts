@@ -2,13 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectNoThrow, withTableView} from '../helpers';
 
-// Regression coverage for GROK-19207: drawing a line-chart annotation
-// region, then closing/deleting the chart and re-opening another, threw
-// "Index out of range". JS cannot synthesize the mouse drag, so we pin
-// the lifecycle invariants the fix guarantees: the annotation-drawing
-// helpers can be invoked on an attached Line chart, the chart can be
-// closed via the attached viewer, and a fresh Line chart on the same
-// TableView (or a second df.plot.line round) survives without throwing.
+// Regression coverage for GROK-19207: Line chart annotation regions survive delete and re-open.
 category('AI: GROK-19207: Annotation regions after delete', () => {
   test('enable region drawing, close attached viewer, add new line chart', async () => {
     await withTableView(demog(), async (tv) => {

@@ -4,18 +4,7 @@ import {
   demog, expectPropAndLook, expectRoundTripPropAndLook, findProp, look, subscribeAll, withAttachedViewer,
 } from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:243 (DG.Viewer.lineChart),
-// public/js-api/src/viewer.ts:577 (DG.LineChartViewer).
-// LineChart-only JS surface: factory friendly-key aliasing on
-// DG.Viewer.lineChart and df.plot.line (note: ILineChartSettings has no `y`
-// field — only yColumnNames; the singular 'y' alias does not resolve), the
-// multi-element array properties (yColumnNames / splitColumnNames) round-tripping
-// through getOptions(true).look, multiAxis + splineTension via setOptions,
-// the LineChart-typed events (onLineSelected / onZoomed / onResetView) as
-// rxjs Observables, and view.addViewer attaching a typed LineChartViewer with
-// activeFrame. screenToWorld(0,0) was intentionally dropped here — pre-paint
-// the viewport Rect is NaN and screenToWorld throws NaN.floor() rather than
-// returning null (worth a JIRA).
+// LineChart JS API: factory aliases, array props, events, addViewer.
 category('AI: Viewers: LineChart JS API', () => {
   test('factory friendly-key aliasing via DG.Viewer.lineChart', async () => {
     const v = DG.Viewer.lineChart(demog(), {x: 'age', yColumnNames: ['height'], split: 'race'});

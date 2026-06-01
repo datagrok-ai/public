@@ -2,15 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectFiresWithin, subscribeAll, until, wait, withTableView} from '../helpers';
 
-// DG.FilterGroup — core/client/d4/lib/src/viewers/filters/filters_core.dart (scenario: filters-events)
-// Six event observables on the built-in filter panel (FiltersCore -> DG.FilterGroup):
-// onFilterAdded/onFilterRemoved fire from addColumnFilter/removeColumnFilter,
-// onFilterEnabledChanged from setEnabled, onFilterCriteriaChanged from the onRowsFiltered
-// listener (debounced through the filter pipeline), onFilterSync/onFormulaFilterChanged
-// have no clean JS trigger so they are proven well-formed via subscribeAll. The built-in
-// filter payloads are opaque Dart handles, so every getter is EventData<any>. The add/
-// remove/setEnabled/updateOrAdd mechanics themselves are already covered by
-// src/grid/filterGroup.ts — this file covers only the event streams.
+// The six event observables on the built-in filter panel (DG.FilterGroup).
 category('AI: Viewers: Filters Events', () => {
   test('onFilterAdded fires when a filter is added', async () => {
     await withTableView(demog(), async (tv) => {

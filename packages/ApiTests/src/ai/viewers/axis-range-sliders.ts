@@ -2,28 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectFiresWithin, until, withAttachedViewer} from '../helpers';
 
-// Axis range slider VISIBILITY behaviour, asserted on the real slider element.
-//
-// ScatterPlot and DensityPlot set slider visibility during RENDER:
-//   htmlSetVisible([slider.g], isCustomRange && (!autoLayout || showAxis))
-//   (scatterplot_core.dart:1264/1266, density_plot_core.dart:402/405)
-// so the outcome is observable headlessly (grok test runs in a real browser):
-// we narrow a slider / flip props, force a render, and assert RangeSlider.visible
-// against the full rule — including BOTH gating terms (showXAxis/showYAxis and
-// autoLayout), per axis, independently.
-//
-// NOT asserted (documented):
-// - BarChart's axis-slider visibility is driven ONLY by mouse enter/leave
-//   (bar_chart_core.dart:1296-1305), not by render — so it is not testable
-//   headlessly without synthesizing mouse events. Its determinant is still
-//   isCustomRange (+ showValueAxis for the value axis).
-// - The hover-to-reveal-at-full-range behaviour (slider shows on mouse-in even
-//   at full range, gated by D4Settings.showRangeSlidersOnViewers == 'Auto') is
-//   mouse-driven and likewise not asserted here.
+// Axis range slider visibility behaviour for ScatterPlot and DensityPlot, asserted on the real slider element.
 category('AI: Viewers: Axis Range Sliders', () => {
 
-  // Narrow the selected window to the middle 50% of the slider's full range,
-  // keeping the range bounds: makes isCustomRange true. notify -> viewer re-render.
+  // Narrows to the middle 50% so isCustomRange becomes true.
   function narrow(s: DG.RangeSlider): void {
     const lo = s.minRange;
     const hi = s.maxRange;
@@ -35,7 +17,6 @@ category('AI: Viewers: Axis Range Sliders', () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
         await expectFiresWithin(v.onAfterDrawScene, () => v.invalidateCanvas(), 2000);
-        // full range => isCustomRange false => visibility expression false
         expect(v.xAxisSlider.isCustomRange, false);
         expect(v.yAxisSlider.isCustomRange, false);
         expect(v.xAxisSlider.visible, false);
@@ -48,8 +29,6 @@ category('AI: Viewers: Axis Range Sliders', () => {
       {x: 'age', y: 'height'}, async (v) => {
         narrow(v.yAxisSlider);
         await expectFiresWithin(v.onAfterDrawScene, () => v.invalidateCanvas(), 2000);
-        // isCustomRange true, autoLayout true (default), showYAxis true (default)
-        // => true && (false || true) => visible
         expect(v.yAxisSlider.isCustomRange, true);
         expect(v.yAxisSlider.visible, true);
       });
@@ -59,9 +38,8 @@ category('AI: Viewers: Axis Range Sliders', () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
         narrow(v.yAxisSlider);
-        v.setOptions({showYAxis: false}); // autoLayout stays true
+        v.setOptions({showYAxis: false});
         await expectFiresWithin(v.onAfterDrawScene, () => v.invalidateCanvas(), 2000);
-        // isCustomRange true, but (!autoLayout || showYAxis) = (false || false) = false
         expect(v.yAxisSlider.isCustomRange, true);
         expect(v.yAxisSlider.visible, false);
       });
@@ -73,7 +51,6 @@ category('AI: Viewers: Axis Range Sliders', () => {
         v.setOptions({autoLayout: false, showYAxis: false});
         narrow(v.yAxisSlider);
         await expectFiresWithin(v.onAfterDrawScene, () => v.invalidateCanvas(), 2000);
-        // isCustomRange true, (!autoLayout || showYAxis) = (true || false) = true => visible
         expect(v.yAxisSlider.visible, true);
       });
   });
@@ -85,7 +62,6 @@ category('AI: Viewers: Axis Range Sliders', () => {
         await expectFiresWithin(v.onAfterDrawScene, () => v.invalidateCanvas(), 2000);
         expect(v.xAxisSlider.isCustomRange, true);
         expect(v.xAxisSlider.visible, true);
-        // Y untouched -> full range -> hidden
         expect(v.yAxisSlider.isCustomRange, false);
         expect(v.yAxisSlider.visible, false);
       });

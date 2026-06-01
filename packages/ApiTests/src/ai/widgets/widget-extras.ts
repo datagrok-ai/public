@@ -1,5 +1,3 @@
-// DG.RangeSlider / ColumnComboBox / Legend / InputForm / DropDown / TagEditor —
-// public/js-api/src/widgets/{data-widgets,forms,specialized,tree}.ts (scenario: widget-extras)
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';

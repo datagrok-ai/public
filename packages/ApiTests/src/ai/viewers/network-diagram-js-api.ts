@@ -3,15 +3,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectNoThrow, expectRoundTripPropAndLook,
   subscribeAll, withAttachedViewer} from '../helpers';
 
-// DG.NetworkDiagramViewer — core/client/d4/lib/src/viewers/network_diagram/network_diagram_core.dart
-// (scenario: network-diagram-js-api)
-// NetworkDiagram-only JS surface: the typed factory DG.Viewer.network now returns
-// DG.NetworkDiagramViewer (vs the generic Viewer<INetworkDiagramSettings> the old
-// factory returned, proving the new className getter on NetworkDiagramCore wires the
-// Dart instance to the JS class), the onNodeClicked / onEdgeClicked events, the
-// INetworkDiagramSettings round-trip (autoLayout, mergeNodes, selectRowsOnClick,
-// selectEdgesOnClick, showColumnSelectors, edgeWidth), and an edge-shaped DataFrame
-// boundary with explicit node1/node2 column options.
+// NetworkDiagram JS API: typed factory, events, settings round-trip, edge DataFrame.
 category('AI: Viewers: NetworkDiagram JS API', () => {
   test('factory DG.Viewer.network returns typed DG.NetworkDiagramViewer; round-trips type', async () => {
     const t = demog();

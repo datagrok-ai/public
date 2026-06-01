@@ -2,9 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectCleared, expectLook, expectNoThrow, expectPropAndLook, look} from '../helpers';
 
-// Regression coverage for GROK-19511: scatter plot's `linesBy`
-// (and serialized `linesByColumnName`) is independent from `color`.
-// Pure prop-existence + round-trip — no rendering assertions.
+// Regression coverage for GROK-19511: scatter plot linesBy independent of color.
 category('AI: GROK-19511: Scatter plot linesBy independent of color', () => {
   test('linesBy and color stay independent in df.plot.scatter', async () => {
     const v = demog().plot.scatter({x: 'age', y: 'height', color: 'race', linesBy: 'sex'});

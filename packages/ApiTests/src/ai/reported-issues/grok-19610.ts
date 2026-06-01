@@ -2,12 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectNoThrow, findProp, look} from '../helpers';
 
-// Regression coverage for GROK-19610: Box plot 'Zoom Values by Filter'.
-// The user-facing fix was a tooltip clarification on the property; the test
-// pins the property key (`zoomValuesByFilter`), confirms it round-trips
-// through getOptions(true).look, that toggling under an active filter on
-// the value column does not throw, and that the property carries a
-// non-empty description (the actual remediation in the ticket).
+// Regression coverage for GROK-19610: Box plot zoomValuesByFilter toggle.
 category('AI: GROK-19610: Box plot zoom-values-by-filter toggle', () => {
   const v = (): DG.Viewer => demog().plot.box({value: 'height', category: 'race'});
 

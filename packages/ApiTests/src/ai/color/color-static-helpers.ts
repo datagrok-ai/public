@@ -1,12 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectFloat, test} from '@datagrok-libraries/test/src/test';
 
-// JS API source: public/js-api/src/color.ts:30
-// Pure-JS static helpers on DG.Color that pack/unpack ARGB ints without
-// crossing the Dart interop boundary: channel extractors (a/r/g/b), argb,
-// setAlpha, fromHtml/toHtml, toRgb, scale, hexToPercentRgb (used by the
-// RDKit substruct highlight), and the categorical-palette wrap-around
-// accessor getCategoricalColor.
+// Tests pure-JS ARGB pack/unpack static helpers on DG.Color.
 category('AI: Color: static helpers', () => {
   test('channel extractors', async () => {
     const c = 0x12345678;

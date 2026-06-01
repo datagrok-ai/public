@@ -2,17 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {df, expectPropAndLook} from '../helpers';
 
-// Regression coverage for GROK-13205: Trellis plot inner viewers (Line / Box /
-// Pie / Bar) used to duplicate data instead of partitioning when rowSource was
-// set to one of the per-row variants. JS-side coverage pins state-machine
-// integrity only — the property bag accepts each RowSet literal, the viewer
-// instance survives without throwing, and the value persists through
-// getOptions(true).look. Visual partition correctness is not asserted here and
-// must be checked in manual / image-diff QA.
-//
-// RowSet literals taken from public/js-api/src/interfaces/d4.d.ts:
-//   All, Filtered, Selected, SelectedOrCurrent, FilteredSelected,
-//   MouseOverGroup, CurrentRow, MouseOverRow.
+// Regression coverage for GROK-13205: Trellis plot inner viewers row source variants.
 category('AI: GROK-13205: Trellis row source variants', () => {
   const ROW_SOURCES = [
     'Selected', 'SelectedOrCurrent', 'CurrentRow', 'MouseOverRow', 'FilteredSelected', 'MouseOverGroup',

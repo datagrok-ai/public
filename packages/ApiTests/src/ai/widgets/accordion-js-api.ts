@@ -1,4 +1,3 @@
-// DG.Accordion — core/client/d4/lib/src/widgets/accordion/accordion.dart (scenario: accordion-js-api)
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';

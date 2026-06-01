@@ -2,16 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, subscribeAll, until, withAttachedViewer} from '../helpers';
 
-// DG.CorrelationPlot / DG.PivotViewer / DG.TrellisPlotViewer / DG.PcPlot —
-// core/client/d4/lib/src/viewers/{correlation_plot,pivot_viewer,trellis_plot,pc_plot}/*_core.dart
-// (scenario: viewer-events). Last core-viewer member gap: the stub-viewer event
-// observables (onCorrCellClicked, onAggregationChanged, the three TrellisPlot
-// events) plus PcPlot.isFiltering. Each event is an onEvent('...') getter — not
-// headlessly triggerable — so we prove the typed wrapper is reachable (className
-// round-trips through withAttachedViewer) and the streams are well-formed
-// Observables (subscribe/unsubscribe), without faking fires. isFiltering is read
-// on a fresh and on an attached plot; its true-branch needs a private slider drag
-// not reachable from JS, so only the false path is asserted.
+// Stub-viewer event Observables (CorrelationPlot, PivotViewer, TrellisPlot) plus PcPlot.isFiltering.
 category('AI: Viewers: Events', () => {
   test('CorrelationPlot typed wrapper exposes onCorrCellClicked as an rxjs Observable', async () => {
     await withAttachedViewer<DG.CorrelationPlot>(demog(), DG.VIEWER.CORR_PLOT, {}, async (v) => {
