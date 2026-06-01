@@ -76,9 +76,7 @@ The `Analysis` tab presents a table with ANOVA computations:
 >  df (fractional), critical F-value, and p-value - Welch's test has no SS/MS
 >  decomposition by design.
 
-Click the `Conclusion` tab to explore the null hypothesis testing:
-
-![add-to-workspace](anova-conclusions.gif)
+Click the `Conclusion` tab to explore the null hypothesis testing.
 
 See also:
 
