@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, subscribeAll, wait, withTableView} from '../helpers';
+import {demog, expectFiresWithin, subscribeAll, until, wait, withTableView} from '../helpers';
 
 // DG.FilterGroup — core/client/d4/lib/src/viewers/filters/filters_core.dart (scenario: filters-events)
 // Six event observables on the built-in filter panel (FiltersCore -> DG.FilterGroup):
@@ -26,7 +26,7 @@ category('AI: Viewers: Filters Events', () => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
       await wait(100);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
-      await wait(200);
+      await until(() => fg.filters.length > 0);
       expect(fg.filters.length > 0, true);
       const filter = fg.filters[fg.filters.length - 1];
       await expectFiresWithin(fg.onFilterRemoved, () => fg.remove(filter), 3000);
@@ -38,7 +38,7 @@ category('AI: Viewers: Filters Events', () => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
       await wait(100);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
-      await wait(200);
+      await until(() => fg.filters.length > 0);
       expect(fg.filters.length > 0, true);
       const filter = fg.filters[fg.filters.length - 1];
       await expectFiresWithin(fg.onFilterEnabledChanged, () => fg.setEnabled(filter, false), 3000);
@@ -50,7 +50,7 @@ category('AI: Viewers: Filters Events', () => {
       const fg = tv.getFiltersGroup({createDefaultFilters: false});
       await wait(100);
       fg.add({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age'});
-      await wait(300);
+      await until(() => fg.filters.length > 0);
       await expectFiresWithin(fg.onFilterCriteriaChanged,
         () => fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'age', min: 20, max: 60}, true), 5000);
     });

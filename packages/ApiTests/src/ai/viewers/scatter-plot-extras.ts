@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, df, expectChoices, expectRoundTrip, wait} from '../helpers';
+import {demog, df, expectChoices, expectRoundTrip, until} from '../helpers';
 
 // JS API source: public/js-api/src/viewer.ts (DG.ScatterPlotViewer / df.plot.scatter),
 // public/js-api/src/interfaces/d4.d.ts (IScatterPlotSettings),
@@ -111,7 +111,7 @@ category('AI: Viewers: ScatterPlot extras', () => {
 
     const otherBase = initialX === 'a' ? 'b' : 'a';
     c.setOptions({xColumnName: otherBase});
-    await wait(200);
+    await until(() => c.props['xColumnName'] === otherBase);
 
     expect(c.props['xColumnName'], otherBase);
     expect(c.props['xWhiskerMinColumnName'], otherBase + ' min');

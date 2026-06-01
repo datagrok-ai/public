@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectChoices, expectNoThrow, expectPropAndLook, expectRoundTrip,
-  expectRoundTripPropAndLook, wait, withAttachedViewer} from '../helpers';
+  expectRoundTripPropAndLook, until, withAttachedViewer} from '../helpers';
 
 // DG.FormViewer — core/client/d4/lib/src/viewers/form/form_core.dart (scenario: form-js-api)
 // Form viewer JS surface (standalone DataFrame Form viewer, NOT the InputForm
@@ -68,7 +68,7 @@ category('AI: Viewers: Form JS API', () => {
   test('buildForm + columnNames — rebuild the form with a subset of columns', async () => {
     await withAttachedViewer<DG.FormViewer>(demog(), DG.VIEWER.FORM, {}, async (v) => {
       v.buildForm(['name', 'age']);
-      await wait(200);
+      await until(() => (v.columnNames ?? []).length >= 1);
       const names = v.columnNames ?? [];
       // buildForm should re-register field handlers; assert it's at least non-empty and
       // contains one of the requested columns (the SketchForm may dedupe or filter,

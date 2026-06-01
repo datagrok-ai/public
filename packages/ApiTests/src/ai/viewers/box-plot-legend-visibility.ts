@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectLook, wait, withAttachedViewer} from '../helpers';
+import {demog, expectLook, look, until, withAttachedViewer} from '../helpers';
 
 // Source: core/client/d4/lib/src/viewers/box_plot/box_plot_core.dart:94
 // (canShowLegend) and :28 (legendCol => markerColorCol). When a single
@@ -25,7 +25,7 @@ category('AI: Viewers: BoxPlot legend visibility', () => {
 
   test('legend hidden when single category equals markerColor column', async () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT, opts, async (v) => {
-      await wait();
+      await until(() => look(v)['markerColorColumnName'] === 'race');
       expectLook(v, {category1ColumnName: 'race', markerColorColumnName: 'race'});
       expect(legendPresent(v), false);
     });
@@ -33,9 +33,9 @@ category('AI: Viewers: BoxPlot legend visibility', () => {
 
   test('legend visible when category and markerColor columns differ', async () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT, opts, async (v) => {
-      await wait(200);
+      await until(() => look(v)['category1ColumnName'] === 'race');
       v.setOptions({allowColorSynchronization: false, markerColorColumnName: 'sex'});
-      await wait();
+      await until(() => look(v)['markerColorColumnName'] === 'sex' && legendPresent(v));
       expectLook(v, {category1ColumnName: 'race', markerColorColumnName: 'sex'});
       expect(legendPresent(v), true);
     });
@@ -43,15 +43,15 @@ category('AI: Viewers: BoxPlot legend visibility', () => {
 
   test('legend toggles when markerColor switches to/from category column', async () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT, opts, async (v) => {
-      await wait(200);
+      await until(() => look(v)['category1ColumnName'] === 'race');
       v.setOptions({allowColorSynchronization: false, markerColorColumnName: 'sex'});
-      await wait();
+      await until(() => legendPresent(v) === true);
       expect(legendPresent(v), true);
       v.setOptions({markerColorColumnName: 'race'});
-      await wait();
+      await until(() => legendPresent(v) === false);
       expect(legendPresent(v), false);
       v.setOptions({markerColorColumnName: 'sex'});
-      await wait();
+      await until(() => legendPresent(v) === true);
       expect(legendPresent(v), true);
     });
   });

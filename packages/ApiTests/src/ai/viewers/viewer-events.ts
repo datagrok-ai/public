@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, subscribeAll, wait, withAttachedViewer} from '../helpers';
+import {demog, subscribeAll, until, withAttachedViewer} from '../helpers';
 
 // DG.CorrelationPlot / DG.PivotViewer / DG.TrellisPlotViewer / DG.PcPlot —
 // core/client/d4/lib/src/viewers/{correlation_plot,pivot_viewer,trellis_plot,pc_plot}/*_core.dart
@@ -54,7 +54,7 @@ category('AI: Viewers: Events', () => {
   test('PcPlot.isFiltering stays false on an attached plot after layout', async () => {
     await withAttachedViewer<DG.PcPlot>(demog(), DG.VIEWER.PC_PLOT,
       {columnNames: ['age', 'height', 'weight']}, async (v) => {
-        await wait(200);
+        await until(() => v.chartBox != null);
         expect(v.isFiltering, false);
       });
   });

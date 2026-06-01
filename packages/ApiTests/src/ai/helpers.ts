@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import {take} from 'rxjs/operators';
-import {expect, expectObject} from '@datagrok-libraries/test/src/test';
+import {expect, expectObject, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 // Shared helpers for AI tests. Keep the surface narrow — only patterns that
 // repeat across at least 3 files. Tests that need bespoke logic should still
@@ -158,6 +158,20 @@ export function expectCleared(value: any): void {
 
 // Wrapper around DG.delay so call sites can read as `await wait(300)`.
 export const wait = (ms: number = 300): Promise<void> => DG.delay(ms);
+
+// Poll until `cond()` is true, resolving the instant it holds instead of sleeping
+// a fixed padding. Transient throws from not-yet-rendered getters are swallowed so
+// the condition can reference layout-derived state safely. Replaces conservative
+// `await wait(200/300)` before render/event-dependent assertions.
+export async function until(cond: () => boolean, ms: number = 2000): Promise<void> {
+  await awaitCheck(() => {
+    try {
+      return cond();
+    } catch (_e) {
+      return false;
+    }
+  }, `until: condition not met within ${ms}ms`, ms, 25);
+}
 
 // Build a small DataFrame from named lists. Each entry: [name, dartType, values].
 export function df(cols: Array<[string, string, any[]]>): DG.DataFrame {

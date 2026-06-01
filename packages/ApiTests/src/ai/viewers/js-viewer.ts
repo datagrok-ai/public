@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, withTableView, wait, expectNoThrow} from '../helpers';
+import {demog, withTableView, until, expectNoThrow} from '../helpers';
 
 // DG.JsViewer — public/js-api/src/viewer.ts:379 (members 406-427); Dart host:
 // core/client/d4/lib/src/viewers/js_viewer/js_viewer_host_core.dart (scenario: js-viewer)
@@ -69,7 +69,7 @@ category('AI: Viewers: JsViewer', () => {
     });
     await withTableView(demog(20), async (tv) => {
       tv.addViewer(name);
-      await wait(300);
+      await until(() => captured != null && captured!.frameAttachedCount >= 1 && captured!.tableAttachedCount >= 1);
       expect(captured != null, true);
       expect(captured!.frameAttachedCount >= 1, true);
       expect(captured!.tableAttachedCount >= 1, true);
@@ -85,7 +85,7 @@ category('AI: Viewers: JsViewer', () => {
     });
     await withTableView(demog(20), async (tv) => {
       tv.addViewer(name);
-      await wait(300);
+      await until(() => captured != null && captured!.sourceRowsChangedCount >= 1 && captured!.onSourceRowsChangedCount >= 1);
       expect(captured != null, true);
       expect(captured!.sourceRowsChangedCount >= 1, true);
       expect(captured!.onSourceRowsChangedCount >= 1, true);
@@ -101,15 +101,14 @@ category('AI: Viewers: JsViewer', () => {
     });
     await withTableView(demog(20), async (tv) => {
       const host = tv.addViewer(name);
-      await wait(300);
-      expect(captured != null, true);
+      await until(() => captured != null && captured!.sourceRowsChangedCount >= 1);
       const before = captured!.sourceRowsChangedCount;
       const beforeHook = captured!.onSourceRowsChangedCount;
       // Toggle the row source so the host re-pushes the filtered rows.
       host.setOptions({rowSource: 'Selected'});
       tv.dataFrame.selection.set(0, true);
       tv.dataFrame.selection.set(1, true);
-      await wait(300);
+      await until(() => captured!.sourceRowsChangedCount > before && captured!.onSourceRowsChangedCount > beforeHook);
       expect(captured!.sourceRowsChangedCount >= before, true);
       expect(captured!.onSourceRowsChangedCount >= beforeHook, true);
     });
@@ -126,7 +125,7 @@ category('AI: Viewers: JsViewer', () => {
     });
     await withTableView(demog(10), async (tv) => {
       tv.addViewer(name);
-      await wait(300);
+      await until(() => captured != null);
       expect(captured != null, true);
       const v = captured!;
       const dfr = tv.dataFrame;

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectNoThrow, wait, withAttachedViewer} from '../helpers';
+import {demog, expectNoThrow, until, withAttachedViewer} from '../helpers';
 
 // DG.ScatterPlotViewer / DG.LineChartViewer — core/client/d4/lib/src/viewers/scatterplot/*.dart,
 // core/client/d4/lib/src/viewers/line_chart/*.dart (scenario: viewer-geometry).
@@ -13,7 +13,7 @@ category('AI: Viewers: Geometry', () => {
   test('xAxisBox / yAxisBox are sane Rects after layout', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
-        await wait(200);
+        await until(() => v.xAxisBox != null);
         const xb = v.xAxisBox;
         const yb = v.yAxisBox;
         expect(xb != null, true);
@@ -28,7 +28,7 @@ category('AI: Viewers: Geometry', () => {
   test('worldToScreen returns a finite Point', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
-        await wait(200);
+        await until(() => v.xAxisBox != null);
         const p = v.worldToScreen(40, 170);
         expect(p != null, true);
         expect(Number.isFinite(p.x), true);
@@ -39,7 +39,7 @@ category('AI: Viewers: Geometry', () => {
   test('pointToScreen returns a Point for row 0', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
-        await wait(200);
+        await until(() => v.xAxisBox != null);
         const p = v.pointToScreen(0);
         expect(p != null, true);
         // Clipped rows may map to NaN — assert numeric type, not finiteness.
@@ -51,7 +51,7 @@ category('AI: Viewers: Geometry', () => {
   test('hitTest returns a row index or -1', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
-        await wait(200);
+        await until(() => v.xAxisBox != null);
         const p = v.worldToScreen(40, 170);
         const hit = v.hitTest(p.x, p.y);
         expect(typeof hit, 'number');
@@ -63,7 +63,7 @@ category('AI: Viewers: Geometry', () => {
   test('render into an offscreen 2d context does not throw', async () => {
     await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
       {x: 'age', y: 'height'}, async (v) => {
-        await wait(200);
+        await until(() => v.xAxisBox != null);
         const g = document.createElement('canvas').getContext('2d')!;
         expectNoThrow(() => v.render(g));
       });
@@ -72,7 +72,7 @@ category('AI: Viewers: Geometry', () => {
   test('LineChart worldToScreen(x, y, chartIdx) maps a point for chart 0', async () => {
     await withAttachedViewer<DG.LineChartViewer>(demog(), DG.VIEWER.LINE_CHART,
       {x: 'age', yColumnNames: ['height']}, async (v) => {
-        await wait(200);
+        await until(() => v.worldToScreen(40, 170, 0) != null);
         const p = v.worldToScreen(40, 170, 0);
         expect(p != null, true);
         expect(Number.isFinite(p.x), true);

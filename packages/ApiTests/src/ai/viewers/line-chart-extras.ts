@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectCleared, expectRoundTrip, look, wait, withTableView} from '../helpers';
+import {demog, expectChoices, expectCleared, expectRoundTrip, look, until, wait, withTableView} from '../helpers';
 
 // JS API source: public/js-api/src/viewer.ts (DG.Viewer.lineChart),
 // public/js-api/src/interfaces/d4.d.ts:686 (ILineChartSettings),
@@ -102,12 +102,12 @@ category('AI: Viewers: LineChart extras', () => {
     await withTableView(demog(), async (tv) => {
       const c = v();
       tv.addViewer(c);
-      await wait();
+      await until(() => c.root.querySelector('canvas') != null);
       c.setOptions({autoLayout: false, markerSize: 99});
-      await wait(200);
+      await until(() => look(c)['markerSize'] === 99);
       expect(look(c)['markerSize'], 99);
       c.setOptions({autoLayout: true});
-      await wait(200);
+      await until(() => look(c)['markerSize'] !== 99);
       const after = look(c);
       expect(after['autoLayout'], true);
       expect(after['markerSize'] !== 99 && after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
