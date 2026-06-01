@@ -15,7 +15,7 @@ The two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test)
 determines whether the mean of a feature differs between two groups.
 
 1. Open a table.
-2. Run **Top Menu > ML > Analyze > Group comparison > T-test...**. A dialog opens.
+2. Run **Top Menu > ML > Analyze > Group Comparison > T-test...**. A dialog opens.
 3. In the dialog, specify:
    * the column defining the two groups (in the `Category` field)
    * the column with feature values (in the `Feature` field)
@@ -47,7 +47,7 @@ determines whether the examined factor has a significant impact on the studied
 feature.
 
 1. Open a table.
-2. Run **Top Menu > ML > Analyze > Group comparison > ANOVA...**. A dialog opens.
+2. Run **Top Menu > ML > Analyze > Group Comparison > ANOVA...**. A dialog opens.
 3. In the dialog, specify:
    * the column with factor values (in the `Category` field)
    * the column with feature values (in the `Feature` field)
