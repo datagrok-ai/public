@@ -468,9 +468,18 @@ export class SubstructureFilter extends DG.Filter {
         this.recalculateFilter = true;
         return;
       }
-      // no cached result yet, or a full search is running -> recompute the whole column
-      const searching = !!this.batchResultObservable && !this.batchResultObservable.closed;
-      if (!this.bitset || this.recalculateFilter || searching) {
+      // A full search is already running: don't restart it (avoids a restart storm when several
+      // cells are edited in quick succession). Just mark dirty — when the search completes,
+      // applyFilter sees the flag and recomputes once with the edited rows included.
+      if (this.batchResultObservable && !this.batchResultObservable.closed) {
+        this.recalculateFilter = true;
+        return;
+      }
+      // Recompute the whole column instead of patching when there's no cached result, a recompute
+      // is already pending, or EXACT_MATCH (the worker compares raw strings against the canonicalized
+      // column, which a raw edited cell value can't reproduce — see searchWithPatternFps).
+      if (!this.bitset || this.recalculateFilter ||
+        this.searchType === SubstructureSearchType.EXACT_MATCH) {
         this.recalculateFilter = true;
         await this._onSketchChanged();
         return;

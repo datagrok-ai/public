@@ -534,6 +534,36 @@ M  END
     await delay(1000);
   });
 
+  test('cellEditRefiltersRowExactMatch', async () => {
+    // EXACT_MATCH must compare against the CANONICAL form. Editing a row to a non-canonical SMILES
+    // of the query (Kekulé benzene) must still match — verifies it goes through the canonicalizing
+    // full recompute, not the raw-string incremental path.
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+    const filter = await createFilter('Structure', df, sketcherDialogs);
+
+    filter.searchTypeInput.value = SubstructureSearchType.EXACT_MATCH;
+    filter.sketcher.setSmiles('c1ccccc1');
+    await awaitCheck(() => filter.bitset != null, 'exact-match filter did not apply', 15000);
+
+    let hiddenIdx = -1;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (!df.filter.get(i)) { hiddenIdx = i; break; }
+    }
+    expect(hiddenIdx >= 0, true);
+    const before = df.filter.trueCount;
+
+    // 'C1=CC=CC=C1' is benzene written non-canonically; canonicalized it equals the query
+    df.col('Structure')!.set(hiddenIdx, 'C1=CC=CC=C1');
+    await awaitCheck(() => df.filter.get(hiddenIdx) && df.filter.trueCount === before + 1,
+      'editing a row to a non-canonical form of the query did not match under EXACT_MATCH', 10000);
+
+    sketcherDialogs.forEach((it) => it.close());
+    filter.detach();
+    await delay(1000);
+  });
+
 });
 
 

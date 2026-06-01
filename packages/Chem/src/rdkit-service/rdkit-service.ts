@@ -271,9 +271,11 @@ export class RdKitService {
   }
 
   /** Worker for small subset calls (cell-edit patches): the last one, which heavy ops
-   * (R-group, MCS on worker[0]) tend to leave free. NB: with a single worker the "last" worker
-   * IS worker[0], so the terminate-flag reset below can collide with those ops on low-core
-   * machines — acceptable because a k-row patch is cheap and the caller awaits any running search. */
+   * (R-group, MCS — they run on worker[0]) tend to leave free, so on multi-worker machines the
+   * terminate-flag reset below can't disturb them. NB: with a single worker the "last" worker IS
+   * worker[0], so the reset can transiently un-cancel an in-progress MCS/R-group on low-core
+   * machines. Worst case is a cancelled op running a little longer — never a wrong filter result.
+   * A proper per-operation cancellation scope is out of scope here. */
   private _getLastWorker(): RdKitServiceWorkerClient {
     const worker = this.parallelWorkers[this.parallelWorkers.length - 1];
     worker.setTerminateFlag(false).catch(() => {}); // clear any stale "cancelled" flag before reuse
