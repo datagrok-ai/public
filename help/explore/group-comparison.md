@@ -7,7 +7,6 @@ Group comparison capabilities let you check whether the average of a numeric fea
 
 * [T-test](#t-test): two groups.
 * [ANOVA](#anova): three or more groups.
-* [Control comparisons](#control-comparisons): each group against one designated control.
 
 ## T-test
 
@@ -80,10 +79,6 @@ The `Analysis` tab presents a table with ANOVA computations:
 Click the `Conclusion` tab to explore the null hypothesis testing:
 
 ![add-to-workspace](anova-conclusions.gif)
-
-## Control comparisons
-
-ddd
 
 See also:
 
