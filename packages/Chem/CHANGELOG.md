@@ -6,6 +6,7 @@
 * MPO: Fixed disabled OK button with no explanation when creating a new profile — the profile settings (name field) now expand automatically, the OK state re-validates after the default name is filled, and the footer warning explains an invalid name
 * [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
 * Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
+* GROK-15991: Invalid argument(s): Array lengths differ
 
 ## 1.17.10 (2026-05-28)
 
