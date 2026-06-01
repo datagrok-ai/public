@@ -343,18 +343,18 @@ export async function visualizeSigmoidKernelSVM(df: DG.DataFrame, targetColumn: 
   return await PackageFunctions.visualizeSigmoidKernelSVM(df, targetColumn, predictColumn, model);
 }
 
-//name: ANOVA
-//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
-//top-menu: ML | Analyze | Compare means | ANOVA...
-export function anova() : void {
-  PackageFunctions.anova();
-}
-
 //name: T-test
 //description: Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.
-//top-menu: ML | Analyze | Compare means | t-test...
+//top-menu: ML | Analyze | Group comparison | T-test...
 export function tTest() : void {
   PackageFunctions.tTest();
+}
+
+//name: ANOVA
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
+//top-menu: ML | Analyze | Group comparison | ANOVA...
+export function anova() : void {
+  PackageFunctions.anova();
 }
 
 //name: KNN impute

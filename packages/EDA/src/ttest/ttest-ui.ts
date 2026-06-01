@@ -15,7 +15,7 @@ import {twoSampleTTest, TwoSampleTTest, TTestMethod} from './ttest-tools';
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
 
-const T_TEST_HELP_URL = '/help/explore/t-test';
+const T_TEST_HELP_URL = '/help/explore/group-comparison#t-test';
 
 /** Significance const. */
 enum SIGNIFICANCE {

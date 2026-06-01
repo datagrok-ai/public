@@ -173,17 +173,17 @@ export namespace funcs {
   }
 
   /**
-  One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
-  */
-  export async function anova(): Promise<void> {
-    return await grok.functions.call('EDA:Anova', {});
-  }
-
-  /**
   Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.
   */
   export async function tTest(): Promise<void> {
     return await grok.functions.call('EDA:TTest', {});
+  }
+
+  /**
+  One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
+  */
+  export async function anova(): Promise<void> {
+    return await grok.functions.call('EDA:Anova', {});
   }
 
   /**

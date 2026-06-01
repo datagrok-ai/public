@@ -10,7 +10,7 @@ import {FactorizedData, oneWayAnova, OneWayAnovaReport, WelchAnova} from './anov
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
 
-const ANOVA_HELP_URL = '/help/explore/anova';
+const ANOVA_HELP_URL = '/help/explore/group-comparison#anova';
 
 /** Significance const */
 enum SIGNIFICANCE {
@@ -94,8 +94,8 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   ]);
 
   const analysisTitle = report.method === 'Welch' ?
-    "One-Way ANOVA (Welch's)" :
-    "One-Way ANOVA (Fisher's)";
+    'One-Way ANOVA (Welch\'s)' :
+    'One-Way ANOVA (Fisher\'s)';
   const reportViewer = getAnovaGrid(report);
   const tabControl = ui.tabControl({
     'Analysis': ui.panel([ui.h2(analysisTitle), reportViewer.root]),

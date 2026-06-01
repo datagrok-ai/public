@@ -648,24 +648,24 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    'top-menu': 'ML | Analyze | Compare means | ANOVA...',
-    'name': 'ANOVA',
-    'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
-  })
-  static anova(): void {
-    runOneWayAnova();
-  }
-
-
-  @grok.decorators.func({
-    'top-menu': 'ML | Analyze | Compare means | t-test...',
-    'name': 'T-test',
-    'description': 'Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.',
-  })
+   @grok.decorators.func({
+     'top-menu': 'ML | Analyze | Group comparison | T-test...',
+     'name': 'T-test',
+     'description': 'Two-sample t-test (Welch or Student) compares the means of a feature between two groups.',
+   })
   static tTest(): void {
     runTwoSampleTTest();
   }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Group comparison | ANOVA...',
+    'name': 'ANOVA',
+    'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
+  })
+   static anova(): void {
+     runOneWayAnova();
+   }
 
 
   @grok.decorators.func({
