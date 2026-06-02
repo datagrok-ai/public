@@ -68,10 +68,10 @@ function labelOf(factor: DG.Column, code: number): string {
 // --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
 
 /** Null-hypothesis-testing tooltip for a conclusion cell (H0 / H1 / Conclusion + verdict). */
-function conclusionTooltip(significant: boolean): HTMLElement {
+function conclusionTooltip(significant: boolean, featureName: string, label0: string, label1: string): HTMLElement {
   return ui.divV([
-    ui.markdown('**H0:** the two group means are equal.'),
-    ui.markdown('**H1:** the two group means differ.'),
+    ui.markdown(`**H0:** mean "${featureName}" is equal between "${label0}" and "${label1}".`),
+    ui.markdown(`**H1:** mean "${featureName}" differs between "${label0}" and "${label1}".`),
     ui.markdown(`**Conclusion:** ${significant ?
       'Reject the null hypothesis.' :
       'Fail to reject the null hypothesis.'}`),
@@ -131,7 +131,7 @@ function buildDescription(factorName: string, featureName: string, label0: strin
 }
 
 /** One-row results grid: conclusion, t, df, p-value, mean difference, 95% CI, effect size. */
-function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.Grid {
+function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string, featureName: string): DG.Grid {
   const ciLevel = Math.round((1 - res.alpha) * 100);
   const ciCaption = `${ciLevel}% CI`;
   // Single user-facing header for both methods; tooltip explains the pooled vs non-pooled distinction.
@@ -188,7 +188,7 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
       }
     } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME) {
       // Null-hypothesis-testing tooltip for the conclusion cell.
-      ui.tooltip.show(conclusionTooltip(significant), x, y);
+      ui.tooltip.show(conclusionTooltip(significant, featureName, label0, label1), x, y);
       return true;
     }
     return false;
@@ -230,7 +230,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   const analysisTitle = res.method === 'Welch' ?
     'Two-Sample t-test (Welch\'s)' :
     'Two-Sample t-test (Student\'s)';
-  const reportViewer = getTTestGrid(res, label0, label1);
+  const reportViewer = getTTestGrid(res, label0, label1, feature.name);
 
   // Register the results table in the workspace, then dock the grid under the box plot.
   reportViewer.dataFrame.name = 'T-test result';

@@ -35,10 +35,10 @@ type Method = 'Welch' | 'Fisher';
 // --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
 
 /** Null-hypothesis-testing tooltip for the conclusion cell (H0 / H1 / Conclusion + verdict). */
-function conclusionTooltip(significant: boolean): HTMLElement {
+function conclusionTooltip(significant: boolean, factorName: string, featureName: string): HTMLElement {
   return ui.divV([
-    ui.markdown('**H0:** all group means are equal.'),
-    ui.markdown('**H1:** at least one group mean differs.'),
+    ui.markdown(`**H0:** mean "${featureName}" is equal across all "${factorName}" groups.`),
+    ui.markdown(`**H1:** mean "${featureName}" differs in at least one "${factorName}" group.`),
     ui.markdown(`**Conclusion:** ${significant ?
       'Reject the null hypothesis.' :
       'Fail to reject the null hypothesis.'}`),
@@ -102,26 +102,27 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   const analysisTitle = report.method === 'Welch' ?
     'One-Way ANOVA (Welch\'s)' :
     'One-Way ANOVA (Fisher\'s)';
-  const reportViewer = getAnovaGrid(report);
+  const reportViewer = getAnovaGrid(report, factorsName, featuresName);
 
   // Register the results table in the workspace, then dock the grid under the box plot.
   reportViewer.dataFrame.name = 'ANOVA result';
   grok.shell.addTable(reportViewer.dataFrame);
 
-  view.dockManager.dock(reportViewer.root, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
+  view.dockManager.dock(reportViewer, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
 
   reportViewer.root.style.width = '100%';
 } // addVizualization
 
 /** Create grid with one-way ANOVA results, dispatched by method. */
-function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
+function getAnovaGrid(report: OneWayAnovaReport, factorName: string, featureName: string): DG.Grid {
   if (report.method === 'Fisher')
-    return getFisherGrid(report);
-  return getWelchGrid(report.anovaTable, report.fCritical, report.significance);
+    return getFisherGrid(report, factorName, featureName);
+  return getWelchGrid(report.anovaTable, report.fCritical, report.significance, factorName, featureName);
 }
 
 /** Classical Fisher ANOVA table (3x7: Between/Within/Total x SS/DF/MS/F/F-critical/p-value). */
-function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid {
+function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'},
+  factorName: string, featureName: string): DG.Grid {
   const anova = report.anovaTable;
   const significant = anova.fStat > report.fCritical;
 
@@ -159,7 +160,7 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
         return true;
       }
     } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
-      ui.tooltip.show(conclusionTooltip(significant), x, y);
+      ui.tooltip.show(conclusionTooltip(significant, factorName, featureName), x, y);
       return true;
     }
     return false;
@@ -172,7 +173,8 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
 
 /** Welch ANOVA results (1x6: Source / F / df₁ / df₂ / F-critical / p-value).
  *  Welch's W-test does not have a SS/MS decomposition. */
-function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number): DG.Grid {
+function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number,
+  factorName: string, featureName: string): DG.Grid {
   const DF1 = 'df₁';
   const DF2 = 'df₂';
   const significant = anova.fStat > fCritical;
@@ -208,7 +210,7 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
         return true;
       }
     } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
-      ui.tooltip.show(conclusionTooltip(significant), x, y);
+      ui.tooltip.show(conclusionTooltip(significant, factorName, featureName), x, y);
       return true;
     }
     return false;
