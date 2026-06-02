@@ -27,6 +27,7 @@ import {applyPdbTransform, concatPdbStructures, fetchPdbBlock, IDENTITY_4X4,
   ligandFeaturesToOverlayBlock, pocketAtomsToOverlayBlock, stripCofactorsFromPdb} from './pdb-utils';
 import {fetchUniProtById, getPdbIdsForAccession, isUniProtAccession,
   searchUniProt, UniProtHit} from './uniprot-client';
+import {isLocalId, localFingerprintFor} from './local-pdb-store';
 
 // ---------------------------------------------------------------------------
 // Result types
@@ -2066,6 +2067,9 @@ export class ConsensusPharmacophoreApp {
       // whole downstream cache must invalidate when the user toggles a box.
       excludedInputPdbs: [...(opts.excludedInputPdbs ?? [])]
         .map((s) => s.toUpperCase()).sort().join(','),
+      // Dropped local files have no RCSB identity — key the cache on their
+      // content so re-dropping an edited file invalidates downstream stages.
+      localStore: localFingerprintFor(pdbIds),
     });
   }
 
@@ -2082,6 +2086,8 @@ export class ConsensusPharmacophoreApp {
     if (cache.pdbQc) return cache.pdbQc;
     this.setStageStatus('stage1', 'running');
     pi.update(10, 'Stage 1: enriching PDB metadata...');
+    // enrichPdbList synthesizes QC rows for user-dropped local ids (no RCSB
+    // round-trip) alongside the RCSB enrichment — one schema-stable build.
     const stage1 = await enrichPdbList(pdbIds, opts);
     const pdbQc = stage1.accepted;
     this._droppedPdbs = stage1.dropped;
@@ -2240,39 +2246,45 @@ export class ConsensusPharmacophoreApp {
         return;
       }
 
-      const rawBlocks = await this.ensureRawBlocks(cache, pdbQc, pi);
-      this.setMolstarCaption(
-        'Fetched PDBs shown in their native crystallographic frames (no alignment yet).');
+      // QC has succeeded and the Accepted/Dropped table is published. The 3D
+      // preview of the (unaligned) structures is BEST-EFFORT: rendering many
+      // structures in their native frames can fail inside Mol*/BSV, and such a
+      // failure must NOT fail the whole Fetch step — QC is the point of Step 1,
+      // and the real 3D story is at Align.
+      try {
+        const rawBlocks = await this.ensureRawBlocks(cache, pdbQc, pi);
+        this.setMolstarCaption(
+          'Fetched PDBs shown in their native crystallographic frames (no alignment yet).');
 
-      // Unique pdb_ids preserved in pdb_qc first-occurrence order
-      const labels: string[] = [];
-      const blocks: string[] = [];
-      const seen = new Set<string>();
-      const pdbIdCol = pdbQc.col('pdb_id')!;
-      for (let i = 0; i < pdbQc.rowCount; i++) {
-        const id = String(pdbIdCol.get(i));
-        if (seen.has(id)) continue;
-        seen.add(id);
-        labels.push(id);
-        blocks.push(stripCofactorsFromPdb(rawBlocks.get(id) ?? ''));
+        // Unique pdb_ids preserved in pdb_qc first-occurrence order
+        const labels: string[] = [];
+        const blocks: string[] = [];
+        const seen = new Set<string>();
+        const pdbIdCol = pdbQc.col('pdb_id')!;
+        for (let i = 0; i < pdbQc.rowCount; i++) {
+          const id = String(pdbIdCol.get(i));
+          if (seen.has(id)) continue;
+          seen.add(id);
+          labels.push(id);
+          blocks.push(stripCofactorsFromPdb(rawBlocks.get(id) ?? ''));
+        }
+
+        pi.update(90, 'Rendering in Mol*...');
+        // Each PDB is a SEPARATE Mol* structure so the Accepted-PDBs row-click
+        // can isolate one and the "Use" checkbox can hide one. Native crystal
+        // frames will visually scatter; per-PDB selection still works.
+        await this.renderAlignedStructuresMulti(blocks, labels);
+        this._cachedAlignedBlocks = blocks;
+        this._cachedAlignedLabels = labels;
+        await this.setMolstarStyle({cartoonAlpha: 1.0, solventAlpha: 1.0});
+        grok.shell.info(`Fetch: ${labels.length} PDB(s) shown in their native frames. ` +
+          'Click "Align" to superimpose them.');
+      } catch (renderErr: any) {
+        console.warn('[previewFetch] 3D preview failed (QC succeeded):', renderErr);
+        grok.shell.warning('Structures fetched and QC complete — the 3D preview here ' +
+          `couldn't render (${renderErr?.message ?? renderErr}); they'll show at Align.`);
       }
-
-      pi.update(90, 'Rendering in Mol*...');
-      // Render each PDB as a SEPARATE Mol* structure (same multi-structure path
-      // Step 2 uses) so the Step 1 Accepted PDBs row-click can isolate one and
-      // the "Use" checkbox can hide one — both via the fast toggleVisibility
-      // path against tracked `_alignedStructureRefs`. The legacy concat path
-      // glued all PDBs into a single Mol* structure, which had no per-PDB
-      // visibility handle. Native crystal frames will visually scatter (each
-      // PDB sits at its own origin); the per-PDB selection still works.
-      await this.renderAlignedStructuresMulti(blocks, labels);
-      this._cachedAlignedBlocks = blocks;
-      this._cachedAlignedLabels = labels;
-      // Reset to opaque cartoon + show solvent (in case Pocket was clicked previously).
-      await this.setMolstarStyle({cartoonAlpha: 1.0, solventAlpha: 1.0});
       pi.update(100, 'Done.');
-      grok.shell.info(`Fetch: ${labels.length} PDB(s) shown in their native frames. ` +
-        'Click "Align" to superimpose them.');
     } catch (e: any) {
       const failing = currentRunningStage(this.stageBadges) ?? 'preview';
       this.setStageStatus(failing, 'error');
@@ -2595,16 +2607,37 @@ export class ConsensusPharmacophoreApp {
    * → state ref so `isolatePdb()` can find structures to hide/show.
    */
   private async renderAlignedStructuresMulti(blocks: string[], labels: string[]): Promise<void> {
+    // Drop structures with no PDB-format block (e.g. RCSB serves only mmCIF for
+    // very large entries, so fetchPdbBlock returned ''). Feeding an empty block
+    // to BSV/Mol* throws "Bad state: No element", which previously killed the
+    // whole render — and blocks[0] being empty is the common trigger.
+    const kept = blocks
+      .map((b, i) => ({b, l: labels[i]}))
+      .filter((p) => typeof p.b === 'string' && p.b.trim().length > 0);
+    if (kept.length < blocks.length) {
+      const dropped = labels.filter((_, i) => !(blocks[i] && blocks[i].trim().length > 0));
+      console.warn('[render] skipping structures with no PDB-format block:', dropped);
+    }
+    blocks = kept.map((p) => p.b);
+    labels = kept.map((p) => p.l);
     if (blocks.length === 0) return;
     // The viewer is being rebuilt — any interaction-highlight marker is gone,
     // so clear the tracked key (else the detail row would show as highlighted
     // with no matching sphere).
     this._highlightedInteractionKey = undefined;
-    // 1. Mount the viewer chrome with the FIRST PDB via BSV. This sets up
-    //    the full state tree (data, trajectory, model, structure, components,
-    //    representations) using BSV's preset.
-    await this.refreshDockedViewer(blocks[0], {showBindingSite: false});
-    if (!this.viewer) return;
+    // 1. Mount the viewer chrome with the first structure BSV can load. A
+    //    structure Mol*/BSV chokes on (very large, unusual records) must NOT
+    //    kill the whole multi-structure render — fall through to the next one.
+    let baseIdx = -1;
+    for (let i = 0; i < blocks.length; i++) {
+      try {
+        await this.refreshDockedViewer(blocks[i], {showBindingSite: false});
+        if (this.viewer) { baseIdx = i; break; }
+      } catch (e) {
+        console.error(`[renderAlignedStructuresMulti] base load failed for ${labels[i]}:`, e);
+      }
+    }
+    if (baseIdx < 0 || !this.viewer) return;
     await this.waitForMolstarReady();
 
     // 2. Snapshot the structure refs that exist AFTER BSV's first load.
@@ -2644,10 +2677,10 @@ export class ConsensusPharmacophoreApp {
 
     const preExistingRoots = collectRootStructRefs();
     this._alignedStructureRefs.clear();
-    // Pair labels[0] with the single root structure BSV produced from blocks[0].
+    // Pair labels[baseIdx] with the single root structure BSV produced from it.
     if (preExistingRoots.size === 1) {
       const [firstRef] = preExistingRoots;
-      this._alignedStructureRefs.set(labels[0].toUpperCase(), firstRef);
+      this._alignedStructureRefs.set(labels[baseIdx].toUpperCase(), firstRef);
     } else {
       console.warn(`[renderAlignedStructuresMulti] expected exactly 1 root structure ` +
         `after BSV load, found ${preExistingRoots.size}`);
@@ -2657,7 +2690,8 @@ export class ConsensusPharmacophoreApp {
     //    of subtree (components + cartoon reps) that BSV created for the
     //    first PDB.
     const trackedRoots = new Set(preExistingRoots);
-    for (let i = 1; i < blocks.length; i++) {
+    for (let i = 0; i < blocks.length; i++) {
+      if (i === baseIdx) continue; // already mounted as the base structure
       const block = blocks[i];
       const label = labels[i];
       if (!block) continue;
@@ -3078,7 +3112,8 @@ export function parsePdbIdsDetailed(raw: string): {accepted: string[]; rejected:
     const t = rawToken.trim();
     if (!t) continue;
     const upper = t.toUpperCase();
-    if (/^[0-9][A-Z0-9]{3}$/.test(upper)) {
+    // Accept RCSB 4-char codes and registered local (dropped-file) ids.
+    if (/^[0-9][A-Z0-9]{3}$/.test(upper) || isLocalId(upper)) {
       if (!seen.has(upper)) {
         seen.add(upper);
         accepted.push(upper);

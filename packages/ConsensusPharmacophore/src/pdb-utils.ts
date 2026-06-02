@@ -16,6 +16,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {resolveFamily} from './family-map';
+import {getLocalPdb} from './local-pdb-store';
 
 /** PDB column widths from the v3.3 spec. */
 const ATOM_PREFIXES = ['ATOM', 'HETATM'];
@@ -70,6 +71,9 @@ export const IDENTITY_4X4: number[] = [
  * whether to bubble or fall back).
  */
 export async function fetchPdbBlock(pdbId: string): Promise<string> {
+  // User-dropped local structures aren't on RCSB — serve their stored text.
+  const local = getLocalPdb(pdbId);
+  if (local) return local.pdbText;
   try {
     const url = `https://files.rcsb.org/download/${pdbId.toUpperCase()}.pdb`;
     const resp = await grok.dapi.fetchProxy(url);

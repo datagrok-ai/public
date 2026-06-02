@@ -11,8 +11,8 @@ export namespace scripts {
   /**
   Stage 2a - global Calpha Kabsch alignment of input PDBs. Template is the highest-resolution entry; transform is row-major 4x4 in JSON.
   */
-  export async function pharmacophoreStage2AlignPockets(pdb_qc: DG.DataFrame , chain_selection: string , alt_loc_filter: boolean , min_occupancy: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('ConsensusPharmacophore:PharmacophoreStage2AlignPockets', { pdb_qc, chain_selection, alt_loc_filter, min_occupancy });
+  export async function pharmacophoreStage2AlignPockets(pdb_qc: DG.DataFrame , chain_selection: string , alt_loc_filter: boolean , min_occupancy: number , reference_pdb_id: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ConsensusPharmacophore:PharmacophoreStage2AlignPockets', { pdb_qc, chain_selection, alt_loc_filter, min_occupancy, reference_pdb_id });
   }
 
   /**

@@ -119,6 +119,158 @@
   min-height: 14px;
 }
 
+/* Italic, muted placeholder so the example IDs read as a hint, not as
+   already-entered values. */
+.cp-step-panel textarea::placeholder {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* --- Ligand-search results picker dialog ----------------------------- */
+.cp-ligand-picker-scroll {
+  max-height: 420px;
+  width: 100%;
+  overflow: auto;
+  border: 1px solid var(--grey-2, #e0e0e0);
+  border-radius: 4px;
+}
+.cp-ligand-picker-table {
+  width: 100%;
+}
+.cp-ligand-results-host {
+  width: 100%;
+}
+
+/* Lightweight Passed / Excluded tab toggle for the results. */
+.cp-result-tabbar {
+  gap: 4px;
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  margin: 4px 0;
+}
+.cp-result-tab {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #777;
+  border-bottom: 2px solid transparent;
+}
+.cp-result-tab:hover {
+  color: #333;
+}
+.cp-result-tab-active {
+  color: var(--blue-2, #1f7ad4);
+  border-bottom-color: var(--blue-2, #1f7ad4);
+}
+
+/* Running "N selected" count under the results. */
+.cp-sel-count {
+  font-size: 12px;
+  color: #444;
+  margin-top: 4px;
+  min-height: 16px;
+}
+.cp-ligand-picker-table tbody tr {
+  cursor: pointer;
+}
+.cp-ligand-picker-table tbody tr:hover {
+  background: var(--grey-1, #f5f5f5);
+}
+.cp-ligand-picker-table th,
+.cp-ligand-picker-table td {
+  white-space: nowrap;
+}
+/* Title column (4th: checkbox, snapshot, PDB, title) may wrap and is
+   width-capped so long titles don't blow out the dialog. */
+.cp-ligand-picker-table td:nth-child(4) {
+  white-space: normal;
+  max-width: 300px;
+}
+
+/* RCSB structure snapshot thumbnail (same idea as the PDB cell renderer). */
+.cp-pdb-snapshot {
+  display: block;
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--grey-1, #f5f5f5);
+}
+
+/* Two search buttons stacked under the "Search structures" heading. */
+.cp-search-btn-row {
+  gap: 6px;
+}
+
+/* Search dialogs (sketcher / target input on top, results below). */
+.cp-search-dialog-body {
+  gap: 10px;
+  min-height: 460px;
+  padding: 4px 2px;
+}
+.cp-search-pane {
+  gap: 8px;
+  padding: 8px 0;
+}
+.cp-ligand-sketch-col {
+  gap: 10px;
+  padding: 8px 0;
+  align-items: stretch;
+}
+/* Frame the Chem sketcher in a fixed, clipped box. Without an explicit size it
+   collapses; without overflow:hidden its canvas spills out and covers the
+   Search button / results below. */
+.cp-sketch-host {
+  width: 540px;
+  height: 340px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--grey-2, #e0e0e0);
+  border-radius: 4px;
+}
+.cp-sketch-host > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+.cp-ligand-results-host {
+  min-height: 120px;
+}
+.cp-ligand-section-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.cp-ligand-empty {
+  color: #999;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* Ligand structure cell (rendered 2D depictions + comp-id captions). */
+.cp-ligand-picker-table td:nth-child(7) {
+  white-space: normal;
+}
+.cp-ligand-struct-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.cp-ligand-struct {
+  text-align: center;
+}
+/* No frame/fill — let the depiction sit transparently in the row so it reads
+   as integrated content, not an inserted image. */
+.cp-ligand-struct svg {
+  display: block;
+  margin: 0 auto;
+  background: transparent;
+  border: none;
+}
+.cp-ligand-cap {
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+}
+
 /* --- Advanced options accordion -------------------------------------- */
 
 .cp-advanced-toggle {
@@ -1126,4 +1278,12 @@
 
 .cp-wizard-export-btn:hover {
   background: #C8E6C9;
+}
+
+/* Active state while dragging .pdb files over the Step 1 PDB-IDs textarea. */
+.cp-pdb-dropzone-active,
+.cp-pdb-dropzone-active textarea {
+  outline: 2px dashed #2196F3;
+  outline-offset: 2px;
+  background: #E3F2FD;
 }

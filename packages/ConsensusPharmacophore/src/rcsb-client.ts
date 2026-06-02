@@ -19,8 +19,10 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {_package} from './package';
 import type {PipelineOptions} from './orchestrator-types';
+import {isLocalId, localQcRows} from './local-pdb-store';
 
 const GRAPHQL_ENDPOINT = 'https://data.rcsb.org/graphql';
+const SEARCH_ENDPOINT = 'https://search.rcsb.org/rcsbsearch/v2/query';
 
 // Vendored from packages/BiostructureViewer/src/utils/rcsb-gql-adapter.ts:40-121.
 // Stripped of polymer organism/host fields v1 doesn't consume; otherwise verbatim.
@@ -171,7 +173,9 @@ export async function enrichPdbList(
   // (~5s total instead of ~1s). Each fetch settles independently so one
   // 404 / network error doesn't take the batch down with it; failures are
   // tracked alongside successes and surfaced via the same warning toast.
-  const upper = pdbIds.map((s) => s.toUpperCase());
+  // User-dropped local structures have no RCSB entry — exclude them from the
+  // GraphQL fetch; their QC rows are synthesized below via localQcRows().
+  const upper = pdbIds.map((s) => s.toUpperCase()).filter((id) => !isLocalId(id));
   const entries: Array<{pdbId: string; entry: EntryInfo | null; error?: Error}> =
     await Promise.all(upper.map(async (pdbId) => {
       try {
@@ -277,22 +281,194 @@ export async function enrichPdbList(
     grok.shell.info(`Stage 1: dropped ${dropped} entries${breakdown}.`);
   }
 
-  // Always build the DataFrame from a schema-stable column set so empty results
-  // still have the expected columns downstream.
-  const df = rows.length
-    ? DG.DataFrame.fromObjects(rows)!
-    : DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('pdb_id', []),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'resolution', []),
-      DG.Column.fromStrings('experimental_method', []),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'r_free', []),
-      DG.Column.fromStrings('ligand_comp_id', []),
-      DG.Column.fromStrings('ligand_chain', []),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'ligand_formula_weight', []),
-      DG.Column.fromStrings('ligand_smiles', []),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'ligand_rscc', []),
-    ]);
+  // Append synthesized rows for user-dropped local structures (auto-detected
+  // ligand; resolution from REMARK 2; no RCSB metadata or filters applied).
+  rows.push(...localQcRows(pdbIds));
+
+  // Build with EXPLICIT column types (not DG.DataFrame.fromObjects). fromObjects
+  // infers each column's type from its values, and columns that are null for
+  // every row (r_free, ligand_rscc — always null in v1) make that inference do
+  // a `.first` on an empty set and throw "Bad state: No element". Constructing
+  // the columns directly keeps the schema stable whether rows is empty or not.
+  const numCol = (k: string): (number | null)[] =>
+    rows.map((r) => (typeof r[k] === 'number' ? r[k] as number : null));
+  const strCol = (k: string): string[] => rows.map((r) => String(r[k] ?? ''));
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('pdb_id', strCol('pdb_id')),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'resolution', numCol('resolution')),
+    DG.Column.fromStrings('experimental_method', strCol('experimental_method')),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'r_free', numCol('r_free')),
+    DG.Column.fromStrings('ligand_comp_id', strCol('ligand_comp_id')),
+    DG.Column.fromStrings('ligand_chain', strCol('ligand_chain')),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'ligand_formula_weight',
+      numCol('ligand_formula_weight')),
+    DG.Column.fromStrings('ligand_smiles', strCol('ligand_smiles')),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'ligand_rscc', numCol('ligand_rscc')),
+  ]);
   const smilesCol = df.col('ligand_smiles');
   if (smilesCol) smilesCol.semType = DG.SEMTYPE.MOLECULE;
   return {accepted: df, dropped: droppedList};
+}
+
+/**
+ * A ligand-similarity hit: a PDB id and its RCSB similarity score (0..1). */
+export interface LigandHit {
+  id: string;
+  score: number;
+}
+
+/** Lightweight per-PDB metadata for the ligand-search selection dialog. */
+export interface PdbSummary {
+  id: string;
+  title: string;
+  resolution: number | null;
+  method: string;
+  ligands: {compId: string; name: string; smiles: string}[];
+}
+
+/**
+ * Search-by-ligand: find PDB entries whose bound ligand is similar to a query
+ * SMILES, via the RCSB Search API's `chemical` service (Tanimoto
+ * fingerprint-similarity). Returns experimental-structure hits ordered by
+ * similarity (best first), de-duped, capped at `maxResults`.
+ *
+ * Empty result is a normal outcome (RCSB replies HTTP 204 No Content). An
+ * invalid SMILES surfaces as an HTTP 400 from the API.
+ */
+export async function searchPdbsByLigand(
+  smiles: string, maxResults = 25,
+): Promise<LigandHit[]> {
+  const query = {
+    query: {
+      type: 'terminal',
+      service: 'chemical',
+      parameters: {
+        value: smiles,
+        type: 'descriptor',
+        descriptor_type: 'SMILES',
+        match_type: 'fingerprint-similarity',
+      },
+    },
+    return_type: 'entry',
+    request_options: {
+      paginate: {start: 0, rows: maxResults},
+      results_content_type: ['experimental'],
+    },
+  };
+  const resp = await grok.dapi.fetchProxy(SEARCH_ENDPOINT, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(query),
+  });
+  if (resp.status === 204) return []; // RCSB returns 204 when nothing matches
+  if (!resp.ok) {
+    let detail = '';
+    try { detail = (await resp.text()).slice(0, 200); } catch { /* ignore */ }
+    throw new Error(`RCSB Search API HTTP ${resp.status}${detail ? `: ${detail}` : ''}`);
+  }
+  const json = await resp.json();
+  const seen = new Set<string>();
+  const hits: LigandHit[] = [];
+  for (const r of json.result_set ?? []) {
+    const id = String(r.identifier ?? '').toUpperCase();
+    if (!/^[0-9][A-Z0-9]{3}$/.test(id) || seen.has(id)) continue;
+    seen.add(id);
+    hits.push({id, score: typeof r.score === 'number' ? r.score : 0});
+  }
+  return hits;
+}
+
+/**
+ * Fetch lightweight metadata (title, resolution, method, bound ligands) for a
+ * set of PDB ids — used to populate the ligand-search selection dialog. Each
+ * entry is fetched independently; ids that fail to resolve are omitted.
+ */
+/** Morgan fingerprint (bitstring) for a SMILES, or null if it won't parse. */
+function morganFp(rdkit: {get_mol: (s: string) => any}, smiles: string): string | null {
+  let mol: any = null;
+  try {
+    mol = rdkit.get_mol(smiles);
+    if (!mol || !mol.is_valid?.()) return null;
+    return typeof mol.get_morgan_fp === 'function' ? mol.get_morgan_fp() : null;
+  } catch {
+    return null;
+  } finally {
+    mol?.delete?.();
+  }
+}
+
+/** Tanimoto coefficient between two equal-length fingerprint bitstrings. */
+function tanimoto(a: string, b: string): number {
+  const n = Math.min(a.length, b.length);
+  let inter = 0;
+  let union = 0;
+  for (let i = 0; i < n; i++) {
+    const x = a.charCodeAt(i) === 49; // '1'
+    const y = b.charCodeAt(i) === 49;
+    if (x && y) inter++;
+    if (x || y) union++;
+  }
+  return union ? inter / union : 0;
+}
+
+/**
+ * Fetch lightweight metadata (title, resolution, method, bound ligand) for a
+ * set of PDB ids — used to populate the ligand-search selection dialog.
+ *
+ * When `querySmiles` is given, only the single bound ligand most chemically
+ * similar to the query (Morgan/Tanimoto) is kept per entry — i.e. the ligand
+ * that actually drove the RCSB hit — so ions, buffers and cryoprotectants
+ * (IOD, MPD, …) that the cofactor deny-list misses don't clutter the row.
+ * Without a query, cofactors are filtered by the deny-list as a fallback.
+ */
+export async function fetchPdbSummaries(
+  ids: string[], querySmiles?: string,
+): Promise<PdbSummary[]> {
+  const cofactors = await loadCofactorDenylist();
+  const rdkit = await getRdKitModule();
+  const queryFp = querySmiles ? morganFp(rdkit, querySmiles) : null;
+
+  const out = await Promise.all(ids.map(async (id): Promise<PdbSummary | null> => {
+    try {
+      const e = await executeEntryInfo(id);
+      if (!e) return null;
+      const allLigands = (e.nonpolymer_entities ?? [])
+        .map((ne) => ({
+          compId: (ne.nonpolymer_comp?.chem_comp?.id ?? '').toUpperCase(),
+          name: ne.nonpolymer_comp?.chem_comp?.name ?? '',
+          smiles: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES_stereo ??
+                  ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES ?? '',
+        }))
+        .filter((l) => l.compId);
+
+      let ligands = allLigands;
+      if (queryFp) {
+        let best: typeof allLigands[number] | null = null;
+        let bestSim = -1;
+        for (const l of allLigands) {
+          if (!l.smiles) continue;
+          const fp = morganFp(rdkit, l.smiles);
+          if (!fp) continue;
+          const sim = tanimoto(queryFp, fp);
+          if (sim > bestSim) { bestSim = sim; best = l; }
+        }
+        // Keep just the matched ligand; fall back to the deny-list filter if
+        // none of the ligands produced a fingerprint.
+        ligands = best ? [best] : allLigands.filter((l) => !cofactors.has(l.compId));
+      } else {
+        ligands = allLigands.filter((l) => !cofactors.has(l.compId));
+      }
+
+      return {
+        id: id.toUpperCase(),
+        title: e.struct?.title ?? '',
+        resolution: e.rcsb_entry_info?.resolution_combined?.[0] ?? null,
+        method: e.rcsb_entry_info?.experimental_method ?? '',
+        ligands,
+      };
+    } catch {
+      return null;
+    }
+  }));
+  return out.filter((s): s is PdbSummary => s !== null);
 }
