@@ -10,6 +10,7 @@ import {
   ifOverlapping,
   IconImage,
   useUnwrappedCallMeta,
+  DEFAULT_FLOAT_FORMAT,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -27,7 +28,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, getViewers} from '../../utils';
 
 
 interface ScalarsState {
@@ -116,8 +117,6 @@ const getEmptyTabToProperties = () => ({
   outputs: new Map() as TabContent,
 });
 
-const DEFAULT_FLOAT_PRECISION = 4;
-
 const isEmptyScalar = (v: any) =>
   v == null || v === '' || v === DG.FLOAT_NULL || v === DG.INT_NULL;
 
@@ -137,7 +136,7 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
     else if (prop.options.precision)
       formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
     else
-      formattedScalarValue = scalarValue.toFixed(DEFAULT_FLOAT_PRECISION);
+      formattedScalarValue = DG.format(scalarValue, DEFAULT_FLOAT_FORMAT);
   } else if (typeof scalarValue === 'boolean')
     formattedScalarValue = String(scalarValue);
   const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
@@ -481,10 +480,19 @@ export const RichFunctionView = Vue.defineComponent({
     const handlePanelChanged = (name: string | null, oldName: string | null) => {
       // Restore on initial mount OR when an inflight rebuild auto-focused away from
       // the user's saved tab — push the saved tab back if it's still visible.
+      // When formAsTab is on, 'Inputs' is a valid tab even though it's not in tabLabels
+      // (its title is hardcoded on the form panel, not derived from input params).
       if (oldName == null || rebuildInFlight) {
         const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
-        if (savedName && visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
-          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName));
+        const isInputsTab = (n: string) => n === 'Inputs' && formAsTab.value && !formHidden.value;
+        const canRestore = !!savedName && (
+          isInputsTab(savedName) ||
+          (visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
+        );
+        if (canRestore)
+          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName!));
+        else if (formAsTab.value && !formHidden.value)
+          setTimeout(() => dockSpawnRef.value?.setActivePanel('Inputs'));
       }
       if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
@@ -731,7 +739,12 @@ export const RichFunctionView = Vue.defineComponent({
                         options={options}
                         dataFrame={tabContent.df.value}
                         class='w-full'
-                        onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
+                        onViewerChanged={(v) => {
+                          setViewerRef(v, tabContent.name, options['type'] as string);
+                          applyDefaultGridFloatFormat(v, options['type'] as string);
+                        }}
+                        onViewerDataFrameChanged={(v) =>
+                          applyDefaultGridFloatFormat(v, options['type'] as string)}
                       />
                     }
                   </div>;

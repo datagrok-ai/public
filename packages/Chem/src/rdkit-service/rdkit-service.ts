@@ -288,7 +288,7 @@ export class RdKitService {
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
     searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan,
-    afterBatchCalculated = () => {}) {
+    afterBatchCalculated = () => {}, includeMask: BitArray | null = null) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, PackageFunctions.getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -352,6 +352,13 @@ export class RdKitService {
           searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
           // *********** FILTERING using fingerprints
           patternFpFilterBitArray = this.filterByPatternFps(searchType, batch, fpRdKit, fpResult);
+          // drop rows the parent scaffold already excluded — child matches ⊆ parent matches
+          if (includeMask) {
+            for (let i = 0; i < batch.length; ++i) {
+              if (!includeMask.getBit(batchStartIdx + i))
+                patternFpFilterBitArray.setFast(i, false);
+            }
+          }
           filteredMolecules = this.filterMoleculesByBitArray(patternFpFilterBitArray, batch, fpResult, createSmiles);
         } else
           filteredMolecules = createSmiles ? fpResult.smiles! as string[] : batch;

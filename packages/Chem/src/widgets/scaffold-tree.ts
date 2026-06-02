@@ -11,9 +11,11 @@ import {chem} from 'datagrok-api/grok';
 import {InputBase, toJs, TreeViewGroup, TreeViewNode} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {_package, PackageFunctions} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
+import {SCAFFOLD_TREE_HIGHLIGHT, SubstructureSearchType} from '../constants';
+import {Fingerprint} from '../utils/chem-common';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
@@ -258,12 +260,13 @@ function getVisibleNodes(thisViewer: ScaffoldTreeViewer, includeExpanded: boolea
 
 function ensureNodeBitset(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, forceRecalc: boolean): Promise<DG.BitSet | null> {
   const v = value(group);
+  const fresh = v.bitsetCalculated && v.bitset != null && !thisViewer.isBitsetStale(group);
 
   if (forceRecalc)
     v.bitsetCalculated = false;
   else {
-    if (v.bitsetCalculated)
-      return Promise.resolve(v.bitset ?? null);
+    if (fresh)
+      return Promise.resolve(v.bitset);
     if (v.bitsetPromise)
       return v.bitsetPromise;
   }
@@ -271,11 +274,18 @@ function ensureNodeBitset(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, 
   const gen = (v.bitsetGen ?? 0) + 1;
   v.bitsetGen = gen;
 
+  const parent = group.parent;
+  const parentVal = parent ? value(parent) : null;
+  // mask by the parent only when it is genuinely a substructure of this node (child ⊆ parent)
+  const hasScaffoldParent = !!parent && !isOrphans(parent) && !!parentVal?.smiles &&
+    ScaffoldTreeViewer.validateNodes(v.smiles, parentVal.smiles);
+
   const p: Promise<DG.BitSet | null> = (async () => {
     let bitset: DG.BitSet | null = null;
     try {
       await thisViewer.ensureFpsWarm();
-      bitset = await handleMalformedStructures(thisViewer.molColumn!, v.smiles);
+      const parentBitset = hasScaffoldParent ? await ensureNodeBitset(thisViewer, parent as TreeViewGroup, false) : null;
+      bitset = await handleMalformedStructures(thisViewer.molColumn!, v.smiles, parentBitset);
     } finally {
       if (v.bitsetGen === gen) {
         v.bitset = bitset;
@@ -487,7 +497,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     visibleNodes.forEach((group) => {
       if (isOrphans(group))
         return;
-      updateLabel(thisViewer, group, thisViewer.updateBitset(group));
+      updateLabel(thisViewer, group, thisViewer.isBitsetStale(group));
     });
   }
 
@@ -674,11 +684,16 @@ function isNotBitOperation(group: TreeViewGroup) : boolean {
   return isNot;
 }
 
-async function handleMalformedStructures(molColumn: DG.Column, smiles: string): Promise<DG.BitSet> {
+async function handleMalformedStructures(molColumn: DG.Column, smiles: string,
+  parentBitset: DG.BitSet | null = null): Promise<DG.BitSet> {
   let bitset;
   try {
     const smarts = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, _rdKitModule);
-    const result = await chemSubstructureSearchLibrary(molColumn, smiles, smarts, FILTER_TYPES.scaffold);
+    const includeMask = parentBitset ?
+      new BitArray(new Uint32Array(parentBitset.getBuffer().buffer), parentBitset.length) :
+      null;
+    const result = await chemSubstructureSearchLibrary(molColumn, smiles, smarts, FILTER_TYPES.scaffold,
+      false, true, SubstructureSearchType.CONTAINS, 0.8, Fingerprint.Morgan, includeMask);
     bitset = DG.BitSet.fromBytes(result.buffer.buffer as ArrayBuffer, molColumn.length);
   } catch (e) {
     console.log(e);
@@ -1453,11 +1468,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   selectTableRows(group: TreeViewGroup, flag: boolean): void {
-    const bitset = value(group).bitset!;
+    if (this.molColumn === null)
+      return;
+    const bitset = value(group).bitset;
+    if (!bitset || bitset.length !== this.molColumn.dataFrame.rowCount) {
+      ensureNodeBitset(this, group, false).then(() => this.selectTableRows(group, flag));
+      return;
+    }
+    const selection = this.molColumn.dataFrame.selection;
     if (flag)
-      this.molColumn?.dataFrame.selection.or(bitset);
+      selection.or(bitset);
     else
-      this.molColumn?.dataFrame.selection.andNot(bitset);
+      selection.andNot(bitset);
   }
 
   updateFilters(triggerRequestFilter = true): void {
@@ -1470,13 +1492,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.bitset === null || this.bitset.length !== this.molColumn.length) {
-      if (this.bitsetUpdateInProgress) {
-        grok.shell.warning('Filtering starts after the bitset is updated.');
-        return;
-      }
-      this.bitset = DG.BitSet.create(this.molColumn.length);
+    const staleNodes = checkedNodes.filter((node) => {
+      const bs = value(node).bitset;
+      return !bs || bs.length !== this.molColumn!.length;
+    });
+    if (staleNodes.length > 0) {
+      Promise.all(staleNodes.map((node) => ensureNodeBitset(this, node as TreeViewGroup, false)))
+        .then(() => this.updateFilters(triggerRequestFilter));
+      return;
     }
+
+    if (this.bitset === null || this.bitset.length !== this.molColumn.length)
+      this.bitset = DG.BitSet.create(this.molColumn.length);
 
     this.bitset.setAll(this.bitOperation === BitwiseOp.AND, false);
 
@@ -1883,7 +1910,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
-  updateBitset(node: DG.TreeViewNode | null): boolean {
+  isBitsetStale(node: DG.TreeViewNode | null): boolean {
     if (!node || !this.dataFrame)
       return false;
 
@@ -2252,7 +2279,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   waitForLoaderToRemove(node: DG.TreeViewNode): Promise<void> {
     return new Promise((resolve) => {
       const interval = setInterval(() => {
-        if (!value(node).labelDiv?.querySelector('.chem-scaffold-tree-loader') && !this.updateBitset(node)) {
+        if (!value(node).labelDiv?.querySelector('.chem-scaffold-tree-loader') && !this.isBitsetStale(node)) {
           clearInterval(interval);
           resolve();
         }
@@ -2449,8 +2476,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
 
-      const updateBitset = this.updateBitset(this.tree.currentItem ?? this.tree.items[0]);
-      await updateVisibleNodes(thisViewer, {updateBitset: updateBitset, includeExpanded: true, includeChecked: true});
+      const stale = this.isBitsetStale(this.tree.currentItem ?? this.tree.items[0]);
+      await updateVisibleNodes(thisViewer, {updateBitset: stale, includeExpanded: true, includeChecked: true});
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
     }));

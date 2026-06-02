@@ -11,15 +11,33 @@ unlisted: true
 
 | Service                                                                   | Docker Image                                                                                      |
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.3](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.2](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                                              | [datagrok/grok_spawner:1.15.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.30.0](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.5](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.4](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                                              | [datagrok/grok_spawner:2.19.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.34.0](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 
 
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../../deploy/docker-compose/docker-compose.mdx)
+
+## 2026-05-20 Datagrok 1.27.5 release
+
+### Improvements:
+
+* OAuth: 
+  * Token-based connections now work across providers with different OAuth dialects (Azure AD, Google, Okta, etc.) 
+  * For Databricks connections using the OAuth (user-consent) method, Datagrok now automatically exchanges the identity provider's token for a Databricks workspace token
+* GCP: Cloud Storage connections can now authenticate via Task Role
+* Browse: **Shared with me** now contains **By users** submenu that groups shared entities by who shared them
+* JS API: Project now exposes a writable `meta` map (`metaParams`), so plugins can set and read project metadata such as `project.meta.demoPath`
+* Layouts: Entity markup now shows the entity icon
+* Trellis plot: Improved Summary rendering — added text padding and value-on-top labels with automatic rotation
+
+### Fixed:
+
+* GCP/AWS: Authentication Method choice now appears for secret connections
+* Layouts: Now save and apply correctly when tags contain a `null` value
 
 ## 2026-04-27 Datagrok 1.27.3 release
 

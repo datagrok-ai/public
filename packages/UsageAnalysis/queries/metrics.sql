@@ -4,10 +4,16 @@ SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
 --end
 
 
+--name: MetricsResetPgStatStatements
+--connection: System:DatagrokAdmin
+SELECT pg_stat_statements_reset();
+--end
+
+
 --name: MetricsDbStats
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH summary AS (
   SELECT
     pg_database_size(current_database()) AS db_size_bytes,
@@ -45,7 +51,7 @@ ORDER BY o.offender_hit_pct ASC NULLS LAST;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH unhealthy AS (
   SELECT
     schemaname || '.' || relname AS table_name,
@@ -142,7 +148,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_exec_time DESC
+ORDER BY mean_exec_time DESC
 LIMIT @limit;
 --end
 
@@ -194,7 +200,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;
@@ -225,7 +231,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-ORDER BY total_time DESC
+ORDER BY mean_time DESC
 LIMIT @limit;
 --end
 
@@ -277,7 +283,7 @@ WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
   AND query NOT ILIKE 'commit%'
   AND query NOT ILIKE 'rollback%'
   AND query <> 'select $1'
-  AND calls >= 1000
+  AND calls >= 10
   AND shared_blks_hit + shared_blks_read > 0
 ORDER BY (1.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)) ASC NULLS LAST
 LIMIT @limit;
@@ -288,11 +294,12 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   pg_size_pretty(pg_total_relation_size(relid)) AS total,
   pg_size_pretty(pg_indexes_size(relid)) AS "index",
+  n_live_tup AS "#rows",
   pg_total_relation_size(relid) AS total_bytes
 FROM pg_stat_user_tables
 ORDER BY pg_total_relation_size(relid) DESC
@@ -304,7 +311,7 @@ LIMIT @limit;
 --input: int limit = 10
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 SELECT
   schemaname || '.' || relname AS table_name,
   COALESCE(round((100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0))::numeric, 0), 0)::int AS dead_pct,
@@ -320,7 +327,7 @@ LIMIT @limit;
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -345,7 +352,7 @@ WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 */5 * * * *
+--meta.cache.invalidateOn: */5 * * * *
 WITH _dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
@@ -367,7 +374,15 @@ WHERE s.started BETWEEN d.min_prev_date AND d.max_date;
 --name: MetricsLatency
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
-WITH _dates AS (
+--meta.cache: all
+--meta.cache.invalidateOn: */5 * * * *
+WITH ht AS (
+  SELECT id FROM event_types WHERE source = 'usage' AND friendly_name = 'http-request'
+),
+ms_param AS (
+  SELECT id FROM event_parameters WHERE name = 'ms' AND event_type_id = (SELECT id FROM ht)
+),
+_dates AS (
   SELECT min(event_time) AS min_date, max(event_time) AS max_date FROM events WHERE @date(event_time)
 ),
 dates AS (
@@ -375,13 +390,10 @@ dates AS (
 ),
 http_events AS (
   SELECT e.event_time, epv.value::int AS ms
-  FROM events e
-  CROSS JOIN dates d
-  JOIN event_types et ON et.id = e.event_type_id
-    AND et.source = 'usage' AND et.friendly_name = 'http-request'
-  JOIN event_parameters ep ON ep.event_type_id = et.id AND ep.name = 'ms'
-  JOIN event_parameter_values epv ON epv.event_id = e.id AND epv.parameter_id = ep.id
-  WHERE e.event_time BETWEEN d.min_prev_date AND d.max_date
+  FROM dates d
+  JOIN events e ON e.event_time BETWEEN d.min_prev_date AND d.max_date
+  JOIN event_parameter_values epv ON epv.event_id = e.id
+    AND epv.parameter_id = (SELECT id FROM ms_param)
 )
 SELECT
   COALESCE(round(percentile_cont(0.50) WITHIN GROUP (ORDER BY ms)
@@ -405,20 +417,26 @@ FROM http_events;
 --input: string date {pattern: datetime}
 --input: int limit = 10
 --connection: System:Datagrok
-WITH http_events AS (
+--meta.cache: all
+--meta.cache.invalidateOn: */5 * * * *
+WITH ht AS (
+  SELECT id FROM event_types WHERE source = 'usage' AND friendly_name = 'http-request'
+),
+p AS (
+  SELECT name, id FROM event_parameters
+  WHERE event_type_id = (SELECT id FROM ht) AND name IN ('method', 'route', 'status', 'ms')
+),
+http_events AS (
   SELECT
-    e.id,
-    max(epv.value) FILTER (WHERE ep.name = 'method')          AS method,
-    max(epv.value) FILTER (WHERE ep.name = 'route')           AS route,
-    max(epv.value::int) FILTER (WHERE ep.name = 'status')     AS status,
-    max(epv.value::int) FILTER (WHERE ep.name = 'ms')         AS ms
+    epv.event_id AS id,
+    max(epv.value) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'method'))      AS method,
+    max(epv.value) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'route'))       AS route,
+    max(epv.value::int) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'status')) AS status,
+    max(epv.value::int) FILTER (WHERE epv.parameter_id = (SELECT id FROM p WHERE name = 'ms'))     AS ms
   FROM events e
-  JOIN event_types et ON et.id = e.event_type_id
-    AND et.source = 'usage' AND et.friendly_name = 'http-request'
-  JOIN event_parameter_values epv ON epv.event_id = e.id
-  JOIN event_parameters ep ON ep.id = epv.parameter_id
-  WHERE @date(e.event_time)
-  GROUP BY e.id
+  JOIN event_parameter_values epv ON epv.event_id = e.id AND epv.parameter_id IN (SELECT id FROM p)
+  WHERE e.event_type_id = (SELECT id FROM ht) AND @date(e.event_time)
+  GROUP BY epv.event_id
 )
 SELECT
   method || ' ' || route AS route,

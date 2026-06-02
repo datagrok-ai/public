@@ -12,6 +12,15 @@
 * RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
 * BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously
 * Highlight widget: Unsubscribe `ItemsGrid` event subscriptions when the grid is rebuilt or the widget is detached
+* Chem: MPO: Optimized score calculation for large datasets — a column-major typed-array compute pipeline (one `getRawData()` per column instead of per-cell `get()`/`isNone()`) with per-column desirability caching, so interactive profile edits recompute only the changed property
+* MPO: Fixed disabled OK button with no explanation when creating a new profile — the profile settings (name field) now expand automatically, the OK state re-validates after the default name is filled, and the footer warning explains an invalid name
+* [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
+* Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
+* GROK-15991: Invalid argument(s): Array lengths differ
+
+## 1.17.10 (2026-05-28)
+
+* Chem: Record all generated reaction results in the enumerator
 
 ## 1.17.9 (2026-05-26)
 

@@ -260,6 +260,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
   }
 
+  export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
+  }
+
   export async function metricsDbStats(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
   }
@@ -544,6 +548,10 @@ export namespace funcs {
 
   export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn });
+  }
+
+  export async function metricsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:MetricsApp', {});
   }
 
   export async function testTrackApp(): Promise<void> {

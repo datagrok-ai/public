@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export const DEFAULT_FLOAT_FORMAT = '#0.###';
+
 // mapping from internal Dart labels to JS DG.VIEWER labels
 export const viewerTypesMapping: {[key: string]: string} = {
   ['barchart']: DG.VIEWER.BAR_CHART,

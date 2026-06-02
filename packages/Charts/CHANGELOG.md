@@ -4,6 +4,7 @@
 
 * GROK-19683: Charts | Tree viewer: Option to customize molecule label size
 * GROK-20084: Radar, Tree, Timelines: Broken help page
+* GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 
 ## 1.7.0 (2026-03-20)
 

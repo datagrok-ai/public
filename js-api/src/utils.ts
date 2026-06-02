@@ -407,6 +407,18 @@ export class Utils {
     return '';
   }
 
+  /** Formats a duration in seconds as a compact human string: `45s`, `3m 12s`, `2h 5m`. */
+  static formatDuration(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m < 60)
+      return s === 0 ? `${m}m` : `${m}m ${s}s`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return rm === 0 ? `${h}h` : `${h}h ${rm}m`;
+  }
+
   static randomString(length: number): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';

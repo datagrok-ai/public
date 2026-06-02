@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
+import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
@@ -52,7 +52,10 @@ export const InputForm = Vue.defineComponent({
       console.log('InputForm onRenderTriggered', event);
     });
 
-    const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
+    const currentCall = Vue.computed(() => {
+      if (props.funcCall) applyDefaultFloatFormats(props.funcCall);
+      return Vue.markRaw(props.funcCall);
+    });
     const validationStates = Vue.computed(() => props.validationStates);
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
@@ -117,10 +120,11 @@ export const InputForm = Vue.defineComponent({
           // const rangeMeta = meta[param.property.name]?.['range'];
           // if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
           const hideMeta = meta[param.property.name]?.['hidden'];
-          if (hideMeta)
-            input.root.style.display = 'none';
+          if ((input as any).visible != null)
+            (input as any).visible = !hideMeta;
           else
-            input.root.style.display = 'flex';
+            input.root.style.display = hideMeta ? 'none' : 'flex';
+
         });
     });
 

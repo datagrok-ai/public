@@ -99,6 +99,16 @@ export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
   return arg?.setStatus && isFuncCallInput(arg);
 }
 
+export const DEFAULT_FLOAT_FORMAT = '#0.###';
+
+export function applyDefaultFloatFormats(call: DG.FuncCall): void {
+  for (const param of call.inputParams.values()) {
+    const prop = param.property as any;
+    if (prop?.propertyType === DG.TYPE.FLOAT && !prop.format)
+      prop.format = DEFAULT_FLOAT_FORMAT;
+  }
+}
+
 function showDFDiff(df1?: DG.DataFrame, df2?: DG.DataFrame) {
   const idxName = '__compare_idx_col__'
   if (!df1 || !df2) {

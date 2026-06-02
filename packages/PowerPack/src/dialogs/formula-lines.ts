@@ -274,9 +274,14 @@ class Table {
   // real cell — so without a column the indicator stays invisible until the user clicks.
   // Using `currentCell` here sets both row and column atomically.
   public set currentItemIdx(rowIdx: number) {
-    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount)
+    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount) {
+      const sameRow = this.dataFrame.currentRowIdx === rowIdx;
       this.dataFrame.currentCell = this.dataFrame.cell(rowIdx, 'title');
-    else
+      // Defer scroll: on dialog open the grid viewport is still laying out.
+      // Skip when already current (e.g. editing the current row) — would jolt the viewport.
+      if (!sameRow)
+        requestAnimationFrame(() => this.grid.scrollToCell('title', rowIdx));
+    } else
       this.dataFrame.currentRowIdx = rowIdx;
   }
 
@@ -333,6 +338,7 @@ class Table {
       showCurrentRowIndicator: true,
       showSelectedRows: false,
       allowRowResizing: false,
+      allowRowSelection: false,
       allowBlockSelection: false,
       allowColSelection: false,
       allowRowReordering: false,

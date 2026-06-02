@@ -1,4 +1,5 @@
 export * from './src/InputForm/InputForm';
+export {DEFAULT_FLOAT_FORMAT} from './src/InputForm/utils';
 export * from './src/Viewer/Viewer';
 export * from './src/RibbonPanel/RibbonPanel';
 export * from './src/RibbonMenu/RibbonMenu';
