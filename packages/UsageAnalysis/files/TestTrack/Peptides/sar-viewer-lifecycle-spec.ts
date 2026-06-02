@@ -445,7 +445,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
       // The d4 accordion does NOT add an `.expanded` class to the pane element —
       // visibility is signalled by `.d4-accordion-pane-content` `display` (none
       // vs. flex). Use that as the truth signal: click the header only if the
-      // content is genuinely hidden. See round-1-retry recon notes (2026-05-30).
+      // content is genuinely hidden (clicking an open pane header toggles it shut).
       const viewersPane = dlg
         ? Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
           .find((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim() === 'Viewers')
@@ -493,50 +493,18 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
   // runs the closeViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY) branch when
   // showClusterMaxActivity flips to false.
   //
-  // Round-1 hypothesis-retry tactical fix (MCP-empirically backed 2026-05-30
-  // in this cycle 2026-05-30-peptides-automate-01). The prior cycle's Gate B
-  // FAIL with [B-RUN-PASS, B-STAB-01] was attributed to a warm-vs-cold MCP
-  // divergence (the SR-04 narrative pre-this-cycle). The actual root cause —
-  // surfaced by live MCP recon against the failing run's error-context.md
-  // (test-playwright-output/.../error-context.md showed locator.click: Element
-  // is not visible) — is a TEST-BUG in the pane-expand logic:
-  //
+  // Pane-expand + checkbox-driving technique:
   //   - The d4 accordion does NOT add an `.expanded` class to a pane when
   //     opened; visibility is signalled by `.d4-accordion-pane-content`
   //     `display` (none vs. flex). The Viewers pane is opened by default per
   //     `accordion.addPane('Viewers', ..., true)` (widgets/settings.ts#L141),
-  //     so `pane.classList.contains('expanded')` is always FALSE on first open.
-  //
-  //   - The prior spec body executed `if (!pane.classList.contains('expanded')) {
-  //     header.click(); }` — which clicked the header on an already-open pane,
-  //     toggling it CLOSED (display:none on .d4-accordion-pane-content).
-  //
-  //   - With the pane collapsed, the `[name="input-Active-peptide-selection"]`
-  //     checkbox has 0×0 geometric area. Playwright's locator.click({force:true,
-  //     timeout: 5000}) timed out with "Element is not visible" — `force:true`
-  //     bypasses actionability but does not synthesize a click on an element
-  //     with zero rendered box. The dialog therefore stayed open with the cb
-  //     untoggled; the subsequent Step 5-7 wrench.click() opened a SECOND
-  //     dialog, producing the strict-mode-violation "resolved to 2 elements"
-  //     downstream failure.
-  //
-  // Fix (this retry):
-  //   (1) Read `.d4-accordion-pane-content` `display` to detect collapse —
-  //       click the header ONLY if display === 'none'. Pane is opened by
-  //       default, so the click rarely fires.
-  //   (2) Drive the checkbox toggle via in-evaluate dispatchEvent(new MouseEvent
-  //       ('click', {bubbles, cancelable, composed, view: window})) on the raw
-  //       input. Composed-true synthetic events DO drive the d4 InputBase
-  //       onValueChanged listener AND the OK button's onOK handler — verified
-  //       live 2026-05-30 in MCP recon (cmaAttached:true → click-twice OFF +
-  //       OK click → showCMASetting:false AND cmaAttached:false synchronously
-  //       within 500ms). This contradicts the prior round-2 hypothesis that
-  //       in-evaluate synthetic clicks are CDP-trust-boundary blocked — that
-  //       hypothesis was based on the wrong failure-mode attribution; the
-  //       actual prior failure was the hidden-checkbox cascade above.
-  //   (3) Restore cmaAttached as a HARD assertion. MCP recon confirms the
-  //       round-trip works synchronously cold — the SR-04 tolerant-record was
-  //       defensive against a misattributed failure mode.
+  //     so clicking the header would toggle it CLOSED. Click the header ONLY if
+  //     `.d4-accordion-pane-content` display === 'none'.
+  //   - With the pane collapsed the checkbox has 0×0 area; clicks cannot land.
+  //   - Drive the checkbox toggle via in-evaluate dispatchEvent(new MouseEvent
+  //     ('click', {bubbles, cancelable, composed, view: window})) on the raw
+  //     input. composed:true synthetic events drive the d4 InputBase
+  //     onValueChanged listener AND the OK button's onOK handler.
   await softStep('Scenario 2 (steps 3-4): toggle Cluster max activity OFF via the Settings dialog, apply', async () => {
     const before = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -558,10 +526,9 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     await page.locator('[name="dialog-Peptides-settings"]').waitFor({timeout: 8000});
 
     // Drive the OFF transition + OK click via in-evaluate synthetic MouseEvents.
-    // composed:true events DO drive the d4 InputBase onValueChanged AND the OK
-    // handler — verified live in MCP recon 2026-05-30. The pane-expand uses
-    // .d4-accordion-pane-content display as the truth signal (NOT a non-existent
-    // .expanded class on the pane).
+    // composed:true events drive the d4 InputBase onValueChanged AND the OK
+    // handler. The pane-expand uses .d4-accordion-pane-content display as the
+    // truth signal (there is no .expanded class on the pane).
     const ok = await page.evaluate(async () => {
       const dlg = document.querySelector('[name="dialog-Peptides-settings"]');
       if (!dlg) return {error: 'dialog not found'};
@@ -595,7 +562,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
       await new Promise((r) => setTimeout(r, 300));
       const cbStateBeforeOk = cb.checked;
       // OK click via synthetic MouseEvent (composed:true fires the dialog onOK
-      // handler — verified live MCP 2026-05-30).
+      // handler).
       const okBtn = dlg.querySelector('[name="button-OK"]') as HTMLElement | null;
       if (!okBtn) return {error: 'OK btn not found'};
       okBtn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, composed: true, view: window}));
@@ -605,10 +572,9 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     expect((ok as any).cbStateBeforeOk,
       'Active-peptide-selection checkbox should be OFF (false) before OK').toBe(false);
 
-    // Wait for the dialog to close + a deterministic poll for the closeViewer
-    // dispatch to settle. MCP-empirically the dispatch completes synchronously
-    // within ~500ms; the 8s budget tolerates a dock-manager mutation race on a
-    // cold browser without flaking.
+    // Wait for the dialog to close, then poll for the closeViewer dispatch to
+    // settle. The dispatch completes synchronously (~500ms); the 8s budget
+    // tolerates a dock-manager mutation race on a cold browser.
     await page.waitForFunction(() =>
       !document.querySelector('[name="dialog-Peptides-settings"]'), null, {timeout: 8000});
 
@@ -641,12 +607,9 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     // value transitioning to false (it was undefined entering this step) is
     // what the model setter switch keys on.
     //
-    // HARD ASSERTION: showCMASetting === false AND cmaAttached === false. Both
-    // contracts verified empirically against the live MCP session 2026-05-30:
-    // the closeViewer dispatch is synchronous; findViewer(CLUSTER_MAX_ACTIVITY)
-    // returns null within 500ms of OK. The prior cycle's tolerant-record on
-    // cmaAttached was driven by a misattribution of the hidden-checkbox
-    // cascade as a warm-vs-cold MCP divergence.
+    // HARD ASSERTION: showCMASetting === false AND cmaAttached === false. The
+    // closeViewer dispatch is synchronous; findViewer(CLUSTER_MAX_ACTIVITY)
+    // returns null within ~500ms of OK.
     expect(after.showCMASetting,
       'settings.showClusterMaxActivity should be false after the click-twice OFF round-trip').toBe(false);
     expect(after.cmaAttached,
@@ -660,15 +623,10 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
   // settingsChanged dispatch at model.ts#L270-L273 now runs the
   // addClusterMaxActivityViewer() branch from a non-empty analysis-view
   // starting state (the re-add path Scenario 2 cites as the principal
-  // assertion that differs from Scenario 1's first-add path).
-  //
-  // Round-1 hypothesis-retry tactical fix (cycle 2026-05-30-peptides-automate-
-  // 01): same fixes as Steps 3-4 above — pane-expand truth signal switched to
-  // .d4-accordion-pane-content display (not the non-existent .expanded class),
-  // and the cb + OK clicks switched to in-evaluate dispatchEvent(MouseEvent,
-  // {composed: true}) which empirically drives the d4 onValueChanged + onOK
-  // handlers cold (MCP recon 2026-05-30). Single click here — entry state is
-  // FALSE after Steps 3-4 OFF transition; one click lands at TRUE.
+  // assertion that differs from Scenario 1's first-add path). Same pane-expand
+  // + composed:true dispatchEvent technique as Steps 3-4. Single click here —
+  // entry state is FALSE after the Steps 3-4 OFF transition; one click lands at
+  // TRUE.
   await softStep('Scenario 2 (steps 5-7): toggle Cluster max activity ON again, verify re-add path', async () => {
     // Re-open the Settings dialog.
     await page.evaluate(async () => {
@@ -744,9 +702,8 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     // Scenario 2 assertion): the settingsChanged branch at model.ts#L271 now
     // invokes addClusterMaxActivityViewer() against a non-empty analysisView.
     //
-    // HARD ASSERTION: showCMASetting is truthy AND cmaAttached is true. Both
-    // contracts verified empirically in MCP recon 2026-05-30: the re-add
-    // dispatch awaits dockManager.dock() and findViewer(CLUSTER_MAX_ACTIVITY)
+    // HARD ASSERTION: showCMASetting is truthy AND cmaAttached is true. The
+    // re-add dispatch awaits dockManager.dock(); findViewer(CLUSTER_MAX_ACTIVITY)
     // returns the new viewer within ~1.5s.
     expect(after.showCMASetting,
       'settings.showClusterMaxActivity should be truthy after the click-once ON round-trip').toBeTruthy();

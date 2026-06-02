@@ -292,20 +292,17 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
   // Step 3: confirm the Manual Alignment widget is mounted with the textarea
   // pre-populated, the Reset icon-button, and the Apply button.
   //
-  // Round-2 hypothesis (test-bug): the `expanded` CSS class lives on the
-  // INNER `.d4-accordion-pane-content` child, NOT on the outer
-  // `.d4-accordion-pane` element. Live MCP recon 2026-05-29 against
-  // dev.datagrok.ai (@datagrok/peptides v1.27.9) confirmed:
+  // The `expanded` CSS class lives on the INNER `.d4-accordion-pane-content`
+  // child, NOT on the outer `.d4-accordion-pane` element:
   //   outer pane classList:  ["d4-accordion-pane"]            (no "expanded")
   //   inner content classes: ["d4-accordion-pane-content", "ui-div",
   //                           "d4-pane-manual_alignment", "expanded"]
   // The widget mounts as soon as grok.shell.o resolves to a Monomer-semtype
-  // cell (no header click required on this build). Round-1 asserted
-  // `manualPane.classList.contains('expanded')` which is permanently false
-  // on the outer element — that was the spec test-bug, not a platform issue.
-  // Step-3 predicate is widened to "widget is reachable + content is visible
-  // + textarea is bound to live column value", with a defensive header click
-  // gated on the inner-content expanded state.
+  // cell (no header click required on this build). Asserting on the outer
+  // element's `expanded` class is permanently false. The predicate is
+  // therefore "widget is reachable + content is visible + textarea is bound
+  // to live column value", with a defensive header click gated on the
+  // inner-content expanded state.
   await softStep('Scenario 1 (step 3): widget mounts; verify textarea + Reset + Apply', async () => {
     const widget = await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
@@ -456,9 +453,8 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
   await softStep('Scenario 2 (step 1): re-open Manual Alignment — textarea binds to live (edited) value', async () => {
     const result = await page.evaluate(async () => {
       // The pane may have collapsed across the Apply round-trip — re-expand.
-      // Same predicate-on-inner-content fix as Scenario 1 step 3 (live recon
-      // 2026-05-29: `expanded` class lives on `.d4-accordion-pane-content`,
-      // not on the outer `.d4-accordion-pane`).
+      // The `expanded` class lives on `.d4-accordion-pane-content`, not on the
+      // outer `.d4-accordion-pane` (same predicate-on-inner-content as step 3).
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
       const manualPane = panes.find((p) => {
         const h = p.querySelector('.d4-accordion-pane-header');

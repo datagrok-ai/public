@@ -426,14 +426,10 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
   // visible (ui.tooltip.root style.display flips off "none") and carries
   // non-trivial content (innerHTML length > 0).
   await softStep('Scenario 1 (step 3): hover SVM Invariant-Map cell, verify tooltip appears', async () => {
-    // Round-2 retry fix #1 (see header recon notes): resolve a GUARANTEED-
-    // populated SVM cell empirically via svmViewer.monomerPositionStats. The
-    // SVM matrix is sparse — most (monomer, position) cells have count=0 and
+    // Resolve a guaranteed-populated SVM cell via svmViewer.monomerPositionStats.
+    // The SVM matrix is sparse — most (monomer, position) cells have count=0 and
     // peptides.tooltips.show-tooltip-at returns null on !stats?.count
-    // (tooltips.ts#L58-59 — empirically confirmed live 2026-05-30 via MCP).
-    // page.mouse.move() to a fixed-offset point landed on an empty cell on
-    // the prior cycle's Gate B run (failure_keys [B-RUN-PASS, B-STAB-01];
-    // error-context.md showed innerLen received 0 expected >0).
+    // (tooltips.ts#L58-59), so a fixed-offset point can land on an empty cell.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -454,11 +450,10 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
         }
       }
       if (!bestPos || !bestMonomer) return {svmFound: true, populatedFound: false};
-      // Round-2 fix #1: GRID-row monomer-lookup (NOT DF-row). The viewerGrid is
-      // sorted by MONOMER ascending (sar-viewer.ts#L1071); DF row index does
-      // not equal grid row index. svmViewer.getMonomerPosition(cell) returns
-      // the actual monomer the cell at GRID row r is rendering — match that
-      // against bestMonomer to find the correct grid row.
+      // GRID-row monomer-lookup (NOT DF-row): the viewerGrid is sorted by
+      // MONOMER ascending (sar-viewer.ts#L1071), so DF row index != grid row
+      // index. svmViewer.getMonomerPosition(cell) returns the monomer the cell
+      // at GRID row r renders — match against bestMonomer to find the row.
       let cellRow = -1;
       let bounds: any = null;
       for (let r = 0; r < vg.dataFrame.rowCount; r++) {
@@ -543,9 +538,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
 
   // Step 4: Move cursor to a different populated cell, verify tooltip re-renders.
   await softStep('Scenario 1 (step 4): move to a different SVM cell, verify tooltip re-renders', async () => {
-    // Round-2 retry fix #1 (continued): resolve a SECOND populated cell with
-    // (position, monomer) DIFFERENT from the prior step. Pick the
-    // second-highest-count entry — guaranteed populated.
+    // Resolve a SECOND populated cell with (position, monomer) different from
+    // the prior step — pick the second-highest-count entry, guaranteed populated.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -566,9 +560,7 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       // Pick index 1 (second-most-populated) so we hover a DIFFERENT cell than step 3.
       const pick = pairs[1] || pairs[0];
       if (!pick) return {found: false};
-      // Round-2 fix #1: GRID-row monomer-lookup via getMonomerPosition (NOT
-      // DF-row lookup via monoCol.get). The viewerGrid is sorted; DF row index
-      // does not equal grid row index.
+      // GRID-row monomer-lookup via getMonomerPosition (viewerGrid is sorted).
       let bounds: any = null;
       for (let r = 0; r < vg.dataFrame.rowCount; r++) {
         const probeCell: any = vg.cell(pick.pos, r);
@@ -640,17 +632,15 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       }
     });
 
-    // Round-2 retry fix #1: in Mutation Cliffs mode the populated cells are
-    // those whose svmViewer.mutationCliffs?.get(monomer)?.get(position) is
-    // truthy (sar-viewer.ts#L1110). showTooltipAt returns null on the
-    // cliff-stats branch if !cliffStats?.get(monomer).get(position)
-    // (tooltips.ts#L86-87). Resolve a cell with non-empty cliffs at runtime.
-    // FALLBACK: if no Mutation Cliffs cells were computed yet (mutation
-    // cliffs are async; may still be pending), fall back to a populated
-    // Invariant-Map cell — the tooltip still fires because the SAR viewer's
-    // tooltip handler reaches the inv-map branch for cells not in
-    // mutationCliffs (tooltip handler reads monomerPositionStats first,
-    // mutation-cliffs branch only kicks in when cliffStats is present).
+    // In Mutation Cliffs mode the populated cells are those whose
+    // svmViewer.mutationCliffs?.get(monomer)?.get(position) is truthy
+    // (sar-viewer.ts#L1110); showTooltipAt returns null on the cliff-stats
+    // branch if !cliffStats?.get(monomer).get(position) (tooltips.ts#L86-87).
+    // Resolve a cell with non-empty cliffs at runtime. Mutation cliffs are
+    // async and may still be pending — fall back to a populated Invariant-Map
+    // cell, where the tooltip still fires because the handler reads
+    // monomerPositionStats first and only takes the cliffs branch when
+    // cliffStats is present.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -685,7 +675,6 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
         }
       }
       if (!bestPos || !bestMonomer) return {found: false};
-      // Round-2 fix #1: GRID-row monomer-lookup via getMonomerPosition.
       let bounds: any = null;
       for (let r = 0; r < vg.dataFrame.rowCount; r++) {
         const probeCell: any = vg.cell(bestPos, r);
@@ -804,9 +793,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       await new Promise((res) => setTimeout(res, 2000));
       // Re-resolve the peptidesModel-bearing TableView post-click — active view
       // may drift on selection-driven dock dispatch; bind explicitly rather than
-      // reusing the outer `tv` capture. Renamed to `tv2` to avoid TS2451
-      // block-scoped variable redeclaration with the outer `tv` (the original
-      // Gate B B-COLLECT-ABORT root cause — TSX transpile failed → 0s collection).
+      // reusing the outer `tv` capture. Named `tv2` to avoid TS2451 block-scoped
+      // redeclaration with the outer `tv`.
       const tv2 = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       return {canvasFound: true, selAfter: tv2.dataFrame.selection.trueCount};
     });
@@ -862,25 +850,15 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
   // — same model-state mutation class as the bug-library description (column
   // reference may go stale after settings change).
   await softStep('Scenario 1 (step 8): Settings dialog round-trip → re-hover SVM', async () => {
-    // Round-2 retry fix #2 (see header recon notes): replicate the empirically-
-    // validated sister sar-viewer-lifecycle-spec.ts pattern.
-    //
-    // The prior spec's pane-expand check `!viewersPane.classList.contains
-    // ('expanded')` always returned true because d4 accordion panes do NOT
-    // set/clear an "expanded" class on the pane root — collapse is signalled
-    // by .d4-accordion-pane-content display==='none' (CSS-only). Result: the
-    // header click TOGGLED the already-open pane CLOSED, then the cb +
-    // OK locators landed on hidden elements and cbLocator.click({force:true})
-    // failed with "Element is not visible" (verbatim error-context.md from
-    // the prior Gate B run).
-    //
-    // Fix: detect pane collapse via display==='none' truth signal (NEVER
-    // toggle an already-open pane), and drive both cb and OK via
-    // dispatchEvent(MouseEvent, {composed:true}) inside page.evaluate.
-    // Composed-true synthetic MouseEvents DO drive the d4 InputBase
-    // onValueChanged + d4 button onOK handlers (sister-spec MCP recon
-    // 2026-05-30; on-disk sister spec at sar-viewer-lifecycle-spec.ts
-    // carries the identical pattern).
+    // d4 accordion panes do NOT set/clear an "expanded" class on the pane root —
+    // collapse is signalled by .d4-accordion-pane-content display==='none'
+    // (CSS-only). A classList-based expand check always reads "collapsed" and
+    // would toggle the already-open pane CLOSED, leaving the cb + OK locators on
+    // hidden elements ("Element is not visible"). So detect collapse via the
+    // display==='none' truth signal (NEVER toggle an already-open pane), and
+    // drive both cb and OK via dispatchEvent(MouseEvent, {composed:true}) inside
+    // page.evaluate — composed-true synthetic MouseEvents DO drive the d4
+    // InputBase onValueChanged + d4 button onOK handlers.
     await page.evaluate(async () => {
       const wrench = document.querySelector(
         'i.grok-icon.fa-wrench[aria-label="Peptides analysis settings"]') as HTMLElement | null;
@@ -923,7 +901,7 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       !document.querySelector('[name="dialog-Peptides-settings"]'), null, {timeout: 8000});
     await page.waitForTimeout(2000);
 
-    // Post-settings re-hover on a populated cell (Round-2 fix #1 pattern).
+    // Post-settings re-hover on a populated cell.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -943,7 +921,6 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
         }
       }
       if (!bestPos || !bestMonomer) return {svmFound: true, populatedFound: false};
-      // Round-2 fix #1: GRID-row monomer-lookup via getMonomerPosition.
       let bounds: any = null;
       for (let r = 0; r < vg.dataFrame.rowCount; r++) {
         const probeCell: any = vg.cell(bestPos, r);
@@ -1034,14 +1011,12 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
   // anchors the tooltip at the letter's bounding box rather than the raw
   // mouse position.
   await softStep('Scenario 2 (steps 2-4): hover main-grid column-header WebLogo, verify tooltip via showTooltipAt', async () => {
-    // Round-2 retry fix #1 (column-header variant): resolve a VISIBLE position
-    // column in the main-grid canvas using mainGrid.cell(posName, 0).bounds
-    // — column-header x-range aligns with the data-cell x-range for the
-    // column. The header WebLogo strip is in the top chh pixels of the
-    // canvas. Hover at the column's center-x and middle-y of header strip.
-    // Only VISIBLE columns (bounds.x in [0, canvasWidth - bounds.width]) are
-    // hit-testable — empirically, position columns 7-12 are typically
-    // visible on this build's viewport scroll-x (live 2026-05-30 MCP recon).
+    // Resolve a VISIBLE position column in the main-grid canvas via
+    // mainGrid.cell(posName, 0).bounds — column-header x-range aligns with the
+    // data-cell x-range for the column. The header WebLogo strip is in the top
+    // chh pixels of the canvas; hover at the column's center-x and middle-y of
+    // the header strip. Only VISIBLE columns (bounds.x in
+    // [0, canvasWidth - bounds.width]) are hit-testable.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -1119,12 +1094,11 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
   // no per-letter DOM); the contract is that the tooltip surface continues
   // to re-render across hover transitions and does NOT throw null-receiver.
   await softStep('Scenario 2 (steps 5-6): inter-letter + cross-column hover transitions', async () => {
-    // Round-2 retry fix #1 (column-header variant): resolve TWO visible
-    // position columns with populated stats — hover between them as the
-    // inter-letter + cross-column hover transition. The GROK-15934 invariant
-    // is what we primarily assert; the tooltip-content presence is a
-    // secondary contract that may or may not hold across rapid transitions
-    // (no per-letter DOM granularity to resolve a specific letter).
+    // Resolve TWO visible position columns with populated stats — hover between
+    // them as the inter-letter + cross-column hover transition. The GROK-15934
+    // invariant is the primary assert; tooltip-content presence is a secondary
+    // contract that may not hold across rapid transitions (no per-letter DOM
+    // granularity to resolve a specific letter).
     const targets = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];

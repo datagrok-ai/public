@@ -25,74 +25,22 @@ sub_features_covered: [powerpack.dialogs.add-new-column-func, powerpack.dialogs.
 //   page.evaluate DOM-event dispatches as the UI-driving form for
 //   non-Playwright-locator-friendly widgets).
 //
-// Retry-cycle hypothesis evidence (cycle 2026-05-24-powerpack-automate-06):
-//   Round 1 (this cycle) hypothesis category: environmental-flake-remediated.
-//     Theory: the prior cycle 03 Validator FAIL (failure_keys [B-RUN-PASS,
-//     B-STAB-01]) was attributed to "two different versions of
-//     @playwright/test" causing TestTypeImpl._currentSuite to be empty.
-//     Round-1 fix: no spec content rewrite — re-run on the resolved
-//     environment. Validator round-1 STILL FAILED with the same keys, so
-//     the environmental theory is REFUTED as the load-bearing cause.
-//   Round 2 hypothesis category: test-bug (formula end-state non-deterministic
-//     due to CM6 view-binding race + tooltip-detection brittleness).
-//     Round-2 fix: keyboard-type fallback in Step 4c to guarantee end-state.
-//     Validator round-2 STILL FAILED with same failure pattern across all
-//     three stability attempts — REFUTED as the load-bearing cause.
-//   Round 3 (THIS dispatch, automator_retry) hypothesis category: test-bug
-//     — DISTINCT from round 1 (env-flake) AND round 2 (view-binding race).
-//   Cheap-check evidence (per `agents/automator-prompt.md` §"Hypothesis
-//   protocol" :: test-bug investigation recipe — the actual Validator
-//   attempt-3 traces in cycle_logs/2026-05-24-powerpack-automate-06/
-//   add-new-column/ are the load-bearing input here):
-//     1. Three attempts produced byte-identical failure output (deterministic
-//        — rules out environmental-flake). The smoking-gun substring at
-//        Step 8 says: `Received string: "Round(num)"`. The history entry
-//        recorded after the first dialog close shows that the expression
-//        persisted was JUST `Round(num)` — the CM6 autocomplete signature
-//        template for the `Round` function. Steps 4c, 5 timed out because
-//        the dialog had ALREADY CLOSED before they reached their selectors.
-//     2. Source check (PowerPack/src/dialogs/add-new-column.ts L156, L279-295,
-//        L459-474): the dialog wires its OWN keydown listener on cmDiv that
-//        ONLY stops Enter-propagation when `autocompleteEnter === true`.
-//        That flag is set inside CM6 `autocompletion({activateOnCompletion})`
-//        callback (L462-463) — which CM6 invokes ONLY when an autocomplete
-//        option is accepted through its OWN activation path (Enter on the
-//        focused tooltip OR mouseDOWN event triggering CM's pointer handler).
-//     3. The round-2 spec's Step 4b at L303-313 accepted the tooltip via
-//        synthetic `mousedown / mouseup / click` MouseEvent dispatch on
-//        the `<li>` — NOT through CM6's pointer handler — so the
-//        `activateOnCompletion` callback never fires and `autocompleteEnter`
-//        stays `false`. The subsequent `keyboard.press('Enter')` at
-//        L315 then propagates to the dialog, firing onOK (L236-238),
-//        which closes the dialog with whatever formula is in CM at that
-//        instant: `Round(num)` (the template just inserted by accept).
-//     4. The dialog being closed mid-test explains ALL three failure
-//        substrings: Step 4c waits 15s for `.cm-content` (gone with the
-//        dialog), Step 5 waits 15s for OK button (gone), Step 8 reads
-//        the autofilled formula from the just-recorded history and finds
-//        `Round(num)` not `Round(${HEIGHT} + ${WEIGHT})`.
-//   Round-3 evidence-based fix (per the investigation recipe):
-//     a. Step 4b: DO NOT press Enter after the synthetic mousedown/click
-//        on the tooltip option. Synthetic events bypass CM6's
-//        `activateOnCompletion` path, so the dialog's own keydown filter
-//        cannot recognize the Enter as a tooltip-accept event and instead
-//        passes it through to the dialog OK handler. Dismiss the tooltip
-//        with Escape (which the dialog's L284-285 explicitly stops at
-//        cm-div scope, safe). The tooltip-surfaced observation alone
-//        satisfies the autocomplete ui_coverage_responsibility flow.
-//     b. Step 4c: keep the keyboard-typed canonical formula as the
-//        deterministic end-state guarantor, but add a defensive
-//        dialog-visibility check BEFORE the 15s `.cm-content` wait so
-//        that a closed-dialog state surfaces immediately with a clear
-//        error rather than a generic locator timeout.
-//   Round 2 carry-forwards (preserved fixes from prior rounds):
-//     - Step 2: soft-assert overflow within the contents panel; only
-//       FAIL if the dialog ROOT spills beyond viewport (the actual UI
-//       bug surface per scenario wording).
-//     - Step 4c: deterministic keyboard-typed formula as the load-bearing
-//       end-state (drag-drop dispatch is best-effort UI exercise only).
-//     - Step 7: accept either `.d4-menu-popup` or `.d4-menu` for the
-//       history popup container.
+// Autocomplete-Enter-fires-OK hazard (source-of-truth:
+// PowerPack/src/dialogs/add-new-column.ts L156, L279-295, L459-474):
+//   The dialog wires its own keydown listener on cmDiv that ONLY stops
+//   Enter-propagation when `autocompleteEnter === true`. That flag is set
+//   inside the CM6 `autocompletion({activateOnCompletion})` callback
+//   (L462-463), which CM6 invokes ONLY when a suggestion is accepted through
+//   its own activation path (Enter on the focused tooltip, or a real
+//   mouseDOWN reaching CM's pointer handler). Synthetic mousedown/mouseup/
+//   click on the tooltip `<li>` bypasses that path, so `autocompleteEnter`
+//   stays false; a following `keyboard.press('Enter')` then propagates to
+//   the dialog OK handler (onOK L236-238), closing the dialog with whatever
+//   is in CM at that instant — `Round(num)`, the inserted signature template.
+//   Hence Step 4b must NOT accept the suggestion via synthetic events or
+//   Enter; it dismisses the tooltip with Escape (explicitly stopped at
+//   cm-div scope, L284-285) and relies on the keyboard-typed canonical
+//   formula in Step 4c for the deterministic end-state.
 //
 // Source citations for selectors not in current grok-browser/references:
 //   - Toolbar icon: [name="icon-add-new-column"] — verified in
@@ -179,9 +127,9 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   // load-bearing check is: the dialog root is fully contained within the
   // viewport (no off-screen clipping) and the dialog rect has non-zero,
   // sensible bounds. Internal scroll on the ColumnGrid (88 demog cols) is
-  // ACCEPTABLE per scenario wording. Round-1 hypothesis-evidence note:
-  // strict `contents.scrollWidth > contents.clientWidth` was a
-  // deterministic FAIL when the in-dialog ColumnGrid legitimately scrolls.
+  // ACCEPTABLE per scenario wording — checking
+  // `contents.scrollWidth > contents.clientWidth` would falsely FAIL when
+  // the in-dialog ColumnGrid legitimately scrolls.
   await softStep('Step 2: verify dialog UI sanity (root contained, tooltips attached)', async () => {
     const sanity = await page.evaluate(() => {
       const dialog = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -224,12 +172,11 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   // handles does NOT fire Dart's resize handler; CSS-style override is
   // the deterministic path that exercises layout reflow at both extremes.)
   await softStep('Step 3: dialog resizes larger then smaller; root stays viewport-contained', async () => {
-    // Round-2 evidence-based fix: assert the dialog ROOT remains inside
-    // the viewport at both resize extremes (the actual UI bug surface
-    // per scenario wording). Internal scrollbars on the embedded
-    // ColumnGrid widget are ACCEPTABLE — the failure mode named in the
-    // scenario is "scrollbars... extending BEYOND the dialog boundaries",
-    // not internal panel scrolling.
+    // Assert the dialog ROOT remains inside the viewport at both resize
+    // extremes (the actual UI bug surface per scenario wording). Internal
+    // scrollbars on the embedded ColumnGrid widget are ACCEPTABLE — the
+    // failure mode named in the scenario is "scrollbars... extending BEYOND
+    // the dialog boundaries", not internal panel scrolling.
     const checkRootContained = async () => await page.evaluate(() => {
       const d = document.querySelector('.d4-dialog') as HTMLElement | null;
       if (!d) return false;
@@ -285,8 +232,8 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     // CodeMirror 6 contenteditable surface is `.cm-content` scoped inside
     // the dialog's `.add-new-column-dialog-cm-div` container
     // (PowerPack/src/dialogs/add-new-column.ts:175). Click first so CM6
-    // lazily attaches the EditorView to the host (the race that bit the
-    // sibling add-new-column-advanced-spec.ts in cycle 04).
+    // lazily attaches the EditorView to the host (cmView.view is null until
+    // the editor is focused/interacted with).
     const cm = dlg.locator('.add-new-column-dialog-cm-div .cm-content').first();
     await cm.waitFor({timeout: 15_000, state: 'visible'});
     await cm.click();
@@ -295,33 +242,22 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Delete');
     await page.waitForTimeout(100);
-    // Type "Rou" - the CodeMirror autocomplete extension should fire after
-    // a brief debounce; record whether `.cm-tooltip-autocomplete` surfaces.
-    // The autocomplete mechanic is EXERCISED here (the typing path drives
-    // the @codemirror/autocomplete extension regardless of whether the
-    // tooltip becomes visible synchronously). Round-2 evidence-based fix:
-    // do NOT make downstream assertions contingent on tooltip visibility
-    // or click-accept success — these are timing-sensitive UI surfaces.
-    // The load-bearing end-state guarantee is the keyboard-typed final
-    // formula at the end of Step 4c.
+    // Type "Rou" — the typing path drives the @codemirror/autocomplete
+    // extension regardless of whether the tooltip becomes visible
+    // synchronously; record whether `.cm-tooltip-autocomplete` surfaces.
+    // Downstream assertions are NOT contingent on tooltip visibility or
+    // click-accept success (timing-sensitive UI surfaces); the load-bearing
+    // end-state guarantee is the keyboard-typed formula at the end of Step 4c.
     await page.keyboard.type('Rou', {delay: 60});
     const tooltipAppeared = await page.locator('.cm-tooltip-autocomplete')
       .first().waitFor({timeout: 3_000, state: 'visible'}).then(() => true).catch(() => false);
-    // Round-3 evidence-based fix (cycle 06): observing the tooltip surface
-    // is sufficient to exercise the autocomplete ui_coverage_responsibility
-    // flow. DO NOT attempt to accept the suggestion via synthetic mouse
-    // events or `keyboard.press('Enter')` — both paths bypass CM6's
-    // `activateOnCompletion` callback (PowerPack/src/dialogs/add-new-column.ts
-    // L462-463) which is the only path that sets `autocompleteEnter = true`.
-    // Without that flag, the dialog's own keydown listener at L281-283
-    // does NOT stop Enter from propagating to the dialog's OK handler,
-    // which closes the dialog mid-test with `Round(num)` (the autocomplete
-    // signature template) — the deterministic failure observed across all
-    // three Validator attempts in cycle 06.
-    //
-    // Safe-dismiss path: `Escape` is explicitly stopPropagation'd on the
-    // cm-div at L284-285, so it cleanly closes the autocomplete tooltip
-    // without affecting the dialog.
+    // Observing the tooltip surface is sufficient to exercise the
+    // autocomplete ui_coverage_responsibility flow. Do NOT accept the
+    // suggestion via synthetic mouse events or `keyboard.press('Enter')` —
+    // both bypass CM6's `activateOnCompletion` callback and let Enter close
+    // the dialog mid-test (see "Autocomplete-Enter-fires-OK hazard" above).
+    // Escape is explicitly stopPropagation'd on the cm-div at L284-285, so
+    // it cleanly closes the tooltip without affecting the dialog.
     if (tooltipAppeared) {
       await page.keyboard.press('Escape').catch(() => {});
       await page.waitForTimeout(200);
@@ -332,26 +268,24 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   });
 
   await softStep('Step 4c: best-effort drag-n-drop HEIGHT/WEIGHT; guarantee keyboard-typed formula', async () => {
-    // Two-phase composition (round-2 evidence-based fix):
+    // Two-phase composition:
     //   Phase 1: best-effort exercise the drag-n-drop UI surface for
     //     ui_coverage_responsibility (add-new-column-drag-n-drop-columns).
     //     Datagrok's columnsToCm wiring intercepts drop on .cm-content
     //     and inserts `${ColName}` into the CM doc; we dispatch the
     //     synthetic HTML5 drag/drop chain on the discovered column-label
     //     nodes. Failure to land does NOT block the spec.
-    //   Phase 2: deterministically guarantee the end-state via the
-    //     proven historical pattern from add-new-column-run.md (2026-04-23
-    //     PASS): clear the editor and type the full canonical formula
-    //     `Round(${HEIGHT} + ${WEIGHT})` via keyboard.type into the
-    //     focused .cm-content. The keyboard path drives CodeMirror's
-    //     own input handlers (which DO populate the doc reliably,
-    //     independent of cmView.view binding state).
+    //   Phase 2: deterministically guarantee the end-state by clearing the
+    //     editor and typing the full canonical formula
+    //     `Round(${HEIGHT} + ${WEIGHT})` via keyboard.type into the focused
+    //     .cm-content. The keyboard path drives CodeMirror's own input
+    //     handlers, which populate the doc reliably independent of
+    //     cmView.view binding state.
     //
-    // Round-3 defensive guard: fail fast (with clear message) if the
-    // dialog is no longer visible — under the bug pattern observed in
-    // cycle 06, the dialog could close mid-test from a misrouted Enter
-    // and the downstream 15s .cm-content waitFor would otherwise dangle
-    // with an opaque locator timeout. Surface the actual error directly.
+    // Defensive guard: fail fast (with clear message) if the dialog is no
+    // longer visible — a misrouted Enter can close it mid-test, after which
+    // the downstream 15s .cm-content waitFor would dangle with an opaque
+    // locator timeout. Surface the actual error directly.
     const dialogStillOpen = await page.locator('.d4-dialog')
       .filter({hasText: 'Add New Column'}).first()
       .isVisible({timeout: 1_000}).catch(() => false);
@@ -393,7 +327,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Delete');
     await page.waitForTimeout(100);
-    // Historical-proven pattern (add-new-column-run.md 2026-04-23 PASS):
     // keyboard.type the full formula into the focused .cm-content.
     await page.keyboard.type('Round(${HEIGHT} + ${WEIGHT})', {delay: 30});
     await page.waitForTimeout(300);
@@ -458,14 +391,14 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   });
 
   // ---- Step 7: open Recent Activities (history icon) and select first entry ----
-  // Per run-md retrospective (cycle 2026-04-23): the history icon in the
-  // dialog command bar is exposed as [name="icon-history"] (name-attribute,
-  // not the bare .fa-history class). Empirical finding: a real synthesized
-  // click (Playwright locator.click - CDP-driven) is REQUIRED to fire
-  // applyInput; dispatchEvent + .click() appears to work but leaves the
-  // form unfilled because Modal.initDefaultHistory wires applyInput only
-  // to native click. Hence: use page.locator(...).click() exclusively on
-  // both the history icon AND the .d4-menu-popup .d4-menu-item entry.
+  // The history icon in the dialog command bar is exposed as
+  // [name="icon-history"] (name-attribute, not the bare .fa-history class).
+  // A real synthesized click (Playwright locator.click — CDP-driven) is
+  // REQUIRED to fire applyInput; dispatchEvent + .click() appears to work
+  // but leaves the form unfilled because Modal.initDefaultHistory wires
+  // applyInput only to native click. Hence use page.locator(...).click()
+  // exclusively on both the history icon AND the
+  // .d4-menu-popup .d4-menu-item entry.
   await softStep('Step 7: click history icon, select most recent entry', async () => {
     const dlg2 = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
     await dlg2.waitFor({timeout: 10_000});
@@ -476,12 +409,9 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     await histIcon.waitFor({timeout: 15_000, state: 'visible'});
     await histIcon.click({timeout: 10_000});
     // The history popup renders as either `.d4-menu-popup` (DG menu) or
-    // `.d4-menu` (some popup variants); items are `.d4-menu-item` in both.
-    // Round-2 hardening: accept either container class. Per the run-md
-    // retrospective: only a real synthesized click (Playwright locator.click,
-    // CDP-driven) fires `applyInput` — dispatchEvent + .click() appears to
-    // work but leaves the form unfilled because Modal.initDefaultHistory
-    // wires applyInput only to native click.
+    // `.d4-menu` (some popup variants); items are `.d4-menu-item` in both,
+    // so accept either container class. Only a real synthesized click
+    // (Playwright locator.click, CDP-driven) fires `applyInput`.
     const popup = page.locator('.d4-menu-popup, .d4-menu').first();
     await popup.waitFor({timeout: 15_000, state: 'visible'});
     const firstItem = popup.locator('.d4-menu-item').first();

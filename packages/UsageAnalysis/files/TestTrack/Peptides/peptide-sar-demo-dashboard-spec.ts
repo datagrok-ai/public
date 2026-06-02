@@ -1,16 +1,12 @@
 /* ---
 sub_features_covered: [peptides.demos.macromolecule-sar-fasta, peptides.app, peptides.lifecycle.init, peptides.workflow.start-analysis, peptides.model.add-sequence-space]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (missing-field policy: non-pyramid defaults applied —
-//     JS API substitution permitted; FORBIDDEN list reduced to target_layer-driven
-//     entries only; >=1 DOM-driving call still REQUIRED per E-LAYER-COMPLIANCE-01)
+// target_layer: playwright; coverage_type: smoke. No pyramid_layer, so JS API
+// substitution is permitted, but >=1 DOM-driving call is still required per
+// E-LAYER-COMPLIANCE-01.
 //   sub_features_covered: [peptides.demos.macromolecule-sar-fasta, peptides.app,
 //                          peptides.lifecycle.init, peptides.workflow.start-analysis,
 //                          peptides.model.add-sequence-space]
-//   coverage_type: smoke
-//   related_bugs: []
 //
 // Atlas provenance (derived_from):
 //   feature-atlas/peptides.yaml#critical_paths[peptide-sar-demo-dashboard-from-gallery]
@@ -22,7 +18,7 @@ sub_features_covered: [peptides.demos.macromolecule-sar-fasta, peptides.app, pep
 // Peptide SAR demo dashboard + Peptides app landing — entry-point smokes.
 // Scenario 1 covers peptides.demos.macromolecule-sar-fasta (FASTA dashboard demo)
 // and Scenario 2 covers peptides.app (three-button app landing view). Both retire
-// gap[1].proposal sub-clause (f) per coverage-gaps/peptides.yaml rev 16.
+// coverage-gaps/peptides.yaml gap[1].proposal sub-clause (f).
 //
 // Empirical recon notes (live MCP recon 2026-05-29 on dev.datagrok.ai — these
 // drive the deterministic assertions, contradicting two scenario claims that do
@@ -98,69 +94,38 @@ sub_features_covered: [peptides.demos.macromolecule-sar-fasta, peptides.app, pep
 //     this file that the buttons carry no name= was wrong; the canonical
 //     Datagrok [name="button-<Label>"] pattern applies.
 //
-// Retry fix history (this file accumulates same-paradigm tactical fixes):
+// Technique notes:
 //
-//   Initial-author round (pre-Gate-B): spec read grok.shell.tableViews.length
-//   directly. shell.ts L333 declares the property as Iterable<TableView>
-//   (NOT Array) — `.length` is `undefined` on it. Rewrote all seven occurrences
-//   to Array.from(grok.shell.tableViews).length. MCP-recon backed.
+//   - grok.shell.tableViews is Iterable<TableView>, NOT Array (shell.ts L333)
+//     — `.length` is undefined on it; wrap with Array.from(...) before reading
+//     length. MCP-recon backed.
 //
-//   Round 1 retry (cycle 2026-05-29-peptides-automate-02, after Gate B FAIL
-//   with [B-RUN-PASS, B-STAB-01], 3 attempts averaging ~124s each — clear
-//   assertion failure within the 600s per-attempt budget). Hypothesis category
-//   test-bug; cheap-checks confirmed via live MCP recon on dev.datagrok.ai
-//   2026-05-29 (mcp_status: used). Same-paradigm tactical fixes (no paradigm
-//   pivot — same Locator-API click on same buttons, same JS-API readback
-//   surface; just better selectors + longer/poll-shaped waits):
+//   - The three demo-button clicks use page.locator('[name="button-Simple-demo"]')
+//     (and Complex / HELM) rather than getByRole accessible-name. The
+//     [name="button-X-demo"] attribute is set by ui.button via the platform's
+//     annotate(); an attribute selector is more deterministic than accessible-name
+//     computation, which on cold init can race with the accessibility-tree build.
 //
-//     (a) Switched the three demo-button clicks from
-//         page.getByRole('button', {name:'Simple demo', exact:true}) to
-//         page.locator('[name="button-Simple-demo"]') (and Complex / HELM).
-//         The [name="button-X-demo"] attribute IS set by ui.button via the
-//         platform's annotate() (recon-verified — earlier wrong note about
-//         "ui.button does not annotate" corrected above). Attribute selector
-//         is more deterministic than accessible-name computation, which on
-//         cold init can race with the accessibility-tree build. Class-2
-//         recon-noted; canonical [name=] Datagrok pattern.
+//   - Scenario 1 readiness polls up to 90s for ALL of MCL + Logo Summary Table +
+//     Sequence Variability Map + Most Potent Residues to attach. PeptidesModel
+//     attaches at the START of startAnalysis (PeptidesModel.getInstance(df),
+//     Peptides/src/model.ts L368-373), BEFORE addMonomerPosition /
+//     addMostPotentResidues / addMCLClusters / addLogoSummaryTable run — so a
+//     PeptidesModel-attach gate would fire well before the viewers materialize.
+//     On a cold worker MCL clustering takes 30-60s; polling on the actual
+//     viewer-set the assertions read is the deterministic readiness signal.
 //
-//     (b) Replaced the Scenario-1 "wait for PeptidesModel attach + fixed
-//         8s settle" with a poll that waits up to 60s for ALL of MCL +
-//         Logo Summary Table + Sequence Variability Map + Most Potent
-//         Residues to be attached. PeptidesModel attaches at the START of
-//         startAnalysis (in PeptidesModel.getInstance(df), see
-//         Peptides/src/model.ts L368-373), BEFORE addMonomerPosition /
-//         addMostPotentResidues / addMCLClusters / addLogoSummaryTable run.
-//         The original PeptidesModel-attach gate could fire well before the
-//         viewers attach; on a cold worker where MCL clustering takes 30-60s
-//         in workers, the 8s settle is insufficient. Polling on the actual
-//         viewer-set the assertions read is the deterministic readiness
-//         signal.
+//   - grok.shell.lastError is Promise<string|undefined> (js-api shell.ts L107);
+//     it must be awaited. Stringifying the Promise directly yields "[object
+//     Promise]", which never matches the null-receiver regex (a silent no-op).
+//     Awaiting turns it into a real crash signal without changing pass-fail
+//     semantics on the warm path (lastError resolves to undefined or a benign
+//     string).
 //
-//     (c) grok.shell.lastError is typed as Promise<string|undefined>
-//         (js-api shell.ts L107) — the prior crash-check stringified the
-//         Promise directly, always yielding "[object Promise]" which never
-//         matched the null-receiver regex. Properly await it now. The check
-//         was effectively a no-op before (always passed); making it await
-//         turns it from a no-op into a real signal without changing the
-//         pass-fail semantics on the normal warm path (lastError resolves
-//         to undefined or "[object Promise]"-equivalent string).
-//
-//     (d) Lengthened the Scenario-1 -> Scenario-2 transition wait from
-//         800ms to 3000ms after closeAll(). On cold workers the SAR
-//         dashboard cleanup (multiple viewers, MCL worker shutdown) can
-//         take >800ms; the 3s budget matches the conservative cleanup wait
-//         used elsewhere (sibling info-panels-spec.ts).
-//
-//   Why same-paradigm (not a pivot, so the empirical-backing rule's pivot
-//   ban does not fire): the spec still drives Scenario 2 steps 4/5/6
-//   through REAL DOM clicks (Locator API) on the same three demo buttons.
-//   The Locator-target attribute changed (text-based -> [name=]) but the
-//   trigger mechanism is unchanged. JS-API surfaces are unchanged. No
-//   canvas-click or event-dispatch was introduced. The wait shapes were
-//   tightened (poll-based readiness on the actual viewer set instead of a
-//   fixed-duration settle on a too-early signal) — wait-tightening per
-//   §"Cheap-checks usage contract" item (2) is the canonical same-paradigm
-//   tactical fix and does not require fresh paradigm-pivot evidence.
+//   - The Scenario-1 -> Scenario-2 transition waits 3000ms after closeAll(). On
+//     cold workers the SAR dashboard cleanup (multiple viewers, MCL worker
+//     shutdown) can take >800ms; 3s matches the conservative cleanup wait used in
+//     sibling info-panels-spec.ts.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -199,7 +164,7 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
         return {
           initError,
           // grok.shell.tableViews is Iterable<TableView>, NOT Array — .length is undefined on it
-          // (confirmed live via MCP recon 2026-05-29). Must Array.from(...) before reading length.
+          // Array.from(...) before reading length.
           tableViewsBefore: Array.from(grok.shell.tableViews).length,
         };
       });
@@ -497,13 +462,13 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
     // ship an AlignedSequence Macromolecule column).
     await softStep('Scenario 2 (step 4): click "Simple demo" button (DOM-driving)',
       async () => {
-        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with Array.from
-        // before reading .length (confirmed live via MCP recon 2026-05-29).
+        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with
+        // Array.from before reading .length.
         const tvsBefore = await page.evaluate(() => Array.from(grok.shell.tableViews).length);
         // Locator-API click on the button — the load-bearing DOM-driving call.
-        // [name="button-Simple-demo"] is set by ui.button() via annotate()
-        // (live MCP recon 2026-05-29). Attribute selector is more deterministic
-        // than getByRole accessible-name on cold init.
+        // [name="button-Simple-demo"] is set by ui.button() via annotate(); the
+        // attribute selector is more deterministic than getByRole accessible-name
+        // on cold init.
         await page.locator('[name="button-Simple-demo"]').click();
         // openDemoData -> grok.data.loadTable -> addTableView (async).
         await page.waitForFunction((before) => Array.from(grok.shell.tableViews).length > before,
@@ -547,11 +512,10 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           if (v) grok.shell.v = v;
         });
         await page.waitForTimeout(800);
-        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with Array.from
-        // before reading .length (confirmed live via MCP recon 2026-05-29).
+        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with
+        // Array.from before reading .length.
         const tvsBefore = await page.evaluate(() => Array.from(grok.shell.tableViews).length);
-        // Locator-API click on the [name="button-Complex-demo"] attribute selector
-        // (recon-verified 2026-05-29 same as Simple demo above).
+        // Locator-API click on the [name="button-Complex-demo"] attribute selector.
         await page.locator('[name="button-Complex-demo"]').click();
         await page.waitForFunction((before) => Array.from(grok.shell.tableViews).length > before,
           tvsBefore, {timeout: 30_000});
@@ -590,11 +554,10 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           if (v) grok.shell.v = v;
         });
         await page.waitForTimeout(800);
-        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with Array.from
-        // before reading .length (confirmed live via MCP recon 2026-05-29).
+        // grok.shell.tableViews is Iterable<TableView>, not Array — wrap with
+        // Array.from before reading .length.
         const tvsBefore = await page.evaluate(() => Array.from(grok.shell.tableViews).length);
-        // Locator-API click on the [name="button-HELM-demo"] attribute selector
-        // (recon-verified 2026-05-29 same as Simple demo above).
+        // Locator-API click on the [name="button-HELM-demo"] attribute selector.
         await page.locator('[name="button-HELM-demo"]').click();
         await page.waitForFunction((before) => Array.from(grok.shell.tableViews).length > before,
           tvsBefore, {timeout: 30_000});

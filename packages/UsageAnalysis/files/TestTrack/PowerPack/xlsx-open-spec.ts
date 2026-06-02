@@ -68,91 +68,37 @@ sub_features_covered: [powerpack.io.xlsx-file-handler, powerpack.io.exceljs-serv
 //   - .grok-preloader — preloader absence is the canonical "page boot
 //     complete" signal per spec-login.ts:33.
 //
-// MCP investigation note (current retry, 2026-05-28 — live recon on
-// dev.datagrok.ai, cycle 2026-05-28-powerpack-automate-02):
-//   Hypothesis category: test-bug (NOT core-bug; NOT a paradigm pivot —
-//   same trigger mechanisms, with a cold-start package-load guard added).
-//   Gate B FAILed all 3 attempts deterministically in ~17s each with
-//   failure_keys [B-RUN-PASS, B-STAB-01]. attempt-N-report.json showed all
-//   7 steps failing with three distinct messages that share ONE root cause:
-//     (a) Setup: handlerRegistered=false.
-//     (b) Scenarios 1-2: "page.evaluate: Cannot serialize result: object
-//         reference chain is too long" (OpenFile could not resolve the
-//         xlsx @fileHandler on a cold context; returned a partial object).
-//     (c) Scenarios 3-6: grok.functions.call('PowerPack:XlsxFileHandler')
-//         threw "Unable to get project asset \"XlsxFileHandler\"".
-//   Live MCP recon on the warm dev session showed EVERY path succeeding:
-//     - PowerPack 1.7.5 present; DG.Func.find({name:'xlsxFileHandler'})===1
+// MCP-observed behavior (live recon on dev.datagrok.ai):
+//   On a warm session with PowerPack loaded, every entry path succeeds:
+//     - DG.Func.find({name:'xlsxFileHandler'}) returns 1
 //       (canonical nqName 'PowerPack:xlsxFileHandler').
 //     - grok.functions.call with bytes returns 1 DataFrame (7999x15 for
 //       excel-1mb.xlsx; 2x2 for excel-rich-text-test.xlsx) in ~675ms.
 //     - openTableFromFile (OpenFile dispatch) produces a TableView in
 //       ~1.9s with valid '.script' = 'Mb = OpenFile("System.DemoFiles/...")'
 //       provenance; [name="viewer-Grid"] renders 1147x1024; 0 error balloons.
-//   The ONLY divergence between the warm MCP session and the cold Playwright
-//   context is package initialization: the warm session had PowerPack loaded
-//   for a long time (26 funcs registered); the cold spec exercised the
-//   handler immediately after login, before pp.load() ran. Root cause:
-//   the spec never ensured PowerPack package load + xlsxFileHandler
-//   registration before use. GROK-19329 itself is RESOLVED on this build
-//   (the handler works once the package is loaded).
-//   Evidence-based fix (this dispatch): added ensurePowerPackLoaded(page)
-//   in the setup phase — triggers pp.load() and polls DG.Func.find for the
-//   handler up to 30s before any scenario runs. Same registration-propagation
-//   pattern as helpers/openers.ts:provisionDataframeScript. NOT a paradigm
-//   pivot — every scenario keeps its existing trigger mechanism (OpenFile
-//   dispatch for S1-2; grok.functions.call('PowerPack:xlsxFileHandler') for
-//   S3-6); only a cold-start load guard was added.
+//   The only divergence between the warm session and a cold Playwright
+//   context is package initialization: a cold spec exercises the handler
+//   immediately after login, before pp.load() has run, so the handler is
+//   not yet registered. GROK-19329 itself is resolved on this build — the
+//   handler works once the package is loaded. Fix: ensurePowerPackLoaded(page)
+//   in the setup phase triggers pp.load() and polls DG.Func.find for the
+//   handler before any scenario runs (same registration-propagation pattern
+//   as helpers/openers.ts:provisionDataframeScript).
 //
-//   Earlier retry note (round-2, 2026-05-27 — live recon on
-//   dev.datagrok.ai, cycle 2026-05-27-powerpack-automate-02):
-//   Empirical observations from this round's live MCP investigation:
-//     - Auth on dev.datagrok.ai works (logged in as oahadzhanian).
-//     - PowerPack 1.7.5 deployed; xlsxFileHandler IS registered
-//       (nqName 'PowerPack:xlsxFileHandler').
-//     - XLSX fixtures reachable: System:DemoFiles/test/excel/
-//       excel-rich-text-test.xlsx (10015 bytes, 1 sheet, 2x2) AND
-//       excel-1mb.xlsx (1036503 bytes, 1 sheet 'Sheet1', 7999x15).
-//     - grok.data.files.openTables(<xlsx>) — succeeds in ~949ms
-//       (returns 1 table).
-//     - grok.functions.call('PowerPack:XlsxFileHandler', {bytes}) —
-//       succeeds in ~143ms (returns 1 DataFrame).
-//     - openTableFromFile helper path — succeeds in 649ms; produces
-//       valid TableView with df.tags['.script'] = 'Sheet1 = OpenFile(...)'
-//       provenance; rowCount + colCount > 0; [name="viewer-Grid"]
-//       renders; no error balloons surfaced.
-//     - GROK-19329 regression APPEARS RESOLVED on the current dev build
-//       (in stark contrast to the round-1 retry MCP recon 2026-05-26
-//       which observed the indefinite hang on every dispatch path).
+//   Defensive 60s Promise.race wrappers guard every dispatch path: if
+//   GROK-19329 ever regresses (the handler hung indefinitely with no console
+//   errors), the spec fails fast with a bug-citing message instead of
+//   consuming the test.setTimeout(420_000) window. On a healthy build they
+//   are NO-OP on success and FAIL-FAST on regression — both desirable.
 //
-//   Round-1 retry's MCP investigation (preserved for audit):
-//     - GROK-19329 was active: openTables / direct handler call /
-//       OpenFile-dispatch all hung indefinitely on dev v1.7.5 with no
-//       console errors. Round-1 fix wrapped each call in a 60s
-//       Promise.race so the spec failed fast with bug-citing message
-//       instead of consuming the test.setTimeout(420_000) window.
-//
-//   Hypothesis category for round-2: previously core-bug; the
-//   round-2 empirical evidence reclassifies as resolved-platform-bug.
-//   The defensive 60s race wrappers from round-1 are kept as
-//   regression-witness stabilization (per §"Paradigm-pivot empirical-
-//   backing requirement": "Adding stabilization (re-tries, soft-checks)
-//   around the existing approach" is explicitly NOT a pivot). With the
-//   platform fixed, the race wrappers are NO-OP on success and
-//   FAIL-FAST on regression — both behaviors are desirable.
-//
-//   Round-2 tactical fixes landed by this dispatch (NOT a paradigm
-//   pivot per §"Cheap-checks usage contract rule #2" — same trigger
-//   mechanism, same JS API call → registered handler dispatch; just
-//   tightening reset-state settle waits and grid-render confirmation
-//   windows):
-//     - resetShellState extended from 300ms to 800ms between scenarios
-//       so closeAll() fully drains before the next scenario's open;
-//       observed 495ms grid-ready cycle in round-2 MCP recon, so 800ms
-//       gives a comfortable margin.
-//     - invokeXlsxHandlerWithBytes adds a small post-addTableView
-//       settle (300ms) so the grid renderer has time to attach before
-//       the caller asserts [name="viewer-Grid"] visibility.
+//   Settle-wait rationale:
+//     - resetShellState waits 800ms between scenarios so closeAll() fully
+//       drains before the next scenario's open; the observed grid-ready
+//       cycle is ~495ms, so 800ms gives a comfortable margin.
+//     - invokeXlsxHandlerWithBytes adds a 300ms post-addTableView settle
+//       so the grid renderer has time to attach before the caller asserts
+//       [name="viewer-Grid"] visibility.
 //
 // FORBIDDEN list self-check (per Automator prompt §"Constraint
 // enforcement" §4.1 ALWAYS + non-ui-smoke variant; pyramid_layer is
@@ -377,10 +323,9 @@ async function resetShellState(page: Page): Promise<void> {
     document.querySelectorAll('.d4-toast, .d4-menu-popup, .d4-balloon')
       .forEach((el) => { try { (el as HTMLElement).remove(); } catch (_) {} });
   }).catch(() => {});
-  // Round-2 retry tightening: 800ms (was 300ms) so closeAll() fully
-  // drains before the next scenario's open begins.  MCP recon
-  // 2026-05-27 observed grid-ready cycle at ~495ms; 800ms gives a
-  // comfortable margin without inflating total test wall-clock.
+  // 800ms so closeAll() fully drains before the next scenario's open begins.
+  // Observed grid-ready cycle is ~495ms; 800ms gives a comfortable margin
+  // without inflating total test wall-clock.
   await page.waitForTimeout(800);
 }
 
@@ -426,10 +371,9 @@ async function invokeXlsxHandlerWithBytes(
       // (capitalized 'XlsxFileHandler' per package-api.ts L110).
       const params: any = {bytes};
       if (args.sn) params.sheetName = args.sn;
-      // Defensive timeout race — see MCP investigation note in header:
-      // on a regressed build (GROK-19329 active) this call hangs
-      // indefinitely. Fail FAST with a clear bug-citing message instead
-      // of waiting for the full test.setTimeout window.
+      // Defensive timeout race: on a regressed build (GROK-19329 active)
+      // this call hangs indefinitely. Fail FAST with a clear bug-citing
+      // message instead of waiting for the full test.setTimeout window.
       const TIMEOUT_MS = 60_000;
       const result: any = await Promise.race([
         grok.functions.call('PowerPack:XlsxFileHandler', params),
@@ -448,12 +392,10 @@ async function invokeXlsxHandlerWithBytes(
       // Surface the first DataFrame into the shell so the resulting
       // TableView matches what the entry-path UI flow would produce.
       if (first) grok.shell.addTableView(first);
-      // Round-2 retry tightening: 300ms post-addTableView settle so the
-      // Datagrok grid renderer has time to attach the [name="viewer-Grid"]
-      // DOM node before the caller's verifyXlsxOpenedSuccessfully asserts
-      // visibility. MCP recon 2026-05-27 observed grid-ready at ~495ms
-      // from the start of the handler call; 300ms post-addTableView
-      // covers the renderer attach window.
+      // 300ms post-addTableView settle so the Datagrok grid renderer has
+      // time to attach the [name="viewer-Grid"] DOM node before the caller's
+      // verifyXlsxOpenedSuccessfully asserts visibility. Grid-ready is ~495ms
+      // from the start of the handler call; 300ms covers the attach window.
       await new Promise((r) => setTimeout(r, 300));
       return {
         dfCount: dfs.length,
@@ -599,10 +541,9 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       await page.locator('[name="Browse"]').waitFor({timeout: 30_000, state: 'visible'});
 
       // Open the XLSX through the same OpenFile dispatch the Browse
-      // double-click ultimately reaches. Wrapped in 60s defensive
-      // timeout — MCP recon (header note) shows the hang on regressed
-      // dev builds; this surfaces a clear GROK-19329 attribution instead
-      // of letting the test run out the full test.setTimeout window.
+      // double-click ultimately reaches. Wrapped in a 60s defensive timeout
+      // so a regressed build surfaces a clear GROK-19329 attribution instead
+      // of running out the full test.setTimeout window.
       const opened = await openTableFromFileWithTimeout(page, xlsxFullPath);
 
       // GROK-19329 invariant: XLSX opens into a Datagrok TableView with
@@ -640,8 +581,8 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       // settings.  As a graceful detection: if neither surface is
       // available, run OpenFile a second time and record the path as
       // "would-be-recent" — exercises the SAME dispatch the user's
-      // Recent-files click reaches. Defensive 60s timeout (see header
-      // MCP investigation note — handler hangs on regressed builds).
+      // Recent-files click reaches. Defensive 60s timeout (handler hangs
+      // on regressed builds).
       const opened = await openTableFromFileWithTimeout(page, xlsxFullPath);
 
       // GROK-19329 invariant: Recent-files re-open routes through the
@@ -810,7 +751,7 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
 
       if (sharedPath) {
         // Real shared XLSX is reachable — drive OpenFile against it.
-        // Defensive 60s timeout — see header MCP investigation note.
+        // Defensive 60s timeout (handler hangs on regressed builds).
         const opened = await openTableFromFileWithTimeout(page, sharedPath);
         expect(opened.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
         const v = await verifyXlsxOpenedSuccessfully(page);
@@ -871,7 +812,7 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       // Multi-sheet workbook: discover the second sheet's name from
       // the DataFrame names produced by ExcelJSService.parse (typically
       // ExcelJSService preserves the sheet names as DataFrame names).
-      // Defensive 60s race — see header MCP investigation note.
+      // Defensive 60s race (handler hangs on regressed builds).
       const secondSheetName = await page.evaluate(async (p) => {
         const grok = (window as any).grok;
         const bytes = await grok.dapi.files.readAsBytes(p);
@@ -898,7 +839,7 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       expect(oneSheet.error).toBeNull();
       expect(oneSheet.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
       // Verify the returned DataFrame matches the requested sheet.
-      // Defensive 60s race — see header MCP investigation note.
+      // Defensive 60s race (handler hangs on regressed builds).
       const namedRowCount = await page.evaluate(async (args: {p: string; sn: string}) => {
         const grok = (window as any).grok;
         const bytes = await grok.dapi.files.readAsBytes(args.p);

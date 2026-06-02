@@ -21,9 +21,7 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 //      GROK-17109 save+reopen persistence invariant)
 //   related_bugs: [GROK-17109]
 //   produced_from: migrated (original at
-//     PowerPack/AddNewColumn/formula-refreshing.md — split out by
-//     Migrator 2026-05-20 with the Additional-Notes persistence check
-//     promoted to an explicit scenario block).
+//     PowerPack/AddNewColumn/formula-refreshing.md).
 //
 // Bug-library cross-reference:
 //   GROK-17109 (Calculated columns: columns are not saved to project
@@ -34,11 +32,8 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 //     add-new-column, add-new-column-func, prepare-add-column-call,
 //     is-formula-column, formula.widget, dialogs — covered verbatim by
 //     frontmatter sub_features_covered.
-//   Chain witness role: per scenario Notes "Chain context" — one of
-//     three GROK-17109 spans (alongside the top-level add-new-column.md
-//     smoke and the multi-source AddNewColumn/add-new-column.md
-//     datasync flow); this scenario contributes the dependency-chain
-//     recalc invariant (Weight2 → Weight3 → Weight4) PLUS the
+//   Chain witness role: this scenario contributes the dependency-chain
+//     recalc invariant (Weight2 → Weight3 → Weight4) plus the
 //     save+reopen persistence check for chained calc columns.
 //
 // Atlas provenance (derived_from): per feature-atlas/powerpack.yaml
@@ -69,19 +64,19 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 //      dispatch + [name="button-Add-New-Column---OK"] selectors).
 //   - public/packages/UsageAnalysis/files/TestTrack/PowerPack/add-new-column-advanced-spec.ts
 //     (bug-focused sibling — saveProjectWithProvenance + reopen +
-//      formula-tag-preserved invariant for Weight2/Weight3 chain;
-//      THIS spec extends the chain to Weight4 + adds the Formula info
-//      panel UI surface).
+//      formula-tag-preserved invariant for Weight2/Weight3 chain; this
+//      spec extends the chain to Weight4 + adds the Formula info panel
+//      UI surface).
 //
 // Reference templates:
 //   - bug-focused: Projects/complex-derived-tables-spec.ts (GROK-19103
 //     slice pattern — open → mutate → save-and-reopen via JS API +
 //     find-by-id verification; deleteProjectWithCleanup in finally).
 //   - sibling pattern: PowerPack/add-new-column-advanced-spec.ts
-//     (most-direct template: same GROK-17109 invariant, same
-//     openTableFromFile + saveProjectWithProvenance + reopen +
-//     deleteProjectWithCleanup helper trio; THIS spec adds the
-//     Formula info panel widget UI surface as the formula-edit path).
+//     (same GROK-17109 invariant, same openTableFromFile +
+//     saveProjectWithProvenance + reopen + deleteProjectWithCleanup
+//     helper trio; this spec adds the Formula info panel widget UI
+//     surface as the formula-edit path).
 //
 // Selector / API citations (all in current grok-browser/references or
 // existing PowerPack/JS-API sources; no reference-file proposal needed):
@@ -183,33 +178,28 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 //     SAME powerpack.formula.widget sub_feature surface).
 //
 // Scope notes:
-//   * Scenario steps are walked end-to-end EXCEPT for two scope
+//   * Scenario steps are walked end-to-end except for two scope
 //     compressions in the Formula-info-panel block:
-//     - "Modify the Weight4 formula" sub-step (block 2 step 4) is
-//       executed but the assertion that Weight2/Weight3 are unaffected
-//       is checked by reading their values pre-edit and post-edit
-//       (we keep the pre-Weight4-edit values and confirm they did not
-//       change). The scenario's "no errors are surfaced" check is
-//       satisfied by absence of grok.shell.warnings additions.
-//     - Formula editing for each of Weight2/Weight3/Weight4 is driven
-//       via the Formula info panel pane in the Context Panel (UI
-//       surface owned: context-panel-formula-edit). When the
-//       accordion-pane-click path resolves under headless conditions,
-//       it drives the same AddNewColumnDialog as the standard
-//       toolbar-icon path; when it does not resolve within the
-//       per-step deadline, the helper falls back to invoking
-//       `PowerPack:formulaWidget` directly — which still exercises
-//       the same widget code path and produces the same end state.
+//     - "Modify the Weight4 formula" (block 2 step 4): the assertion
+//       that Weight2/Weight3 are unaffected is checked by comparing
+//       their values pre-edit and post-edit. The "no errors are
+//       surfaced" check is satisfied by absence of grok.shell.warnings
+//       additions.
+//     - Formula editing for Weight2/Weight3/Weight4 is driven via the
+//       Formula info panel pane in the Context Panel (UI surface owned:
+//       context-panel-formula-edit). When the accordion-pane-click path
+//       resolves it drives the same AddNewColumnDialog as the toolbar-icon
+//       path; when it does not resolve within the per-step deadline, the
+//       helper falls back to invoking `PowerPack:formulaWidget` directly,
+//       which exercises the same widget code path and end state.
 //   * The save block uses saveProjectWithProvenance (JS API helper)
 //     rather than the Save Project dialog UI for project naming
 //     determinism (the dialog PascalCase-normalizes typed names per
-//     grok-browser/references/projects.md L64). The
-//     save-project-with-formula-columns-persistence UI flow is owned
-//     here in the sense that the END-STATE invariant (calc columns
-//     persist with formula tags intact across save+reopen) is the
-//     surface under test; the JS API path produces the same persisted
-//     project entity with the same tag preservation as the dialog
-//     path (verified by add-new-column-advanced-spec.ts pattern).
+//     grok-browser/references/projects.md L64). The END-STATE invariant
+//     (calc columns persist with formula tags intact across save+reopen)
+//     is the surface under test; the JS API path produces the same
+//     persisted project entity with the same tag preservation as the
+//     dialog path.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -621,27 +611,22 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
 //
 // These three helpers (openAddNewColumnDialog, composeAddNewColumn,
 // editFormulaViaInfoPanel) abstract patterns reused across the three
-// scenario blocks; intentionally kept inline because:
-//   * The helpers-registry currently has no powerpack module — promotion
-//     would require a new module file + registry append (helper-authoring
-//     sub-routine). Per Automator-prompt §"Helper-authoring sub-routine"
-//     threshold rule, the trigger is ≥3 reuse sites WITHIN the current
-//     session. Block-1 reuses (open + compose + OK) 3x, but the
-//     compose-helper signature is identical between the toolbar-icon
-//     and Formula-info-panel paths only at the CodeMirror dispatch
-//     level (the editFormulaViaInfoPanel path adds the Context Panel
-//     navigation that the toolbar-icon path does not need). The
-//     accumulated reuse for THIS spec alone is exactly at threshold;
-//     deferring promotion until a second spec needs the same helpers
-//     keeps the registry append from being premature.
-//   * The candidate_helpers list in the scenario frontmatter names
-//     openDemog / addCalculatedColumn / editFormulaViaContextPanel /
-//     saveProjectWithDatasync / reopenProject — three of these
-//     (openDemog, saveProjectWithDatasync, reopenProject) are ALREADY
-//     covered by openTableFromFile + saveProjectWithProvenance +
-//     reopenAndAssertProvenance (registered in helpers-registry). The
-//     remaining two (addCalculatedColumn, editFormulaViaContextPanel)
-//     are the two helpers below; they remain inline for this cycle.
+// scenario blocks; kept inline because:
+//   * The helpers-registry has no powerpack module, so promotion would
+//     require a new module file + registry append. The compose-helper
+//     signature is identical between the toolbar-icon and
+//     Formula-info-panel paths only at the CodeMirror dispatch level
+//     (editFormulaViaInfoPanel adds Context Panel navigation the
+//     toolbar-icon path does not need), so defer promotion until a
+//     second spec needs the same helpers.
+//   * The scenario frontmatter's candidate_helpers (openDemog /
+//     addCalculatedColumn / editFormulaViaContextPanel /
+//     saveProjectWithDatasync / reopenProject) overlap existing
+//     registered helpers: openDemog, saveProjectWithDatasync,
+//     reopenProject map to openTableFromFile + saveProjectWithProvenance
+//     + reopenAndAssertProvenance. The remaining two
+//     (addCalculatedColumn, editFormulaViaContextPanel) are the helpers
+//     below, kept inline.
 // ===========================================================================
 
 async function openAddNewColumnDialog(page: any): Promise<void> {
@@ -669,29 +654,21 @@ async function composeAddNewColumn(page: any, name: string, formula: string): Pr
     input.dispatchEvent(new Event('change', {bubbles: true}));
   }, name);
   await page.waitForTimeout(150);
-  // Compose formula via the CM6 view.dispatch path. MCP recon 2026-05-26
-  // cycle 03 retry round 1 pinned down the correct property path:
-  // the CM6 EditorView is exposed at `cmContent.cmTile.view` (on the
-  // `.cm-content` element itself, via the `cmTile` property — NOT
-  // `cmDiv.cmView.view` as earlier spec versions assumed). Verified
-  // live: `document.querySelector('.cm-content').cmTile.view.dispatch(
-  // {changes: {from: 0, to: 0, insert: '${WEIGHT} + 100'}})` succeeds
-  // and `view.state.doc.toString()` reports the inserted formula.
-  // Earlier `cmView.view` reads ALWAYS returned undefined across all
-  // 5 ancestor levels of the contenteditable host — that's why the
-  // 10-iteration retry loop always exhausted and the spec fell to
-  // the brittle keyboard fallback (root cause of cycle -02 / -03
-  // [B-RUN-PASS, B-STAB-01]). The {force: true} click bypasses any
-  // pointer-intercept hazard from the autocomplete/hints overlay
-  // (same mitigation as cycle -02 — kept as belt-and-suspenders).
+  // Compose formula via the CM6 view.dispatch path. The CM6 EditorView is
+  // exposed at `cmContent.cmTile.view` — on the `.cm-content` element
+  // itself, via the `cmTile` property (NOT `cmDiv.cmView.view`; the
+  // `cmView` property does not exist on any ancestor of the
+  // contenteditable host, so that read always returns undefined and the
+  // retry loop exhausts into the brittle keyboard fallback). The
+  // {force: true} click bypasses any pointer-intercept hazard from the
+  // autocomplete/hints overlay sitting above the contenteditable host.
   const cm = dlg.locator('.add-new-column-dialog-cm-div .cm-content').first();
   await cm.waitFor({timeout: 15_000, state: 'visible'});
   await cm.click({force: true});
   await page.waitForTimeout(200);
-  // Run the view-dispatch path. `cmTile.view` is present immediately
-  // on the contenteditable host after mount (verified empirically); a
-  // brief retry loop guards against rare race conditions but typically
-  // first iteration succeeds.
+  // Run the view-dispatch path. `cmTile.view` is present on the
+  // contenteditable host after mount; the brief retry loop guards
+  // against rare race conditions.
   let composed: {ok: boolean; doc?: string} = {ok: false};
   for (let i = 0; i < 10; i++) {
     composed = await page.evaluate((f: string) => {
@@ -803,23 +780,16 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   // root is `.grok-prop-panel`; inside it the panel registrations
   // render as `.d4-accordion-pane` with a header element carrying the
   // pane name text (no stable name= attribute on the pane). Find the
-  // "Formula" pane header by text. Header click TOGGLES expansion (it
-  // is NOT idempotent — confirmed via MCP recon 2026-05-26 cycle 03
-  // retry round 2: starting expanded → click → collapsed (cmVisible=false
-  // but cmInDom=true); click again → re-expanded (cmVisible=true). The
-  // d4-accordion keeps pane content in the DOM but display:none when
-  // collapsed, which is why the locator resolves to a hidden element.
-  // Root cause of cycle -03 retry round 1 Gate B FAIL:
-  // [B2.3 timeout — 34× locator resolved to hidden .cm-content] +
-  // [B3.3+4 expected "+ 50" got "${Weight2} + 100" — Weight3 edit
-  //  never reached the dispatch step because the pane was collapsed].
-  // The Formula pane is auto-expanded by the Context Panel when
-  // grok.shell.o is set to a calc column (powerpack.formula.widget
-  // panel registers with condition PowerPack:isFormulaColumn(col),
-  // and the panel framework auto-expands single-matching widgets).
-  // Across column switches (Weight2 -> Weight3 -> Weight4) the
-  // expansion state PERSISTS — so the prior cycle's blind click
-  // ALWAYS collapsed the pane. Fix: read aria-expanded / .expanded
+  // "Formula" pane header by text. Header click TOGGLES expansion — it
+  // is NOT idempotent: clicking an already-expanded pane collapses it,
+  // and d4-accordion keeps the pane content in the DOM but display:none
+  // when collapsed (so the locator resolves to a hidden element). The
+  // Formula pane is auto-expanded by the Context Panel when grok.shell.o
+  // is set to a calc column (the powerpack.formula.widget panel registers
+  // with condition PowerPack:isFormulaColumn(col), and the framework
+  // auto-expands single-matching widgets). Across column switches
+  // (Weight2 -> Weight3 -> Weight4) the expansion state PERSISTS — so a
+  // blind click would collapse the pane. Read aria-expanded / .expanded
   // first; only click when NOT already expanded (true idempotency).
   const accordionPathWorked = await page.evaluate(() => {
     const propPanel = document.querySelector('.grok-prop-panel');
@@ -836,15 +806,12 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   await page.waitForTimeout(500);
 
   // (3) Wait for the Formula widget's AddNewColumnDialog to render
-  // within the Context Panel. CRITICAL EMPIRICAL FINDING (MCP recon
-  // 2026-05-26 cycle 03 retry round 1): in PRACTICE the Formula info
-  // panel widget renders `.add-new-column-dialog-cm-div`, NOT
-  // `.add-new-column-widget-cm-div` — confirmed live: the only
-  // CodeMirror host found in `.grok-prop-panel` is at
+  // within the Context Panel. The Formula info panel widget renders
+  // `.add-new-column-dialog-cm-div`, NOT `.add-new-column-widget-cm-div`:
+  // the only CodeMirror host in `.grok-prop-panel` is at
   // `.grok-prop-panel .add-new-column-dialog-cm-div .cm-content`.
   //
-  // Why the source-reading-based "widget mode" hypothesis missed this:
-  // PowerPack/src/dialogs/add-new-column.ts:174-190 has
+  // Why: PowerPack/src/dialogs/add-new-column.ts:174-190 has
   //   constructor(call, widget?) {
   //     this.codeMirrorDiv.classList.add(this.widget ?
   //       'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
@@ -860,8 +827,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   // accommodates by scoping `.add-new-column-dialog-cm-div .cm-content`
   // to `.grok-prop-panel`. Widget mode still does NOT call
   // prepareForSeleniumTests() (gated by `if (!this.widget)` at L217),
-  // so OK is unset and we click `ui.button('Apply', ...)` by text
-  // (step 6 below).
+  // so OK is unset and we click `ui.button('Apply', ...)` (step 6 below).
   let widgetCmFound = false;
   if (accordionPathWorked) {
     for (let i = 0; i < 25; i++) {
@@ -918,20 +884,18 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel .add-new-column-dialog-cm-div .cm-content) did not render for column "${columnName}"`);
 
   // (5) Dispatch the new formula into the in-panel CodeMirror editor.
-  // Same `cmContent.cmTile.view` pattern as composeAddNewColumn — MCP
-  // recon 2026-05-26 cycle 03 verified the panel-widget CM6 host
-  // exposes the EditorView via the SAME cmTile property as the
-  // toolbar-dialog CM. The in-panel widget instantiates the same
-  // AddNewColumnDialog code path so the CM6 cmTile property surface
-  // applies identically. Panel CM class: `add-new-column-dialog-cm-div`
-  // (see step 3 root-cause note re: PowerPack constructor ordering).
-  // Use force: true on the click to bypass any pointer-intercept overlay
-  // hazard (autocomplete/hints can sit above the contenteditable host).
+  // Same `cmContent.cmTile.view` pattern as composeAddNewColumn — the
+  // panel-widget CM6 host exposes the EditorView via the same cmTile
+  // property because the in-panel widget instantiates the same
+  // AddNewColumnDialog code path. Panel CM class:
+  // `add-new-column-dialog-cm-div` (see step 3 re: PowerPack constructor
+  // ordering). Use force: true on the click to bypass any pointer-intercept
+  // overlay hazard (autocomplete/hints can sit above the contenteditable
+  // host).
   //
   // Visibility self-heal: if the CM host is in the DOM but hidden
-  // (collapsed accordion pane — see step 2 root-cause comment), re-expand
-  // the Formula pane. Belt-and-suspenders for any race where the step-2
-  // expansion-state read missed.
+  // (collapsed accordion pane — see step 2), re-expand the Formula pane,
+  // guarding against a race where the step-2 expansion-state read missed.
   await page.evaluate(() => {
     const pp = document.querySelector('.grok-prop-panel');
     if (!pp) return;
@@ -993,20 +957,18 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   if (firstToken)
     expect(doc).toContain(firstToken);
 
-  // (6) Click Apply to apply the new formula. CRITICAL: in widget mode
-  // the AddNewColumnDialog DOES NOT call `prepareForSeleniumTests()` —
-  // that block is gated on `if (!this.widget)` at add-new-column.ts:217-250.
-  // So `[name="button-Add-New-Column---OK"]` is NEVER set on the widget's
+  // (6) Click Apply to apply the new formula. In widget mode the
+  // AddNewColumnDialog does NOT call `prepareForSeleniumTests()` — that
+  // block is gated on `if (!this.widget)` at add-new-column.ts:217-250 —
+  // so `[name="button-Add-New-Column---OK"]` is never set on the widget's
   // button. Instead the widget renders `ui.button('Apply', addNewColumnAction)`
-  // at add-new-column.ts:262-266 with title "Apply to the column". MCP
-  // recon 2026-05-26 cycle 03 retry round 2 confirmed: the Apply button
-  // DOES carry `[name="button-Apply"]` (annotate() auto-adds the name=
-  // attribute from the button text — same convention as
-  // [name="button-Add-New-Column---OK"]). Prefer the name= selector for
-  // robustness; fall back to text-content lookup for older builds where
-  // the convention may not yet be applied. Both paths are scoped to
-  // .grok-prop-panel (the only Apply button in this scope is the
-  // Formula widget's apply button).
+  // at add-new-column.ts:262-266 with title "Apply to the column". The
+  // Apply button carries `[name="button-Apply"]` (annotate() auto-adds the
+  // name= attribute from the button text — same convention as
+  // [name="button-Add-New-Column---OK"]). Prefer the name= selector;
+  // fall back to text-content lookup for older builds where the convention
+  // may not yet be applied. Both paths are scoped to .grok-prop-panel (the
+  // only Apply button in this scope is the Formula widget's apply button).
   let applyClicked = false;
   for (let i = 0; i < 25; i++) {
     applyClicked = await page.evaluate(() => {

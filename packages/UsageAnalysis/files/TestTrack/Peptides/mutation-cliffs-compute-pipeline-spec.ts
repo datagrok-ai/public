@@ -255,21 +255,13 @@ const VIEWER_TYPE = {
 };
 
 test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-position stats + per-cluster stats survive end-to-end into SVM Mutation-Cliffs mode, SMC viewer, Export Mutation Cliffs TableView, LST grid, and Distribution accordion', async ({page}) => {
-  // SAR launch ~10 s + MCL clustering + dedicated SMC viewer attach + export
-  // round-trip + 2x LST cluster-select Distribution round-trip won't fit the
-  // default per-test budget.
-  // Round-6 FIX-11(a): bump 420000 -> 600000ms to match sibling cold-cache-
-  // prone Bio specs (analyze-spec.ts, sequence-space-spec.ts,
-  // sequence-activity-cliffs-spec.ts, pepsea-spec.ts, msa-spec.ts,
-  // convert-spec.ts, composition-analysis-spec.ts — all at 600_000). Cold
-  // attempt-1 of Round-5 hit the 420000ms outer budget INSIDE Setup before
-  // any Scenario step could run (cold Peptides webpack bundle + Bio package
-  // init + worker spawn on the first Macromolecule frame).
-  // Round-8: 600_000 -> 300_000. The 200-row Extract subset (Setup below) cuts
-  // the dominant MCL/LST attach + worker-pass latency from ~137 s (warm, full
-  // 647-row) to a few seconds; the remaining cold-start initPeptides cost is
-  // bounded by the best-effort prewarm (FIX-11b) and re-paid inside Launch SAR.
-  // 300 s leaves ample headroom for cold init + the now-fast Scenarios 1 + 2.
+  // SAR launch + MCL clustering + SMC viewer attach + export round-trip + 2x
+  // LST cluster-select Distribution round-trip won't fit the default per-test
+  // budget. The 200-row Extract subset (Setup below) cuts the dominant MCL/LST
+  // attach + worker-pass latency from ~137 s (warm, full 647-row) to a few
+  // seconds; the remaining cold-start initPeptides cost is dataset-independent,
+  // bounded by the best-effort prewarm and re-paid inside Launch SAR. 300 s
+  // leaves ample headroom for cold init + the now-fast Scenarios 1 + 2.
   test.setTimeout(300_000);
   await loginToDatagrok(page);
 
@@ -305,14 +297,13 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       // (peptides.compute.parallel-mutation-cliffs depends on extractColInfo
       // packing the position columns, which in turn depends on MonomerWorks
       // being initialized).
-      // Round-6 FIX-11(b): bound the prewarm via Promise.race with a 240s
-      // ceiling. Warm initPeptides returns in ~8 ms (MCP recon 2026-05-31)
+      // Bound the prewarm via Promise.race. Warm initPeptides returns in ~8 ms
       // but cold-load on a CI worker can stall on RDKit/MonomerWorks/
-      // sequence-helper download + Bio package init. The prewarm is
-      // best-effort (the catch path already swallows any throw — startAnalysis
-      // re-runs the init internally on first SAR launch), so a 240s ceiling
-      // converts a hung cold-init into a deterministic Setup-step trace
-      // line rather than letting it eat the entire 600s outer test budget.
+      // sequence-helper download + Bio package init. The prewarm is best-effort
+      // (the catch path swallows any throw — startAnalysis re-runs the init
+      // internally on first SAR launch), so the ceiling converts a hung
+      // cold-init into a deterministic Setup-step trace line rather than
+      // letting it eat the entire outer test budget.
       try {
         await Promise.race([
           grok.functions.call('Peptides:initPeptides'),
@@ -332,7 +323,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(result.semType, 'AlignedSequence must be a Macromolecule column').toBe('Macromolecule');
   });
 
-  // ---- Setup (Round-8): reduce to a fast 200-row working subset ----
+  // ---- Setup: reduce to a fast 200-row working subset ----
   // MCL clustering + LST attach + the parallel-mutation-cliffs worker pass all
   // scale with row count — on the full 647-row dataset the SAR-attach-to-LST
   // chain measured ~137 s (warm); on a 200-row subset it completes in seconds,
@@ -421,41 +412,20 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     // pool + MCL clustering + sequence-space embedding). Worker chunking +
     // postMessage round-trip is the critical surface this scenario asserts
     // on — wait until the PeptidesModel singleton is live before probing.
-    //
-    // Round-4 FIX-7: page.waitForFunction signature is
-    // (pageFunction, arg, options) — options is the THIRD positional arg.
-    // The previous revision passed `{timeout: 90000}` as the second arg
-    // (which was forwarded to the inner pageFunction as `arg` and ignored),
-    // so options fell back to the playwright.config.ts actionTimeout of
-    // 15s — that is the 15000ms timeout the failing run logged.
+    // page.waitForFunction takes (pageFunction, arg, options) — pass timeout
+    // in the 3rd-arg options object; a timeout passed as the 2nd arg is
+    // forwarded to the inner pageFunction as `arg` and silently ignored.
     await page.waitForFunction(() => {
       return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
     }, null, {timeout: 60000});
-    // Wait for the FULL SAR-attach chain to settle: PeptidesModel.isInitialized
-    // + LST attach + MCL Cluster column on df. The blanket 10 s timeout the
-    // previous attempt used was racy on cold dev network (MCL clustering can
-    // exceed 10 s when the @datagrok-libraries/ml MCL pass is cold-loaded).
-    // Per round-2 MCP recon (2026-05-30 live on dev.datagrok.ai): the
-    // deterministic readiness signal is `model.findViewer('Logo Summary Table')
-    // ?.logoSummaryTable?.rowCount > 0` AND `df.columns.byName('Cluster (MCL)')`
-    // non-null AND `model.isInitialized === true`.
-    // Round-4 FIX-7: same signature correction (null + options-as-3rd-arg).
-    // Round-5 FIX-10: extend timeout 90 s → 180 s. Live MCP recon on
-    // dev.datagrok.ai 2026-05-31 measured the LST+MCL-column cold-attach
-    // latency at ~130 s elapsed from OK click — model.isInitialized fires
+    // Wait for the FULL SAR-attach chain to settle. model.isInitialized fires
     // in <2 s but the MCL clustering + LST attach + Cluster (MCL) column
-    // emission are on a delayed background path that consistently exceeds
-    // 90 s. 180 s gives a ~50 s margin.
-    // Round-7 FIX-12: extend timeout 180 s → 240 s. Post-Round-6 live MCP
-    // recon on dev.datagrok.ai 2026-05-31 measured the warm-cache
-    // SAR-attach-to-LST+MCL chain at 137 s elapsed — Round-5's 180 s
-    // budget gave only 43 s margin over warm. Cold-cache CI worker attach
-    // can reasonably exceed warm by 30-90 s (cold RDKit/MonomerWorks/
-    // sequence-helper download + worker pool spawn + MCL clustering +
-    // sequence-space embedding). 240 s gives ~100 s margin over warm and
-    // aligns with the FIX-11(b) prewarm bound budget. Within the 600 s
-    // outer test.setTimeout (FIX-11(a)) this still leaves headroom for
-    // Scenarios 1 + 2 + cleanup.
+    // emission are on a delayed background path. The deterministic readiness
+    // signal (MCP recon, dev.datagrok.ai) is
+    // `model.findViewer('Logo Summary Table')?.logoSummaryTable?.rowCount > 0`
+    // AND `df.columns.byName('Cluster (MCL)')` non-null AND
+    // `model.isInitialized === true`. On the 200-row subset this chain
+    // completes in seconds, so 90 s is generous headroom.
     await page.waitForFunction(() => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']);
       if (!tv) return false;
@@ -467,11 +437,10 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       if (!colNames.some((n: string) => /^Cluster \(MCL\)$/.test(n))) return false;
       return true;
     }, null, {timeout: 90000});
-    // Small post-settle pause for the SVM mutationCliffs Map to be populated
-    // by the worker-pool aggregation (parallel-mutation-cliffs workers post
-    // back after model.init returns; the Map fill is fire-and-forget from
-    // model.init's caller). Per recon, < 2 s is sufficient after the LST
-    // readiness condition above resolves.
+    // Post-settle pause for the SVM mutationCliffs Map to be populated by the
+    // worker-pool aggregation — parallel-mutation-cliffs workers post back
+    // after model.init returns and the Map fill is fire-and-forget, so it can
+    // lag the LST readiness condition above by a beat.
     await page.waitForTimeout(2500);
   });
 
@@ -558,16 +527,13 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
 
       // peptides.util.extract-col-info — transitively verified: position
       // columns must be present on the DataFrame for findMutations to have
-      // packed them via extractColInfo. Round-3 FIX-3: combined
-      // column-name-regex (canonical /^\d+$/ — names '1', '2', ..., '17'
-      // verified live on dev.datagrok.ai 2026-05-30) AND
-      // `isPositionCol` tag check. The Peptides Splitter at
-      // `src/utils/misc.ts` `splitAlignedSequences` creates these by
-      // numeric index — the name pattern is deterministic and survives
-      // any post-SAR-launch viewer/model state mutation that might
-      // transiently clear column tags. Live MCP recon confirms BOTH
-      // detectors return 17 — but the regex path is the primary fallback
-      // for the cold-grok-test-vs-warm-MCP tag-presence divergence.
+      // packed them via extractColInfo. Detect via combined column-name-regex
+      // (canonical /^\d+$/ — names '1', '2', ..., '17') AND `isPositionCol`
+      // tag check. The Peptides Splitter at `src/utils/misc.ts`
+      // `splitAlignedSequences` creates these by numeric index, so the name
+      // pattern is deterministic and survives any post-SAR-launch state
+      // mutation that might transiently clear column tags — the regex path is
+      // the primary fallback for that tag-presence divergence.
       const posColCount = tv.dataFrame.columns.toList().filter((c: any) =>
         /^\d+$/.test(c.name)
         || (c.getTag && c.getTag('isPositionCol') === 'true')).length;
@@ -799,9 +765,9 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const ok = dlg?.querySelector('[name="button-OK"]') as HTMLElement | null;
       if (ok) ok.click();
     });
-    // The new TableView name is `Mutation Cliffs` (verified live; appended
-    // to grok.shell.tableViews). Wait for it to materialize.
-    // Round-4 FIX-9: correct waitForFunction signature (null + options-as-3rd-arg).
+    // The new TableView name is `Mutation Cliffs` (appended to
+    // grok.shell.tableViews). Wait for it to materialize — timeout goes in the
+    // 3rd-arg options object.
     await page.waitForFunction(() =>
       Array.from(grok.shell.tableViews).some((v) =>
         v.name && /^Mutation Cliffs/.test(v.name)), null, {timeout: 15000});
@@ -810,11 +776,10 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const mc = Array.from(grok.shell.tableViews).find((v) =>
         v.name && /^Mutation Cliffs/.test(v.name) && !before.includes(v.name));
       if (!mc) return {error: 'new Mutation Cliffs view not found after OK'};
-      // FIX-5: tag the exported view's dataframe with a sentinel temp key
-      // so the post-assertion close step can find it by identity (not by
-      // name regex) — eliminates any risk of closing the wrong view if
-      // the SAR view's name happens to start with "Mutation Cliffs" for
-      // any reason on this build.
+      // Tag the exported view's dataframe with a sentinel temp key so the
+      // post-assertion close step can find it by identity, not by name regex
+      // — eliminates the risk of closing the wrong view if the SAR view's name
+      // happens to start with "Mutation Cliffs".
       mc.dataFrame.temp['__test_mutation_cliffs_export_view__'] = true;
       return {
         name: mc.name,
@@ -838,10 +803,10 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect((exported as any).colNames,
       'Exported TableView must carry the Delta column').toContain('Delta');
 
-    // FIX-5: close the exported scratch view by identity (the sentinel
-    // temp tag set above), not by name regex. Re-focus the SAR TableView
-    // by `peptidesModel` lookup. Scenario 2 must operate on the same SAR
-    // model state Scenario 1 left behind.
+    // Close the exported scratch view by identity (the sentinel temp tag set
+    // above), not by name regex. Re-focus the SAR TableView by `peptidesModel`
+    // lookup — Scenario 2 must operate on the same SAR model state Scenario 1
+    // left behind.
     await page.evaluate(() => {
       const mc = Array.from(grok.shell.tableViews).find(
         (v) => v.dataFrame.temp['__test_mutation_cliffs_export_view__'] === true);
@@ -860,35 +825,20 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
   // produced the `Cluster (MCL)` column + LST attach during Scenario 1.
   // Re-validate the prerequisites here for Scenario 2 isolation.
   //
-  // Round-3 FIX-4: re-poll for LST readiness BEFORE the assertion. The
-  // LST viewer can transiently report null from model.findViewer(...)
-  // during/after MCL re-clustering triggered by Step 4's SVM mode switch
-  // (settingsChanged → MCL re-attach race). Bounded waitForFunction
-  // converts the race into a deterministic resolution: if LST re-
-  // attaches within 30 s, proceed; if not, the explicit poll-timeout
-  // error is more diagnosable than the downstream "Cannot read of null"
-  // cascade across 5 subsequent steps.
+  // Re-poll for LST readiness BEFORE the assertion. The LST viewer can
+  // transiently report null from model.findViewer(...) during/after MCL
+  // re-clustering triggered by Step 4's SVM mode switch (settingsChanged →
+  // MCL re-attach race). A bounded waitForFunction converts the race into a
+  // deterministic resolution: if LST re-attaches within the budget, proceed;
+  // if not, the explicit poll-timeout error is more diagnosable than the
+  // downstream "Cannot read of null" cascade across the subsequent steps.
   await softStep('Scenario 2 (step 1): confirm default-launch already produced MCL clusters + LST attach', async () => {
-    // Round-4 FIX-8: extend re-poll timeout from 30s to 90s. Live MCP recon
-    // 2026-05-30 (warm dev.datagrok.ai) confirms the four readiness
-    // conditions (peptidesModel attached + model.isInitialized + LST
-    // present with rowCount >= 1 + Cluster (MCL) column present) are
-    // satisfied IMMEDIATELY in a healthy SAR state — Step 4 mode flip,
-    // Step 5 addViewer(SMC), and Step 6 export-close-refocus do NOT
-    // regress LST or model state (verified by MCP probe).
-    // Round-5 FIX-10: further extend 90 s → 180 s. The 2026-05-31 live
-    // MCP recon measured the SAR-attach-to-LST+MCL-column-ready chain
-    // at ~130 s elapsed — 90 s was empirically insufficient. The two
-    // readiness re-polls (this one and the Scenario 1 step 1-2 one
-    // above) must share the same budget because Scenario 2 step 1 must
-    // tolerate the worst-case where the Scenario-1 readiness wait
-    // resolved at the edge of its budget. 180 s matches the Scenario-1
-    // FIX-10 budget.
-    // Round-7 FIX-12: further extend 180 s → 240 s. Post-Round-6 live MCP
-    // recon measured warm 137 s — 180 s left only 43 s margin; cold can
-    // exceed warm by 30-90 s. 240 s shares the Scenario-1 step-1-2
-    // budget so Scenario 2 tolerates the worst-case Scenario-1
-    // edge-of-budget resolution.
+    // The four readiness conditions (peptidesModel attached + isInitialized +
+    // LST present with rowCount >= 1 + Cluster (MCL) column) are satisfied
+    // immediately in a healthy SAR state — Step 4 mode flip, Step 5
+    // addViewer(SMC), and Step 6 export-close-refocus do not regress LST or
+    // model state. This poll shares the Scenario-1 step-1-2 budget so it
+    // tolerates a worst-case Scenario-1 edge-of-budget resolution.
     await page.waitForFunction((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']);
       if (!tv) return false;
@@ -924,10 +874,9 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
   // Step 2: confirm the clusters column has >= 2 distinct ids (calculate-
   // cluster-statistics emits one stats entry per cluster — single-cluster
   // output would not exercise the per-cluster row enumeration).
-  //
-  // Round-3 FIX-6: explicit defensive null-check for tv/model/lst inside
-  // the evaluate; return {error} short-circuit instead of dereferencing
-  // a null. Eliminates the "Cannot read of null" cascade.
+  // Defensive null-check for tv/model/lst inside the evaluate; return {error}
+  // short-circuit instead of dereferencing a null, to avoid a "Cannot read of
+  // null" cascade.
   await softStep('Scenario 2 (step 2): MCL clusters column has >= 2 distinct ids', async () => {
     const state = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -945,8 +894,8 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       return {clusterCount: uniq.size, sample: Array.from(uniq).slice(0, 6)};
     }, VIEWER_TYPE);
     expect((state as any).error, 'clusters-column lookup failed').toBeFalsy();
-    // Round-8: on the 200-row subset MCL may cluster into a single group
-    // (the cliff-dense SAR series is highly connected). The compute-pipeline
+    // On the 200-row subset MCL may cluster into a single group (the
+    // cliff-dense SAR series is highly connected). The compute-pipeline
     // contract is that MCL emitted >= 1 cluster id and calculateClusterStatistics
     // ran; the multi-cluster row-enumeration coverage (>= 2) is exercised on
     // the full dataset and recorded here as a scope reduction when the subset
@@ -1167,10 +1116,10 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     // peptides.compute.get-summary-stats re-invocation assertion: the
     // Distribution innerText delta is the on-disk proof that getSummaryStats
     // ran fresh for the new cluster, not stale from the previous selection.
-    // Round-8: only assertable when the subset produced >= 2 clusters (a real
-    // second cluster to switch to). On a single-cluster 200-row subset there
-    // is no distinct second cluster — the switch is a no-op and the delta
-    // cannot exist; record the scope reduction instead of false-failing.
+    // Only assertable when the subset produced >= 2 clusters (a real second
+    // cluster to switch to). On a single-cluster 200-row subset there is no
+    // distinct second cluster — the switch is a no-op and the delta cannot
+    // exist; record the scope reduction instead of false-failing.
     if (result.lstRowCount >= 2)
       expect(result.distText,
         'Distribution accordion text must differ from the prior cluster\'s summary (getSummaryStats re-invoked)')
