@@ -62,23 +62,40 @@ function labelOf(factor: DG.Column, code: number): string {
   return String(factor.categories[code]);
 }
 
-/** Format a number for display (compact scientific notation for tiny magnitudes). */
-function fmt(x: number): string {
-  if (!Number.isFinite(x))
-    return String(x);
-  const a = Math.abs(x);
-  if (a !== 0 && (a < 1e-4 || a >= 1e6))
-    return x.toExponential(2);
-  return x.toFixed(4);
-}
+// --- Conclusion column (see ttest-results-table-spec.md) ---
 
-/** Qualitative magnitude of a standardized effect size (Cohen's conventions; domain may dictate different cutoffs). */
-function effectMagnitude(g: number): string {
-  const a = Math.abs(g);
-  if (a < 0.2) return 'negligible';
-  if (a < 0.5) return 'small';
-  if (a < 0.8) return 'medium';
-  return 'large';
+/** Header of the leftmost results column and of its tooltip. */
+const CONCLUSION_COL_NAME = 'Conclusion';
+const CONCLUSION_HEADER_TOOLTIP = 'Null hypothesis testing';
+
+/** Cell labels for the conclusion column. */
+const CONCLUSION_LABEL = {
+  significant: 'Significant',
+  notSignificant: 'Not significant',
+} as const;
+
+/**
+ * Conclusion cell colors (Option 1 — neutral accent), applied via categorical column color-coding.
+ * The brand color is a deliberate non-judgemental accent: significance carries no "good/bad" meaning,
+ * so red/green are avoided.
+ */
+const CONCLUSION_COLOR = {
+  significant: '#534AB7',
+  notSignificant: '#94A1B2',
+} as const;
+
+/** Null-hypothesis-testing tooltip for a conclusion cell (H₀ / H₁ / Conclusion + verdict). */
+function conclusionTooltip(significant: boolean): HTMLElement {
+  return ui.divV([
+    ui.markdown('**H0:** the two group means are equal.'),
+    ui.markdown('**H1:** the two group means differ.'),
+    ui.markdown(`**Conclusion:** ${significant ?
+      'Reject the null hypothesis.' :
+      'Fail to reject the null hypothesis.'}`),
+    ui.markdown(significant ?
+      '**There is a significant difference between the group means.**' :
+      '**There is no significant difference between the group means.**'),
+  ]);
 }
 
 // --- Box plot description (see boxplot-description-spec.md) ---
@@ -130,7 +147,7 @@ function buildDescription(factorName: string, featureName: string, label0: strin
   return `${longPhrase}${DESCRIPTION_SEPARATOR} ${pStr}`;
 }
 
-/** One-row results grid: t, df, p-value, mean difference, 95% CI, effect size. */
+/** One-row results grid: conclusion, t, df, p-value, mean difference, 95% CI, effect size. */
 function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.Grid {
   const ciLevel = Math.round((1 - res.alpha) * 100);
   const ciCaption = `${ciLevel}% CI`;
@@ -138,7 +155,11 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
   const effectCaption = 'Hedges\' g';
   const diffDescription = `mean("${label1}") − mean("${label0}")`;
 
+  const significant = res.pValue < res.alpha;
+  const conclusionLabel = significant ? CONCLUSION_LABEL.significant : CONCLUSION_LABEL.notSignificant;
+
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(CONCLUSION_COL_NAME, [conclusionLabel]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 't', [res.t]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'df', [res.df]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [res.pValue]),
@@ -151,7 +172,25 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
 
   grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(res.pValue);
 
+  // Conclusion column: color the verdict via categorical column color-coding (Option 1, neutral accent).
+  grid.dataFrame.col(CONCLUSION_COL_NAME)!.meta.colors.setCategorical({
+    [CONCLUSION_LABEL.significant]: DG.Color.fromHtml(CONCLUSION_COLOR.significant),
+    [CONCLUSION_LABEL.notSignificant]: DG.Color.fromHtml(CONCLUSION_COLOR.notSignificant),
+  });
+  const conclusionGridCol = grid.col(CONCLUSION_COL_NAME)!;
+  conclusionGridCol.isTextColorCoded = true; // color the text, not the cell background
+  conclusionGridCol.width = 110;
+
+  // Bold the conclusion text (color stays driven by the color-coding above).
+  grid.onCellPrepare((cell) => {
+    if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME) {
+      const base = cell.style.font ? cell.style.font.replace(/^bold\s+/i, '') : '13px Roboto';
+      cell.style.font = `bold ${base}`;
+    }
+  });
+
   const tooltip = new Map<string, string>([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
     ['t', `Two-sample t-statistic. Positive when mean("${label1}") > mean("${label0}").`],
     ['df', res.method === 'Welch' ?
       'Welch–Satterthwaite degrees of freedom. Non-integer values are normal for Welch.' :
@@ -179,6 +218,10 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
         ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
         return true;
       }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME) {
+      // Null-hypothesis-testing tooltip for the conclusion cell.
+      ui.tooltip.show(conclusionTooltip(significant), x, y);
+      return true;
     }
     return false;
   });
@@ -187,7 +230,7 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
   return grid;
 } // getTTestGrid
 
-/** Lay out the t-test results: box plot + Analysis/Conclusion tab control (mirrors ANOVA). */
+/** Lay out the t-test results: box plot + a single titled results table (no tab control). */
 function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
   res: TwoSampleTTest): void {
   const view = grok.shell.getTableView(df.name);
@@ -202,7 +245,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factor.name],
     valueColumnName: feature.name,
-    // No on-plot statistics or p-value (as in ANOVA); all numbers live in the Analysis/Conclusion tabs.
+    // No on-plot statistics or p-value (as in ANOVA); all numbers live in the results table.
     showPValue: false,
     showStatistics: false,
     description: description,
@@ -216,60 +259,16 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
 
   const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'T-Test');
 
-  const effectCaption = res.method === 'Welch' ? 'Hedges\' g_s*' : 'Hedges\' g';
-  const ciCaption = `${Math.round((1 - res.alpha) * 100)}% CI`;
-
-  const nullHypoMd = ui.markdown(`**Null Hypothesis:** the two group means are equal.`);
-  ui.tooltip.bind(nullHypoMd, `The mean of "${feature.name}" is the same for "${label0}" and "${label1}".`);
-
-  const altHypoMd = ui.markdown(`**Alternative Hypothesis:** the two group means differ.`);
-  ui.tooltip.bind(altHypoMd, `The mean of "${feature.name}" differs between "${label0}" and "${label1}".`);
-
-  const conclusionMd = ui.markdown(`**Conclusion:** ${significant ?
-    'a significant difference between the group means.' :
-    'no significant difference between the group means.'}`,
-  );
-
-  const tooltipDiv = significant ?
-    ui.divV([
-      ui.p(`Reject the null hypothesis, since p < α: ${fmt(res.pValue)} < ${res.alpha}.`),
-      ui.p(`Effect size (${effectCaption}) = ${fmt(res.hedgesG)} (${effectMagnitude(res.hedgesG)}); ` +
-        `${ciCaption} for the mean difference = [${fmt(res.ciLow)}, ${fmt(res.ciHigh)}].`),
-      ui.h2('There is a significant difference between the group means.'),
-    ]) :
-    ui.divV([
-      ui.p(`Fail to reject the null hypothesis, since p ≥ α: ${fmt(res.pValue)} ≥ ${res.alpha}.`),
-      ui.p(`Effect size (${effectCaption}) = ${fmt(res.hedgesG)} (${effectMagnitude(res.hedgesG)}); ` +
-        `${ciCaption} for the mean difference = [${fmt(res.ciLow)}, ${fmt(res.ciHigh)}].`),
-      ui.h2('There is no significant difference between the group means.'),
-    ]);
-
-  ui.tooltip.bind(conclusionMd, () => tooltipDiv);
-
-  const divResult = ui.divV([
-    nullHypoMd,
-    altHypoMd,
-    conclusionMd,
-    ui.link('Learn more',
-      () => window.open(LEARN_MORE_URL[res.method], '_blank'),
-      'Click to open in a new tab.',
-    ),
-  ]);
-
   const analysisTitle = res.method === 'Welch' ?
     'Two-Sample t-test (Welch\'s)' :
     'Two-Sample t-test (Student\'s)';
   const reportViewer = getTTestGrid(res, label0, label1);
 
-  const tabControl = ui.tabControl({
-    'Analysis': ui.panel([ui.h2(analysisTitle), reportViewer.root]),
-    'Conclusion': ui.panel([divResult]),
-  });
+  // Register the results table in the workspace, then dock the grid under the box plot.
+  reportViewer.dataFrame.name = 'T-test result';
+  //grok.shell.addTable(reportViewer.dataFrame);
 
-  ui.tooltip.bind(tabControl.getPane('Analysis').header, 't-test results summary.');
-  ui.tooltip.bind(tabControl.getPane('Conclusion').header, 'Null hypothesis testing.');
-
-  view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
+  view.dockManager.dock(reportViewer, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
 
   reportViewer.root.style.width = '100%';
 } // addVisualization
