@@ -457,47 +457,24 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    let rebuildInFlight = false;
-    let rebuildTimeoutId: ReturnType<typeof setTimeout> | undefined;
-    const clearRebuildFlag = () => {
-      rebuildInFlight = false;
-      if (rebuildTimeoutId !== undefined) {
-        clearTimeout(rebuildTimeoutId);
-        rebuildTimeoutId = undefined;
-      }
-    };
-    Vue.watch(tabLabels, () => {
-      rebuildInFlight = true;
-      if (rebuildTimeoutId !== undefined) clearTimeout(rebuildTimeoutId);
-      rebuildTimeoutId = setTimeout(clearRebuildFlag, 50);
-    });
-    Vue.onUnmounted(clearRebuildFlag);
+    // The user's chosen tab, persisted per function and pushed to the dock as the
+    // preferred tab so it survives tab adds/rebuilds without the dock stealing focus.
+    // Updated only on real user tab clicks (the dock's `tabClicked` event).
+    const tabStorageKey = Vue.computed(() => `opened_tab_${currentCall.value?.func?.nqName}`);
+    const preferredTab = Vue.ref<string | null>(null);
+    Vue.watch(tabStorageKey, (key) => {
+      preferredTab.value = sessionStorage.getItem(key);
+    }, {immediate: true});
 
-    // 'Inputs' is the form side-panel unless formAsTab is on. Don't persist or
-    // restore it as an active tab — it's a sticky panel, not a tab the user switches to.
+    // 'Inputs' is the form side-panel unless formAsTab is on — a sticky panel, not a
+    // tab the user switches to, so don't persist it as the preferred output tab.
     const isInputsSidePanel = (n: string | null) => n === 'Inputs' && !formAsTab.value;
 
-    const handlePanelChanged = (name: string | null, oldName: string | null) => {
-      // Restore on initial mount OR when an inflight rebuild auto-focused away from
-      // the user's saved tab — push the saved tab back if it's still visible.
-      // When formAsTab is on, 'Inputs' is a valid tab even though it's not in tabLabels
-      // (its title is hardcoded on the form panel, not derived from input params).
-      if (oldName == null || rebuildInFlight) {
-        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
-        const isInputsTab = (n: string) => n === 'Inputs' && formAsTab.value && !formHidden.value;
-        const canRestore = !!savedName && (
-          isInputsTab(savedName) ||
-          (visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
-        );
-        if (canRestore)
-          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName!));
-        else if (formAsTab.value && !formHidden.value)
-          setTimeout(() => dockSpawnRef.value?.setActivePanel('Inputs'));
-      }
-      if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
-        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
-        clearRebuildFlag();
-      }
+    const handleTabClicked = (title: string | null) => {
+      if (!title || isInputsSidePanel(title))
+        return;
+      preferredTab.value = title;
+      sessionStorage.setItem(tabStorageKey.value, title);
     };
 
     ////
@@ -649,7 +626,8 @@ export const RichFunctionView = Vue.defineComponent({
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}
-          onUpdate:activePanelTitle={handlePanelChanged}
+          preferredPanelTitle={preferredTab.value ?? undefined}
+          onTabClicked={handleTabClicked}
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
