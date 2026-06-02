@@ -98,6 +98,11 @@ function formatPForDescription(p: number): string {
   return `p = ${Number(p.toFixed(3))}`;
 }
 
+/** Display format for a p-value column cell: scientific notation below 0.001, fixed "0.000" otherwise. */
+function pValueColumnFormat(p: number): string {
+  return p < 0.001 ? 'scientific' : '0.000';
+}
+
 /**
  * Build the box plot description line per boxplot-description-spec.md.
  *
@@ -143,6 +148,8 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Cohen\'s d', [res.cohenD]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, effectCaption, [res.hedgesG]),
   ]));
+
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(res.pValue);
 
   const tooltip = new Map<string, string>([
     ['t', `Two-sample t-statistic. Positive when mean("${label1}") > mean("${label0}").`],

@@ -49,6 +49,11 @@ function formatPForDescription(p: number): string {
   return `p = ${Number(p.toFixed(3))}`;
 }
 
+/** Display format for a p-value column cell: scientific notation below 0.001, fixed "0.000" otherwise. */
+function pValueColumnFormat(p: number): string {
+  return p < 0.001 ? 'scientific' : '0.000';
+}
+
 
 /** Add one-way ANOVA results */
 function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
@@ -154,6 +159,8 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
   ]));
 
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
+
   const tooltip = new Map([
     ['Source of variance', 'List of the explored variation sources.'],
     ['SS', 'Sum of squares (SS). Measure of total variation in the data.'],
@@ -190,6 +197,8 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-critical', [fCritical]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue]),
   ]));
+
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
 
   const tooltip = new Map([
     ['Source of variance', 'List of the explored variation sources.'],
