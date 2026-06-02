@@ -98,7 +98,8 @@ export class PackageFunctions {
 
     // Packages: when a JS bundle is loaded
     grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
-      sync('packages', pkg.name);
+      if (pkg?.name)
+        sync('packages', pkg.name);
     });
 
     // Poll for shared connections and package updates every 10 minutes.
