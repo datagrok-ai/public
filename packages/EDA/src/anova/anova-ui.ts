@@ -69,9 +69,9 @@ function pValueColumnFormat(p: number): string {
 }
 
 
-/** Add one-way ANOVA results */
+/** Add one-way ANOVA results. When `showReport` is false, only the box plot is shown (no results table). */
 function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
-  report: OneWayAnovaReport): void {
+  report: OneWayAnovaReport, showReport: boolean): void {
   const view = grok.shell.getTableView(df.name);
   grok.shell.v = view;
 
@@ -98,6 +98,9 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   });
 
   const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
+
+  if (!showReport)
+    return;
 
   const analysisTitle = report.method === 'Welch' ?
     'One-Way ANOVA (Welch\'s)' :
@@ -378,6 +381,11 @@ export function runOneWayAnova(): void {
     },
   });
 
+  const fullReportInput = ui.input.bool('Full report', {
+    value: true,
+    tooltipText: 'Add a table with the full test statistics and conclusion.',
+  });
+
   const dlg = ui.dialog({title: 'ANOVA', helpUrl: ANOVA_HELP_URL});
   const view = grok.shell.getTableView(df.name);
   view.root.appendChild(dlg.root);
@@ -389,7 +397,7 @@ export function runOneWayAnova(): void {
         method: currentMethod,
         toValidate: false,
       });
-      addVizualization(df, factor!.name, feature!.name, res);
+      addVizualization(df, factor!.name, feature!.name, res, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));
@@ -403,7 +411,7 @@ export function runOneWayAnova(): void {
       } else
         grok.shell.error('ANOVA fails: the platform issue');
     }
-  }, undefined, 'Perform analysis of variances');
+  }, undefined, 'Perform analysis of variances.');
 
   const runBtn = dlg.getButton('Run');
 
@@ -443,13 +451,14 @@ export function runOneWayAnova(): void {
     }
 
     runBtn.disabled = false;
-    ui.tooltip.bind(runBtn, 'Perform analysis of variances');
+    ui.tooltip.bind(runBtn, 'Perform analysis of variances.');
   }
 
   dlg.add(factorInput)
     .add(featureInput)
     .add(methodInput)
-    .add(signInput);
+    .add(signInput)
+    .add(fullReportInput);
 
   updateRunButtonState();
   factorInput.validate();

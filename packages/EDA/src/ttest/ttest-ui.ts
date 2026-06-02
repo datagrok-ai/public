@@ -198,9 +198,10 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string, featu
   return grid;
 } // getTTestGrid
 
-/** Lay out the t-test results: box plot + a single titled results table (no tab control). */
+/** Lay out the t-test results: box plot + a single titled results table (no tab control).
+ *  When `showReport` is false, only the box plot is shown (no results table). */
 function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
-  res: TwoSampleTTest): void {
+  res: TwoSampleTTest, showReport: boolean): void {
   const view = grok.shell.getTableView(df.name);
   grok.shell.v = view;
 
@@ -227,6 +228,9 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
 
   const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'T-Test');
 
+  if (!showReport)
+    return;
+
   const analysisTitle = res.method === 'Welch' ?
     'Two-Sample t-test (Welch\'s)' :
     'Two-Sample t-test (Student\'s)';
@@ -234,7 +238,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
 
   // Register the results table in the workspace, then dock the grid under the box plot.
   reportViewer.dataFrame.name = 'T-test result';
-  //grok.shell.addTable(reportViewer.dataFrame);
+  grok.shell.addTable(reportViewer.dataFrame);
 
   view.dockManager.dock(reportViewer, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
 
@@ -379,6 +383,11 @@ export function runTwoSampleTTest(): void {
     onValueChanged: (value) => {significance = value; updateRunButtonState();},
   });
 
+  const fullReportInput = ui.input.bool('Full report', {
+    value: true,
+    tooltipText: 'Add a table with the full test statistics and conclusion.',
+  });
+
   const dlg = ui.dialog({title: 'Two-sample t-test', helpUrl: T_TEST_HELP_URL});
   const view = grok.shell.getTableView(df.name);
   view.root.appendChild(dlg.root);
@@ -390,7 +399,7 @@ export function runTwoSampleTTest(): void {
         method: currentMethod,
         alpha: significance,
       });
-      addVisualization(df, factor!, feature!, res);
+      addVisualization(df, factor!, feature!, res, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));
@@ -403,7 +412,7 @@ export function runTwoSampleTTest(): void {
       } else
         grok.shell.error('t-test fails: the platform issue');
     }
-  }, undefined, 'Perform two-sample t-test');
+  }, undefined, 'Perform two-sample t-test.');
 
   const runBtn = dlg.getButton('Run');
 
@@ -465,13 +474,14 @@ export function runTwoSampleTTest(): void {
     }
 
     runBtn.disabled = false;
-    ui.tooltip.bind(runBtn, 'Perform two-sample t-test');
+    ui.tooltip.bind(runBtn, 'Perform two-sample t-test.');
   }
 
   dlg.add(factorInput)
     .add(featureInput)
     .add(signInput)
-    .add(methodInput);
+    .add(methodInput)
+    .add(fullReportInput);
 
   updateRunButtonState();
 
