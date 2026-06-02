@@ -345,14 +345,14 @@ export async function visualizeSigmoidKernelSVM(df: DG.DataFrame, targetColumn: 
 
 //name: T-test
 //description: Two-sample t-test (Welch or Student) compares the means of a feature between two groups.
-//top-menu: ML | Analyze | Group comparison | T-test...
+//top-menu: ML | Analyze | Group Comparison | T-test...
 export function tTest() : void {
   PackageFunctions.tTest();
 }
 
 //name: ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
-//top-menu: ML | Analyze | Group comparison | ANOVA...
+//top-menu: ML | Analyze | Group Comparison | ANOVA...
 export function anova() : void {
   PackageFunctions.anova();
 }

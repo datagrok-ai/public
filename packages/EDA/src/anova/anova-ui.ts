@@ -34,6 +34,21 @@ const LEARN_MORE_URL = {
   Welch: 'https://en.wikipedia.org/wiki/Welch%27s_t-test',
 } as const;
 
+// --- Box plot description (mirrors the two-sample t-test; see boxplot-description-spec.md) ---
+
+/** Separator between the phrase and the p-value in the box plot description (placed directly after the phrase). */
+const DESCRIPTION_SEPARATOR = ',';
+
+/** Format a p-value for the box plot description: clamp at the extremes, else round to 3 digits without trailing zeros. */
+function formatPForDescription(p: number): string {
+  if (p < 0.001)
+    return 'p < 0.001';
+  if (p > 0.99)
+    return 'p > 0.99';
+  // Round to 3 decimals; Number() drops trailing zeros (0.420 → 0.42, 0.005 → 0.005).
+  return `p = ${Number(p.toFixed(3))}`;
+}
+
 
 /** Add one-way ANOVA results */
 function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
@@ -42,17 +57,24 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   grok.shell.v = view;
 
   const test = report.anovaTable.fStat > report.fCritical;
-  const shortConclusion = test ?
+  // ANOVA compares 3+ groups, so only the long (category-free) phrase applies.
+  const phrase = test ?
     `"${factorsName}" affects the "${featuresName}"` :
     `"${factorsName}" doesn't affect the "${featuresName}"`;
+  const description = `${phrase}${DESCRIPTION_SEPARATOR} ${formatPForDescription(report.anovaTable.pValue)}`;
 
   const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factorsName],
     valueColumnName: featuresName,
+    // No on-plot statistics or p-value; all numbers live in the Analysis/Conclusion tabs.
     showPValue: false,
     showStatistics: false,
-    description: shortConclusion,
+    description: description,
+    // Always show the description, pinned to the top of the box plot.
+    descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Top',
     showColorSelector: false,
+    showSizeSelector: false,
     autoLayout: false,
   });
 

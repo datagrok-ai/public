@@ -173,7 +173,7 @@ export namespace funcs {
   }
 
   /**
-  Two-sample t-test (Welch or Student) comparing the means of a feature between two groups.
+  Two-sample t-test (Welch or Student) compares the means of a feature between two groups.
   */
   export async function tTest(): Promise<void> {
     return await grok.functions.call('EDA:TTest', {});

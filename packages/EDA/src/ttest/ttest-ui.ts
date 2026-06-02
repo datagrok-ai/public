@@ -2,8 +2,7 @@
 // Two-sample t-test - UI.
 //
 // Mirrors the ANOVA dialog (`runOneWayAnova`). Reuses the ANOVA factorization and
-// stat primitives, but ships its own results renderer (the unification of the ANOVA
-// and t-test renderers into a single two-level discriminated union is a follow-up).
+// stat primitives, but ships its own results renderer.
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -82,6 +81,50 @@ function effectMagnitude(g: number): string {
   return 'large';
 }
 
+// --- Box plot description (see boxplot-description-spec.md) ---
+
+/** Separator between the phrase and the p-value in the box plot description (placed directly after the phrase). */
+const DESCRIPTION_SEPARATOR = ',';
+/** Above this total line length the description switches to the long (category-free) form. */
+const DESCRIPTION_LENGTH_THRESHOLD = 70;
+
+/** Format a p-value for the box plot description: clamp at the extremes, else round to 3 digits without trailing zeros. */
+function formatPForDescription(p: number): string {
+  if (p < 0.001)
+    return 'p < 0.001';
+  if (p > 0.99)
+    return 'p > 0.99';
+  // Round to 3 decimals; Number() drops trailing zeros (0.420 → 0.42, 0.005 → 0.005).
+  return `p = ${Number(p.toFixed(3))}`;
+}
+
+/**
+ * Build the box plot description line per boxplot-description-spec.md.
+ *
+ * Short form ("<value>" differs between "<catA>" and "<catB>") is used when the whole line fits
+ * within the length threshold and both category names are non-empty; otherwise the long, category-free
+ * form ("<factor>" affects the "<value>") is used.
+ */
+function buildDescription(factorName: string, featureName: string, label0: string, label1: string,
+  significant: boolean, p: number): string {
+  const pStr = formatPForDescription(p);
+
+  const shortPhrase = significant ?
+    `"${featureName}" differs between "${label0}" and "${label1}"` :
+    `"${featureName}" doesn't differ between "${label0}" and "${label1}"`;
+  const shortLine = `${shortPhrase}${DESCRIPTION_SEPARATOR} ${pStr}`;
+
+  const labelsPresent = label0.length > 0 && label1.length > 0;
+  if (labelsPresent && shortLine.length <= DESCRIPTION_LENGTH_THRESHOLD)
+    return shortLine;
+
+  // Long form: note the deliberate article ("affects the") absent from the short form.
+  const longPhrase = significant ?
+    `"${factorName}" affects the "${featureName}"` :
+    `"${factorName}" doesn't affect the "${featureName}"`;
+  return `${longPhrase}${DESCRIPTION_SEPARATOR} ${pStr}`;
+}
+
 /** One-row results grid: t, df, p-value, mean difference, 95% CI, effect size. */
 function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.Grid {
   const ciLevel = Math.round((1 - res.alpha) * 100);
@@ -147,9 +190,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   const label0 = labelOf(factor, res.code0);
   const label1 = labelOf(factor, res.code1);
 
-  const shortConclusion = significant ?
-    `"${feature.name}" differs between "${label0}" and "${label1}"` :
-    `"${feature.name}" doesn't differ between "${label0}" and "${label1}"`;
+  const description = buildDescription(factor.name, feature.name, label0, label1, significant, res.pValue);
 
   const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factor.name],
@@ -157,9 +198,12 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
     // No on-plot statistics or p-value (as in ANOVA); all numbers live in the Analysis/Conclusion tabs.
     showPValue: false,
     showStatistics: false,
-    description: shortConclusion,
+    description: description,
+    // Always show the description, pinned to the top of the box plot.
     descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Top',
     showColorSelector: false,
+    showSizeSelector: false,
     autoLayout: false,
   });
 
