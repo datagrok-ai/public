@@ -6,6 +6,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -107,7 +108,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
     // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
-    if (molString && !hasNewLines(molString) && molString.length > 5000)
+    if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
       return null; // do not attempt to parse very long SMILES, will cause MOB. P.s. passing undefined details fails rdkit
     return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
@@ -138,7 +139,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
           mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          if (cachedMol || this.addToCache(mol))
+          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+          if (mol && this.addToCache(mol))
             isCached = true;
           if (mol) {
             if (stereoAgnostic)
@@ -513,10 +515,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   invalidateCache() {
     this._cacheCounter = 0;
-    if (this._molsCache) {
-      this._molsCache.forEach((it) => it?.delete());
-      this._molsCache.clear();
-    }
   }
 
   mmpGetFragments(molecules: string[]): IMmpFragmentsResult {

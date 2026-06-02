@@ -7,6 +7,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
 import {hasNewLines, isMolBlock} from './chem-common';
+import {MAX_SMILES_LENGTH} from './chem-constants';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -99,10 +100,7 @@ export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: nu
 }
 
 function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
-  const opts: {[key: string]: any} = {};
-  Object.keys(RDKIT_COMMON_RENDER_OPTS).forEach((key: string) => opts[key] = RDKIT_COMMON_RENDER_OPTS[key]);
-  Object.keys(addSettings).forEach((key: string) => opts[key] = addSettings[key]);
-  return opts;
+  return {...RDKIT_COMMON_RENDER_OPTS, ...addSettings};
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
@@ -243,7 +241,7 @@ export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
 export function checkMoleculeValid(molecule: string): any {
   let mol;
   try {
-    if (!hasNewLines(molecule) && molecule?.length > 5000)
+    if (!hasNewLines(molecule) && molecule?.length > MAX_SMILES_LENGTH)
       return null;
     mol = getRdKitModule().get_mol(molecule);
   } catch (e: any) {

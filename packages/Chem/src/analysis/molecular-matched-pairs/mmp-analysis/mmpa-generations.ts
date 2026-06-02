@@ -53,7 +53,7 @@ async function generationsCPU(structuresN: number, activityN: number, moleculesA
     for (let j = 0; j < frags.fragCodes[i].length; j++) {
       const core = frags.idToName[frags.fragCodes[i][j][0]];
       const subst = frags.idToName[frags.fragCodes[i][j][1]];
-      if (core != '') {
+      if (core !== '') {
         for (let k = 0; k < rulesFrom.length; k++) {
           if (subst === rulesFromCats[rulesFrom[k]] ) {
             for (let kk = 0; kk < activityN; kk++) {

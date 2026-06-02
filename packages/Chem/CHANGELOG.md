@@ -2,6 +2,16 @@
 
 ## v.next
 
+* Chem: Fixed `waitFor` clearing the wrong timer handle, leaving the polling interval running after the condition was met
+* OCL worker: Added missing `break` statements so a drug-likeness or molfile-to-V3K request no longer also runs and posts later cases' results
+* OCL worker: Fixed an off-by-one atom loop that could miscalculate molecule charge
+* RDKit worker: Fixed the R-group analysis handler posting a stray `undefined` result due to a shadowed variable
+* Identifiers: Fixed the UniChem home-page link mapped to the base-ID URL instead of `src_url`
+* Map Identifiers: Fixed `column ids.key does not exist` when converting from InChIKey or via the ChEMBL bridge — `_chemMapViaQuery` now renames a cloned input column to `key` to match the converter SQL parameter name
+* Chem search: Replaced a floating promise with proper `if`/`.catch()` so substructure-search sub-task rejections are handled
+* RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
+* BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously
+* Highlight widget: Unsubscribe `ItemsGrid` event subscriptions when the grid is rebuilt or the widget is detached
 * Chem: MPO: Optimized score calculation for large datasets — a column-major typed-array compute pipeline (one `getRawData()` per column instead of per-cell `get()`/`isNone()`) with per-column desirability caching, so interactive profile edits recompute only the changed property
 * MPO: Fixed disabled OK button with no explanation when creating a new profile — the profile settings (name field) now expand automatically, the OK state re-validates after the default name is filled, and the footer warning explains an invalid name
 * [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
