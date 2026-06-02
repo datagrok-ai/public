@@ -5,79 +5,24 @@ sub_features_covered:
   - bio.analyze.sequence-space.editor
   - bio.analyze.sequence-space.transform
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md (chain yaml carries integration);
-//     coverage_type: regression — deeper Sequence-Space-specific scenario
-//   sub_features_covered: [bio.analyze.sequence-space, .top-menu, .editor, .transform]
-//   ui_coverage_responsibility: absent in scenario .md frontmatter (chain
-//     yaml carries [Bio | Analyze | Sequence Space, sequence-space-editor-dialog,
-//     sequence-space-similarity-metric-input, sequence-space-method-name-input,
-//     scatter-plot-viewer]); ui_coverage_delegated_to: null
 //   related_bugs: [GROK-18616, GROK-19928] (cross-cutting invariants delegated
 //     to chain bug_focused_candidates: bio-grok-18616-spec.ts /
 //     bio-grok-19928-spec.ts per scenario Notes)
-//   produced_from: migrated
-//   coverage_type: regression
-//
-// Atlas provenance: scenario realises atlas critical path bio.cp.sequence-space
-// (p0, derived_from package.ts#L740) across three canonical Macromolecule
-// notations (FASTA, HELM, MSA), exercising the multi-subsystem path: editor
-// dialog (bio.analyze.sequence-space.editor, SequenceSpaceEditor wrapping
-// DimReductionBaseEditor — package.ts#L237) → embedding compute
-// (bio.analyze.sequence-space.transform, sequenceSpaceTransform —
-// package.ts#L789, via bio.engines.preprocess-encode) → ScatterPlot embedding
-// viewer titled "Embeddings".
-//
 // SCOPE_REDUCTIONS honoured from scenario frontmatter:
 //   SR-01 (A-CONT-01) — "arbitrary Similarity/Method edit set" not defined in
-//     atlas for bio.analyze.sequence-space.editor. The edit-then-run flow is
-//     preserved (dialog re-opens, inputs are editable via the <select> widget
-//     surface, a second embedding ScatterPlot docks); the correctness assertion
-//     on the edited-parameter embedding distribution is deferred until atlas
-//     or operator supplies a concrete edit set. Concrete picks below
-//     (UMAP → t-SNE, Hamming → Levenshtein) come from the prior run log
-//     (sequence-space-run.md) — they exercise the input re-binding contract
-//     but are NOT canonical for correctness.
-//
-// Sister specs: sequence-activity-cliffs-spec.ts (parallel deeper scenario for
-// the Activity-Cliffs top menu); analyze-spec.ts (umbrella runner covering
-// Sequence Space alongside Activity Cliffs and Composition); composition-
-// analysis-spec.ts (parallel deeper scenario for the Composition top menu).
-//
-// Selector provenance: every [name=...] selector below is class-1 (in
-// bio.md grok-browser reference — L117 top-menu path, L121 dialog, L127-L128
-// Method / Similarity SELECT inputs, L131 OK button).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Dataset family pinned to `tests/filter_*.csv` per scenario authority
-// (frontmatter source_text_fixes:
-// dataset-path-pinned-to-system-appdata-bio-tests-directory). Sequence Space
-// needs only a Macromolecule column (NOT a numeric Activity column — that is
-// an Activity Cliffs editor requirement), so the single-column filter_*.csv
-// fixtures (which sequence-activity-cliffs-spec.ts had to abandon due to a
-// missing Activity column) are valid for this analysis. The scenario Notes
-// section explicitly invites operator clarification if `samples/` is
-// preferred over `tests/`; the scenario as written pins to tests/, and per
-// the constraint-enforcement section's Scenario authority rule, scenario
-// wins by default.
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv'},
   {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv'},
 ];
-
 for (const ds of datasets) {
   test(`Bio Sequence Space on ${ds.name}`, async ({page}) => {
     test.setTimeout(600_000);
     stepErrors.length = 0;
-
     await loginToDatagrok(page);
-
     // Setup phase: open dataset, wait for Macromolecule semType detection +
     // Bio package init (cell renderer + filter registration).
     await page.evaluate(async (path) => {
@@ -102,7 +47,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
     // Bio top-menu + init-completion readiness (cold-start stabilization,
     // mirrors the analyze-spec.ts / sequence-activity-cliffs-spec.ts cycle-2
     // retry pattern). Two-layer guard:
@@ -125,7 +69,6 @@ for (const ds of datasets) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-
     // Per-leaf function-registration probe (cycle-2 retry refinement from
     // analyze-spec.ts). The init probe above guarantees init COMPLETION; it
     // does NOT guarantee the Bio:sequenceSpaceTopMenu leaf is findable in the
@@ -149,7 +92,6 @@ for (const ds of datasets) {
       await new Promise((r) => setTimeout(r, 1500));
     });
     await page.waitForTimeout(2000);
-
     // Scenario 1, Step 2 — Open Bio > Analyze > Sequence Space (defaults run).
     // Atlas: bio.analyze.sequence-space.top-menu (package.ts#L740),
     // bio.analyze.sequence-space.editor (SequenceSpaceEditor — package.ts#L237).
@@ -180,7 +122,6 @@ for (const ds of datasets) {
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Sequence Space');
     });
-
     // Scenario 1, Step 3 — Click OK to run with default parameters.
     // Atlas: bio.analyze.sequence-space.transform (sequenceSpaceTransform —
     // package.ts#L789, via bio.engines.preprocess-encode).
@@ -220,14 +161,12 @@ for (const ds of datasets) {
       expect(hasEmbedX).toBe(true);
       expect(hasEmbedY).toBe(true);
     });
-
     // Close the scatter plot from the first run so the second run's
     // structural invariant (distinct viewer mount) is clearly observable.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     // Scenario 2, Step 5 — Re-open Bio > Analyze > Sequence Space.
     // Editor input re-binding contract (bio.analyze.sequence-space.editor).
     await softStep(`${ds.name}: Re-open Bio > Analyze > Sequence Space`, async () => {
@@ -241,7 +180,6 @@ for (const ds of datasets) {
       });
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
     });
-
     // Scenario 2, Step 6 — Change Similarity + Method (edit-then-run flow).
     // Per SR-01: source text says "arbitrarily" — atlas does not pin a
     // canonical edit set. The concrete picks below (UMAP → t-SNE, Hamming →
@@ -281,7 +219,6 @@ for (const ds of datasets) {
       expect(verified.method).toBe('t-SNE');
       expect(verified.sim).toBe('Levenshtein');
     });
-
     // Scenario 2, Step 7 — Click OK to run with edited parameters.
     // Structural invariant survives SR-01 deferral: a second "Embeddings"
     // Scatter plot must dock (distinct from the first run's viewer — the
@@ -318,14 +255,12 @@ for (const ds of datasets) {
       expect(embedXCount).toBeGreaterThanOrEqual(2);
       expect(embedYCount).toBeGreaterThanOrEqual(2);
     });
-
     // Final cleanup: close non-Grid viewers so subsequent dataset iterations
     // observe a clean TableView.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
       throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

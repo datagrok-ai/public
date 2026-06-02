@@ -5,91 +5,7 @@ sub_features_covered:
   - bio.api.get-seq-helper
   - bio.lifecycle.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md frontmatter (chain yaml pins
-//     proactive_lifecycle_specs[5] at the proactive-lifecycle pyramid layer
-//     globally; coverage_type: regression)
-//   sub_features_covered: [bio.engines.numbering-immunum,
-//     bio.annotate.numbering-scheme, bio.api.get-seq-helper,
-//     bio.lifecycle.init]
-//   ui_coverage_responsibility: absent (delegated_to: null) — scenario Notes
-//     explicitly state "JS API substitutes are used for project persistence
-//     assertions per the same pattern as sibling bio-lifecycle-*.md
-//     scenarios"; UI driving stays on the cited dispatch points where the
-//     assertable surface lives (the Annotate top-menu path).
-//   related_bugs: [] (chain proactive_lifecycle_specs[5].bugs_reinforcing
 //     empty; no bug-invariant slice on this lifecycle cell)
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.lifecycle.init] derived_from:
-//     public/packages/Bio/src/package.ts#L138 — initBio role: init.
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-helper] derived_from:
-//     public/packages/Bio/src/package.ts#L1678 — Bio:getSeqHelper service
-//     surface. interaction = "await grok.functions.call('Bio:getSeqHelper')".
-//   feature-atlas/bio.yaml#sub_features[bio.annotate.numbering-scheme]
-//     derived_from: public/packages/Bio/src/package.ts#L502 — applyNumbering
-//     Scheme top-menu function. interaction = "Bio | Annotate | Apply
-//     Numbering Scheme...".
-//   feature-atlas/bio.yaml#sub_features[bio.engines.numbering-immunum]
-//     derived_from: public/packages/Bio/src/package.ts#L1018 — Immunum engine
-//     (immunumAntibodyNumbering, meta.role: antibodyNumbering); WASM-in-worker
-//     5-column result shape per Bio/CLAUDE.md "Expected output shape" table:
-//     position_names, chain_type, annotations_json, numbering_detail,
-//     numbering_map. Schemes choices ['imgt', 'kabat'].
-//   feature-atlas/bio.yaml#critical_paths[bio.cp.numbering-scheme] derived_from:
-//     public/packages/Bio/src/package.ts#L502 (priority p1; sub_features_used:
-//     [bio.annotate.numbering-scheme, bio.engines.numbering-immunum]).
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[save_project_with_analysis]
-//     affected_source_classes: [all] (shorthand applies to immunum_wasm per
-//     chain proactive_lifecycle_specs[5].rationale — "Only one non-agnostic
-//     op affects this source class since WASM asset is bundled with package
-//     version and has no runtime entity-type dep").
-//
-// Paradigm selection (per pyramid_layer: proactive-lifecycle on
-// target_layer: playwright): mostly JS API for matrix/lifecycle shape; UI
-// driving required for the atlas-cited UI dispatch point the scenario
-// explicitly names — `Bio | Annotate | Apply Numbering Scheme...` (Scenario
-// 1 step 3). The top-menu path is class-1 selectors (bio.md L37, L417-L429).
-//
-// SCOPE notes honoured from scenario authority:
-//   - Step 2.1 (Save Project Ribbon + Data Sync toggle): per scenario Notes
-//     "JS API substitutes are used for project persistence assertions per
-//     the same pattern as sibling bio-lifecycle-*.md scenarios". Mirrors
-//     bio-lifecycle-macromolecule-column-spec.ts S3.3 — uses
-//     helpers/projects.ts saveAllTablesWithProvenance +
-//     reopenAndAssertProvenance, the canonical JS-API persistence-helper
-//     pattern at the lifecycle layer.
-//   - Step 3.3 (re-run Immunum on reopened table): exercises the WASM
-//     re-load determinism contract — same code path as first call per
-//     immunum-client.ts "fresh worker per call, terminate before return"
-//     pattern (Bio/CLAUDE.md). No private WASM-handle hooks; assertion is
-//     observable equality of the two result DataFrames' column shapes +
-//     non-null values across the same input rows.
-//
-// Selector provenance: every [name=...] selector below is class-1
-// (in bio.md grok-browser reference at the cited lines):
-//   - [name="div-Bio"] (bio.md L606)
-//   - [name="div-Bio---Annotate"] (bio.md L69)
-//   - [name="div-Bio---Annotate---Apply-Numbering-Scheme..."] (bio.md L421)
-//   - [name="dialog-Apply-Antibody-Numbering"] (bio.md L425; dialog title
-//     differs from menu label — title is "Apply Antibody Numbering")
-//   - [name="input-host-Sequence"], [name="input-host-Engine"],
-//     [name="input-host-Scheme"] (bio.md L427-L429)
-//   - [name="button-OK"] (bio.md L131 / standard dialog OK)
-//   - [name="viewer-Grid"] (standard platform selector — used across all bio specs)
-//
-// Sibling spec reuse:
-//   - bio-lifecycle-macromolecule-column-spec.ts — canonical proactive-
-//     lifecycle pattern (cold-start two-layer init probe + top-menu dialog
-//     drive + saveAllTablesWithProvenance + reopenAndAssertProvenance);
-//     this spec mirrors its structure exactly, with the Convert+Sequence
-//     Space ribbon paths replaced by the Apply Numbering Scheme path.
-//   - convert-spec.ts — canonical Bio top-menu click + .dispatchEvent
-//     'mouseover' submenu pattern; mirrored for the Annotate submenu walk.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
@@ -97,17 +13,10 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
-
 test.use(specTestOptions);
-
 test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+reopen → re-run', async ({page}) => {
-  // 7-minute end-to-end budget: cold Bio init (≤90s observed in sibling
-  // analyze/sequence-space cycle-2 retries) + dialog dispatch + IMGT
-  // numbering WASM compute on a tiny antibody fixture (≤30s expected) +
-  // project save+reopen round trip + second numbering run.
   test.setTimeout(420_000);
   stepErrors.length = 0;
-
   const stamp = Date.now();
   const projectName = `bio-lifecycle-immunum-wasm-${stamp}`;
   // Canonical antibody fixture (used by Bio/src/tests/antibody-numbering-tests.ts:167).
@@ -116,7 +25,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
   // shape is non-degenerate per row.
   const antibodyFixturePath = 'System:AppData/Bio/samples/antibodies.csv';
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
-
   // The 5-column result DataFrame columns the Immunum engine produces, per
   // atlas bio.engines.numbering-immunum + Bio/CLAUDE.md "Expected output
   // shape" table. These names are emitted by showNumberingSchemeDialog's
@@ -133,9 +41,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     'position_names', 'chain_type', 'annotations_json',
     'numbering_detail', 'numbering_map',
   ] as const;
-
   await loginToDatagrok(page);
-
   // ==========================================================================
   // Setup — open antibody fixture, await semType + Bio init readiness.
   // ==========================================================================
@@ -164,7 +70,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     }
   }, antibodyFixturePath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Two-layer Bio init readiness probe (mirrors convert-spec.ts /
   // sequence-space-spec.ts / bio-lifecycle-macromolecule-column-spec.ts).
   // Layer 1: DOM top-menu visibility. Layer 2: Bio service-surface
@@ -178,7 +83,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
   // ==========================================================================
   // Scenario 1 — Trigger initBio + verify getSeqHelper resolves (atlas
   // bio.lifecycle.init + bio.api.get-seq-helper).
@@ -215,7 +119,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     // method other packages consume (Bio/CLAUDE.md service pattern).
     expect(info.methodNames).toContain('getSeqHandler');
   });
-
   // ==========================================================================
   // Scenario 1, Step 2 — Macromolecule detector classified the antibody
   // sequences (atlas bio.detector — outside this scenario's
@@ -243,7 +146,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     // any valid antibody sequence input per atlas bio.engines.numbering-immunum.
     expect(info.units).not.toBeNull();
   });
-
   // ==========================================================================
   // Scenario 1, Step 3 — Drive Bio | Annotate | Apply Numbering Scheme...
   // (atlas bio.annotate.numbering-scheme + bio.engines.numbering-immunum).
@@ -311,7 +213,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       () => document.querySelectorAll('[name="dialog-Apply-Antibody-Numbering"]').length === 0,
       null, {timeout: 30_000}).catch(() => {});
   });
-
   // ==========================================================================
   // Scenario 1, Step 4 — Verify the 5-column Immunum result-shape contract
   // (atlas bio.engines.numbering-immunum + Bio/CLAUDE.md "Expected output
@@ -380,7 +281,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     for (const expectedName of EXPECTED_IMMUNUM_COLS)
       expect(info.sampleRow![expectedName]).not.toBeNull();
   });
-
   try {
     // ==========================================================================
     // Scenario 2 — Save project with the numbering output (atlas
@@ -400,7 +300,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-
     // Scenario 2.2 — Verify project record persists (find-by-id; per the
     // saveAllTablesWithProvenance contract, the project entity carries the
     // TableInfo with .annotations / aligned columns intact).
@@ -412,7 +311,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       }, saved.projectId);
       expect(ok).toBe(true);
     });
-
     // ==========================================================================
     // Scenario 3 — Reopen project + WASM re-load + deterministic re-run.
     // ==========================================================================
@@ -438,7 +336,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(post.units).not.toBeNull();
       expect(post.rowCount).toBeGreaterThan(0);
     });
-
     // Scenario 3, Step 3 — Re-run Immunum on the reopened table; exercises
     // the WASM re-load code path on a fresh session. Per immunum-client.ts
     // "fresh worker per call, terminate before return" pattern (Bio/CLAUDE.md)
@@ -502,7 +399,6 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       });
     }
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

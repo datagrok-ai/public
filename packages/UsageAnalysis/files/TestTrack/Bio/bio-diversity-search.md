@@ -43,33 +43,6 @@ gate_verdicts:
     timestamp: 2026-06-02T07:00:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
 ---
 
 # Bio | Search | Diversity Search — positive-path diversity docking and viewer-reaction contract

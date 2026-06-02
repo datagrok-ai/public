@@ -32,33 +32,6 @@ gate_verdicts:
     timestamp: 2026-06-01T12:30:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   f:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02
@@ -69,8 +42,6 @@ gate_verdicts:
     cycle_id: 2026-06-01-bio-migrate-02
     timestamp: 2026-06-01T23:45:00Z
     failure_keys: []
-    scope_reduction_proposal: |-
-      Within-slice deferral of the library Search box presence assertion from scenario step 3. The scenario `.md` asserts `[name="input-host-Search"]` as one of three sub-assertions in step 3 (alongside per-library checkbox host and per-row checkbox element). That selector is NOT in the bio.md reference (L459-477 enumerates view-root, controls-form, per-library row/checkbox/label, Edit/Delete icons, Add/Merge buttons, Duplicate-Monomer-Symbols sub-section — no Search input) and could not be live-MCP-observed this cycle (spec body lines 174-183 cite profile auth stale despite prewarm). The spec correctly declines to emit a class-3 inferred selector per agents/automator-prompt.md §"Selector provenance (3-class model)" and instead asserts the load-bearing ui-smoke surface for `bio.manage.libraries-view`: per-library checkbox listing under `.monomer-lib-controls-form` (rowCount >= 1; bio.md L470), per-row checkbox element presence (bio.md L471 — `eachRowHasCheckbox`), and toggle independence with end-of-test restore. All other scenario assertions are covered: Scenario 1 (open `System:AppData/Bio/tests/filter_HELM.csv`, Macromolecule detector classification, top-menu dispatch) maps cleanly to softSteps at spec lines 88-102 and 104-172; Scenario 2's per-library checkbox host + checkbox element + toggle independence (lines 184-218 and 220-299) is fully realized. Gate B retry context: scenario carries `gate_verdicts.b: FAIL [B-RUN-PASS, B-STAB-01]` for cycle_id 2026-06-01-bio-migrate-02. The new spec body substantively addresses the prior failure mode — section-header detection rewritten (lines 124-171) from fragile `textContent === ...` on divs (which prior attempt's error-context.md flagged as missing the title because containing elements wrap the title alongside a counter badge) to (a) `grok.shell.v.name` equality for the `Manage Monomer Libraries` title and (b) an `<h1>..<h4>` scan for the literal `Manage Duplicate Monomer Symbols` heading. This is a good-faith diff against the prior diagnosed region, not a cosmetic rename — E-RETRY-IGNORES-GATE-B does NOT fire. Recommended follow-up: queue forward MCP recon on the Monomer Libraries view to enumerate the Search input selector (candidate shapes: `.monomer-lib-controls-form input[placeholder="Search" i]` or `[name="input-host-Search"]` if it materializes), update bio.md, then a later cycle can reinstate the Search box assertion via a small spec amendment. Routes through SCOPE_REDUCTION per spec-mode.md verdict guidance ("spec covers fewer assertions than the scenario explicitly because of a documented technical limitation"). No new failure_keys.
   b:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02

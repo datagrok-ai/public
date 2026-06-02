@@ -23,33 +23,6 @@ gate_verdicts:
     timestamp: 2026-06-02T06:00:00Z
     failure_keys: []
     review_round: 1
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   f:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02

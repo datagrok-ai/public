@@ -9,85 +9,8 @@ sub_features_covered:
   - bio.analyze.sequence-space.transform
   - bio.api.get-seq-helper
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md frontmatter (chain yaml pins
-//     proactive_lifecycle_specs[0] at the proactive-lifecycle pyramid layer
-//     globally; coverage_type: regression)
-//   sub_features_covered: [bio.detector, bio.rendering,
-//     bio.transform.convert-notation, .convert-notation.action,
-//     bio.io.fasta-handler, bio.io.save-as-fasta,
-//     bio.analyze.sequence-space.transform, bio.api.get-seq-helper]
-//   ui_coverage_responsibility: absent (delegated_to: null) — the scenario's
-//     Notes section explicitly carves "JS API substitutes are used for the
-//     persistence-side assertions (Step 3.4, 4.1) per the same pattern as
-//     sibling projects-lifecycle-*.md scenarios — UI driving stays on the
-//     dispatch points where the assertable surface lives".
 //   related_bugs: [GROK-12164, GROK-15176, GROK-18616, GROK-19928]
 //     (cross-cutting lifecycle invariants — bug-focused full-repro specs are
-//     delegated downstream per scenario Notes; this spec exercises the
-//     lifecycle surface that touches each invariant at the round-trip layer.)
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.detector] — Macromolecule detector
-//     classification at file-open (synchronous detector contract).
-//   feature-atlas/bio.yaml#sub_features[bio.transform.convert-notation]
-//     interaction = "convertDialog → convertDo" (package.ts#L1131).
-//   feature-atlas/bio.yaml#sub_features[bio.io.save-as-fasta]
-//     interaction = "saveAsFastaUI / saveAsFastaDo" (package.ts#L1422
-//     fileExporter + utils/save-as-fasta.ts saveAsFastaDo signature).
-//   feature-atlas/bio.yaml#sub_features[bio.analyze.sequence-space.transform]
-//     interaction = "sequenceSpaceTransform" (package.ts#L789).
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-helper]
-//     interaction = "Bio:getSeqHelper" (package.ts service surface).
-//
-// Paradigm selection (per pyramid_layer: proactive-lifecycle on
-// target_layer: playwright): mostly JS API for matrix/lifecycle shape; UI
-// driving required for the atlas-cited UI dispatch points the scenario
-// explicitly names — `Bio | Transform | Convert Sequence Notation...`
-// (Scenario 1 step 3) and `Bio | Analyze | Sequence Space...` (Scenario 3
-// step 1). Both top-menu paths are class-1 selectors (bio.md
-// L94 / L117 / L606-L609 selector-validation matrix).
-//
-// SCOPE notes honoured from scenario authority:
-//   - "Step 3.4's UI reopen path uses JS API by design (consistent with
-//     sibling projects-lifecycle-*.md scenarios)". The Save Project Ribbon
-//     button + Data Sync toggle dialog is a platform-wide UI not present in
-//     bio.md selector reference; the persistence-side assertion is exercised
-//     via helpers/projects.ts saveAllTablesWithProvenance +
-//     reopenAndAssertProvenance, mirroring projects-lifecycle-files-spec.ts.
-//   - Step 2's Save As FASTA UI dialog is column-picker only (the assertable
-//     contract is the FASTA string content). The sibling Bio package test
-//     `fasta-export-tests.ts` exercises `saveAsFastaDo` directly; this spec
-//     follows the same pattern — get the SeqHandler via the atlas
-//     `bio.api.get-seq-helper` surface (`Bio:getSeqHelper`), invoke
-//     `saveAsFastaDo` via the public `saveAsFastaUI` JS path the
-//     fileExporter dispatches into. The round-trip re-import then uses
-//     `grok.dapi.files.write` + `readCsv` against an AppData temp path,
-//     exercising the FastaFileHandler's `importFasta` registration.
-//
-// Selector provenance: every [name=...] selector below is class-1
-// (in bio.md grok-browser reference):
-//   - [name="div-Bio"] (bio.md L76, L606)
-//   - [name="div-Bio---Transform"] / [name="div-Bio---Transform---Convert-Sequence-Notation..."] (bio.md L33, L609)
-//   - [name="dialog-Convert-Sequence-Notation"] (bio.md L612)
-//   - [name="div-Bio---Analyze"] / [name="div-Bio---Analyze---Sequence-Space..."] (bio.md L21, L117)
-//   - [name="dialog-Sequence-Space"] (bio.md L121, L612)
-//   - [name="button-OK"] (bio.md L131)
-//   - [name="viewer-Grid"] (standard platform selector — used across all bio specs)
-//
-// Sibling spec reuse:
-//   - convert-spec.ts — canonical Bio top-menu click pattern + Convert
-//     Sequence Notation dialog drive + cold-start two-layer init probe;
-//     mirrored verbatim here for Scenario 1 step 3.
-//   - sequence-space-spec.ts — canonical Bio | Analyze | Sequence Space top-
-//     menu drive + post-OK embedding column + ScatterPlot mount invariant;
-//     mirrored for Scenario 3 step 1.
-//   - Projects/projects-lifecycle-files-spec.ts — canonical save+reopen
-//     verification via uploadProject/reopenAndAssertProvenance pattern.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
@@ -95,23 +18,15 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
-
 test.use(specTestOptions);
-
 test('Bio macromolecule_column source-class lifecycle: detect → convert → fasta round-trip → save+reopen', async ({page}) => {
-  // 7-minute end-to-end budget: cold Bio init (≤90s observed in
-  // analyze/sequence-space sibling specs cycle-2 retries) + dialog dispatches
-  // + Sequence Space embedding compute on a small fixture (≤4 min observed).
   test.setTimeout(420_000);
   stepErrors.length = 0;
-
   const stamp = Date.now();
   const projectName = `bio-lifecycle-macromolecule-${stamp}`;
   const fastaTempPath = `System:AppData/UsageAnalysis/temp/bio-lifecycle-${stamp}.fasta`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
-
   await loginToDatagrok(page);
-
   // ==========================================================================
   // Scenario 1 — Detect on open + convert-notation round trip
   // ==========================================================================
@@ -141,7 +56,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Two-layer Bio init readiness probe (mirrors convert-spec.ts /
   // sequence-space-spec.ts). Layer 1: DOM top-menu visibility. Layer 2:
   // Bio:getSeqHelper / getMonomerLibHelper / getBioLib serialization probe —
@@ -154,7 +68,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
   // Scenario 1, Step 2 — Verify detector outcome on HELM open.
   // Atlas: bio.detector (synchronous classification on open).
   await softStep('S1.2: Macromolecule detector classifies HELM column synchronously (units=helm)', async () => {
@@ -179,7 +92,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     // bio.rendering: units tag is set (renderer-dispatch precondition).
     expect(info.units).not.toBeNull();
   });
-
   // Scenario 1, Step 3 — Drive Bio | Transform | Convert Sequence Notation...
   // (atlas bio.transform.convert-notation + .top-menu + .action).
   //
@@ -246,7 +158,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-
   // ==========================================================================
   // Scenario 2 — Import FASTA → Export FASTA → re-import round trip
   // ==========================================================================
@@ -262,7 +173,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     await new Promise((r) => setTimeout(r, 3000));
   }, 'System:AppData/Bio/tests/filter_FASTA.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Scenario 2.1 — Verify FASTA detector + handler post-open (atlas
   // bio.io.fasta-handler + bio.detector).
   await softStep('S2.1: filter_FASTA.csv opens with Macromolecule semType (units=fasta)', async () => {
@@ -281,7 +191,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     expect(info.units).toBe('fasta');
     expect(info.rowCount).toBeGreaterThan(0);
   });
-
   // Scenario 2.2-2.4 — Export as FASTA → re-import → verify round-trip.
   //
   // Per scenario Notes + sibling-test precedent (fasta-export-tests.ts), the
@@ -303,11 +212,9 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       if (!seqCol) throw new Error('S2.2: no Macromolecule column found');
       const idCol: any = cols.find((c: any) => c.semType !== 'Macromolecule') ?? null;
       const idColList = idCol ? [idCol] : [];
-
       // Atlas bio.api.get-seq-helper: SeqHelper singleton.
       const seqHelper: any = await (grok as any).functions.call('Bio:getSeqHelper', {});
       const seqHandler: any = seqHelper.getSeqHandler(seqCol);
-
       // Atlas bio.io.save-as-fasta: saveAsFastaDo builds FASTA text from
       // (idColList, seqHandler, lineWidth). Mirrors fasta-export-tests.ts.
       // Read the Bio package's exported saveAsFastaDo via the package
@@ -334,13 +241,11 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
           fastaLines.push(seqText.slice(i, i + lineWidth) + '\n');
       }
       const fastaText: string = fastaLines.join('');
-
       // Sanity: the export contains FASTA-shape content (header line + seq).
       if (!fastaText.startsWith('>'))
         throw new Error('S2.2: exported FASTA does not start with > header');
       if (fastaText.length < 4)
         throw new Error('S2.2: exported FASTA is empty');
-
       // Atlas bio.cp.import-fasta-export-fasta: round-trip via temp file.
       // Write the FASTA to AppData, then re-read it. Datagrok's
       // FileSystem accepts text via dapi.files.write. The .fasta importer
@@ -353,7 +258,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       } catch (e) {
         writeErr = String(e).slice(0, 200);
       }
-
       // The FASTA file-handler ingest path: the platform dispatches
       // `Bio:importFasta` when opening a .fasta file (atlas
       // bio.io.fasta-handler). The programmatic equivalent reads the FASTA
@@ -370,10 +274,8 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       } catch (e) {
         reimportErr = String(e).slice(0, 200);
       }
-
       // Cleanup the temp file best-effort.
       try { await grok.dapi.files.delete(tempPath); } catch (_) { /* best effort */ }
-
       return {
         fastaShape: {
           startsWithHeader: fastaText.startsWith('>'),
@@ -390,7 +292,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
         originalRowCount: df.rowCount,
       };
     }, {tempPath: fastaTempPath});
-
     // Export contract:
     expect(result.fastaShape.startsWithHeader).toBe(true);
     expect(result.fastaShape.totalLen).toBeGreaterThan(0);
@@ -419,7 +320,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       expect(result.fastaShape.lineCount).toBeGreaterThan(1);
     }
   });
-
   // ==========================================================================
   // Scenario 3 — Save project with analysis + reopen restores analysis output
   // ==========================================================================
@@ -459,7 +359,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     expect(hasEmbedX).toBe(true);
     expect(hasEmbedY).toBe(true);
   });
-
   try {
     // Scenario 3, Step 3 — Save project with Data Sync ON.
     //
@@ -475,7 +374,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-
     // Scenario 3, Step 4-5 — Close + reopen via JS API; verify embedding
     // columns + Macromolecule semType survive the round-trip.
     //
@@ -533,7 +431,6 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
     }, fastaTempPath).catch(() => {});
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

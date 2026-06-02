@@ -8,48 +8,25 @@ sub_features_covered:
   - bio.analyze.activity-cliffs.editor
   - bio.analyze.composition
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: smoke — umbrella integration scenario)
-//   sub_features_covered: [bio.analyze.sequence-space, .sequence-space.top-menu,
-//     .sequence-space.editor, bio.analyze.activity-cliffs, .activity-cliffs.top-menu,
-//     .activity-cliffs.editor, bio.analyze.composition]
-//   ui_coverage_responsibility: absent (delegated_to: null)
 //   related_bugs: [GROK-18616, GROK-19928, GROK-19150] (umbrella surfaces only —
 //     per-bug repro slices are delegated to chain bug_focused_candidates:
 //     bio-grok-18616-spec.ts / bio-grok-19928-spec.ts / bio-grok-19150-spec.ts).
-//   produced_from: migrated
-//   coverage_type: smoke
-//
-// Atlas provenance: scenario realises the umbrella runner for the three
-// Bio | Analyze top-menu functions across three Macromolecule notations
-// (FASTA, HELM, MSA). Deep per-function coverage lives in sibling specs:
-// sequence-space-spec.ts, sequence-activity-cliffs-spec.ts, composition-analysis-spec.ts.
-//
 // SCOPE_REDUCTIONS honoured from scenario frontmatter:
 //   SR-01 (A-CONT-01) — "arbitrary changed parameters" run deferred (no
-//     deterministic edit set in atlas). Only run-with-defaults asserted here.
 //   SR-02 (A-CONT-01) — Composition Context-Pane property checklist deferred.
-//     Step 5 verifies Context Panel property-editor surface presence only.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv'},
   {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv'},
 ];
-
 for (const ds of datasets) {
   test(`Bio Analyze umbrella on ${ds.name}`, async ({page}) => {
     test.setTimeout(600_000);
     stepErrors.length = 0;
-
     await loginToDatagrok(page);
-
     // Setup phase: open dataset, wait for Macromolecule semType detection +
     // Bio package init (cell renderer + filter registration).
     await page.evaluate(async (path) => {
@@ -74,7 +51,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
     // Bio top-menu readiness poll (cold-start stabilization per Gate-B FLAKY
     // attempt-1 evidence: MSA dataset's first softStep dialog never materialized
     // within 15s on a truly-cold Bio package init). Two-layer guard:
@@ -108,7 +84,6 @@ for (const ds of datasets) {
       // if every named probe is unavailable on this Bio build.
       await new Promise((r) => setTimeout(r, 3000));
     });
-
     // Per-leaf function-registration probe (cycle-2 retry refinement).
     //
     // The Bio package init probe above guarantees init COMPLETION (via
@@ -151,14 +126,11 @@ for (const ds of datasets) {
       await new Promise((r) => setTimeout(r, 1500));
     });
     await page.waitForTimeout(2000);
-
     // Scenario 1 — Open dataset (done above) + dispatch each Analyze function.
     // The "submenu exposes Sequence Space.../Activity Cliffs.../Composition"
     // assertion is verified implicitly by clicking the leaf in each
     // subsequent softStep — a missing leaf would surface as a click failure.
-
     // Scenario 2 — Run each function with default parameters.
-
     await softStep(`${ds.name}: Bio > Analyze > Sequence Space — run with defaults`, async () => {
       // Top-menu navigation per bio.md ("Click pattern (MCP-validated, mirrors chem.md)"):
       // click [name="div-Bio"] → 400ms → mouseover [name="div-Bio---Analyze"] → 300ms →
@@ -180,11 +152,9 @@ for (const ds of datasets) {
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Sequence Space');
-
       // Click OK — run with default parameters.
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
-
       // Verify ScatterPlot opens with embedding columns appended
       // (atlas bio.analyze.sequence-space.transform).
       await page.waitForFunction(
@@ -195,13 +165,11 @@ for (const ds of datasets) {
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'));
       expect(hasScatter).toBe(true);
     });
-
     // Close non-Grid viewers so the next softStep observes its own Scatter plot.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     await softStep(`${ds.name}: Bio > Analyze > Activity Cliffs — run with defaults`, async () => {
       await page.evaluate(async () => {
         (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
@@ -218,10 +186,8 @@ for (const ds of datasets) {
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Activity Cliffs');
-
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
-
       // Verify ScatterPlot with cliff overlay (atlas bio.analyze.activity-cliffs.init).
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base &&
@@ -231,12 +197,10 @@ for (const ds of datasets) {
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'));
       expect(hasScatter).toBe(true);
     });
-
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     await softStep(`${ds.name}: Bio > Analyze > Composition — WebLogo docks (no dialog)`, async () => {
       // Composition has NO "..." suffix — opens directly with NO dialog
       // per bio.md ("opens directly with NO dialog, mirroring the Chem
@@ -249,7 +213,6 @@ for (const ds of datasets) {
         await new Promise((r) => setTimeout(r, 300));
         (document.querySelector('[name="div-Bio---Analyze---Composition"]') as HTMLElement).click();
       });
-
       // Verify WebLogo viewer docks (atlas bio.analyze.composition →
       // bio.viewers.web-logo). Pixel-level WebLogo paint is atlas
       // manual_only — only presence asserted here.
@@ -260,7 +223,6 @@ for (const ds of datasets) {
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'WebLogo'));
       expect(hasWebLogo).toBe(true);
     });
-
     // Scenario 3 — Composition Gear → Context Panel wiring.
     // Per scenario: only run on filter_FASTA.csv after Composition above.
     if (ds.name === 'FASTA') {
@@ -286,13 +248,11 @@ for (const ds of datasets) {
         expect(result.hasPropertyGrid).toBe(true);
       });
     }
-
     // Final cleanup: close non-Grid viewers.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
       throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

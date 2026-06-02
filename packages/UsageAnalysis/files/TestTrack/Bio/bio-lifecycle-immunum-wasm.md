@@ -22,33 +22,6 @@ gate_verdicts:
     timestamp: 2026-06-02T14:30:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   f:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02
@@ -69,8 +42,6 @@ gate_verdicts:
     cycle_id: 2026-06-01-bio-migrate-02
     timestamp: 2026-06-02T13:15:00Z
     failure_keys: []
-    scope_reduction_proposal: |-
-      One scenario step is realized via JS API substitution rather than the UI affordance the scenario step text explicitly names; the substitution has a sound technical rationale documented in the spec body header (lines 57-64) and the scenario Notes (lines 186-193), but the rationale is NOT surfaced in scenario .md frontmatter scope_reductions[] (currently []). Migrator must apply the following SR entry. SR-01 id=save-project-ribbon-jsapi-substitution check=E-TRACE-02 (S2.1) rationale=Scenario Step 2.1 names the ribbon SAVE button (NOT Ctrl+S); project name from Setup; Data Sync toggle ON; cancel the auto-share dialog if it appears. The Save Project ribbon dialog with Data Sync toggle + auto-share dialog is a platform-wide UI surface not documented in bio.md grok-browser reference selectors (verified by grep on .claude/skills/grok-browser/references/bio.md — no [name="button-Save"] / [name="dialog-Save"] / [name="dialog-Save-Project"] / [name="input-host-Data-Sync"] family); UI driving for that surface is delegated to platform-side ui-smoke scenarios elsewhere. Spec uses the canonical test-area helper helpers/projects.ts saveAllTablesWithProvenance at line 399 (mirrors sibling bio-lifecycle-macromolecule-column-spec.ts S3.3 and bio-lifecycle-fasta-file-spec.ts S4.1 per the latter's prior Critic-E SCOPE_REDUCTION at this same SR class), preserving the assertable contract (persisted project + reopened detector state per atlas dep_lifecycle_ops[save_project_with_analysis]; the [all] shorthand applies to immunum_wasm per chain proactive_lifecycle_specs[5].rationale). verdict_status=SCOPE_REDUCTION. After Migrator applies this SR entry, the spec is otherwise PASS-compliant. Mechanical checks pass: E-STRUCT-MECH-01 spec exists at expected path public/packages/UsageAnalysis/files/TestTrack/bio/bio-lifecycle-immunum-wasm-spec.ts; -02 parses cleanly (balanced braces, complete test() signature, proper imports); -03 test() block at line 103; -04 test name 'Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+reopen → re-run' substring-matches scenario heading 'Bio — immunum_wasm source-class lifecycle'; -05 imports from @playwright/test (canonical) plus the test-area-locals ../spec-login and ../helpers/projects which resolve to TestTrack/spec-login.ts and TestTrack/helpers/projects.ts — the established sibling-spec convention shared verbatim across 33+ sibling specs in TestTrack/bio/ and TestTrack/Projects/ — not an E-STRUCT-MECH-05 fabrication per the sibling Critic-E precedent (bio-lifecycle-fasta-file.md.gate-e.verdict.json + bio-lifecycle-monomer-collection.md.gate-e.verdict.json same cycle); -06 leading /* --- sub_features_covered: [...] --- */ frontmatter at lines 1-7 with 4 ids all resolving to atlas sub_features[].id entries (bio.engines.numbering-immunum bio.yaml L750, bio.annotate.numbering-scheme L640, bio.api.get-seq-helper L81, bio.lifecycle.init L71). E-TRACE-01..03: every softStep (S1.1, S1.2, S1.3-1.4, S1.4, S2.1, S2.2, S3.1-3.2, S3.3-3.4) traces to numbered scenario steps; all four Scenarios covered (Scenario 4 cleanup runs in finally per scenario Expected); verification steps map to JS API calls (expect(info.resolved).toBe(true), expect(info.result!.colCount).toBe(5), grok.dapi.projects.find post-reopen via reopenAndAssertProvenance, etc.). E-SEL-01: every [name=...] selector is class-1 in bio.md grok-browser reference per the spec-body Selector provenance block (lines 72-82) — [name="div-Bio"] L606, [name="div-Bio---Annotate"] L69, [name="div-Bio---Annotate---Apply-Numbering-Scheme..."] L421, [name="dialog-Apply-Antibody-Numbering"] L425, [name="button-OK"] standard dialog OK, [name="viewer-Grid"] standard platform selector — all verified at the cited bio.md lines. E-SEL-02: no invented selectors. E-SEL-03: no .fill() calls — all data entry surfaces go via grok.dapi.files.readCsv / grok.functions.call / dispatchEvent inside page.evaluate. E-HELP-01..02: softStep (helpers-registry L3927) and loginToDatagrok (L3933) registered; specTestOptions, stepErrors, saveAllTablesWithProvenance, reopenAndAssertProvenance, deleteProjectWithCleanup are spec-area infrastructure locals in TestTrack/spec-login.ts and TestTrack/helpers/projects.ts following the established sibling-spec convention (verified file existence at TestTrack/spec-login.ts and TestTrack/helpers/projects.ts L926, L999, L1060) — not registered-helper reinventions (no open-coded login, no open-coded project-save). E-LAYER-01..02 + E-LAYER-COMPLIANCE-01: scenario frontmatter target_layer: playwright; spec has multiple DOM-driving calls satisfying ≥1 requirement — page.locator(...).waitFor at L166, L173, L283; page.locator(...).click() at L289; page.waitForFunction at L294, L310; document.querySelector(...).click() / dispatchEvent patterns inside page.evaluate at L273-279; pyramid_layer absent in scenario frontmatter so ui-smoke sub-rule does not apply. E-BOUND-01..02: spec under allowed path public/packages/UsageAnalysis/files/TestTrack/bio/, no core/** or non-test-area writes. E-RETRY-IGNORES-GATE-B: does NOT fire — scenario frontmatter carries gate_verdicts.f (PASS) only, no gate_verdicts.b block present, therefore not a retry context per the detection predicate in spec-mode.md §'Gate B awareness on retry context'. Timeout-budget-without-reduction advisory: test.setTimeout(420_000) is above the 60-90s threshold, but the budget IS documented (spec lines 104-107) with explicit dataset-size-driven compute-wait rationale (cold Bio init ≤90s + IMGT numbering WASM compute on a tiny 47-row antibody fixture ≤30s + project save+reopen round trip + second numbering run); the dataset IS small (47 rows per spec line 113-116), so the boundary-applies note clears the soft signal — no additional SR-class advisory.
 ---
 
 # Bio — `immunum_wasm` source-class lifecycle

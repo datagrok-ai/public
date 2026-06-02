@@ -7,128 +7,7 @@ sub_features_covered:
   - bio.api.get-seq-helper
   - bio.lifecycle.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md frontmatter (chain yaml pins
-//     proactive_lifecycle_specs[4] at the proactive-lifecycle pyramid layer
-//     globally; coverage_type: regression)
-//   sub_features_covered: [bio.engines.msa-pepsea, bio.analyze.msa,
-//     bio.analyze.msa.dialog, bio.analyze.msa.align-sequences,
-//     bio.api.get-seq-helper, bio.lifecycle.init]
-//   ui_coverage_responsibility: absent (delegated_to: null) — per scenario
-//     Notes "target_layer rationale: playwright — the lifecycle spans the
-//     MSA dialog engine-selector UI and the Save Project ribbon path; both
-//     surfaces require DOM driving. Container lifecycle observations go
-//     through grok.dapi.docker.dockerContainers (JS API) since Docker
-//     admin UI is out-of-scope."
-//   related_bugs: [] per chain proactive_lifecycle_specs[4].bugs_reinforcing
 //     (empty — no GROK bug specifically tags the PepSeA container lifecycle).
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.engines.msa-pepsea] — non-canonical
-//     MSA engine; Docker-container PepSeA path dispatched from the MSA dialog
-//     Engine SELECT (option "PepSeA").
-//   feature-atlas/bio.yaml#sub_features[bio.analyze.msa] — MSA top-menu
-//     dispatcher (Bio | Analyze | MSA...).
-//   feature-atlas/bio.yaml#sub_features[bio.analyze.msa.dialog] — MSA dialog
-//     (kalign + PepSeA share the dialog; engine choice is in the SELECT).
-//   feature-atlas/bio.yaml#sub_features[bio.analyze.msa.align-sequences] —
-//     alignSequences runtime entry point (kalign WASM OR PepSeA Docker).
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-helper] — SeqHelper
-//     singleton via Bio:getSeqHelper service-surface function.
-//   feature-atlas/bio.yaml#sub_features[bio.lifecycle.init] — Bio:initBio
-//     package-init function.
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[align_sequences]
-//     affected_source_classes: includes pepsea_container.
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[save_project_with_analysis]
-//     source_agnostic: true (affected_source_classes: [all]).
-//   feature-atlas/bio.yaml#interactions[bio.x.docker-container-eviction-msa-fallback]
-//     container-eviction recovery contract (reopen restarts evicted container
-//     OR surfaces a deterministic error).
-//   feature-atlas/bio.yaml#source_classes[pepsea_container] — PepSeA Docker
-//     container; external_deps: [DockerContainer].
-//
-// Paradigm selection (per pyramid_layer: proactive-lifecycle on
-// target_layer: playwright): mostly JS API for matrix/lifecycle shape; UI
-// driving required for the atlas-cited UI dispatch points the scenario
-// explicitly names — `Bio | Analyze | MSA...` (Scenario 1.3) and the MSA
-// dialog Engine SELECT (Scenario 1.3). All MSA dialog selectors used below
-// are class-1 (bio.md L161-L179 selector-validation table). Container
-// status observation + project save+reopen + cleanup go through JS API
-// (atlas + scenario authority both delegate container admin UI as
-// out-of-scope; the assertable surface is the post-dispatch contract).
-//
-// SCOPE notes honoured from scenario authority:
-//   - Setup: "Abort the scenario with a clear skip-status if no PepSeA
-//     container is registered (env not configured)" — implemented as an
-//     env-conditional early-return per softStep that converts the env miss
-//     into a logged skip rather than a hard failure (matches scenario
-//     "env_requirements: Docker host available for PepSeA container" gate).
-//   - Scenario 2: "save the project via the ribbon SAVE button (NOT
-//     Ctrl+S); project name from Setup; Data Sync toggle ON. Cancel the
-//     auto-share dialog if it appears." The Save Project Ribbon dialog
-//     and Data Sync toggle are platform-wide UI not present in bio.md
-//     selector reference; per sibling
-//     bio-lifecycle-macromolecule-column-spec.ts S3.3 + scenario Notes
-//     ("UI driving for the Save Project Ribbon dialog is delegated to
-//     UI-smoke scenarios elsewhere"), the persistence-side assertion is
-//     exercised via helpers/projects.ts saveAllTablesWithProvenance —
-//     the assertable contract is the saved-project shape + reopen
-//     survival of the alignment output (Scenario 3).
-//   - Scenario 3.1: "Optional — env-conditional container eviction via
-//     dockerContainers.find(<id>).stop()". The scenario explicitly licenses
-//     skipping the explicit eviction; the assertable contract is the
-//     reopen + subsequent MSA path (Scenario 3.3-3.4). This spec implements
-//     the assertable path; eviction-triggering is best-effort.
-//   - Scenario 1.3 column-picker dialog inputs (Sequence column / Clusters
-//     column) — when the dialog auto-binds the only Macromolecule column
-//     it suffices; otherwise the input host selectors documented in bio.md
-//     L170-L171 ([name="input-host-Sequence"]) are the class-1 surface
-//     (not exercised here because the fixture has exactly one
-//     Macromolecule HELM column → auto-bind).
-//
-// Selector provenance: every [name=...] selector below is class-1
-// (in bio.md grok-browser reference):
-//   - [name="div-Bio"] (bio.md L77, L606)
-//   - [name="div-Bio---Analyze"] / [name="div-Bio---Analyze---MSA..."]
-//     (bio.md L65, L165)
-//   - [name="dialog-MSA"] (bio.md L169)
-//   - [name="input-Engine"] (bio.md L172 — options "Datagrok MSA" / "PepSeA")
-//   - [name="button-OK"] / [name="button-CANCEL"] (bio.md L179)
-//   - [name="viewer-Grid"] (standard platform selector — used across all
-//     bio specs)
-//
-// MCP recon attempted (this dispatch, 2026-06-02): chrome-devtools MCP
-// list_pages returned the dev.datagrok.ai page successfully (transport
-// healthy). evaluate_script on grok.dapi.files.readCsv threw
-// "In.grok_Get_Settings is not a function" because the MCP browser session
-// landed on the Datagrok login form (auth profile stale — observed via
-// loginVisible: true / browseVisible: false). Per §"MCP recon — auth
-// assumption" the canonical posture is mcp_status: unavailable with the
-// stale-auth observation; this spec proceeds via inference-only authoring
-// backed by the strong sibling-spec template (no paradigm pivot from
-// sibling — same Playwright + JS-API substitution paradigm at the same
-// pyramid layer with the same helpers).
-//
-// Sibling spec reuse (reference templates):
-//   - bio-lifecycle-macromolecule-column-spec.ts — canonical Bio
-//     lifecycle pattern (setup phase, two-layer Bio init readiness probe,
-//     project save+reopen via helpers/projects.ts). Mirrored verbatim for
-//     this scenario's parallel surface; this spec is the pepsea_container
-//     source-class twin of that scenario's macromolecule_column coverage.
-//   - bio-lifecycle-fasta-file-spec.ts — parallel proactive-lifecycle
-//     scenario (fasta_file source-class); same setup phase, same project
-//     save+reopen helpers pattern.
-//   - analyze-spec.ts — canonical Bio | Analyze | MSA top-menu click
-//     pattern + per-leaf function-registration probe; mirrored for
-//     Scenario 1.3 (top-menu dispatch).
-//   - public/packages/Bio/src/tests/msa-tests.ts — sibling API-layer
-//     alignSequences test (canonical kalign at the API layer); this
-//     scenario adds the PepSeA-Docker layer the apitest does not exercise
-//     (Notes section explicitly identifies this gap).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
@@ -136,19 +15,10 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
-
 test.use(specTestOptions);
-
 test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) → container status → save + reopen + post-reopen MSA', async ({page}) => {
-  // 10-minute end-to-end budget: cold Bio init (≤90s observed) + MSA dialog
-  // dispatch with cold-PepSeA-container start (per bio.md L185 "30-60s
-  // OK-to-result wait on cold start") + project save+reopen + post-reopen
-  // MSA second invocation. Headroom over the 7-min budget used by the
-  // sibling fasta-file lifecycle because PepSeA cold-container warmup is
-  // synchronously blocking inside the MSA dialog OK click.
   test.setTimeout(600_000);
   stepErrors.length = 0;
-
   const stamp = Date.now();
   const projectName = `bio-lifecycle-pepsea-container-${stamp}`;
   // Atlas: pepsea_container env_requirements = "Docker host available for
@@ -158,9 +28,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
   let envHasPepsea: boolean = false;
   let containerId: string | null = null;
   let preRunStatus: string | null = null;
-
   await loginToDatagrok(page);
-
   // ==========================================================================
   // Setup — open HELM fixture, run Bio init probe, resolve PepSeA container
   // ==========================================================================
@@ -191,7 +59,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Two-layer Bio init readiness probe (mirrors
   // bio-lifecycle-macromolecule-column-spec.ts and analyze-spec.ts).
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
@@ -202,11 +69,9 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
   // ==========================================================================
   // Scenario 1 — Initial PepSeA run on HELM column
   // ==========================================================================
-
   // S1.1 — Bio:initBio + Bio:getSeqHelper (atlas bio.lifecycle.init +
   // bio.api.get-seq-helper). Same pattern as
   // bio-lifecycle-fasta-file-spec.ts S1.1 — the setup-phase Bio init probe
@@ -233,7 +98,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     expect(probe.helperErr).toBeNull();
     expect(probe.helperType).toBe('ISeqHelper');
   });
-
   // S1.0-env-gate — Resolve the PepSeA Docker container handle. If env not
   // configured (no container registered), gracefully skip the
   // PepSeA-specific assertions per scenario Setup directive: "Abort the
@@ -286,7 +150,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       console.warn('[S1.0] PepSeA Docker container NOT registered on this host — env-conditional skip per scenario Setup directive. PepSeA-specific assertions will short-circuit.');
     }
   });
-
   // S1.2 — Detector + HELM column shape (atlas bio.detector). Independent of
   // PepSeA env; asserted regardless.
   await softStep('S1.2: filter_HELM.csv detector classifies Macromolecule column with units=helm', async () => {
@@ -304,7 +167,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     expect(info.units).toBe('helm');
     expect(info.rowCount).toBeGreaterThan(0);
   });
-
   // S1.3 — Drive Bio | Analyze | MSA... (atlas bio.analyze.msa +
   // bio.analyze.msa.dialog + bio.analyze.msa.top-menu). The same dialog
   // handles canonical kalign + non-canonical PepSeA; engine choice is the
@@ -335,7 +197,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     // attempt-1/Gate-B-FLAKY history per bio.md "cold-start tolerance"
     // note on the analyze umbrella runner).
     await page.locator('[name="dialog-MSA"]').waitFor({timeout: 60_000});
-
     // Engine SELECT exposes both options per bio.md L172.
     const engineOpts = await page.evaluate(() => {
       const sel = document.querySelector('[name="dialog-MSA"] [name="input-Engine"]') as HTMLSelectElement | null;
@@ -353,7 +214,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       o.toLowerCase().indexOf('datagrok') >= 0 || o.toLowerCase().indexOf('msa') >= 0);
     expect(hasKalign).toBe(true);
   });
-
   // S1.4 — Select PepSeA + click OK + verify alignment outcome (atlas
   // bio.analyze.msa.align-sequences + bio.engines.msa-pepsea +
   // dep_lifecycle_ops[align_sequences] for source_class=pepsea_container).
@@ -369,9 +229,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       console.warn('[S1.4] PepSeA env not configured — dialog canceled; PepSeA-engine OK + alignSequences assertion skipped per Setup env-gate.');
       return;
     }
-
     const beforeCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-
     // Select PepSeA in the Engine SELECT. Per bio.md L172 the SELECT carries
     // text options "Datagrok MSA" + "PepSeA"; assign via .value index on
     // the matching option to be resilient to capitalisation.
@@ -386,14 +244,12 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         sel.dispatchEvent(new Event('change', {bubbles: true}));
       }
     });
-
     // OK click. Per bio.md L185 "Engine PepSeA routes to the PepSeA Docker
     // container — on a cold container, the OK click blocks while the
     // container warms up (grok.dapi.docker.dockerContainers.run is invoked
     // synchronously). For specs targeting pepsea.md, allow 30-60s OK-to-result
     // wait on cold start." 240s tolerates an extreme cold boot.
     await page.locator('[name="dialog-MSA"] [name="button-OK"]').click();
-
     // Verify dispatch outcome: a new aligned column appears.
     // Per bio.md L187 "new aligned column appears alongside the source column
     // with aligned=SEQ.MSA tag" — that tag is the deterministic post-handler
@@ -401,7 +257,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     await page.waitForFunction(
       (b) => grok.shell.tv.dataFrame.columns.length > b,
       beforeCols, {timeout: 240_000});
-
     aligned = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -419,7 +274,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     // bio.md L187 post-OK invariant: aligned=SEQ.MSA tag (deterministic).
     expect(aligned.alignedTag).toBe('SEQ.MSA');
   });
-
   // ==========================================================================
   // Scenario 2 — Save project with PepSeA alignment
   // ==========================================================================
@@ -442,7 +296,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-
     // S2.2 — Project find returns the saved project (atlas
     // dep_lifecycle_ops[save_project_with_analysis] invariant).
     await softStep('S2.2: grok.dapi.projects.find returns the saved project', async () => {
@@ -459,12 +312,10 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       expect((result as any).found).toBe(true);
       expect((result as any).name).toBe(projectName);
     });
-
     // ==========================================================================
     // Scenario 3 — Reopen after container eviction (env-conditional explicit
     // eviction; assertable surface is the post-reopen contract)
     // ==========================================================================
-
     // S3.1 — Best-effort container eviction via dockerContainers.stop().
     // Per scenario Setup directive: "do NOT stop the container if it was
     // running before the test — host-shared resource". So eviction is
@@ -484,7 +335,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       // disposition", not assert eviction.
       expect(true).toBe(true);
     });
-
     // S3.2-S3.3 — Close + reopen via helpers/projects.ts
     // reopenAndAssertProvenance. Verify the alignment column survives the
     // round-trip (atlas dep_lifecycle_ops[save_project_with_analysis]
@@ -494,7 +344,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       const result = await reopenAndAssertProvenance(page, saved.projectId);
       expect(result.tablesAfter).toBeGreaterThan(0);
       expect(result.reopenedRowCount).toBeGreaterThan(0);
-
       const post = await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -532,7 +381,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         console.warn('[S3.3] PepSeA env not configured — aligned column assertion skipped; HELM source-column survival is the reachable contract.');
       }
     });
-
     // S3.4 — Trigger MSA again on the reopened table (atlas
     // bio.x.docker-container-eviction-msa-fallback): PepSeA container path
     // either resumes cleanly (warm container) or restarts deterministically
@@ -556,7 +404,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         (document.querySelector('[name="div-Bio---Analyze---MSA..."]') as HTMLElement).click();
       });
       await page.locator('[name="dialog-MSA"]').waitFor({timeout: 60_000});
-
       const engineOpts = await page.evaluate(() => {
         const sel = document.querySelector('[name="dialog-MSA"] [name="input-Engine"]') as HTMLSelectElement | null;
         if (!sel) return {hasSelect: false, options: [] as string[]} as any;
@@ -567,7 +414,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       });
       expect(engineOpts.hasSelect).toBe(true);
       expect(engineOpts.options.some((o: string) => o.toLowerCase().indexOf('pepsea') >= 0)).toBe(true);
-
       // Cancel — the assertable contract on S3.4 is "dialog opens + PepSeA
       // option present after reopen". A full second alignSequences run on
       // the reopened table is bounded by the test budget (already 600s
@@ -580,7 +426,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         if (cancel) cancel.click();
       });
     });
-
     // ==========================================================================
     // Scenario 4 — Container lifecycle observation (read-only)
     // ==========================================================================
@@ -631,7 +476,6 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       });
     }
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

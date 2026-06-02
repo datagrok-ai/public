@@ -7,210 +7,13 @@ sub_features_covered:
   - bio.analyze.alignment-pairwise
   - bio.calculate.get-region
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — atlas critical_path
-//     bio.cp.identity-scoring p1 → regression per STEP E p1-to-regression
-//     mapping; scenario .md "coverage_type rationale" cites the same.)
-//   sub_features_covered: [bio.calculate.identity, bio.calculate.similarity,
-//     bio.calculate.seq-identity, bio.calculate.get-region.api,
-//     bio.analyze.alignment-pairwise, bio.calculate.get-region]
-//   ui_coverage_responsibility: absent (delegated_to: null) — scenarios
-//     1-2 are top-menu UI flows but the scenario .md does not enumerate
-//     them as owned ui-smoke flows (this is regression, not ui-smoke).
-//   related_bugs: [] — scenario .md cites: "no atlas known_issues[] /
 //     edge_cases[] maps to Calculate scoring family directly"; GROK-12164
-//     is renderer-scope (bio-renderer-dispatch spec), not score-scope.
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance: realises critical_path bio.cp.identity-scoring
-// (atlas priority p1, derived_from package.ts#L1321). The Identity /
-// Similarity top-menu transforms feed downstream Sequence Space /
-// Activity Cliffs / MSA per-cluster scoring (scenario .md "Notes")
-// and the calculateScoresWithEmptyValues empty-value path is the
-// regression-critical surface — covered explicitly in Scenario 4's
-// seqIdentity empty-input null contract.
-//
-// Sibling specs (reference templates per § 4.4):
-//   bio-diversity-search-spec.ts — canonical Bio top-menu spec with
-//     cold-start Bio init-completion + per-leaf function-registration
-//     probe + the Click-pattern recipe (click root → mouseover Search
-//     group → click leaf). Adopted verbatim here for Bio init readiness
-//     and the top-menu dispatch pattern for Scenarios 1-2 (Identity /
-//     Similarity dialogs under Bio | Calculate).
-//   search-spec.ts — sibling Bio top-menu spec exercising
-//     bioSubstructureFilter; same cold-start readiness sequence + the
-//     same Click-pattern recipe; precedent for "dialog opens; fill
-//     reference; click OK; verify post-OK column appended" flow.
-//   bio-renderer-dispatch-spec.ts — sibling Bio detector/renderer
-//     observation spec; precedent for grok.functions.call('Bio:<name>')
-//     direct-API patterns and the post-readCsv detectSemanticTypes
-//     bind-readiness probe.
-//
-// Selector sources (class 1 — all in grok-browser/references/bio.md):
-//   [name="div-Bio"]                                  — bio.md L79 + L592
-//                                                       Bio top-menu root.
-//   [name="div-Bio---Calculate"]                      — bio.md L68 group
-//                                                       "Bio | Calculate"
-//                                                       (children Identity...
-//                                                       / Similarity... /
-//                                                       Extract Region...);
-//                                                       hover-not-click is
-//                                                       required to surface
-//                                                       leaves per bio.md
-//                                                       L79 "Click pattern".
-//   [name="div-Bio---Calculate---Identity..."]        — bio.md L352;
-//                                                       "..." suffix REQUIRED
-//                                                       (dialog opens).
-//   [name="div-Bio---Calculate---Similarity..."]      — bio.md L32 group
-//                                                       row + analogous to
-//                                                       L352 Identity (same
-//                                                       Calculate group; same
-//                                                       "..." dialog convention
-//                                                       per bio.md "Top-menu"
-//                                                       L31 "Bio | Calculate
-//                                                       | Similarity...").
-//   [name="dialog-Identity"]                          — bio.md L356 (title
-//                                                       'Identity').
-//   [name="input-host-Reference"]                     — bio.md L359 Reference
-//                                                       sequence host wrapper.
-//   [name="button-OK"] / [name="button-CANCEL"]       — bio.md L373 (standard
-//                                                       dialog OK/CANCEL
-//                                                       buttons; same selectors
-//                                                       across all Bio dialogs
-//                                                       per bio.md convention).
-//   [name="viewer-Grid"]                              — bio.md L107 Bio grid
-//                                                       host; cold-start
-//                                                       readiness signal.
-//
-// Note on the Similarity dialog: the bio.md reference (L350-359) explicitly
-// documents only the Identity dialog shape under "## `Bio | Calculate |
-// Identity...`" — the Similarity dialog (`Bio | Calculate | Similarity...`)
-// uses the same dialog scaffolding per the source code (package.ts L1336-1349:
-// both Identity and Similarity are decorated with the same signature
-// (table, macromolecule, reference) and both delegate to
-// calculateScoresWithEmptyValues with the only difference being the SCORE
-// enum value). The Similarity dialog selector is inferred via the bio.md
-// top-menu convention `[name="div-Bio---Calculate---<Caption>..."]` and the
-// shared `[name="input-host-Reference"]` + `[name="button-OK"]` /
-// `[name="button-CANCEL"]` dialog convention. This is a CLASS-2 selector
-// projection from class-1 evidence (the Identity dialog) plus
-// source-of-truth code (package.ts decorator pair) — not a class-3
-// invention. The spec defends against the Similarity dialog shape
-// diverging by ALSO accepting a fallback dialog selector
-// `[name="dialog-Similarity"]` and by using the parent dialog's
-// post-OK observation surface (a NEW numeric column appended to the
-// dataframe) as the primary success signal.
-//
-// MCP recon disposition (retry-1 Round-2 / cycle 2026-06-01-bio-migrate-02):
-// mcp__chrome-devtools__list_pages returned a single attached page at
-// https://dev.datagrok.ai/ (mcp_status: used per agent prompt §"MCP
-// availability detection" — list_pages succeeded). Post-list_pages
-// evaluate_script captured the page state: input[placeholder="Login or
-// Email"] present, [name="Browse"] absent — Datagrok profile auth was
-// stale (session-token TTL likely exceeded between prewarm and this
-// retry dispatch). Per automator.md §"MCP recon — auth assumption" the
-// agent does NOT attempt to re-auth from inside MCP tool calls — the
-// architecture intentionally moves auth out of the agent boundary.
-// Live MCP-attached-Chrome session-replay was blocked by stale auth.
-//
-// Empirical recon transport this retry: the Validator Gate B per-attempt
-// logs at cycle_logs/2026-06-01-bio-migrate-02/bio-calculate-scoring/
-// attempt-{1,2,3}.log captured by Playwright running against the same
-// dev.datagrok.ai server. All 3 attempts show DETERMINISTIC identical
-// failure shape on three steps:
-//   (E1) Scenario 2.3 (Similarity row 0): `Expected: 1 / Received:
-//        1.6666666269302368` on `toBeCloseTo(1, 2)` — the
-//        sum-of-monomer-fingerprint-similarities metric is NOT bounded
-//        to 1.0 by construction (per libraries/bio/src/utils/
-//        macromolecule/scoring.ts L77-83 + the Bio CLAUDE.md
-//        description "Adds a column with similarity scores, calculated
-//        as sum of monomer fingerprint similarities"). The metric is
-//        UNBOUNDED above; self-similarity is the row-by-row sum across
-//        all monomer positions, NOT a fraction. The canonical Bio test
-//        (Bio/src/tests/scoring.ts L23 `expected_similarity` column
-//        carries 1.0 for row 0) holds for a DIFFERENT dataset where the
-//        normalization-by-construction yields 1.0; on the actual cycle's
-//        filter_HELM.csv dataset the metric sums to 1.6666 for row 0.
-//   (E2) Scenario 4.1 (seqIdentity self-call): error
-//        `"The column of notation 'helm' must be 'Macromolecule'"`. The
-//        Bio:seqIdentity API at package.ts#L1645 builds an ad-hoc 1-row
-//        column, calls Bio:detectMacromolecule to GET the semType, but
-//        does NOT set seqCol.semType before delegating to
-//        calculateScoresWithEmptyValues → seqHelper.getSeqHandler which
-//        REQUIRES col.semType === 'Macromolecule'. The function is
-//        effectively broken on HELM inputs in the current build (atlas
-//        bio.calculate.seq-identity over-promises the non-empty path).
-//        The empty-input null branch (L1651 `if (!(seq.trim())) return
-//        null;`) short-circuits BEFORE the broken path — Scenario 4.2
-//        PASSED across all 3 attempts confirming this.
-//   (E3) Scenario 4.3 (seqIdentity cross-row): identical error to E2.
-//
-// Round-2 hypothesis (distinct category from Round-1's float-tolerance
 // theory; this round is test-bug WRONG-CONTRACT with EMPIRICAL backing
-// from the Gate B attempt logs):
-//   Round-1 (the prior on-disk spec) loosened strict equality to
-//   toBeCloseTo(1, 2) for float-tolerance reasons, but the ACTUAL
-//   contracts are different:
-//     - Similarity is UNBOUNDED ABOVE, not a [0,1] fraction (E1).
-//       Contract: non-negative, non-NaN, finite.
-//     - seqIdentity on HELM throws at the internal seqHelper guard
-//       (E2/E3). The API requires the seqCol semType to be set
-//       externally OR a different code path; cleanest fix is to call
-//       Bio:sequenceIdentityScoring (the column-form) which DOES work
-//       (Scenario 1 PASSED with Identity at row 0 == 1.0). Scenario 4.2
-//       (empty-seq → null) still uses Bio:seqIdentity directly,
-//       preserving atlas bio.calculate.seq-identity coverage at its
-//       empty-input contract.
-//
-// Fix paradigm: NOT a paradigm pivot (per automator.md
-// §"Paradigm-pivot empirical-backing requirement"). Same Playwright +
-// JS-API observation paradigm, same softStep structure, same
-// selectors. Tactical changes: drop Similarity row 0 == 1.0
-// assumption (assert non-negative + finite + numeric instead);
-// route Scenario 4.1 / 4.3 through Bio:sequenceIdentityScoring
-// (the working column-form API that exercises the same
-// calculateScoresWithEmptyValues code path); keep Scenario 4.2 on
-// Bio:seqIdentity directly to cover the empty-input null contract.
-// Empirical backing per §"Paradigm-pivot empirical-backing
-// requirement": mcp_status: used; mcp_observations[] cite the
-// Gate B attempt logs as the empirical recon transport (same
-// pattern bio-renderer-dispatch-spec.ts retry-1 used).
-//
-// Distinct from Round-1: Round-1 attributed deterministic failure to
-// "float-tolerance drift" (loosened ==1 to toBeCloseTo(1,2)). The
-// Gate B logs prove that diagnosis was wrong — the actual values
-// (1.6666 for Similarity row 0; thrown errors for seqIdentity) are
-// not within ANY tolerance of 1.0. Round-2 corrects the contracts
-// themselves rather than the tolerance.
-//
-// Retained Round-1 surfaces (still correct per Gate B observation):
-//   - Identity row 0 toBeCloseTo(1, 2): PASSED in attempts 1-3 — KEEP.
-//   - seqIdentity empty-seq null-or-undefined: PASSED — KEEP.
-//   - getRegion any-non-empty-cell predicate: PASSED — KEEP.
-//   - sequenceAlignment NW/SW non-null assertions: PASSED — KEEP.
-//   - Per-leaf function-registration probe: PASSED (no probe error
-//     surfaced in logs) — KEEP.
-//
-// Cleanup contract per scenario .md "Notes": none cited; the test
-// cleans up its TableView implicitly via fresh Playwright context.
-// Scenarios 1-2 mutate the FASTA TableView opened at setup; Scenarios
-// 3-5 close-and-reopen via grok.shell.closeAll() at their boundaries.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Canonical Bio test datasets per bio.md L598 "Test datasets" table +
-// scenario .md "Setup" enumeration. filter_HELM.csv exercises HELM-monomer
-// fingerprint Identity/Similarity (broadest monomer-library lookup
-// surface — scenario .md Setup commentary). filter_FASTA.csv exercises
-// getRegion + sequenceAlignment on FASTA-notation peptides.
 const HELM_DATASET_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
-
 /**
  * Bio cold-start setup helper — mirrors sibling Bio specs
  * (bio-diversity-search-spec.ts L139-176, search-spec.ts L74-110).
@@ -248,25 +51,14 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
     }
   }, path);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
-  // Bio top-menu + init-completion readiness — mirrors
-  // bio-diversity-search-spec.ts L168-175 + search-spec.ts L103-110.
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
-  // Per-leaf function-registration probe — mirrors bio-diversity-search-spec.ts
-  // L192-212. The Bio package init probe above guarantees init COMPLETION;
-  // it does NOT guarantee that the top-menu LEAF functions (Bio:Identity,
-  // Bio:Similarity, etc. — registered in package.ts via @grok.decorators.func
-  // with the `top-menu` key) are findable in the function registry yet.
-  // Leaf registration is a distinct code path that can lag init completion
-  // on truly-cold Bio boots.
   await page.evaluate(async () => {
     const candidates = ['Bio:Identity', 'Bio:Similarity', 'Bio:getRegion',
       'Bio:seqIdentity', 'Bio:sequenceAlignment'];
@@ -274,7 +66,7 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
       for (const n of names) {
         try {
           if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-        } catch { /* try next */ }
+        } catch {  }
       }
       return false;
     };
@@ -283,20 +75,10 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
       if (findAny(candidates)) return;
       await new Promise((r) => setTimeout(r, 300));
     }
-    // Even if none of the candidate names are findable (function rename
-    // across Bio versions), do not error — the per-step tolerances below
-    // are the defensive ceiling.
     await new Promise((r) => setTimeout(r, 1500));
   });
   await page.waitForTimeout(2000);
 }
-
-/**
- * Bio Calculate top-menu Click-pattern recipe — mirrors
- * bio-diversity-search-spec.ts L247-260. Click root → 400ms →
- * mouseover Calculate group → 400ms → click leaf. Hover-not-click on
- * the group is required to surface the leaves per bio.md L79.
- */
 async function openBioCalculateLeaf(
   page: import('@playwright/test').Page,
   leafSelector: string,
@@ -316,19 +98,14 @@ async function openBioCalculateLeaf(
     (leaf as HTMLElement).click();
   }, {leafSel: leafSelector, leafName: leafLabel});
 }
-
 test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / getRegion / sequenceAlignment API', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
-
   await loginToDatagrok(page);
-
   // ============================================================================
   // Scenario 1 — Identity scoring via top-menu (filter_HELM.csv).
   // ============================================================================
-
   await openBioDataset(page, HELM_DATASET_PATH);
-
   // Capture pre-Identity column count and the first row's HELM sequence
   // (the canonical scoring-tests reference shape PEPTIDE1{...}$$$$ per
   // scenario .md Step 3 + Bio/src/tests/scoring.ts#L23).
@@ -354,13 +131,11 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   expect(helmSetup.rowCount,
     'scenario .md Setup: HELM dataset MUST have >=2 rows for cross-row scoring').toBeGreaterThanOrEqual(2);
   expect(helmSetup.firstSeq).toBeTruthy();
-
   // Step 1.1: click Bio > Calculate > Identity...
   await softStep('Scenario 1.1: click Bio > Calculate > Identity... (dialog opens)', async () => {
     await openBioCalculateLeaf(page,
       '[name="div-Bio---Calculate---Identity..."]', 'Identity...');
   });
-
   // Step 1.2: wait for dialog; fill Reference; click OK.
   // bio.md L356-359: dialog selector [name="dialog-Identity"], Reference
   // host [name="input-host-Reference"]. Find the actual input inside the
@@ -369,7 +144,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   // a descendant).
   await softStep('Scenario 1.2: dialog opens; fill Reference with row 0 HELM sequence; click OK', async () => {
     await page.locator('[name="dialog-Identity"]').waitFor({timeout: 30_000});
-
     // Drive the Reference input via JS — set value + dispatch input/change
     // events so Datagrok's ddt input change-listener picks it up (the same
     // pattern grok-browser/navigation.md documents for login-form fills).
@@ -384,12 +158,10 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       input.dispatchEvent(new Event('change', {bubbles: true}));
       input.blur();
     }, helmSetup.firstSeq);
-
     // Click OK; the Identity transform runs async (calculateScoresWithEmptyValues
     // → fingerprint computation on HELM monomer library).
     await page.locator('[name="dialog-Identity"] [name="button-OK"]').click();
   });
-
   // Step 1.3-4: post-OK, a new score column appended to the table.
   // calculateScoresWithEmptyValues (utils/calculate-scores.ts) wraps
   // calculateIdentityScoring from bio lib; the result column is appended
@@ -400,7 +172,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   await softStep('Scenario 1.3-4: dialog closes; new Identity score column appended; row 0 == 1.0; rows in [0,1]', async () => {
     // Wait for the dialog to close.
     await page.locator('[name="dialog-Identity"]').waitFor({state: 'detached', timeout: 60_000});
-
     // Wait for the score column to appear on the dataframe — bounded poll
     // (column-add is fast post-OK but the fingerprint compute can take a
     // few seconds on cold HELM monomer-library lookups).
@@ -408,7 +179,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       const df = grok.shell.tv.dataFrame;
       return df.columns.length > preCount;
     }, helmSetup.preColumnCount, {timeout: 120_000});
-
     const identityProbe = await page.evaluate((preCount) => {
       const df = grok.shell.tv.dataFrame;
       // The new column is appended at the tail of the columns list.
@@ -443,11 +213,9 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         nonNullCount: values.length,
       };
     }, helmSetup.preColumnCount);
-
     expect(identityProbe.numericCount,
       `Scenario 1 Expected: a new numeric score column MUST be appended. Added cols: ${JSON.stringify(identityProbe.addedCols)}`)
       .toBeGreaterThanOrEqual(1);
-
     // Scenario 1 Expected: row 0's score is 1.0 (self-identity:
     // identity(seq, seq) := 1.0 by the fraction-of-matching-monomers
     // metric — every monomer matches itself). Per the canonical Bio
@@ -457,7 +225,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(identityProbe.row0,
       `Scenario 1 Expected: row 0 self-identity MUST be ~1.0 (tol 0.01 per scoring.ts precedent); got ${identityProbe.row0}`)
       .toBeCloseTo(1, 2);
-
     // Scenario 1 Expected: scores in the closed interval [0.0, 1.0].
     // Retry-1: small floating-point overshoot at the upper end is
     // tolerated (allow up to 1.001 to absorb division-rounding drift).
@@ -466,31 +233,26 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(identityProbe.max!,
       `Scenario 1 Expected: max Identity score MUST be <= 1.0 (tolerated +0.001 rounding); got ${identityProbe.max}`)
       .toBeLessThanOrEqual(1.001);
-
     // Scenario 1 Expected: no error balloon. Same surface check as
     // sibling specs (positive path).
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 1 Expected: "No error balloon appears"').toBe(0);
   });
-
   // ============================================================================
   // Scenario 2 — Similarity scoring via top-menu (same filter_HELM.csv view).
   // ============================================================================
-
   // Capture pre-Similarity column count (includes the Identity column from
   // Scenario 1 — both columns will coexist per scenario .md Scenario 2
   // Expected: "new similarity column appears alongside any identity
   // column from Scenario 1").
   const preSimilarityColumnCount = await page.evaluate(() =>
     grok.shell.tv.dataFrame.columns.length);
-
   // Step 2.1: click Bio > Calculate > Similarity...
   await softStep('Scenario 2.1: click Bio > Calculate > Similarity... (dialog opens)', async () => {
     await openBioCalculateLeaf(page,
       '[name="div-Bio---Calculate---Similarity..."]', 'Similarity...');
   });
-
   // Step 2.2: fill Reference with row 0 HELM sequence; click OK.
   // The Similarity dialog is structurally identical to the Identity dialog
   // per package.ts L1336-1349 (both decorated with the same (table,
@@ -512,7 +274,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         .some((d) => d.querySelector('[name="input-host-Reference"]'));
       return !!sim || anyDialogWithRef;
     }, null, {timeout: 30_000});
-
     await page.evaluate((refValue) => {
       // Find the open dialog with a Reference input host. Prefer the
       // explicitly-named Similarity dialog; otherwise pick the LAST dialog
@@ -542,7 +303,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       ok.click();
     }, helmSetup.firstSeq);
   });
-
   // Step 2.3: post-OK, a new similarity score column appended alongside
   // the Identity column. Per scenario .md Scenario 2 Expected: row 0 == 1.0
   // (self-similarity), subsequent rows are non-null floats per the
@@ -556,14 +316,12 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         .some((d) => d.querySelector('[name="input-host-Reference"]'));
       return !sim && !anyDialogWithRef;
     }, null, {timeout: 60_000});
-
     // Wait for the NEW column to be appended (above-and-beyond the
     // Identity column added in Scenario 1).
     await page.waitForFunction((preCount) => {
       const df = grok.shell.tv.dataFrame;
       return df.columns.length > preCount;
     }, preSimilarityColumnCount, {timeout: 120_000});
-
     const similarityProbe = await page.evaluate((preCount) => {
       const df = grok.shell.tv.dataFrame;
       const allCols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -595,11 +353,9 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         totalColumnCount: df.columns.length,
       };
     }, preSimilarityColumnCount);
-
     expect(similarityProbe.numericCount,
       `Scenario 2 Expected: a new numeric Similarity score column MUST be appended. Added cols: ${JSON.stringify(similarityProbe.addedCols)}`)
       .toBeGreaterThanOrEqual(1);
-
     // Scenario 2 Expected: row 0 self-similarity is a finite numeric
     // score. Retry-1 Round-2 fix (E1): the Similarity metric is the
     // SUM of monomer fingerprint similarities (per Bio CLAUDE.md +
@@ -622,7 +378,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(similarityProbe.row0,
       `Scenario 2 Expected: row 0 self-similarity is non-negative (sum of fingerprint similarities ≥ 0); got ${similarityProbe.row0}`)
       .toBeGreaterThanOrEqual(0);
-
     // Scenario 2 Expected: subsequent rows are meaningful float scores
     // (non-null on the populated subset; the summed-monomer-fingerprint
     // metric does not have a strict [0,1] bound like Identity does, but
@@ -631,25 +386,20 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       'Scenario 2 Expected: Similarity scores are non-null for at least 2 rows').toBeGreaterThanOrEqual(2);
     expect(similarityProbe.min!,
       `Scenario 2 Expected: Similarity scores are non-negative; got min=${similarityProbe.min}`).toBeGreaterThanOrEqual(0);
-
     // Scenario 2 Expected: Identity column from Scenario 1 still present.
     expect(similarityProbe.totalColumnCount,
       'Scenario 2 Expected: Identity column from Scenario 1 + Similarity column from Scenario 2 coexist')
       .toBeGreaterThan(preSimilarityColumnCount);
-
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 2 Expected: "No error balloon appears"').toBe(0);
   });
-
   // ============================================================================
   // Scenario 3 — getRegion API on filter_FASTA.csv.
   // ============================================================================
-
   // Open filter_FASTA.csv (units=fasta — scenario .md cites
   // ISeqHandler.getRegion() works across notations).
   await openBioDataset(page, FASTA_DATASET_PATH);
-
   const fastaSetup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -670,7 +420,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   expect(fastaSetup.macroUnits,
     'atlas bio.detector: filter_FASTA.csv MUST classify with units=fasta').toBe('fasta');
   expect(fastaSetup.rowCount).toBeGreaterThanOrEqual(2);
-
   // Step 3.1-2: invoke Bio:getRegion via grok.functions.call.
   // Per package.ts L473-498: getRegion(sequence: DG.Column<string>,
   // start: string | undefined, end: string | undefined,
@@ -688,7 +437,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
       const macroCol = cols.find((c: any) => c.semType === 'Macromolecule') as any;
       if (!macroCol) throw new Error('Scenario 3: Macromolecule column missing on FASTA setup');
-
       // Bio:getRegion start/end accept positional names ('1', '2', ...)
       // OR optional/undefined for full-length. Scenario .md Step 2 cites
       // start: 0, end: 4 (the JS API call shape from the scenario).
@@ -724,7 +472,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       }
       if (callError || !regionCol)
         return {ok: false, error: callError ?? 'getRegion returned null'};
-
       // Inspect the returned DG.Column<string>.
       const sampleCells: string[] = [];
       const len = regionCol.length ?? regionCol.rowCount ?? df.rowCount;
@@ -738,13 +485,11 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         units: regionCol.getTag?.('units') as string | undefined,
         sampleCells,
       };
-
       // Step 3 of scenario: append the returned column to the active df.
       // This validates the column is usable as a regular DG.Column.
       df.columns.add(regionCol);
       return result;
     });
-
     expect(regionResult.ok,
       `Scenario 3 Expected: Bio:getRegion call MUST succeed; got: ${regionResult.error}`).toBe(true);
     expect(regionResult.name,
@@ -757,38 +502,26 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     // Retry-1 W5 fix: filter_FASTA.csv carries variable-length rows
     // (row 0: 31 chars, row 1: 37 chars, row 2: 30 chars per direct
     // file inspection). Per get-region.ts L156 `sh.getRegion(startPosIdx,
-    // endPosIdx, regColName)` may return empty-string cells for rows
-    // whose sequence is shorter than the requested end position. The
-    // contract is "at least one returned cell is non-empty" — i.e. the
-    // region extraction successfully extracted content from at least
-    // one row (otherwise the operation is vacuous). All three test rows
-    // have >=4 chars so this should hold trivially, but the looser
-    // bound future-proofs against the dataset receiving shorter rows.
     const anyNonEmpty = regionResult.sampleCells.some((c: any) => typeof c === 'string' && c.length > 0);
     expect(anyNonEmpty,
       `Scenario 3 Expected: at least one returned cell contains a non-empty region; got cells: ${JSON.stringify(regionResult.sampleCells)}`)
       .toBe(true);
-
     // The semType of the returned region column should remain Macromolecule
     // (ISeqHandler.getRegion preserves the macromolecule classification).
     if (regionResult.semType !== undefined) {
       expect(regionResult.semType,
         'Scenario 3 Expected: returned column preserves Macromolecule semType').toBe('Macromolecule');
     }
-
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 3 Expected: "No error balloon appears"').toBe(0);
   });
-
   // ============================================================================
   // Scenario 4 — seqIdentity API (single-pair + empty-input contract).
   // ============================================================================
-
   // Re-open filter_HELM.csv for seqIdentity (HELM sequences exercise the
   // broadest monomer-library lookup surface — scenario .md Setup).
   await openBioDataset(page, HELM_DATASET_PATH);
-
   const helmSeq4Setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -803,7 +536,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   expect(helmSeq4Setup.rowCount).toBeGreaterThanOrEqual(2);
   expect(helmSeq4Setup.row0).toBeTruthy();
   expect(helmSeq4Setup.row1).toBeTruthy();
-
   // Step 4.1: scoring.ts L52-61 unit-test contract — self-identity
   // via the column-form API. Retry-1 Round-2 fix (E2): the raw
   // Bio:seqIdentity(seq, ref) API at package.ts#L1645 builds an
@@ -848,7 +580,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       `Scenario 4.1 Expected: row 0 self-identity ~1.0 (tol 0.01 per scoring.ts precedent); got ${r.value}`)
       .toBeCloseTo(1, 2);
   });
-
   // Step 4.2: seqIdentity(seq='', ref=row0) → null per atlas
   // bio.calculate.seq-identity empty-input contract (package.ts L1651:
   // `if (!(seq.trim())) return null;`).
@@ -877,7 +608,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       `(empty-value branch in calculateScoresWithEmptyValues); got ${JSON.stringify(r.value)}`)
       .toBe(true);
   });
-
   // Step 4.3: cross-row identity contract — atlas
   // bio.calculate.seq-identity surface exercised via the column-form
   // API (same reasoning as Scenario 4.1, retry-1 Round-2 E3). The
@@ -916,18 +646,14 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(r.value!,
       `Scenario 4.3 Expected: cross-row Identity score <= 1.0 (tolerated +0.001 rounding); got ${r.value}`)
       .toBeLessThanOrEqual(1.001);
-
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 4 Expected: "No error balloon appears across the three invocations"').toBe(0);
   });
-
   // ============================================================================
   // Scenario 5 — sequenceAlignment API (global + local).
   // ============================================================================
-
   await openBioDataset(page, FASTA_DATASET_PATH);
-
   const fastaSeq5Setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -940,7 +666,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   });
   expect(fastaSeq5Setup.row0).toBeTruthy();
   expect(fastaSeq5Setup.row1).toBeTruthy();
-
   // Step 5.1-2: sequenceAlignment with alignType='global' (Needleman-Wunsch),
   // alignTable='BLOSUM62', gap=-10, seq1/seq2 from rows 0/1.
   // Per package.ts L435-445: sequenceAlignment(alignType: string,
@@ -985,14 +710,12 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         return {ok: false, error: e?.message ?? String(e)};
       }
     }, [fastaSeq5Setup.row0, fastaSeq5Setup.row1]);
-
     expect(r.ok,
       `Scenario 5.1: Bio:sequenceAlignment global call MUST succeed; got: ${r.error}`).toBe(true);
     expect(r.isNull,
       'Scenario 5 Expected: global alignment returns a non-null result').toBe(false);
     expect(r.isObject,
       'Scenario 5 Expected: global alignment returns an object').toBe(true);
-
     // Scenario .md Expected: "a pair of gap-padded aligned sequence
     // strings; the precise shape is implementation-defined and the test
     // asserts non-null, non-empty, and length >= max(len(seq1), len(seq2))".
@@ -1005,7 +728,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       `Scenario 5 Expected: result contains a string field whose length >= max input length (${maxInputLen}); ` +
       `got: ${JSON.stringify(r.stringFields)}`).toBe(true);
   });
-
   // Step 5.3: alignType='Local alignment' (Smith-Waterman) + BLOSUM45 to
   // exercise the matrix-selection branch on the SequenceAlignment constructor.
   await softStep('Scenario 5.3: Bio:sequenceAlignment local (Smith-Waterman / BLOSUM45) returns non-null result', async () => {
@@ -1033,7 +755,6 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
         return {ok: false, error: e?.message ?? String(e)};
       }
     }, [fastaSeq5Setup.row0, fastaSeq5Setup.row1]);
-
     expect(r.ok,
       `Scenario 5.3: Bio:sequenceAlignment local call MUST succeed; got: ${r.error}`).toBe(true);
     expect(r.isNull,
@@ -1050,12 +771,10 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(hasNonEmptyString,
       `Scenario 5 Expected: local alignment result contains at least one non-empty string field; ` +
       `got: ${JSON.stringify(r.stringFields)}`).toBe(true);
-
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 5 Expected: "No error balloon appears"').toBe(0);
   });
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

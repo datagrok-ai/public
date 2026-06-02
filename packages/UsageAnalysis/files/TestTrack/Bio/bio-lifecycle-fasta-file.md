@@ -26,33 +26,6 @@ gate_verdicts:
     timestamp: 2026-06-02T07:00:00Z
     failure_keys: []
     review_round: 1
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   f:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02
@@ -63,8 +36,6 @@ gate_verdicts:
     cycle_id: 2026-06-01-bio-migrate-02
     timestamp: 2026-06-02T06:20:00Z
     failure_keys: []
-    scope_reduction_proposal: |-
-      Two scenario steps are realized via JS API substitution rather than the UI affordance the scenario step text names; both substitutions have a sound technical rationale documented in the spec body header (lines 88-113) but are NOT surfaced in scenario .md frontmatter scope_reductions[] (currently []). Migrator must apply the following two entries. SR-01 id=save-as-fasta-dialog-jsapi-substitution check=E-TRACE-02 (S3.1) rationale=Scenario Step 3.1 names File | Export | As FASTA... ribbon path / right-click Save As FASTA... column-picker dialog. bio.md grok-browser reference documents no [name=...] selectors for the Save As FASTA column-picker dialog (verified by grep on .claude/skills/grok-browser/references/bio.md). Sibling test public/packages/Bio/src/tests/fasta-export-tests.ts (saveAsFastaTest1) precedent uses SeqHandler.getSplitted as the wrapped primitive, which is the same code path saveAsFastaUI dispatches into post-OK. Spec exercises this primitive (line 488-501) plus dapi.files.writeAsText (line 510) plus Bio:importFasta re-import (line 522) to assert the atlas bio.cp.import-fasta-export-fasta round-trippable contract. verdict_status=SCOPE_REDUCTION. SR-02 id=save-project-ribbon-jsapi-substitution check=E-TRACE-02 (S4.1) rationale=Scenario Step 4.1 names the ribbon SAVE button (Data Sync ON, cancel auto-share dialog). The Save Project ribbon dialog is a platform-wide UI surface not documented in bio.md selectors; UI driving is delegated to platform-side ui-smoke scenarios elsewhere. Spec uses the canonical test-area helper helpers/projects.ts saveAllTablesWithProvenance (mirrors sibling bio-lifecycle-macromolecule-column-spec.ts S3.3-3.5 and Projects/projects-lifecycle-files-spec.ts), preserving the assertable contract (persisted project + reopened detector state per atlas dep_lifecycle_ops[save_project_with_analysis]). verdict_status=SCOPE_REDUCTION. After Migrator applies these SR entries, the spec is otherwise PASS-compliant. Mechanical checks pass: E-STRUCT-MECH-01 spec exists; -02 parses; -03 test() block at line 178; -04 test name 'Bio fasta_file source-class lifecycle' substring-matches scenario heading 'Bio - fasta_file source-class lifecycle'; -05 imports from @playwright/test + sibling test-area relative imports ../spec-login + ../helpers/projects (test-area relative path convention used across 33+ sibling specs); -06 leading /* --- sub_features_covered: [...] --- */ block present at lines 1-10, all 7 ids (bio.io.fasta-handler, bio.io.save-as-fasta, bio.detector, bio.rendering, bio.rendering.fasta, bio.api.get-seq-helper, bio.lifecycle.init) resolve in feature-atlas/bio.yaml. E-SEL-01/02 both [name=...] selectors are class-1 in bio.md ([name=div-Bio] L76/L606; [name=viewer-Grid] standard platform, also at L107 for grid-canvas warm-up). E-SEL-03 no .fill() calls (none used). E-HELP-01 softStep + loginToDatagrok registered in helpers-registry.yaml lines 3927-3938; saveAllTablesWithProvenance/reopenAndAssertProvenance/deleteProjectWithCleanup exist as canonical TestTrack-area helpers at helpers/projects.ts:926,999,1060 used across 33+ section specs (advisory: registry maintenance gap, not Automator-introduced reinvention). E-HELP-02 no reinvention. E-LAYER-01 target_layer=playwright matches paradigm; E-LAYER-COMPLIANCE-01 satisfied by 2 page.locator(...).waitFor calls at lines 240 + 244. E-BOUND-01/02 spec under public/packages/UsageAnalysis/files/TestTrack/bio/, no core/** edits. E-RETRY-IGNORES-GATE-B: retry context active (gate_verdicts.b.verdict=FAIL same-cycle 2026-06-01-bio-migrate-02 with failure_keys [B-RUN-PASS, B-STAB-01]); new spec substantively addresses Validator's diagnosis - corrected {content} -> {fileContent} at 3 call sites (lines 218, 396, 522) per Playwright report error 'Errors calling importFasta: fileContent: Value not defined' verbatim cited in retry dispatch; moved FASTA open into setup phase OUTSIDE softStep (lines 212-239) so failures surface immediately instead of being swallowed; removed broken grok.data.loadTable(System:AppData/...) fallback; added grok.data.detectSemanticTypes(df) at 3 sites (lines 227, 400, 525); evidence-backed test-bug fix triangulated from package.ts:1107-1118 decorator + renderers-test.ts:134 sibling pattern. Not cosmetic, not paradigm-pivot-without-backing, not ignored. E-RETRY-IGNORES-GATE-B does NOT fire.
   b:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02

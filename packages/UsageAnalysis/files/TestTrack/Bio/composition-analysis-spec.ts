@@ -1,112 +1,27 @@
 /* ---
 sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
-//   ui_coverage_responsibility: ["Bio | Analyze | Composition",
-//     composition-analysis-viewer, composition-analysis-select-on-click,
-//     composition-analysis-gear-icon, composition-analysis-context-pane-properties]
-//     (delegated_to: null)
-//   related_bugs: []
-//   produced_from: migrated
 //   scope_reductions: SR-01 (A-CONT-01: Context-Pane property-name correctness
-//     deferred until atlas/operator supplies canonical checklist; the wiring +
-//     edit-acceptance flow is preserved as Step 5 with a generic two-toggle
-//     probe that asserts "at least one property accepts an edit").
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.analyze.composition]
-//     derived_from: public/packages/Bio/src/package.ts#L1041
-//   feature-atlas/bio.yaml#sub_features[bio.viewers.web-logo]
-//     derived_from: public/packages/Bio/src/package.ts#L449
-//   feature-atlas/bio.yaml#critical_paths[bio.cp.composition-analysis]
-//     derived_from: public/packages/Bio/src/package.ts#L1041
-//
-// Selector recon-notes (class-2: live-MCP-observed, not yet in grok-browser/references/bio.md):
-//   Top-menu path [name="div-Bio"] → mouseenter [name="div-Bio---Analyze"] → click
-//     [name="div-Bio---Analyze---Composition"] — Bio top-menu (no `...` suffix
-//     since the leaf opens directly without a dialog). Documented in
-//     grok-browser/references/bio.md:193 (class 1). Listed here only to
-//     anchor the menu-dispatch evaluate-block (visibility gate workaround).
-//   .panel-base > .panel-titlebar [name="icon-font-icon-settings"] — Gear lives
-//     on the outer docked-panel title bar (NOT inside [name="viewer-WebLogo"]
-//     subtree); reached via parentElement walk from the viewer root up to the
-//     .panel-base ancestor. MCP-validated 2026-06-02 on dev.datagrok.ai across
-//     FASTA / HELM / MSA fixtures (`gearOnPanel: true` on all three).
-//     bio.md:218 still flags this as a forward gap ("Gear icon NOT present
-//     in normal title bar"); the 2026-06-02 recon contradicts that and the
-//     panel-titlebar gear DOES open the prop panel. Kept as class-2 here
-//     until bio.md is re-curated; equivalent fallback path
-//     `grok.shell.o = wlInstance` is also documented (also MCP-validated).
-//   tr[name="prop-show-position-labels"] / tr[name="prop-skip-empty-positions"] —
-//     property-grid rows in .grok-prop-panel after Gear click. MCP-validated
-//     2026-06-02 on dev.datagrok.ai: both rows present in the panel's DOM and
-//     toggling their input[type=checkbox] flips wl.getOptions().look
-//     {showPositionLabels, skipEmptyPositions} cleanly. bio.md:204 documents
-//     the underlying getOptions().look property surface but does not
-//     enumerate the property-grid TR `[name=]` attrs since they are not
-//     officially stable; we treat them as class-2 anchors and verify the
-//     edit via getOptions().look diff rather than DOM read.
-//   Canvas click probe via the viewer's own rendered letter-column rects —
-//     synthetic mousedown/mouseup/click MouseEvent dispatched on the WebLogo
-//     canvas at the CENTER of an actual monomer rect read from
-//     PositionMonomerInfo.bounds. **MCP recon 2026-06-02** confirmed the
-//     bounds object shape is {x, y, width, height} (NOT
-//     {left, top, width, height} as the prior spec assumed — that assumption
-//     produced NaN clientX/Y, browser-coerced to 0, click-misses-canvas; the
-//     prior cycle (2026-06-01-bio-migrate-02 attempt-3) Gate B FAIL on FASTA
-//     and HELM was caused by this typo). With the bounds key corrected:
-//     FASTA selects 8 rows on position-0 'M', HELM selects 2 rows on
-//     position-2 'F', MSA selects 8 rows on position-1 'hHis' — all
-//     deterministic against the static fixtures.
-//   ~3s settle after viewer attach — empirical observation from
-//     composition-analysis-run.md (canvas in DOM but handlers not yet bound
-//     on 2nd/3rd dataset). Flagged in scenario unresolved_ambiguities as
-//     "weblogo-canvas-interactivity-settle-window-not-atlas-declared".
-//     MCP recon 2026-06-02 also observed the same: a 4s post-dispatch settle
-//     before the WebLogo canvas hit-handlers route to df.selection is
-//     required across all 3 notations.
-//
-// Hypothesis investigation (this cycle, 2026-06-02-bio-automate-01):
 //   Round 1 — hypothesis: test-bug (selector-bounds key typo on canvas click).
-//   Cheap check: re-read spec body around failing softStep (line 200-201 of
-//     prior spec used b.left/b.top — undefined per the actual PositionMonomerInfo
-//     bounds shape `{x, y, width, height}`, derived from MCP introspection).
-//   Full repro: MCP recon on dev.datagrok.ai 2026-06-02 reproduced the FASTA
-//     and HELM failure path with the prior bounds-key approach (click at
-//     translated NaN→0 coords misses the canvas) and confirmed the fix
-//     (bounds.x/.y produces in-canvas coords, click hits monomer rect,
-//     df.selection.trueCount > 0).
 //   Conclusion: test-bug (single-line bounds key fix). Same-paradigm
-//     tactical fix per §"Cheap-checks usage contract" rule #2; no paradigm
-//     pivot. mcp_status: used; mcp_observations[] populated.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv'},
   {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv'},
 ];
-
 test('Bio | Analyze | Composition — composition analysis integration', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
-
   await loginToDatagrok(page);
-
   await page.evaluate(() => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
   });
-
   for (const ds of datasets) {
     await softStep(`[${ds.name}] Scenario 1 Step 1 — Open ${ds.path}`, async () => {
       const result: {rows: number, hasMacromolecule: boolean} = await page.evaluate(async (path: string) => {
@@ -133,7 +48,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.hasMacromolecule).toBe(true);
       await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     });
-
     await softStep(`[${ds.name}] Scenario 1 Step 2 — Bio > Analyze > Composition; WebLogo viewer docks; no multi-column dialog`, async () => {
       // Top-menu dispatch via DOM events — Playwright .click() fails the
       // visibility gate on a hidden-but-attached submenu item.
@@ -168,7 +82,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.hasCanvas).toBe(true);
       expect(result.dialogOpen).toBe(false);
     });
-
     await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
       // ~3-4s settle: canvas may be in DOM before the click handlers are bound
       // (empirical from composition-analysis-run.md AND from MCP recon
@@ -233,7 +146,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       // tallest-rect path; all > 0.
       expect(selected).toBeGreaterThan(0);
     });
-
     await softStep(`[${ds.name}] Scenario 3 Step 4 — Gear icon on WebLogo opens Context Pane property grid`, async () => {
       const opened: {found: boolean, pg: boolean} = await page.evaluate(async () => {
         const g = (window as any).grok;
@@ -271,7 +183,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
         state: 'attached', timeout: 10_000});
     });
-
     await softStep(`[${ds.name}] Scenario 3 Step 5 — Edit ≥1 Context Pane property (SR-01: edit-acceptance only)`, async () => {
       // SR-01: per scenario frontmatter scope_reductions, the property-name
       // correctness assertion is deferred until atlas/operator supplies a
@@ -312,10 +223,8 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.changedShow || result.changedSkip).toBe(true);
     });
   }
-
   // Cleanup contract per scenario Notes — close all views.
   await page.evaluate(() => (window as any).grok.shell.closeAll());
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

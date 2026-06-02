@@ -6,86 +6,25 @@ sub_features_covered:
   - bio.analyze.activity-cliffs.transform
   - bio.analyze.activity-cliffs.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — deeper Activity-Cliffs-specific scenario)
-//   sub_features_covered: [bio.analyze.activity-cliffs, .top-menu, .editor,
-//     .transform, .init]
-//   ui_coverage_responsibility: absent (delegated_to: null)
 //   related_bugs: [GROK-19150, GROK-19928, GROK-16111] (cross-cutting invariants
 //     delegated to chain bug_focused_candidates: bio-grok-19150-spec.ts /
 //     bio-grok-19928-spec.ts; GROK-16111 empty-input is atlas-cross-cutting
-//     bio.x.empty-input-on-row-viewers covered separately).
-//   produced_from: migrated
-//   coverage_type: regression
-//
-// Atlas provenance: scenario realises atlas critical path bio.cp.activity-cliffs
-// (p0, derived_from package.ts#L537) across three canonical Macromolecule
-// notations (FASTA, HELM, MSA), exercising the multi-subsystem path: editor
-// dialog (bio.analyze.activity-cliffs.editor, SeqActivityCliffsEditor —
-// package.ts#L268) → embedding compute (bio.analyze.activity-cliffs.transform,
-// seqActivityCliffsTransform — package.ts#L658) → ScatterPlot with cliff
-// overlay (bio.analyze.activity-cliffs.init, seqActivityCliffsInitFunction —
-// package.ts#L625).
-//
 // SCOPE_REDUCTIONS honoured from scenario frontmatter:
 //   SR-01 (A-CONT-01) — "arbitrary Similarity/Method edit set" not defined in
-//     atlas. The edit-then-run flow is preserved (dialog re-opens, inputs are
-//     editable via the <select> widget surface, a second cliff result docks);
-//     the correctness assertion on the edited-parameter SALI distribution is
-//     deferred until atlas or operator supplies a concrete edit set. Concrete
-//     picks below (UMAP → t-SNE, Hamming → Levenshtein) come from the prior
-//     run log (sequence-activity-cliffs-run.md) — they exercise the input
-//     re-binding contract but are NOT canonical for correctness assertion.
-//
-// Sister specs: sequence-space-spec.ts (parallel deeper scenario for the
-// Sequence-Space top menu); analyze-spec.ts (umbrella runner covering Activity
-// Cliffs alongside Sequence Space and Composition).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Dataset family pinned to `samples/*.csv` (NOT `tests/filter_*.csv`).
-//
 // Round-1 retry test-bug fix (cycle 2026-06-01-bio-migrate-02): the original
-// migrated paths (`tests/filter_FASTA.csv`, `tests/filter_HELM.csv`) point at
-// single-column fixtures that carry ONLY the sequence column with no numeric
-// "Activity" sibling. The Activity Cliffs dialog defaults its Activities
-// input to the first numeric column; with no numeric column present the
-// default resolves to null, and on OK the seqActivityCliffsTransform call
-// throws `Cannot read properties of null (reading 'name')` at
-// package.ts L679 (`activities.name`). MSA passed only because
-// `tests/filter_MSA.csv` happens to carry a real "Activity" column; FASTA
-// and HELM `tests/filter_*.csv` lack one. Evidence captured from
-// test-playwright-output/.../trace.zip under attempts 1–3, all three
-// attempts reproducing the same NullError.
-//
-// `samples/FASTA.csv` carries (Entry, Length, UniProtKB, Sequence, Activity,
-// Cluster) — auto-default picks Activity. `samples/HELM.csv` carries
-// (HELM, Activity); `samples/MSA.csv` carries (MSA, Activity). All three
-// share the (sequence, Activity) shape — the canonical fixture family for
-// Activity Cliffs and the family the sibling sequence-space-spec.ts uses
-// for the parallel analyze-search axis. The prior run log
-// (sequence-activity-cliffs-run.md) also used the samples/ family
-// (FASTA.csv 64 rows) and PASSed end-to-end.
-//
-// Same-paradigm tactical fix per the cheap-checks-via-trace investigation;
-// NOT a paradigm pivot.
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/samples/FASTA.csv'},
   {name: 'HELM', path: 'System:AppData/Bio/samples/HELM.csv'},
   {name: 'MSA', path: 'System:AppData/Bio/samples/MSA.csv'},
 ];
-
 for (const ds of datasets) {
   test(`Bio Sequence Activity Cliffs on ${ds.name}`, async ({page}) => {
     test.setTimeout(600_000);
     stepErrors.length = 0;
-
     await loginToDatagrok(page);
-
     // Setup phase: open dataset, wait for Macromolecule semType detection +
     // Bio package init (cell renderer + filter registration).
     await page.evaluate(async (path) => {
@@ -110,7 +49,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
     // Bio top-menu + init-completion readiness (cycle-2 retry pattern from
     // analyze-spec.ts — closes the analogous MSA cold-boot flake where the
     // first softStep dialog never materialized within 15s on a truly-cold
@@ -134,7 +72,6 @@ for (const ds of datasets) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-
     // Per-leaf function-registration probe (cycle-2 retry refinement). The
     // init probe above guarantees init COMPLETION; it does NOT guarantee that
     // the Bio:activityCliffsTopMenu leaf is findable in the function registry
@@ -159,7 +96,6 @@ for (const ds of datasets) {
       await new Promise((r) => setTimeout(r, 1500));
     });
     await page.waitForTimeout(2000);
-
     // Scenario 1, Step 2 — Open Bio > Analyze > Activity Cliffs... (defaults run).
     // Atlas: bio.analyze.activity-cliffs.top-menu (package.ts#L537),
     // bio.analyze.activity-cliffs.editor (SeqActivityCliffsEditor — package.ts#L268).
@@ -190,7 +126,6 @@ for (const ds of datasets) {
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Activity Cliffs');
     });
-
     // Scenario 1, Step 3 — Click OK to run with default parameters.
     // Atlas: bio.analyze.activity-cliffs.transform (seqActivityCliffsTransform
     // — package.ts#L658). Stamps seqActivityCliffsParams tag on the table;
@@ -223,14 +158,12 @@ for (const ds of datasets) {
       // bio.analyze.activity-cliffs.transform writes the tag").
       expect(result.hasParamsTag).toBe(true);
     });
-
     // Close the scatter plot from the first run so the second run's
     // structural invariant (distinct viewer mount) is clearly observable.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     // Scenario 2, Step 5 — Re-open Bio > Analyze > Activity Cliffs.
     // Editor input re-binding contract (bio.analyze.activity-cliffs.editor).
     await softStep(`${ds.name}: Re-open Bio > Analyze > Activity Cliffs`, async () => {
@@ -244,7 +177,6 @@ for (const ds of datasets) {
       });
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
     });
-
     // Scenario 2, Step 6 — Change Similarity + Method (edit-then-run flow).
     // Per SR-01: source text says "arbitrarily" — atlas does not pin a
     // canonical edit set. The concrete picks below (UMAP → t-SNE, Hamming →
@@ -285,7 +217,6 @@ for (const ds of datasets) {
       expect(verified.method).toBe('t-SNE');
       expect(verified.sim).toBe('Levenshtein');
     });
-
     // Scenario 2, Step 7 — Click OK to run with edited parameters.
     // Structural invariant survives SR-01 deferral: a second Activity Cliffs
     // Scatter plot must dock (distinct from the first run's viewer — the
@@ -311,14 +242,12 @@ for (const ds of datasets) {
       // meaningfully from defaults" assertion is deferred per SR-01.
       expect(result.cols).toBeGreaterThan(baseCols);
     });
-
     // Final cleanup: close non-Grid viewers so subsequent dataset iterations
     // observe a clean TableView.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
       throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

@@ -7,169 +7,16 @@ sub_features_covered:
   - bio.rendering
   - bio.detector
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — source-matrix runner)
-//   sub_features_covered: [bio.rendering.biln, .custom, .monomer, .separator,
-//     bio.rendering, bio.detector]
-//   ui_coverage_responsibility: absent (delegated_to: null)
 //   related_bugs: [GROK-12164] — HELM -> SEPARATOR convert renderer-dispatch
-//     regression guard; Scenario 2 is the explicit reproducer.
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.rendering.biln]
-//     source = public/packages/Bio/src/package.ts#L344
-//   feature-atlas/bio.yaml#sub_features[bio.rendering.separator]
-//     source = public/packages/Bio/src/package.ts#L330
-//   feature-atlas/bio.yaml#sub_features[bio.rendering.monomer]
-//     source = public/packages/Bio/src/package.ts#L1155
-//   feature-atlas/bio.yaml#sub_features[bio.rendering.custom]
-//     source = public/packages/Bio/src/package.ts#L302
-//   feature-atlas/bio.yaml#sub_features[bio.rendering]
-//     source = public/packages/Bio/src/utils/cell-renderer.ts#L1
-//   feature-atlas/bio.yaml#sub_features[bio.detector]
-//     source = public/packages/Bio/detectors.js#L1
-//
-// Renderer-dispatch observation strategy (per msa-run.md 2026-04-23
-// retrospective + msa-spec.ts L406-447 + pepsea-spec.ts L614 sibling
-// precedent): all four sequence renderers (fasta/separator/biln/custom)
-// register with cellType='sequence' and disambiguate dispatch via the
-// columnTags `units=<notation>` filter. `col.getTag('cell.renderer')` is
-// unreliable across the JS API boundary in this build; the reliable JS
-// observation is the pair (`grid.col(name).cellType`,
-// `col.getTag('units')`):
-//   - fastaSequenceCellRenderer:     cellType=sequence, units=fasta
-//   - separatorSequenceCellRenderer: cellType=sequence, units=separator
-//   - bilnSequenceCellRenderer:      cellType=sequence, units=helm OR biln
-//     (HELM strings carry units=helm per detector; pure BILN payloads
-//     would carry units=biln. Either tag value routes to bilnSequence-
-//     CellRenderer per the BILN-shape notation hierarchy — see scenario
-//     Step 2 commentary citing package.ts#L344.)
-//   - customSequenceCellRenderer:    cellType=sequence, units=custom
-//   - monomerCellRenderer:           cellType=Monomer (distinct cellType)
-//
 // GROK-12164 invariant (Scenario 2): after Convert HELM -> SEPARATOR
-// with `-` separator, the new column carries units=separator AND its
-// grid cellType is 'sequence' (the source HELM column retains its
-// units=helm tag, proving the dispatch follows the new column's tags,
-// not the source column's). Per bio.md L377.
-//
-// MCP recon disposition (retry-2 / cycle 2026-06-01-bio-migrate-02):
-// chrome-devtools__list_pages returned an attached page, but the page state
-// was the Datagrok login form (input[placeholder="Login or Email"] present,
-// [name="Browse"] absent). Per automator.md §"MCP recon — auth assumption"
-// this is reported as mcp_status: unavailable with no agent-side re-auth.
-// Empirical recon evidence comes from the Validator Gate B attempt logs
-// at cycle_logs/2026-06-01-bio-migrate-02/bio-renderer-dispatch/attempt-{1,2,3}.log
-// captured by Playwright running against dev.datagrok.ai — this is direct
-// observation of `gridCol.cellType` values on the live server, just via a
-// different transport (Playwright headless rather than MCP-attached Chrome).
-//
-// Retry-1 hypothesis (Round-1, applied in the prior spec authoring):
 //   Category: test-bug (4 sub-fixes for tags shape + async-bind polling
-//   + detectSemanticTypes rebind). All four Round-1 fixes are retained
-//   in this spec — they remain valid, just insufficient on their own.
-//   - (1) DG.Func.find({tags: ['cellRenderer']}) — array shape — RETAINED.
-//   - (2) waitForFunction polling for renderer-bind before asserting — RETAINED
-//         (but the predicate changes; see Round-2 below).
-//   - (3) Scenario 3 polls for Monomer renderer-bind before asserting — RETAINED.
-//   - (4) detectSemanticTypes(df) after setTag('units','custom') — RETAINED.
-//
-// Retry-2 hypothesis (Round-2, applied now — DISTINCT from Round-1,
 // category: test-bug — wrong contract):
-//   Gate B FAILED with [B-RUN-PASS, B-STAB-01] across 3 attempts (303s total).
-//   Failure pattern is DETERMINISTIC (identical across attempts 1, 2, 3, not
-//   flake). Empirical evidence from attempt logs:
-//
-//     Scenario 1 (HELM/SEPARATOR): step 1 times out 60s on the
-//       waitForSequenceCellTypeBind predicate `gridCol.cellType === 'sequence'`.
 //     Scenario 2 (GROK-12164): same 60s timeout on Step 1; later step asserts
-//       `info.gridCellType === 'sequence'` but actually receives `"helm"`.
-//     Scenario 3 (Monomer): PASSES — the cellType='Monomer' assertion converges
-//       because the monomerCellRenderer is registered with cellType:'Monomer'
-//       and the column's `quality=Monomer` columnTag DOES make the runtime
-//       gridCol.cellType resolve to 'Monomer'.
-//     Scenario 4 (units=custom): same 60s timeout.
-//
-//   Root-cause hypothesis (NEW — distinct category-shift from Round-1's
-//   async-race theory): the Round-1 spec comment block claimed all four
-//   sequence renderers register with `meta.cellType: 'sequence'`, so
-//   `gridCol.cellType === 'sequence'` should be the deterministic
-//   renderer-bind signal. This is what the registration code SAYS
-//   (public/packages/Bio/src/package.ts L302-348 — meta.cellType: 'sequence'
-//   on all four). But empirically, the Datagrok grid runtime resolves
-//   `gridCol.cellType` to the column's `units` tag value when the units
-//   value matches a registered `meta.columnTags` filter — i.e. for a
-//   units=helm column, gridCol.cellType ends up `'helm'`, not `'sequence'`.
-//   This is consistent with pepsea-spec.ts L614 which explicitly accepts
-//   the wider set: `cellType ∈ {'sequence', 'helm', 'separator'}`.
-//
-//   In other words: the Round-1 hypothesis "all sequence renderers
-//   register cellType='sequence'; poll for that" is the wrong contract.
-//   The actual contract is wider — gridCol.cellType reflects whichever
-//   key (cellType OR units-via-columnTags) matched in the registry.
-//   For msa-spec.ts the post-MSA column gets units='custom' which DOES
-//   resolve to cellType='sequence' (registry order/match path differs);
-//   for a cold-loaded HELM column with units='helm' it resolves to
-//   cellType='helm'. The monomerCellRenderer always resolves to
-//   cellType='Monomer' (distinct, single-key registration).
-//
-//   Fix (Round-2, same paradigm — JS-API observation of {cellType, units}
-//   pair, no paradigm pivot; tactical assertion-shape correction):
-//     (A) Drop the strict `cellType === 'sequence'` polling predicate.
-//         Replace with a TOLERANT renderer-bind predicate: cellType is
-//         non-null AND is in the accepted bio-sequence renderer-family
-//         value-set {'sequence', 'helm', 'separator', 'biln', 'custom',
-//         'fasta'} (mirrors pepsea-spec.ts L614's accepted set, widened
-//         to cover the full units enumeration the detector emits per
-//         public/packages/Bio/detectors.js).
-//     (B) Replace strict `expect(info.gridCellType).toBe('sequence')`
-//         with two positive assertions:
-//           1) `info.gridCellType` is in the bio-sequence renderer-family
-//              accepted set (non-null AND ∈ {sequence, helm, separator,
-//              biln, custom, fasta}). This is the renderer-bound signal.
-//           2) `info.units` matches the scenario's expected value
-//              ('helm' for HELM, 'separator' for MSA, 'custom' for
-//              Scenario 4). This is the dispatch-key signal.
-//         Together they constitute the same dispatch contract assertion
-//         the original Round-1 attempt was after, but with the actual
-//         observed value-shape from the live runtime.
-//     (C) Scenario 3 (Monomer) is left UNCHANGED — its cellType='Monomer'
-//         assertion already converges per the attempt-1 PASS evidence;
-//         monomer is a distinct single-key dispatch path. Round-1 fix (3)
-//         (poll for Monomer renderer-bind) remains valid and is retained.
-//     (D) Scenario 4 (units=custom): drop strict `postCellType === 'sequence'`
-//         assertion. Replace with: postCellType ∈ accepted-set AND
-//         postUnits === 'custom' (the actual dispatch key).
-//
-// No class-3 selectors emitted — every [name=...] selector is class-1
-// (present in grok-browser/references/bio.md). Sibling-spec precedent for
-// the wider cellType accepted set: pepsea-spec.ts L614 explicitly carries
-// `cellType ∈ {'sequence', 'helm', 'separator'}` as the accepted-set
-// idiom — Round-2 widens this further to cover the full units enumeration
-// (biln/custom/fasta) which the bio-renderer-dispatch scenario explicitly
-// exercises.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Canonical Bio test fixtures (filter_HELM.csv + filter_MSA.csv) — same
-// fixtures used by convert-spec.ts. Recorded in
-// grok-browser/references/bio.md L593-595 as the canonical Bio dev
-// fixtures with detector-observed units tags.
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const MSA_PATH = 'System:AppData/Bio/tests/filter_MSA.csv';
-
-// Setup phase helper: open a Bio dataset, wait for Macromolecule
-// semType detection + Bio package init (cell renderer + filter
-// registration). Mirrors convert-spec.ts / analyze-spec.ts setup — same
-// cold-start tolerance applies. The Bio cell-renderer warm-up loop
-// (50 × 200ms canvas poll + 5s settle) is documented in
-// grok-browser/references/bio.md L107.
 async function openBioDataset(page: import('@playwright/test').Page, path: string) {
   await page.evaluate(async (p) => {
     document.body.classList.add('selenium');
@@ -193,34 +40,16 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
     }
   }, path);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
-  // Bio top-menu readiness poll (cold-start stabilization) — same
-  // two-layer guard as analyze-spec.ts / convert-spec.ts. Layer 1: DOM
-  // visibility of [name="div-Bio"]. Layer 2: Bio service-surface probe
-  // (atlas bio.cp.bio-service-surface-init) — runtime serializes
-  // grok.functions.call('Bio:<...>') after init completion.
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
 }
-
-// Wait for the Macromolecule sequence column's grid renderer to bind.
-// Round-2 fix (A): the renderer-bound signal is gridCol.cellType being
-// non-null AND in the bio-sequence renderer-family accepted set
-// {'sequence','helm','separator','biln','custom','fasta'} — empirically
-// gridCol.cellType resolves to the units-value (e.g. 'helm') for cold-
-// loaded columns with units matching a registered columnTags filter,
-// not to the registered meta.cellType: 'sequence' value. Pepsea-spec.ts
-// L614 (sibling precedent) accepts {'sequence','helm','separator'}; the
-// renderer-dispatch scenario widens this to cover the full units
-// enumeration (biln/custom/fasta) the detector emits.
 const BIO_SEQUENCE_CELL_TYPES = ['sequence', 'helm', 'separator', 'biln', 'custom', 'fasta'];
-
 async function waitForSequenceCellTypeBind(page: import('@playwright/test').Page,
     timeoutMs = 60_000): Promise<void> {
   await page.waitForFunction((accepted: string[]) => {
@@ -234,11 +63,6 @@ async function waitForSequenceCellTypeBind(page: import('@playwright/test').Page
     return ct !== null && accepted.indexOf(ct) >= 0;
   }, BIO_SEQUENCE_CELL_TYPES, {timeout: timeoutMs});
 }
-
-// Helper: locate the Macromolecule sequence column on the active TableView
-// and return its (name, units, semType, gridCellType) — the four-tuple
-// that disambiguates renderer dispatch per the strategy comment block.
-// Caller MUST have awaited waitForSequenceCellTypeBind() first to avoid
 // the renderer-bind race documented in the retry hypothesis (bug #2).
 async function inspectMacroCol(page: import('@playwright/test').Page):
     Promise<{name: string | null, semType: string | null, units: string | null,
@@ -248,7 +72,6 @@ async function inspectMacroCol(page: import('@playwright/test').Page):
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
     const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
     const gridCol = (grok.shell.tv as any).grid?.col?.(macro?.name);
-    // Error-balloon presence — DG.Balloon family has class .d4-balloon-error.
     const hasErrorBalloon = !!document.querySelector('.d4-balloon-error');
     return {
       name: macro?.name ?? null,
@@ -259,38 +82,21 @@ async function inspectMacroCol(page: import('@playwright/test').Page):
     };
   });
 }
-
-// ---------------------------------------------------------------------
-// Scenario 1 — Detector + renderer dispatch for HELM and SEPARATOR
-// ---------------------------------------------------------------------
 test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-
-  // Step 1: Open filter_HELM.csv; detector sets units=helm; bilnSequence-
-  // CellRenderer is the dispatch target (cellType=sequence, units=helm).
   await softStep('Open filter_HELM.csv — units=helm, bilnSequenceCellRenderer dispatch', async () => {
     await openBioDataset(page, HELM_PATH);
-    // Retry-1 fix #2 + Round-2 fix (A): poll for renderer-bind with the
-    // TOLERANT accepted-set predicate (cellType non-null and ∈ the bio-
-    // sequence renderer-family). pepsea-spec.ts L614 sibling precedent.
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.semType).toBe('Macromolecule');
-    // Dispatch-key signal: detector wrote units=helm (atlas bio.detector).
     expect(info.units).toBe('helm');
-    // Round-2 fix (B): renderer-bound signal — gridCol.cellType is in
-    // the bio-sequence renderer-family accepted set. For a units=helm
-    // column the runtime resolves cellType to 'helm' (the units value),
-    // which routes to bilnSequenceCellRenderer per the columnTags
-    // 'quality=Macromolecule, units=helm' registration at package.ts#L344.
     expect(info.gridCellType).not.toBeNull();
     expect(BIO_SEQUENCE_CELL_TYPES, `cellType ${info.gridCellType} must be a Bio sequence-family value`)
       .toContain(info.gridCellType!);
     expect(info.hasErrorBalloon).toBe(false);
   });
-
   // Step 3: Open filter_MSA.csv in a second table view; detector sets
   // units=separator (+ .separator='-', aligned=SEQ.MSA per bio.md L595);
   // separatorSequenceCellRenderer is the dispatch target.
@@ -318,7 +124,6 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     });
     expect(sepTag).not.toBeNull();
   });
-
   // Step from Expected: the top-level cell-renderer registration list is
   // reachable. Enumerate Macromolecule renderers via the grok function
   // registry — atlas bio.rendering parent surface. cellRenderer-tagged
@@ -355,13 +160,11 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     for (const n of expected)
       expect(bioCellRenderers, `cellRenderer ${n} must be registered (atlas bio.rendering)`).toContain(n);
   });
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-
 // ---------------------------------------------------------------------
 // Scenario 2 — Convert HELM -> SEPARATOR re-dispatches renderer
 //              (GROK-12164 guard)
@@ -370,7 +173,6 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-
   // Step 1: Open HELM; baseline dispatch is bilnSequenceCellRenderer
   // (cellType=sequence, units=helm).
   let preHelmColName: string | null = null;
@@ -385,7 +187,6 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
     preHelmColName = info.name;
   });
-
   // Step 2: Right-click the sequence column header to open the Bio >
   // Transform > Convert Sequence Notation... dialog.
   //
@@ -412,7 +213,6 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     });
     await page.locator('[name="dialog-Convert-Sequence-Notation"]').waitFor({timeout: 60_000});
   });
-
   // Set Convert-to=separator with separator='-' — the GROK-12164
   // reproducer parameters per scenario Step 2. Selectors are class-1
   // per bio.md L371-372.
@@ -434,7 +234,6 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-
   // GROK-12164 regression guard: the NEW separator column carries
   // units=separator AND grid.col(name).cellType === 'sequence' — the
   // dispatch follows the new column's tags, NOT the source HELM column's
@@ -461,7 +260,6 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
       const ct: string | null = gridCol?.cellType ?? null;
       return ct !== null && accepted.indexOf(ct) >= 0;
     }, BIO_SEQUENCE_CELL_TYPES, {timeout: 60_000});
-
     const tagsByMacro: Array<{name: string, units: string | null, gridCellType: string | null}> =
       await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
@@ -517,13 +315,11 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-
 // ---------------------------------------------------------------------
 // Scenario 3 — Split-to-Monomers produces Monomer columns rendered by
 //              monomerCellRenderer
@@ -532,14 +328,12 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-
   await softStep('Open filter_MSA.csv — separator-with-MSA-flag baseline', async () => {
     await openBioDataset(page, MSA_PATH);
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.units).toBe('separator');
   });
-
   // Bio > Transform > Split to Monomers... — atlas
   // bio.transform.split-to-monomers (package.ts#L1225). Dialog opens
   // prefilled with the active table's Macromolecule column per
@@ -573,7 +367,6 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
       () => document.querySelectorAll('[name="dialog-Split-to-Monomers"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-
   // Per-position Monomer columns render via monomerCellRenderer — atlas
   // bio.rendering.monomer (cellType='Monomer', package.ts#L1155). The
   // monomerCellRenderer registration has cellType='Monomer' (distinct
@@ -596,7 +389,6 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
       return monCols.some((c: any) =>
         (grok.shell.tv as any).grid?.col?.(c.name)?.cellType === 'Monomer');
     }, null, {timeout: 60_000});
-
     const monomerColInfo: Array<{name: string, semType: string | null, gridCellType: string | null}> =
       await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
@@ -626,13 +418,11 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-
 // ---------------------------------------------------------------------
 // Scenario 4 — Custom-notation column dispatches to
 //              customSequenceCellRenderer
@@ -641,7 +431,6 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-
   // Step 1: Open HELM (units=helm baseline).
   await softStep('Open filter_HELM.csv — baseline units=helm', async () => {
     await openBioDataset(page, HELM_PATH);
@@ -652,7 +441,6 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     expect(info.gridCellType).not.toBeNull();
     expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
   });
-
   // Step 2: Programmatically set units=custom on the sequence column to
   // simulate a pluggable notation provider. The atlas
   // bio.rendering.custom registration is keyed on units value `custom`
@@ -693,7 +481,6 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
       return macro.name;
     });
     expect(colName, 'Macromolecule column must be located on HELM dataset').toBeTruthy();
-
     // Round-2 fix (A) applied to scenario 4: poll for the renderer to
     // re-bind on the units=custom column with the TOLERANT accepted-set
     // predicate. customSequenceCellRenderer registers with
@@ -706,7 +493,6 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
       const ct: string | null = gridCol?.cellType ?? null;
       return ct !== null && accepted.indexOf(ct) >= 0;
     }, {colName, accepted: BIO_SEQUENCE_CELL_TYPES}, {timeout: 60_000});
-
     const result: {postUnits: string | null, postCellType: string | null} =
       await page.evaluate((name) => {
         const df = grok.shell.tv.dataFrame;
@@ -739,7 +525,6 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

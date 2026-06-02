@@ -53,56 +53,6 @@ gate_verdicts:
     timestamp: 2026-06-01T14:00:00Z
     failure_keys: []
     review_round: 1
-    scope_reduction_proposal: |
-      Adjudicate SR-01 (check: A-CONT-01) as SCOPE_REDUCTION. The
-      scenario body has already applied the reduction in place: source
-      Step 5's non-deterministic "Change the Similarity and Method name
-      parameters arbitrarily" is preserved as the edit-then-run flow in
-      Step 6 (dialog must re-open, inputs must accept new selections via
-      the select widget, exercising the editor input re-binding
-      contract), while Step 7's correctness assertion on the
-      edited-parameter SALI distribution is explicitly deferred. The
-      observable assertion that survives is structural — a second
-      "Activity cliffs" ScatterPlot must dock, distinct from the first
-      run (total viewer count = 2). The cited dependency is real and
-      atlas-level: atlas sub-feature bio.analyze.activity-cliffs.editor
-      (L380, SeqActivityCliffsEditor at package.ts#L268) describes the
-      dialog inputs (Similarity metric, Method, similarity cutoff) but
-      does NOT enumerate which Similarity / Method combinations form a
-      canonical edit set, and the unresolved_ambiguities[] field
-      acknowledges that the prior run log used Hamming->Levenshtein and
-      UMAP->t-SNE as concrete picks but neither atlas nor an operator
-      decision binds those as canonical. Bumping SR-01.verdict_status
-      from null to SCOPE_REDUCTION; once atlas or operator supplies a
-      concrete edit set, a follow-up scenario revision can promote the
-      deferred assertion into a typed SALI-distribution check.
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   f:
     verdict: PASS
     cycle_id: 2026-06-01-bio-migrate-02

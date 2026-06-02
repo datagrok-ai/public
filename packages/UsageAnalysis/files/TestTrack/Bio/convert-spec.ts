@@ -8,81 +8,23 @@ sub_features_covered:
   - bio.transform.split-to-monomers
   - bio.detector
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — source-matrix runner)
-//   sub_features_covered: [bio.calculate.get-region, .get-region.top-menu,
-//     bio.transform.convert-notation, .convert-notation.top-menu,
-//     bio.transform.to-atomic-level, bio.transform.split-to-monomers,
-//     bio.detector]
-//   ui_coverage_responsibility: absent (delegated_to: null)
 //   related_bugs: [GROK-15176, GROK-12164] (cross-cutting bug-repro
 //     surfaces — per chain bug_focused_candidates, GROK-15176 is delegated
 //     to a dedicated bio-grok-15176-spec.ts that chains To Atomic Level →
 //     Chem renderer / PubChem standardization; GROK-12164 is below the
-//     cross-scenario trigger threshold — this spec verifies the convert
-//     action produces a new column but does NOT assert post-convert
-//     renderer dispatch).
-//   produced_from: migrated
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.calculate.get-region.top-menu]
-//     interactions[0] = "Bio | Calculate | Extract Region..."
-//     source = public/packages/Bio/src/package.ts#L496
-//   feature-atlas/bio.yaml#sub_features[bio.transform.convert-notation.top-menu]
-//     interactions[0] = "Bio | Transform | Convert Sequence Notation..."
-//     source = public/packages/Bio/src/package.ts#L1131
-//   feature-atlas/bio.yaml#sub_features[bio.transform.to-atomic-level]
-//     interactions[0] = "Bio | Transform | To Atomic Level..."
-//     source = public/packages/Bio/src/package.ts#L863
-//   feature-atlas/bio.yaml#sub_features[bio.transform.split-to-monomers]
-//     interactions[0] = "Bio | Transform | Split to Monomers..."
-//     source = public/packages/Bio/src/package.ts#L1225
-//
-// Unresolved-ambiguity resolution (frontmatter
-// `polytool-vs-transform-convert-submenu-path`): bio.md 2026-06-01 selector
-// validation matrix (lines 609-610) MCP-validated that
-// `[name="div-Bio---Transform---Convert-Sequence-Notation..."]` opens the
-// canonical `dialog-Convert-Sequence-Notation` (notation conversion), while
-// `[name="div-Bio---PolyTool---Convert..."]` on a FASTA column routes to
-// `dialog-To-Atomic-Level` (NOT a notation-conversion dialog — same
-// shared-widget overlap the 2026-04-23 convert-run.md misidentified). This
-// spec uses the canonical Transform path for convert-notation per atlas
-// `bio.transform.convert-notation.top-menu` (`package.ts#L1131`).
-//
-// 4 actions × 3 notations matrix (per scenario Setup table):
-//   Action                       | FASTA            | HELM            | MSA
-//   Calculate > Extract Region   | Sequence:(1-39)  | HELM:(1-17)     | MSA:(1-17)   (Macromolecule)
-//   Transform > Convert Notation | molfile(Sequence)| molfile(HELM)   | molfile(MSA) (Molecule, molblock) — see PolyTool reconciliation above
-//   Transform > To Atomic Level  | molfile(Sequence)| molfile(HELM)   | molfile(MSA) (Molecule, molblock)
-//   Transform > Split to Monomers| 39 Monomer cols  | 17 Monomer cols | 17 Monomer cols
-//
-// Per-cell assertion strategy: verify column appearance + semType + units
-// (atlas-anchored decidable surface), NOT exact name strings — column
-// suffixes ("(2)", numbering) are environment-dependent per scenario Setup
-// note.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Fixtures match scenario frontmatter Setup section (Bio tests/ canonical
-// fixtures) — distinct from the larger samples/ fixtures used elsewhere.
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta'},
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm'},
   {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv', units: 'separator'},
 ];
-
 for (const ds of datasets) {
   test(`Bio Convert matrix on ${ds.name}`, async ({page}) => {
     test.setTimeout(600_000);
     stepErrors.length = 0;
-
     await loginToDatagrok(page);
-
     // Setup phase: open dataset, wait for Macromolecule semType detection +
     // Bio package init (cell renderer + filter registration). Mirrors the
     // analyze-spec.ts setup phase — same cold-start tolerance applies.
@@ -108,7 +50,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
     // Bio top-menu readiness poll (cold-start stabilization — same
     // two-layer guard as analyze-spec.ts).
     //
@@ -129,7 +70,6 @@ for (const ds of datasets) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-
     // Scenario 1 — Macromolecule detection assertion (atlas bio.detector).
     // The Macromolecule detector classifies the sequence column
     // synchronously; the table view opens with the sequence column tagged
@@ -144,7 +84,6 @@ for (const ds of datasets) {
       expect(info.hasMacro).toBe(true);
       expect(info.units).toBe(ds.units);
     });
-
     // Scenario 2.a — Bio > Calculate > Extract Region... (atlas
     // bio.calculate.get-region + .top-menu). Dialog opens prefilled with
     // the active Macromolecule column; OK adds a sub-region Macromolecule
@@ -182,7 +121,6 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-Get-Region"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 2.b — Bio > Transform > Convert Sequence Notation... (atlas
     // bio.transform.convert-notation + .top-menu, package.ts#L1131).
     //
@@ -247,7 +185,6 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 2.c — Bio > Transform > To Atomic Level... (atlas
     // bio.transform.to-atomic-level, package.ts#L863).
     //
@@ -297,7 +234,6 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 2.d — Bio > Transform > Split to Monomers... (atlas
     // bio.transform.split-to-monomers, package.ts#L1225).
     //
@@ -339,7 +275,6 @@ for (const ds of datasets) {
       expect(monCount).toBeGreaterThan(beforeMonCount);
       expect(monCount).toBeGreaterThan(0);
     });
-
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
       throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

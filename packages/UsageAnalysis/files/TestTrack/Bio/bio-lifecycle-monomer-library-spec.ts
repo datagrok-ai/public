@@ -6,186 +6,8 @@ sub_features_covered:
   - bio.api.get-monomer-lib-helper
   - bio.lifecycle.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md frontmatter (chain yaml pins
-//     proactive_lifecycle_specs[1] at the proactive-lifecycle pyramid layer
-//     globally; coverage_type: regression).
-//   sub_features_covered: [bio.manage.libraries-view, bio.manage.libraries-dialog,
-//     bio.manage.libraries-app, bio.api.get-monomer-lib-helper, bio.lifecycle.init]
-//   ui_coverage_responsibility: absent (delegated_to: null) — the scenario's
-//     Notes section explicitly carves "JS API substitutes are used for
-//     FileShare read/write and project persistence assertions per the same
-//     pattern as the sibling bio-lifecycle-macromolecule-column.md scenario."
-//   related_bugs: [] per scenario frontmatter + chain
-//     proactive_lifecycle_specs[1].bugs_reinforcing
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.lifecycle.init]
-//     source: public/packages/Bio/src/package.ts#L138 (initBio) — MonomerLibManager
-//     singleton constructed during init.
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-monomer-lib-helper]
-//     source: public/packages/Bio/src/package.ts#L133 — service surface
-//     `Bio:getMonomerLibHelper` returns the MonomerLibManager singleton.
-//   feature-atlas/bio.yaml#sub_features[bio.manage.libraries-view]
-//     source: public/packages/Bio/src/package.ts#L1359 — `manageLibrariesView`
-//     top-menu function ("Bio | Manage | Monomer Libraries"); opens a View
-//     named `Manage Monomer Libraries`.
-//   feature-atlas/bio.yaml#sub_features[bio.manage.libraries-dialog]
-//     source: public/packages/Bio/src/package.ts#L1351 — `manageMonomerLibraries`
-//     function (the alternate dialog entry-point per scenario step 1.4).
-//   feature-atlas/bio.yaml#sub_features[bio.manage.libraries-app]
-//     source: public/packages/Bio/src/package.ts#L1377 — Monomer Libraries app
-//     (browsePath Peptides). Atlas surface only — exercised here through the
-//     shared singleton it consumes (not via the app launcher UI, which is a
-//     separate entry-path covered in manage-spec.ts and the app-tree-browser
-//     sub-feature).
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[load_monomer_library]
-//     scope: monomer_library; reads JSON from
-//     System:AppData/Bio/monomer-libraries via grok.dapi.files.readAsText.
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[save_monomer_library]
-//     scope: monomer_library + monomer_collection; writes via
-//     grok.dapi.files.writeAsText against System:AppData/Bio/monomer-libraries.
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[save_project_with_analysis]
-//     scope: [all]; project persistence with Data Sync ON branch.
-//
-// Paradigm selection (per pyramid_layer: proactive-lifecycle on
-// target_layer: playwright): mostly JS API for the matrix/lifecycle shape;
-// UI driving required for the atlas-cited UI dispatch points the scenario
-// explicitly names — `Bio | Manage | Monomer Libraries` View entry
-// (Scenario 1 step 3), which is the load-bearing class-1 top-menu surface
-// per bio.md L611. Scenario 1 step 4 (the alternate dialog entry-point) is
-// driven via `Bio:manageMonomerLibraries` function call rather than
-// re-driving the same top-menu — the scenario explicitly distinguishes the
-// two API surfaces (view-style and dialog-style) at the function-registry
-// layer rather than at the top-menu layer.
-//
-// SCOPE notes honoured from scenario authority:
-//   - Step 3.4's UI project-reopen path is delegated to UI-smoke scenarios
-//     elsewhere; this spec asserts the persistence-side outcome via the
-//     canonical helpers/projects.ts saveAllTablesWithProvenance +
-//     reopenAndAssertProvenance pair (mirrors
-//     bio-lifecycle-macromolecule-column-spec.ts S3.3 / S3.4 verbatim).
-//   - Step 3.2 says "Save the project via the ribbon SAVE button (NOT Ctrl+S,
-//     per the feedback_no_ctrlS_for_layouts policy)". The Save Project ribbon
-//     dialog + Data Sync toggle is platform-wide UI not present in bio.md
-//     selector reference; per §"Selector provenance (3-class model)" we
-//     route via the helpers/projects.ts JS API path (same path
-//     bio-lifecycle-macromolecule-column-spec.ts uses for the same step).
-//   - Step 2.3 "trigger the manager's reload entry point" maps to
-//     `MonomerLibManager.loadMonomerLib(true)` (lib-manager.ts#L175 — the
-//     reload entry point) consumed via the `Bio:getMonomerLibHelper`
-//     service surface. This bypasses no UI surface — the scenario itself
-//     specifies the JS-API reload path ("Reload the library via
-//     getMonomerLibHelper()").
-//   - Step 2.2 "Modify the JSON in memory: add one synthetic monomer entry"
-//     uses the round-trip read/write loop documented by the scenario; the
-//     in-memory edit is a JSON.parse → mutate → JSON.stringify cycle on the
-//     working copy bytes. The synthetic monomer carries a `symbol`,
-//     `molfile` (HELM-style stub), and `polymerType: 'PEPTIDE'` so the
-//     ajv validator accepts the entry (lib-manager.ts file-validator path).
-//
-// Selector provenance: the one [name=...] selector below is class-1 (in
-// bio.md grok-browser reference):
-//   - [name="div-Bio"] (bio.md L76, L606)
-//   - [name="div-Bio---Manage"] / [name="div-Bio---Manage---Monomer-Libraries"]
-//     (bio.md L463, L611)
-//   - [name="view-handle: Manage Monomer Libraries"] (bio.md L467, L620)
-//   - .monomer-lib-controls-form.d4-dialog-contents + child
-//     .ui-input-bool input[type="checkbox"] (bio.md L469-L471, L619 — the
-//     per-library row checkbox structure used by manage-spec.ts as well)
-//   - [name="viewer-Grid"] (standard platform selector)
-//
-// Sibling spec reuse:
-//   - bio-lifecycle-macromolecule-column-spec.ts — canonical body shape for
-//     a Bio proactive-lifecycle spec (cold-start probe + Scenario 3 save +
-//     reopen + cleanup `finally` block). Mirrored verbatim here.
-//   - manage-spec.ts — canonical pattern for the Bio | Manage | Monomer
-//     Libraries top-menu drive + view-name assertion + per-library checkbox
-//     enumeration. Mirrored for Scenario 1 step 3.
-//   - convert-spec.ts / sequence-space-spec.ts — Bio top-menu drive pattern +
-//     two-layer cold-init readiness probe. Mirrored for Bio init readiness.
-//
 // Retry hardening — evidence-based fixes per the test-bug hypothesis path of
-// §"Hypothesis protocol with MCP investigation":
-//
-// PRIOR-ROUND FIXES (already landed; preserved for traceability):
-//   * S1.1-1.2 + S2.2: HELM library file is a top-level JSON ARRAY (per
-//     MonomerLibFileValidator.validateFile, file-validator.ts L28-32 — "The
-//     file must contain an array of monomers"). Spec now treats `parsed`
-//     itself as the monomer array.
-//   * S3.1: `grok.shell.tv` returns the current view (shell.ts get tv()),
-//     which after a Manage view dispatch is the manage view, not a
-//     TableView. Spec now enumerates `grok.shell.tableViews` and selects
-//     the HELM TableView by Macromolecule column presence.
-//
-// CURRENT-ROUND FAILURE EVIDENCE (attempt-3.log, deterministic across all
-// three attempts of this round, ~32s per attempt — earlier 4 assertions now
-// pass; 3 remaining failures are all the SAME shape):
-//   S2.3  expected working copy 'bio-lifecycle-monomer-library-<stamp>.json'
-//         (or stem) in available libraries; observed: [HELMCoreLibrary.json,
-//         NH2.json, polytool-lib.json, sample-lib-Aca-colored.json]
-//   S2.4  expected working copy in manage-view labels; observed same set as
-//         S2.3 (working copy missing)
-//   S3.3  expected working copy in post-reopen available libraries; observed
-//         same set
-//
-// ROUND-2 ROOT-CAUSE INVESTIGATION (source-code recon, MCP unavailable for
-// authenticated DOM probing this round — list_pages returned the page but
-// the in-page session is stale, see mcp_observations[] in dispatch yaml):
-//
-//   The working-copy file IS being written to FileShare (S2.1 + S2.2 PASS
-//   — readAsText round-trips the synthetic monomer successfully). But
-//   `getAvaliableLibraryNames(true)` and the manage view never surface the
-//   working copy. The trigger surface (writeAsText) is correct; the
-//   visibility surface is gated by HELM SCHEMA VALIDATION.
-//
-//   Evidence chain (Bio source):
-//     1. lib-manager.ts#L56 getAvaliableLibraryNames(refresh: true) calls
-//        provider.refreshLists() THEN provider.listLibraries().
-//     2. monomers-lib-provider.ts#L98 listLibraries() returns validLibList.
-//     3. monomers-lib-provider.ts#L246 updateValidLibList() scans the dir
-//        via getLibFileListAtLocation() (which IS based on
-//        grok.dapi.files.list, so writeAsText'd files WILL appear), then
-//        validates each via isValidHELMLibrary(fileContent, path) on L267,
-//        filtering INVALID files into the `invalidFiles` list. Only valid
-//        files land in validLibList (L271).
-//     4. file-validator.ts#L23 validateFile() requires Array.isArray AND
-//        every monomer to pass ajv against HELMmonomerSchema.json.
-//     5. HELMmonomerSchema.json (Bio/files/tests/libraries/) has
-//        `required: ["symbol", "name", "molfile", "id", "rgroups",
-//        "smiles", "polymerType", "monomerType"]`. Each rgroups entry has
-//        `required: ["alternateId", "label", "capGroupName",
-//        "capGroupSMILES"]`.
-//
-//   The prior-round synthetic monomer was missing `id` and `smiles` and
-//   had `rgroups: []` (an empty array is allowed by the schema — but
-//   absent required scalar fields are not). Result: validateFile() short-
-//   circuits on the first non-conformant monomer, returns false, file
-//   lands in `invalidFiles`, gets filtered out of validLibList — and the
-//   manage view + getAvaliableLibraryNames() never see it.
-//
-// CURRENT-ROUND FIX (round-2 distinct hypothesis): extend the synthetic
-// monomer to satisfy every required HELM schema field. Use the canonical
-// Alanine entry (HELMCoreLibrary.json L2-28) as the schema template — same
-// `id: 0`, same R1/R2 backbone rgroups, real `smiles` with [*:1]/[*:2]
-// connection points. Only `symbol` and `name` carry the unique stamp.
-//
 // HYPOTHESIS CATEGORY: test-bug (spec synthesized a monomer object missing
-// schema-required fields). Round-2 hypothesis is DISTINCT from round-1
-// (round-1 addressed JSON top-level shape + TableView accessor stability —
-// orthogonal axes to the schema-validation-rejecting-the-payload axis
-// pinned this round).
-//
-// SELECTOR / PARADIGM UNCHANGED: same Playwright DOM-driving + JS-API
-// hybrid. Per §"Paradigm-pivot empirical-backing requirement", a payload
-// schema correction is a tactical fix (no trigger-mechanism change, no
-// canvas-vs-DOM swap, no JS-API vs DOM-driving swap) and does NOT
-// constitute a paradigm pivot — MCP empirical backing is supplementary
-// for this class of fix, not required.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
@@ -193,17 +15,10 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
-
 test.use(specTestOptions);
-
 test('Bio monomer_library source-class lifecycle: load → edit/save round-trip → save project with library reference', async ({page}) => {
-  // 7-minute end-to-end budget: cold Bio init (≤90s observed in
-  // analyze/sequence-space sibling specs cycle-2 retries) + manage-view
-  // dispatch + FileShare read/write loop + project save+reopen on a small
-  // HELM fixture (≤4 min observed).
   test.setTimeout(420_000);
   stepErrors.length = 0;
-
   const stamp = Date.now();
   const workingCopy = `bio-lifecycle-monomer-library-${stamp}.json`;
   const workingCopyPath = `System:AppData/Bio/monomer-libraries/${workingCopy}`;
@@ -223,9 +38,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
   const syntheticSymbol = `XYZ_TEST_${stamp}`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   let workingCopyWritten = false;
-
   await loginToDatagrok(page);
-
   // ==========================================================================
   // Setup — open a Bio dataset that exercises the monomer library so the
   // renderer touches the library color-coding code path (atlas
@@ -256,7 +69,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Two-layer Bio init readiness probe (mirrors convert-spec.ts /
   // sequence-space-spec.ts / bio-lifecycle-macromolecule-column-spec.ts).
   // Layer 1: DOM top-menu visibility. Layer 2: Bio:getMonomerLibHelper
@@ -271,12 +83,10 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
   try {
     // ========================================================================
     // Scenario 1 — Load library via service surface
     // ========================================================================
-
     // Scenario 1, Steps 1+2 — Service-surface init contract: post-init the
     // MonomerLibManager singleton is non-null AND the canonical
     // HELMCoreLibrary.json (or fallback) is readable via FileShare AND its
@@ -356,7 +166,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.allHaveSymbol).toBe(true);
       expect(result.allHaveStructure).toBe(true);
     });
-
     // Scenario 1, Step 3 — Open the management UI via the ribbon
     // `Bio | Manage | Monomer Libraries` (atlas bio.manage.libraries-view,
     // bio.cp.manage-monomer-libraries). Verify the canonical library appears
@@ -417,7 +226,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         canonicalStems.some((stem) => l.toLowerCase().includes(stem.toLowerCase())));
       expect(hasCanonical, `expected one of [${canonicalStems.join(', ')}] in labels; observed: [${listing.labels.join(', ')}]`).toBe(true);
     });
-
     // Scenario 1, Step 4 — Verify the alternate entry-point: the dialog-mode
     // surface (atlas bio.manage.libraries-dialog) — invoked via the
     // function-registry `Bio:manageMonomerLibraries` (package.ts#L1355,
@@ -524,11 +332,9 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(cataloguesOverlap,
         `view labels [${result.viewLabels.join(', ')}] do not share any entry with dialog labels [${result.dialogLabels.join(', ')}]`).toBe(true);
     });
-
     // ========================================================================
     // Scenario 2 — Save edited library back to FileShare
     // ========================================================================
-
     // Scenario 2, Step 1 — Make a working copy via grok.dapi.files.writeAsText.
     // Atlas dep_lifecycle_ops[save_monomer_library] write surface.
     await softStep('S2.1: working copy lands under System:AppData/Bio/monomer-libraries via writeAsText', async () => {
@@ -570,7 +376,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.contentEqual).toBe(true);
       workingCopyWritten = true;
     });
-
     // Scenario 2, Step 2 — Edit the JSON in memory: add a synthetic monomer
     // entry, write the edited content back through the same writeAsText
     // path. Atlas dep_lifecycle_ops[save_monomer_library] write surface.
@@ -640,7 +445,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.afterCount).toBe(result.beforeCount + 1);
       expect(result.hasSynthetic).toBe(true);
     });
-
     // Scenario 2, Step 3 — Reload via getMonomerLibHelper().loadMonomerLib(true);
     // verify the synthetic monomer is now present in the in-memory library
     // cache (no stale-singleton issue post-write).
@@ -703,7 +507,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.inAvailable,
         `expected working copy '${workingCopy}' (or stem) in available libraries; observed: [${result.availableNames.join(', ')}]`).toBe(true);
     });
-
     // Scenario 2, Step 4 — Reopen the manage view and verify the working
     // copy still appears in the listing.
     //
@@ -764,11 +567,9 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.hasWorkingCopy,
         `expected working copy '${workingCopy}' (or stem) in manage-view labels; observed: [${result.labels.join(', ')}]`).toBe(true);
     });
-
     // ========================================================================
     // Scenario 3 — Save project that references the library
     // ========================================================================
-
     // Scenario 3, Step 1 — Switch to a Bio dataset that exercises the library
     // (the HELM dataset is already open from Setup; the renderer consults
     // the monomer library for color coding per atlas bio.rendering).
@@ -825,7 +626,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(info.units).toBe('helm');
       expect(info.rowCount).toBeGreaterThan(0);
     });
-
     // Scenario 3, Step 2 — Save project with Data Sync ON.
     // Per scenario Notes + §4.5 Scenario authority — JS API persistence via
     // the canonical helpers/projects.ts saveAllTablesWithProvenance pattern
@@ -866,7 +666,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-
     // Scenario 3, Step 3 — Close + reopen via JS API; verify:
     //   - HELM dataset restores (atlas dep_lifecycle_ops[save_project_with_analysis]).
     //   - Macromolecule column re-classifies post-reopen (atlas bio.detector
@@ -931,14 +730,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
     // Expected: "Cleanup runs in tearDownAll / finally regardless of
     // earlier failures").
     // ========================================================================
-
     // Step 4.1 — Delete the working copy library file (best-effort).
     if (workingCopyWritten) {
       await page.evaluate(async (p) => {
         try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
       }, workingCopyPath).catch(() => {});
     }
-
     // Step 4.2 — Delete the project (best-effort via the canonical helper).
     if (saved) {
       await deleteProjectWithCleanup(page, {
@@ -946,7 +743,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         tableInfoId: saved.primaryTableInfoId,
       });
     }
-
     // Step 4.3 — Close any open Manage Monomer Libraries dialogs / views
     // (best-effort — escape any open dialog + close the view if docked).
     await page.evaluate(async () => {
@@ -963,7 +759,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       } catch (_) { /* best effort */ }
     }).catch(() => {});
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

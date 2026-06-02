@@ -8,163 +8,15 @@ sub_features_covered:
   - bio.api.get-seq-helper
   - bio.lifecycle.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent in scenario .md frontmatter (chain yaml pins
-//     proactive_lifecycle_specs[3] at the proactive-lifecycle pyramid layer
-//     globally; coverage_type: regression)
-//   sub_features_covered: [bio.io.fasta-handler, bio.io.save-as-fasta,
-//     bio.detector, bio.rendering, bio.rendering.fasta,
-//     bio.api.get-seq-helper, bio.lifecycle.init]
-//   ui_coverage_responsibility: absent (delegated_to: null) — per scenario
-//     Notes "target_layer rationale: playwright — the lifecycle spans
-//     drag-and-drop UI events, the Files browse path, the File | Export
-//     ribbon, and the Save Project dialog" + Notes "Deferrals: Files-browser
-//     double-click entry path is optional within Scenario 2.3 — the
-//     assertion-grade detector-sync verification is on the two deterministic
-//     entry paths (drop + programmatic)".
 //   related_bugs: [GROK-18616] — entry-path-class detection-sync gap. The
 //     multi-entry-path lifecycle reinforces the contract; bug-focused
 //     full-repro is delegated to bio-grok-18616-spec.ts per chain
 //     bug_focused_candidates[GROK-18616].
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.io.fasta-handler] — registered
-//     `Bio:importFasta` file handler for .fasta / .fa / .fst (uses
-//     FastaFileHandler from bio library).
-//   feature-atlas/bio.yaml#sub_features[bio.io.save-as-fasta] — file
-//     exporter `As FASTA...` (saveAsFasta; saveAsFastaUI dispatches into
-//     saveAsFastaDo; round-trip tested in fasta-export-tests.ts
-//     saveAsFastaTest1).
-//   feature-atlas/bio.yaml#sub_features[bio.detector] — synchronous
-//     Macromolecule classification at file-open.
-//   feature-atlas/bio.yaml#sub_features[bio.rendering.fasta] — FASTA cell
-//     renderer dispatched by units tag.
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-helper] — SeqHelper
-//     singleton via Bio:getSeqHelper service-surface function.
-//   feature-atlas/bio.yaml#sub_features[bio.lifecycle.init] — Bio:initBio
-//     package-init function.
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[import_fasta_file]
-//     affected_source_classes: [fasta_file, macromolecule_column].
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[export_as_fasta]
-//     affected_source_classes: [macromolecule_column, fasta_file].
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[save_project_with_analysis]
-//     affected_source_classes: [all] (source_agnostic: true).
-//   feature-atlas/bio.yaml#dep_lifecycle_ops[detect_macromolecule_on_open]
 //     entry-path detector-sync contract (GROK-18616).
-//   feature-atlas/bio.yaml#source_classes[fasta_file].examples[0] —
 //     "human_genes.fasta (GROK-18474)". Sample not present on dev
-//     fileshare as of 2026-06-02 (verified via dapi.files.list pre-author);
-//     scenario .md Setup explicitly licenses the fallback "any *.fasta
-//     file under System:AppData/Bio/samples". Spec uses System:AppData/Bio/
-//     samples/FASTA.fasta (canonical Bio package fixture, ships with the
-//     Bio package per public/packages/Bio/files/samples/FASTA.fasta).
-//
-// Paradigm selection (per pyramid_layer: proactive-lifecycle on
-// target_layer: playwright): mostly JS API for matrix/lifecycle shape; UI
-// driving required for the atlas-cited UI dispatch points the scenario
-// explicitly names. For this scenario the Notes section + sibling spec
-// precedent govern:
-//   - Programmatic load (Scenario 1) is the assertable detector-sync
-//     surface — JS API per atlas bio.io.fasta-handler `Bio:importFasta`
-//     dispatch.
-//   - Drag-and-drop (Scenario 2) is implemented as a Playwright synthetic
-//     DragEvent on the table-view drop zone; per the selector-provenance
-//     3-class model, the drop-zone surface is class-1 covered by the
-//     standard Datagrok host element (`.layout-root` / `body`) and the
-//     `dragover` + `drop` events DataTransfer carry the FASTA file blob.
-//     Per scenario Notes "Drop entry path triggers the same synchronous
-//     detection outcome as the programmatic load" — the assertable
-//     contract is the post-handler outcome (units / semType / row-count).
-//     If the synthetic drop does not trigger the file-handler dispatch on
-//     this Chromium version (a known fragility of synthetic File-drop in
-//     headless Chromium without page.dragAndDrop support for File objects),
-//     the spec falls back to invoking the atlas-equivalent `Bio:importFasta`
-//     code path with the same FASTA content (the handler dispatched by
-//     the drop event per package.ts FastaFileHandler registration), and
 //     documents the fallback via console.warn + scope_reductions citation.
-//   - Save As FASTA dialog column-picker (Scenario 3) is not assertable
-//     via [name=...] selectors — bio.md documents no column-picker dialog
-//     selectors. Per sibling fasta-export-tests.ts precedent, the export
-//     contract is asserted via saveAsFastaDo's wrapped primitive: build
-//     FASTA from SeqHandler.getSplitted (the same wire-shape saveAsFastaUI
-//     produces post-OK), then round-trip via Bio:importFasta or dapi.files.
-//   - Project save+reopen (Scenario 4) uses helpers/projects.ts
-//     saveAllTablesWithProvenance + reopenAndAssertProvenance, mirroring
-//     bio-lifecycle-macromolecule-column-spec.ts S3.3-3.5.
-//
-// SCOPE notes honoured from scenario authority:
-//   - "Step 2.3 (Files-browser double-click entry path) is optional —
-//     environment-dependent for Playwright driving". Treated as
-//     within-scope deferral (not asserted; Scenario 2 covers drop +
-//     programmatic equivalence which atlas declares as the same
-//     code path).
-//   - Step 3 column-picker dialog UI not assertable via selectors —
-//     the contract under test is the FASTA wire shape + re-import
-//     detector outcome (atlas bio.cp.import-fasta-export-fasta
-//     round-trippable contract).
-//   - Step 4 project Save dialog ribbon UI: per Notes the lifecycle
-//     spans the Save Project dialog, but the assertable contract is
-//     the persisted project + reopened detector state. helpers/
-//     projects.ts is the canonical JS API path (mirrors sibling
-//     bio-lifecycle-macromolecule-column-spec.ts S3.3-3.5 and
-//     Projects/projects-lifecycle-files-spec.ts).
-//
-// Selector provenance: every [name=...] selector below is class-1
-// (in bio.md grok-browser reference):
-//   - [name="div-Bio"] (bio.md L76, L606)
-//   - [name="viewer-Grid"] (standard platform selector — used across all
-//     bio specs)
-//
-// Sibling spec reuse (reference templates):
-//   - bio-lifecycle-macromolecule-column-spec.ts — canonical Bio
-//     lifecycle pattern (setup phase, two-layer Bio init readiness probe,
-//     FASTA round-trip via SeqHandler.getSplitted, save+reopen via
-//     helpers/projects.ts). Mirrored verbatim for this scenario's
-//     parallel surface; this spec is the fasta_file source-class twin
-//     of that scenario's macromolecule_column coverage.
-//   - public/packages/Bio/src/tests/fasta-export-tests.ts
-//     (saveAsFastaTest1) — canonical saveAsFastaDo round-trip at the
-//     API layer; informs the FASTA wire-shape construction here.
-//   - public/packages/Bio/src/tests/renderers-test.ts:134 — canonical
-//     Bio:importFasta invocation: `await grok.functions.call(
-//     'Bio:importFasta', {fileContent: fastaTxt})` — proves the
-//     canonical parameter name is `fileContent` (not `content`). The
-//     decorator declaration at package.ts:1113 confirms the static
-//     signature `static importFasta(fileContent: string)`.
-//
-// Hypothesis-protocol Round-1 evidence trail (Gate B FAIL → retry):
-//   - Failure shape: TimeoutError at line `await page.locator(
-//     '.d4-grid[name="viewer-Grid"]').waitFor` after softStep S1.2-1.3
-//     completed; page snapshot showed the Home/Welcome view (no grid).
-//   - Root cause from test-playwright-report.json:100:
-//     "Errors calling importFasta: fileContent: Value not defined. /
-//     fallback=loadTable failed: Bad state: Origin is only applicable
-//     schemes http and https: system:AppData/Bio/samples/FASTA.fasta".
-//     Two test-bugs: (1) wrong parameter name `content` instead of
-//     `fileContent`; (2) `grok.data.loadTable(systemPath)` only accepts
-//     http/https URIs, not `System:AppData/...` paths. Both bugs
-//     swallowed by softStep, so the subsequent post-softStep waitFor
-//     timed out.
 //   - Round-1 fix (category: test-bug; evidence-based per
-//     §"Hypothesis protocol with MCP investigation"): (a) corrected
-//     Bio:importFasta call sites to `{fileContent: <string>}` (3 sites
-//     — setup, Scenario 2 fallback, Scenario 3 re-import); (b) moved
-//     the FASTA open into the setup phase OUTSIDE softStep (mirrors
-//     sibling bio-lifecycle-macromolecule-column-spec.ts:122-143 setup
-//     pattern) so any setup-side failure surfaces immediately rather
-//     than being swallowed; (c) removed the broken
-//     `grok.data.loadTable(samplePath)` fallback (unreachable —
-//     System:AppData paths fail; bio.io.fasta-handler dispatch via
-//     Bio:importFasta with correct param is the canonical path); (d)
-//     added `grok.data.detectSemanticTypes(df)` after each
-//     Bio:importFasta dispatch (mirrors renderers-test.ts:143
-//     awaitGrid+detectSemanticTypes pattern). No paradigm pivot — same
-//     Playwright + JS-API substitution paradigm; same sibling
 //     reference template; same helpers; same scope-reduction set.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
@@ -172,16 +24,10 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
-
 test.use(specTestOptions);
-
 test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path detector-sync → FASTA round-trip → save+reopen', async ({page}) => {
-  // 7-minute end-to-end budget mirrors bio-lifecycle-macromolecule-column-spec.ts:
-  // cold Bio init (≤90s observed in analyze/sequence-space sibling specs cycle-2
-  // retries) + multiple file-handler dispatches + project save+reopen.
   test.setTimeout(420_000);
   stepErrors.length = 0;
-
   const stamp = Date.now();
   const projectName = `bio-lifecycle-fasta-file-${stamp}`;
   const fastaTempPath = `System:AppData/UsageAnalysis/temp/lifecycle-fasta-${stamp}.fasta`;
@@ -193,9 +39,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
   // (public/packages/Bio/files/samples/FASTA.fasta).
   const fastaSamplePath = 'System:AppData/Bio/samples/FASTA.fasta';
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
-
   await loginToDatagrok(page);
-
   // ==========================================================================
   // Scenario 1 — Programmatic load entry path
   // ==========================================================================
@@ -238,7 +82,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     await new Promise((r) => setTimeout(r, 5000));
   }, fastaSamplePath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
   // Two-layer Bio init readiness probe (mirrors
   // bio-lifecycle-macromolecule-column-spec.ts).
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
@@ -249,7 +92,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-
   // Scenario 1.1 — Trigger Bio:initBio if not initialized; verify
   // getSeqHelper returns the singleton (atlas bio.lifecycle.init +
   // bio.api.get-seq-helper). Order swapped vs Scenario 1.2/1.3 because the
@@ -280,7 +122,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(probe.helperErr).toBeNull();
     expect(probe.helperType).toBe('ISeqHelper');
   });
-
   // Scenario 1.2-1.3 — Verify detector outcome on the table already opened
   // in setup (atlas bio.io.fasta-handler + bio.detector + bio.rendering.fasta).
   // The setup phase performed the programmatic load (atlas-equivalent of
@@ -322,7 +163,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(result.firstSeqLen).toBeGreaterThan(0);
     expect(result.gridCanvasMounted).toBe(true);
   });
-
   // ==========================================================================
   // Scenario 2 — Drag-and-drop entry path
   // ==========================================================================
@@ -351,7 +191,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     const result = await page.evaluate(async (samplePath) => {
       // Read FASTA content for both the synthetic-drop and fallback paths.
       const content: string = await grok.dapi.files.readAsText(samplePath);
-
       // Synthetic drop: build a DataTransfer carrying a File constructed
       // from the FASTA content, dispatch dragenter + dragover + drop on
       // the platform's main layout host. Returns whether the platform's
@@ -372,7 +211,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
           return {dispatched: false, reason: String(e).slice(0, 150)};
         }
       })();
-
       // Poll briefly for the table count to increase (drop dispatched
       // file-handler synchronously per atlas
       // bio.x.entry-path-detector-sync).
@@ -382,7 +220,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
         if (grok.shell.tables.length > startTables) {viaSyntheticDrop = true; break;}
         await new Promise((r) => setTimeout(r, 200));
       }
-
       // Fallback per spec header: if synthetic drop did NOT trigger
       // the file-handler dispatch, exercise the atlas-equivalent
       // Bio:importFasta code path with the same content. Atlas
@@ -410,7 +247,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
             macro: null as any, units: null as any, rowCount: 0};
         }
       }
-
       // Snapshot the freshly-opened table's detector state.
       const df = grok.shell.tv?.dataFrame;
       let macro: any = null; let units: any = null; let rowCount = 0;
@@ -428,7 +264,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
         dropReason: dropOutcome.reason, fallbackErr: null as string | null,
         macro, units, rowCount, rendererTag, firstSeqLen};
     }, fastaSamplePath);
-
     // Heuristic recording — surfaces in the run log if the synthetic
     // drop path was not honored by headless Chromium (a known fragility,
     // documented in the spec header). The atlas-equivalent fallback
@@ -449,7 +284,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(result.rowCount).toBeGreaterThan(0);
     expect(result.firstSeqLen).toBeGreaterThan(0);
   });
-
   // ==========================================================================
   // Scenario 3 — Export As FASTA round trip
   // ==========================================================================
@@ -474,11 +308,9 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       if (!seqCol) throw new Error('S3.1: no Macromolecule column on active table');
       const idCol: any = cols.find((c: any) => c.semType !== 'Macromolecule') ?? null;
       const idColList = idCol ? [idCol] : [];
-
       // atlas bio.api.get-seq-helper: SeqHelper singleton.
       const seqHelper: any = await (grok as any).functions.call('Bio:getSeqHelper', {});
       const seqHandler: any = seqHelper.getSeqHandler(seqCol);
-
       // atlas bio.io.save-as-fasta: build FASTA text via SeqHandler's
       // public getSplitted API (same primitive saveAsFastaDo wraps).
       // Mirrors fasta-export-tests.ts saveAsFastaTest1 wire-shape.
@@ -500,10 +332,8 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
           fastaLines.push(seqText.slice(i, i + lineWidth) + '\n');
       }
       const fastaText: string = fastaLines.join('');
-
       if (!fastaText.startsWith('>'))
         throw new Error('S3.1: exported FASTA does not start with > header');
-
       // atlas bio.cp.import-fasta-export-fasta: round-trip via temp file.
       let writeErr: string | null = null;
       try {
@@ -511,7 +341,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       } catch (e) {
         writeErr = String(e).slice(0, 200);
       }
-
       // atlas bio.io.fasta-handler: dispatch the registered Bio:importFasta
       // handler with the file content. Canonical parameter is `fileContent`
       // per package.ts:1113 + renderers-test.ts:134. This is the same code
@@ -527,11 +356,9 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       } catch (e) {
         reimportErr = String(e).slice(0, 200);
       }
-
       // Best-effort cleanup of the temp file (deferred to finally block
       // too; this is the in-step cleanup per scenario Step 5.1).
       try { await grok.dapi.files.delete(tempPath); } catch (_) { /* best effort */ }
-
       let reimportedShape: any = null;
       let reimportedFirstSeqLen = 0;
       let reimportedFirstSeq = '';
@@ -548,7 +375,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
         reimportedFirstSeq = rmacro && reimported.rowCount > 0 ? String(rmacro.get(0) ?? '') : '';
         reimportedFirstSeqLen = reimportedFirstSeq.length;
       }
-
       return {
         fastaShape: {
           startsWithHeader: fastaText.startsWith('>'),
@@ -564,11 +390,9 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
         reimportedFirstSeqLen,
       };
     }, {tempPath: fastaTempPath});
-
     // Export contract:
     expect(result.fastaShape.startsWithHeader).toBe(true);
     expect(result.fastaShape.totalLen).toBeGreaterThan(0);
-
     // Round-trip contract per atlas bio.cp.import-fasta-export-fasta.
     if (result.reimported) {
       expect(result.reimported.rowCount).toBe(result.originalRowCount);
@@ -592,7 +416,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       expect(result.fastaShape.lineCount).toBeGreaterThan(1);
     }
   });
-
   try {
     // ========================================================================
     // Scenario 4 — Save project with FASTA-imported table; reopen survives
@@ -611,7 +434,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-
     // Scenario 4.2 — Close + reopen via JS API; verify Macromolecule
     // column + units/semType tags survive (atlas
     // dep_lifecycle_ops[save_project_with_analysis] entry-path
@@ -666,7 +488,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
     }, fastaTempPath).catch(() => {});
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

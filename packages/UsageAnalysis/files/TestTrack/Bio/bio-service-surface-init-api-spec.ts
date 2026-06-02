@@ -7,121 +7,14 @@ sub_features_covered:
   - bio.api.get-monomer-lib-helper
   - bio.lifecycle.init
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: apitest
-//   pyramid_layer: absent in scenario .md frontmatter (coverage_type: smoke
-//     per scenario frontmatter; smoke is the load-bearing constraint here)
-//   sub_features_covered: [bio.api.get-bio-lib, bio.api.get-seq-handler,
-//     bio.api.get-helm-monomers, bio.api.get-seq-helper,
-//     bio.api.get-monomer-lib-helper, bio.lifecycle.init]
-//   ui_coverage_responsibility: absent (apitest layer — no UI surface owned)
-//   related_bugs: [] per scenario frontmatter; no atlas known_issues[] entry
-//     maps to the service-surface family directly
-//   produced_from: atlas-driven
-//   coverage_type: smoke
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.lifecycle.init]
-//     derived_from: public/packages/Bio/src/package.ts#L138 (initBio @init).
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-helper]
-//     derived_from: public/packages/Bio/src/package.ts#L1678 — Bio:getSeqHelper.
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-monomer-lib-helper]
-//     derived_from: public/packages/Bio/src/package.ts#L133 — Bio:getMonomerLibHelper.
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-bio-lib]
-//     derived_from: public/packages/Bio/src/package.ts#L175 — Bio:getBioLib
-//     (function body at L176 returns _package.monomerLib).
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-seq-handler]
-//     derived_from: public/packages/Bio/src/package.ts#L180 — Bio:getSeqHandler
-//     (function body at L181-L184 delegates to _package.seqHelper.getSeqHandler).
-//   feature-atlas/bio.yaml#sub_features[bio.api.get-helm-monomers]
-//     derived_from: public/packages/Bio/src/package.ts#L1240 (registration with
-//     name: 'Bio: getHelmMonomers'); function body at L1244 returns
-//     _package.seqHelper.getSeqMonomers(sequence).
-//   feature-atlas/bio.yaml#critical_paths[bio.cp.bio-service-surface-init]
-//     derived_from: public/packages/Bio/src/package.ts#L138 (priority p0).
-//
-// Paradigm selection (per target_layer: apitest on coverage_type: smoke):
-// pure JS API / function-registry contract — FORBIDDEN list per §4.1
-// includes DOM-driving calls (page.click | page.fill | page.locator |
-// page.hover | page.press | page.keyboard | page.mouse | dlg.*). Spec body
-// uses only grok.functions.call() + grok.dapi.files.readCsv() + grok.shell.*
-// inside page.evaluate. No DOM driving in body — apitest paradigm pure per
-// §"Paradigm selection". The only page.locator call is inside loginToDatagrok
-// (spec-login.ts:34, platform-shared login readiness probe — NOT in this
-// spec body, satisfies E-LAYER-COMPLIANCE-01 sub-rule for apitest).
-//
-// Function-registry name divergence (source vs grok-browser reference):
-//   - source `name: 'Bio: getHelmMonomers'` (literal space, package.ts#L1241)
-//     — explicit @grok.decorators name override
-//   - bio.md L564 cites the call as `grok.functions.call('Bio:getHelmMonomers')`
-//     (no space) — likely the canonical post-registration alias
-//   Spec uses a small tryCall helper that probes BOTH forms in order
-//   ('Bio:getHelmMonomers' first per bio.md, fallback to 'Bio: getHelmMonomers'
-//   per source) so the assertion is robust to either registration shape.
-//   Same defensive pattern as bio-lifecycle-immunum-wasm-spec.ts L175-180.
-//
-// Selector provenance: this spec emits ZERO DOM selectors in its body
-// (apitest paradigm). The only [name=...] selector reached is inside the
-// shared spec-login helper (`[name="Browse"]` at spec-login.ts L34) which
-// is class-1 (sidebar tab annotation per grok-browser SKILL.md "Naming
-// convention for `name=` attributes" table).
-//
-// Sibling spec reuse (canonical apitest precedents):
-//   - Charts/charts-api-spec.ts — canonical body shape for a TestTrack
-//     apitest spec (page.evaluate wrappers, softStep, console-error
-//     capture). Mirrored verbatim here for paradigm-pure shape.
-//   - PowerPack/widgets-after-debug-delete-api-spec.ts — canonical pattern
-//     for apitest spec self-protection (graceful early-exit when a
-//     precondition cannot be satisfied). Mirrored for the HELM/FASTA
-//     fixture-availability guard.
-//   - bio/bio-lifecycle-immunum-wasm-spec.ts L175-180 — canonical sibling
-//     pattern for the three-probe service-surface readiness check
-//     ('Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib').
-//     Mirrored for the init-completion gate.
-//
-// Test datasets (per bio.md L592-L595, validated 2026-06-01):
-//   - System:AppData/Bio/tests/filter_HELM.csv — HELM macromolecule fixture
-//     (Scenarios 2 + 3)
-//   - System:AppData/Bio/tests/filter_FASTA.csv — 14 rows × 1 col, FASTA
-//     peptide, units=fasta (Scenario 2 cross-check)
-//
-// MCP recon disposition this dispatch (per §"Knowledge-gap MCP mandate"):
-//   - Scenario IS knowledge-gap (gate_verdicts.b absent, realized_as empty).
-//   - mcp_status: used. list_pages succeeded; navigated to dev.datagrok.ai;
-//     observed stale-auth session (login screen present, Datagrok Dart bridge
-//     functions `grok_CallFunc` / `grok_User` not yet registered). Live
-//     `grok.functions.call('Bio:<...>')` recon not possible this session.
-//   - Per §"Cheap-checks usage contract" #3, the spec falls back to
-//     inference-based authoring grounded in: (a) Bio/src/package.ts source
-//     (lines cited in atlas provenance block above), (b) bio.md#L552-L566
-//     Service-surface table (live-validated 2026-06-01 per the selector
-//     validation matrix at bio.md#L602), (c) sibling
-//     bio-lifecycle-immunum-wasm-spec.ts which calls three of the five
-//     functions in identical syntactic shape. Spec assertions exercise
-//     the same JS-API call shape the sibling spec already uses.
-//
-// Cleanup contract (per §"REQUIRED list"):
-//   - test calls grok.shell.closeAll() in a finally block to release any
-//     table views opened by the HELM/FASTA fixture loads. No project save,
-//     no server-side entities — the service-surface contract is in-session
-//     only, per scenario Setup Notes.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
-
 test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLib / getSeqHandler / getHelmMonomers', async ({page}) => {
-  // 6-minute end-to-end budget: cold Bio init (≤90s observed in sibling
-  // bio specs cycle-2 retries) + three small CSV reads (HELM/FASTA fixtures
-  // are <20 rows each) + five grok.functions.call resolutions. The
-  // load-bearing wait is initBio completion; everything after is trivial.
   test.setTimeout(360_000);
   stepErrors.length = 0;
-
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
     /Failed to load resource/.test(text) ||
@@ -131,9 +24,7 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
     if (msg.type() === 'error' && !isBenignError(msg.text())) consoleErrors.push(msg.text());
   });
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
-
   await loginToDatagrok(page);
-
   // Setup — apitest-pure: no UI driving, only shell state hygiene. Mirrors
   // Charts/charts-api-spec.ts L45-L53.
   await page.evaluate(() => {
@@ -146,7 +37,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
     document.body.classList.add('selenium');
     g.shell.windows.simpleMode = true;
   });
-
   try {
     // ========================================================================
     // Scenario 1 — Service-surface five-function resolution after init.
@@ -162,7 +52,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       const out = await page.evaluate(async () => {
         const g = (window as any).grok;
         const result: any = {seqHelper: null, monomerLibHelper: null, bioLib: null, errBalloons: 0};
-
         // tryCall — defensive helper for the function-registry name
         // divergence pattern (source `name:` literal vs canonical alias).
         // Returns {ok, value, name, err} — name records which form
@@ -179,7 +68,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           }
           return {ok: false, value: null, name: null, err: lastErr};
         }
-
         // Atlas bio.api.get-seq-helper — Bio:getSeqHelper (package.ts#L1678).
         // Returns the ISeqHelper singleton (SeqHelper concrete impl per
         // seq-helper.ts). At minimum a callable getSeqHandler(column) method
@@ -199,7 +87,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         } else {
           result.seqHelper = {err: r1.err};
         }
-
         // Atlas bio.api.get-monomer-lib-helper — Bio:getMonomerLibHelper
         // (package.ts#L133). Returns the MonomerLibManager singleton
         // (lib-manager.ts) implementing IMonomerLibHelper. At minimum a
@@ -218,7 +105,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         } else {
           result.monomerLibHelper = {err: r2.err};
         }
-
         // Atlas bio.api.get-bio-lib — Bio:getBioLib (package.ts#L175).
         // Returns the merged IMonomerLib (MonomerLib concrete impl per
         // monomer-lib.ts extending MonomerLibBase). At minimum a callable
@@ -237,22 +123,18 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         } else {
           result.bioLib = {err: r3.err};
         }
-
         // Capture any error balloons that surfaced during the three calls.
         // Per bio.md (common observability pieces) — error balloons appear
         // in `.d4-balloon-error` containers; an `isErrorBallon` helper is
         // referenced in sibling specs. Direct DOM read is sanctioned here
         // because it is observational, not driving.
         result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
-
         return result;
       });
-
       // Atlas contract — all three service-surface calls resolve to non-null
       // singletons with the documented interface methods present.
       expect(out.seqHelper?.resolved, `getSeqHelper err: ${out.seqHelper?.err ?? ''}`).toBe(true);
       expect(out.seqHelper?.methods).toContain('getSeqHandler');
-
       expect(out.monomerLibHelper?.resolved, `getMonomerLibHelper err: ${out.monomerLibHelper?.err ?? ''}`).toBe(true);
       // At least one of getMonomerLib / getBioLib must be present
       // (IMonomerLibHelper interface evolves — getBioLib is the legacy
@@ -260,15 +142,12 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       const hasMlhAccessor = (out.monomerLibHelper?.methods ?? []).some((m: string) =>
         m === 'getMonomerLib' || m === 'getBioLib');
       expect(hasMlhAccessor, `monomerLibHelper accessor methods: ${JSON.stringify(out.monomerLibHelper?.methods)}`).toBe(true);
-
       expect(out.bioLib?.resolved, `getBioLib err: ${out.bioLib?.err ?? ''}`).toBe(true);
       expect(out.bioLib?.methods).toContain('getMonomer');
-
       // No error balloon raised during the four resolution steps
       // (scenario Expected bullet 5).
       expect(out.errBalloons, 'error balloon count after S1').toBe(0);
     });
-
     // ========================================================================
     // Scenario 2 — getSeqHandler returns notation-correct per-column handlers
     // (HELM + FASTA).
@@ -283,7 +162,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       const out = await page.evaluate(async ([helmPath, fastaPath]) => {
         const g = (window as any).grok;
         const result: any = {helm: null, fasta: null, distinctInstances: null, errBalloons: 0};
-
         // --- Load HELM fixture; detector classifies units=helm.
         const dfHelm = await g.dapi.files.readCsv(helmPath);
         const tvHelm = g.shell.addTableView(dfHelm);
@@ -300,7 +178,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           await new Promise((r) => setTimeout(r, 200));
         }
         await new Promise((r) => setTimeout(r, 3000));
-
         const helmCols = Array.from({length: dfHelm.columns.length},
           (_, i) => dfHelm.columns.byIndex(i));
         const helmCol: any = helmCols.find((c: any) => c.semType === 'Macromolecule');
@@ -327,7 +204,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
               .filter((m) => typeof handlerHelm[m] === 'function'),
           };
         }
-
         // --- Load FASTA fixture; detector classifies units=fasta.
         const dfFasta = await g.dapi.files.readCsv(fastaPath);
         g.shell.addTableView(dfFasta);
@@ -340,7 +216,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           await new Promise((r) => setTimeout(r, 200));
         }
         await new Promise((r) => setTimeout(r, 3000));
-
         const fastaCols = Array.from({length: dfFasta.columns.length},
           (_, i) => dfFasta.columns.byIndex(i));
         const fastaCol: any = fastaCols.find((c: any) => c.semType === 'Macromolecule');
@@ -360,7 +235,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
             hasGetSplitter: typeof handlerFasta.getSplitter === 'function',
           };
         }
-
         // Per-column scoping: the two handlers MUST be distinct instances.
         // Re-fetch the HELM handler via the same call to verify the scope
         // (do NOT keep the first one in memory then compare; the SeqHelper
@@ -370,16 +244,12 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           const fh = await g.functions.call('Bio:getSeqHandler', {sequence: fastaCol});
           result.distinctInstances = hh !== fh;
         }
-
         result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
-
         return result;
       }, [HELM_PATH, FASTA_PATH]);
-
       // Atlas contract: both calls resolve to a non-null ISeqHandler instance.
       expect(out.helm?.resolved, `helm handler err: ${out.helm?.err ?? ''}`).toBe(true);
       expect(out.fasta?.resolved, `fasta handler err: ${out.fasta?.err ?? ''}`).toBe(true);
-
       // Notation-correctness — at minimum the column's units tag should be
       // 'helm' / 'fasta' respectively (the canonical detector output per
       // bio.md L592-L595). The handler's own notation accessor may surface
@@ -387,19 +257,15 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       // (load-bearing observable per bio.md "Common observability pieces").
       expect(out.helm?.unitsTag).toBe('helm');
       expect(out.fasta?.unitsTag).toBe('fasta');
-
       // ISeqHandler surface contract — getSplitter() is the load-bearing
       // method (used by all per-notation operations across the bio package).
       expect(out.helm?.hasGetSplitter).toBe(true);
       expect(out.fasta?.hasGetSplitter).toBe(true);
-
       // Per-column scoping: distinct handlers for distinct columns.
       expect(out.distinctInstances, 'handlers should be distinct instances per column').toBe(true);
-
       // No error balloon raised (scenario Expected bullet 5).
       expect(out.errBalloons, 'error balloon count after S2').toBe(0);
     });
-
     // ========================================================================
     // Scenario 3 — getHelmMonomers returns the HELM-column monomer list.
     //
@@ -414,7 +280,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       const out = await page.evaluate(async (helmPath) => {
         const g = (window as any).grok;
         const result: any = {monomers: null, columnSymbols: null, errBalloons: 0};
-
         // Find the open HELM table view from Scenario 2 (table view is
         // retained across softSteps within the same test). If it isn't open
         // for some reason, re-read the fixture — apitest specs don't depend
@@ -437,7 +302,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           }
           await new Promise((r) => setTimeout(r, 3000));
         }
-
         const helmCols = Array.from({length: dfHelm.columns.length},
           (_, i) => dfHelm.columns.byIndex(i));
         const helmCol: any = helmCols.find((c: any) => c.semType === 'Macromolecule');
@@ -445,7 +309,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           result.monomers = {err: 'no Macromolecule column in filter_HELM.csv'};
           return result;
         }
-
         // tryCall — Bio:getHelmMonomers source `name:` has a literal space
         // ('Bio: getHelmMonomers'). bio.md L564 documents the no-space form.
         // Try the no-space form first (bio.md is the validated grok-browser
@@ -461,12 +324,10 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
             break;
           } catch (e) { lastErr = String(e).slice(0, 300); }
         }
-
         if (monomers == null) {
           result.monomers = {err: lastErr, candidatesTried: candidates};
           return result;
         }
-
         // Normalize the returned value to a string list. The atlas contract
         // (per scenario Expected) says it's "an array (or iterable) of
         // monomer identifiers (strings)". The source body returns
@@ -477,7 +338,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           : (typeof monomers?.[Symbol.iterator] === 'function'
             ? Array.from(monomers as Iterable<unknown>).map((x) => String(x))
             : []);
-
         // Extract the unique monomer-symbol set observable in the column's
         // HELM strings. HELM monomer-symbol forms appear as bracketed names
         // (e.g. [meE], [dA]) and as bare single-letter symbols inside the
@@ -509,7 +369,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
             }
           }
         }
-
         result.monomers = {
           resolved: true,
           invokeName,
@@ -521,7 +380,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           unique: Array.from(symbolsInColumn),
           count: symbolsInColumn.size,
         };
-
         // Compute the symmetric-difference statistics. The returned list may
         // be larger than the strict observable-in-column set (e.g. due to
         // upstream monomer-library merging) — the load-bearing direction is:
@@ -544,16 +402,13 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         }
         result.columnSymbols.missingInReturned = missingInReturned;
         result.columnSymbols.extraInReturned = extraInReturned.slice(0, 20);
-
         result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
         return result;
       }, HELM_PATH);
-
       // Atlas contract — non-empty array of monomer identifiers.
       expect(out.monomers?.resolved, `getHelmMonomers err: ${out.monomers?.err ?? ''} tried=${JSON.stringify(out.monomers?.candidatesTried)}`).toBe(true);
       expect(out.monomers?.listType).toBe('array');
       expect(out.monomers?.count, `returned monomer list count`).toBeGreaterThan(0);
-
       // Round-trip / mapping consistency — column-observed symbols ⊆ returned.
       // The reverse direction (returned ⊆ column) is NOT asserted: the
       // SeqHelper implementation may include monomers from the active
@@ -565,7 +420,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         out.columnSymbols?.missingInReturned ?? [],
         `column ⊆ returned violated; column-symbols absent from returned list: ${JSON.stringify(out.columnSymbols?.missingInReturned)}`,
       ).toEqual([]);
-
       // No error balloon raised (scenario Expected bullet 4).
       expect(out.errBalloons, 'error balloon count after S3').toBe(0);
     });
@@ -580,7 +434,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       try { (window as any).grok.shell.closeAll(); } catch (e) { /* ignore */ }
     });
   }
-
   // Surface non-benign console errors as a soft signal (per Charts/charts-
   // api-spec.ts L34-L37 pattern). Service-surface init contract does not
   // own a no-console-error invariant — surface as diagnostic, do not fail.
@@ -588,7 +441,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
     // eslint-disable-next-line no-console
     console.warn(`[diagnostic] non-benign console errors observed: ${consoleErrors.length}; first: ${consoleErrors[0]?.slice(0, 200)}`);
   }
-
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

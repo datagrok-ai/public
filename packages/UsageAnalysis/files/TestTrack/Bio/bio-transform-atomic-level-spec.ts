@@ -7,76 +7,20 @@ sub_features_covered:
   - bio.transform.helm-to-mol
   - bio.transform.molecules-to-helm
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — source-matrix-like
-//     runner with broad JS-API permission + ≥1 DOM-driving call required;
-//     same body shape as sibling convert-spec.ts on coverage_type: regression)
-//   sub_features_covered: [bio.transform.to-atomic-level, .action, .single,
-//     .api, bio.transform.helm-to-mol, bio.transform.molecules-to-helm]
-//   ui_coverage_responsibility: absent (delegated_to: null) — no specialty
-//     ui-smoke ownership; Bio top-menu + dialog OK is the DOM-driving slice;
 //     API wrappers + GROK-15176 isotope-flag regression guard run as JS-API
-//     assertions inside the same Playwright runner per scenario Notes.
 //   related_bugs: [GROK-15176] — bug-focused regression guard inline
-//     (Scenario 5); molfile must not carry MASS=1 isotope flags on heavy
-//     atoms; ties to cross-feature interaction bio.x.bio-to-chem-via-atomic-level.
-//   produced_from: atlas-driven
-//   coverage_type: regression
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/bio.yaml#sub_features[bio.transform.to-atomic-level]
-//     interactions[0] = "Bio | Transform | To Atomic Level..."
-//     source = public/packages/Bio/src/package.ts#L863
-//   feature-atlas/bio.yaml#sub_features[bio.transform.to-atomic-level.action]
-//     interactions[0] = "column action: to atomic level"
-//     source = public/packages/Bio/src/package.ts#L886 (toAtomicLevelAction)
-//   feature-atlas/bio.yaml#sub_features[bio.transform.to-atomic-level.single]
-//     interactions[0] = grok.functions.call('Bio:toAtomicLevelSingleSeq')
-//     source = public/packages/Bio/src/package.ts#L911
-//   feature-atlas/bio.yaml#sub_features[bio.transform.to-atomic-level.api]
-//     interactions[0] = grok.functions.call('Bio:seq2atomic')
-//     source = public/packages/Bio/src/package.ts#L1605
-//   feature-atlas/bio.yaml#sub_features[bio.transform.helm-to-mol]
-//     interactions[0] = HelmToMolfileConverter pipeline
-//     source = public/packages/Bio/src/package.ts#L1684 (helper-converter wrapper)
-//   feature-atlas/bio.yaml#sub_features[bio.transform.molecules-to-helm]
-//     interactions[0] = "Bio | Transform | Molecules to HELM..."
-//     source = public/packages/Bio/src/package.ts#L824 (moleculesToHelmTopMenu)
-//   feature-atlas/bio.yaml#critical_paths[bio.cp.to-atomic-level] (p1)
-//   feature-atlas/bio.yaml#interactions[bio.x.bio-to-chem-via-atomic-level]
 //     coverage_type: regression, related_bugs: [GROK-15176]
-//
 // Bug-library cross-reference:
 //   bug-library/bio.yaml :: GROK-15176 — to-atomic-level molfile must not
-//   contain heavy-atom oxygens with isotope=1 (MASS=1 flag); downstream
-//   PubChem standardization (Chem panel) rejects illegal isotopes,
-//   breaking the bio.x.bio-to-chem-via-atomic-level renderer contract.
-//
-// All selectors used here are class-1 — present in
-// grok-browser/references/bio.md (lines 379-415 for Transform top-menu
-// dialogs; lines 499-521 for Macromolecule column Context Pane actions).
-// No class-2 selector recon-notes required.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
 test.use(specTestOptions);
-
-// Fixtures match scenario Setup section — the two canonical Bio test
-// fixtures cover the HELM and FASTA branches of toAtomicLevel.
 const datasets = [
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm'},
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta'},
 ];
-
 // Heavy-atom isotope-flag scanner (GROK-15176 invariant — see scenario
-// Scenario 5). V3000 atom lines look like:
-//   "M  V30 <idx> <symbol> x y z 0 ..."
 // Isotope is encoded via the "MASS=<n>" key on the atom line. The bug
-// surfaced as MASS=1 on heavy-atom oxygens (illegal isotope of O), which
-// PubChem rejects. We exclude H / D explicitly: a "1" mass on hydrogen
-// is the natural isotope and not the regression signal.
 function heavyAtomIsotopeFlags(mol: string): string[] {
   if (!mol) return [];
   return mol.split(/\r?\n/)
@@ -84,14 +28,11 @@ function heavyAtomIsotopeFlags(mol: string): string[] {
     .filter((l) => / MASS=1\b/.test(l))
     .filter((l) => !/ [HD] /.test(l));
 }
-
 for (const ds of datasets) {
   test(`Bio Transform To Atomic Level + round-trip on ${ds.name}`, async ({page}) => {
     test.setTimeout(600_000);
     stepErrors.length = 0;
-
     await loginToDatagrok(page);
-
     // Setup phase: open dataset, wait for Macromolecule semType detection
     // + Bio package init. Mirrors convert-spec.ts cold-start tolerance —
     // the Bio top-menu doesn't appear until Bio package functions are
@@ -118,7 +59,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
     // Bio top-menu readiness poll — two-layer guard (same as convert-spec.ts
     // and analyze-spec.ts cold-start stabilization).
     //
@@ -133,7 +73,6 @@ for (const ds of datasets) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-
     // Sanity: Macromolecule column is tagged with the expected units
     // (atlas bio.detector). This anchors the scenario's Setup expectation
     // before any Transform action runs.
@@ -147,7 +86,6 @@ for (const ds of datasets) {
       expect(info.hasMacro).toBe(true);
       expect(info.units).toBe(ds.units);
     });
-
     // Scenario 1 (HELM dataset) / Scenario 3 (FASTA dataset) — Top-menu
     // To Atomic Level... (atlas bio.transform.to-atomic-level,
     // package.ts#L863). On HELM input the pipeline routes through
@@ -182,7 +120,6 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Molecule').length > base;
       }, beforeMolCount, {timeout: 120_000});
-
       // Assert column contract: semType=Molecule, units=molblock,
       // first non-null cell is a V3K molfile.
       const info: {hasMol: boolean, units: string | null, name: string | null, firstCell: string | null} =
@@ -204,12 +141,10 @@ for (const ds of datasets) {
       // GROK-15176-related shape check: produced cell is a V3K molfile.
       expect(info.firstCell).not.toBeNull();
       expect(info.firstCell!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
-
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 2 — Column-header cell-action "to atomic level"
     // (atlas bio.transform.to-atomic-level.action, package.ts#L886).
     //
@@ -236,7 +171,6 @@ for (const ds of datasets) {
       });
       // Give the Context Panel a moment to render the accordion panes.
       await page.waitForTimeout(800);
-
       // Expand the column-scoped Actions pane. There are two `Actions`
       // accordion panes in the right column (toolbox-section + column-scoped);
       // we click them all — expanding the toolbox one is a harmless no-op.
@@ -247,7 +181,6 @@ for (const ds of datasets) {
         }
       });
       await page.waitForTimeout(800);
-
       // Click the "To Atomic Level..." link action. Once expanded the
       // label is present in the DOM; before expand it's `null`. Find by
       // text-starts-with per bio.md line 517.
@@ -262,7 +195,6 @@ for (const ds of datasets) {
         return false;
       });
       expect(clicked).toBe(true);
-
       // The action invokes toAtomicLevelAction → func.prepare(...).edit()
       // which opens the same dialog-To-Atomic-Level surface as the
       // top-menu path. Close the dialog without re-running the conversion
@@ -277,7 +209,6 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 4 — Molecules to HELM round-trip (atlas
     // bio.transform.molecules-to-helm, package.ts#L824). With the
     // molfile column from the top-menu step present on the active
@@ -311,7 +242,6 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Macromolecule').length > base;
       }, beforeMacroCount, {timeout: 180_000});
-
       // Assert: a new Macromolecule column appears. The moleculesToHelm
       // implementation sets meta.units='helm' + cell.renderer='helm' on
       // the regenerated-sequence column per package.ts#L840-844.
@@ -329,12 +259,10 @@ for (const ds of datasets) {
         });
       expect(info.newMacroCount).toBeGreaterThan(beforeMacroCount);
       expect(info.lastUnits).toBe('helm');
-
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-Molecules-to-HELM"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-
     // Scenario 5 — Public API wrappers + GROK-15176 isotope-flag
     // regression guard. Calls the two public wrappers directly via
     // grok.functions.call (no dataframe round-trip needed) and asserts
@@ -364,7 +292,6 @@ for (const ds of datasets) {
           }
           return result;
         });
-
       // API wrappers MUST be callable and return non-empty string molfiles.
       expect(out.linearErr).toBeNull();
       expect(out.nonLinearErr).toBeNull();
@@ -372,25 +299,21 @@ for (const ds of datasets) {
       expect(out.molNonLinear).not.toBeNull();
       expect(out.molLinear!.length).toBeGreaterThan(0);
       expect(out.molNonLinear!.length).toBeGreaterThan(0);
-
       // V3K shape: the molfile contains V3000 markers (header line
       // includes "V3000"; CTAB block opens with "M  V30 BEGIN CTAB").
       expect(out.molLinear!).toMatch(/V3000/);
       expect(out.molNonLinear!).toMatch(/V3000/);
       expect(out.molLinear!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
       expect(out.molNonLinear!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
-
       // GROK-15176 invariant: no heavy atom carries MASS=1.
       const offendersLinear = heavyAtomIsotopeFlags(out.molLinear!);
       const offendersNonLinear = heavyAtomIsotopeFlags(out.molNonLinear!);
-
       // The bug-library entry GROK-15176 names the expected behaviour:
       // a clean V3K molfile that PubChem standardization accepts.
       // Any heavy-atom MASS=1 flag means the bug has regressed.
       expect(offendersLinear, `GROK-15176 regression on linear wrapper: ${offendersLinear.length} heavy-atom MASS=1 flag(s). Offending atom lines:\n${offendersLinear.join('\n')}`).toEqual([]);
       expect(offendersNonLinear, `GROK-15176 regression on non-linear wrapper: ${offendersNonLinear.length} heavy-atom MASS=1 flag(s). Offending atom lines:\n${offendersNonLinear.join('\n')}`).toEqual([]);
     });
-
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
       throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
