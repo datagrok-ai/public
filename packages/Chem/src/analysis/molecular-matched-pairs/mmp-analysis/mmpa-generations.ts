@@ -2,11 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
 import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments} from './mmpa-misc';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 export async function calculateGenerations(structuresN: number, activityN: number, moleculesArray: string[],
   allStructures: string[], allInitActivities: Float32Array, activityName: string[], activities: Float32Array[],
   activityNames: string[], frags: MmpFragments, meanDiffs: Float32Array[], prediction: Float32Array,
   cores: string[], from: string[], to: string[], rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
   rulesFromCats: string[], rulesToCats: string[], gpu: boolean, strictCPU: boolean = false) {
+  const path = (structuresN < 10 || !gpu || strictCPU) ? 'CPU' : 'GPU';
+  _tsLog(`[calculateGenerations] entering, path=${path}, structuresN=${structuresN}, gpu=${gpu}, strictCPU=${strictCPU}`);
   try {
     if (structuresN < 10 || !gpu || strictCPU) {
       if (structuresN > MMP_CONSTRICTIONS.CPU)
@@ -20,7 +24,9 @@ export async function calculateGenerations(structuresN: number, activityN: numbe
         activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
         rulesFrom, rulesTo, rulesFromCats, rulesToCats);
     }
+    _tsLog(`[calculateGenerations] ${path} path completed`);
   } catch (e: any) {
+    _tsLog(`[calculateGenerations] ${path} path threw: ${e instanceof Error ? e.message : e}`);
     const eMsg: string = e instanceof Error ? e.message : e.toString();
     if (eMsg === MMP_ERRORS.FRAGMENTS_CPU) {
       grok.shell.warning(MMP_ERRORS.GPU_ABORTED);

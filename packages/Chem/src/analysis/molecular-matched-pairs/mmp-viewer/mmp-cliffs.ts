@@ -16,6 +16,8 @@ import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 export function getMmpScatterPlot(
   parentTable: DG.DataFrame, axesColsNames: string[], labelsColName: string, colorByActivityName: string) : DG.ScatterPlotViewer {
   parentTable.columns.addNewFloat(axesColsNames[0]);
@@ -173,8 +175,10 @@ export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp
     options: {useWebGPU: true},
   };
 
+  _tsLog(`[runMmpChemSpace] constructing ScatterPlotLinesRenderer, lines=${lines.from?.length ?? 0}`);
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
+  _tsLog('[runMmpChemSpace] ScatterPlotLinesRenderer constructed');
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(

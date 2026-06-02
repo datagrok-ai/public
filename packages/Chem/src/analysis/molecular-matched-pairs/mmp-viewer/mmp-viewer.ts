@@ -32,6 +32,16 @@ import {getZoomCoordinates} from '../../../utils/ui-utils';
 
 const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
 
+// Storm detector: logs the 1st call and then every 50th, with a running count, so a
+// runaway re-entrant loop (e.g. filter/render storm starving the event loop) shows up
+// as a fast-climbing counter instead of flooding — or absent if it's not the culprit.
+const _stormCounters: {[key: string]: number} = {};
+const _tsCount = (key: string): void => {
+  const n = (_stormCounters[key] = (_stormCounters[key] ?? 0) + 1);
+  if (n === 1 || n % 50 === 0)
+    _tsLog(`[MMPA-VIEWER] storm-counter "${key}" = ${n}`);
+};
+
 export type MmpInput = {
   table: DG.DataFrame,
   molecules: DG.Column,
@@ -179,7 +189,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(property: DG.Property | null): void {
-    console.log(property!.name);
+    _tsLog(`[MMPA-VIEWER] onPropertyChanged: entering, property=${property?.name}`);
     super.onPropertyChanged(property);
     if (property?.name === 'totalData')
       this.totalDataUpdated = true;
@@ -187,10 +197,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (property?.name === 'molecules' && property.get(this) !== '') {
       this.moleculesColumnName = property.get(this);
       this.molecules = '';
+      _tsLog(`[MMPA-VIEWER] onPropertyChanged: molecules->moleculesColumnName, returning early`);
       return;
     }
 
     this.onPropertyChangedObs.next(property);
+    _tsLog(`[MMPA-VIEWER] onPropertyChanged: emitted "${property?.name}" to debounce(1000)`);
   }
 
   async render() {
@@ -240,14 +252,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const tabs = ui.tabControl(null, false);
 
     const transformationsTab = tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
+      _tsLog('[MMPA-VIEWER] tab factory: Transformations');
       return this.getTransformationsTab();
     });
     ui.tooltip.bind(transformationsTab.header, decript1);
 
     const fragmentsTab = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+      _tsLog('[MMPA-VIEWER] tab factory: Fragments (scheduling setupFragmentsTab)');
       //need timeout not to freeze when switching to tab
       setTimeout(() => {
+        _tsLog('[MMPA-VIEWER] setupFragmentsTab: entering');
         this.setupFragmentsTab();
+        _tsLog('[MMPA-VIEWER] setupFragmentsTab: done');
       }, 100);
       ui.setUpdateIndicator(this.fragmentsDiv, true, 'Generating fragments trellis plot...');
       return this.fragmentsDiv;
@@ -255,17 +271,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ui.tooltip.bind(fragmentsTab.header, decript2);
 
     const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+      _tsLog('[MMPA-VIEWER] tab factory: Cliffs');
       return this.getCliffsTab();
     });
     ui.tooltip.bind(cliffsTab.header, decript3);
 
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
+      _tsLog('[MMPA-VIEWER] tab factory: Generation');
       return this.getGenerationsTab();
     });
     ui.tooltip.bind(genTab.header, decript4);
 
     let firstCliffsOpening = true;
     tabs.onTabChanged.subscribe(() => {
+      _tsLog(`[MMPA-VIEWER] onTabChanged: ${this.currentTab} -> ${tabs.currentPane.name}`);
       this.lastOpenedHint?.remove();
       const prevTab = this.currentTab;
       this.currentTab = tabs.currentPane.name;
@@ -599,6 +618,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getCliffsTab(): HTMLElement {
+    _tsLog('[MMPA-VIEWER] getCliffsTab: entering, creating lines');
     const {linesIdxs, lines, linesActivityCorrespondance} = createLines(this.mmpa!, this.colorPalette!);
     this.linesIdxs = linesIdxs;
     this.lines = lines;
@@ -612,6 +632,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.setupFilters(this.mmpFilters, linesActivityCorrespondance);
     console.log(`created mmpa filters`);
 
+    _tsLog('[MMPA-VIEWER] getCliffsTab: filters created, building scatter plot');
     this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames,
       this.moleculesCol!.name, this.activitiesCols!.byIndex(0).name);
     //show scatter plot context menu instead of mmp viewer's context menu
@@ -623,12 +644,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     }));
 
+    _tsLog('[MMPA-VIEWER] getCliffsTab: calling runMmpChemSpace');
     const [linesEditor, chemSpaceParams] = runMmpChemSpace(this.parentTable!, this.moleculesCol!, this.sp, lines,
       linesIdxs, linesActivityCorrespondance, this.pairedGrids!.mmpGridTrans.dataFrame, this.mmpa!, this.rdkitModule!,
       this.spAxesNames);
+    _tsLog('[MMPA-VIEWER] getCliffsTab: runMmpChemSpace returned, calling mmpa.chemSpace');
 
     const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
     this.mmpa!.chemSpace(chemSpaceParams).then((res) => {
+      _tsLog('[MMPA-VIEWER] getCliffsTab: chemSpace resolved, replacing embedding cols');
       const embeddings = res.coordinates;
       for (const col of embeddings)
         this.parentTable!.columns.replace(col.name, col);
@@ -636,7 +660,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       spDiv.style.height = '800px';
       this.totalData = this.mmpa!.toJSON();
       progressBarSpace.close();
+      _tsLog('[MMPA-VIEWER] getCliffsTab: chemSpace .then done');
     }).catch((error: any) => {
+      _tsLog(`[MMPA-VIEWER] getCliffsTab: chemSpace .catch: ${error}`);
       const errorStr = `Scatter plot haven't been completed due to error: ${error}`;
       grok.shell.error(errorStr);
     }).finally(() => ui.setUpdateIndicator(this.sp!.root, false));
@@ -656,18 +682,22 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     this.subs.push(this.parentTable!.onRowsFiltering.subscribe(() => {
+      _tsCount('cliffs.onRowsFiltering');
       if (this.currentTab === MMP_NAMES.TAB_CLIFFS)
         this.parentTable!.filter.and(this.totalCutoffMask!);
     }));
 
+    _tsLog('[MMPA-VIEWER] getCliffsTab: initial refilterCliffs');
     this.refilterCliffs(this.mmpFilters.activitySliderInputs.map((si) => si.value),
       this.mmpFilters.activityActiveInputs.map((ai) => ai.value));
+    _tsLog('[MMPA-VIEWER] getCliffsTab: returning content');
 
     const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID, this.pairedGrids!.pairsGridCliffsTab,
       MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
     mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-opened');
 
     this.pairedGrids!.pairsGridCliffsTab.dataFrame.onCurrentRowChanged.subscribe(() => {
+      _tsCount('cliffs.onCurrentRowChanged');
       const currentRowIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx;
       if (currentRowIdx !== -1 && this.currentTab === MMP_NAMES.TAB_CLIFFS) {
         this.lastCurrentRowOnCliffsTab = currentRowIdx;
@@ -823,7 +853,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getGenerationsTab(): HTMLElement {
+    _tsLog('[MMPA-VIEWER] getGenerationsTab: entering, calling getGenerations');
     getGenerations(this.mmpa!, this.pairedGrids!.fpGrid).then(([genGrid, corrGrid]) => {
+      _tsLog(`[MMPA-VIEWER] getGenerationsTab: getGenerations resolved, ` +
+        `genRows=${genGrid.dataFrame.rowCount}, corrRows=${corrGrid.dataFrame.rowCount}`);
       this.generationsGrid = genGrid;
       this.corrGrid = corrGrid;
 
@@ -886,7 +919,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       setTimeout(() => {
         this.setupHint(hints, 0);
       }, 1000);
+      _tsLog('[MMPA-VIEWER] getGenerationsTab: .then done');
     }).catch((error: any) => {
+      _tsLog(`[MMPA-VIEWER] getGenerationsTab: .catch: ${error}`);
       const errorStr = `Generations haven't been completed due to error: ${error}`;
       ui.setUpdateIndicator(this.generationsGridDiv, false);
       ui.setUpdateIndicator(this.spCorrDiv, false);
@@ -896,6 +931,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
     ui.setUpdateIndicator(this.generationsGridDiv, true, 'Generations in progress...');
     ui.setUpdateIndicator(this.spCorrDiv, true, 'Generating correlation scatter plot...');
+    _tsLog('[MMPA-VIEWER] getGenerationsTab: returning placeholder div (getGenerations pending)');
     return this.generationsGridDiv;
   }
 
@@ -1130,6 +1166,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
 
   refilterCliffs(cutoffs: number[], isActiveVar: boolean[]): void {
+    _tsCount('refilterCliffs');
     for (let i = 0; i < this.cutoffMasks!.length; i++)
       this.cutoffMasks![i].setAll(false);
 

@@ -178,6 +178,9 @@ category('mmpa', () => {
   });
 
   test('transformationsTab', async () => {
+    // dispose the previous test's view: a leftover live MMPA/cliffs scatterplot
+    // keeps re-rendering and starves the event loop, freezing the next test's render
+    grok.shell.closeAll();
     _tsLog('[MMPA] transformationsTab: loading table view');
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
     _tsLog('[MMPA] transformationsTab: adding MMPA viewer');
@@ -240,6 +243,7 @@ category('mmpa', () => {
   });
 
   test('cliffsTab', async () => {
+    grok.shell.closeAll();
     _tsLog('[MMPA] cliffsTab: loading table view');
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
     _tsLog('[MMPA] cliffsTab: adding MMPA viewer');
@@ -310,6 +314,7 @@ category('mmpa', () => {
   });
 
   test('generationTab', async () => {
+    grok.shell.closeAll();
     _tsLog('[MMPA] generationTab: loading table view');
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
     _tsLog('[MMPA] generationTab: adding MMPA viewer');

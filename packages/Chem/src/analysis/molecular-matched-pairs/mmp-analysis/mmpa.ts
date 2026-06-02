@@ -131,12 +131,16 @@ export class MMPA {
   }
 
   async chemSpace(chemSpaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
+    _tsLog(`[MMPA.chemSpace] entering, cached=${!!this.chemSpaceResult}`);
     if (this.chemSpaceResult) {
       const cols: DG.Column[] = chemSpaceParams.embedAxesNames.map((name: string, index: number) =>
         DG.Column.fromFloat32Array(name, this.chemSpaceResult![index]));
+      _tsLog('[MMPA.chemSpace] returning cached embeddings');
       return {coordinates: new DG.ColumnList(cols)};
     } else {
+      _tsLog('[MMPA.chemSpace] calling chemSpace() (dim. reduction)');
       const res = await chemSpace(chemSpaceParams);
+      _tsLog('[MMPA.chemSpace] chemSpace() returned');
 
       const embeddings = res.coordinates;
       const cols: DG.Column [] = [];
@@ -153,6 +157,7 @@ export class MMPA {
 
   async calculateGenerations(rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
     rulesFromCats: string[], rulesToCats: string[]): Promise<MmpGeneration> {
+    _tsLog(`[MMPA.calculateGenerations] entering, cached=${!!this.generationResult}, gpu=${this.gpu}`);
     if (this.generationResult)
       return this.generationResult;
     else {
@@ -167,11 +172,14 @@ export class MMPA {
       const prediction = new Float32Array(activityN * structuresN).fill(0);
       const activityName: Array<string> = Array(structuresN * activityN);
 
+      _tsLog(`[MMPA.calculateGenerations] calling calculateGenerations(), structuresN=${structuresN}, ` +
+        `activityN=${activityN}`);
       await calculateGenerations(structuresN, activityN, this.initData.molecules, allStructures, allInitActivities,
         activityName, this.initData.activities, this.initData.activitiesNames,
         this.frags, this.rulesBased.meanDiffs,
         prediction, cores, from, to,
         rulesFrom, rulesTo, rulesFromCats, rulesToCats, this.gpu);
+      _tsLog('[MMPA.calculateGenerations] calculateGenerations() returned');
 
       this.generationResult = {allStructures, allInitActivities, activityName, cores, from, to, prediction};
       return this.generationResult;

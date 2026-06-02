@@ -6,8 +6,11 @@ import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   Promise<[DG.Grid, DG.Grid]> {
+  _tsLog('[getGenerations] entering');
   const rulesColumns = allPairsGrid.dataFrame.columns;
 
   const rulesFrom = rulesColumns.byName(MMP_NAMES.FROM).getRawData();
@@ -15,7 +18,9 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   const rulesFromCats = rulesColumns.byName(MMP_NAMES.FROM).categories;
   const rulesToCats = rulesColumns.byName(MMP_NAMES.TO).categories;
 
+  _tsLog('[getGenerations] calling mmpa.calculateGenerations');
   const genRes = await mmpa.calculateGenerations(rulesFrom, rulesTo, rulesFromCats, rulesToCats);
+  _tsLog('[getGenerations] calculateGenerations returned');
 
   //excluding those molecules for which we could not generate molecule with better activity
   const idxsToExclude: number[] = [];
@@ -24,7 +29,9 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
       idxsToExclude.push(i);
   }
 
+  _tsLog('[getGenerations] getRdKitService + mmpLinkFragments (worker)');
   const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
+  _tsLog('[getGenerations] mmpLinkFragments returned, building grid');
   const cols = [];
   cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures,
     GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
@@ -64,8 +71,10 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   });
   createMolExistsCol(mmpa.initData.molecules, generation, grid, generation.length - idxsToExclude.length);
 
+  _tsLog('[getGenerations] building correlation grid');
   const gridCorr = getCorGrid(mmpa);
 
+  _tsLog('[getGenerations] done');
   return [grid, gridCorr];
 }
 
