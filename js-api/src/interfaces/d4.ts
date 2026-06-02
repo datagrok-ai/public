@@ -2251,6 +2251,29 @@ export interface ILineChartSettings {
 
   selectedRowsColor: number;
 
+  /// Regression line visibility (toggle by pressing R).
+  showRegressionLine: boolean;
+
+  showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
+
+  /// Splits the regression by the *Split* column(s). Supports up to 20 categories;
+  /// otherwise, a common regression line is shown.
+  regressionPerCategory: boolean;
+
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
+  formulaFont: string;
+
   statisticalProcessLineColor: number;
 
   statisticalProcessAreaColor: number;
