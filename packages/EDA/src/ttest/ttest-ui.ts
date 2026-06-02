@@ -10,6 +10,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {factorize, groupStats, areVarsEqual, GroupStats, CatCol, NumCol} from '../anova/anova-tools';
 import {twoSampleTTest, TwoSampleTTest, TTestMethod} from './ttest-tools';
+import {
+  CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP, conclusionColumn, styleConclusionColumn,
+} from '../group-comparison/conclusion-column';
 
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
@@ -62,29 +65,9 @@ function labelOf(factor: DG.Column, code: number): string {
   return String(factor.categories[code]);
 }
 
-// --- Conclusion column (see ttest-results-table-spec.md) ---
+// --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
 
-/** Header of the leftmost results column and of its tooltip. */
-const CONCLUSION_COL_NAME = 'Conclusion';
-const CONCLUSION_HEADER_TOOLTIP = 'Null hypothesis testing';
-
-/** Cell labels for the conclusion column. */
-const CONCLUSION_LABEL = {
-  significant: 'Significant',
-  notSignificant: 'Not significant',
-} as const;
-
-/**
- * Conclusion cell colors (Option 1 — neutral accent), applied via categorical column color-coding.
- * The brand color is a deliberate non-judgemental accent: significance carries no "good/bad" meaning,
- * so red/green are avoided.
- */
-const CONCLUSION_COLOR = {
-  significant: '#534AB7',
-  notSignificant: '#94A1B2',
-} as const;
-
-/** Null-hypothesis-testing tooltip for a conclusion cell (H₀ / H₁ / Conclusion + verdict). */
+/** Null-hypothesis-testing tooltip for a conclusion cell (H0 / H1 / Conclusion + verdict). */
 function conclusionTooltip(significant: boolean): HTMLElement {
   return ui.divV([
     ui.markdown('**H0:** the two group means are equal.'),
@@ -156,10 +139,9 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
   const diffDescription = `mean("${label1}") − mean("${label0}")`;
 
   const significant = res.pValue < res.alpha;
-  const conclusionLabel = significant ? CONCLUSION_LABEL.significant : CONCLUSION_LABEL.notSignificant;
 
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
-    DG.Column.fromStrings(CONCLUSION_COL_NAME, [conclusionLabel]),
+    conclusionColumn(significant),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 't', [res.t]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'df', [res.df]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [res.pValue]),
@@ -172,22 +154,8 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string): DG.G
 
   grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(res.pValue);
 
-  // Conclusion column: color the verdict via categorical column color-coding (Option 1, neutral accent).
-  grid.dataFrame.col(CONCLUSION_COL_NAME)!.meta.colors.setCategorical({
-    [CONCLUSION_LABEL.significant]: DG.Color.fromHtml(CONCLUSION_COLOR.significant),
-    [CONCLUSION_LABEL.notSignificant]: DG.Color.fromHtml(CONCLUSION_COLOR.notSignificant),
-  });
-  const conclusionGridCol = grid.col(CONCLUSION_COL_NAME)!;
-  conclusionGridCol.isTextColorCoded = true; // color the text, not the cell background
-  conclusionGridCol.width = 110;
-
-  // Bold the conclusion text (color stays driven by the color-coding above).
-  grid.onCellPrepare((cell) => {
-    if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME) {
-      const base = cell.style.font ? cell.style.font.replace(/^bold\s+/i, '') : '13px Roboto';
-      cell.style.font = `bold ${base}`;
-    }
-  });
+  // Conclusion column: text color-coding (Option 1, neutral accent) + bold (shared infra).
+  styleConclusionColumn(grid);
 
   const tooltip = new Map<string, string>([
     [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],

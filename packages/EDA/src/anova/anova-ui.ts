@@ -6,6 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {FactorizedData, oneWayAnova, OneWayAnovaReport, WelchAnova} from './anova-tools';
+import {
+  CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP, conclusionColumn, styleConclusionColumn,
+} from '../group-comparison/conclusion-column';
 
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
@@ -29,10 +32,21 @@ enum DEFAULT {
 
 type Method = 'Welch' | 'Fisher';
 
-const LEARN_MORE_URL = {
-  Fisher: 'https://en.wikipedia.org/wiki/F-test',
-  Welch: 'https://en.wikipedia.org/wiki/Welch%27s_t-test',
-} as const;
+// --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
+
+/** Null-hypothesis-testing tooltip for the conclusion cell (H0 / H1 / Conclusion + verdict). */
+function conclusionTooltip(significant: boolean): HTMLElement {
+  return ui.divV([
+    ui.markdown('**H0:** all group means are equal.'),
+    ui.markdown('**H1:** at least one group mean differs.'),
+    ui.markdown(`**Conclusion:** ${significant ?
+      'Reject the null hypothesis.' :
+      'Fail to reject the null hypothesis.'}`),
+    ui.markdown(significant ?
+      '**There is a significant difference among the group means.**' :
+      '**There is no significant difference among the group means.**'),
+  ]);
+}
 
 // --- Box plot description (mirrors the two-sample t-test; see boxplot-description-spec.md) ---
 
@@ -85,55 +99,16 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
 
   const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
-  const nullHypoMd = ui.markdown(`**Null Hypothesis:** all group means are equal.`);
-  ui.tooltip.bind(nullHypoMd, `The "${factorsName}" factor does not produce a significant difference in the "${featuresName}" feature.`);
-
-  const altHypoMd = ui.markdown(`**Alternative Hypothesis:** at least one group mean differs significantly.`);
-  ui.tooltip.bind(altHypoMd, `The "${factorsName}" factor produces a significant difference in the "${featuresName}" feature.`);
-
-  const conclusionMd = ui.markdown(`**Conclusion:** ${test ?
-    'significant differences exist between groups.' :
-    'no significant differences detected.'}`,
-  );
-
-  const tooltipDiv = test ?
-    ui.divV([
-      ui.p(`Reject the null hypothesis, since F > F-critical:
-      ${report.anovaTable.fStat.toFixed(2)} > ${report.fCritical.toFixed(2)}.`),
-      ui.h2('There is a significant difference among sample averages.'),
-    ]) :
-    ui.divV([
-      ui.p(`Fail to reject the null hypothesis, since F < F-critical:
-      ${report.anovaTable.fStat.toFixed(2)} < ${report.fCritical.toFixed(2)}.`),
-      ui.h2('There is no significant difference among sample averages.'),
-    ]);
-
-  ui.tooltip.bind(conclusionMd, () => tooltipDiv);
-
-  const divResult = ui.divV([
-    nullHypoMd,
-    altHypoMd,
-    conclusionMd,
-    ui.link('Learn more',
-      () => window.open(LEARN_MORE_URL[report.method], '_blank'),
-      'Click to open in a new tab.',
-    ),
-  ]);
-
   const analysisTitle = report.method === 'Welch' ?
     'One-Way ANOVA (Welch\'s)' :
     'One-Way ANOVA (Fisher\'s)';
   const reportViewer = getAnovaGrid(report);
-  const tabControl = ui.tabControl({
-    'Analysis': ui.panel([ui.h2(analysisTitle), reportViewer.root]),
-    'Conclusion': ui.panel([divResult]),
-  });
 
-  ui.tooltip.bind(tabControl.getPane('Analysis').header, 'ANOVA results summary.');
-  ui.tooltip.bind(tabControl.getPane('Conclusion').header, 'Null hypothesis testing.');
+  // Register the results table in the workspace, then dock the grid under the box plot.
+  reportViewer.dataFrame.name = 'ANOVA result';
+  grok.shell.addTable(reportViewer.dataFrame);
 
-
-  view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
+  view.dockManager.dock(reportViewer.root, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
 
   reportViewer.root.style.width = '100%';
 } // addVizualization
@@ -148,8 +123,11 @@ function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
 /** Classical Fisher ANOVA table (3x7: Between/Within/Total x SS/DF/MS/F/F-critical/p-value). */
 function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid {
   const anova = report.anovaTable;
+  const significant = anova.fStat > report.fCritical;
 
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    // Verdict only on the "Between groups" row (first), which carries F / F-critical / p-value.
+    conclusionColumn(significant, 3, 0),
     DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'SS', [anova.ssBn, anova.ssWn, anova.ssTot]),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'DF', [anova.dfBn, anova.dfWn, anova.dfTot]),
@@ -160,8 +138,10 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
   ]));
 
   grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
+  styleConclusionColumn(grid);
 
   const tooltip = new Map([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
     ['Source of variance', 'List of the explored variation sources.'],
     ['SS', 'Sum of squares (SS). Measure of total variation in the data.'],
     ['DF', 'Degrees of freedom (DF). Number of independent values that can vary.'],
@@ -173,9 +153,16 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
 
   grid.onCellTooltip(function(cell, x, y) {
     if (cell.isColHeader) {
-      ui.tooltip.show(ui.divV([ui.p(tooltip.get(cell.tableColumn!.name)!)]), x, y);
+      const t = tooltip.get(cell.tableColumn!.name);
+      if (t != null) {
+        ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
+        return true;
+      }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
+      ui.tooltip.show(conclusionTooltip(significant), x, y);
       return true;
     }
+    return false;
   });
 
   grid.helpUrl = ANOVA_HELP_URL;
@@ -188,8 +175,10 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'}): DG.Grid 
 function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number): DG.Grid {
   const DF1 = 'df₁';
   const DF2 = 'df₂';
+  const significant = anova.fStat > fCritical;
 
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    conclusionColumn(significant),
     DG.Column.fromStrings('Source of variance', ['Between groups']),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F', [anova.fStat]),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, DF1, [anova.dfBn]),
@@ -199,8 +188,10 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
   ]));
 
   grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
+  styleConclusionColumn(grid);
 
   const tooltip = new Map([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
     ['Source of variance', 'List of the explored variation sources.'],
     ['F', `F-statistic. Ratio of weighted between-group variance to within-group variance (Welch's W).`],
     [DF1, 'Numerator degrees of freedom (k − 1, where k is the number of groups).'],
@@ -211,9 +202,16 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
 
   grid.onCellTooltip(function(cell, x, y) {
     if (cell.isColHeader) {
-      ui.tooltip.show(ui.divV([ui.p(tooltip.get(cell.tableColumn!.name)!)]), x, y);
+      const t = tooltip.get(cell.tableColumn!.name);
+      if (t != null) {
+        ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
+        return true;
+      }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
+      ui.tooltip.show(conclusionTooltip(significant), x, y);
       return true;
     }
+    return false;
   });
 
   grid.helpUrl = ANOVA_HELP_URL;
