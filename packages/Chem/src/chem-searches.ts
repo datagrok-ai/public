@@ -266,6 +266,18 @@ export async function chemSubstructureSearchLibrary(
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
   _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
+
+  // Release the Chem critical section exactly once for THIS invocation.
+  // Idempotent so the terminate-handler / allSettled / catch paths can't
+  // double-release (which would free a newer search's lock on the shared token).
+  let csReleased = false;
+  const releaseCriticalSection = (): void => {
+    if (csReleased)
+      return;
+    csReleased = true;
+    chemEndCriticalSection();
+  };
+
   await chemBeginCriticalSection();
   _package.logger.debug(`in chemSubstructureSearchLibrary, began critical section currentSearch: ${currentSearch}`);
   const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
@@ -273,7 +285,7 @@ export async function chemSubstructureSearchLibrary(
     _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section without search: ${currentSearch}`);
     grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp,
       similarityCutOff));
-    chemEndCriticalSection();
+    releaseCriticalSection();
     _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
     return new BitArray(molStringsColumn.length);
   }
@@ -339,7 +351,7 @@ export async function chemSubstructureSearchLibrary(
         _package.logger.debug(e);
       } finally {
         _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section: ${currentSearch}`);
-        chemEndCriticalSection();
+        releaseCriticalSection();
         _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
       }
     };
@@ -375,14 +387,24 @@ export async function chemSubstructureSearchLibrary(
             _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
             fireFinishEvents();
           }
-        }).catch((err) => _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs settle failed: ${err}`));
+        }).catch((err) => _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs settle failed: ${err}`))
+          .finally(() => {
+            // Safety net: never leak the lock, even if neither the terminate
+            // handler nor the finish path above released it.
+            sub.unsubscribe();
+            releaseCriticalSection();
+          });
+      } else {
+        // No promises to await - previously this path leaked the lock forever.
+        sub.unsubscribe();
+        releaseCriticalSection();
       }
     }
     return result.bitArray;
   } catch (e: any) {
     grok.shell.error(e.message);
     _package.logger.debug(`in chemSubstructureSearchLibrary, ending chemEndCriticalSection in catch, ${currentSearch}`);
-    chemEndCriticalSection();
+    releaseCriticalSection();
     _package.logger.debug(`in chemSubstructureSearchLibrary, ended chemEndCriticalSection in catch, ${currentSearch}`);
     throw e;
   }
