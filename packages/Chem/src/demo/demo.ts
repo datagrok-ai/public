@@ -13,6 +13,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
+const _tsLog = (msg: string): void => console.log(`[${new Date().toISOString()}] ${msg}`);
+
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -189,13 +191,23 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 
 export async function _demoMMPA(): Promise<void> {
+  const t0 = performance.now();
+  _tsLog('[DEMO-MMP] entering, calling openMoleculeDataset(mmp_demo.csv)');
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
+  _tsLog(`[DEMO-MMP] openMoleculeDataset returned after ${(performance.now() - t0).toFixed(0)} ms, ` +
+    `rows=${tv.dataFrame.rowCount}, cols=${tv.dataFrame.columns.length}, kicking off detached layout work`);
 
   _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
+    const t1 = performance.now();
+    _tsLog(`[DEMO-MMP] layout file read, length=${layoutString?.length}, parsing JSON`);
     const layout = DG.ViewLayout.fromJson(layoutString);
+    _tsLog('[DEMO-MMP] calling tv.loadLayout');
     tv.loadLayout(layout);
+    _tsLog(`[DEMO-MMP] loadLayout returned after ${(performance.now() - t1).toFixed(0)} ms, setting currentRowIdx=0`);
     tv.dataFrame.currentRowIdx = 0;
     let mmpViewer: MatchedMolecularPairsViewer | null = null;
+    _tsLog('[DEMO-MMP] awaiting MMPA viewer in tv.viewers (20s timeout)');
+    const tAwait = performance.now();
     try {
       await awaitCheck(() => {
         for (const v of tv.viewers) {
@@ -207,16 +219,25 @@ export async function _demoMMPA(): Promise<void> {
         }
         return false;
       }, '', 20000);
-    } catch (e) {};
+      _tsLog(`[DEMO-MMP] MMPA viewer found after ${(performance.now() - tAwait).toFixed(0)} ms`);
+    } catch (e: any) {
+      _tsLog(`[DEMO-MMP] awaitCheck for MMPA viewer threw after ${(performance.now() - tAwait).toFixed(0)} ms: ` +
+        `${e instanceof Error ? e.message : String(e)}`);
+    };
+    _tsLog(`[DEMO-MMP] setting helpUrl, mmpViewer=${!!mmpViewer}`);
     mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
+      _tsLog('[DEMO-MMP] showHelp setTimeout fired');
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
     }, 1000);
+    _tsLog(`[DEMO-MMP] detached .then completed after ${(performance.now() - t1).toFixed(0)} ms`);
 
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });
+  _tsLog(`[DEMO-MMP] _demoMMPA returning after ${(performance.now() - t0).toFixed(0)} ms ` +
+    `(detached .then still running)`);
 }
 
 

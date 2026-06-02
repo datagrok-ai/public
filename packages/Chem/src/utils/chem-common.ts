@@ -39,19 +39,35 @@ export function criticalSectionEnd(key: string): void {
 }
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
+let _csSeq = 0;
 
 export async function chemBeginCriticalSection(token = CHEM_TOKEN): Promise<void> {
+  const id = ++_csSeq;
+  const tWait = performance.now();
   let warned = false;
   if (unlockFunctionForKey[token]) {
-    console.warn('Chem | Is already in a critical section, waiting...');
+    console.warn(`[${new Date().toISOString()}] Chem | #${id} Is already in a critical section, waiting...`);
     warned = true;
+  } else {
+    console.warn(`[${new Date().toISOString()}] Chem | #${id} Acquired critical section directly (no wait)`);
   }
   await criticalSectionBegin(token);
+  const waited = (performance.now() - tWait).toFixed(1);
   if (warned)
-    console.warn('Chem | Left the critical section');
+    console.warn(`[${new Date().toISOString()}] Chem | #${id} Left the critical section (waited ${waited} ms)`);
+  else
+    console.warn(`[${new Date().toISOString()}] Chem | #${id} Entered critical section (waited ${waited} ms)`);
+  (chemBeginCriticalSection as any)._lastHolder = {id, tEnter: performance.now()};
 }
 
 export function chemEndCriticalSection(token = CHEM_TOKEN): void {
+  const holder = (chemBeginCriticalSection as any)._lastHolder;
+  if (holder) {
+    const held = (performance.now() - holder.tEnter).toFixed(1);
+    console.warn(`[${new Date().toISOString()}] Chem | #${holder.id} Releasing critical section (held ${held} ms)`);
+  } else {
+    console.warn(`[${new Date().toISOString()}] Chem | Releasing critical section (no holder tracked)`);
+  }
   criticalSectionEnd(token);
 }
 
