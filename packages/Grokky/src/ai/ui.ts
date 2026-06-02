@@ -14,7 +14,7 @@ import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEv
 import {executeSingleBlock, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
-import {loadPowerSearchScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 import {_package} from '../package';
 
 interface ExecutionPlan {
@@ -188,7 +188,7 @@ export function setupSearchUI() {
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
     const wandIcon = ui.iconFA('magic', async (e) => {
-      const scopes = await loadPowerSearchScopes();
+      const scopes = await resolveScopes('powerSearch');
       showSuggestionsMenu(scopes, (prompt) => {
         searchInput.value = prompt;
         searchInput.dispatchEvent(new Event('input', {bubbles: true}));
@@ -520,7 +520,6 @@ async function streamOnce(
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
       client.send(sessionId, prompt, {
         ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
-        userPrompt,
       });
     } catch (e: any) {
       panel.clearStreaming();
