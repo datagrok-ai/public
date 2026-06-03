@@ -1,5 +1,33 @@
 # compute-utils changelog
 
+## 1.46.0 (2026-06-03)
+
+### Features
+
+- `action` steps can route to children via `showWhen`/`hideWhen` visibility conditions
+- Links now allowed on `funcCall` steps; `clearRestriction` on the data-link controller
+- String shorthand for step refs, states, and `.`/`./` self-refs in link paths
+- `(call)` matching across all link types; optional id-list for `same(@ref)`
+- `inputs`/`outputs` IO selectors for template queries; name-match template propagation
+- New `pipelineValidator` link kind (replaces `structureCheck`)
+- `nodeMeta` body slot; pipeline description surfaced in config
+- `inputsHidden` option; `formAsTab` replaces `formOnly`
+- Per-step funccall history; consistency dataframes stored outside pipeline JSON
+- `includeInfo` on override-to-consistent rerun
+- `compute-api`: `startWorkflow` accepts step shorthand
+- Fitting: worker executor defaults to `auto`, gated on `//meta.workerSafe`; async script bodies supported; async-to-sync codegen for the NM optimizer mirror
+
+### Refactoring
+
+- Split codegen into `@datagrok-libraries/codegen-async-to-sync`
+- Fitting worker pool reworked: extracted `Slot`, `Query`, `JobQueue`, `JobSpec`; Lite DataFrame parity surface expanded (`id`/`newId`, `columns.toList`/`toJson`)
+
+### Bug fixes
+
+- Surface worker errors instead of swallowing them
+- Reject pipeline action mutations on overlapping subtrees and configs with multiple base entries
+- Hide actions when the `visibleOn`/`showWhen` target id is missing
+
 ## 1.45.3 (2026-04-24)
 
 ### Features

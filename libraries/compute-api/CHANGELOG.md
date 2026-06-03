@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.7.4 (2026-06-03)
+
+- `startWorkflow` accepts step shorthand
+
 ## 0.7.2 (2026-03-19)
 
 - 1.27 platform support

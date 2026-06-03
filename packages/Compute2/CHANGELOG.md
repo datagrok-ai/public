@@ -1,5 +1,30 @@
 # Compute2 changelog
 
+## 1.5.0 (2026-06-03)
+
+### Features
+
+- Per-step funccall history in the tree wizard
+- `inputsHidden` with inline toggle; `formAsTab` replaces `formOnly`
+- Inspector: parsed link IOs rendered structurally, clickable link badges on error-log items, actions vs. links distinguished, unified inputs/outputs shape across tabs
+- Honor RTD action visibility in TreeWizard; render `nodeMeta` body on the pipeline action page
+- Output category groups for scalar outputs; hide empty outputs with tab persistence
+- Render boolean scalars in the scalars table
+
+### Build
+
+- Default build now uses rspack (webpack kept as `build-webpack`); added rspack + tsgo option, Babel for `.tsx`
+
+### UI
+
+- Default float mask `#0.###` across outputs and grids
+- Hide ribbon actions and input viewer panels when UI is blocked / `meta.hidden` is set
+
+### Bug fixes
+
+- Fixed latent type errors surfaced by tsgo
+- Refresh RFV scalars after buffer-collapsed re-runs; focus/persist Inputs tab when `formAsTab` is on
+
 ## 1.4.1 (2026-04-24)
 
 ### Features

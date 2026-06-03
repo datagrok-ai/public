@@ -1,5 +1,10 @@
 # Arrow changelog
 
+## 1.6.0 (2026-06-03)
+
+* Extracted conversion core into `@datagrok-libraries/arrow`; package now delegates to the library
+* Added boolean column support
+
 ## 1.5.0 (2026-03-20)
 
 * [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles
