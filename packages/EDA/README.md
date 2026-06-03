@@ -26,6 +26,7 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
 * Group comparison
   * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
   * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
+  * Control comparisons against a single control ([Dunnett's test](https://en.wikipedia.org/wiki/Dunnett%27s_test) and Holm-corrected Welch's t-tests)
 * Missing data imputation
   * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))
 * Multi-objective optimization

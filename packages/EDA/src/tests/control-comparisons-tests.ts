@@ -6,6 +6,7 @@
 // against R `p.adjust(p, method = "holm")`. The Holm-Welch wiring is pinned to the package's
 // own `twoSampleTTest` via a canary on the k=2 reduction.
 
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
@@ -13,11 +14,14 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {
   controlComparisons, holmCorrect, ControlComparison, ControlComparisonsMethod,
 } from '../control-comparisons/control-comparisons-tools';
+import {CatCol, NumCol} from '../anova/anova-tools';
 import {twoSampleTTest} from '../ttest/ttest-tools';
 import {
   conclusionColumnPerRow, CONCLUSION_LABEL, CONCLUSION_COL_NAME,
 } from '../group-comparison/conclusion-column';
-import {FIXTURES, HolmWelchExpected} from './control-comparisons-fixtures';
+import {
+  FIXTURES, HolmWelchExpected, DEMOG_FIXTURES, DEMOG_FILE, ControlComparisonsDemogFixture,
+} from './control-comparisons-fixtures';
 
 const ALPHA = 0.05;
 const CONTROL = 'ctrl';
@@ -383,4 +387,120 @@ category('Control comparisons: Holm family size', () => {
     close(ratio, 4, 'smallest adj/raw ratio == k−1', 0, 1e-9);
     expect(Math.abs(ratio - 10) > 1, true, `ratio ${ratio} must not be the k(k−1)/2 family size`);
   }, {timeout: 30000});
+});
+
+// ── Large df: integration window regression ──────────────────────
+
+/** Deterministic ramp: n values centred on `mean` with a fixed ±3·amp pattern (sd ≈ 2·amp). */
+function ramp(mean: number, n: number, amp = 2): number[] {
+  const out: number[] = [];
+  for (let k = 0; k < n; ++k) out.push(mean + amp * ((k % 7) - 3));
+  return out;
+}
+
+category('Control comparisons: large df', () => {
+  // Regression for the dunnettMaxCdf integration window. The scale variable s = S/σ ~ chi(df)/√df
+  // concentrates around 1 as df grows (width ~1/√(2·df)); the old fixed [1e-3, 6] grid under-resolved
+  // the peak and produced garbage adjusted p-values (on demog.csv, WEIGHT by RACE: raw p ≈ 2e-9 but
+  // adj p ≈ 0.2). With n in the thousands (df ≈ 4000) the report must stay self-consistent: every
+  // adjusted p obeys raw ≤ adj ≤ m·raw — the Dunnett marginals are identical t_df, so that union
+  // bound is exact — and a clearly separated group is significant while a zero-difference one is not.
+  test('Dunnett stays consistent at df ≈ 4000', async () => {
+    const n = 1000;
+    const control = ramp(60, n);
+    const treated = [ramp(60.7, n), ramp(60.3, n), ramp(60, n)];
+    const {report, byTreated} = runCC(control, treated, 'Dunnett');
+
+    expect(report.pooledDF! > 3000, true, `expected large pooled df, got ${report.pooledDF}`);
+
+    const m = byTreated.length;
+    for (let i = 0; i < m; ++i) {
+      const c = byTreated[i];
+      expect(c.pValueAdj >= c.pValueRaw * (1 - 1e-6) - 1e-12, true,
+        `[${i}] adjusted p ≥ raw p (raw=${c.pValueRaw}, adj=${c.pValueAdj})`);
+      expect(c.pValueAdj <= Math.min(1, m * c.pValueRaw) * 1.05 + 1e-9, true,
+        `[${i}] adjusted p ≤ m·raw union bound (raw=${c.pValueRaw}, adj=${c.pValueAdj}, m=${m})`);
+    }
+
+    expect(byTreated[0].significant, true, 'Δ = 0.7 group (t ≈ 3.9) is significant');
+    expect(byTreated[2].significant, false, 'zero-difference group is not significant');
+  }, {timeout: 30000});
+});
+
+// ── Real-data references: demog.csv (scipy.stats / statsmodels) ───
+// The generator (tools/generate-control-comparisons-fixtures.py) reads files/demog.csv and stores,
+// per (group, feature, control, alpha) combo, the expected values keyed by group label. The test
+// reads the SAME file (DEMOG_FILE) so the data is identical; NaN rows (null feature or null
+// category) are dropped on both sides by factorize / pandas. Holm-Welch matches scipy/statsmodels
+// near machine precision; Dunnett adjusted p is loose (scipy's QMC is itself imprecise at p ~ 1e-9,
+// where our deterministic integration is actually closer to the truth — the meaningful Dunnett
+// check is at mid-range p, and the tail just confirms "both ≈ 0").
+
+// Datagrok stores FLOAT columns as float32, so demog WEIGHT/HEIGHT values arrive ~1e-7-rounded vs
+// the float64 the generator used; averaged over thousands of rows the means differ ~1e-8 and the
+// t/df/CI/tail-p amplify that. These tolerances reflect that float32 input floor (INT features like
+// AGE are exact and pass with wide margin). Machine-precision agreement lives in the synthetic set.
+const DEMOG_HW_TOL: Record<keyof HolmWelchExpected, [number, number]> = {
+  meanDiff: [1e-5, 1e-5],
+  statistic: [1e-4, 1e-6],
+  df: [1e-4, 1e-6],
+  pValueRaw: [1e-2, 1e-12],
+  pValueAdj: [1e-2, 1e-12],
+  ciLow: [1e-4, 1e-4],
+  ciHigh: [1e-4, 1e-4],
+  hedgesG: [1e-4, 1e-6],
+};
+
+/** Run a demog combo: load columns by name, resolve the control code, run one method. */
+function runDemog(demog: DG.DataFrame, fx: ControlComparisonsDemogFixture,
+  method: ControlComparisonsMethod): Map<string, ControlComparison> {
+  const cats = demog.col(fx.groupCol) as unknown as CatCol;
+  const values = demog.col(fx.featureCol) as unknown as NumCol;
+  const categories = (cats as unknown as DG.Column).categories;
+  const controlCode = categories.indexOf(fx.control);
+
+  const report = controlComparisons(cats, values, controlCode, categories.length, {method, alpha: fx.alpha});
+
+  const byLabel = new Map<string, ControlComparison>();
+  for (const c of report.comparisons)
+    byLabel.set(String(categories[c.groupCode]), c);
+  return byLabel;
+}
+
+category('Control comparisons: demog.csv references', () => {
+  let demog: DG.DataFrame | null = null;
+  const loadDemog = async (): Promise<DG.DataFrame> => {
+    if (demog === null) demog = await grok.dapi.files.readCsv(DEMOG_FILE);
+    return demog!;
+  };
+
+  for (const fx of DEMOG_FIXTURES) {
+    test(`${fx.name} — Dunnett`, async () => {
+      const byLabel = runDemog(await loadDemog(), fx, 'Dunnett');
+      for (const exp of fx.dunnett) {
+        const c = byLabel.get(exp.groupLabel)!;
+        expect(c !== undefined, true, `missing comparison for "${exp.groupLabel}"`);
+        close(c.statistic, exp.statistic, `${fx.name} ${exp.groupLabel} statistic`, 1e-4, 1e-6);
+        // Dunnett adjusted p: scipy QMC vs our deterministic integration — absolute floor only.
+        close(c.pValueAdj, exp.pValueAdj, `${fx.name} ${exp.groupLabel} pValueAdj`, 2e-2, 1.5e-3);
+      }
+    }, {timeout: 60000});
+
+    test(`${fx.name} — Holm-Welch`, async () => {
+      const byLabel = runDemog(await loadDemog(), fx, 'Holm-Welch');
+      for (const exp of fx.holmWelch) {
+        const c = byLabel.get(exp.groupLabel)!;
+        expect(c !== undefined, true, `missing comparison for "${exp.groupLabel}"`);
+        const actual: HolmWelchExpected = {
+          meanDiff: c.meanDiff, statistic: c.statistic, df: c.df,
+          pValueRaw: c.pValueRaw, pValueAdj: c.pValueAdj,
+          ciLow: c.ciLow, ciHigh: c.ciHigh, hedgesG: c.hedgesG,
+        };
+        for (const k of Object.keys(actual) as (keyof HolmWelchExpected)[]) {
+          const [rtol, atol] = DEMOG_HW_TOL[k];
+          close(actual[k], exp[k], `${fx.name} ${exp.groupLabel} ${k}`, rtol, atol);
+        }
+      }
+    }, {timeout: 60000});
+  }
 });

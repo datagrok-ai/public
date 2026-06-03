@@ -269,24 +269,37 @@ function holmWelch(control: GroupStats, controlCode: number,
 } // holmWelch
 
 // ── Ported Dunnett joint-distribution CDF ────────────────────────
-// Ported from @datagrok-libraries/sci-comp stats/tests/dunnett.ts. Integration parameters
-// (160×160 Simpson panels) are kept identical to stay matched to scipy.stats.dunnett's QMC
-// precision floor (~1e-4 on small p, ~1e-5 on moderate ones). gammaln/normalCdf -> jStat.
+// Ported from @datagrok-libraries/sci-comp stats/tests/dunnett.ts. gammaln/normalCdf -> jStat.
+// The outer scale window is computed adaptively (see below) rather than the sci-comp fixed
+// [1e-3, 6] range, which silently breaks for large df.
 
 /**
  * P(|T_1| < c, ..., |T_k| < c) under H0 with the Dunnett structure.
  *
  *   T_i = (alpha_i Z_i − beta_i Z_0) / s,  (Z_i, Z_0) i.i.d. N(0,1),  s = S/σ ~ chi(df)/√df.
  *
- * Outer Simpson over s ∈ (0, sMax], inner Simpson over Z_0 ∈ [−zMax, zMax]; the integrand is the
- * product of the conditional rectangle probabilities.
+ * Outer Simpson over s, inner Simpson over Z_0 ∈ [−zMax, zMax]; the integrand is the product of
+ * the conditional rectangle probabilities.
+ *
+ * The outer variable s = S/σ ~ chi(df)/√df concentrates around 1 as df grows, with width ~1/√(2·df).
+ * A fixed [1e-3, 6] grid (as in sci-comp) then puts only ~2 nodes inside the peak at df ≈ 5·10³ and
+ * the integral collapses to garbage (adjusted p-values inconsistent with the raw ones). Instead the
+ * window is bracketed by a Wilson–Hilferty normal approximation of the χ² tails, so the panel step
+ * tracks the peak width at any df; 200 panels then resolve it across the full df range.
  */
 function dunnettMaxCdf(c: number, df: number, alphas: number[], betas: number[]): number {
-  const sMax = 6.0;
-  const sMin = 1e-3;
   const zMax = 8.0;
-  const nOuter = 160; // Simpson panels for s
+  const nOuter = 200; // Simpson panels for s
   const nInner = 160; // Simpson panels for z
+
+  // Wilson–Hilferty: χ²_df ≈ df·(1 − 2/(9df) ± Z·√(2/(9df)))³, so s = √(χ²/df) = w^{3/2}.
+  // Z = 8 brackets ~1e-15 of the tail mass — far below the ~1e-4 integration precision floor.
+  const h = 2 / (9 * df);
+  const sd = Math.sqrt(h);
+  const loW = 1 - h - 8 * sd;
+  const hiW = 1 - h + 8 * sd;
+  const sMin = Math.max(loW > 0 ? Math.pow(loW, 1.5) : 0, 1e-4);
+  const sMax = Math.pow(hiW, 1.5);
 
   const outerH = (sMax - sMin) / nOuter;
   const innerH = (2 * zMax) / nInner;
