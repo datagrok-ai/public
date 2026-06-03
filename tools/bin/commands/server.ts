@@ -1,5 +1,6 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
+import * as path from 'path';
 import {NodeDapi, BatchRequest, BatchOperation} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, OutputFormat} from '../utils/server-output';
@@ -174,14 +175,16 @@ async function handleTablesDownload(dapi: NodeDapi, rest: string[], argv: any, o
 async function handleTablesUpload(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
   const [name, localPath] = rest;
   if (!name || !localPath) {
-    printError(new Error('Usage: grok s tables upload <name> <file.csv>'));
+    printError(new Error('Usage: grok s tables upload <name> <file.csv|file.d42>'));
     return false;
   }
   if (!fs.existsSync(localPath)) {
     printError(new Error(`Local file not found: ${localPath}`));
     return false;
   }
-  const result = await dapi.tables.upload(name, localPath);
+  const ct = path.extname(localPath).toLowerCase() === '.d42'
+    ? 'application/octet-stream' : 'text/csv';
+  const result = await dapi.tables.upload(name, localPath, ct);
   if (output === 'quiet') console.log(result?.ID ?? result?.id ?? '');
   else printOutput(result, output);
   return true;
@@ -691,7 +694,7 @@ Special commands:
   grok s groups list-memberships <group> [--admin]    List parent groups
   grok s users block <id-or-login>                    Block a user from the platform
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
-  grok s tables upload <name> <file.csv>              Upload a CSV as a Datagrok table
+  grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
   grok s tables download <name-or-id> [-O <file>]     Download a table as CSV (stdout by default)
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array

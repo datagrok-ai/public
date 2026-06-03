@@ -47,6 +47,15 @@ export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: D
   await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
+//name: Metrics
+//output: view result
+//meta.role: app
+//meta.url: /
+//meta.browsePath: Admin
+export function metricsApp() : any {
+  return PackageFunctions.metricsApp();
+}
+
 //name: Test Track
 //meta.role: app
 //meta.url: /tests/manager

@@ -9,6 +9,7 @@ import {
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {STEP_HISTORY_OPTION} from '../History/History';
 import {TreeNode} from './TreeNode';
@@ -577,7 +578,7 @@ export const TreeWizard = Vue.defineComponent({
     const isEachDraggable = (stat: AugmentedStat) => {
       return stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIDragging);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
@@ -601,7 +602,7 @@ export const TreeWizard = Vue.defineComponent({
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIRemoving);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////

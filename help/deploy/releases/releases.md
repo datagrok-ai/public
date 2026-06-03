@@ -191,7 +191,7 @@ Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775
 
 |<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
 |----------------- | -----------------------------------|
-|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
+|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/db/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
 |**Search integrated functions**:<br/>Annotate queries and other functions with search patterns to display results when users search with matching terms<br/><br/>[Learn more](../../datagrok/concepts/functions/func-params-annotation.md#search-integrated-functions) |![Search-integrated queries](../../datagrok/concepts/functions/search-integrated-queries.gif)|
 |**Plugin databases**|You can now ship a Postgres database (such as chemical registration system) with your plugin|
 

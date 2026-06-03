@@ -3,9 +3,9 @@ import {category, test, before, delay} from '@datagrok-libraries/test/src/test';
 import {createRFV, initComputeApi} from '@datagrok-libraries/compute-api';
 import {take, filter} from 'rxjs/operators';
 import {applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
-import {getFuncCallIO} from '../utils';
+import {getFuncCallIO} from './utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import fc1 from '../snapshots/fc1.json';
+import fc1 from './snapshots/fc1.json';
 import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
 
 category('Compute API: RFV Inputs', async () => {
@@ -14,7 +14,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Simple inputs setParamValue', async () => {
-    const view = createRFV('Libtests:simpleInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:simpleInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 1,
       b: 2.2,
@@ -66,7 +66,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Simple inputs inputs tweak', async () => {
-    const view = createRFV('Libtests:simpleInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:simpleInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 1,
       b: 2.2,
@@ -120,7 +120,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Simple inputs setParamValue rerun', async () => {
-    const view = createRFV('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2,
       b: 3.2,
@@ -175,7 +175,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Simple inputs inputs tweak rerun', async () => {
-    const view = createRFV('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2,
       b: 3.2,
@@ -231,7 +231,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Simple inputs default values', async () => {
-    const view = createRFV('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
@@ -255,7 +255,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Complex inputs setParamValue', async () => {
-    const view = createRFV('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
@@ -275,7 +275,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Complex inputs inputs tweak', async () => {
-    const view = createRFV('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
@@ -299,7 +299,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Complex inputs setParamValue rerun', async () => {
-    const view = createRFV('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValuesPre: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),
@@ -329,7 +329,7 @@ category('Compute API: RFV Inputs', async () => {
   });
 
   test('Complex inputs inputs tweak rerun', async () => {
-    const view = createRFV('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValuesPre: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),
@@ -370,7 +370,7 @@ category('Compute API: RFV Validation', async () => {
   });
 
   test('Validate on start', async () => {
-    const view = createRFV('Libtests:validationTest', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:validationTest', {historyEnabled: false, isTabbed: false});
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(1500);
     const results = view.getValidationState();
@@ -421,7 +421,7 @@ category('Compute API: RFV Validation', async () => {
   });
 
   test('Validate on input', async () => {
-    const view = createRFV('Libtests:validationTest', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:validationTest', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2.3,
       b: 3.2,
@@ -456,7 +456,7 @@ category('Compute API: RFV Validation', async () => {
   });
 
   test('Revalidation sequence', async () => {
-    const view = createRFV('Libtests:globalValidationTest', {historyEnabled: false, isTabbed: false});
+    const view = createRFV('Compute:globalValidationTest', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 30,
       b: 40,

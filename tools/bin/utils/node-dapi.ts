@@ -449,12 +449,16 @@ export class NodeTablesDataSource {
     return result as string;
   }
 
-  /** POST /public/v1/tables/{name} with raw CSV bytes. Returns `{ID, Grok name, Markup, URL}`. */
-  async upload(name: string, localPath: string): Promise<any> {
+  /**
+   * POST /public/v1/tables/{name} with raw bytes. Returns `{ID, Grok name, Markup, URL}`.
+   * Defaults to `text/csv`; pass `application/octet-stream` to upload a `.d42`
+   * binary blob — the server content-negotiates on the header and persists either form.
+   */
+  async upload(name: string, localPath: string, contentType: string = 'text/csv'): Promise<any> {
     const fs = require('fs') as typeof import('fs');
     const bytes = fs.readFileSync(localPath);
     const seg = encodeURIComponent(name.replace(/:/g, '.'));
-    return this.client.putBytes(`/public/v1/tables/${seg}`, bytes, 'text/csv');
+    return this.client.putBytes(`/public/v1/tables/${seg}`, bytes, contentType);
   }
 }
 

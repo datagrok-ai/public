@@ -92,3 +92,27 @@ export function CustomStringInput(params: any) {
 export function ObjectCoolingSelector(params: any) {
   return PackageFunctions.ObjectCoolingSelector(params);
 }
+
+//input: object params 
+//output: object input
+export async function CustomInputMock(params: any) : Promise<any> {
+  return await PackageFunctions.CustomInputMock(params);
+}
+
+//input: object params 
+//output: object validator
+export function RangeValidatorFactory(params: any) {
+  return PackageFunctions.RangeValidatorFactory(params);
+}
+
+//input: object params 
+//output: object validator
+export function AsyncValidatorDemoFactory(params: any) {
+  return PackageFunctions.AsyncValidatorDemoFactory(params);
+}
+
+//input: object params 
+//output: object validator
+export function GlobalValidatorDemoFactory(params: any) {
+  return PackageFunctions.GlobalValidatorDemoFactory(params);
+}

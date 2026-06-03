@@ -29,6 +29,7 @@ import {
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  EmailDialog, EmailDialogOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -640,6 +641,14 @@ export function link(
 */
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
+}
+
+/**
+ * Creates an email dialog with editable subject/to/bcc, a markdown body,
+ * and attachment management.
+ */
+export function composeEmail(options?: EmailDialogOptions): EmailDialog {
+  return EmailDialog.create(options);
 }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
