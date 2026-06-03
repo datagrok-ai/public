@@ -359,7 +359,7 @@ export function anova() : void {
 
 //name: Control comparisons
 //description: Compare several groups against a single control (Dunnett's test or Holm-corrected Welch's t-tests).
-//top-menu: ML | Analyze | Group Comparison | Control comparisons...
+//top-menu: ML | Analyze | Group Comparison | Control Comparisons...
 export function controlComparisons() : void {
   PackageFunctions.controlComparisons();
 }
