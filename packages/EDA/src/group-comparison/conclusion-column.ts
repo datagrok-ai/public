@@ -43,6 +43,15 @@ export function conclusionColumn(significant: boolean, rowCount = 1, valueRow = 
   return DG.Column.fromStrings(CONCLUSION_COL_NAME, values);
 }
 
+/**
+ * Build the leftmost `Conclusion` column with a per-row verdict (Control comparisons).
+ * Each row is its own test, so every row carries its own Significant / Not significant label —
+ * unlike `conclusionColumn`, where a single test-level verdict sits on one row.
+ */
+export function conclusionColumnPerRow(significants: readonly boolean[]): DG.Column {
+  return DG.Column.fromStrings(CONCLUSION_COL_NAME, significants.map(conclusionLabel));
+}
+
 /** Apply text color-coding (Option 1, neutral accent) + bold to the conclusion column of `grid`. */
 export function styleConclusionColumn(grid: DG.Grid): void {
   grid.dataFrame.col(CONCLUSION_COL_NAME)!.meta.colors.setCategorical({

@@ -94,8 +94,10 @@ export interface TwoSampleTTestOptions {
  * what makes the corrected effect size the g_s* of Delacre et al. 2021 [4]; it matches
  * `effectsize::hedges_g(..., pooled_sd = FALSE)` and TOSTER. The exact Γ form (vs. the classic
  * `1 − 3/(4·df − 1)` approximation) matters most at the small fractional df Welch can produce.
+ *
+ * Exported so Control comparisons reuses the same single effect-size correction for both methods.
  */
-function hedgesCorrection(df: number): number {
+export function hedgesCorrection(df: number): number {
   return Math.exp(jStat.gammaln(df / 2) - 0.5 * Math.log(df / 2) - jStat.gammaln((df - 1) / 2));
 }
 
@@ -108,10 +110,6 @@ function hedgesCorrection(df: number): number {
  */
 export function twoSampleTTest(categories: CatCol, values: NumCol, uniqueCount: number,
   opts: TwoSampleTTestOptions = {}): TwoSampleTTest {
-  const method = opts.method ?? 'Welch';
-  const alpha = opts.alpha ?? 0.05;
-  checkSignificanceLevel(alpha);
-
   const f = factorize(categories, values, uniqueCount);
 
   // Collect the non-empty groups together with their category codes.
@@ -124,8 +122,23 @@ export function twoSampleTTest(categories: CatCol, values: NumCol, uniqueCount: 
   if (present.length !== 2)
     throw new Error(`${ERROR_MSG.NOT_TWO_GROUPS} (got ${present.length}).`);
 
-  const g0 = present[0].stats;
-  const g1 = present[1].stats;
+  return twoSampleTTestFromStats(present[0].stats, present[1].stats,
+    present[0].code, present[1].code, opts);
+} // twoSampleTTest
+
+/**
+ * Two-sample t-test computed directly from two per-group `GroupStats` (Welford mean/M2/size).
+ *
+ * The column-based `twoSampleTTest` is a thin factorization wrapper over this. Exposed so
+ * Control comparisons can reuse the exact same Welch kernel per (group vs control) pair —
+ * `g0` = control, `g1` = group, so `meanDiff` and `t` are signed as group − control.
+ */
+export function twoSampleTTestFromStats(g0: GroupStats, g1: GroupStats, code0: number, code1: number,
+  opts: TwoSampleTTestOptions = {}): TwoSampleTTest {
+  const method = opts.method ?? 'Welch';
+  const alpha = opts.alpha ?? 0.05;
+  checkSignificanceLevel(alpha);
+
   const n0 = g0.size;
   const n1 = g1.size;
 
@@ -170,8 +183,8 @@ export function twoSampleTTest(categories: CatCol, values: NumCol, uniqueCount: 
 
   return {
     method,
-    code0: present[0].code,
-    code1: present[1].code,
+    code0,
+    code1,
     mean0: g0.mean,
     mean1: g1.mean,
     n0, n1,
@@ -187,4 +200,4 @@ export function twoSampleTTest(categories: CatCol, values: NumCol, uniqueCount: 
     cohenD,
     hedgesG,
   };
-} // twoSampleTTest
+} // twoSampleTTestFromStats

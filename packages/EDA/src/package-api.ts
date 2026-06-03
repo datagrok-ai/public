@@ -187,6 +187,13 @@ export namespace funcs {
   }
 
   /**
+  Compare several groups against a single control (Dunnett's test or Holm-corrected Welch's t-tests).
+  */
+  export async function controlComparisons(): Promise<void> {
+    return await grok.functions.call('EDA:ControlComparisons', {});
+  }
+
+  /**
   Missing values imputation using the k-nearest neighbors method (KNN)
   */
   export async function kNNImputation(): Promise<void> {

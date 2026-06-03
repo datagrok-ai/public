@@ -15,6 +15,7 @@ import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
 import {runTwoSampleTTest} from './ttest/ttest-ui';
+import {runControlComparisons} from './control-comparisons/control-comparisons-ui';
 
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
@@ -665,6 +666,16 @@ export class PackageFunctions {
   })
   static anova(): void {
     runOneWayAnova();
+  }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Group Comparison | Control comparisons...',
+    'name': 'Control comparisons',
+    'description': 'Compare several groups against a single control (Dunnett\'s test or Holm-corrected Welch\'s t-tests).',
+  })
+  static controlComparisons(): void {
+    runControlComparisons();
   }
 
 

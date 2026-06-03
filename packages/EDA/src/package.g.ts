@@ -357,6 +357,13 @@ export function anova() : void {
   PackageFunctions.anova();
 }
 
+//name: Control comparisons
+//description: Compare several groups against a single control (Dunnett's test or Holm-corrected Welch's t-tests).
+//top-menu: ML | Analyze | Group Comparison | Control comparisons...
+export function controlComparisons() : void {
+  PackageFunctions.controlComparisons();
+}
+
 //name: KNN impute
 //description: Missing values imputation using the k-nearest neighbors method (KNN)
 //top-menu: ML | Impute Missing Values...
