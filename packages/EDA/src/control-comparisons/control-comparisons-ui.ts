@@ -11,10 +11,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {NumCol} from '../anova/anova-tools';
 import {
-  controlComparisons, ControlComparison, ControlComparisonsReport, ControlComparisonsMethod,
+  controlComparisons, ControlComparisonsReport, ControlComparisonsMethod,
 } from './control-comparisons-tools';
 import {
-  CONCLUSION_COL_NAME, conclusionColumnPerRow, styleConclusionColumn,
+  CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP, conclusionColumnPerRow, styleConclusionColumn,
 } from '../group-comparison/conclusion-column';
 
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
@@ -94,13 +94,6 @@ function pColumnFormat(pValues: readonly number[]): string {
   return pValues.some((p) => p < 0.001) ? 'scientific' : '0.000';
 }
 
-/** Shared p-value formatter for prose: clamp at the extremes, else 3 decimals. */
-function formatP(p: number): string {
-  if (p < 0.001) return '< 0.001';
-  if (p > 0.99) return '> 0.99';
-  return Number(p.toFixed(3)).toString();
-}
-
 // ── Box plot description ─────────────────────────────────────────
 
 /** Box plot caption: "None / ${m} of ${k-1} groups differ significantly from "${control}"". */
@@ -115,30 +108,20 @@ function buildDescription(report: ControlComparisonsReport, controlLabel: string
   return `${sig} of ${total} ${groups} differ significantly from "${controlLabel}"`;
 }
 
-// ── Per-row Conclusion cell tooltip (H0 / H1 / Conclusion / meaning) ──
+// ── Per-row Conclusion cell tooltip (H0 / H1 / Conclusion + verdict) ──
 
-function conclusionTooltip(c: ControlComparison, controlLabel: string, groupLabel: string,
-  featureName: string, alpha: number): HTMLElement {
-  const sig = c.significant;
-  const compare = sig ? '<' : '≥';
-  const verdict = sig ? 'Reject the null hypothesis' : 'Fail to reject the null hypothesis';
-  const pCi = Math.round((1 - alpha) * 100);
-
-  const meaning = sig ?
-    `The data provide evidence that "${groupLabel}" differs from "${controlLabel}" in mean ` +
-    `"${featureName}". The estimated difference is ${c.meanDiff.toFixed(2)} units ` +
-    `(${pCi}% CI: ${c.ciLow.toFixed(2)} to ${c.ciHigh.toFixed(2)}), so values in that range ` +
-    `are consistent with the data.` :
-    `The data do not provide enough evidence to claim a difference between "${groupLabel}" and ` +
-    `"${controlLabel}". This is not proof that the groups are equal — the ${pCi}% CI on the ` +
-    `difference (${c.ciLow.toFixed(2)} to ${c.ciHigh.toFixed(2)}) shows which differences are ` +
-    `still consistent with the data.`;
-
+/** Null-hypothesis-testing tooltip for a conclusion cell, in the ANOVA dialog's compact style. */
+function conclusionTooltip(significant: boolean, groupLabel: string, controlLabel: string,
+  featureName: string): HTMLElement {
   return ui.divV([
     ui.markdown(`**H0:** mean "${featureName}" in "${groupLabel}" equals mean in "${controlLabel}".`),
     ui.markdown(`**H1:** mean "${featureName}" in "${groupLabel}" differs from mean in "${controlLabel}".`),
-    ui.markdown(`**Conclusion:** ${verdict} (p = ${formatP(c.pValueAdj)} ${compare} α = ${alpha}).`),
-    ui.markdown(`**What this means**\n\n${meaning}`),
+    ui.markdown(`**Conclusion:** ${significant ?
+      'Reject the null hypothesis.' :
+      'Fail to reject the null hypothesis.'}`),
+    ui.markdown(significant ?
+      `**"${groupLabel}" differs significantly from "${controlLabel}" in mean "${featureName}".**` :
+      `**"${groupLabel}" does not differ significantly from "${controlLabel}" in mean "${featureName}".**`),
   ]);
 }
 
@@ -150,52 +133,34 @@ function headerTooltips(report: ControlComparisonsReport, controlLabel: string, 
   const diff = `mean(group) − mean("${controlLabel}"), in the original units of "${featureName}"`;
 
   return new Map<string, string>([
-    [CONCLUSION_COL_NAME,
-      '"Significant" — the data provide evidence of a difference between this group and the control. ' +
-      '"Not significant" — they do not provide enough evidence to claim a difference. ' +
-      'Hover the cell value for the hypotheses and a plain-language interpretation.'],
-    ['Group', `The non-control group being compared against the control "${controlLabel}".`],
-    ['n', 'Sample size — number of observations in this group. Larger n narrows the confidence ' +
-      'interval and makes smaller true differences detectable.'],
-    ['Mean diff', `${diff}. Positive: the group mean is higher than the control's; negative: lower. ` +
-      'This is the point estimate; the CI columns show how precise it is.'],
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
+    ['Group', `Group compared against the control "${controlLabel}".`],
+    ['n', 'Sample size (n). Number of observations in this group.'],
+    ['Mean diff', `Mean difference. ${diff}.`],
     [`${ciCaption} low`, ciTooltip(report.alpha)],
     [`${ciCaption} high`, ciTooltip(report.alpha)],
     ['t', dunnett ?
-      'Dunnett\'s t-statistic: (mean(group) − mean(control)) / SE, where SE uses the pooled ' +
-      'within-group variance from all groups. Compared against Dunnett\'s multivariate-t ' +
-      'reference distribution, which accounts for the shared control.' :
-      'Welch\'s t-statistic: (mean(group) − mean(control)) / sqrt(s²_group/n_group + ' +
-      's²_control/n_control). Uses each group\'s own variance — does not pool.'],
+      'Dunnett\'s t-statistic. Uses the pooled within-group variance; compared against Dunnett\'s ' +
+      'multivariate-t reference distribution.' :
+      'Welch\'s t-statistic. Uses each group\'s own variance (no pooling).'],
     ['df', dunnett ?
-      'Pooled degrees of freedom N − k (N total sample size, k number of groups incl. control). ' +
-      'A single shared value — that is what makes Dunnett more powerful than separate t-tests ' +
-      'when variances are equal.' :
-      'Welch–Satterthwaite degrees of freedom. Non-integer values are normal — they reflect that ' +
-      'the test does not assume equal variances. Each comparison has its own df.'],
+      'Pooled degrees of freedom (N − k). A single value shared across all comparisons.' :
+      'Welch–Satterthwaite degrees of freedom. Fractional by design; each comparison has its own.'],
     ['p (raw)', dunnett ?
-      'Per-comparison probability of a difference at least as extreme as this one if the means ' +
-      'were equal. Not yet corrected for running k−1 comparisons.' :
-      'Two-sided p-value from Welch\'s t-test for this single comparison. Not yet corrected for ' +
-      'running k−1 comparisons.'],
+      'Uncorrected per-comparison p-value. Not yet adjusted for the k−1 comparisons.' :
+      'Uncorrected two-sided Welch p-value for this comparison. Not yet adjusted for the k−1 comparisons.'],
     ['p (adj)', dunnett ?
-      'p-value adjusted via Dunnett\'s joint reference distribution, which accounts for all k−1 ' +
-      'comparisons sharing the same control. Adjusted p < α means "Significant".' :
-      'p-value adjusted by Holm\'s step-down procedure (Holm 1979). Controls the probability of ' +
-      'any false positive across the family of k−1 comparisons. Adjusted p < α means "Significant".'],
-    ['Hedges\' g', 'Per-pair effect size: (mean(group) − mean(control)) / SD, corrected for ' +
-      'small-sample bias. Rules of thumb (Cohen 1988): |g| < 0.2 negligible, < 0.5 small, ' +
-      '< 0.8 medium, ≥ 0.8 large. Effect size does not depend on n.'],
+      'Adjusted p-value (Dunnett\'s joint reference distribution). Significant when below α.' :
+      'Adjusted p-value (Holm step-down, 1979). Significant when below α.'],
+    ['Hedges\' g', 'Hedges\' g effect size. Standardized mean difference, corrected for small-sample bias.'],
   ]);
 }
 
 /** CI column tooltip with the per-comparison (not simultaneous) caveat. */
 function ciTooltip(alpha: number): string {
   const pct = Math.round((1 - alpha) * 100);
-  return `Bound of the ${pct}% confidence interval for the mean difference. If the interval ` +
-    `crosses zero, the data are consistent with no difference. ⚠ Per-comparison interval, not ` +
-    `simultaneous: each covers its own true difference with ${pct}% probability, but the family ` +
-    `of all k−1 intervals does not jointly.`;
+  return `Bound of the ${pct}% confidence interval for the mean difference ` +
+    `(per-comparison, not simultaneous).`;
 }
 
 // ── Results grid ─────────────────────────────────────────────────
@@ -241,7 +206,7 @@ function getControlComparisonsGrid(report: ControlComparisonsReport, factor: DG.
       }
     } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.cell.rowIndex >= 0) {
       const c = comps[cell.cell.rowIndex];
-      ui.tooltip.show(conclusionTooltip(c, controlLabel, labelOf(factor, c.groupCode), featureName, report.alpha), x, y);
+      ui.tooltip.show(conclusionTooltip(c.significant, labelOf(factor, c.groupCode), controlLabel, featureName), x, y);
       return true;
     }
     return false;
@@ -250,21 +215,6 @@ function getControlComparisonsGrid(report: ControlComparisonsReport, factor: DG.
   grid.helpUrl = HELP_URL;
   return grid;
 } // getControlComparisonsGrid
-
-/** Metadata block shown above the grid: title + control reference + method-specific line. */
-function metadataBlock(report: ControlComparisonsReport, controlLabel: string): HTMLElement {
-  const title = report.method === 'Dunnett' ?
-    'Control Comparisons (Dunnett\'s test)' : 'Control Comparisons (Holm-Welch)';
-
-  const controlLine = `Control: "${controlLabel}", n = ${report.controlN}, mean = ${report.controlMean.toFixed(2)}`;
-  const methodLine = report.method === 'Dunnett' ?
-    `Pooled MSE = ${report.pooledMSE!.toFixed(2)}, pooled df = ${report.pooledDF}, α = ${report.alpha}` :
-    `α = ${report.alpha}`;
-
-  const block = ui.divV([ui.h2(title), ui.divText(controlLine), ui.divText(methodLine)]);
-  block.style.padding = '6px 12px';
-  return block;
-}
 
 // ── Layout ───────────────────────────────────────────────────────
 
@@ -281,7 +231,7 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
     valueColumnName: feature.name,
     // A single p-value is meaningless across k ≥ 3 groups; per-group quartiles are useful.
     showPValue: false,
-    showStatistics: true,
+    showStatistics: false,
     description: buildDescription(report, controlLabel),
     descriptionVisibilityMode: 'Always',
     descriptionPosition: 'Top',
@@ -301,14 +251,8 @@ function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Colum
   grid.dataFrame.name = 'Control comparisons result';
   grok.shell.addTable(grid.dataFrame);
 
-  const panel = ui.divV([metadataBlock(report, controlLabel), grid.root]);
-  panel.style.height = '100%';
-  grid.root.style.width = '100%';
-  grid.root.style.flexGrow = '1';
-
-  const title = report.method === 'Dunnett' ?
-    'Control Comparisons (Dunnett\'s test)' : 'Control Comparisons (Holm-Welch)';
-  view.dockManager.dock(panel, DG.DOCK_TYPE.DOWN, node, title, 0.3);
+  const title = `Control comparisons: "${feature.name}" vs "${controlLabel}" (${report.method})`;
+  view.dockManager.dock(grid, DG.DOCK_TYPE.DOWN, node, title, 0.3);
 } // addVisualization
 
 // ── Dialog ───────────────────────────────────────────────────────
