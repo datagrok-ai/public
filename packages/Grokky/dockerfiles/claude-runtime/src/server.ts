@@ -161,17 +161,6 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string
     };
   }
 
-  if (process.env['MILVUS_TOKEN']) {
-    const env: Record<string, string> = {MILVUS_TOKEN: process.env['MILVUS_TOKEN']!};
-    if (process.env['OPENAI_API_KEY'])
-      env['OPENAI_API_KEY'] = process.env['OPENAI_API_KEY'];
-    servers['claude-context'] = {
-      command: 'claude-context-mcp',
-      args: [] as string[],
-      env,
-    };
-  }
-
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 

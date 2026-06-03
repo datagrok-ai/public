@@ -50,22 +50,31 @@ since their skills are personal.
 
 ## Sync
 
-All three scopes sync independently using timestamp-based incremental sync — only new or changed
-files are downloaded, and files deleted on the remote side are cleaned up locally. Naming
-conventions prevent collisions across sources:
+All three scopes sync independently using incremental sync — only new or changed files are
+downloaded, and files deleted on the remote side are cleaned up locally. Naming conventions
+prevent collisions across sources:
 
 | Scope | Source | Local naming | Trigger |
 |-------|--------|--------------|---------|
 | Personal | User's `My Files/agents/` folder | `agents/{filename}` | File events (`d4-file-event`, `onFileEdited`) |
-| Package | `agents/` folder inside a published package | `agents/{PackageName}-{filename}` | `onPackageLoaded` event + 15-min poll |
-| Shared | `MyFilesAgents` sub-connections from other users | `agents/shared-{connId}-{filename}` | 15-minute polling interval |
+| Package | `agents/` folder inside a published package | `agents/{PackageName}-{filename}` | `onPackageLoaded` event + on-demand TTL refresh |
+| Shared | `MyFilesAgents` sub-connections from other users | `agents/shared-{connId}-{filename}` | On-demand TTL refresh |
 
-Package sync uses timestamp caching (`updatedOn`) to skip unchanged packages — ZIP downloads
-only happen when a package has actually been updated.
+Package sync keys on the package's `buildHash` to skip unchanged packages. When a build changes,
+the runtime lists the published-files folder
+(`/packages/published/files/{name}/{version}/{buildHash}/{buildNumber}/agents/`) and downloads
+each agent file individually. The per-user cache lives in process memory only and tracks
+`buildHash` plus the files written for that build, so the previous build's files can be removed
+before the new ones land.
 
-On the first user message, all three scopes sync (`scope=all`). After that, event-driven syncs
-use a narrow scope so only the relevant category is re-checked. A concurrency guard prevents
-duplicate syncs for the same user.
+Shared sync uses `updatedOn` timestamp caching. The seen version is recorded whether or not the
+download succeeds, so a file that can't be fetched (e.g. invalid JSON) is not retried on every
+refresh — it retries only when its `updatedOn` changes.
+
+The first user message syncs all scopes blockingly (`scope=all`); later `scope=all` turns serve
+on-disk state immediately and refresh the package and shared scopes in the background once a
+15-minute TTL elapses, so a turn never pays sync latency. A concurrency guard (`syncInFlight` per
+user) prevents duplicate syncs.
 
 ---
 

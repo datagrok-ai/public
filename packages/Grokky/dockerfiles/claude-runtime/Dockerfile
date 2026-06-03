@@ -14,8 +14,7 @@ RUN groupadd -g 2001 grok && \
 
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
 COPY --chown=grok:grok src ./src
-RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production && \
-    npm install -g @zilliz/claude-context-mcp@latest
+RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production
 
 COPY --chown=grok:grok plugin /app/plugin
 
