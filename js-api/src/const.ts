@@ -431,8 +431,6 @@ export const FUNC_TYPES = {
 
   SEARCH_PROVIDER: 'searchProvider',
   NOTATION_REFINER: 'notationRefiner',
-
-  KNIME_WORKFLOW: 'knimeWorkflow',
 }
 
 
@@ -613,11 +611,6 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.NOTATION_REFINER,
     description: 'Refines the biological sequence notation based on company specific rules',
     signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
-  },
-  {
-    role: FUNC_TYPES.KNIME_WORKFLOW,
-    description: 'Executes a KNIME workflow via the KNIME Business Hub REST API and returns the results.',
-    signature: 'knimeWorkflow(...args): any'
   }
 ]
 
