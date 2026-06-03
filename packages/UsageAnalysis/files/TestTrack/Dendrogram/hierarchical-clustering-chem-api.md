@@ -1,23 +1,60 @@
 ---
 feature: dendrogram
 sub_features_covered:
-  - dendrogram.hierarchical-clustering.distance.euclidean
-  - dendrogram.hierarchical-clustering.distance.manhattan
-  - dendrogram.hierarchical-clustering.linkage.single
-  - dendrogram.hierarchical-clustering.linkage.complete
-  - dendrogram.hierarchical-clustering.linkage.average
-  - dendrogram.hierarchical-clustering.linkage.weighted
-  - dendrogram.hierarchical-clustering.linkage.centroid
-  - dendrogram.hierarchical-clustering.linkage.median
-  - dendrogram.hierarchical-clustering.linkage.ward
-  - dendrogram.hierarchical-clustering.molecule-path
-  - dendrogram.hierarchical-clustering.numeric-path
+  - dendrogram.clustering.api
+  - dendrogram.api.get-tree-helper
+  - dendrogram.api.tree-helper.calc-distance-matrix
+  - dendrogram.api.tree-helper.parse-cluster-matrix
+  - dendrogram.clustering.inject-tree-for-grid
 target_layer: apitest
 coverage_type: regression
 pyramid_layer: integration
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-chem-api.md
 related_bugs: []
+realized_as:
+  - hierarchical-clustering-chem-api.ts
+scope_reductions:
+  - id: SR-FRONTMATTER-ATLAS-RESOLUTION
+    rationale: |
+      Original Test-Designer-authored sub_features_covered list used synthetic
+      matrix-enumeration ids (dendrogram.hierarchical-clustering.distance.{euclidean,
+      manhattan}, .linkage.{single,complete,average,weighted,centroid,median,ward},
+      .molecule-path, .numeric-path) which do NOT resolve in
+      feature-atlas/dendrogram.yaml :: sub_features[].id. E-STRUCT-MECH-06 failed
+      Gate E with failure_keys: [E-STRUCT-MECH-06] (cycle 2026-06-03-dendrogram-
+      automate-02). Remapped to the 5 atlas-resolvable ids that name the actual
+      JS-API surfaces the spec exercises: the registered Dendrogram:hierarchical-
+      Clustering function (dendrogram.clustering.api), the Dendrogram:getTreeHelper
+      function (dendrogram.api.get-tree-helper), calcDistanceMatrix
+      (dendrogram.api.tree-helper.calc-distance-matrix), parseClusterMatrix
+      (dendrogram.api.tree-helper.parse-cluster-matrix), and the GridNeighbor
+      mount that observability-verifies injectTreeForGrid2
+      (dendrogram.clustering.inject-tree-for-grid). The distance × linkage matrix
+      coverage is preserved at the SPEC level (the spec iterates all 14
+      distance×linkage combos for both molecule and numeric paths); the atlas
+      side does not enumerate per-distance / per-linkage as separate ids, so
+      matrix breadth is asserted within the spec body rather than as separate
+      atlas anchors. Upstream resolution path: Test Designer either (a) extend
+      the atlas with matrix-enumeration sub_features or (b) accept the
+      compute-surface atlas anchors as canonical and remove the matrix-enum
+      naming convention from future scenarios.
+gate_verdicts:
+  e:
+    verdict: PASS
+    cycle_id: 2026-06-03-dendrogram-automate-02
+    timestamp: 2026-06-03T00:00:00Z
+    failure_keys: []
+  b:
+    verdict: FAIL
+    cycle_id: 2026-06-03-dendrogram-automate-02
+    timestamp: 2026-06-03T14:35:00Z
+    spec_runs:
+      - spec: hierarchical-clustering-chem-api.ts
+        result: failed
+        attempts: 3
+        duration_seconds: 0
+        failure_keys: [B-COLLECT-ABORT, B-STAB-01]
 ---
 
 # Hierarchical Clustering (chem) — Distance × Linkage matrix (JS API)
