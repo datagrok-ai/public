@@ -82,6 +82,7 @@ export interface IUserReport {
   /// True is this object was deleted.
   /// True is this object was deleted.
   /// True is this object was deleted.
+  /// True is this object was deleted.
   isDeleted: boolean;
 
   bindId: string;

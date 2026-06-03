@@ -29,6 +29,14 @@ export class UsageType {
 
   static UNDOCK = 'undock';
 
+  static DIALOG_SHOWED = 'dialog-showed';
+
+  static DIALOG_CLOSED = 'dialog-closed';
+
+  static TABLE_ADDED = 'table-added';
+
+  static FUNC_RUN = 'func-run';
+
 }
 export class GridCellStyleEx {
   public dart: any;

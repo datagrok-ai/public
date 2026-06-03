@@ -183,10 +183,21 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Axis Font | string |  |
 | Grid Line Color | number |  |
 | Selected Rows Color | number |  |
+| Regression Line Color | number |  |
+| Regression Line Transparency | number |  |
+| Formula Font | string |  |
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |
 | Statistical Process Rule Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by the *Split* column(s). Supports up to 20 categories; otherwise, a common regression line is shown. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
