@@ -84,6 +84,11 @@ module.exports = (env = {}) => {
       path: path.resolve(__dirname, 'dist'),
       clean: true,
     },
-    optimization: {concatenateModules: false},
+    // splitChunks/runtimeChunk off: keep the fitting worker chunk self-contained.
+    // A split vendor chunk (e.g. dayjs) would force the classic worker to
+    // importScripts() it, which needs a publicPath the worker can't auto-detect
+    // (no document) — the worker then fails to load. Webpack bundled dayjs into
+    // the worker; this preserves that.
+    optimization: {concatenateModules: false, splitChunks: false, runtimeChunk: false},
   };
 };
