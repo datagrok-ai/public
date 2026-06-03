@@ -385,7 +385,7 @@ export function runTwoSampleTTest(): void {
 
   const fullReportInput = ui.input.bool('Full report', {
     value: true,
-    tooltipText: 'Add a table with the full test statistics and conclusion.',
+    tooltipText: 'Add a table with the full test statistics and conclusion',
   });
 
   const dlg = ui.dialog({title: 'Two-sample t-test', helpUrl: T_TEST_HELP_URL});
@@ -412,7 +412,7 @@ export function runTwoSampleTTest(): void {
       } else
         grok.shell.error('t-test fails: the platform issue');
     }
-  }, undefined, 'Perform two-sample t-test.');
+  }, undefined, 'Perform two-sample t-test');
 
   const runBtn = dlg.getButton('Run');
 
@@ -431,7 +431,7 @@ export function runTwoSampleTTest(): void {
     // 1. Alpha range.
     if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
       runBtn.disabled = true;
-      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1.');
+      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1');
       return;
     }
 
@@ -474,7 +474,7 @@ export function runTwoSampleTTest(): void {
     }
 
     runBtn.disabled = false;
-    ui.tooltip.bind(runBtn, 'Perform two-sample t-test.');
+    ui.tooltip.bind(runBtn, 'Perform two-sample t-test');
   }
 
   dlg.add(factorInput)

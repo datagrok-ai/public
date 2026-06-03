@@ -54,6 +54,18 @@ function groupCount(factor: DG.Column): number {
   return factor.stats.uniqueCount;
 }
 
+/** True when every non-null value is distinct (an ID-like column — each group has size 1, so the
+ *  column cannot define groups). Mirrors the ANOVA dialog's guard. */
+function isFactorAllUnique(factor: DG.Column): boolean {
+  const uniqueCount = factor.stats.uniqueCount;
+  const nonNullCount = factor.length - factor.stats.missingValueCount;
+  return uniqueCount >= 2 && uniqueCount === nonNullCount;
+}
+
+const ALL_UNIQUE_MSG =
+  'Every value is unique (an ID-like column) — no groups to compare. ' +
+  'Pick a column with at least one repeated category.';
+
 /** Human-readable label for a category code. */
 function labelOf(factor: DG.Column, code: number): string {
   if (factor.type === DG.COLUMN_TYPE.BOOL)
@@ -91,11 +103,16 @@ function formatP(p: number): string {
 
 // ── Box plot description ─────────────────────────────────────────
 
-/** `${m} of ${k-1} groups differ significantly from "${control}"`. */
+/** Box plot caption: "None / ${m} of ${k-1} groups differ significantly from "${control}"". */
 function buildDescription(report: ControlComparisonsReport, controlLabel: string): string {
   const total = report.comparisons.length;
   const sig = report.comparisons.filter((c) => c.significant).length;
-  return `${sig} of ${total} group${total === 1 ? '' : 's'} differ significantly from "${controlLabel}"`;
+  // No significant difference: avoid "differ significantly" (not significant ≠ proven equal) —
+  // state the absence of a detectable difference instead.
+  if (sig === 0)
+    return `No detectable difference from "${controlLabel}"`;
+  const groups = `group${total === 1 ? '' : 's'}`;
+  return `${sig} of ${total} ${groups} differ significantly from "${controlLabel}"`;
 }
 
 // ── Per-row Conclusion cell tooltip (H0 / H1 / Conclusion / meaning) ──
@@ -327,13 +344,18 @@ export function runControlComparisons(): void {
       factorColNames.push(col.name);
   }
 
-  // A category column is usable here if it has at least 2 groups (control + ≥ 1 other).
-  const validFactorColNames = factorColNames.filter((name) => groupCount(columns.byName(name)) >= 2);
+  // A category column is usable here if it has at least 2 groups and is not an ID-like (all-unique)
+  // column. Used for the applicability check and the default selection; ID columns stay selectable
+  // in the dropdown but get flagged (mirrors the ANOVA dialog).
+  const validFactorColNames = factorColNames.filter((name) => {
+    const col = columns.byName(name);
+    return groupCount(col) >= 2 && !isFactorAllUnique(col);
+  });
 
   if (validFactorColNames.length < 1) {
     grok.shell.warning(ui.markdown(`Control comparisons are not applicable to this table:
 
-    - no categorical column with at least two groups`));
+    - no categorical column with at least two repeated groups`));
     return;
   }
 
@@ -344,7 +366,11 @@ export function runControlComparisons(): void {
     return;
   }
 
-  let factor = columns.byName(validFactorColNames[0]);
+  // Prefer a column with 3+ groups as the default — control comparisons are most meaningful then
+  // (2 groups just reduce to a t-test). Fall back to the first valid column otherwise.
+  const defaultFactorName = validFactorColNames.find((name) => groupCount(columns.byName(name)) >= 3) ??
+    validFactorColNames[0];
+  let factor = columns.byName(defaultFactorName);
   let feature = columns.byName(featureColNames[0]);
   let currentMethod: ControlComparisonsMethod = 'Dunnett';
   let significance: number = SIGNIFICANCE.DEFAULT;
@@ -370,6 +396,12 @@ export function runControlComparisons(): void {
     onValueChanged: (col) => {factor = col; rebuildControlChoices(); updateRunButtonState();},
     filter: (col: DG.Column) => factorColNames.includes(col.name),
     nullable: false,
+  });
+
+  // Reject ID-like (all-unique) columns via input validation, as in the ANOVA dialog.
+  factorInput.addValidator(() => {
+    const col = factorInput.value;
+    return col != null && isFactorAllUnique(col) ? ALL_UNIQUE_MSG : null;
   });
 
   // --- Control ---
@@ -411,18 +443,9 @@ export function runControlComparisons(): void {
 
   const fullReportInput = ui.input.bool('Full report', {
     value: true,
-    tooltipText: 'Add a table with the full test statistics and per-group conclusions.',
+    tooltipText: 'Add a table with the full test statistics and per-group conclusions',
   });
 
-  // Info banner shown when the chosen category has only 2 groups (reduces to a t-test).
-  const twoGroupHint = ui.iconFA('info-circle', null);
-  twoGroupHint.style.color = 'var(--blue-1, #1f8fff)';
-  twoGroupHint.style.marginLeft = '12px';
-  twoGroupHint.style.display = 'none';
-  ui.tooltip.bind(twoGroupHint,
-    'With only 2 groups, this is equivalent to a two-sample t-test against the chosen control. ' +
-    'Consider opening the t-test dialog instead.');
-  factorInput.root.append(twoGroupHint);
 
   const dlg = ui.dialog({title: 'Control comparisons', helpUrl: HELP_URL});
   const view = grok.shell.getTableView(df.name);
@@ -445,16 +468,14 @@ export function runControlComparisons(): void {
       } else
         grok.shell.error('Control comparisons fail: the platform issue');
     }
-  }, undefined, 'Perform control comparisons.');
+  }, undefined, 'Perform control comparisons');
 
   const runBtn = dlg.getButton('Run');
 
   function updateRunButtonState(): void {
-    twoGroupHint.style.display = 'none';
-
     if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
       runBtn.disabled = true;
-      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1.');
+      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1');
       return;
     }
     if (factor == null || feature == null) {
@@ -469,17 +490,21 @@ export function runControlComparisons(): void {
       ui.tooltip.bind(runBtn, 'The category column needs at least two groups.');
       return;
     }
+    // ID-like (all-unique) column: each group has size 1 — block Run (the validator shows why),
+    // exactly as in the ANOVA dialog.
+    if (isFactorAllUnique(factor)) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, ALL_UNIQUE_MSG);
+      return;
+    }
     if (control == null || !groupLabels(factor).includes(control)) {
       runBtn.disabled = true;
       ui.tooltip.bind(runBtn, 'Select a control group present in the data.');
       return;
     }
-    // k = 2 is valid but equivalent to a t-test — surface an informational hint only.
-    if (nGroups === 2)
-      twoGroupHint.style.display = '';
 
     runBtn.disabled = false;
-    ui.tooltip.bind(runBtn, 'Perform control comparisons.');
+    ui.tooltip.bind(runBtn, 'Perform control comparisons');
   }
 
   dlg.add(factorInput)
@@ -490,6 +515,7 @@ export function runControlComparisons(): void {
     .add(fullReportInput);
 
   updateRunButtonState();
+  factorInput.validate();
   dlg.show();
 
   setTimeout(() => (document.activeElement as HTMLElement | null)?.blur(), 0);

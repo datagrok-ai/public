@@ -383,7 +383,7 @@ export function runOneWayAnova(): void {
 
   const fullReportInput = ui.input.bool('Full report', {
     value: true,
-    tooltipText: 'Add a table with the full test statistics and conclusion.',
+    tooltipText: 'Add a table with the full test statistics and conclusion',
   });
 
   const dlg = ui.dialog({title: 'ANOVA', helpUrl: ANOVA_HELP_URL});
@@ -411,7 +411,7 @@ export function runOneWayAnova(): void {
       } else
         grok.shell.error('ANOVA fails: the platform issue');
     }
-  }, undefined, 'Perform analysis of variances.');
+  }, undefined, 'Perform analysis of variances');
 
   const runBtn = dlg.getButton('Run');
 
@@ -420,7 +420,7 @@ export function runOneWayAnova(): void {
 
     if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
       runBtn.disabled = true;
-      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1.');
+      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1');
       return;
     }
 
@@ -451,7 +451,7 @@ export function runOneWayAnova(): void {
     }
 
     runBtn.disabled = false;
-    ui.tooltip.bind(runBtn, 'Perform analysis of variances.');
+    ui.tooltip.bind(runBtn, 'Perform analysis of variances');
   }
 
   dlg.add(factorInput)
