@@ -14,6 +14,7 @@ export function _importSdfString(str: string): DG.DataFrame[] {
   parser = new OCL.SDFileParser(str, fieldNames);
   let rows = 0;
   const data: any = {'molecule': []};
+  const addName = !fieldNames.includes('Name');
 
   while (parser.next()) {
     for (const field of fieldNames) {
@@ -21,12 +22,15 @@ export function _importSdfString(str: string): DG.DataFrame[] {
         data[field] = [];
       data[field][rows] = parser.getField(field);
     }
-    data['molecule'][rows] = parser.getNextMolFile();
+    const molfile = parser.getNextMolFile();
+    data['molecule'][rows] = molfile;
+    if (addName)
+      (data['Name'] ??= [])[rows] = molfile.split('\n', 1)[0].trim();
     rows++;
   }
 
   const df = DG.DataFrame.create(rows);
-  for (const field of ['molecule'].concat(fieldNames))
+  for (const field of ['molecule'].concat(addName ? ['Name'] : [], fieldNames))
     df.columns.add(DG.Column.fromStrings(field, data[field]));
   df.col('molecule')!.semType = DG.SEMTYPE.MOLECULE;
   df.col('molecule')!.meta.units = 'molblock'; // DG.UNITS.Molecule.MOLBLOCK;
