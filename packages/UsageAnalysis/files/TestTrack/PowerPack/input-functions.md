@@ -78,92 +78,6 @@ gate_verdicts:
     cycle_id: 2026-05-28-powerpack-automate-02
     timestamp: 2026-05-28T16:05:00Z
     failure_keys: []
-    scope_reduction_proposal: |
-      Fresh independent Gate E review of input-functions-spec.ts.
-
-      E-STRUCT-MECH-01..06 PASS: spec present at
-      PowerPack/input-functions-spec.ts; balanced braces, well-formed
-      test() signature (line 463), imports for all used symbols; one
-      test() block (line 463); test name "Add new column — function
-      insertion (plus icon, drag-and-drop, auto-bound column parameter)"
-      substring-overlaps the scenario heading "Insert functions via +
-      icon and drag-and-drop; auto-bind columns by type match"; imports
-      only @playwright/test + ../spec-login (registered sibling helper
-      module); leading /* --- sub_features_covered: [...] --- */ block at
-      lines 1-3 before any other content, non-empty, both ids resolve to
-      atlas sub_features (powerpack.yaml lines 608 and 615).
-
-      E-TRACE-01..03 PASS: all 10 numbered scenario steps map to softStep
-      blocks (Steps 2-10 + 7a/7b + 10b); Step 1 is the SPGI-open
-      precondition asserting cols.contains('Structure') + semType Molecule
-      (lines 509-510); each Verify maps to an expect(...) JS-API assertion
-      (col/semType checks, formula regexes, preview presence); probe/clear/
-      read helpers are documented technical glue for the non-linear canvas
-      row->column mapping, not orphaned code. E-SEL-01..03 PASS: no
-      grok-browser/references/powerpack.md exists (confirmed via glob), so
-      E-SEL-01's local-notes-with-reason clause applies — every selector
-      is documented in the spec header (lines 54-73) with add-new-column.ts
-      source citations; no invented selectors; no .fill() on Dart inputs.
-      E-HELP-01/02 PASS: softStep + loginToDatagrok are registered
-      (helpers-registry.yaml lines 3735, 3741); specTestOptions/stepErrors
-      are config/error-array exports of the same spec-login.ts module
-      (lines 5, 14), not reinvented helpers. E-BOUND-01/02 PASS (spec under
-      TestTrack/PowerPack/, no core/** touched).
-
-      E-LAYER-01/02 + E-LAYER-COMPLIANCE-01 PASS: target_layer playwright
-      with many DOM-driving calls (page.locator/.click/.hover/.evaluate).
-      Pyramid sub-rule (pyramid_layer ui-smoke): scenario
-      ui_coverage_responsibility lists ONE owned flow
-      (add-new-column-function-plus-icon), exercised via a genuine TRUSTED
-      .click() on [name="icon-plus"] (clickPlusIcon, lines 289-314) — no
-      JS-API substitution. Calls(>=1) >= flows(1). PASS.
-
-      RETRY CONTEXT: gate_verdicts.b.verdict == FAIL, cycle_id
-      2026-05-28-powerpack-automate-02 == current inputs.cycle_id,
-      failure_keys [B-RUN-PASS, B-STAB-01] — same-cycle retry, so
-      E-RETRY-IGNORES-GATE-B was evaluated. It does NOT fire. The new spec
-      makes two real, identifiable, non-cosmetic diffs in the exact failing
-      region: (a) adds VALIDATION_TYPES_MAPPING (lines 199-207) applied in
-      dragFunctionOntoEditor's auto-bind position search (line 429,
-      mapped.includes(args.sel.type)), so double/int/qnum columns bridge to
-      Abs's `num` input — addressing the cited B-RUN-PASS assertion miss;
-      (b) moves editor read/clear/insert from the desync-prone
-      document.execCommand contenteditable path to the live CM6 EditorView
-      dispatch (readEditorDoc line 228, clearEditor line 252,
-      dragFunctionOntoEditor line 442), addressing the text-accumulation
-      symptom. These are good-faith changes to the failing path (not a
-      retained failing path, not cosmetic-only). Whether the fix holds at
-      runtime is Validator's job at Gate B next run; Critic E does not
-      enforce convergence. (Decision log records a prior
-      E-RETRY-IGNORES-GATE-B FAIL in cycle 2026-05-26-powerpack-automate-02
-      for this feature — that earlier round genuinely ignored the
-      diagnosis; this round does not.)
-
-      Two acceptable scope reductions are recorded on the scenario
-      frontmatter, each citing a real platform-affordance dependency from
-      MCP recon 2026-05-28 (not effort/complexity):
-        - SR-01: function rows are not HTML5-draggable (Dart pointer-event
-          DnD via _dndContext); the drag-drop leg uses the
-          insertIntoCodeMirror END STATE via the CM6 view dispatch with
-          usedFallback:true. The drag-drop flow is split to
-          input-functions-ui.md (NOT in this scenario's owned
-          ui_coverage_responsibility), so the JS-substituted end-state is
-          an acceptable affordance-gap SR, not a pyramid-sub-rule violation.
-        - SR-02: the canvas row->column mapping is non-linear and the
-          literal Structure column is not among the visible canvas rows;
-          the positive auto-bind type-match invariant is asserted FOR REAL
-          against whichever Molecule/numeric column the probe selects (a
-          name relaxation, not a console.warn downgrade).
-
-      Open item for Gate F (not a Gate E failure): the chain YAML still
-      lists this scenario's ui_coverage_responsibility as all THREE flows,
-      whereas the scenario frontmatter lists only plus-icon with
-      ui_coverage_split_to: [input-functions-ui.md]. Reconciling
-      chain-level ownership vs the split is F-UI-COVERAGE-01's job; out of
-      Gate E's scenario-paired scope.
-
-      Proposal: accept the two existing scope_reductions[] entries (SR-01,
-      SR-02) as-is and proceed. No spec change required at Gate E.
   d:
     verdict: PASS
     cycle_id: cycle-2026-05-20-powerpack-input-functions
@@ -175,33 +89,6 @@ gate_verdicts:
     timestamp: 2026-05-20T00:00:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   b:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02

@@ -65,33 +65,6 @@ gate_verdicts:
     timestamp: 2026-05-28T00:00:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check_id: A-STRUCT-MECH-01
-        status: PASS
-      - check_id: A-STRUCT-MECH-02
-        status: PASS
-      - check_id: A-STRUCT-MECH-03
-        status: PASS
-      - check_id: A-STRUCT-MECH-04
-        status: PASS
-      - check_id: A-STRUCT-MECH-05
-        status: PASS
-      - check_id: A-STRUCT-MECH-06
-        status: PASS
-      - check_id: A-STRUCT-03
-        status: PASS
-      - check_id: A-STRUCT-04
-        status: PASS
-      - check_id: A-LAYER-ALIGN-01
-        status: PASS
-      - check_id: A-CONT-01
-        status: PASS
-      - check_id: A-BUG-01
-        status: PASS
-      - check_id: A-MERIT-01
-        status: PASS
-      - check_id: A-MERIT-02
-        status: PASS
   b:
     verdict: PASS
     cycle_id: 2026-05-30-peptides-automate-02

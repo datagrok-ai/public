@@ -72,27 +72,33 @@ sub_features_covered: [powerpack.db-explorer, powerpack.db-explorer.run-enrichme
 //     with selectors that worked and platform behaviors observed.
 //   - data-enrichment.md scope_reductions :: SR-01 — sub-4 deferral path.
 //
-// Recorded bug — PowerPack:runEnrichment no-op (surfaced 2026-05-27 on
-// dev.datagrok.ai; affects powerpack.db-explorer.run-enrichment +
-// run-enrichment-from-config):
+// Recorded bug — GROK-20175: PowerPack DB-Explorer enrichment join fails with a
+// SQL type mismatch (surfaced 2026-05-27 on dev.datagrok.ai; affects
+// powerpack.db-explorer.run-enrichment + run-enrichment-from-config):
 //   repro:    open events via core:DbQuery; select session_id; expand
 //             Datagrok → Enrich; click the runLink on a correctly-configured
 //             enrichment row (config has events.session_id in fields[] +
 //             TableJoin leftTableKeys=['session_id'] rightTableKeys=['id']).
-//   expected: runEnrichment executes the join query and appends the selected
+//   expected: the enrichment executes the join query and appends the selected
 //             right-table columns to the events df.
-//   actual:   the function-call returns normally and the config JSON is read
-//             (200 OK), but no /api/connectors/queries/* request fires
-//             downstream; df.columns.length stays constant (9) for 18s+.
-//   isolation: the underlying convertEnrichmentToQuery + executeEnrichQuery
-//             work when invoked piecewise (the TableQuery executes, returns
-//             rows, JoinTables.applySync applies). Only the top-level
-//             runEnrichment function-call path is broken.
+//   actual:   the join query fires and the DB rejects it with "operator does
+//             not exist: uuid = character varying (Hint: add explicit type
+//             casts; Position: 429)"; PowerPack surfaces a "Failed to enrich"
+//             balloon (db-explorer.ts executeEnrichQuery catch →
+//             grok.shell.error). No columns are appended because the query
+//             errored — df.columns.length stays at 9.
+//   mechanism: the generated JOIN/WHERE compares the uuid column
+//             users_sessions.id to character-varying session_id values without
+//             an explicit cast. The wiring is correct
+//             (events.session_id = users_sessions.id); the defect is purely in
+//             PowerPack's SQL generation / type coercion.
 //   This drives SR-05/06/07/08 (sub-1.10/1.12/2.3/2.4): the column-count
-//   invariants are replaced with console.warn because the apply silently
-//   no-ops, so every downstream remove/union delta is meaningless. Reinstate
-//   the hard assertions once a PowerPack ticket lands + bug-library catalogues
-//   it.
+//   invariants are encoded as GROK-20175 inverted assertions (columns are NOT
+//   added while the bug is live). When GROK-20175 is fixed the join will append
+//   columns, the inverted assertions flip red, and the positive checks
+//   (expect(colCountAfter > colCountBefore)) must be reinstated. The transient
+//   "Failed to enrich" balloon is captured as best-effort soft corroboration
+//   only (a hard expect() on a transient toast risks a Gate B FLAKY verdict).
 //
 // Technique record (why the spec drives the UI the way it does):
 //   - Cascading vert-menu expansion: vertical menu items (d4-menu-item-vert)
@@ -188,6 +194,28 @@ async function fillDartInput(
   await dialog.locator(`input[name="${inputNameAttr}"]:not(.d4-invalid)`).first()
     .waitFor({timeout: 5_000})
     .catch(() => { /* if still invalid we'll surface via SAVE failure */ });
+}
+
+// ---------------------------------------------------------------------------
+// Helper: best-effort, non-blocking corroboration of GROK-20175. The failed
+// enrichment join surfaces a transient "Failed to enrich" balloon
+// (db-explorer.ts executeEnrichQuery catch → grok.shell.error, rendered as a
+// .d4-balloon-content toast). Poll-and-log only — a hard expect() on a
+// transient toast risks a Gate B FLAKY verdict on timing, so the deterministic
+// column-count inverted assertions remain the load-bearing signal. Never
+// throws; absence of the balloon is not a failure signal.
+// ---------------------------------------------------------------------------
+async function logEnrichFailureBalloon(page: Page, stepId: string): Promise<void> {
+  try {
+    const balloon = page.locator('.d4-balloon-content')
+      .filter({hasText: /failed to enrich|uuid = character varying/i}).first();
+    await balloon.waitFor({timeout: 4000});
+    const text = ((await balloon.textContent()) ?? '').trim().replace(/\s+/g, ' ').slice(0, 200);
+    // eslint-disable-next-line no-console
+    console.log(`[GROK-20175] ${stepId}: enrichment-failure balloon observed: ${text}`);
+  } catch {
+    // Transient toast — it may have auto-dismissed before the poll; not a signal.
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -656,6 +684,9 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         .first();
       await enrichmentLabel.waitFor({timeout: 15_000});
       await enrichmentLabel.click({timeout: 15_000});
+      // GROK-20175 soft corroboration: the failed join surfaces a transient
+      // "Failed to enrich" balloon. Logged, never asserted (see helper).
+      await logEnrichFailureBalloon(page, '1.10');
       // Allow the runEnrichment + join to execute.
       await page.waitForTimeout(6000);
 
@@ -663,16 +694,14 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // SR-05: PowerPack:runEnrichment silently no-ops on this apply path (see
-      // the "Recorded bug" entry in the header). The hard
-      // expect(colCountAfter > colCountBefore) is replaced with console.warn so
-      // the scenario invariant is documented without blocking the run; sub-1.12,
-      // 2.3, 2.4 cascade from this and are handled as SR-06/07/08. Reinstate the
-      // hard assertion once a PowerPack ticket lands + bug-library catalogues it.
-      if (!(colCountAfter > colCountBefore)) {
-        // eslint-disable-next-line no-console
-        console.warn(`[SR-05 known platform gap] 1.10: PowerPack:runEnrichment silently no-ops for events.session_id → users_sessions.id enrichment apply (before=${colCountBefore}, after=${colCountAfter}). See data-enrichment.md.automator-retry.dispatch.yaml cycle 2026-05-27-powerpack-automate-01 Round 2 mcp_observations.`);
-      }
+      // SR-05: GROK-20175 — the enrichment join fails at the DB with a SQL type
+      // mismatch (uuid = character varying), so no columns are appended (see the
+      // "Recorded bug" entry in the header). The deterministic column-count
+      // invariant is the load-bearing signal: while the bug is live, columns are
+      // NOT added.
+      // GROK-20175 inverted assertion — when fixed, columns get added and this
+      // flips red; restore the positive expect(colCountAfter > colCountBefore).
+      expect(colCountAfter).toEqual(colCountBefore);
     });
 
     await softStep('1.11 Edit the enrichment via i.fa-pencil → save → grid updates to reflect new column set', async () => {
@@ -709,13 +738,13 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // SR-06: cascade from SR-05. Since 1.10's apply never added columns, the
-      // remove has nothing to drop, so expect(afterRemove < withEnrich) fails
-      // deterministically — replaced with console.warn.
-      if (!(colCountAfterRemove < colCountWithEnrich)) {
-        // eslint-disable-next-line no-console
-        console.warn(`[SR-06 known platform gap] 1.12: column-remove cascade from SR-05 (sub-1.10 apply never added columns, so 1.12 remove has nothing to drop; withEnrich=${colCountWithEnrich}, afterRemove=${colCountAfterRemove}). See SR-05 comment above for root cause + cycle 2026-05-27 MCP recon citation.`);
-      }
+      // SR-06: cascade of SR-05 (GROK-20175). Because sub-1.10's apply errored
+      // with the SQL type mismatch, no columns were ever added, so the remove
+      // has nothing to drop and the count is unchanged.
+      // GROK-20175 inverted assertion — when fixed, sub-1.10 adds columns and
+      // this remove drops them (afterRemove < withEnrich), flipping red; restore
+      // the positive expect(colCountAfterRemove < colCountWithEnrich).
+      expect(colCountAfterRemove).toEqual(colCountWithEnrich);
     });
 
     // ============================================================
@@ -787,6 +816,8 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         .first();
       await label2.waitFor({timeout: 15_000});
       await label2.click({timeout: 15_000});
+      // GROK-20175 soft corroboration on the multi-enrichment apply path.
+      await logEnrichFailureBalloon(page, '2.3');
       await page.waitForTimeout(5000);
 
       // Now select event_type_id and click that enrichment.
@@ -805,13 +836,13 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // SR-07: cascade from SR-05. runEnrichment no-ops, so clicking the
-      // session_id + event_type_id enrichment rows adds no columns and
-      // expect(colCountAfter > colCountBefore) fails — replaced with console.warn.
-      if (!(colCountAfter > colCountBefore)) {
-        // eslint-disable-next-line no-console
-        console.warn(`[SR-07 known platform gap] 2.3: multi-enrichment apply cascade from SR-05 (runEnrichment no-ops; before=${colCountBefore}, after=${colCountAfter}). See SR-05 comment at sub-1.10.`);
-      }
+      // SR-07: cascade of SR-05 (GROK-20175) on the multi-enrichment apply path.
+      // Clicking the session_id + event_type_id enrichment rows hits the same
+      // join that fails with the SQL type mismatch, so no columns are added.
+      // GROK-20175 inverted assertion — when fixed, the union of joined columns
+      // appears and this flips red; restore the positive
+      // expect(colCountAfter > colCountBefore).
+      expect(colCountAfter).toEqual(colCountBefore);
     });
 
     await softStep('2.4 Remove one active enrichment — only its contributed columns disappear; remaining stay', async () => {
@@ -836,15 +867,19 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // SR-08: cascade from SR-05/SR-07. expect(colCountAfter <= colCountBefore)
-      // reasons about a post-apply delta that is meaningless when enrichments
-      // never applied; runs have also shown colCountAfter=18 vs before=9 (late-
-      // binding column additions from another path, e.g. lingering event_type_id
-      // enrichment or fixture re-read on selectColumn). Replaced with console.warn.
-      if (!(colCountAfter <= colCountBefore)) {
-        // eslint-disable-next-line no-console
-        console.warn(`[SR-08 known platform gap] 2.4: single-enrichment-remove preserves-remaining cascade from SR-05 (enrichments never applied; before=${colCountBefore}, after=${colCountAfter}). See SR-05 comment at sub-1.10.`);
-      }
+      // SR-08: cascade of SR-05/SR-07 (GROK-20175). Removing one active
+      // enrichment should drop only its contributed columns, but since the apply
+      // path errored (SQL type mismatch) nothing was ever applied, so the remove
+      // cannot reduce the column count. A strict toEqual is NOT used here: this
+      // site is non-deterministic — runs have shown colCountAfter=18 vs before=9
+      // from late-binding additions on another path (lingering event_type_id
+      // enrichment / fixture re-read on selectColumn). The bug-tolerant invariant
+      // is that the remove does NOT reduce the count.
+      // GROK-20175 inverted assertion — when fixed, sub-2.3 applies enrichments
+      // and this remove drops enrichmentName2's columns (after < before),
+      // flipping red; restore the positive expect(colCountAfter <= colCountBefore)
+      // (only its columns disappear; remaining stay).
+      expect(colCountAfter).toBeGreaterThanOrEqual(colCountBefore);
     });
 
     // ============================================================

@@ -17,7 +17,7 @@ scope_reductions: []
 related_bugs:
   - GROK-16915
 realized_as:
-  - widgets-after-debug-delete-api-spec.ts
+  - widgets-after-debug-delete-api.ts
 gate_verdicts:
   d:
     verdict: PASS
@@ -30,33 +30,6 @@ gate_verdicts:
     timestamp: 2026-05-23T13:00:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   e:
     verdict: PASS
     cycle_id: 2026-05-28-powerpack-automate-02
@@ -67,7 +40,7 @@ gate_verdicts:
     cycle_id: 2026-05-28-powerpack-automate-02
     timestamp: 2026-05-28T12:48:42Z
     spec_runs:
-      - spec: widgets-after-debug-delete-api-spec.ts
+      - spec: widgets-after-debug-delete-api.ts
         result: passed
         attempts: 3
         duration_seconds: 19

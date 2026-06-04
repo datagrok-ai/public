@@ -26,7 +26,7 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
   await loginToDatagrok(page);
   // Setup — apitest-pure: no UI driving, only shell state hygiene. Mirrors
-  // Charts/charts-api-spec.ts L45-L53.
+  // Charts/charts-api.ts L45-L53.
   await page.evaluate(() => {
     const g = (window as any).grok;
     document.querySelectorAll('.d4-dialog').forEach((d) => {

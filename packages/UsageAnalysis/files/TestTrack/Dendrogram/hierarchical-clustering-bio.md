@@ -54,106 +54,11 @@ gate_verdicts:
     timestamp: 2026-06-03T11:00:00Z
     failure_keys: []
     review_round: 1
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   d:
     verdict: SCOPE_REDUCTION
     cycle_id: 2026-06-03-dendrogram-migrate-01
     timestamp: 2026-06-03T10:15:00Z
     failure_keys: []
-    scope_reduction_proposal: |
-      Carve the four content-diff Gate D checks (D-STEP-01,
-      D-STEP-02, D-EDGE-01, D-SAN-02) plus the three sibling
-      content-shape checks (D-STRUCT-01, D-STRUCT-02, D-MERIT-01,
-      D-MERIT-02) out of this scenario's Gate D denominator for
-      the current cycle. Rationale (real dependency, not effort):
-      the Migrator rewrote
-      public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-bio.md
-      in place at migration_date 2026-06-02; the frontmatter
-      original_path self-references the migrated file, so no
-      separate pre-migration ORIGINAL artifact exists on disk.
-      Every content-diff check above is by construction a
-      line-by-line comparison of original numbered steps and
-      Expected-result assertions against the migrated rewrite,
-      and that diff is not constructible from a single artifact.
-      Mechanical checks applied to the migrated file in
-      isolation PASS: D-STRUCT-MECH-03 (all 8 required
-      frontmatter fields present; no deprecated migrated_from;
-      produced_from migrated is in enum), D-STRUCT-MECH-05
-      (original_path target exists on disk; the self-reference
-      satisfies the letter of the check while being itself the
-      root cause of the missing-ORIGINAL state), and the two
-      Phase 1 mechanical checks (D-FRONTMATTER-PHASE1-01 with
-      all four Phase 1 keys as parseable lists, and
-      D-FRONTMATTER-PHASE1-02 with 5 source_text_fixes
-      kebab-slugs no dupes / empty candidate_helpers / 1
-      unresolved_ambiguities slug / SR-01 carrying the four
-      required keys with verdict_status null in enum). The SR-01
-      rationale cites atlas
-      manual_only[dendrogram.mo.ctrl-wheel-zoom-tactile] and
-      names assign-clusters.md as canonical owner of the
-      deferred surface, satisfying D-UI-DELEGATION-01 in
-      isolation. Partial forensic continuity covers the two
-      most-cited original steps: chain YAML
-      unresolved_ambiguities[hierarchical-clustering-bio.md]
-      quotes original Step 6 verbatim, and the migrated Notes
-      section reconstructs Step 6 (centroid/median
-      parenthetical) and Step 9 (Ctrl+wheel zoom with 1x to 100x
-      clamp range) original prose under the moved-from-inline /
-      Block C deferred-surface headings; these underwrite
-      internal consistency on those two specific surfaces only.
-      Routing precedent: this scenario has accumulated seven
-      prior EVIDENCE_GAP iterations across two cycles
-      (cycle 2026-06-02-dendrogram-migrate-02 review rounds 1
-      through 3 plus the chain-analyzer LOOP_CAP_EXCEEDED at 3
-      iterations, and cycle 2026-06-03-dendrogram-migrate-01
-      review rounds 1 and 2 plus the same loop-cap exit). The
-      mode file caps EVIDENCE_GAP at 2 review rounds; this is
-      review round 2 of the current cycle, so the next non-PASS
-      verdict would force orchestrator escalation per autopilot
-      boundary trigger #1. SCOPE_REDUCTION advances the cycle
-      while routing the structural fix to its correct owner.
-      The structural fix is code-side per project memory
-      migrator-frontmatter-terminator-drop (extractFrontmatter
-      repair plus a Migrator no_op validity gate); the in-cycle
-      critic cannot construct an ORIGINAL artifact. Sibling
-      scope: assign-clusters.md and hierarchical-clustering-chem.md
-      share the same in-place-Migrator root cause and warrant
-      parallel SCOPE_REDUCTION emissions in this cycle.
-      Operator follow-up after the cycle exits: (1) git-log
-      against TestTrack/Dendrogram pre-2026-06-02 to recover the
-      pre-migration blob from VCS and re-run a narrow Gate D
-      content-diff pass; (2) once the code-side Migrator fix
-      lands, future migrations preserve the ORIGINAL as a
-      separate artifact and this carve-out becomes unnecessary;
-      (3) the affected scenarios remain in the section-level
-      Gate F denominator and downstream Gates B and E run
-      unchanged.
   e:
     verdict: PASS
     cycle_id: 2026-06-03-dendrogram-automate-02

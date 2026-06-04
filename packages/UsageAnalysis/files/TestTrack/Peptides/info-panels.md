@@ -57,33 +57,6 @@ gate_verdicts:
     timestamp: 2026-05-29T00:00:00Z
     review_round: 1
     failure_keys: []
-    claims:
-      - check: A-STRUCT-MECH-01
-        status: PASS
-      - check: A-STRUCT-MECH-02
-        status: PASS
-      - check: A-STRUCT-MECH-03
-        status: PASS
-      - check: A-STRUCT-MECH-04
-        status: PASS
-      - check: A-STRUCT-MECH-05
-        status: PASS
-      - check: A-STRUCT-MECH-06
-        status: PASS
-      - check: A-STRUCT-03
-        status: PASS
-      - check: A-STRUCT-04
-        status: PASS
-      - check: A-LAYER-ALIGN-01
-        status: PASS
-      - check: A-CONT-01
-        status: PASS
-      - check: A-BUG-01
-        status: PASS
-      - check: A-MERIT-01
-        status: PASS
-      - check: A-MERIT-02
-        status: PASS
   b:
     verdict: PASS
     cycle_id: 2026-05-30-peptides-automate-02
@@ -99,53 +72,6 @@ gate_verdicts:
     cycle_id: 2026-05-29-peptides-migrate-02
     timestamp: 2026-05-29T00:00:00Z
     failure_keys: []
-    scope_reduction_proposal: |
-      Re-judged independently this cycle (2026-05-29-peptides-migrate-02)
-      against the authoritative pre-migration trace (sibling
-      info-panels-run.md, 2026-04-09). That trace carried 6 steps and
-      enumerated three Context Panel accordion panes at step 4 (Details,
-      Peptides, AND Bioinformatics), with step 6 verifying the Bioinformatics
-      sequence logo plus WebLogo chart. The migrated scenario verifies only
-      Details + Peptides (Setup step + 5 scenario steps). The Bioinformatics
-      pane and its step-6 content verification are dropped; the drop is
-      hosted under scope_reductions[] (not silent, not mis-hosted under
-      source_text_fixes), so this is a documented coverage reduction, not a
-      D-SAN-02 FAIL.
-        - SR-01 (D-SAN-02): the Bioinformatics accordion pane is registered
-          by the Bio package, not Peptides. Verified against the atlas
-          sub_features slice this cycle — peptides.panels children are only
-          peptides.panels.peptides (peptidesPanel, Macromolecule column,
-          atlas L140) and peptides.panels.manual-alignment (Monomer cell,
-          L148); there is no Bioinformatics pane in the Peptides feature
-          surface. The original trace describes Bioinformatics as the Bio
-          package initializing after semType detection, consistent with Bio
-          ownership. Relocation to the Bio chain is well-founded.
-        - SR-02 (D-STEP-01): documents the mechanical merge of original
-          steps 5+6 into migrated steps 4+5; the Bioinformatics step-6
-          target is scoped out by SR-01 and the residual per-pane content
-          invariant for Details + Peptides is surfaced as
-          unresolved_ambiguities[step-6-content-displayed-correctly-no-
-          concrete-invariant].
-      Mechanical fail-fast: all 8 required fields present, deprecated
-      migrated_from absent (D-STRUCT-MECH-03 PASS); original_path resolves on
-      disk (D-STRUCT-MECH-05 PASS — lowercase TestTrack/peptides path resolves
-      to on-disk TestTrack/Peptides/info-panels.md under Windows case-folding,
-      confirmed by directory listing); all four Phase 1 fields present and
-      parseable (D-FRONTMATTER-PHASE1-01 PASS); per-field schema clean with no
-      duplicate ids and valid SR object shape, resolving the prior
-      2026-05-27-peptides-migrate-02 D-FRONTMATTER-PHASE1-02 failed_attempt
-      (decision-log entry_id peptides-2026-05-27-...-d-frontmatter-phase1-02)
-      — D-FRONTMATTER-PHASE1-02 PASS. Content: every original step mapped or
-      acknowledged (D-STEP-01/02 PASS); original Expected-result assertions
-      preserved or SR-acknowledged; no edge case lost (D-EDGE-01 PASS —
-      original trace is straight-line smoke); no lost dependency chain
-      (D-STRUCT-01 PASS — chain depends_on []); not a matrix scenario
-      (D-STRUCT-02 NA); no UI-to-JS-API substitution, so D-UI-DELEGATION-01
-      does not fire; SR rationale cites a real cross-feature-surface boundary,
-      not effort (D-MERIT-01 PASS); no unprompted deferral (D-MERIT-02 PASS).
-      Acceptable cross-feature-surface relocation: original content moved out
-      of this section with a cited, atlas-confirmed ownership reason. No body
-      rewrite required.
   f:
     verdict: PASS
     cycle_id: 2026-05-29-peptides-migrate-02

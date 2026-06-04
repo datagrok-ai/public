@@ -63,8 +63,8 @@ sub_features_covered: [powerpack.widgets, powerpack.lifecycle.init, powerpack.da
 // (where this scenario's destructive precondition is intentionally
 // unattainable).
 //
-// Sister reference: Charts/charts-api-spec.ts, Projects/lifecycle-api-spec.ts,
-// Viewers/Legend/legend-api-spec.ts (target_layer: apitest fleet).
+// Sister reference: Charts/charts-api.ts, Projects/lifecycle-api.ts,
+// Viewers/Legend/legend-api.ts (target_layer: apitest fleet).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

@@ -16,7 +16,7 @@ candidate_helpers: []
 unresolved_ambiguities: []
 scope_reductions: []
 realized_as:
-  - bio-service-surface-init-api-spec.ts
+  - bio-service-surface-init-api.ts
 gate_verdicts:
   f:
     verdict: PASS
@@ -33,7 +33,7 @@ gate_verdicts:
     cycle_id: 2026-06-01-bio-migrate-02
     timestamp: 2026-06-02T08:30:00Z
     spec_runs:
-      - spec: bio-service-surface-init-api-spec.ts
+      - spec: bio-service-surface-init-api.ts
         result: passed
         attempts: 3
         duration_seconds: 61
