@@ -346,6 +346,18 @@ export function runTwoSampleTTest(): void {
   methodInput.root.append(studentWarningIcon);
 
   // --- Category (group) ---
+  const ALL_UNIQUE_MSG =
+    'Every value is unique — no groups to compare. ' +
+    'Pick a column with at least one repeated category.';
+
+  /** True when every non-null value in `col` appears exactly once
+   *  (each potential group has size 1 — an ID column, no two-group split possible). */
+  const isFactorAllUnique = (col: DG.Column): boolean => {
+    const uniqueCount = col.stats.uniqueCount;
+    const nonNullCount = col.length - col.stats.missingValueCount;
+    return uniqueCount >= 2 && uniqueCount === nonNullCount;
+  };
+
   const factorInput = ui.input.column('Category', {
     table: df,
     value: factor,
@@ -353,6 +365,14 @@ export function runTwoSampleTTest(): void {
     onValueChanged: (col) => {factor = col; updateRunButtonState();},
     filter: (col: DG.Column) => factorColNames.includes(col.name),
     nullable: false,
+  });
+
+  // Inline validation for an ID-like column (all values unique) — mirrors the ANOVA dialog.
+  factorInput.addValidator(() => {
+    const col = factorInput.value;
+    if (col != null && isFactorAllUnique(col))
+      return ALL_UNIQUE_MSG;
+    return null;
   });
 
   // Red indicator on the Category input for an invalid category (≠ 2 groups, or a
@@ -441,6 +461,14 @@ export function runTwoSampleTTest(): void {
       return;
     }
 
+    // ID-like column (all values unique): surfaced inline by the validator — mirror ANOVA's
+    // Run-disable with the same message, instead of the generic "3+ groups" icon path below.
+    if (isFactorAllUnique(factor)) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, ALL_UNIQUE_MSG);
+      return;
+    }
+
     let present: {code: number, stats: GroupStats}[];
     try {
       present = presentGroups(factor, feature);
@@ -484,6 +512,7 @@ export function runTwoSampleTTest(): void {
     .add(fullReportInput);
 
   updateRunButtonState();
+  factorInput.validate();
 
   dlg.show();
 

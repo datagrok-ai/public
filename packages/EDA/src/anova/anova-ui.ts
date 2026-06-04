@@ -152,7 +152,7 @@ function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'},
     ['MS', 'Mean square (MS). Sum of squares divided by degrees of freedom.'],
     ['F', 'F-statistic (F). Ratio of between-group to within-group variance.'],
     ['F-critical', `Critical F-value at α = ${report.significance}.`],
-    ['p-value', `Probability of observing this result if groups have equal means.`],
+    ['p-value', `Probability of seeing an F-statistic at least as large as the observed one, assuming all group means are equal. Smaller p = stronger evidence against equality.`],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {
@@ -202,7 +202,7 @@ function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number
     [DF1, 'Numerator degrees of freedom (k − 1, where k is the number of groups).'],
     [DF2, 'Welch–Satterthwaite-adjusted denominator degrees of freedom. Fractional by design.'],
     ['F-critical', `Critical F-value at α = ${significance}, with Welch's df.`],
-    ['p-value', 'Probability of observing this result if group means are equal.'],
+    ['p-value', `Probability of seeing an F-statistic at least as large as the observed one, assuming all group means are equal. Smaller p = stronger evidence against equality.`],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {
