@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.12.6",
+  "version": "1.12.7",
   "description": "Statistics utilities",
   "author": {
     "name": "Dmytro Kovalyov",
