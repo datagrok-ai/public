@@ -45,9 +45,12 @@ export class SearchBaseViewer extends DG.JsViewer {
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
-      this.targetColumnName ??= this.dataFrame.columns.bySemType(this.semType)!.name;
-      this.targetColumn = this.dataFrame.col(this.targetColumnName)!;
-      this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
+      const targetColumnName = this.targetColumnName ?? this.dataFrame.columns.bySemType(this.semType)?.name;
+      if (targetColumnName) {
+        this.targetColumnName = targetColumnName;
+        this.targetColumn = this.dataFrame.col(targetColumnName)!;
+        this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
+      }
     }
     this.render();
   }

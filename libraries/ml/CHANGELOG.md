@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.10.13
+
+Search viewers: Fixed crash (`Cannot read properties of null (reading 'name')`) when a similarity/diversity search viewer is attached to a table without a column of the required semantic type
+
 ## 6.10.11 (2026-03-27)
 
 Dimentionality reduction: pass embeddings and cluster columns names as optional parameters
