@@ -1,5 +1,14 @@
 # Compute2 changelog
 
+## 1.5.2 (2026-06-04)
+
+- Default focus to the Inputs tab when the form is shown as a tab
+- Pick up compute-utils file-input and `pipelineValidator` changes
+
+## 1.5.1 (2026-06-04)
+
+- Fix float-display test for the `#0.###` default mask
+
 ## 1.5.0 (2026-06-03)
 
 ### Features

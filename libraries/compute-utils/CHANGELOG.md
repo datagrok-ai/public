@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.46.1 (2026-06-04)
+
+- File-input save accepts a browser `File` as well as `DG.FileInfo`
+- Compute1 run JSON export handles `DG.FileInfo` inputs from loaded runs
+- `pipelineValidator`: `setValidation` takes the output name as first argument (API change), so a single named `to` target can be addressed
+
 ## 1.46.0 (2026-06-03)
 
 ### Features
