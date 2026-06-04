@@ -462,8 +462,8 @@ export const RichFunctionView = Vue.defineComponent({
     // Updated only on real user tab clicks (the dock's `tabClicked` event).
     const tabStorageKey = Vue.computed(() => `opened_tab_${currentCall.value?.func?.nqName}`);
     const preferredTab = Vue.ref<string | null>(null);
-    Vue.watch(tabStorageKey, (key) => {
-      preferredTab.value = sessionStorage.getItem(key);
+    Vue.watch([tabStorageKey, formAsTab], ([key]) => {
+      preferredTab.value = sessionStorage.getItem(key) ?? (formAsTab.value ? 'Inputs' : null);
     }, {immediate: true});
 
     // 'Inputs' is the form side-panel unless formAsTab is on — a sticky panel, not a
