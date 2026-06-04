@@ -19,7 +19,7 @@
     "datagrok-tools": "^5.1.9",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "typescript": "^5.6.3",
+    "typescript": "^5.8.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
