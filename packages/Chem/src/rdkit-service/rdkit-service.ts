@@ -309,7 +309,8 @@ export class RdKitService {
     // the expensive part (parse k mols + build FPs) runs in the worker
     const fpRes = await this._getLastWorker().getFingerprints(fp, molecules, false) as IFpResult;
     for (let i = 0; i < molecules.length; i++) {
-      const rowFp = fpRes.fps[i] ? rdKitFingerprintToBitArray(fpRes.fps[i]) : null;
+      const rowFpBytes = fpRes.fps[i]; // hoist so the null-check narrows the second use
+      const rowFp = rowFpBytes ? rdKitFingerprintToBitArray(rowFpBytes) : null;
       if (rowFp && tanimotoSimilarity(queryFp, rowFp) >= similarityCutOff)
         result.setBit(i, true);
     }
