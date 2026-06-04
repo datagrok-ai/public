@@ -129,6 +129,13 @@ export async function TestDF1(df: DG.DataFrame) {
   return df;
 }
 
+//input: file inputFile
+//output: string result
+export async function TestFileInput(inputFile: DG.FileInfo) {
+  const bytes = await inputFile.readAsBytes();
+  return `${inputFile.fileName ?? inputFile.name}: ${bytes.length} bytes`;
+}
+
 //input: double a
 //input: double b
 //output: double res
