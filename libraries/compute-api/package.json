@@ -7,6 +7,7 @@
     "email": "andrey.sharapov@softwarecountry.com"
   },
   "description": "Datagrok compute global API",
+  "sideEffects": false,
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.46.0",
     "datagrok-api": "^1.27.0",
