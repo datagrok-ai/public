@@ -114,9 +114,25 @@ export class SubstructureFilter extends DG.Filter {
   searchNotCompleted = false;
   recalculateFilter = false;
   _peerFilterDisabled = false;
+  /** Rows edited since the last refresh, awaiting a bit patch. Filled on every cell edit and
+   * drained once no search is running — immediately when idle, or from finishSearch() when the
+   * in-flight search completes. We never restart or patch mid-search. */
+  changedValuesRows = new Set<number>();
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
+
+  /** A full-column substructure search is currently in flight. */
+  private get isSearchRunning(): boolean {
+    return !!this.batchResultObservable && !this.batchResultObservable.closed;
+  }
+
+  /** The FILTER_SYNC_EVENT payload broadcast to peer filters on this column. */
+  private filterSyncState(bitset: DG.BitSet | null = this.bitset) {
+    return {bitset, molblock: this.currentMolecule, colName: this.columnName,
+      filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
+      simCutOff: this.similarityCutOff, fp: this.fp};
+  }
 
   onActiveChanged(active: boolean): void {
     // Guard: during layout apply, onActiveChanged(false) fires before detach() while the
@@ -286,7 +302,7 @@ export class SubstructureFilter extends DG.Filter {
       .subscribe((_: any) => {
         delete this.column!.temp[FILTER_SCAFFOLD_TAG];
         //in case filter filter is disabled during active search, we finish current search
-        if (this.batchResultObservable && !this.batchResultObservable?.closed) {
+        if (this.isSearchRunning) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.terminatePreviousSearch();
           const smarts = this.moleculeToSmarts(this.currentMolecule);
@@ -294,7 +310,8 @@ export class SubstructureFilter extends DG.Filter {
         }
       }));
 
-    // On cell edits, re-evaluate only the edited rows (O(k), not a full re-scan).
+    // On cell edits, queue the edited rows; they are matched + patched (O(k), not a full re-scan)
+    // once no search is running — see _onCellsEdited / _drainChangedValuesRows.
     this.subs.push(this.dataFrame!.onValuesChanged
       .pipe(filter((event: ValuesChangedEventArgs) => { // only this column's edits, with indexes
         const eventArgs = event?.args;
@@ -420,12 +437,7 @@ export class SubstructureFilter extends DG.Filter {
     //in case detaching active filter -> send sync event to other filters and reset active filter id
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: -1};
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-        bitset: this.bitset,
-        molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-        tableName: this.tableName, searchType: this.searchType,
-        simCutOff: this.similarityCutOff, fp: this.fp,
-      });
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, this.filterSyncState());
     };
     //terminating search (in case the search was active at the moment of detach)
     _package.logger.debug(`************finish search in detach ${this.filterId}`);
@@ -436,6 +448,7 @@ export class SubstructureFilter extends DG.Filter {
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
     super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
+    this.changedValuesRows.clear();
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {
@@ -454,39 +467,47 @@ export class SubstructureFilter extends DG.Filter {
     grok.shell.tv?.grid?.invalidate();
   }
 
-  /** Re-evaluate the edited rows in a worker and patch their bits. Falls back to a full recompute
-   * when patching isn't possible (peer owns the filter, disabled, no cached result, or a search is
-   * still running). */
+  /** Queue the edited rows, then drain them now if idle. If a search is in flight we DON'T patch or
+   * restart it (the column data it reads is mid-flight) — finishSearch() drains the queue once the
+   * search completes. A peer filter owning the search patches and syncs the result to us, so we skip. */
   async _onCellsEdited(indexes: Int32Array | number[]): Promise<void> {
+    const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
+    if (active && active.filterId !== -1 && active.filterId !== this.filterId)
+      return;
+    for (const i of indexes)
+      this.changedValuesRows.add(i);
+    // a full search is running -> defer; finishSearch() will drain once it completes
+    if (this.isSearchRunning)
+      return;
+    await this._drainChangedValuesRows();
+  }
+
+  /** Match the queued edited rows in a worker and patch their bits into the cached bitset, then sync
+   * peers. Falls back to a full recompute when patching isn't possible (filter disabled, no cached
+   * result, a recompute is already pending, or EXACT_MATCH — the worker compares raw strings against
+   * the canonicalized column, which a raw edited cell value can't reproduce; see searchWithPatternFps). */
+  async _drainChangedValuesRows(): Promise<void> {
+    if (this.changedValuesRows.size === 0)
+      return;
     try {
-      // a peer filter owns the search — it patches and syncs the result to us
-      const active = this.column?.temp[CHEM_APPLY_FILTER_SYNC];
-      if (active && active.filterId !== -1 && active.filterId !== this.filterId)
-        return;
-      // disabled/empty: nothing to apply now — mark dirty so a re-enable recomputes
+      // disabled/empty: nothing to apply now — mark dirty so a re-enable recomputes, drop the edits
       if (!this.isFiltering) {
         this.recalculateFilter = true;
+        this.changedValuesRows.clear();
         return;
       }
-      // A full search is already running: don't restart it (avoids a restart storm when several
-      // cells are edited in quick succession). Just mark dirty — when the search completes,
-      // applyFilter sees the flag and recomputes once with the edited rows included.
-      if (this.batchResultObservable && !this.batchResultObservable.closed) {
-        this.recalculateFilter = true;
-        return;
-      }
-      // Recompute the whole column instead of patching when there's no cached result, a recompute
-      // is already pending, or EXACT_MATCH (the worker compares raw strings against the canonicalized
-      // column, which a raw edited cell value can't reproduce — see searchWithPatternFps).
+      // no cached result / recompute already pending / EXACT_MATCH -> recompute the whole column
       if (!this.bitset || this.recalculateFilter ||
         this.searchType === SubstructureSearchType.EXACT_MATCH) {
         this.recalculateFilter = true;
+        this.changedValuesRows.clear();
         await this._onSketchChanged();
         return;
       }
-      // match just the edited rows, then write their bits into the cached bitset
+      // snapshot + clear so edits arriving during the awaits re-queue and get drained in finally
       const bitset = this.bitset; // capture before the await — a sketch change/peer sync can replace it
-      const rows = Array.from(indexes);
+      const rows = Array.from(this.changedValuesRows);
+      this.changedValuesRows.clear();
       const molecules = rows.map((i) => this.column!.get(i) ?? '');
       const service = await getRdKitService();
       const matches = this.searchType === SubstructureSearchType.IS_SIMILAR
@@ -503,15 +524,16 @@ export class SubstructureFilter extends DG.Filter {
         bitset.set(rows[j], matches.getBit(j), false);
       this.dataFrame!.rows.requestFilter();
       // keep peer filters on this column in sync
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-        bitset, molblock: this.currentMolecule, colName: this.columnName,
-        filterId: this.filterId, tableName: this.tableName, searchType: this.searchType,
-        simCutOff: this.similarityCutOff, fp: this.fp,
-      });
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, this.filterSyncState(bitset));
     } catch (e) {
       _package.logger.error(e instanceof Error ? e.message : 'Chem | substructure filter cell-edit failed');
       this.recalculateFilter = true;
       await this._onSketchChanged(); // recover from a worker failure instead of leaving the row stale
+    } finally {
+      // edits that arrived while we matched/recomputed -> drain them too, but only if idle now
+      // (a fallback _onSketchChanged above may have started a new search, which will drain on finish)
+      if (this.changedValuesRows.size > 0 && !this.isSearchRunning)
+        await this._drainChangedValuesRows();
     }
   }
 
@@ -643,10 +665,7 @@ export class SubstructureFilter extends DG.Filter {
       this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
       if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
         this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-          tableName: this.tableName, searchType: this.searchType,
-          simCutOff: this.similarityCutOff, fp: this.fp});
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, this.filterSyncState());
       }
       this.dataFrame?.rows.requestFilter();
     } else if ((wu(this.dataFrame!.rows.filters)
@@ -672,10 +691,7 @@ export class SubstructureFilter extends DG.Filter {
       this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
       _package.logger.debug(`starting filter by ${this.currentMolecule}, ${this.filterId}`);
       try {
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-          tableName: this.tableName, searchType: this.searchType,
-          simCutOff: this.similarityCutOff, fp: this.fp});
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, this.filterSyncState());
         const bitArray = await this.getFilterBitset();
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
@@ -780,18 +796,16 @@ export class SubstructureFilter extends DG.Filter {
         if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
           this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
           //synchronize the results with other substructure filters on the same column
-          grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-            bitset: this.bitset,
-            molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-            tableName: this.tableName, searchType: this.searchType,
-            simCutOff: this.similarityCutOff, fp: this.fp,
-          });
+          grok.events.fireCustomEvent(FILTER_SYNC_EVENT, this.filterSyncState());
         }
         this.calculating = false;
         this.progressBar?.close();
         this.progressBar = null;
         this.batchResultObservable?.unsubscribe();
         _package.logger.debug(`Unsubscribed from batchResultObservable  Filter ${this.filterId}`);
+        // edits made while the search was running: now that it's done, refresh just those rows
+        if (this.changedValuesRows.size > 0)
+          void this._drainChangedValuesRows();
       }
     };
     if (this.currentSearches.has(queryMolAndType)) {
