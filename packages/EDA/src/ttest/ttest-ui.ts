@@ -1,0 +1,521 @@
+/* eslint-disable max-len */
+// Two-sample t-test - UI.
+//
+// Mirrors the ANOVA dialog (`runOneWayAnova`). Reuses the ANOVA factorization and
+// stat primitives, but ships its own results renderer.
+
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {factorize, groupStats, areVarsEqual, GroupStats, CatCol, NumCol} from '../anova/anova-tools';
+import {twoSampleTTest, TwoSampleTTest, TTestMethod} from './ttest-tools';
+import {
+  CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP, conclusionColumn, styleConclusionColumn,
+} from '../group-comparison/conclusion-column';
+
+const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
+const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
+
+const T_TEST_HELP_URL = '/help/explore/group-comparison#t-test';
+
+/** Significance const. */
+enum SIGNIFICANCE {
+  DEFAULT = 0.05,
+  MIN = 0.0001,
+  MAX = 0.99,
+  INFIMUM = 0,
+  SUPREMUM = 1,
+};
+
+const LEARN_MORE_URL = {
+  Student: 'https://en.wikipedia.org/wiki/Student%27s_t-test',
+  Welch: 'https://en.wikipedia.org/wiki/Welch%27s_t-test',
+} as const;
+
+const STUDENT_UNEQUAL_VAR_MSG =
+  'Variances differ significantly between the two groups. ' +
+  `Student's t-test assumes equal variances — switch Method to Welch.`;
+
+/** Number of factorization bins for a categorical column (upper bound on category codes). */
+function binCount(factor: DG.Column): number {
+  return factor.type === DG.COLUMN_TYPE.BOOL ? 2 : factor.categories.length;
+}
+
+/** Number of non-empty groups in a categorical column (distinct non-null values). */
+function groupCount(factor: DG.Column): number {
+  return factor.stats.uniqueCount;
+}
+
+/** Non-empty groups (with their category codes) produced by factorizing `feature` by `factor`. */
+function presentGroups(factor: CatCol, feature: NumCol): {code: number, stats: GroupStats}[] {
+  const f = factorize(factor, feature, binCount(factor));
+  const present: {code: number, stats: GroupStats}[] = [];
+  for (let i = 0; i < f.catCount; ++i) {
+    if (f.sizes[i] > 0)
+      present.push({code: i, stats: groupStats(f, i)});
+  }
+  return present;
+}
+
+/** Human-readable label for a category code. */
+function labelOf(factor: DG.Column, code: number): string {
+  if (factor.type === DG.COLUMN_TYPE.BOOL)
+    return code === 1 ? 'true' : 'false';
+  return String(factor.categories[code]);
+}
+
+// --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
+
+/** Null-hypothesis-testing tooltip for a conclusion cell (H0 / H1 / Conclusion + verdict). */
+function conclusionTooltip(significant: boolean, featureName: string, label0: string, label1: string): HTMLElement {
+  return ui.divV([
+    ui.markdown(`**H0:** mean "${featureName}" is equal between "${label0}" and "${label1}".`),
+    ui.markdown(`**H1:** mean "${featureName}" differs between "${label0}" and "${label1}".`),
+    ui.markdown(`**Conclusion:** ${significant ?
+      'Reject the null hypothesis.' :
+      'Fail to reject the null hypothesis.'}`),
+    ui.markdown(significant ?
+      '**There is a significant difference between the group means.**' :
+      '**There is no significant difference between the group means.**'),
+  ]);
+}
+
+// --- Box plot description (see boxplot-description-spec.md) ---
+
+/** Separator between the phrase and the p-value in the box plot description (placed directly after the phrase). */
+const DESCRIPTION_SEPARATOR = ',';
+/** Above this total line length the description switches to the long (category-free) form. */
+const DESCRIPTION_LENGTH_THRESHOLD = 70;
+
+/** Format a p-value for the box plot description: clamp at the extremes, else round to 3 digits without trailing zeros. */
+function formatPForDescription(p: number): string {
+  if (p < 0.001)
+    return 'p < 0.001';
+  if (p > 0.99)
+    return 'p > 0.99';
+  // Round to 3 decimals; Number() drops trailing zeros (0.420 → 0.42, 0.005 → 0.005).
+  return `p = ${Number(p.toFixed(3))}`;
+}
+
+/** Display format for a p-value column cell: scientific notation below 0.001, fixed "0.000" otherwise. */
+function pValueColumnFormat(p: number): string {
+  return p < 0.001 ? 'scientific' : '0.000';
+}
+
+/**
+ * Build the box plot description line per boxplot-description-spec.md.
+ *
+ * Short form ("<value>" differs between "<catA>" and "<catB>") is used when the whole line fits
+ * within the length threshold and both category names are non-empty; otherwise the long, category-free
+ * form ("<factor>" affects the "<value>") is used.
+ */
+function buildDescription(factorName: string, featureName: string, label0: string, label1: string,
+  significant: boolean, p: number): string {
+  const pStr = formatPForDescription(p);
+
+  const shortPhrase = significant ?
+    `"${featureName}" differs between "${label0}" and "${label1}"` :
+    `"${featureName}" doesn't differ between "${label0}" and "${label1}"`;
+  const shortLine = `${shortPhrase}${DESCRIPTION_SEPARATOR} ${pStr}`;
+
+  const labelsPresent = label0.length > 0 && label1.length > 0;
+  if (labelsPresent && shortLine.length <= DESCRIPTION_LENGTH_THRESHOLD)
+    return shortLine;
+
+  // Long form: note the deliberate article ("affects the") absent from the short form.
+  const longPhrase = significant ?
+    `"${factorName}" affects the "${featureName}"` :
+    `"${factorName}" doesn't affect the "${featureName}"`;
+  return `${longPhrase}${DESCRIPTION_SEPARATOR} ${pStr}`;
+}
+
+/** One-row results grid: conclusion, t, df, p-value, mean difference, 95% CI, effect size. */
+function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string, featureName: string): DG.Grid {
+  const ciLevel = Math.round((1 - res.alpha) * 100);
+  const ciCaption = `${ciLevel}% CI`;
+  // Single user-facing header for both methods; tooltip explains the pooled vs non-pooled distinction.
+  const effectCaption = 'Hedges\' g';
+  const diffDescription = `mean("${label1}") − mean("${label0}")`;
+
+  const significant = res.pValue < res.alpha;
+
+  const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    conclusionColumn(significant),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 't', [res.t]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'df', [res.df]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [res.pValue]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean difference', [res.meanDiff]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${ciCaption} low`, [res.ciLow]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${ciCaption} high`, [res.ciHigh]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Cohen\'s d', [res.cohenD]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, effectCaption, [res.hedgesG]),
+  ]));
+
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(res.pValue);
+
+  // Conclusion column: text color-coding (Option 1, neutral accent) + bold (shared infra).
+  styleConclusionColumn(grid);
+
+  const tooltip = new Map<string, string>([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
+    ['t', `Two-sample t-statistic. Positive when mean("${label1}") > mean("${label0}").`],
+    ['df', res.method === 'Welch' ?
+      'Welch–Satterthwaite degrees of freedom. Non-integer values are normal for Welch.' :
+      'Degrees of freedom (n0 + n1 − 2).'],
+    ['p-value',
+      'Probability of seeing a difference at least as extreme as the observed one, ' +
+      'assuming the two group means are actually equal. Smaller p = stronger evidence against equality.'],
+    ['Mean difference', `${diffDescription}, in the original units of the feature.`],
+    [`${ciCaption} low`, `Lower bound of the ${ciCaption} (confidence interval) for ${diffDescription}.`],
+    [`${ciCaption} high`, `Upper bound of the ${ciCaption} (confidence interval) for ${diffDescription}.`],
+    ['Cohen\'s d', res.method === 'Welch' ?
+      'Standardized mean difference. For Welch, uses the average of the two group SDs (non-pooled, per Delacre et al. 2021).' :
+      'Standardized mean difference, using the pooled SD across the two groups.'],
+    [effectCaption, res.method === 'Welch' ?
+      `Hedges' g_s* — Cohen's d corrected for small-sample bias. Companion effect size to Welch's t-test (Delacre et al. 2021). ` +
+      `Rules of thumb (Cohen 1988): |g| < 0.2 negligible, < 0.5 small, < 0.8 medium, ≥ 0.8 large.` :
+      `Hedges' g — Cohen's d corrected for small-sample bias. ` +
+      `Rules of thumb (Cohen 1988): |g| < 0.2 negligible, < 0.5 small, < 0.8 medium, ≥ 0.8 large.`],
+  ]);
+
+  grid.onCellTooltip(function(cell, x, y) {
+    if (cell.isColHeader) {
+      const t = tooltip.get(cell.tableColumn!.name);
+      if (t != null) {
+        ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
+        return true;
+      }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME) {
+      // Null-hypothesis-testing tooltip for the conclusion cell.
+      ui.tooltip.show(conclusionTooltip(significant, featureName, label0, label1), x, y);
+      return true;
+    }
+    return false;
+  });
+
+  grid.helpUrl = T_TEST_HELP_URL;
+  return grid;
+} // getTTestGrid
+
+/** Lay out the t-test results: box plot + a single titled results table (no tab control).
+ *  When `showReport` is false, only the box plot is shown (no results table). */
+function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
+  res: TwoSampleTTest, showReport: boolean): void {
+  const view = grok.shell.getTableView(df.name);
+  grok.shell.v = view;
+
+  const significant = res.pValue < res.alpha;
+  const label0 = labelOf(factor, res.code0);
+  const label1 = labelOf(factor, res.code1);
+
+  const description = buildDescription(factor.name, feature.name, label0, label1, significant, res.pValue);
+
+  const chart = DG.Viewer.boxPlot(df, {
+    categoryColumnNames: [factor.name],
+    valueColumnName: feature.name,
+    // No on-plot statistics or p-value (as in ANOVA); all numbers live in the results table.
+    showPValue: false,
+    showStatistics: false,
+    description: description,
+    // Always show the description, pinned to the top of the box plot.
+    descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Top',
+    showColorSelector: false,
+    showSizeSelector: false,
+    autoLayout: false,
+  });
+
+  const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'T-Test');
+
+  if (!showReport)
+    return;
+
+  const analysisTitle = res.method === 'Welch' ?
+    'Two-Sample t-test (Welch\'s)' :
+    'Two-Sample t-test (Student\'s)';
+  const reportViewer = getTTestGrid(res, label0, label1, feature.name);
+
+  // Register the results table in the workspace, then dock the grid under the box plot.
+  reportViewer.dataFrame.name = 'T-test result';
+  grok.shell.addTable(reportViewer.dataFrame);
+
+  view.dockManager.dock(reportViewer, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
+
+  reportViewer.root.style.width = '100%';
+} // addVisualization
+
+/** Warning div shown when the t-test cannot be performed. */
+function getWarning(msg: string): HTMLElement {
+  return ui.divV([
+    ui.markdown(`The t-test cannot be performed:
+
+    ${msg}`),
+    ui.link('Learn more',
+      () => window.open(LEARN_MORE_URL.Welch, '_blank'),
+      'Click to open in a new tab.',
+    ),
+  ]);
+}
+
+/** Run the two-sample t-test dialog. */
+export function runTwoSampleTTest(): void {
+  const df: DG.DataFrame | null = grok.shell.t;
+
+  if (df === null) {
+    grok.shell.warning('No dataframe is opened');
+    return;
+  }
+
+  const columns = df.columns;
+  const factorColNames = [] as string[];
+  const featureColNames = [] as string[];
+
+  for (const col of columns) {
+    if (FEATURE_TYPES.includes(col.type))
+      featureColNames.push(col.name);
+    else if (FACTOR_TYPES.includes(col.type))
+      factorColNames.push(col.name);
+  }
+
+  if (factorColNames.length < 1) {
+    grok.shell.warning(ui.markdown(`The t-test is not applicable to this table:
+
+    - no categorical column (type ${FACTOR_TYPES.join(', ')}) to define groups`,
+    ));
+    return;
+  }
+
+  if (featureColNames.length < 1) {
+    grok.shell.warning(ui.markdown(`The t-test is not applicable to this table:
+
+    - no numeric feature column (type ${FEATURE_TYPES.join(', ')})`,
+    ));
+    return;
+  }
+
+  // A categorical column is valid for the two-sample t-test only if it has exactly two groups.
+  const validFactorColNames = factorColNames.filter((name) => groupCount(columns.byName(name)) === 2);
+
+  if (validFactorColNames.length < 1) {
+    grok.shell.warning(ui.markdown(`The t-test is not applicable to this table:
+
+    - no categorical column with exactly two groups
+    - the two-sample t-test compares exactly two groups — use ANOVA for three or more`,
+    ));
+    return;
+  }
+
+  // Default to the first valid (two-group) category column.
+  let factor = columns.byName(validFactorColNames[0]);
+
+  let feature = columns.byName(featureColNames[0]);
+
+  let currentMethod: TTestMethod = 'Welch';
+  let significance: number = SIGNIFICANCE.DEFAULT;
+
+  // --- Method (Welch / Student) ---
+  const methodSource = {method: currentMethod};
+  const methodProp = DG.Property.fromOptions({
+    name: 'method',
+    caption: 'Method',
+    inputType: 'Radio',
+    choices: ['Welch', 'Student'],
+    defaultValue: 'Welch',
+  });
+  const methodInput = ui.input.forProperty(methodProp, methodSource);
+  methodInput.onChanged.subscribe(() => {
+    currentMethod = (methodSource.method as TTestMethod) ?? 'Welch';
+    updateRunButtonState();
+  });
+
+  const methodTooltip = ui.markdown(
+    'Set the method for the test:\n\n' +
+    '* **Welch** — does **not** assume equal group variances. Recommended default; ' +
+    'controls error rates correctly whether variances are equal or not, ' +
+    'with negligible power loss when they are.\n\n' +
+    '* **Student** — assumes **equal variances** across the two groups. ' +
+    'Slightly more powerful when that assumption truly holds; otherwise its p-value is unreliable.\n\n',
+  );
+  ui.tooltip.bind(methodInput.captionLabel, () => methodTooltip);
+
+  const studentWarningIcon = ui.iconFA('info-circle', null, STUDENT_UNEQUAL_VAR_MSG);
+  studentWarningIcon.style.color = 'var(--red-3, #EB6767)';
+  studentWarningIcon.style.marginLeft = '12px';
+  studentWarningIcon.style.display = 'none';
+  methodInput.root.append(studentWarningIcon);
+
+  // --- Category (group) ---
+  const ALL_UNIQUE_MSG =
+    'Every value is unique — no groups to compare. ' +
+    'Pick a column with at least one repeated category.';
+
+  /** True when every non-null value in `col` appears exactly once
+   *  (each potential group has size 1 — an ID column, no two-group split possible). */
+  const isFactorAllUnique = (col: DG.Column): boolean => {
+    const uniqueCount = col.stats.uniqueCount;
+    const nonNullCount = col.length - col.stats.missingValueCount;
+    return uniqueCount >= 2 && uniqueCount === nonNullCount;
+  };
+
+  const factorInput = ui.input.column('Category', {
+    table: df,
+    value: factor,
+    tooltipText: 'Categorical column defining the two groups',
+    onValueChanged: (col) => {factor = col; updateRunButtonState();},
+    filter: (col: DG.Column) => factorColNames.includes(col.name),
+    nullable: false,
+  });
+
+  // Inline validation for an ID-like column (all values unique) — mirrors the ANOVA dialog.
+  factorInput.addValidator(() => {
+    const col = factorInput.value;
+    if (col != null && isFactorAllUnique(col))
+      return ALL_UNIQUE_MSG;
+    return null;
+  });
+
+  // Red indicator on the Category input for an invalid category (≠ 2 groups, or a
+  // degenerate group) — by analogy with the Student/Welch indicator on Method.
+  const factorWarningIcon = ui.iconFA('info-circle', null);
+  factorWarningIcon.style.color = 'var(--red-3, #EB6767)';
+  factorWarningIcon.style.marginLeft = '12px';
+  factorWarningIcon.style.display = 'none';
+  factorInput.root.append(factorWarningIcon);
+
+  // --- Feature ---
+  const featureInput = ui.input.column('Feature', {
+    table: df,
+    value: feature,
+    tooltipText: 'Numeric column to compare across the two groups',
+    onValueChanged: (col) => {feature = col; updateRunButtonState();},
+    filter: (col: DG.Column) => featureColNames.includes(col.name),
+    nullable: false,
+  });
+
+  // --- Alpha ---
+  const signInput = ui.input.float('Alpha', {
+    min: SIGNIFICANCE.MIN,
+    max: SIGNIFICANCE.MAX,
+    value: significance,
+    nullable: false,
+    tooltipText: 'Significance level',
+    onValueChanged: (value) => {significance = value; updateRunButtonState();},
+  });
+
+  const fullReportInput = ui.input.bool('Full report', {
+    value: true,
+    tooltipText: 'Add a table with the full test statistics and conclusion',
+  });
+
+  const dlg = ui.dialog({title: 'Two-sample t-test', helpUrl: T_TEST_HELP_URL});
+  const view = grok.shell.getTableView(df.name);
+  view.root.appendChild(dlg.root);
+
+  dlg.addButton('Run', () => {
+    dlg.close();
+    try {
+      const res = twoSampleTTest(factor!, feature!, binCount(factor!), {
+        method: currentMethod,
+        alpha: significance,
+      });
+      addVisualization(df, factor!, feature!, res, fullReportInput.value!);
+    } catch (error) {
+      if (error instanceof Error) {
+        grok.shell.warning(getWarning(error.message));
+        view.addViewer(DG.VIEWER.BOX_PLOT, {
+          categoryColumnNames: [factor!.name],
+          valueColumnName: feature!.name,
+          showStatistics: true,
+          showPValue: true,
+        });
+      } else
+        grok.shell.error('t-test fails: the platform issue');
+    }
+  }, undefined, 'Perform two-sample t-test');
+
+  const runBtn = dlg.getButton('Run');
+
+  function updateRunButtonState(): void {
+    studentWarningIcon.style.display = 'none';
+    factorWarningIcon.style.display = 'none';
+
+    /** Flag an invalid Category: show the red icon + disable Run, both with `msg`. */
+    const flagCategory = (msg: string): void => {
+      factorWarningIcon.style.display = '';
+      ui.tooltip.bind(factorWarningIcon, msg);
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, msg);
+    };
+
+    // 1. Alpha range.
+    if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1');
+      return;
+    }
+
+    if (factor == null || feature == null) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, 'Select a category column and a feature column.');
+      return;
+    }
+
+    // ID-like column (all values unique): surfaced inline by the validator — mirror ANOVA's
+    // Run-disable with the same message, instead of the generic "3+ groups" icon path below.
+    if (isFactorAllUnique(factor)) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, ALL_UNIQUE_MSG);
+      return;
+    }
+
+    let present: {code: number, stats: GroupStats}[];
+    try {
+      present = presentGroups(factor, feature);
+    } catch (err) {
+      flagCategory((err as Error).message);
+      return;
+    }
+
+    // 2. Number of groups must be exactly 2.
+    if (present.length > 2) {
+      flagCategory(`Column has ${present.length} groups (3+). Use ANOVA.`);
+      return;
+    }
+    if (present.length < 2) {
+      flagCategory('Exactly 2 groups required — the column has fewer than two.');
+      return;
+    }
+
+    // 3. Degenerate groups (variance cannot be estimated).
+    if (present[0].stats.size < 2 || present[1].stats.size < 2) {
+      flagCategory('Each group needs at least 2 observations to estimate variance.');
+      return;
+    }
+
+    // 4. Student + unequal variances → suggest Welch.
+    if (currentMethod === 'Student' && !areVarsEqual(present[0].stats, present[1].stats, significance)) {
+      studentWarningIcon.style.display = '';
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, STUDENT_UNEQUAL_VAR_MSG);
+      return;
+    }
+
+    runBtn.disabled = false;
+    ui.tooltip.bind(runBtn, 'Perform two-sample t-test');
+  }
+
+  dlg.add(factorInput)
+    .add(featureInput)
+    .add(signInput)
+    .add(methodInput)
+    .add(fullReportInput);
+
+  updateRunButtonState();
+  factorInput.validate();
+
+  dlg.show();
+
+  // Strip auto-focus from the first input to avoid a distracting focus ring.
+  setTimeout(() => (document.activeElement as HTMLElement | null)?.blur(), 0);
+} // runTwoSampleTTest
