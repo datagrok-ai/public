@@ -45,14 +45,28 @@ export class SearchBaseViewer extends DG.JsViewer {
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
-      const targetColumnName = this.targetColumnName ?? this.dataFrame.columns.bySemType(this.semType)?.name;
-      if (targetColumnName) {
-        this.targetColumnName = targetColumnName;
-        this.targetColumn = this.dataFrame.col(targetColumnName)!;
-        this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
-      }
+      this.subs.push(this.dataFrame.onSemanticTypeDetected.subscribe((_: any) => {
+        if (!this.targetColumn && this.resolveTargetColumn())
+          this.render();
+      }));
+      if (!this.resolveTargetColumn())
+        this.root.appendChild(ui.divText(`This viewer requires a ${this.semType} column`, 'd4-viewer-error'));
     }
     this.render();
+  }
+
+  /** Resolves [targetColumn] from a saved [targetColumnName] or the first column of [semType].
+   * Returns whether a suitable column was found. */
+  protected resolveTargetColumn(): boolean {
+    if (!this.dataFrame)
+      return false;
+    const targetColumnName = this.targetColumnName ?? this.dataFrame.columns.bySemType(this.semType)?.name;
+    if (!targetColumnName)
+      return false;
+    this.targetColumnName = targetColumnName;
+    this.targetColumn = this.dataFrame.col(targetColumnName)!;
+    this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
+    return true;
   }
 
   onPropertyChanged(property: DG.Property): void {

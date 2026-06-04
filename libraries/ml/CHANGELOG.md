@@ -2,7 +2,7 @@
 
 ## 6.10.13
 
-Search viewers: Fixed crash (`Cannot read properties of null (reading 'name')`) when a similarity/diversity search viewer is attached to a table without a column of the required semantic type
+Search viewers: Fixed crash (`Cannot read properties of null (reading 'name')`) when a similarity/diversity search viewer is attached to a table without a column of the required semantic type; the viewer now shows a "requires a … column" message and resolves the column automatically once semantic-type detection completes
 
 ## 6.10.11 (2026-03-27)
 
