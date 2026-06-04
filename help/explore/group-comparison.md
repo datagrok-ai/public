@@ -3,15 +3,19 @@ title: "Group comparison"
 sidebar_position: 6
 ---
 
-Group comparison capabilities let you check whether the average of a numeric feature differs between two or more groups, telling you how large the difference is and how confident you can be that it's real. Choose the method that matches your comparison:
+Group comparison capabilities let you check whether the average of a numeric feature differs between
+groups, telling you how large the difference is and how confident you can be that it's real. Choose
+the method that matches your comparison:
 
 * [T-test](#t-test): two groups.
 * [ANOVA](#anova): three or more groups.
+* [Control comparisons](#control-comparisons): several groups, each against one shared control.
+
 
 ## T-test
 
 The two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test)
-determines whether the mean of a feature differs between two groups.
+determines whether the mean of a feature differs between two groups. For three or more groups, use [ANOVA](#anova) instead.
 
 1. Open a table.
 2. Run **Top Menu > ML > Analyze > Group Comparison > T-test...**. A dialog opens.
@@ -20,24 +24,12 @@ determines whether the mean of a feature differs between two groups.
    * the column with feature values (in the `Feature` field)
    * the significance level (in the `Alpha` field)
    * the analysis method (in the `Method` field): `Welch` or `Student`
-4. Click `Run` to execute. A box plot and an `Analysis`/`Conclusion` tab control appear.
+   * whether to add the results table (the `Full report` checkbox, on by default)
+4. Click `Run`. You get:
+   * a **box plot** showing the distribution of values by category
+   * a **results table** (when `Full report` is on) reporting the t-statistic, degrees of freedom, p-value, mean difference with its confidence interval, and effect size (Cohen's d and Hedges' g)
 
 ![t-test.gif](t-test.gif)
-
->Datagrok supports two two-sample t-test methods:
->
->* **Welch** (default) - robust to unequal variances across groups. Recommended unless you have strong reason to assume equal variances.
->* **Student** - classical t-test. More powerful when variances are equal, but
->  unreliable otherwise. You can't run the analysis if group variances differ
->  significantly - switch to Welch in that case.
-
-The box plot shows the distribution of values by categories:
-
-![t-test-box-plot.png](t-test-box-plot.png)
-
-The `Analysis` tab reports the t-statistic, degrees of freedom, p-value, mean
-difference with its confidence interval, and effect size (Cohen's d and
-Hedges' g). The `Conclusion` tab presents the null hypothesis testing.
 
 ## ANOVA
 
@@ -52,31 +44,33 @@ feature.
    * the column with feature values (in the `Feature` field)
    * the analysis method (in the `Method` field): `Welch` or `Fisher`
    * the significance level (in the `Alpha` field)
-4. Click `Run` to execute. The following analysis appears:
+   * whether to add the results table (the `Full report` checkbox, on by default)
+4. Click `Run`. You get:
+   * a **box plot** showing the distribution of values by category
+   * a **results table** (when `Full report` is on) with the ANOVA computations
 
 ![add-to-workspace](anova.gif)
 
->Datagrok supports two one-way ANOVA methods:
->
->* **Welch** (default) - robust to unequal variances across groups. Recommended unless you have strong reason to assume equal variances.
->* **Fisher** - classical ANOVA. More powerful when variances are equal, but
->  unreliable otherwise. You can't run the analysis if group variances differ
->  significantly - switch to Welch in that case.
+## Control comparisons
 
-The `Analysis` tab presents a table with ANOVA computations:
+[Control comparisons](https://en.wikipedia.org/wiki/Dunnett%27s_test) test each group against a
+single control, correcting for the multiple comparisons. Use them in dose-response or toxicology
+studies, where every treatment is compared with one reference group.
 
-![anova-summary-table.png](anova-summary-table.png)
+1. Open a table.
+2. Run **Top Menu > ML > Analyze > Group Comparison > Control Comparisons...**. A dialog opens.
+3. In the dialog, specify:
+   * the column defining the groups (in the `Category` field)
+   * the reference group every other group is compared against (in the `Control` field)
+   * the column with feature values (in the `Feature` field)
+   * the significance level (in the `Alpha` field)
+   * the analysis method (in the `Method` field): `Dunnett` or `Holm-Welch`
+   * whether to add the results table (the `Full report` checkbox, on by default)
+4. Click `Run`. You get:
+   * a **box plot** showing the distribution of values by category
+   * a **results table** (when `Full report` is on) with one row per group compared against the control
 
->The Fisher and Welch methods show different columns:
->
->* **Fisher**: sums of squares (SS), degrees of freedom (DF), mean squares (MS),
->  F-statistic, critical F-value, and p-value - split into Between groups,
->  Within groups, and Total.
->* **Welch**: F-statistic, numerator df (k − 1), Welch–Satterthwaite denominator
->  df (fractional), critical F-value, and p-value - Welch's test has no SS/MS
->  decomposition by design.
-
-Click the `Conclusion` tab to explore the null hypothesis testing.
+![control-comparisons.gif](control-comparisons.gif)
 
 See also:
 
