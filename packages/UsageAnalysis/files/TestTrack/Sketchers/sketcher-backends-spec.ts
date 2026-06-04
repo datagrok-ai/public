@@ -1,10 +1,15 @@
 /* ---
-sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
+sub_features_covered: [chem.sketcher, chem.sketcher.ocl, chem.sketcher.ketcher,
+  chem.sketcher.chemdraw, chem.sketcher.backend-switch, chem.sketcher.hamburger-menu,
+  chem.sketcher.copy-as, chem.sketcher.roundtrip, chem.sketcher.molecular-input]
 --- */
-// Frontmatter extraction:
+// Frontmatter extraction (pre-author hooks):
 //   target_layer: playwright
+//   pyramid_layer: bug-focused
 //   coverage_type: regression
-//   sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
+//   sub_features_covered: [chem.sketcher, chem.sketcher.ocl, chem.sketcher.ketcher,
+//     chem.sketcher.chemdraw, chem.sketcher.backend-switch, chem.sketcher.hamburger-menu,
+//     chem.sketcher.copy-as, chem.sketcher.roundtrip, chem.sketcher.molecular-input]
 //   ui_coverage_responsibility: [chem-sketcher-open, chem-sketcher-hamburger-backend-switch,
 //     chem-sketcher-battery-per-backend]
 //   related_bugs: [GROK-16340, GROK-12685, GROK-12391, GROK-12297, GROK-12966, GROK-14028,
@@ -28,16 +33,25 @@ sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
 //   active backend == selected (after menu switch) ..... GROK-12581 / GROK-12905
 //   zero sketcher console errors ...................... GROK-12758
 //
-// Recon (chrome-devtools MCP @ dev.datagrok.ai): hamburger icon
-// `.d4-dialog .fa-bars.d4-input-options`; backend radio items are `.d4-menu-item-label`
-// elements whose text is the friendlyName. Switching in-place on one widget round-trips
-// benzene on OCL, Ketcher (570) and ChemDraw (658).
+// Selector recon-notes (class-2: live-MCP-observed, not yet in grok-browser reference):
+//   .d4-dialog .fa-bars.d4-input-options — Sketcher dialog hamburger icon (reached via
+//     ui.dialog('Sketcher').add(sk.root).show()); observed live 2026-06-03 via
+//     chrome-devtools MCP (evaluate_script). CSS-class selector (no [name=] on this icon).
+//   .d4-menu-item-label — radio backend item rendered after hamburger click; menu labels
+//     observed in 2026-06-03 recon = ['', 'Copy as SMILES', 'Copy as MOLBLOCK', 'Recent',
+//     'Add to Favorites', 'Favorites', 'ChemDraw', 'Marvin', 'Ketcher', 'OpenChemLib'].
+//     Spec selects OpenChemLib / Ketcher / ChemDraw (Marvin excluded per scenario).
+// Switching in-place on one widget round-trips benzene on OCL, Ketcher (570) and ChemDraw (658).
 //
 // Paired scenario: sketcher-backends.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+// No `storageState`: `loginToDatagrok(page)` inside the test body is the canonical auth path
+// per spec-login.ts (DATAGROK_AUTH_TOKEN injection by `grok test`). A `storageState: 'auth.json'`
+// directive here would shadow that path — Playwright would resolve the file at module-load
+// against `public/packages/UsageAnalysis/` and ENOENT the whole spec before any test() runs.
+test.use(specTestOptions);
 
 // Embedded large V3000 molblock (aspirin) for C4 — no server convert (an unbounded convert
 // previously hung the whole test).

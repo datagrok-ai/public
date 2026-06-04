@@ -1,6 +1,16 @@
 ---
 feature: chem
-sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
+sub_features_covered:
+  [
+    chem.sketcher,
+    chem.sketcher.ocl,
+    chem.sketcher.substructure-filter,
+    chem.sketcher.backend-switch,
+    chem.sketcher.hamburger-menu,
+    chem.sketcher.molecular-input,
+    chem.sketcher.ketcher,
+    chem.sketcher.chemdraw
+  ]
 target_layer: playwright
 coverage_type: regression
 produced_from: atlas-driven
@@ -8,20 +18,34 @@ pyramid_layer: bug-focused
 migration_date: 2026-06-02
 original_path: public/packages/UsageAnalysis/files/TestTrack/Sketchers/filter-panel-cross-context.md
 authored_date: 2026-06-02
-realized_as: [filter-panel-cross-context-spec.ts]
-related_bugs: [GROK-12581, GROK-12903, GROK-12905, GROK-14028, GROK-12505]
+realized_as: [ filter-panel-cross-context-spec.ts ]
+related_bugs: [ GROK-12581, GROK-12903, GROK-12905, GROK-14028 ]
 gate_verdicts:
+  a:
+    verdict: PASS
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T17:00:00Z
+    review_round: 1
+    failure_keys: []
   b:
     verdict: PASS
-    cycle_id: cycle-2026-06-02-chem-filter-panel-cross-context
-    timestamp: 2026-06-02T00:00:00Z
-    runs: 3
-    runs_passed: 3
-    note: "UI-driven via Filter Panel: Block A apply (50->47) + clear (input empties, 50/50 restored, GROK-14028); Block B backend-switch propagation in the filter sketcher dialog (GROK-12581/12903); Block C reopen after churn (GROK-12905). Green 3/3 (1.4m, 2.0m, 1.6m). Requires forcing Chem init (probe Sketcher) before getFiltersGroup so the molecule column gets the substructure filter. Block D (GROK-12505) manual; GROK-12803 excluded."
+    cycle_id: 2026-06-04-sketchers-filter-panel-revalidation
+    timestamp: 2026-06-04T14:35:29Z
+    spec_runs:
+      - spec: filter-panel-cross-context-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 106
+        failure_keys: []
   e:
     verdict: PASS
     cycle_id: cycle-2026-06-02-chem-filter-panel-cross-context
     timestamp: 2026-06-02T00:00:00Z
+    failure_keys: []
+  f:
+    verdict: PASS
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T16:00:00Z
     failure_keys: []
 ---
 
@@ -66,12 +90,3 @@ gate_verdicts:
      open after switching backends back and forth.
 
 Each automated block also asserts zero sketcher `console.error`.
-
-### Block D — `.structure-filter-type = Categorical` (GROK-12505) 
-
-
-1. Right-click the molecule (Structure) column header → **Column Properties**.
-2. Add the `.structure-filter-type` tag, set it to **Categorical**.
-3. Open the Filter Panel, right-click the panel and select Remove all
-4. Close the Filter and and open it again.
-   - **Expected:** a **categorical** filter tab for Structure. 

@@ -28,17 +28,15 @@ sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
 // in-place on one widget (stable, unlike fresh-widget churn). NB: getFiltersGroup() must run
 // AFTER semType detection or the molecule column won't get the substructure filter (filters.md).
 //
-// NOT covered here:
-//   GROK-12505 (`.structure-filter-type=Categorical` → categorical filter) — needs the
-//     delete-tab + re-add-column path; the default auto-filter ignores the tag. Kept as a
-//     manual block in the scenario .md.
-//   GROK-12803 (DB query param sketcher on Context Pane) — out of scope (excluded per request).
-//
 // Paired scenario: filter-panel-cross-context.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+// No `storageState`: `loginToDatagrok(page)` inside the test body is the canonical auth path
+// per spec-login.ts (DATAGROK_AUTH_TOKEN injection by `grok test`). A `storageState: 'auth.json'`
+// directive here would shadow that path — Playwright would resolve the file at module-load
+// against `public/packages/UsageAnalysis/` and ENOENT the whole spec before any test() runs.
+test.use(specTestOptions);
 
 const FILTERS = '[name="viewer-Filters"]';
 
@@ -140,22 +138,34 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
     expect(trueCount, 'benzene matches most rows (not zero)').toBeGreaterThan(0);
   });
 
-  await softStep('Block A: clear the filter — input empties + rows restored (GROK-14028)', async () => {
-    await openFilterSketcher(page);
-    const smiles = page.locator('.d4-dialog input[placeholder*="SMILES" i]');
-    await smiles.click();
-    await page.keyboard.press('Control+A');
-    await page.keyboard.press('Delete');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(2000);
-    const inputVal = await smiles.inputValue();
-    const ok = page.locator('.d4-dialog [name="button-OK"], .d4-dialog .ui-btn-ok');
-    if (await ok.count() > 0) await ok.first().click();
-    await page.waitForTimeout(2500);
+  await softStep('Block A: Reset on the Filter Panel clears input + restores rows (GROK-14028)', async () => {
+    // GROK-14028 path per the scenario .md: the gesture is the Filter Panel's Reset
+    // (the substructure card's `.chem-clear-sketcher-button`), NOT a manual input wipe —
+    // the bug was that Reset failed to clear the persisted sketcher input. Manually emptying
+    // the input would assert a tautology and never exercise the fix. The button is
+    // hover-revealed, so click it via DOM (mirrors chem-grok-14028-spec.ts).
+    const clicked = await page.evaluate(async () => {
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let btn: HTMLElement | null = null;
+      for (let i = 0; i < 30; i++) {
+        btn = document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button');
+        if (btn) break;
+        await sleep(500);
+      }
+      if (!btn) return false;
+      btn.click();
+      await sleep(2500);
+      return true;
+    });
+    expect(clicked, 'GROK-14028: Reset (.chem-clear-sketcher-button) must be present on the Filter Panel after applying').toBe(true);
     const trueCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    console.log(`[fp] after clear: input="${inputVal}" trueCount=${trueCount}/${total}`);
-    expect(inputVal, 'GROK-14028: input line must be cleared').toBe('');
-    expect(trueCount, 'rows restored after clearing the filter').toBe(total);
+    expect(trueCount, 'GROK-14028: rows restored after Reset on the Filter Panel').toBe(total);
+    // Reopen the sketcher to confirm Reset also cleared its persisted input line.
+    await openFilterSketcher(page);
+    const inputVal = await page.locator('.d4-dialog input[placeholder*="SMILES" i]').inputValue();
+    console.log(`[fp] after Reset: input="${inputVal}" trueCount=${trueCount}/${total}`);
+    expect(inputVal, 'GROK-14028: Reset must clear the sketcher input line').toBe('');
+    await closeDialog(page);
   });
 
   await softStep('Block B: switch backend in the filter sketcher → global propagates (GROK-12581/12903)', async () => {

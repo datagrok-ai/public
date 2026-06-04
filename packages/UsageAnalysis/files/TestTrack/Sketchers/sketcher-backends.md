@@ -1,6 +1,17 @@
 ---
 feature: chem
-sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
+sub_features_covered:
+  [
+    chem.sketcher,
+    chem.sketcher.ocl,
+    chem.sketcher.ketcher,
+    chem.sketcher.chemdraw,
+    chem.sketcher.backend-switch,
+    chem.sketcher.hamburger-menu,
+    chem.sketcher.copy-as,
+    chem.sketcher.roundtrip,
+    chem.sketcher.molecular-input
+  ]
 target_layer: playwright
 coverage_type: regression
 produced_from: atlas-driven
@@ -8,20 +19,47 @@ pyramid_layer: bug-focused
 migration_date: 2026-06-01
 original_path: public/packages/UsageAnalysis/files/TestTrack/Sketchers/sketcher-backends.md
 authored_date: 2026-06-01
-realized_as: [sketcher-backends-spec.ts]
-related_bugs: [GROK-16340, GROK-12685, GROK-12391, GROK-12297, GROK-12966, GROK-14028, GROK-12826, GROK-12581, GROK-12905, GROK-12758, CLAUDE-5]
+realized_as: [ sketcher-backends-spec.ts ]
+related_bugs:
+  [
+    GROK-16340,
+    GROK-12685,
+    GROK-12391,
+    GROK-12297,
+    GROK-12966,
+    GROK-14028,
+    GROK-12826,
+    GROK-12581,
+    GROK-12905,
+    GROK-12758,
+    CLAUDE-5
+  ]
 gate_verdicts:
+  a:
+    verdict: PASS
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T23:15:00Z
+    review_round: 1
+    failure_keys: []
   b:
     verdict: PASS
-    cycle_id: cycle-2026-06-01-chem-sketcher-backends
-    timestamp: 2026-06-01T00:00:00Z
-    runs: 3
-    runs_passed: 3
-    note: "OpenChemLib -> Ketcher -> ChemDraw selected via the hamburger menu on ONE persistent widget; full battery hard per backend. Green 3/3 (1.5m, 1.7m, 1.8m). In-place menu switching is stable headless (unlike fresh-widget-per-backend, which crashed the renderer ~50%)."
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T22:43:00Z
+    spec_runs:
+      - spec: sketcher-backends-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 212
+        failure_keys: []
   e:
     verdict: PASS
-    cycle_id: cycle-2026-06-01-chem-sketcher-backends
-    timestamp: 2026-06-02T00:00:00Z
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T20:15:00Z
+    failure_keys: []
+  f:
+    verdict: PASS
+    cycle_id: 2026-06-03-sketchers-migrate-03
+    timestamp: 2026-06-03T16:00:00Z
     failure_keys: []
 ---
 
