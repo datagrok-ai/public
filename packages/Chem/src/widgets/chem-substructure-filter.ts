@@ -18,7 +18,8 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
-  SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from '../constants';
+  SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName,
+  getValuesChangedEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 import {Fingerprint} from '../utils/chem-common';
@@ -85,8 +86,9 @@ export class SubstructureFilter extends DG.Filter {
   batchResultObservable: Subscription | null = null;
   terminateEventName: string = '';
   progressEventName: string = '';
+  valuesChangedEventName: string = '';
   currentMolecule: string = '';
-  modifiedRows = new Set<number>();
+  modifiedRows = new Set<number>(); // edited row indexes (received from chem-searches via event), awaiting re-check
   initListeners = false;
   //searchTypeLink: HTMLButtonElement;
   searchType: SubstructureSearchType = SubstructureSearchType.CONTAINS;
@@ -288,18 +290,6 @@ export class SubstructureFilter extends DG.Filter {
           const smarts = this.moleculeToSmarts(this.currentMolecule);
           this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
         }
-      }));
-
-    // track molecule cell edits so the filter stays correct after in-place editing
-    this.subs.push(this.dataFrame!.onDataChanged
-      .pipe(filter((args: any) => args?.args?.column?.name === this.columnName && args?.args?.indexes?.length))
-      .subscribe((args: any) => {
-        const indexes: ArrayLike<number> = args.args.indexes;
-        for (let i = 0; i < indexes.length; i++)
-          this.modifiedRows.add(indexes[i]);
-        // filter is enabled and no active search — re-check immediately
-        if (!this.calculating && this.isFiltering)
-          this._recheckModifiedRows(this.currentMolecule);
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
@@ -518,11 +508,30 @@ export class SubstructureFilter extends DG.Filter {
       this.initListeners = true;
       this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
       this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
+      this.valuesChangedEventName = getValuesChangedEventName(this.tableName, this.columnName!);
 
       this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
         _package.logger.debug(`in ${this.terminateEventName} handler, querymol: ${queryMol}, ${this.filterId}`);
         this.finishSearch(queryMol);
       }));
+
+      // molecule cell edits are tracked by chem-searches, which fires this per-column event
+      // carrying the edited row indexes
+      this.subs.push(grok.events.onCustomEvent(this.valuesChangedEventName)
+        .subscribe((args: {indexes?: number[]}) => {
+          // in case of not active (current filtering) filter - return
+          const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
+          if (!this.calculating && activeFilterId !== this.filterId && this.isFiltering)
+            return;
+
+          if (args.indexes) {
+            for (const i of args.indexes)
+              this.modifiedRows.add(i);
+          }
+          // filter is enabled and no active search -> re-check immediately
+          if (!this.calculating && this.isFiltering)
+            this._recheckModifiedRows(this.currentMolecule);
+        }));
     }
     this.active = state.active ?? true;
     if (state.molBlock && state.molBlock !== this.currentMolecule) {
@@ -655,6 +664,16 @@ export class SubstructureFilter extends DG.Filter {
       return;
     for (let i = mask.findNext(-1); i !== -1; i = mask.findNext(i))
       this.bitset.set(i, partialResult.getBit(i));
+    // synchronize the updated bitset with peer filters on the same column (e.g. cloned views),
+    // mirroring finishSearch — only the active filter does this
+    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId) {
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+        bitset: this.bitset,
+        molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
+        tableName: this.tableName, searchType: this.searchType,
+        simCutOff: this.similarityCutOff, fp: this.fp,
+      });
+    }
     this.dataFrame?.rows.requestFilter();
   }
 
