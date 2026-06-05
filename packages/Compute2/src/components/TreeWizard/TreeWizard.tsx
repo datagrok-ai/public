@@ -25,7 +25,7 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  reportTree,
+  reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -353,25 +353,25 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
+      if (!treeState.value || !chosenStepUuid.value)
         return null;
-
-      if (!chosenStepUuid.value)
-        chosenStepUuid.value = treeState.value.uuid;
-
-      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
-
-      if (step)
-        return step;
-
-      // step with current uuid is removed from the tree, try setting the current step by the route
-      const currentURL = new URL(window.location.href);
-      const currentStep = currentURL.searchParams.get('currentStep');
-      if (currentStep)
-        setCurrentStepByPath(currentStep, treeState.value);
-
-      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) ?? null;
     });
+
+    // Owns chosenStepUuid: defaults it on first load and repairs it when the
+    // selected node disappears (e.g. the selected step was removed). Falls back
+    // along the old positional path to the nearest surviving ancestor, so a
+    // removed last child resolves to its parent instead of dangling.
+    Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
+      if (!treeState)
+        return;
+      const fallbackPath = searchParams.currentStep ?
+        searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
+        undefined;
+      const next = resolveChosenUuid(chosenStepUuid.value, treeState, fallbackPath);
+      if (next !== chosenStepUuid.value)
+        chosenStepUuid.value = next;
+    }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)

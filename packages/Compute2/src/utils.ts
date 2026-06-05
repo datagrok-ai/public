@@ -67,6 +67,27 @@ export function findTreeNodeByPath(pathSegments: number[], state: PipelineState)
   }: undefined;
 };
 
+// Returns a uuid guaranteed to exist in `tree`. Keeps the current selection if
+// it is still alive; otherwise climbs the old positional path to the nearest
+// surviving ancestor (handles a removed last child resolving out of bounds);
+// otherwise falls back to root. Never returns a dead uuid.
+export function resolveChosenUuid(
+  currentUuid: string | undefined,
+  tree: PipelineState,
+  fallbackPath?: number[],
+): string {
+  if (currentUuid && findNodeWithPathByUuid(currentUuid, tree))
+    return currentUuid;
+  let path = fallbackPath ? [...fallbackPath] : [];
+  while (path.length > 1) {
+    const byPath = findTreeNodeByPath(path, tree);
+    if (byPath)
+      return byPath.state.uuid;
+    path = path.slice(0, -1);
+  }
+  return tree.uuid;
+}
+
 export function findTreeNodeParrent(uuid: string, state: PipelineState): PipelineState | undefined {
   const notVisitedStates = [state];
 
