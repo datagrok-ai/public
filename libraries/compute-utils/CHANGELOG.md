@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.46.2 (2026-06-05)
+
+- Fitting: charge worker-replacement reprime budget only to the session that killed the slot, so a misbehaving fit no longer drains a concurrent fit's budget
+- Hold the tree-mutation lock for the whole mutation by OR-ing `treeMutationsLocked` with `globalROLocked`, fixing a flickering "Locked..." overlay and `isTreeReady` signal
+- Expose pipeline-validator results as a live per-node stream (`currentPipelineValidations$`) instead of only in the serialized snapshot
+
 ## 1.46.1 (2026-06-04)
 
 - File-input save accepts a browser `File` as well as `DG.FileInfo`
