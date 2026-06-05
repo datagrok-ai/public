@@ -76,6 +76,10 @@ export class StateTree {
     return Serializer.getValidations(this.nodeTree);
   }
 
+  public getPipelineValidations() {
+    return Serializer.getPipelineValidations(this.nodeTree);
+  }
+
   public getConsistency() {
     return Serializer.getConsistency(this.nodeTree);
   }

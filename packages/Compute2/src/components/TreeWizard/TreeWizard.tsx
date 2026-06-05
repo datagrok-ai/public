@@ -757,6 +757,7 @@ export const TreeWizard = Vue.defineComponent({
                         stat={stat}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
+                        pipelineValidationState={states.pipelineValidations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
