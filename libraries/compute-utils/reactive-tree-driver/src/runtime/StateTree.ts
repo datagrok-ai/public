@@ -50,8 +50,8 @@ export class StateTree {
     this.nodeTree = new BaseTree(item);
     this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
 
-    this.linksState.runningLinks$.pipe(
-      map((links) => !!links?.length),
+    combineLatest([this.linksState.runningLinks$, this.globalROLocked$]).pipe(
+      map(([links, roLocked]) => !!links?.length || roLocked),
       takeUntil(this.closed$),
     ).subscribe(this.treeMutationsLocked$);
   }
