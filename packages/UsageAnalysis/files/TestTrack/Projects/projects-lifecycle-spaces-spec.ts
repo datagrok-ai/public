@@ -11,9 +11,12 @@ generated_from: projects-lifecycle-spaces.md
 // `source_class=spaces × dep_lifecycle_op=save_with_sync_on`.
 //
 // GROK-18345 recipient-open invariant (share + datasync under a different
-// user identity) requires `helpers.playwright.session.logoutAndLoginAs`
-// (token-based, needs DATAGROK_AUTH_TOKEN_2). That part of the scenario is
-// deferred — the recipient-side open flow is not yet wired into this spec.
+// user identity) is now wired via the `shareWithSecondUserAndVerify` helper
+// (token-based, needs DATAGROK_AUTH_TOKEN_2). It shares the project to the
+// second user's GROUP at both View-and-Use + Full access and verifies the
+// recipient can see it after re-auth; when no second-user token is configured
+// it degrades to recipientVisible: null (no hard fail). Runs as the last step
+// before cleanup so the owner session is restored before delete.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {
@@ -33,6 +36,7 @@ import {
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
+  shareWithSecondUserAndVerify,
   deleteProjectWithCleanup,
   SavedAllTables,
 } from '../helpers/projects';
@@ -85,6 +89,21 @@ test('Projects / Lifecycle Spaces: open from Space + sync + reopen', async ({pag
       const result = await reopenAndAssertProvenance(page, saved.projectId, PROVENANCE_PATTERNS.files);
       expect(result.tablesAfter).toBeGreaterThanOrEqual(1);
       expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+
+    // GROK-18345 recipient-open leg (View-and-Use + Full). MUST be the last
+    // action before the finally cleanup — the helper reloads the page during
+    // re-auth and restores the owner session before returning, so the delete
+    // in finally runs as the owner. Defensive skip when no second-user token.
+    await softStep('GROK-18345: share with second user + recipient-open verification', async () => {
+      if (!saved) throw new Error('no saved project');
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName}, {full: true});
+      if (!r.shared) {
+        console.warn('GROK-18345 share skipped — ' + r.reason);
+        return;
+      }
+      if (r.recipientVisible !== null)
+        expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved) {

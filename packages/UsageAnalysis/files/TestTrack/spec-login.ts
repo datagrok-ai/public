@@ -1,4 +1,8 @@
 import {test, Page} from '@playwright/test';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as yaml from 'js-yaml';
 
 export const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
 
@@ -41,9 +45,78 @@ export async function loginToDatagrok(page: Page) {
   await injectToken(page, token);
 }
 
+// Read a second-user dev key (`key2:`) from ~/.grok/config.yaml for the server
+// whose url matches the current DATAGROK_URL (falling back to the configured
+// default server). This makes the second-user login work under a plain
+// `grok test` even when the installed runner doesn't forward key2 — the only
+// thing the installed runner lacks is this config fallback.
+function readSecondUserDevKeyFromConfig(): {apiUrl: string; key2: string} | null {
+  try {
+    const confPath = path.join(os.homedir(), '.grok', 'config.yaml');
+    if (!fs.existsSync(confPath)) return null;
+    const cfg = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
+    const servers = cfg?.servers ?? {};
+    let wantHost: string | null = null;
+    try { wantHost = new URL(baseUrl).host; } catch (_) { wantHost = null; }
+    for (const name of Object.keys(servers)) {
+      const s = servers[name];
+      if (!s?.url || !s?.key2) continue;
+      let h: string | null = null;
+      try { h = new URL(s.url).host; } catch (_) { h = null; }
+      if (h && wantHost && h === wantHost)
+        return {apiUrl: String(s.url).replace(/\/$/, ''), key2: String(s.key2)};
+    }
+    const def = cfg?.default;
+    if (def && servers[def]?.key2 && servers[def]?.url)
+      return {apiUrl: String(servers[def].url).replace(/\/$/, ''), key2: String(servers[def].key2)};
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function exchangeDevKeyForToken(apiUrl: string, key: string): Promise<string> {
+  const resp = await fetch(`${apiUrl}/users/login/dev/${key}`, {method: 'POST'});
+  const json = await resp.json() as any;
+  if (json?.isSuccess === true && json?.token) return json.token;
+  throw new Error(`Second-user dev-key login failed at ${apiUrl}: ${JSON.stringify(json).slice(0, 200)}`);
+}
+
+// Resolve the second-user token: env first (set by the runner), else exchange
+// the config `key2:` dev key for a token. Throws when neither is available —
+// a two-user spec MUST NOT silently pass without its second user. Cached so
+// the login claim can be read (getSecondUserLogin) without a second exchange.
+let _secondTokenCache: string | null = null;
+export async function resolveSecondUserToken(): Promise<string> {
+  if (_secondTokenCache) return _secondTokenCache;
+  const envTok = process.env.DATAGROK_AUTH_TOKEN_2;
+  if (envTok && envTok.length > 0) return (_secondTokenCache = envTok);
+  const cfg = readSecondUserDevKeyFromConfig();
+  if (!cfg)
+    throw new Error(
+      'No second-user credentials available. Set DATAGROK_AUTH_TOKEN_2 / DATAGROK_DEV_KEY_2, ' +
+      'or add a `key2:` (second-user dev key) to the matching server in ~/.grok/config.yaml.');
+  return (_secondTokenCache = await exchangeDevKeyForToken(cfg.apiUrl, cfg.key2));
+}
+
+// Read the second user's login from the JWT `sub` (/`usr.login`) claim — no
+// page switch needed. Lets a two-user spec learn WHO the recipient is so it
+// can share with them, without the costly "switch in, read, switch back"
+// probe (which added two page reloads per spec).
+export async function getSecondUserLogin(): Promise<string> {
+  const token = await resolveSecondUserToken();
+  try {
+    const payload = token.replace(/^Bearer\s+/i, '').split('.')[1];
+    const claims = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    const login = claims?.sub ?? claims?.usr?.login;
+    if (!login) throw new Error('no sub/usr.login claim');
+    return login;
+  } catch (e: any) {
+    throw new Error(`Could not read second-user login from token claim: ${e?.message ?? e}`);
+  }
+}
+
 export async function loginAsSecondUser(page: Page) {
-  const token2 = process.env.DATAGROK_AUTH_TOKEN_2;
-  if (!token2 || token2.length === 0)
-    throw new Error('DATAGROK_AUTH_TOKEN_2 is not set. Provide a second-user dev key via DATAGROK_DEV_KEY_2 (the runner exchanges it for a token).');
+  const token2 = await resolveSecondUserToken();
   await injectToken(page, token2);
 }

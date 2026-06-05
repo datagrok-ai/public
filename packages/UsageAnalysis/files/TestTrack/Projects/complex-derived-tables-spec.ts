@@ -27,7 +27,7 @@ sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sy
 //     about derived-table types. Only the Join sub-bullet that
 //     reproduces GROK-19103 is in scope.
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs} from './_helpers';
 import {deleteProjectWithCleanup} from '../helpers/projects';
 
@@ -60,7 +60,8 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexDerived-' + stamp;
 
-  // Setup: navigate to root and wait for grok.shell to mount.
+  // Setup: authenticate (token injection), navigate to root, wait for shell.
+  await loginToDatagrok(page);
   await page.goto('/');
   await page.waitForFunction(() => {
     try { return !!(window as any).grok?.shell?.user?.login; } catch { return false; }

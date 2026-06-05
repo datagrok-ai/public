@@ -9,7 +9,7 @@ generated_from: projects-lifecycle-db.md (Phase B canonical openers + uploadProj
 // no Samples package or external DB provisioning required.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
-import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
+import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
   openTableFromDbTable,
@@ -26,6 +26,7 @@ import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
+  shareWithSecondUserAndVerify,
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
@@ -82,22 +83,12 @@ test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source'
       expect(result.reopenedScript).toMatch(new RegExp(provisioned.resolvedName));
     });
 
-    await softStep('Step 4: share via JS API (View-and-Use)', async () => {
+    await softStep('Step 4: share with second user (View-and-Use) + recipient open', async () => {
       if (!saved) return;
-      const r = await evalJs<{skipped: boolean; reason?: string}>(page, `(async () => {
-        try {
-          const users = await grok.dapi.users.list({limit: 50});
-          const me = (await grok.dapi.users.current()).login;
-          const target = users.find(u => u.login !== me && u.login !== 'system');
-          if (!target) return {skipped: true, reason: 'no recipient'};
-          const p = await grok.dapi.projects.find('${saved.projectId}');
-          await grok.dapi.permissions.grant(p, target, false);
-          return {skipped: false};
-        } catch (e) {
-          return {skipped: true, reason: String(e).slice(0, 200)};
-        }
-      })()`);
-      if (r.skipped) console.warn('Share skipped: ' + r.reason);
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName});
+      if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
+      // When a second-user token is configured, the recipient must see it.
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved)

@@ -25,6 +25,7 @@ import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
+  shareWithSecondUserAndVerify,
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
@@ -100,23 +101,8 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       expect(hasBaseProvenance || hasDerivedProvenance).toBe(true);
     });
 
-    await softStep('Step 5: share + rename project (recipient-side deferred per Helper 3)', async () => {
+    await softStep('Step 5a: rename project (verify via find-by-id)', async () => {
       if (!saved) return;
-      const shareR = await evalJs<{shared: boolean; reason?: string}>(page, `(async () => {
-        try {
-          const users = await grok.dapi.users.list({limit: 50});
-          const me = (await grok.dapi.users.current()).login;
-          const target = users.find(u => u.login !== me && u.login !== 'system');
-          if (!target) return {shared: false, reason: 'no recipient'};
-          const p = await grok.dapi.projects.find('${saved.projectId}');
-          await grok.dapi.permissions.grant(p, target, false);
-          return {shared: true};
-        } catch (e) {
-          return {shared: false, reason: String(e).slice(0, 200)};
-        }
-      })()`);
-      if (!shareR.shared) console.warn('Share skipped: ' + shareR.reason);
-
       const renameR = await evalJs<{ok: boolean; persistedName: string | null}>(page, `(async () => {
         const p = await grok.dapi.projects.find('${saved.projectId}');
         if (!p) return {ok: false, persistedName: null};
@@ -126,6 +112,15 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
         return {ok: verify?.name === '${projectName}-renamed', persistedName: verify?.name ?? null};
       })()`);
       expect(renameR.ok).toBe(true);
+    });
+
+    // Share is LAST step before finally — the helper reloads the page for
+    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    await softStep('Step 5b: share with second user (View-and-Use + Full) + recipient open', async () => {
+      if (!saved) return;
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: true});
+      if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved)

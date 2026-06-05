@@ -12,7 +12,7 @@ generated_from: projects-lifecycle-script.md (Phase B canonical openers + upload
 // Reference: .claude/diagnostics/mcp-capture-scripts.md
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
-import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
+import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromScript,
   provisionDataframeScript,
@@ -24,6 +24,7 @@ import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
+  shareWithSecondUserAndVerify,
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
@@ -77,25 +78,16 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       expect(result.reopenedScript).toMatch(new RegExp(provisioned.resolvedName));
     });
 
-    await softStep('Step 4: GROK-19403 — share with user not having script access', async () => {
+    // Share is LAST step before finally — the helper reloads the page for
+    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    // GROK-19403 recipient re-auth is now WIRED via shareWithSecondUserAndVerify
+    // (token2-based second-user round-trip); recipient visibility is asserted
+    // when DATAGROK_AUTH_TOKEN_2 is configured.
+    await softStep('Step 4: GROK-19403 — share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
-      const r = await evalJs<{shared: boolean; reason?: string}>(page, `(async () => {
-        try {
-          const users = await grok.dapi.users.list({limit: 50});
-          const me = (await grok.dapi.users.current()).login;
-          const target = users.find(u => u.login !== me && u.login !== 'system');
-          if (!target) return {shared: false, reason: 'no recipient'};
-          const p = await grok.dapi.projects.find('${saved.projectId}');
-          await grok.dapi.permissions.grant(p, target, false);
-          return {shared: true};
-        } catch (e) {
-          return {shared: false, reason: String(e).slice(0, 200)};
-        }
-      })()`);
-      if (!r.shared) console.warn('Share skipped: ' + r.reason);
-      // GROK-19403 invariant assertion (recipient open with explicit-error-vs-silent-null
-      // discrimination) needs second-user re-auth via logoutAndLoginAs (token-based,
-      // needs DATAGROK_AUTH_TOKEN_2) — deferred per complex-share-second-user-spec SR pattern.
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName}, {full: true});
+      if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved)

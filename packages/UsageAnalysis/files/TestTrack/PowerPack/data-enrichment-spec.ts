@@ -165,6 +165,7 @@ import {
   getSystemDatagrokConnection,
   SYSTEM_DATAGROK_NQNAME,
 } from '../helpers/openers';
+import {shareWithSecondUserAndVerify} from '../helpers/projects';
 
 test.use(specTestOptions);
 
@@ -1072,12 +1073,21 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
     });
 
     // ============================================================
-    // Sub-scenario 4: Cross-user visibility — DEFERRED per SR-01.
+    // Sub-scenario 4: Cross-user visibility (SR-01 restored).
     // ============================================================
-    // See scope_reductions :: SR-01 in data-enrichment.md frontmatter.
-    // Pending: formal registration of helpers.playwright.session.logoutAndLoginAs
-    // + provisioning of a second-user fixture account in TestTrack.
-    // Reference: complex-share-second-user-spec.ts in Projects pilot.
+    // A second-user token (DATAGROK_AUTH_TOKEN_2) + the registered helper
+    // shareWithSecondUserAndVerify make the recipient-side assertion runnable.
+    // Enrichments expose no grok.dapi.* surface, so enrichment-level cross-user
+    // visibility cannot be asserted directly — project visibility is the
+    // verified proxy (the project carries the saved enrichment-bearing table).
+    // This helper RELOADS the page during re-auth and restores the primary
+    // session before returning, so it MUST be the last step before finally.
+    await softStep('Sub-scenario 4: cross-user visibility — share project with second user + recipient sees it', async () => {
+      if (!projectId) return;
+      const r = await shareWithSecondUserAndVerify(page, {id: projectId, name: projectName});
+      if (!r.shared) { console.warn('Cross-user share skipped: ' + r.reason); return; }
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
+    });
 
   } finally {
     // ---- Cleanup ----

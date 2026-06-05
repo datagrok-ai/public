@@ -11,7 +11,7 @@ import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, deleteProjectWithCleanup, shareWithSecondUserAndVerify} from '../helpers/projects';
 
 test.use(projectsTestOptions);
 
@@ -52,22 +52,15 @@ test('Projects / Complex (smoke): save, rename, share', async ({page}) => {
       expect(r.persistedName).toBe(renamed);
     });
 
-    await softStep('Step 12 equiv: share with another user via JS API', async () => {
+    // Share is LAST step before finally — the helper reloads the page for
+    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    // The project was renamed to `renamed` in the prior step, so the
+    // recipient-side visibility lookup uses that name (id grant is unaffected).
+    await softStep('Step 12 equiv: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
-      const r = await evalJs<{skipped: boolean; reason?: string}>(page, `(async () => {
-        try {
-          const users = await grok.dapi.users.list({limit: 50});
-          const me = (await grok.dapi.users.current()).login;
-          const target = users.find(u => u.login !== me && u.login !== 'system');
-          if (!target) return {skipped: true, reason: 'no other user'};
-          const p = await grok.dapi.projects.find('${saved.projectId}');
-          await grok.dapi.permissions.grant(p, target, false);
-          return {skipped: false};
-        } catch (e) {
-          return {skipped: true, reason: String(e).slice(0, 200)};
-        }
-      })()`);
-      if (r.skipped) console.warn('Share skipped: ' + r.reason);
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});
+      if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved)

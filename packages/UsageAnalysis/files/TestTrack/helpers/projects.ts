@@ -17,6 +17,130 @@
  */
 
 import {Page, expect} from '@playwright/test';
+import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin} from '../spec-login';
+
+export interface ShareSecondUserResult {
+  /** Whether the share grant was attempted and succeeded server-side. */
+  shared: boolean;
+  /** Login the project was granted to (the second user when known). */
+  recipientLogin: string | null;
+  /**
+   * Whether the second user could see the shared project after re-auth.
+   * `null` when the recipient-open leg was not run (no second-user token, or
+   * the share did not go through) — callers should only assert when non-null.
+   */
+  recipientVisible: boolean | null;
+  /** Populated when a leg was skipped or failed defensively. */
+  reason?: string;
+}
+
+/**
+ * Share a project with the second user and verify the recipient can see it.
+ *
+ * This is the canonical two-user leg used by every scenario whose .md says
+ * "Share project with second user … recipient opens". It bakes in three
+ * invariants that were each a source of silent no-op passes:
+ *
+ *   1. Permissions attach to GROUPS — grant `user.group`, never the User
+ *      (granting a User violates `permissions_user_group_id_fkey`, an error
+ *      the old `try/catch → console.warn` blocks swallowed → the share never
+ *      happened but the test still "passed").
+ *   2. To make the recipient-open verifiable, the grant must target the
+ *      SECOND user specifically. Its login is probed via a token2 re-auth
+ *      round-trip (there is no other way to learn the runner's second-user
+ *      identity).
+ *   3. Verification = the second user re-authenticates (token2 injection) and
+ *      the shared project becomes visible to them. The primary session is
+ *      always restored before returning, so the caller's finally-block
+ *      cleanup runs as the owner.
+ *
+ * The second user is MANDATORY: `loginAsSecondUser` resolves the token from
+ * `DATAGROK_AUTH_TOKEN_2` (set by the runner) OR the matching server's `key2:`
+ * in `~/.grok/config.yaml`, and THROWS if neither exists. A two-user scenario
+ * therefore FAILS in a misconfigured environment rather than silently passing
+ * without exercising the second user.
+ *
+ * @param page - Playwright Page, authenticated as the primary (owner) user.
+ * @param project - The project to share: `{name}` (required for recipient-side
+ *   visibility lookup) and optionally `{id}` (preferred for the owner-side
+ *   grant — robust to name-index lag).
+ * @param options.full - Also elevate the grant to Full access (edit=true).
+ *   Default: false (View-and-Use only).
+ */
+export async function shareWithSecondUserAndVerify(
+  page: Page,
+  project: {id?: string; name: string},
+  options?: {full?: boolean},
+): Promise<ShareSecondUserResult> {
+  // Learn the second user's login from the token claim — NO page switch (the
+  // old switch-in/read/switch-back probe cost two extra reloads). The session
+  // stays on the primary (owner); the only re-auth is the recipient leg below.
+  // getSecondUserLogin THROWS if no second user is configured (env or config
+  // key2) — so the scenario fails loudly rather than silently skipping it.
+  const secondLogin = await getSecondUserLogin();
+
+  // Owner-side grant — to the second user's GROUP (permissions attach to
+  // groups; granting the bare User violates permissions_user_group_id_fkey).
+  const grant = await page.evaluate(async (args: {id: string | null; name: string; wanted: string | null; full: boolean}) => {
+    const grok = (window as any).grok;
+    try {
+      const target = args.wanted ? await grok.dapi.users.filter(`login = "${args.wanted}"`).first() : null;
+      if (!target || !target.group || !target.group.id)
+        return {shared: false, reason: `second user "${args.wanted}" / group not resolvable`, login: null, groupId: null};
+      const p = args.id
+        ? await grok.dapi.projects.find(args.id)
+        : await grok.dapi.projects.filter(`name = "${args.name}"`).first();
+      if (!p) return {shared: false, reason: 'project not found for share', login: null, groupId: null};
+      await grok.dapi.permissions.grant(p, target.group, false);
+      if (args.full) await grok.dapi.permissions.grant(p, target.group, true);
+      // Owner-side confirmation: recipient group appears in granted perms.
+      let confirmed = true;
+      try {
+        const perms = await grok.dapi.permissions.get(p);
+        const groups = [...(perms.view || []), ...(perms.edit || [])];
+        confirmed = groups.some((g: any) => g && g.id === target.group.id);
+      } catch (_) { /* permissions.get optional — grant already succeeded */ }
+      return {shared: confirmed, reason: confirmed ? undefined : 'recipient group not in permissions.get', login: target.login, groupId: target.group.id};
+    } catch (e) {
+      return {shared: false, reason: String(e).slice(0, 200), login: null, groupId: null};
+    }
+  }, {id: project.id ?? null, name: project.name, wanted: secondLogin, full: options?.full ?? false});
+
+  const result: ShareSecondUserResult = {
+    shared: grant.shared,
+    recipientLogin: grant.login,
+    recipientVisible: null,
+    reason: grant.reason,
+  };
+
+  // Recipient-open leg: only when we shared with the actual second user.
+  if (grant.shared && grant.login && grant.login === secondLogin) {
+    await loginAsSecondUser(page);
+    try {
+      let visible = false;
+      await expect.poll(async () => {
+        // Prefer find(id): the id is immutable across rename and the lookup is
+        // permission-scoped, so it's robust to the search-index lag that makes
+        // filter-by-name unreliable right after a rename. Fall back to a
+        // name filter when no id was provided.
+        visible = await page.evaluate(async (args: {id: string | null; name: string}) => {
+          const grok = (window as any).grok;
+          if (args.id) {
+            try {
+              if ((await grok.dapi.projects.find(args.id)) != null) return true;
+            } catch (_) { /* fall through to name filter */ }
+          }
+          return (await grok.dapi.projects.filter(`name = "${args.name}"`).first()) != null;
+        }, {id: project.id ?? null, name: project.name});
+        return visible;
+      }, {timeout: 30_000, intervals: [1000, 2000, 5000]}).toBe(true).catch(() => {});
+      result.recipientVisible = visible;
+    } finally {
+      await loginToDatagrok(page);
+    }
+  }
+  return result;
+}
 
 // ---------------------------------------------------------------------------
 // 1. saveProject — Drive Save Project dialog with optional Data Sync toggle.

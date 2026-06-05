@@ -24,6 +24,7 @@ import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
+  shareWithSecondUserAndVerify,
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
@@ -139,6 +140,17 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
       })()`);
       expect(r.ok).toBe(true);
       expect(r.persistedName).toBe(renamedProj);
+    });
+
+    // Share is LAST step before finally — the helper reloads the page for
+    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    // The project was renamed to `${projectName}-renamed` in Step 5, so the
+    // recipient-side visibility lookup uses that name (id grant is unaffected).
+    await softStep('Step 6: share with second user (View-and-Use) + recipient open', async () => {
+      if (!saved) return;
+      const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: false});
+      if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     if (saved)

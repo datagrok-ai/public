@@ -20,7 +20,7 @@ mcp_observations:
 // dblclick was not delivered to the Dart click handler, URL-direct produced
 // offsetWidth=0 SAVE button (bug 2b).
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs} from './_helpers';
 
 // Bug 2b (toolbar SAVE button collapsed offsetWidth=0 after JS-API
@@ -35,7 +35,8 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   const projectName = `UiSmoke${Date.now()}`;
   let actualName = projectName; // populated from grok.shell.project.name after save — server may normalize typed names (PascalCase rule for hyphen-separated inputs); use the stored form verbatim for tile lookups
 
-  // ---- Setup: navigate, wait for shell ----
+  // ---- Setup: authenticate (token injection), navigate, wait for shell ----
+  await loginToDatagrok(page);
   await page.goto('/browse');
   await page.waitForFunction(() => {
     try { return !!(window.grok?.shell?.user?.login); } catch { return false; }

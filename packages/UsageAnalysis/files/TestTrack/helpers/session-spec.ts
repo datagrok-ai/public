@@ -28,10 +28,9 @@ import {logoutAndLoginAs} from './session';
 
 test.use({...specTestOptions, navigationTimeout: 180_000});
 
-// Skip unless a second-user token is available: re-auth to the second user
-// requires DATAGROK_AUTH_TOKEN_2 (see loginAsSecondUser in spec-login.ts).
-test.skip(!process.env.DATAGROK_AUTH_TOKEN_2, 'requires DATAGROK_AUTH_TOKEN_2 (second-user token)');
-
+// Two-user test: loginAsSecondUser resolves the second token from
+// DATAGROK_AUTH_TOKEN_2 or the config `key2:`, and throws if neither exists —
+// so this fails (rather than skips) when no second user is configured.
 const readLogin = (page: any) =>
   page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
 

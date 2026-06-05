@@ -141,6 +141,7 @@ import {
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareProjectViaContextMenu,
+  shareWithSecondUserAndVerify,
 } from '../helpers/projects';
 
 test.use(specTestOptions);
@@ -415,8 +416,11 @@ test('BiostructureViewer — GROK-17485 ad-hoc PDB project-persistence regressio
       const tileVisible = await tileLocator.first().isVisible({timeout: 15_000}).catch(() => false);
       if (!tileVisible) {
         // Tile not visible — likely the dashboards index has not refreshed for
-        // the just-saved project. Skip share leg with a recorded SR.
-        test.skip(true, 'SR-01 share leg: project tile not visible in Browse > Dashboards within 15s after save');
+        // the just-saved project. This step covers the UI Share *dialog* only;
+        // degrade with a warning (NOT test.skip, which would abort the whole
+        // test) so the real cross-user leg in steps 5-6 still executes via the
+        // robust JS-API share helper.
+        console.warn('SR-01 share-dialog leg: project tile not visible in Browse > Dashboards within 15s after save (UI dialog coverage skipped; JS-API cross-user leg still runs)');
         return;
       }
 
@@ -429,8 +433,9 @@ test('BiostructureViewer — GROK-17485 ad-hoc PDB project-persistence regressio
         const errStr = String(e).slice(0, 400);
         // The share dialog flow can fail when the recipient group does not
         // exist on this server, or when the recipient-picker dropdown does
-        // not surface the expected entry. Treat as partial-deferral (SR-01).
-        test.skip(true, `SR-01 share leg: shareProjectViaContextMenu raised "${errStr}"`);
+        // not surface the expected entry. Degrade with a warning (UI dialog
+        // coverage only) so steps 5-6 cross-user verification still runs.
+        console.warn(`SR-01 share-dialog leg: shareProjectViaContextMenu raised "${errStr}" (UI dialog coverage skipped; JS-API cross-user leg still runs)`);
         return;
       }
 
@@ -458,26 +463,28 @@ test('BiostructureViewer — GROK-17485 ad-hoc PDB project-persistence regressio
       expect(permsOk.ok, `Share leg server-side verification failed: ${(permsOk as any).reason}`).toBe(true);
     });
 
-    await softStep('Scenario 2 steps 5-6 — Cross-user reopen (deferred when PW_OTHER_USER unset; SR-01)', async () => {
-      const otherUserCreds = process.env.PW_OTHER_USER;
-      if (!otherUserCreds) {
-        // Per scenario .md Setup: second-account setup is out of scope here;
-        // pass as injected test context (process.env.PW_OTHER_USER). When
-        // absent, the cross-user reopen leg is deferred per SR-01. The
-        // same-user save+reopen invariant (Scenario 1) is the structural
-        // regression guard; the cross-user leg adds permissions-traversal
-        // coverage, which is necessary for full GROK-17485 coverage but
-        // not for the regression-guard contract.
-        test.skip(true, 'SR-01: PW_OTHER_USER fixture absent; cross-user reopen leg deferred');
+    await softStep('Scenario 2 steps 5-6 — Cross-user reopen: share to second user + verify recipient visibility', async () => {
+      if (!sharedProjectId) return;
+      // Real cross-user leg via the shareWithSecondUserAndVerify helper: it
+      // shares the project to the second user's GROUP (never the bare User —
+      // that violates permissions_user_group_id_fkey), verifies the grant
+      // owner-side, re-authenticates as the second user (token2), confirms the
+      // shared project is visible by NAME, then restores the primary session.
+      // The helper RELOADS the page during re-auth, so this MUST be the last
+      // action before the finally cleanup of the scenario.
+      //
+      // Verifying the recipient can SEE the shared project is the minimal,
+      // reliable cross-user assertion for the GROK-17485 "re-render for the
+      // recipient" intent. Without DATAGROK_AUTH_TOKEN_2 the helper returns
+      // recipientVisible: null (graceful) and we only assert when non-null.
+      const r = await shareWithSecondUserAndVerify(page, {id: sharedProjectId, name: sharedProjectName});
+      if (!r.shared) {
+        // Genuine environmental blocker (no recipient group / share failed) —
+        // preserve the Validator-Gate-B test.skip philosophy for env blockers.
+        test.skip(true, 'cross-user share leg: ' + r.reason);
         return;
       }
-      // When the fixture IS provided, drive a second-user reopen via JS API
-      // (re-auth path is helper-mediated; cross-user verification asserts
-      // payload survives the share boundary). Future cycle: extract a
-      // logoutAndLoginAs helper once the second-user fixture story lands.
-      // Current cycle: this branch is unreachable under default invocation;
-      // documented for future when fixture is wired.
-      test.skip(true, 'SR-01: PW_OTHER_USER cross-user reopen helper not yet wired (helpers-candidates entry needed)');
+      if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
     // Cleanup — delete created projects + their TableInfos. Best-effort; the

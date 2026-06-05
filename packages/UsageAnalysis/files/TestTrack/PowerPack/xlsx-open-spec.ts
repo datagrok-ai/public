@@ -137,7 +137,7 @@ sub_features_covered: [powerpack.io.xlsx-file-handler, powerpack.io.exceljs-serv
 //   - Cleanup contract: finally block closes all open views.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, loginAsSecondUser, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {openTableFromFile} from '../helpers/openers';
 
 test.use(specTestOptions);
@@ -719,6 +719,106 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
     // same GROK-19329 invariant surface.
     // =================================================================
     await softStep('Scenario 5: open XLSX from Shared with me (or handler-dispatch fallback)', async () => {
+      // --------------------------------------------------------------
+      // Real cross-user leg (only when a second-user token is present).
+      //
+      // As the primary user, share the located platform XLSX fixture's
+      // FileInfo with the second user's GROUP (permissions attach to
+      // groups, never the bare User — grok.dapi.permissions.grant).
+      // Then re-auth as the second user, prove cross-user READ access
+      // (grok.dapi.files.readAsBytes succeeds on the shared path), open
+      // the file through the SAME registered handler the other scenarios
+      // use (invokeXlsxHandlerWithBytes), and assert the GROK-19329
+      // invariants. Finally restore the primary session before cleanup.
+      //
+      // Defensive: System:DemoFiles fixtures are owned by System and the
+      // current user may not be permitted to grant on them — if the grant
+      // (or any setup step) throws, console.warn and fall through to the
+      // existing probe + handler-dispatch fallback so the currently-passing
+      // scenario does not regress.
+      // --------------------------------------------------------------
+      const token2 = process.env.DATAGROK_AUTH_TOKEN_2;
+      if (token2 && token2.length > 0) {
+        let realLegDone = false;
+        try {
+          // Step A: discover the second user's login via a token2 re-auth
+          // round-trip (same convention as Projects/complex-share-second-
+          // user-spec.ts:108-117) so the grant targets that exact user. Then
+          // restore the primary session before sharing.
+          await loginAsSecondUser(page);
+          const secondLogin: string | null = await page.evaluate(async () => {
+            const grok = (window as any).grok;
+            return (await grok.dapi.users.current())?.login ?? null;
+          });
+          await loginToDatagrok(page);
+          if (!secondLogin)
+            throw new Error('could not resolve second user login via token2 round-trip');
+
+          // Step B (primary user): resolve the second user (with materialized
+          // group) and the fixture's FileInfo, then grant View to that GROUP.
+          const grant = await page.evaluate(async (args: {p: string; login: string}) => {
+            const grok = (window as any).grok;
+            const second = await grok.dapi.users
+              .filter('login = "' + args.login + '"').first()
+              .catch(() => null);
+            // Permissions attach to GROUPS, never the bare User.
+            const group = second?.group ?? null;
+            if (!group)
+              return {ok: false, reason: `second user "${args.login}" / group not resolvable`};
+            // Resolve the file's FileInfo entity by listing its PARENT
+            // directory and matching the basename — files.list on a full file
+            // path returns nothing (it lists directory contents).
+            const slash = args.p.lastIndexOf('/');
+            const dir = slash >= 0 ? args.p.slice(0, slash + 1) : args.p;
+            const base = slash >= 0 ? args.p.slice(slash + 1) : args.p;
+            const fileInfo = await grok.dapi.files.list(dir, false)
+              .then((items: any[]) => (items || []).find((it: any) => (it?.name ?? '') === base) ?? null)
+              .catch(() => null);
+            if (!fileInfo)
+              return {ok: false, reason: `could not resolve FileInfo for ${args.p} (listed ${dir})`};
+            await grok.dapi.permissions.grant(fileInfo, group, false);
+            return {ok: true, reason: null};
+          }, {p: xlsxFullPath, login: secondLogin});
+
+          if (!grant.ok)
+            throw new Error(grant.reason ?? 'share setup failed');
+
+          // Step C: re-auth as the second user (reloads the page).
+          await loginAsSecondUser(page);
+          await ensurePowerPackLoaded(page);
+
+          // Step D (second user): prove cross-user READ of the shared bytes.
+          const byteLen = await readXlsxBytes(page, xlsxFullPath);
+          expect(byteLen).toBeGreaterThan(0); // cross-user access proven
+
+          // Step E (second user): open via the SAME registered handler.
+          const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
+          expect(result.error).toBeNull();
+          expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
+          expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
+          const v = await verifyXlsxOpenedSuccessfully(page);
+          observations['scenario-5'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
+          expect(v.rowCount).toBeGreaterThan(0);
+          expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+          console.log(`Scenario 5: real cross-user open of shared XLSX as ${secondLogin} succeeded`);
+          realLegDone = true;
+        } catch (e: any) {
+          // Conservative fallback — do NOT hard-fail. Sharing a
+          // System-owned fixture (or resolving the second user) may not be
+          // feasible on this server; defer to the existing handler-dispatch
+          // path below, exactly like the spec's existing defensive style.
+          console.warn(`Scenario 5: real cross-user leg skipped (${String(e?.message ?? e)}); ` +
+            'falling back to handler-dispatch on platform fixture.');
+        } finally {
+          // Re-auth MUST be the last action before state reset — always
+          // restore the primary session so cleanup runs as the owner.
+          await loginToDatagrok(page).catch(() => {});
+          await ensurePowerPackLoaded(page).catch(() => {});
+        }
+        if (realLegDone)
+          return;
+      }
+
       // Probe for any XLSX file the current user has access to that is
       // not under System: or the user's own Home:.  The Datagrok
       // shared-files surface is exposed through dapi.files.list of

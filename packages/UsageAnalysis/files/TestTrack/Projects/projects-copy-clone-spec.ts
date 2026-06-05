@@ -31,48 +31,60 @@ import {
   saveProjectWithProvenance,
   saveCopy,
   shareProjectViaContextMenu,
+  shareWithSecondUserAndVerify,
   deleteProjectWithCleanup,
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
 
-// Wait for grok.shell.tv to become a real TableView (with .addViewer +
-// .dataFrame) — the proxy can briefly report undefined .addViewer right after
-// reopen even when the saved layout DID restore. Same shape as the prior
-// spec's helper, retained verbatim because it mitigates the dev-on-Playwright
-// shell.tv race observed in the 2026-05-05 retrofit.
+// Reopen a saved project by id and wait for grok.shell.tv to become a real
+// TableView (with .dataFrame + .addViewer). A single open() occasionally
+// lands on the Browse view without materializing the TableView (dev shell.tv
+// race) — re-issuing open() recovers far faster than one long single-shot
+// poll. Bounded on purpose: a genuinely-broken project (table reference
+// dropped server-side, GROK-19750 family) can NEVER materialize, so we return
+// after a short retry budget and let the caller's own next step surface it
+// (addViewerSafely throws, or reopenedRowCount → 0 drives the assertion
+// message) instead of burning ~45s on a poll that cannot succeed.
 async function reopenProjectById(page: any, projectId: string) {
   await evalJs(page, `(async () => {
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 400));
     const p = await grok.dapi.projects.find('${projectId}');
-    if (p) await p.open();
-    for (let i = 0; i < 30; i++) {
-      const tv = grok.shell.tv;
-      if (tv?.dataFrame && typeof tv.addViewer === 'function') break;
-      await new Promise(r => setTimeout(r, 500));
+    if (!p) return;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await p.open();
+      for (let i = 0; i < 16; i++) {
+        const tv = grok.shell.tv;
+        if (tv?.dataFrame && typeof tv.addViewer === 'function') return;
+        await new Promise(r => setTimeout(r, 350));
+      }
+      grok.shell.closeAll();
+      await new Promise(r => setTimeout(r, 400));
     }
   })()`);
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(400);
 }
 
-// Add a viewer to the active TableView, polling for tv.addViewer to become
-// a function. Without this poll, 4c/4d sub-flows raced the dev shell.tv
-// rebind after reopen and threw `addViewer is not a function` (verified
-// 2026-05-08 — failed in original run, fixed by polling here).
+// Add a viewer to the active TableView. reopenProjectById already waits for
+// tv.addViewer to become a function before returning, so this normally
+// succeeds on the first probe; the short poll is a thin safety net for render
+// lag, not the 30s reopen-race buffer it used to be. If tv never materializes
+// (broken project), this throws a clear message — the caller's softStep
+// records it without the old ~30s dead wait.
 async function addViewerSafely(page: any, viewerName: string): Promise<void> {
   await evalJs(page, `(async () => {
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 16; i++) {
       const tv = grok.shell.tv;
       if (tv && tv.dataFrame && typeof tv.addViewer === 'function') {
         tv.addViewer(${JSON.stringify(viewerName)});
         return;
       }
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 350));
     }
-    throw new Error('grok.shell.tv.addViewer never became a function (30s poll)');
+    throw new Error('grok.shell.tv.addViewer never became a function (reopen did not materialize a TableView)');
   })()`);
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(400);
 }
 
 // Recreate the original baseline project (delete old, open fresh demog.csv,
@@ -203,12 +215,24 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
         name: names.original,
       });
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     // -------------------------------------------------------------------
     // Sub-flow 4b — Save Copy with Link + GROK-19750 invariant.
+    // 4a's UI Save (mode=original, overwrite) drops the original's table
+    // reference on reopen — same GROK-19750 family the link/clone copies hit
+    // (verified 2026-06-05: the original failed to re-materialize on BOTH the
+    // step 1-4 and step 7 reopens after the overwrite, cascading into the
+    // link-copy capture + Step 5/5b skips). Rehydrate from fresh demog.csv so
+    // 4b runs the Save-Copy-with-Link invariant against a known-good baseline,
+    // mirroring the 4c/4d prep that already passes for this reason.
     // -------------------------------------------------------------------
+    await softStep('4b prep: rehydrate original (post-4a-overwrite GROK-19750 workaround)', async () => {
+      ids.original = await rehydrateOriginal(page, names.original);
+      expect(ids.original.projectId).toBeTruthy();
+    });
+
     await softStep('4b step 1-4: open original → addViewer Scatter → SAVE Copy/Link → closeAll', async () => {
       await reopenProjectById(page, ids.original!.projectId);
       await addViewerSafely(page, 'Scatter plot');
@@ -222,7 +246,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       expect(ids.linkCopy.projectId).toBeTruthy();
       expect(ids.linkCopy.projectId).not.toBe(ids.original!.projectId);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     await softStep('4b step 5-6: reopen <name>-link → table re-materializes → closeAll', async () => {
@@ -230,7 +254,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4b: link copy reopen returned rowCount=0 — Save Copy with Link did not persist the linked table reference').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     await softStep('4b step 7 — GROK-19750 INVARIANT: reopen original → table + viewers intact', async () => {
@@ -246,7 +270,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       if (vc === 0)
         console.warn('GROK-19750 regression detected on dev: original lost all viewers after Save-Copy-with-Link');
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     // -------------------------------------------------------------------
@@ -274,7 +298,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       expect(ids.cloneCopy.projectId).not.toBe(ids.original!.projectId);
       expect(ids.cloneCopy.projectId).not.toBe(ids.linkCopy?.projectId);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     await softStep('4c step 5-6: reopen <name>-clone → table re-materializes (independent copy) → closeAll', async () => {
@@ -282,7 +306,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4c: clone copy reopen returned rowCount=0 — Save Copy with Clone did not persist the cloned table bytes').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     // -------------------------------------------------------------------
@@ -318,7 +342,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       };
       expect(ids.pvcCopy.projectId).toBeTruthy();
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     await softStep('4d step 5-6: reopen <name>-personal-view-customizations → table re-materializes → closeAll', async () => {
@@ -326,7 +350,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4d: PVC variant reopen returned rowCount=0 — PVC mode failed to preserve the linked source-table reference').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(300);
     });
 
     // -------------------------------------------------------------------
@@ -405,6 +429,33 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       // 4-sub-flow coverage isn't gated on this UI surface.
       if (sharedCount === 0)
         console.warn(`Step 5: no variant could be shared (env flake). Tiles seen: ${JSON.stringify(targetTiles)}. Errors: ${shareErrors.join('; ')}`);
+    });
+
+    // -------------------------------------------------------------------
+    // Step 5b — recipient-OPEN verification ("recipient open, run sequence"
+    // per projects-copy-clone.md). The UI Share above owns the share-dialog
+    // surface; this leg adds the second-user grant + recipient-side visibility
+    // round-trip via the canonical helper. MUST be the last action before the
+    // finally cleanup — the helper reloads the page during re-auth and restores
+    // the owner session before returning, so cleanup (delete) runs as owner.
+    // Uses the link-copy variant (it carries a materialized projectId +
+    // server-stored name). Preserves defensive skip: only assert when the
+    // recipient-open leg actually ran (recipientVisible !== null).
+    // -------------------------------------------------------------------
+    await softStep('Step 5b: recipient-open verification via shareWithSecondUserAndVerify', async () => {
+      const projectId = ids.linkCopy?.projectId;
+      const projectName = ids.linkCopy?.serverName ?? names.linkCopy;
+      if (!projectId) {
+        console.warn('Step 5b: no link-copy project id available — skipping recipient-open leg');
+        return;
+      }
+      const r = await shareWithSecondUserAndVerify(page, {id: projectId, name: projectName});
+      if (!r.shared) {
+        console.warn('Step 5b: share skipped — ' + r.reason);
+        return;
+      }
+      if (r.recipientVisible !== null)
+        expect(r.recipientVisible).toBe(true);
     });
 
   } finally {

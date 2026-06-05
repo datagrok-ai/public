@@ -1,16 +1,17 @@
 // Shared helpers for Projects regression specs.
-// All specs run against the configured Datagrok host using the storageState
-// from ../e2e/.auth.json — written by ../e2e/global-setup.ts at suite start.
+// Auth is token-based: `gotoApp` injects DATAGROK_AUTH_TOKEN via
+// `loginToDatagrok` (spec-login.ts), the path `grok test` supports. The old
+// committed storageState (../e2e/.auth.json) is regenerated only locally and
+// goes stale fast on dev — there is no globalSetup to refresh it — so it is
+// no longer used here.
 // Helpers transcribed from .claude/skills/grok-browser/references/projects.md
 // and .claude/skills/grok-browser/references/widgets/dialog.md.
 import {Page, expect} from '@playwright/test';
-import * as path from 'path';
+import {loginToDatagrok} from '../spec-login';
 
 export const BASE_URL = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-export const AUTH_FILE = path.resolve(__dirname, '..', 'e2e', '.auth.json');
 
 export const projectsTestOptions = {
-  storageState: AUTH_FILE,
   baseURL: BASE_URL,
   viewport: {width: 1920, height: 1080},
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
@@ -23,8 +24,9 @@ export async function evalJs<T = any>(page: Page, script: string): Promise<T> {
 }
 
 export async function gotoApp(page: Page) {
-  await page.goto(BASE_URL);
-  await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
+  // Token injection (spec-login.ts) navigates to BASE_URL and waits for the
+  // Browse panel — the grok-test-compatible auth path.
+  await loginToDatagrok(page);
 }
 
 export async function closeAll(page: Page) {
