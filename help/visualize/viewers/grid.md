@@ -593,6 +593,22 @@ Click the hamburger menu on the right of the input field to access these options
 
 :::
 
+### Copy and paste cell values
+
+To copy a cell value:
+
+1. Navigate to the cell (use arrow keys or click it).
+2. Press **Ctrl+C** to copy the value to your clipboard.
+
+To paste a value into a cell:
+
+1. **Double-click** the cell to enter edit mode.
+2. Press **Ctrl+V** to paste.
+
+You can also right-click any cell to access **Copy** and **Paste** options via the context menu.
+
+For a full list of keyboard shortcuts, see [Controls](#controls).
+
 ### Format cells
 
 To change a cell's format:
@@ -842,4 +858,3 @@ See also:
   * [Grid updates](https://community.datagrok.ai/t/grid-updates/616)
   * [Power Grid: Smart form](https://community.datagrok.ai/t/power-grid-smart-form/774)
   * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-
