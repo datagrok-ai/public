@@ -599,6 +599,16 @@ export const TreeWizard = Vue.defineComponent({
         if (oldIndex !== newIndex)
           moveStep(draggedStep.data.uuid, newIndex);
       }
+      // he-tree skips inbound modelValue rebuilds while its `dragNode` data is set. A slow
+      // frame or a debugger pause during drag-end can strand `dragNode` truthy, which then
+      // freezes every later structural update (added/removed steps stop rendering). The
+      // library clears it in its own `dragend` handler, but that path is unreliable under
+      // interruption; `after-drop` fires reliably, so clear it here too.
+      const inst = treeInstance.value as any;
+      if (inst) {
+        inst.dragNode = null;
+        inst.dragOvering = false;
+      }
     };
 
     const isDeletable = (stat: AugmentedStat) => {
@@ -731,6 +741,7 @@ export const TreeWizard = Vue.defineComponent({
 
                 rootDroppable={false}
                 treeLine
+                updateBehavior='disabled'
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
                 statHandler={restoreOpenedNodes}
