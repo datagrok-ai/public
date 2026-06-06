@@ -13,15 +13,35 @@ import {
 } from '@datagrok-libraries/test/src/test';
 
 export * from '@datagrok-libraries/test/src/test';
+import {_rdKitModule} from '../utils/chem-common-rdkit';
 
 let _currentCategory = '';
+
+// Temporary: reads the RDKit WASM heap size and the JS heap so we can plot
+// cumulative memory growth across the suite and locate where it balloons —
+// the suite's silent freeze looks like a WASM-heap OOM that floats run-to-run.
+function memHint(): string {
+  let wasmMb = '?';
+  let jsMb = '?';
+  try {
+    const buf = (_rdKitModule as any)?.HEAPU8?.buffer ?? (_rdKitModule as any)?.HEAP8?.buffer;
+    if (buf?.byteLength)
+      wasmMb = (buf.byteLength / 1048576).toFixed(1);
+  } catch {/* ignore */}
+  try {
+    const used = (performance as any)?.memory?.usedJSHeapSize;
+    if (used)
+      jsMb = (used / 1048576).toFixed(1);
+  } catch {/* ignore */}
+  return `wasm=${wasmMb}MB js=${jsMb}MB`;
+}
 
 function log(kind: 'TEST' | 'BEFORE' | 'AFTER', phase: 'START' | 'END',
   cat: string, name?: string, dtMs?: number): void {
   const ts = new Date().toISOString();
   const where = name ? `"${cat}" / "${name}"` : `"${cat}"`;
   const tail = dtMs !== undefined ? ` (${dtMs.toFixed(1)} ms)` : '';
-  console.log(`[TIMING ${ts}] ${kind.padEnd(6)} ${phase.padEnd(5)} ${where}${tail}`);
+  console.log(`[TIMING ${ts}] ${kind.padEnd(6)} ${phase.padEnd(5)} ${where}${tail} [MEM ${memHint()}]`);
 }
 
 export function category(name: string, tests_: () => void, options?: CategoryOptions): void {
