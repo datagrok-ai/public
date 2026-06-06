@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.model.fire-bitset-changed, peptides.rendering.weblogo-header, peptides.util.modify-selection, peptides.util.get-selection-bitset, peptides.widgets.distribution, peptides.widgets.selection]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 function isNullReceiverCrash(lastError: string): boolean {
@@ -205,14 +203,8 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       `GROK-14298 invariant: the first broadcast produced a null-receiver crash: ${result.lastError}`)
       .toBe(false);
   });
-  // ---- Scenario 2 — Shift / Ctrl modifier semantics: additive then toggle-off, each
-  //      re-broadcast keeps the cross-surface mirror consistent ----
-  // Steps 1-8: starting from the Scenario-1 single pick, Shift-click a second distinct
-  // (monomer, position) for additive selection (union, not replacement), then Ctrl-click it to
-  // toggle it off (back to the single-pick state). Assert the additive/toggle transitions on the
-  // unified Selection map + the projected BitSet, the cross-surfaces stay consistent across both
-  // re-broadcasts, and no null-receiver crash on either re-broadcast (GROK-14298 listener-
-  // mutation crash mode).
+  // Scenario 2 — Shift-click additive (union) then Ctrl-click toggle-off, asserting cross-surface
+  // consistency and no null-receiver crash on either re-broadcast (GROK-14298 listener-mutation mode).
   await softStep('Scenario 2 (steps 1-8): Shift additive then Ctrl toggle-off re-broadcast', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -299,8 +291,6 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       };
     });
     expect(result.twoPicksFound, 'need two distinct partial-count WebLogo picks for the modifier flow').toBe(true);
-    // Step 2: Shift-add did not throw; additive semantics — union grows beyond the single pick
-    // (additive, not replacement).
     expect(result.shiftThrew, `Shift-add WebLogo handler threw: ${result.shiftThrew}`).toBeNull();
     expect(result.selAdditive, 'Shift-click did not grow the selection (additive union expected, not replacement)')
       .toBeGreaterThan(result.selSingle!);
@@ -342,10 +332,6 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       `GROK-14298 invariant: the Ctrl re-broadcast produced a null-receiver crash: ${result.lastErrorAfterCtrl}`)
       .toBe(false);
   });
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

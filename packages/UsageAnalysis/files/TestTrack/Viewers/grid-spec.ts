@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -8,20 +9,7 @@ test('Grid tests', async ({ page }) => {
 
   await loginToDatagrok(page);
 
-  // Setup: close all, open demog, wait for semantic type detection
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = (df as any).onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({ timeout: 30000 });
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
   // Sorting
   await softStep('Sorting: sort AGE desc then asc via JS API', async () => {
@@ -672,10 +660,5 @@ test('Grid tests', async ({ page }) => {
       throw new Error('Grid did not switch to smaller spgi-100 table');
   });
 
-  if (stepErrors.length > 0) {
-    throw new Error(
-      'Some steps failed:\n' +
-      stepErrors.map(e => `  [${e.step}]: ${e.error}`).join('\n')
-    );
-  }
+  v.finishSpec();
 });

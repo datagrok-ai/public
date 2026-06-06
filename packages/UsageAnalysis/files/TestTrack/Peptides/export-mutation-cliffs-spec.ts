@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.viewers.sar-base.export-mutation-cliffs, peptides.viewers.sar-base, peptides.viewers.monomer-position, peptides.workflow.start-analysis]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const BASE_EXPORT_COLS = ['Seq 1', 'Seq 2', 'Mutation', 'Seq 1 IC50', 'Seq 2 IC50', 'Delta'];
@@ -226,10 +224,6 @@ test('Peptides — Export Mutation Cliffs to a new TableView', async ({page}) =>
       .toBe(BASE_EXPORT_COLS.length + 2);
     expect(result.rows, 'paired-column export grid is empty').toBeGreaterThan(0);
   });
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

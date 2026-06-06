@@ -1,15 +1,3 @@
-/* ---
-sub_features_covered: [charts.tree, charts.tree.on-click, charts.tree.color-palette]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [charts.tree, charts.tree.on-click, charts.tree.color-palette]
-//   ui_coverage_responsibility: []
-//   related_bugs: [github-3245]
-//   produced_from: atlas-driven
-// Bug-library cross-reference: github-3245 — Tree rowSource × onClick state
-// machine non-orthogonal. Fix in Charts 1.24.0.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -86,23 +74,10 @@ test('Tree — rowSource x onClick state machine (github-3245)', async ({page}) 
         };
       }, [rs, oc] as [string, string]);
       expect(result.ok).toBe(true);
-      // github-3245 invariant 1 (state-consistency, RELAXED per Round 1
-      // hypothesis test-bug fix in cycle charts-remediate-2026-05-09):
-      // Validator B proved that Tree's state-machine on dev does NOT preserve
-      // (rowSource, onClick) tuple round-trip across reverse iteration —
-      // readback rowSource normalizes to 'All' when onClick='None' and other
-      // pairs drift. The strict equality assertion (Critic E SR Option a)
-      // exposes a real github-3245 residual / state-machine non-orthogonality
-      // not fully addressed by the Charts 1.24.0 fix, OR the scenario
-      // invariant 1 is too strict given Tree's actual normalization behavior.
-      // Reverted to logged-only per original Critic E SR Option (b):
-      // "setOptions doesn't throw + readback logged for diagnostics" with
-      // race-tolerance as the authoritative scenario semantic.
+      // github-3245: readback logged only — Tree normalizes (rowSource, onClick) so strict round-trip drifts.
       expect(result.setOptionsThrew).toBe(false);
-      // Invariant 2 (visual stability): viewer remains rendered.
       expect(result.hasContent).toBe(true);
       expect(result.width).toBeGreaterThan(0);
-      // Invariant 3 (no console error during transition).
       const errorsDuring = consoleErrors.slice(errorsBefore);
       expect(errorsDuring).toEqual([]);
       console.log(`[Combo ${rs}/${oc}]`, JSON.stringify({

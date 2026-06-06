@@ -1,13 +1,7 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.shell.share-via-context-menu, projects.api.get-by-id]
-generated_from: projects-lifecycle-files.md (Phase B canonical openers + uploadProject + reopen-verify)
---- */
-// File-source lifecycle: open, save with provenance, reopen-verify, share,
-// rename, delete. Phase B 2026-05-05 — replaces grok.dapi.files.readCsv path
-// (which produced no .script tag) with helpers.playwright.openers.openTableFromFile.
-// Reference: .claude/diagnostics/mcp-capture-files.md
+// File-source lifecycle: open, save with provenance, reopen-verify, share, rename, delete.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromFile,
@@ -41,11 +35,8 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
     await softStep('Step 1: open demog.csv from System:DemoFiles via OpenFile', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       expect(opened.rowCount).toBeGreaterThan(0);
-      // Gate E-PROV-01: verify .script tag is set with the expected pattern.
       await assertProvenanceScript(page, 'files', opened.script);
-      // Accept both colon-form (`System:DemoFiles`) and dot-form
-      // (`System.DemoFiles`) — openTableFromFile normalizes `:` → `.`
-      // before passing fullPath to OpenFile (workaround for bug 2a).
+      // Accept colon-form and dot-form — openTableFromFile normalizes `:` → `.` (bug 2a workaround).
       expect(opened.script).toMatch(/OpenFile\("System[:.]DemoFiles\/demog\.csv"\)/);
     });
 
@@ -79,8 +70,7 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       expect(r.persistedName).toBe(renamed);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for
-    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 5: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});
@@ -95,8 +85,5 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, login} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, login} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -9,25 +10,10 @@ const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 test('Box plot tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate + login
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // Phase 3: Add Box Plot via toolbox icon
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-box-plot"]');
     if (icon) (icon as HTMLElement).click();
@@ -532,8 +518,5 @@ test('Box plot tests', async ({page}) => {
     await page.evaluate(() => grok.shell.closeAll());
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

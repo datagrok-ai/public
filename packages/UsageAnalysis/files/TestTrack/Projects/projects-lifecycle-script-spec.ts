@@ -1,17 +1,7 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.api.relations.list, projects.add-relation, projects.shell.share-via-context-menu, projects.api.get-by-id]
-related_bugs: [GROK-19403, GROK-19728]
-generated_from: projects-lifecycle-script.md (Phase B canonical openers + uploadProject + reopen-verify)
---- */
-// Script-source lifecycle. Phase B 2026-05-05 — replaces the broken
-// `grok.functions.eval('Samples:Cars()')` (Cars is scalar-output and
-// rejects no-input call → spec always silently skipped) with a
-// fixture script provisioned via DG.Script.create that wraps
-// grok.data.getDemoTable('demog.csv') and has output: dataframe df.
-// This mirrors the test_Layout fixture in scripts-layout.test.ts:24-29.
-// Reference: .claude/diagnostics/mcp-capture-scripts.md
+// Script-source lifecycle on a provisioned dataframe-output script (wraps grok.data.getDemoTable('demog.csv')).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromScript,
@@ -78,11 +68,8 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       expect(result.reopenedScript).toMatch(new RegExp(provisioned.resolvedName));
     });
 
-    // Share is LAST step before finally — the helper reloads the page for
-    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
-    // GROK-19403 recipient re-auth is now WIRED via shareWithSecondUserAndVerify
-    // (token2-based second-user round-trip); recipient visibility is asserted
-    // when DATAGROK_AUTH_TOKEN_2 is configured.
+    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
+    // GROK-19403 recipient re-auth wired via shareWithSecondUserAndVerify (asserted when DATAGROK_AUTH_TOKEN_2 set).
     await softStep('Step 4: GROK-19403 — share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName}, {full: true});
@@ -99,8 +86,5 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       await deleteProjectWithCleanup(page, {scriptId: provisioned.scriptId});
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

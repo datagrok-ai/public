@@ -1,5 +1,6 @@
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -12,7 +13,6 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open demog dataset
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     (grok.shell.settings as any).showFiltersIconsConstantly = true;
@@ -27,7 +27,6 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Forms viewer via toolbox icon
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-Forms"]');
     if (icon) (icon as HTMLElement).click();
@@ -343,10 +342,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   // ---- Renderer size ----
 
   await softStep('Renderer Size: default is a known value', async () => {
-    // The default value is build-dependent (has been both 'small' and 'normal'
-    // across builds — see Curves softStep below). Assert it's one of the
-    // documented options rather than a specific literal — the subsequent
-    // small/normal/large round-trip steps verify the property is writable.
+    // Default is build-dependent ('small' or 'normal'); assert it's one of the documented options.
     const val = await page.evaluate(() => {
       const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
       return forms.props.rendererSize;
@@ -548,10 +544,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Curves: default rendererSize is one of small|normal|large', async () => {
-    // Default is build-dependent on this dataset (Curves) too — author saw
-    // 'small' once but later builds default to 'normal'. The round-trip is
-    // tested separately; here we only assert the default lands in the
-    // documented set.
+    // Default is build-dependent; only assert it lands in the documented set.
     const val = await page.evaluate(async () => {
       await new Promise(r => setTimeout(r, 500));
       const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
@@ -592,8 +585,5 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.small).toBe('small');
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

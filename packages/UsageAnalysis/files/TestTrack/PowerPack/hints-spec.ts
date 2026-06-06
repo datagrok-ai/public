@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('PowerPack: Add new column — hover inserted function name surfaces signature tooltip (demog)', async ({page}) => {
   test.setTimeout(300_000);
@@ -117,8 +115,5 @@ test('PowerPack: Add new column — hover inserted function name surfaces signat
   await page.evaluate(() => {
     try { (window as any).grok.shell.closeAll(); } catch (_) {  }
   }).catch(() => {  });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

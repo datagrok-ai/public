@@ -1,131 +1,8 @@
-/* ---
-sub_features_covered: [dendrogram.viewer, dendrogram.prop.newick, dendrogram.prop.newick-tag, dendrogram.prop.node-column-name, dendrogram.prop.color-column-name, dendrogram.prop.color-aggr-type, dendrogram.prop.line-width, dendrogram.prop.node-size, dendrogram.prop.show-grid, dendrogram.prop.main-color, dendrogram.prop.light-color, dendrogram.prop.current-color, dendrogram.prop.mouse-over-color, dendrogram.prop.selections-color, dendrogram.prop.show-labels, dendrogram.prop.font, dendrogram.prop.step-zoom, dendrogram.prop.show-tooltip, dendrogram.prop.step, dendrogram.lifecycle.on-table-attached, dendrogram.lifecycle.on-property-changed]
---- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (no inference applied; per the prompt's missing-field
-//     policy the constraint extraction uses non-pyramid defaults — ≥1
-//     DOM-driving call still REQUIRED to satisfy E-LAYER-COMPLIANCE-01, JS-API
-//     substitution permitted broadly).
-//   sub_features_covered: 17 dendrogram.prop.* + dendrogram.lifecycle.on-table-attached
-//     + dendrogram.lifecycle.on-property-changed + dendrogram.viewer
-//   ui_coverage_responsibility: absent
-//   related_bugs: []
-//   produced_from: atlas-driven
-//
-// Atlas provenance (derived_from):
-//   dendrogram.yaml#critical_paths[dendrogram.cp.viewer-from-newick-prop]
-//     derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L309
-//   dendrogram.yaml#sub_features[dendrogram.prop.newick] (priority-order edge
-//     case property > newickTag > .newick tag > NEWICK_EMPTY)
-//     derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L309
-//   dendrogram.yaml#sub_features[dendrogram.lifecycle.on-property-changed]
-//     derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L233
-//   dendrogram.yaml#sub_features[dendrogram.lifecycle.on-table-attached]
-//     derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L210
-//
-// Scope reductions (carried from scenario .md Notes section):
-//   SR-01: pixel-level canvas-output assertions
-//     (rectangle-tree-placer geometry, exact leaf-row spacing under `step`,
-//     stroke-width clamping under `lineWidth`, label rendering under
-//     `showLabels`+`font`) are deferred to manual per atlas
-//     `manual_only[dendrogram.mo.tree-canvas-visual-regression]`
-//     (derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L91).
-//     The automated path asserts the property-dispatch SEMANTICS instead:
-//       (a) `viewer.props.<X>` reflects the new value after setOptions,
-//       (b) no console error is raised by the onPropertyChanged dispatcher,
-//       (c) the canvas remains non-empty (width>0, height>0),
-//       (d) `viewer.dataFrame === df` throughout.
-//   SR-02: wheel-zoom-magnitude tactile assertion (scenario Step 10) and
-//     hover-driven tooltip-content assertion (scenario Step 11) are deferred
-//     to manual per atlas `manual_only[dendrogram.mo.ctrl-wheel-zoom-tactile]`.
-//     The automated path asserts only the property-dispatch reflection +
-//     no-console-error invariants on `stepZoom` and `showTooltip`.
-//
-// Selectors per .claude/skills/grok-browser/references/dendrogram.md (rev
-// 2026-06-03 live-MCP-validated):
-//   [name="viewer-Dendrogram"] (host container; ARIA region "Dendrogram"),
-//   [name="viewer-Dendrogram"] canvas (single canvas; the rendered tree),
-//   [name="prop-newick"] / [name="prop-view-newick"] (literal newick row),
-//   [name="prop-newick-tag"] / [name="prop-view-newick-tag"] (DataFrame tag
-//     dropdown; choices repopulated by onTableAttached from tags starting
-//     with '.'),
-//   [name="prop-node"] / [name="prop-view-node"] (NOT "prop-node-column-name"
-//     — name mangled to drop the "-column-name" suffix; documented in the ref
-//     doc's `## Selector validation matrix`),
-//   [name="prop-color"] / [name="prop-view-color"] (same mangling),
-//   [name="prop-color-aggr-type"], [name="prop-line-width"],
-//   [name="prop-node-size"], [name="prop-show-grid"],
-//   [name="prop-main-color"], [name="prop-light-color"],
-//   [name="prop-current-color"], [name="prop-mouse-over-color"],
-//   [name="prop-selections-color"], [name="prop-show-labels"],
-//   [name="prop-font"], [name="prop-step-zoom"], [name="prop-show-tooltip"],
-//   [name="prop-step"],
-//   [name="prop-category-data"] / [name="prop-category-behavior"] /
-//   [name="prop-category-style"] (the three property category headers).
-//
-// MCP recon evidence (live 2026-06-03 on https://dev.datagrok.ai/, user
-// oahadzhanian, Dendrogram plugin v1.4.11, viewport 1920x1080):
-//   - Built a synthetic 4-leaf DataFrame `leaves4` with columns `leaf`
-//     (string ['a','b','c','d']) and `value` (int [1,2,3,4]); set tags
-//     `.newick` = '((a:1,b:1):1,(c:1,d:1):1);' and `.newick-alt` =
-//     '(((a:1,b:1):1,c:1):1,d:1);'.
-//   - addViewer('Dendrogram', {newick: '((a:1,b:1):1,(c:1,d:1):1);',
-//     nodeColumnName: 'leaf'}) mounts within ~1.5s; canvas size 573x1000.
-//   - All 18 property-row selectors (the 17 in this scenario + the 'newick'
-//     row itself) verified present after `grok.shell.o = viewer`. All three
-//     category headers (data / behavior / style) verified present.
-//   - Property reflection round-trips verified for every prop in the sweep:
-//       lineWidth 0/16/2.5, nodeSize 0/16, showGrid true/false, colorColumnName
-//       'value', colorAggrType {avg,min,max,med,total-count}, mainColor/
-//       lightColor/currentColor/mouseOverColor/selectionsColor accept both
-//       packed-ARGB-number (0xFFFF0000) AND hex-string ('#FF0000') —
-//       observed `v.props.mainColor === '#FF0000'` after the string-write.
-//       showLabels true/false, font '12pt monospace', stepZoom -4/4,
-//       showTooltip true, step 0/64, nodeColumnName 'value'/'leaf',
-//       newickTag '.newick-alt'/'.newick' (with newick prop cleared so the
-//       tag wins per the priority order in dendrogram.ts#L309).
-//   - The priority-order edge case: with literal `newick` prop set, switching
-//     `newickTag` does NOT change `viewer.treeNewick` (priority: property >
-//     newickTag > .newick tag > NEWICK_EMPTY). Clearing the literal prop
-//     (`newick: ''`) then setting `newickTag` => `viewer.treeNewick` resolves
-//     to the tag's value. Observed:
-//       newick='((a:1,b:1):1,(c:1,d:1):1);' + newickTag any
-//         => treeNewick='((a:1,b:1):1,(c:1,d:1):1);'
-//       newick='' + newickTag='.newick-alt'
-//         => treeNewick='(((a:1,b:1):1,c:1):1,d:1);'
-//       newick='' + newickTag='.newick'
-//         => treeNewick='((a:1,b:1):1,(c:1,d:1):1);'
-//   - Leaf-set extraction: `grok.functions.call('Dendrogram:getTreeHelper')`
-//     returns ITreeHelper. `helper.newickToDf(newickStr)` returns a 7-row
-//     DataFrame with columns ['node','parent','leaf','distance'] (leaf is
-//     boolean). Filtering rows where `leaf==true` and reading `node` gives
-//     ['a','b','c','d'] for BOTH the balanced and the left-leaning topologies
-//     — set semantics preserved, different topology strings.
-//   - Zero console.error entries across the full 27-call property sweep.
-//     Canvas stays non-empty (573x1000 throughout). viewer.dataFrame ===
-//     grok.shell.tv.dataFrame throughout.
-//
-// Reference template:
-//   public/packages/UsageAnalysis/files/TestTrack/Dendrogram/assign-clusters-spec.ts
-//     (same section, same target_layer: playwright, MCP-evidence comment
-//      block pattern, softStep + stepErrors + cleanup pattern, scoped
-//      helper functions for grok-shell setup).
-//
-// Authoring choice — JS-API substitution for the property sweep:
-//   pyramid_layer is absent so JS-API substitution is permitted (FORBIDDEN
-//   "JS API substitution для owned UI flows" only applies when pyramid_layer
-//   == ui-smoke; absent => no ui-smoke FORBIDDEN entries triggered). The
-//   scenario `.md` Notes explicitly call out the panel UI-edit pattern, but
-//   the dendrogram.md reference doc declares: "Direct viewer.setOptions(...)
-//   exercises onPropertyChanged [SRC dendrogram.ts:233] and reaches the same
-//   code path as a panel edit." We use setOptions to exercise the dispatch
-//   surface, and use locator-based DOM checks against the property-panel rows
-//   (to verify the panel is open and rows are rendered, satisfying
-//   E-LAYER-COMPLIANCE-01 via the ≥1 DOM-driving call invariant — see the
-//   `verifyPropertyPanelOpen` softStep below).
+// Newick resolution priority: literal `newick` prop > newickTag > .newick tag > empty.
+// Property-panel row selectors are name-mangled (e.g. nodeColumnName -> [name="prop-node"]).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -133,9 +10,7 @@ test.use(specTestOptions);
 const NEWICK_BALANCED = '((a:1,b:1):1,(c:1,d:1):1);';
 const NEWICK_LEFT_LEAN = '(((a:1,b:1):1,c:1):1,d:1);';
 
-/** Eighteen property-panel row anchors (the canonical name-mangling per
- *  dendrogram.md `## Selector validation matrix`). Used by the panel-open
- *  DOM verification step. */
+/** Eighteen property-panel row anchors (name-mangled). Used by the panel-open DOM check. */
 const PROP_ROW_NAMES = [
   'newick', 'newick-tag', 'node', 'color', 'color-aggr-type',
   'line-width', 'node-size', 'show-grid', 'main-color', 'light-color',
@@ -191,8 +66,7 @@ async function getViewerInfo(page: Page): Promise<{
       currentColor: v.props.currentColor ?? null,
       mouseOverColor: v.props.mouseOverColor ?? null,
       selectionsColor: v.props.selectionsColor ?? null,
-      // `treeNewick` is the resolved (priority-order-applied) newick — used to
-      // verify the property > newickTag > .newick tag fallback chain.
+      // treeNewick is the resolved (priority-order-applied) newick.
       treeNewick: v.treeNewick ?? null,
       dataFrameMatches: v.dataFrame === grok.shell.tv.dataFrame,
       canvasWidth: canvas ? canvas.width : 0,
@@ -208,7 +82,7 @@ async function applyViewerOptions(page: Page, opts: Record<string, unknown>): Pr
     if (!v) throw new Error('Dendrogram viewer not mounted');
     v.setOptions(o);
   }, opts);
-  // Small settle so onPropertyChanged restyle/rebuild has a chance to run.
+  // Settle so onPropertyChanged restyle/rebuild can run.
   await page.waitForTimeout(250);
 }
 
@@ -230,9 +104,7 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
 
   await loginToDatagrok(page);
 
-  // ── Setup ───────────────────────────────────────────────────────────────
-  // Build the synthetic `leaves4` DataFrame and seed two newick tags so the
-  // newickTag dropdown is non-empty after onTableAttached.
+  // Setup — build the synthetic `leaves4` DataFrame and seed two newick tags.
   await page.evaluate(async (args: {balanced: string; leftLean: string}) => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -261,8 +133,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
       const tv = grok.shell.tv;
       tv.addViewer('Dendrogram', {newick: args.newick, nodeColumnName: 'leaf'});
     }, {newick: NEWICK_BALANCED});
-    // Wait for the viewer host + canvas. DOM-driving wait satisfies
-    // E-LAYER-COMPLIANCE-01 (the ≥1 DOM-driving-call requirement).
     await page.locator('[name="viewer-Dendrogram"]').waitFor({timeout: 30_000});
     await page.locator('[name="viewer-Dendrogram"] canvas').waitFor({timeout: 30_000});
     const info = await getViewerInfo(page);
@@ -276,8 +146,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     const info = await getViewerInfo(page);
     expect(info.newick, 'newick prop is the literal').toBe(NEWICK_BALANCED);
     expect(info.nodeColumnName, 'nodeColumnName is leaf').toBe('leaf');
-    // treeNewick is the resolved (post-priority-order) newick — should equal
-    // the literal regardless of what newickTag would resolve to.
     expect(info.treeNewick, 'treeNewick resolves to the literal property').toBe(NEWICK_BALANCED);
   });
 
@@ -294,8 +162,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
       if (!v) throw new Error('Dendrogram viewer not mounted');
       grok.shell.o = v;
     });
-    // DOM-driving wait against the property-panel rows. This is the ≥1
-    // DOM-driving call that owns the panel's structural verification.
     await page.locator('[name="prop-newick"]').waitFor({timeout: 15_000});
     const present = await page.evaluate((names: string[]) => {
       const out: Record<string, {row: boolean; view: boolean}> = {};
@@ -311,8 +177,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
       expect(present[n].row, `[name="prop-${n}"] row present`).toBe(true);
       expect(present[n].view, `[name="prop-view-${n}"] cell present`).toBe(true);
     }
-    // Category headers (Data / Behavior / Style) — verifies the property
-    // categorization matches the scenario's Step 1 expected result.
     const cats = await page.evaluate(() => ({
       data: !!document.querySelector('[name="prop-category-data"]'),
       behavior: !!document.querySelector('[name="prop-category-behavior"]'),
@@ -323,14 +187,8 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(cats.style, 'prop-category-style header').toBe(true);
   });
 
-  // 2.2 — newickTag rebuild path (data prop; exercises onTableAttached
-  // choice repopulation + onPropertyChanged rebuild branch).
   await softStep('2.2 newickTag dropdown is populated from .* tags; switching it rebuilds the view', async () => {
-    // Per dendrogram.md `## dendrogram-viewer-property-panel`: choices are
-    // populated from df.tags starting with '.'. With the literal `newick`
-    // prop set, the priority order keeps treeNewick pinned to the literal.
-    // To prove the rebuild path, clear the literal prop, switch the tag,
-    // and observe treeNewick resolve to the tag's value.
+    // Clear the literal prop so the newickTag wins, then switch the tag and observe treeNewick.
     await applyViewerOptions(page, {newick: ''});
     let info = await getViewerInfo(page);
     expect(info.newick, 'newick prop cleared').toBe('');
@@ -339,7 +197,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     info = await getViewerInfo(page);
     expect(info.newickTag, 'newickTag set to .newick-alt').toBe('.newick-alt');
     expect(info.treeNewick, 'treeNewick resolves to .newick-alt value').toBe(NEWICK_LEFT_LEAN);
-    // Leaf set is preserved across topology change.
     const altLeaves = await getLeafSetFromNewick(page, info.treeNewick ?? '');
     expect(altLeaves, 'leaf set unchanged across topology').toEqual(['a', 'b', 'c', 'd']);
     expect(info.canvasWidth, 'canvas non-empty after newickTag swap').toBeGreaterThan(0);
@@ -407,9 +264,7 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.showGrid, `showGrid restored to ${initial}`).toBe(initial);
   });
 
-  // 2.8 — Color sweep (mainColor / lightColor / currentColor / mouseOverColor
-  // / selectionsColor). Hex strings ('#FF0000') are accepted by the property
-  // (MCP-validated: viewer stores the literal string after the write).
+  // 2.8 — Color sweep: hex strings ('#FF0000') are accepted; viewer stores the literal string.
   await softStep('2.8 Color sweep — set each of 5 color props to #FF0000, then restore', async () => {
     const colorProps = [
       'mainColor', 'lightColor', 'currentColor', 'mouseOverColor', 'selectionsColor',
@@ -448,10 +303,7 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.showLabels, 'showLabels = false').toBe(false);
   });
 
-  // 2.10 — stepZoom behavior prop.
-  // SR-02: tactile wheel-zoom magnitude assertion deferred to manual per atlas
-  // `manual_only[dendrogram.mo.ctrl-wheel-zoom-tactile]`. Automated coverage
-  // asserts the property-dispatch reflection only.
+  // 2.10 — stepZoom behavior prop (tactile wheel-zoom magnitude deferred to manual; reflection only).
   await softStep('2.10 stepZoom sweep -4 / 4 / 0.5 (slider bounds + mid)', async () => {
     for (const sz of [-4, 4, 0.5]) {
       await applyViewerOptions(page, {stepZoom: sz});
@@ -460,10 +312,7 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     }
   });
 
-  // 2.11 — showTooltip behavior prop.
-  // SR-02: hover-driven tooltip-content assertion deferred to manual per atlas
-  // `manual_only[dendrogram.mo.ctrl-wheel-zoom-tactile]` (tactile/hover paths).
-  // Automated coverage asserts the property-dispatch reflection only.
+  // 2.11 — showTooltip behavior prop (hover-driven tooltip content deferred to manual; reflection only).
   await softStep('2.11 showTooltip toggle off/on (tooltip-content hover deferred to manual per SR-02)', async () => {
     await applyViewerOptions(page, {showTooltip: false});
     let info = await getViewerInfo(page);
@@ -482,30 +331,16 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     }
   });
 
-  // 2.13 — No-console-error invariant across the whole sweep.
   await softStep('2.13 Final invariants: canvas non-empty, viewer attached, dataFrame matches', async () => {
     const info = await getViewerInfo(page);
     expect(info.canvasWidth, 'canvas width > 0 at end of sweep').toBeGreaterThan(0);
     expect(info.canvasHeight, 'canvas height > 0 at end of sweep').toBeGreaterThan(0);
     expect(info.isAttachedToTv, 'viewer still attached at end of sweep').toBe(true);
     expect(info.dataFrameMatches, 'viewer.dataFrame === tv.dataFrame at end of sweep').toBe(true);
-    // SR-01 alignment: pixel-level canvas-output assertions
-    // (rectangle-tree-placer geometry, exact leaf-row spacing under `step`,
-    // stroke-width clamping under `lineWidth`, label rendering under
-    // `showLabels`+`font`) are deferred to manual per atlas
-    // `manual_only[dendrogram.mo.tree-canvas-visual-regression]`. The
-    // assertions above cover the property-dispatch SEMANTICS instead — the
-    // contract that scenario `.md` Step 13 names ("no `Unsupported property`
-    // / `Unsupported aggregation` / `Unsupported semType` / `Non unique key
-    // tree` thrown" and "the viewer remained attached, the canvas remained
-    // non-empty, and viewer.dataFrame === df throughout").
   });
 
-  // ── Cleanup ─────────────────────────────────────────────────────────────
+  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

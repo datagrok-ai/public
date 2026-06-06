@@ -1,11 +1,6 @@
-/* ---
-sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
---- */
-//   scope_reductions: SR-01 (A-CONT-01: Context-Pane property-name correctness
-//   Round 1 — hypothesis: test-bug (selector-bounds key typo on canvas click).
-//   Conclusion: test-bug (single-line bounds key fix). Same-paradigm
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
@@ -49,8 +44,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     });
     await softStep(`[${ds.name}] Scenario 1 Step 2 — Bio > Analyze > Composition; WebLogo viewer docks; no multi-column dialog`, async () => {
-      // Top-menu dispatch via DOM events — Playwright .click() fails the
-      // visibility gate on a hidden-but-attached submenu item.
       await page.evaluate(async () => {
         (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
         await new Promise((r) => setTimeout(r, 300));
@@ -59,9 +52,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         await new Promise((r) => setTimeout(r, 300));
         (document.querySelector('[name="div-Bio---Analyze---Composition"]') as HTMLElement).click();
       });
-      // Verify WebLogo presence on shell.tv.viewers (atlas declares
-      // bio.viewers.web-logo as manual_only for paint correctness, so we
-      // assert presence/docking only, not pixel-level correctness).
       await page.waitForFunction(() => {
         const viewers = Array.from((window as any).grok.shell.tv.viewers);
         return viewers.some((v: any) => v.type === 'WebLogo');
@@ -74,8 +64,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
           if (w && w.root.querySelector('canvas')) { hasCanvas = true; break; }
           await new Promise((r) => setTimeout(r, 300));
         }
-        // Multi-column choice dialog MUST be absent — each fixture has a
-        // single Macromolecule column per scenario Setup.
         const dialogOpen = !!document.querySelector('.d4-dialog');
         return {hasCanvas, dialogOpen};
       });
@@ -83,10 +71,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.dialogOpen).toBe(false);
     });
     await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
-      // ~3-4s settle: canvas may be in DOM before the click handlers are bound
-      // (empirical from composition-analysis-run.md AND from MCP recon
-      // 2026-06-02; documented as unresolved_ambiguities
-      // weblogo-canvas-interactivity-settle-window-not-atlas-declared).
+      // Settle: canvas may be in DOM before click handlers are bound.
       await page.waitForTimeout(4000);
       const selected: number = await page.evaluate(async () => {
         const g = (window as any).grok;
@@ -98,15 +83,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         const canvasRect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         const GAP = '-';
-        // Read the REAL rendered letter-column rects from the viewer's own
-        // layout (PositionMonomerInfo.bounds, set during render()). MCP recon
-        // 2026-06-02 confirmed bounds shape is `{x, y, width, height}` in
-        // canvas pixel coordinates relative to the canvas origin — the prior
-        // spec used `.left` / `.top` which were undefined (NaN clientX →
-        // browser-coerced to 0 → click misses canvas; cause of the prior
-        // FASTA/HELM Gate B FAIL). The click handler (canvasOnMouseDown)
-        // maps the cursor back through getMonomer() and selects rows
-        // carrying that monomer at that position.
         const positions: any[] = Array.isArray(wl.positions) ? wl.positions : [];
         const candidates: {x: number, y: number, h: number}[] = [];
         for (let idx = 0; idx < positions.length && idx < 30; idx++) {
@@ -124,9 +100,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
             candidates.push({x: cx, y: cy, h: b.height});
           }
         }
-        // Tallest rect first — the most frequent monomer is the largest
-        // hit target, minimising boundary misses. First click that selects
-        // ≥1 row wins.
+        // Tallest rect first — most frequent monomer is the largest hit target.
         candidates.sort((a, b) => b.h - a.h);
         for (const c of candidates) {
           df.selection.setAll(false);
@@ -140,10 +114,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         }
         return df.selection.trueCount;
       });
-      // Exact selection count is dataset+position dependent — scenario asserts
-      // "at least one row selected" baseline (not a specific count). MCP-recon
-      // observation 2026-06-02: FASTA=8, HELM=2, MSA=8 selected on the
-      // tallest-rect path; all > 0.
       expect(selected).toBeGreaterThan(0);
     });
     await softStep(`[${ds.name}] Scenario 3 Step 4 — Gear icon on WebLogo opens Context Pane property grid`, async () => {
@@ -151,18 +121,14 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         const g = (window as any).grok;
         g.shell.tv.dataFrame.selection.setAll(false);
         const w = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
-        // Gear lives on the outer docked-panel title bar (.panel-base
-        // ancestor), NOT inside the [name="viewer-WebLogo"] subtree.
-        // MCP-validated 2026-06-02 across FASTA/HELM/MSA.
+        // Gear lives on the outer docked-panel title bar (.panel-base ancestor).
         let panelBase: any = w.root;
         while (panelBase && !panelBase.classList?.contains('panel-base'))
           panelBase = panelBase.parentElement;
         const gear = panelBase?.querySelector(
           '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
         if (!gear) {
-          // Fallback per bio.md:218: programmatic equivalent. The Gear-click
-          // path is the primary UI driver; this fallback covers a forward
-          // gap if the title-bar gear regresses across builds.
+          // Fallback: programmatic equivalent if the title-bar gear is absent.
           g.shell.o = w;
           await new Promise((r) => setTimeout(r, 600));
           const pg2 = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
@@ -173,24 +139,12 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         const pg = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
         return {found: true, pg: !!pg};
       });
-      // The wiring assertion: Context Pane (.grok-prop-panel) bound to the
-      // WebLogo viewer surface. The bare Gear click is the canonical path;
-      // the JS-API fallback (grok.shell.o = w) is the documented forward-gap
-      // recovery per bio.md:218.
       expect(opened.pg).toBe(true);
-      // Property row inside a collapsed accordion section — use
-      // state: 'attached' rather than the default 'visible' wait.
+      // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
         state: 'attached', timeout: 10_000});
     });
     await softStep(`[${ds.name}] Scenario 3 Step 5 — Edit ≥1 Context Pane property (SR-01: edit-acceptance only)`, async () => {
-      // SR-01: per scenario frontmatter scope_reductions, the property-name
-      // correctness assertion is deferred until atlas/operator supplies a
-      // canonical Context-Pane property checklist. We assert the wiring +
-      // edit-acceptance flow only: toggle two boolean properties and check
-      // that at least one flips its value via getOptions().look diff.
-      // MCP-validated 2026-06-02: toggling either checkbox flips look state
-      // cleanly on all 3 notations.
       const result: {changedShow: boolean, changedSkip: boolean} = await page.evaluate(async () => {
         const g = (window as any).grok;
         const wl: any = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
@@ -217,16 +171,9 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
           changedSkip: before.skipEmptyPositions !== after.skipEmptyPositions,
         };
       });
-      // At least one of the two boolean properties accepted the edit (per
-      // SR-01: scenario asserts edit-acceptance, not which specific property
-      // toggled).
       expect(result.changedShow || result.changedSkip).toBe(true);
     });
   }
-  // Cleanup contract per scenario Notes — close all views.
   await page.evaluate(() => (window as any).grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

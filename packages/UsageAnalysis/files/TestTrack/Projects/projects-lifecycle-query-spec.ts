@@ -1,15 +1,8 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.api.relations.list, projects.add-relation, projects.shell.share-via-context-menu, projects.api.get-by-id]
-related_bugs: [github-3550]
-generated_from: projects-lifecycle-query.md
---- */
-// Query-source lifecycle. Provisions a saved query on System:Datagrok
-// (via helpers/openers.ts:provisionSystemDatagrokQuery) — no Samples
-// package dependency. Step 4 is the full github-3550 reproduction:
-// since the test owns the query, we actually rename it (no permission
-// fallback) and assert the platform's reference-resolution invariant.
+// Query-source lifecycle on a provisioned System:Datagrok query.
+// Step 4 = github-3550 reproduction: rename the owned query and assert reference-resolution invariant.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -92,12 +85,8 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
       })()`);
       expect(renameOk).toBe(true);
 
-      // github-3550 invariant: after the external query is renamed, reopening
-      // the project must EITHER auto-resolve (happy path: relations.list
-      // updated to new name, table re-materializes) OR fail with an explicit
-      // error referencing the missing query (graceful failure). Silent null
-      // references — relations.list has entries but table doesn't load and
-      // no error surfaces — is the regression this test guards against.
+      // github-3550 invariant: after the query is renamed, reopen must EITHER auto-resolve OR fail with an
+      // explicit error. Silent null references (relations entries but table doesn't load) is the regression.
       const result = await evalJs<{
         tablesAfter: number;
         relationsCount: number;
@@ -142,10 +131,7 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
       expect(r.persistedName).toBe(renamedProj);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for
-    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
-    // The project was renamed to `${projectName}-renamed` in Step 5, so the
-    // recipient-side visibility lookup uses that name (id grant is unaffected).
+    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 6: share with second user (View-and-Use) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: false});
@@ -161,8 +147,5 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
     if (provisioned) await provisioned.cleanup();
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

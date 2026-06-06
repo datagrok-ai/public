@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -15,7 +16,6 @@ test('Calendar viewer', async ({page}) => {
     catch { return false; }
   }, {timeout: 60000});
 
-  // Phase 2: Open demog
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
@@ -282,10 +282,7 @@ test('Calendar viewer', async ({page}) => {
     expect(result.errors).toEqual([]);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

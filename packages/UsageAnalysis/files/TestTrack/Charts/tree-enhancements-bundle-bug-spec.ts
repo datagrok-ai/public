@@ -1,15 +1,3 @@
-/* ---
-sub_features_covered: [charts.tree, charts.tree.show-counts, charts.tree.on-click, charts.tree.font-size, charts.tree.layout, charts.tree.orient, charts.tree.include-nulls]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [charts.tree, charts.tree.show-counts, charts.tree.on-click, charts.tree.font-size, charts.tree.layout, charts.tree.orient, charts.tree.include-nulls]
-//   ui_coverage_responsibility: []
-//   related_bugs: [github-3221]
-//   produced_from: atlas-driven
-// Bug-library cross-reference: github-3221 — 8-enhancement bundle for Tree
-// (NIBR hierarchical-data workflow). Fix in Charts 1.4.3.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -37,9 +25,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
-  // availableProps captured by Setup softStep — gates the conditional
-  // Capability 4 (layout) exerciseProperty per scenario step 7's
-  // "if tree.props.getProperties() includes 'layout'" phrasing.
   let availableProps: string[] = [];
 
   await softStep('Setup: Open demog.csv, add Tree, set hierarchy CONTROL/SEX/RACE', async () => {
@@ -54,8 +39,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
       await new Promise((r) => setTimeout(r, 1500));
       const types: string[] = [];
       for (const v of tv.viewers) types.push(v.type);
-      // Collect property names exposed for diagnostic + capability 4 (layout)
-      // guarded probe + capability 7 (moleculeSize) enumeration-only check.
       let propNames: string[] = [];
       try { propNames = tree.props.getProperties().map((p: any) => p.name); } catch (e) {}
       return {types, propNames};
@@ -95,7 +78,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
       expect(result.ok).toBe(true);
       // github-3221 invariant: each capability's setOptions does not throw.
       expect(result.setOptionsThrew).toBe(false);
-      // Visual stability across each property toggle.
       expect(result.hasContent).toBe(true);
       expect(result.width).toBeGreaterThan(0);
       const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -103,7 +85,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
     });
   };
 
-  // 8 capabilities per bug ticket
   await exerciseProperty('showCounts', true, 'showCounts ON');
   await exerciseProperty('showCounts', false, 'showCounts OFF');
   await exerciseProperty('onClick', 'Filter', 'onClick=Filter');
@@ -116,16 +97,12 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
   await exerciseProperty('includeNulls', true, 'includeNulls ON');
   await exerciseProperty('includeNulls', false, 'includeNulls OFF');
 
-  // Capability 4 (layout) — guarded probe per scenario step 7's conditional
-  // "if tree.props.getProperties() includes 'layout'". Acceptable env-pending
-  // SR class per orchestrator Edit 10 when 'layout' not exposed on dev build.
+  // Capability 4 (layout) — guarded probe; 'layout' may not be exposed on dev build.
   if (availableProps.includes('layout'))
     await exerciseProperty('layout', 'orthogonal', 'layout=orthogonal');
   else
     console.warn('[SKIP] charts.tree.layout not exposed on current Tree build; capability 4 deferred per scenario step 7 conditional');
 
-  // technical: capability 7 (moleculeSize) enumeration-only check delegated
-  // to Setup propNames log per scenario step 8 best-effort phrasing.
   await exerciseProperty('showMouseOverLine', true, 'showMouseOverLine ON');
 
   await softStep('Final visual stability check after 8 enhancements', async () => {

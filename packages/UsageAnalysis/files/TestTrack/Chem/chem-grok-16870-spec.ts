@@ -1,34 +1,13 @@
-/* ---
-sub_features_covered: [chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.rendering, .molecule-cell, .rdkit-renderer]
-//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice, no specialty flow ownership
-//   related_bugs: [GROK-16870]
-//
-// Bug invariant (regression-lock per references/bug-library/chem.yaml :: GROK-16870):
-//   Hovering over a Box Plot data point on a table containing a Molecule column
-//   MUST NOT surface RDKit cell renderer crashes (NullError / "method not found
-//   'gS' on null" from rdkit-cell-renderer.ts in the tooltip context). Box Plot
-//   stays responsive; if a tooltip renders, it renders cleanly.
-// Parallel-coverage with info-panels.md (Context Panel molecule rendering,
-// coverage_type=regression).
-//
-// Paired scenario: chem-grok-16870.md
+// GROK-16870: hovering a Box Plot point on a Molecule-column table must not crash the RDKit cell renderer (fixed 1.22.0).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-// storageState consumes auth.json captured via `npx playwright codegen --save-storage=auth.json`
-// (cycle bootstrap 2026-05-11; DATAGROK_LOGIN/PASSWORD env not set in this session).
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip context', async ({page}) => {
   test.setTimeout(180_000);
 
-  // GROK-16870 is status: fixed, fixed_in: 1.22.0 per bug-library. Spec
-  // exercises the post-fix invariant as a regression-lock.
   await loginToDatagrok(page);
 
   await softStep('Setup: close all + selenium flags', async () => {
@@ -47,8 +26,6 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
 
       grok.shell.addTableView(df);
       (window as any).__df = df;
-      // Hook console.error BEFORE the cell renderer first fires (any rdkit
-      // errors during initial Box Plot render are part of the bug surface).
       (window as any).__grok16870_errors = [];
       const orig = console.error;
       console.error = function(...args: any[]) {
@@ -73,7 +50,6 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
     });
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected after 30s settle. cols=${JSON.stringify(result.cols)}`);
-    // Box Plot mount + initial render settle (Chem is warm — fast).
     await page.waitForTimeout(3000);
   });
 
@@ -97,7 +73,6 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
       await page.mouse.move(hx, hy, {steps: 5});
       await page.waitForTimeout(1200);
     }
-    // Final settle to let any async tooltip renderer complete.
     await page.waitForTimeout(2000);
   });
 
@@ -135,8 +110,5 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,30 +1,13 @@
-/* ---
-sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.top-menu, chem.analyze.r-groups.decomposition, chem.sketcher]
---- */
-// Frontmatter extraction:
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.analyze.r-groups, .top-menu, .decomposition, chem.sketcher]
-//   ui_coverage_responsibility: [r-groups-mcs-button, r-groups-visual-analysis-checkbox,
-//     r-groups-replace-latest-checkbox, r-groups-no-core-balloon, r-groups-no-rgroups-balloon,
-//     r-groups-trellis-plot-render]
-//   related_bugs: [GROK-16329]
-//
 // Paired scenario: r-group-analysis.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
+import * as chem from '../helpers/chem';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 async function openRGroupsDialog(page: any) {
-  await page.evaluate(async () => {
-    const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
-    chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 600));
-    const item = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'R-Groups Analysis...') as HTMLElement;
-    (item.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-  });
+  await chem.openChemMenuItem(page, 'R-Groups Analysis...', {delayMs: 600});
   await page.locator('.d4-dialog').waitFor({timeout: 10000});
 }
 
@@ -46,9 +29,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
   // ===== Block A — smiles-50.csv empty-result balloon (GROK-16329) =====
 
   await softStep('A1: Open smiles.csv (DIVERSE dataset — required for GROK-16329 empty-MCS trigger)', async () => {
-    // NOTE: scenario specifies System:DemoFiles/chem/smiles.csv (full diverse SMILES)
-    // for Block A — its diversity is what triggers MCS-cannot-decompose → empty result.
-    // smiles-50.csv is too uniform and produces a non-empty MCS, defeating the invariant.
+    // smiles.csv diversity triggers MCS-cannot-decompose → empty result; smiles-50.csv is too uniform.
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
@@ -164,8 +145,5 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,5 +1,6 @@
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,7 +12,6 @@ test('Form tests (Playwright)', async ({page}: {page: Page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open demog
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     (grok.shell.settings as any).showFiltersIconsConstantly = true;
@@ -26,7 +26,6 @@ test('Form tests (Playwright)', async ({page}: {page: Page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Form viewer
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-form"]');
     if (icon) (icon as HTMLElement).click();
@@ -462,8 +461,5 @@ test('Form tests (Playwright)', async ({page}: {page: Page}) => {
     expect(result.formFound).toBe(true);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

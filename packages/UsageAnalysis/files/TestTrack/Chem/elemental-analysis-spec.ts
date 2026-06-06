@@ -1,38 +1,8 @@
-/* ---
-sub_features_covered: [chem.analyze.elemental, chem.analyze.elemental.top-menu, chem.analyze.elemental.run]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: [chem.analyze.elemental, .top-menu, .run]
-//   ui_coverage_responsibility: [chem-elemental-analysis-top-menu, chem-elemental-analysis-checkboxes]
-//     (delegated_to: null — scenario owns its own UI coverage)
-//   related_bugs: []
-//
-// Source: elemental-analysis.md (migrated 2026-05-11), authored under
-//   chem-migrate-spec-phase-2026-05-12 cycle per
-//   chem-migrate-spec-phase-automator-prompt.md.
-//
-// Multi-format matrix per migrated scenario Step 1-6:
-//   D1 = System:AppData/Chem/tests/smiles-50.csv (SMILES)
-//   D2 = System:AppData/Chem/mol1K.sdf (molV2000)
-//   D3 = System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf (molV3000)
-//
-// Breakthrough pattern (chem-new-2026-05-11-batch-2-breakthrough, 2026-05-12):
-//   split-evaluate setup + 30s post-addTableView settle + console.error hook.
-//   Per-variant the cascade fires once (warm package state persists between
-//   variants in the same test session) — 30s wait kept on D1 only; D2/D3 use
-//   a shorter 8s post-addTableView wait per warm-session expectations.
-//
-// Top-menu walk selectors per references/chem.md "Top-menu Chem entries" §:
-//   [name="div-Chem"] dispatchEvent click → .d4-menu-item-label text matching
-//   "Elemental Analysis..." → click `.closest('.d4-menu-item')`.
-//
-// Paired scenario: elemental-analysis.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 interface Variant { id: string; path: string; format: string; opener: 'csv' | 'table'; warmWaitMs: number; }
 const variants: Variant[] = [
@@ -141,19 +111,12 @@ test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'
         return false;
       }, preCount, {timeout: 30000}).then(jsh => jsh.jsonValue()).catch(() => null) as {appended: number; balloon: string | null} | null;
       expect(outcome, `${v.id}: neither column-append nor error balloon within 30s — silent failure not allowed`).toBeTruthy();
-      // The scenario asserts: appended columns OR visible balloon. Both are
-      // valid outcomes per "verify per-element atom-count columns appended
-      // OR a user-visible error balloon is shown — never silent" (migrated
-      // body, Implicit cross-variant invariants).
+      // Valid outcome = appended columns OR a visible error balloon, never silent.
       const ok = (outcome!.appended > 0) || !!outcome!.balloon;
       expect(ok, `${v.id}: outcome=${JSON.stringify(outcome)}`).toBe(true);
     });
-
-    // No closeAll between variants — the next variant's softStep calls closeAll
-    // inside its open evaluate; this keeps the loop tight and avoids extra waits.
   }
 
-  // Console-error sanity check on the cumulative session.
   const consoleErrors = await page.evaluate(() => ((window as any).__ea_errors as string[] | undefined) ?? []);
   const fatalErrors = consoleErrors.filter((e: string) =>
     /TypeError|cannot read|undefined is not|null is not/i.test(e) &&
@@ -165,8 +128,5 @@ test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

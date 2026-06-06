@@ -1,18 +1,3 @@
-/* ---
-sub_features_covered: [charts.radar, charts.echart-base.table]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [charts.radar, charts.echart-base.table]
-//   ui_coverage_responsibility: []
-//   related_bugs: [GROK-18085]
-//   produced_from: atlas-driven
-// Bug-library cross-reference (REQUIRED per Section 4.2 — related_bugs non-empty):
-//   GROK-18085 (bug-library/charts.yaml curated_bugs) — Radar table-rebind
-//   on project save/reopen causes null error during deserialization.
-//   Reproduction class: change Radar's bound table mid-session, save
-//   project, reopen, verify viewer deserializes correctly with new binding.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -56,7 +41,6 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       await new Promise((r) => setTimeout(r, 1500));
       const radar = tvSpgi.addViewer('Radar');
       await new Promise((r) => setTimeout(r, 3000));
-      // Rebind
       let rebindOk = false;
       let readBackTable = null;
       try {
@@ -78,7 +62,6 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       const grok = (window as any).grok;
       const DG = (window as any).DG;
       try {
-        // Save current shell state as a project
         const project = DG.Project.create();
         project.name = pName;
         const saved = await grok.dapi.projects.save(project);
@@ -88,16 +71,12 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       }
     }, projectName);
     if (saveResult.ok) projectId = saveResult.id;
-    // Project save may not be available without Project.create on this env
-    // (DG.Project.create requires DG to be exposed via window). If save failed,
-    // skip the reopen verification — the bug invariant cannot be exercised
-    // without project save (selector-pending / API-pending acceptable SR).
+    // Skip reopen verification if project save unavailable (DG.Project.create not on window).
     if (!saveResult.ok) {
       console.warn('[SKIP]', 'Project save API unavailable (DG.Project.create not on window):', saveResult.err);
       return;
     }
 
-    // Close all + reopen
     const reopenResult = await page.evaluate(async (id) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
@@ -106,7 +85,6 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
         const proj = await grok.dapi.projects.find(id);
         if (proj.open) await proj.open();
         await new Promise((r) => setTimeout(r, 3000));
-        // Inspect open table view
         const tv = grok.shell.tv;
         const types: string[] = [];
         if (tv) for (const v of tv.viewers) types.push(v.type);
@@ -116,11 +94,8 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       }
     }, projectId);
 
-    if (!reopenResult.ok) {
-      // GROK-18085 invariant violated if reopen throws. Log and assert on
-      // console-error capture.
+    if (!reopenResult.ok)
       console.warn('[Reopen failure]', reopenResult.err);
-    }
     // Primary GROK-18085 invariant: no console error during reopen.
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);

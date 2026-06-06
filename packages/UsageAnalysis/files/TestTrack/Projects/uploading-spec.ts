@@ -1,26 +1,9 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync]
-generated_from: uploading.md (8 cases × 2 sync states)
---- */
-// Source-matrix scenario covering uploading.md cases 1, 2, 3, 4, 5, 6, 8, 9
-// in both Sync ON and Sync OFF variants. All non-file prerequisites are
-// created in-test via helpers/openers.ts — no Samples package or
-// env-provisioned DB connection is required.
-//
-// Sync ON: source `df.tags['.script']` survives the save round-trip so
-// reopen re-executes the creation script.
-// Sync OFF: `.script` tags are stripped before save, so reopen relies on
-// persisted dataframe bytes (snapshot mode).
-//
-// Cases 4, 5, 6 (Spaces) provision a transient root Space via the shared
-// `provisionSpaceFixture` helper, copy demog.csv into it via
-// `client.files.write(...)` (so the file is openable via
-// `Spaces:<spaceName>/demog.csv`), then run the same save+reopen flow as
-// the file/query/derived cases. The Space is released in `finally` after
-// reopen — kept alive until then so Sync-ON reopen can re-run
-// `OpenFile("Spaces.<spaceName>/demog.csv")` from the persisted .script.
+// Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
+// Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
+// before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
 import {test, expect, type Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {
   projectsTestOptions,
   evalJs,
@@ -53,15 +36,7 @@ import {
 
 test.use(projectsTestOptions);
 
-// ---------------------------------------------------------------------------
-// Local helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Strip the `.script` provenance tag from every open dataframe — emulates
- * the Save Project dialog's "Data Sync OFF" toggle. After strip, reopen
- * relies on persisted dataframe bytes only (snapshot mode).
- */
+// Strip the `.script` provenance tag from every open dataframe — emulates Data Sync OFF (snapshot mode).
 async function stripProvenance(page: Page): Promise<void> {
   await evalJs(page, `(async () => {
     for (const df of grok.shell.tables) {
@@ -70,16 +45,8 @@ async function stripProvenance(page: Page): Promise<void> {
   })()`);
 }
 
-/**
- * Provision a transient root Space with a physical copy of demog.csv. The
- * file lands at `Spaces:<spaceName>/demog.csv` and is openable via the
- * canonical `OpenFile` opener (which writes the same `.script` provenance
- * tag as a System:DemoFiles double-click).
- *
- * Returns either a usable fixture or an env-skip blocker. Callers that hit
- * a blocker should `test.skip(true, reason)` — the Spaces createRootSpace
- * API may legitimately not exist on older platform builds.
- */
+// Provision a transient root Space with a copy of demog.csv. Returns a fixture or an env-skip blocker
+// (Spaces createRootSpace may not exist on older builds — callers should test.skip on a blocker).
 async function provisionSpaceWithDemog(
   page: Page, namePrefix: string,
 ): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
@@ -95,10 +62,7 @@ async function provisionSpaceWithDemog(
 }
 
 function throwOnStepErrors() {
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 }
 
 // ---------------------------------------------------------------------------

@@ -1,13 +1,5 @@
-/* ---
-sub_features_covered: [legend.column, legend.refresh.on-data-change]
-related_bugs: [GROK-17222, GROK-17278, GROK-19083]
---- */
-// Paired scenario: line-chart.md. Visual gap split (per-Y-subplot legend block
-// layout, distinct-palette-color visual checks) lives in legend-ui.md §1, §2, §3.
-// Full prose moved to line-chart.md.
-
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -16,7 +8,7 @@ test('Line chart legend', async ({page}) => {
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Setup + Sc1 steps 1-2: add Line chart, Split=Series → categorical legend', async () => {
     const items = await page.evaluate(async () => {
@@ -32,7 +24,6 @@ test('Line chart legend', async ({page}) => {
     expect(items).toBeGreaterThan(0);
   });
 
-  // Real Playwright DOM gesture on the Line chart legend — exercises hover surface.
   await softStep('Sc1 verification: legend hover surface available (real DOM)', async () => {
     const legend = page.locator('[name="viewer-Line-chart"] [name="legend"]').first();
     if (await legend.count() === 0) {

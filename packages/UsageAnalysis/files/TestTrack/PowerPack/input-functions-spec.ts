@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
---- */
 import {test, expect, Page, Locator} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const COLS_GRID = '.d4-dialog .add-new-column-columns-grid';
 const FUNCS_ROOT = '.d4-dialog .ui-widget-addnewcolumn-functions';
@@ -56,13 +54,7 @@ async function getFunctionSpan(page: Page, funcName: string): Promise<Locator | 
   if ((await span.count()) === 0) return null;
   return span;
 }
-/**
- * Click the "+" plus-icon for a function row (the owned plus-icon insertion
- * UI flow). Uses Playwright's TRUSTED click on [name="icon-plus"] scoped to
- * the function row (MCP recon 2026-05-28 confirmed it propagates to Dart's
- * onActionPlusIconClicked -> insertIntoCodeMirror). No JS-eval bypass — the
- * caller asserts the resulting formula state.
- */
+// Trusted-click the "+" icon for a function row (propagates to Dart's insertIntoCodeMirror).
 async function clickPlusIcon(page: Page, funcName: string): Promise<{uiClicked: boolean; reason?: string}> {
   const span = await getFunctionSpan(page, funcName);
   if (!span) return {uiClicked: false, reason: `function row "${funcName}" not present`};
@@ -89,12 +81,7 @@ async function clickPlusIcon(page: Page, funcName: string): Promise<{uiClicked: 
     return {uiClicked: false, reason: `trusted click failed: ${String(e?.message ?? e)}`};
   }
 }
-/**
- * Dispatch the synthetic-MouseEvent triple (mousedown + mouseup + click) on
- * the column-grid's LAST canvas (overlay) at the row's pixel center. This is
- * the empirically-verified column-row SELECT mechanism (MCP recon
- * 2026-05-28; mirrors functions-sorting-spec.ts clickColumnRowByIdx).
- */
+// Select a column row via the synthetic-MouseEvent triple on the grid's last canvas (mirrors functions-sorting).
 async function clickColumnRow(page: Page, rowIdx: number): Promise<boolean> {
   return await page.evaluate(async (args: {sel: string; rowIdx: number}) => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -120,16 +107,7 @@ async function clickColumnRow(page: Page, rowIdx: number): Promise<boolean> {
     return true;
   }, {sel: COLS_GRID, rowIdx});
 }
-/**
- * PROBE the column-grid rows to find one whose selection auto-binds the
- * given `probeFunc` to a column (i.e. yields `<...>(${<ColName>})`). The
- * canvas row -> column mapping is non-linear, so we sweep rows 0..maxRows-1,
- * clearing the editor and clicking probeFunc's plus icon after each row,
- * until the formula contains a `${<col>}` reference. Returns the row index,
- * the bound column name, and the observed formula.
- *
- * `kind` is informational only (used in diagnostics).
- */
+// Sweep column rows (non-linear row→column mapping) until probeFunc's plus-icon auto-binds a ${col} reference.
 async function probeColumnRowForAutoBind(
   page: Page,
   probeFunc: string,
@@ -153,22 +131,8 @@ async function probeColumnRowForAutoBind(
   }
   return {rowIdx: -1, boundCol: null, formula: ''};
 }
-/**
- * Drag a function onto the formula editor. Drag-drop is an affordance gap
- * (function rows are not HTML5-draggable; Datagrok uses Dart pointer-event
- * DnD via _dndContext — MCP recon 2026-05-28). This helper produces the
- * insertIntoCodeMirror END STATE (identical to what the platform DnD yields)
- * by dispatching a whole-document replace on the live CM6 `EditorView`
- * (`view.dispatch({changes:{from:0,to:doc.length,insert:'<name(arg)>'}})`),
- * the SAME mechanism the platform's insertIntoCodeMirror uses
- * (add-new-column.ts:1349-1355). The prior document.execCommand('insertText')
- * path desynced the contenteditable from the logical doc (Gate B 2026-05-28
- * accumulation symptom); the view dispatch is deterministic (MCP recon
- * 2026-05-28 verified every end state byte-for-byte). usedFallback:true
- * surfaces the UI-render-leg affordance gap for ui-smoke review (SR-01). The
- * `name(arg)` end state is built from DG.Func metadata + the caller-tracked
- * selected column (auto-bind mirrors insertIntoCodeMirror's type-match logic).
- */
+// Function rows are not HTML5-draggable (Dart pointer-event DnD), so produce the insertIntoCodeMirror end
+// state via a whole-doc CM6 view.dispatch (same mechanism). usedFallback:true flags the UI-leg gap (SR-01).
 async function dragFunctionOntoEditor(
   page: Page,
   funcName: string,
@@ -184,10 +148,7 @@ async function dragFunctionOntoEditor(
     const func = DG?.Func?.find?.({name: args.fn})?.[0] ?? null;
     if (!func) return {dropped: false, doc: '', usedFallback: false};
     const inputs: any[] = (func.inputs || []) as any[];
-    // Mirror insertIntoCodeMirror (add-new-column.ts:1332-1343): the
-    // params list starts as each input's semType ?? propertyType token,
-    // and findColumnTypeMatchingParam (add-new-column.ts:1359) decides
-    // WHICH input position the selected column auto-binds into.
+    // Mirror insertIntoCodeMirror: params start as semType ?? propertyType; type-match picks the auto-bind position.
     const params: string[] = inputs.map((it) => (it.semType ?? it.propertyType ?? '') as string);
     let colPos = -1;
     if (args.sel) {
@@ -212,7 +173,6 @@ async function dragFunctionOntoEditor(
     const funcName = (func.nqName && func.nqName.startsWith('core:')) ? func.name : func.nqName;
     const insertion = inputs.length > 0 ? `${funcName}(${params.join(', ')})` : `${funcName}()`;
     if (view?.state?.doc) {
-      // Whole-document replace via the live CM6 view — desync-proof.
       view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: insertion}});
       await new Promise((r) => setTimeout(r, 120));
       const finalDoc = view.state.doc.toString();
@@ -229,14 +189,12 @@ async function dragFunctionOntoEditor(
   }, {fn: funcName, sel: selectedColumn, cmSel: CM_CONTENT, typeMap: VALIDATION_TYPES_MAPPING});
   return result;
 }
-// ---------------------------------------------------------------------------
-// Test body
-// ---------------------------------------------------------------------------
+
 test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop, auto-bound column parameter)', async ({page}) => {
   test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  // ---- Step 1: open SPGI.csv ----
+  // Step 1: open SPGI.csv.
   await page.evaluate(async () => {
     const grok = (window as any).grok;
     document.body.classList.add('selenium');
@@ -277,7 +235,6 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
   });
   expect(cols.names).toContain('Structure');
   expect(cols.semTypes['Structure']).toBe('Molecule');
-  // ---- Step 2: open Add New Column dialog via toolbar icon ----
   await softStep('Step 2: open Add New Column dialog via toolbar icon; dialog shows formula editor, columns, functions, preview', async () => {
     const icon = page.locator('[name="icon-add-new-column"]').first();
     await icon.waitFor({timeout: 30_000, state: 'visible'});
@@ -292,7 +249,6 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
   const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
   const cm = dlg.locator('.add-new-column-dialog-cm-div .cm-content').first();
   await cm.waitFor({timeout: 15_000, state: 'visible'});
-  // Caller-managed selected-column handle for the drag-drop end-state helper.
   let currentlySelectedColumn: {name: string; type: string; semType: string} | null = null;
   const setSelectedColumn = (colName: string) => {
     currentlySelectedColumn = {
@@ -301,17 +257,13 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
       semType: cols.semTypes[colName] ?? '',
     };
   };
-  // ---------------------------------------------------------------------
-  // Step 3: hover Abs, click + icon → "Abs(num)" (no column selected yet).
-  // Owned flow: add-new-column-function-plus-icon (DOM-driven).
-  // ---------------------------------------------------------------------
+  // Step 3: hover Abs, click + → "Abs(num)" (no column selected, no ${...} reference).
   await softStep('Step 3: hover Abs, click + icon → "Abs(num)" inserted into formula editor', async () => {
     await clearEditor(page);
     const r = await clickPlusIcon(page, 'Abs');
     await page.waitForTimeout(300);
     const doc = await readEditorDoc(page);
     expect(r.uiClicked, `plus-icon trusted click failed for Abs: ${r.reason}`).toBe(true);
-    // No column selected → parameter-typed form; no ${...} reference.
     expect(doc).toMatch(/^Abs\([a-zA-Z_]+\)$/);
     expect(/\$\{[^}]+\}/.test(doc)).toBe(false);
   });
@@ -336,10 +288,6 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     expect(previewOk).toBe(true);
     console.log(`[Step5] Molecule auto-bind: ${probe.formula} (row ${probe.rowIdx}, col "${probe.boundCol}")`);
   });
-  // ---------------------------------------------------------------------
-  // Step 6: clear, drag getCLogP onto editor with same Molecule col → same
-  //         auto-bound form. Owned flows: drag-drop + auto-bound.
-  // ---------------------------------------------------------------------
   await softStep('Step 6: clear editor, drag getCLogP onto editor → auto-bound "Chem:getCLogP(${<MoleculeCol>})"', async () => {
     expect(currentlySelectedColumn).not.toBeNull();
     const r = await dragFunctionOntoEditor(page, 'getCLogP', currentlySelectedColumn);
@@ -349,9 +297,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     if (moleculeBoundCol) expect(doc).toContain(`\${${moleculeBoundCol}}`);
     if (r.usedFallback) console.warn('[ui-smoke] drag-drop UI leg affordance gap for getCLogP; used insertIntoCodeMirror end state — SR-01');
   });
-  // ---------------------------------------------------------------------
-  // Step 7: select a numeric column, add Abs by plus-icon then drag-drop →
-  //         both show "Abs(${<NumericCol>})". Preview reflects output.
+  // Step 7: numeric column + Abs via plus-icon then drag-drop → both "Abs(${<NumericCol>})".
   let numericBoundCol: string | null = null;
   await softStep('Step 7a: select a numeric column via canvas, click Abs + icon → auto-bound "Abs(${<NumericCol>})"', async () => {
     await clearEditor(page);
@@ -374,19 +320,12 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
       document.querySelector('.d4-dialog .ui-addnewcolumn-preview') != null);
     expect(previewOk).toBe(true);
   });
-  // ---------------------------------------------------------------------
-  // Step 8: clear editor → empty.
-  // ---------------------------------------------------------------------
   await softStep('Step 8: clear formula text field → editor is empty', async () => {
     await clearEditor(page);
     const doc = await readEditorDoc(page);
     expect(doc).toBe('');
   });
-  // ---------------------------------------------------------------------
-  // Step 9: click sort-type icon, select "By name" → functions re-sorted
-  //         alphabetically. (Sort behavior owned by functions-sorting-spec.ts;
-  //         here it is a precondition so Abs is reliably found for Step 10.)
-  // ---------------------------------------------------------------------
+  // Step 9: sort "By name" so Abs is reliably found for Step 10 (sort behavior owned by functions-sorting-spec).
   await softStep('Step 9: click sort icon, select "By name" → functions list re-sorted alphabetically', async () => {
     const sortIcon = dlg.locator('.grok-functions-widget-sort-icon').first();
     const sortIconByName = dlg.locator('[name="icon-sort-alt"]').first();
@@ -408,16 +347,9 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     }, FUNCS_ROOT);
     expect(/^[AaBb]/.test(firstFn)).toBe(true);
   });
-  // ---------------------------------------------------------------------
-  // Step 10: with a non-numeric (string) column selected, add Abs → "Abs(num)"
-  //         (no auto-bind — type mismatch). The scenario cites the `Id`
-  //         column (string semType=null on SPGI); a string-column probe
-  //         reproduces the same negative contract.
-  // Owned flow: add-new-column-auto-bound-column-parameter (NEGATIVE).
-  // ---------------------------------------------------------------------
+  // Step 10: non-numeric column + Abs → "Abs(num)" (no auto-bind, type mismatch). Negative contract.
   await softStep('Step 10: select a non-numeric column, click + on Abs → "Abs(num)" (type mismatch — no auto-bind)', async () => {
-    // Probe for a row that selects a string/non-numeric column: such a row
-    // yields Abs(num) (no ${...}). Sweep rows; pick the first that gives a
+    // Sweep rows; the first that yields Abs(num) (no ${...}) selected a non-numeric column.
     let negativeFormula = '';
     for (let r = 0; r < 14; r++) {
       await clickColumnRow(page, r);
@@ -455,8 +387,5 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
   await page.evaluate(() => {
     try { (window as any).grok.shell.closeAll(); } catch (_) {  }
   }).catch(() => {  });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

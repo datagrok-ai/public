@@ -1,22 +1,10 @@
-/* ---
-sub_features_covered: [chem.analyze.mmp, chem.analyze.mmp.top-menu, chem.analyze.mmp.editor, chem.analyze.mmp.viewer, chem.demos.mmpa]
---- */
-// Frontmatter extraction (per automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.analyze.mmp, .top-menu, .editor, .viewer, chem.demos.mmpa]
-//   ui_coverage_responsibility: [chem-add-mmp, chem-mmp-editor-select-activities,
-//     chem-mmp-viewer-transformation-tab, chem-mmp-viewer-fragments-tab,
-//     chem-mmp-viewer-cliffs-tab, chem-mmp-viewer-generation-tab]
-//   related_bugs: [GROK-18517]
-//
-// Paired scenario: mmp.md
-// Bug invariant: MMP generation on mmp_demo.csv with both activities must NOT
-// fire minified runtime errors (`J.aS(...).b7 is not a function` or similar).
+// GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
+import * as chem from '../helpers/chem';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async ({page}) => {
   test.setTimeout(420_000);
@@ -49,14 +37,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
   });
 
   await softStep('Step 2: Chem → Analyze → Matched Molecular Pairs → MMPEditor opens', async () => {
-    await page.evaluate(async () => {
-      const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
-      chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 600));
-      const mmp = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Matched Molecular Pairs...') as HTMLElement;
-      (mmp.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    });
+    await chem.openChemMenuItem(page, 'Matched Molecular Pairs...', {delayMs: 600});
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
@@ -107,15 +88,12 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       const viewer: any = Array.from((window as any).grok.shell.tv.viewers)
         .find((v: any) => /Matched Molecular Pairs/i.test(v.type));
       if (!viewer) return {ok: false, reason: 'MMP viewer not found'};
-      // Broad tab finder — try multiple Datagrok tab-handle conventions.
       const tabCandidates = Array.from(viewer.root.querySelectorAll(
         '.d4-tab-header, .d4-tab-pane-title, .d4-tab-handle, [class*="tab-header"], [class*="tab-handle"], [class*="tab-title"], [role="tab"], [name^="tab-"], [aria-controls]'
       ));
-      // Also try text-search any element inside viewer for the tab name.
       const tab = tabCandidates.find((t: any) =>
         new RegExp(name, 'i').test(t.textContent || '')) as HTMLElement | undefined;
       if (!tab) {
-        // Fallback: find ANY descendant with exact text matching tab name.
         const all = Array.from(viewer.root.querySelectorAll('*'))
           .filter((el: any) => el.children.length === 0 || el.tagName === 'DIV' || el.tagName === 'SPAN')
           .filter((el: any) => (el.textContent ?? '').trim() === name);
@@ -128,15 +106,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
     }, tabName);
 
   await softStep('Step 4-7: SR-DEFERRED 4-tab walk — GROK-18517 invariant verified via viewer mount + no minified-runtime error (final assertion)', async () => {
-    // SR-DEFERRED rationale: MMP viewer's tab DOM structure (canvas-rendered OR
-    // separate floating root managed by Datagrok internals) is opaque to
-    // standard DOM selectors. `viewer.root.querySelectorAll('canvas')` returns
-    // 0 even when MMP renders fully — the viewer object exposed via
-    // `grok.shell.tv.viewers` may not be the same DOM tree as the visible
-    // viewer. MCP recon needed to find canvas hit-test coords + tab click
-    // selectors. The GROK-18517 invariant (MMP generation must NOT fire
-    // minified runtime error) is verified in Step 3b (viewer mount) + final
-    // softStep below (no `is not a function` console errors).
+    // SR-DEFERRED: MMP tab DOM is opaque to DOM selectors; invariant covered by Step 3b mount + final no-error check.
   });
 
   await softStep('Final: no minified-runtime errors throughout MMP walk', async () => {
@@ -148,8 +118,5 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

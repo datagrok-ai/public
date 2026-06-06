@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.panels.peptides, peptides.rendering.weblogo-header, peptides.widgets.distribution, peptides.util.modify-selection]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 test('Peptides — SAR parameters and WebLogo', async ({page}) => {
@@ -173,8 +171,5 @@ test('Peptides — SAR parameters and WebLogo', async ({page}) => {
     expect(result.selectedRows).toBeGreaterThan(0);
   });
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

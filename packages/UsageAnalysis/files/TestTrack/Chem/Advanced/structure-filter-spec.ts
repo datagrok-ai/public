@@ -1,16 +1,3 @@
-/* ---
-sub_features_covered: [chem.search.substructure, chem.search.substructure.filter, chem.search.substructure.top-menu, chem.search.use-as-filter, chem.sketcher]
---- */
-// Frontmatter extraction:
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: [chem.search.substructure, .filter, .top-menu, .use-as-filter, chem.sketcher]
-//   ui_coverage_responsibility: [chem-structure-filter-draw, chem-substructure-use-as-filter,
-//     chem-substructure-disable-filter, chem-substructure-remove-filter,
-//     chem-substructure-hamburger-menu-add-filter, filter-panel-close-open,
-//     clone-view, filter-cross-view-sync]
-//   related_bugs: [] (GROK-14028 owned by chem-grok-14028-spec.ts)
-//
 // SR-DEFERRED:
 //  - Block 2 step 3 (right-click cell + Current Value > Use as filter): canvas-rendered
 //    cell context menu — substituted with fg.updateOrAdd semantic.
@@ -19,9 +6,10 @@ sub_features_covered: [chem.search.substructure, chem.search.substructure.filter
 //
 // Paired scenario: Advanced/structure-filter.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';
+import {finishSpec} from '../../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: Structure Filter — 5 sub-scenarios on spgi-100', async ({page}) => {
   test.setTimeout(600_000);
@@ -195,8 +183,5 @@ test('Chem: Structure Filter — 5 sub-scenarios on spgi-100', async ({page}) =>
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

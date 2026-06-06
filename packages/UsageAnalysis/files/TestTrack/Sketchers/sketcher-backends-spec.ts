@@ -1,64 +1,19 @@
-/* ---
-sub_features_covered: [chem.sketcher, chem.sketcher.ocl, chem.sketcher.ketcher,
-  chem.sketcher.chemdraw, chem.sketcher.backend-switch, chem.sketcher.hamburger-menu,
-  chem.sketcher.copy-as, chem.sketcher.roundtrip, chem.sketcher.molecular-input]
---- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   coverage_type: regression
-//   sub_features_covered: [chem.sketcher, chem.sketcher.ocl, chem.sketcher.ketcher,
-//     chem.sketcher.chemdraw, chem.sketcher.backend-switch, chem.sketcher.hamburger-menu,
-//     chem.sketcher.copy-as, chem.sketcher.roundtrip, chem.sketcher.molecular-input]
-//   ui_coverage_responsibility: [chem-sketcher-open, chem-sketcher-hamburger-backend-switch,
-//     chem-sketcher-battery-per-backend]
-//   related_bugs: [GROK-16340, GROK-12685, GROK-12391, GROK-12297, GROK-12966, GROK-14028,
-//     GROK-12826, GROK-12581, GROK-12905, GROK-12758, CLAUDE-5]
-//
-// Flow (one persistent sketcher panel, backend switched IN-PLACE via the real hamburger menu —
-// exactly the manual gesture in the user's screenshot):
-//   open sketcher (OpenChemLib default) → battery
-//   → click hamburger ≡ → click "Ketcher"   → battery (same checks)
-//   → click hamburger ≡ → click "ChemDraw"   → battery (same checks)
-//
-// The battery (C1-C8) is the same for every backend and each check maps to a fixed bug:
-//   C1 SMILES round-trip + no-"undefined" guard ......... GROK-12685
-//   C2 widget persists after set (does not disappear) ... GROK-16340
-//   C3 MOLBLOCK (V2000) round-trip ...................... baseline
-//   C4 large V3000 molblock loads ...................... GROK-12391
-//   C5 SMARTS set/get round-trip ....................... GROK-12297 / GROK-12966
-//   C6 malformed molecule does not throw ............... CLAUDE-5
-//   C7 resize() does not throw ......................... GROK-12826
-//   C8 clear empties the molecular input field ......... GROK-14028
-//   active backend == selected (after menu switch) ..... GROK-12581 / GROK-12905
-//   zero sketcher console errors ...................... GROK-12758
-//
-// Selector recon-notes (class-2: live-MCP-observed, not yet in grok-browser reference):
-//   .d4-dialog .fa-bars.d4-input-options — Sketcher dialog hamburger icon (reached via
-//     ui.dialog('Sketcher').add(sk.root).show()); observed live 2026-06-03 via
-//     chrome-devtools MCP (evaluate_script). CSS-class selector (no [name=] on this icon).
-//   .d4-menu-item-label — radio backend item rendered after hamburger click; menu labels
-//     observed in 2026-06-03 recon = ['', 'Copy as SMILES', 'Copy as MOLBLOCK', 'Recent',
-//     'Add to Favorites', 'Favorites', 'ChemDraw', 'Marvin', 'Ketcher', 'OpenChemLib'].
-//     Spec selects OpenChemLib / Ketcher / ChemDraw (Marvin excluded per scenario).
-// Switching in-place on one widget round-trips benzene on OCL, Ketcher (570) and ChemDraw (658).
-//
-// Paired scenario: sketcher-backends.md
+// One persistent sketcher panel, backend switched in-place via the hamburger menu
+// (OpenChemLib → Ketcher → ChemDraw). Each backend runs the shared C1-C8 battery:
+//   C1 SMILES round-trip + no-"undefined" guard (GROK-12685); C2 widget persists (GROK-16340);
+//   C3 MOLBLOCK V2000 round-trip; C4 large V3000 loads (GROK-12391); C5 SMARTS round-trip
+//   (GROK-12297/12966); C6 malformed no-throw (CLAUDE-5); C7 resize no-throw (GROK-12826);
+//   C8 clear empties input (GROK-14028); active==selected (GROK-12581/12905); no console errors (GROK-12758).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-// No `storageState`: `loginToDatagrok(page)` inside the test body is the canonical auth path
-// per spec-login.ts (DATAGROK_AUTH_TOKEN injection by `grok test`). A `storageState: 'auth.json'`
-// directive here would shadow that path — Playwright would resolve the file at module-load
-// against `public/packages/UsageAnalysis/` and ENOENT the whole spec before any test() runs.
 test.use(specTestOptions);
 
-// Embedded large V3000 molblock (aspirin) for C4 — no server convert (an unbounded convert
-// previously hung the whole test).
+// Embedded large V3000 molblock (aspirin) for C4 — avoids an unbounded server convert that hung the test.
 const ASPIRIN_V3000 = '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 13 13 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 5.250000 -1.299038 0.000000 0\nM  V30 2 C 3.750000 -1.299038 0.000000 0\nM  V30 3 O 3.000000 -2.598076 0.000000 0\nM  V30 4 O 3.000000 0.000000 0.000000 0\nM  V30 5 C 1.500000 0.000000 0.000000 0\nM  V30 6 C 0.750000 -1.299038 0.000000 0\nM  V30 7 C -0.750000 -1.299038 0.000000 0\nM  V30 8 C -1.500000 0.000000 0.000000 0\nM  V30 9 C -0.750000 1.299038 0.000000 0\nM  V30 10 C 0.750000 1.299038 0.000000 0\nM  V30 11 C 1.500000 2.598076 0.000000 0\nM  V30 12 O 0.750000 3.897114 0.000000 0\nM  V30 13 O 3.000000 2.598076 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 2 2 3\nM  V30 3 1 2 4\nM  V30 4 1 4 5\nM  V30 5 2 5 6\nM  V30 6 1 6 7\nM  V30 7 2 7 8\nM  V30 8 1 8 9\nM  V30 9 2 9 10\nM  V30 10 1 10 11\nM  V30 11 2 11 12\nM  V30 12 1 11 13\nM  V30 13 1 10 5\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n';
 
-// Opens ONE sketcher dialog (OpenChemLib default) and keeps a handle on window.__sk, plus a
-// console.error capture. Subsequent backend switches reuse this same widget.
+// Open ONE sketcher dialog (OpenChemLib default), keep window.__sk handle + console.error capture.
 async function openSketcher(page: import('@playwright/test').Page): Promise<void> {
   await page.evaluate(async () => {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -66,7 +21,7 @@ async function openSketcher(page: import('@playwright/test').Page): Promise<void
     (window as any).__sk_err = [];
     const orig = console.error;
     console.error = function(...a: any[]) { (window as any).__sk_err.push(a.map((x: any) => String(x)).join(' ')); orig.apply(console, a as any); };
-    DG.chem.currentSketcherType = 'OpenChemLib';   // global before construction (chem.ts:594)
+    DG.chem.currentSketcherType = 'OpenChemLib';   // set global before construction
     const sk = new DG.chem.Sketcher();
     (window as any).__sk = sk;
     ui.dialog('Sketcher').add(sk.root).show();
@@ -76,12 +31,12 @@ async function openSketcher(page: import('@playwright/test').Page): Promise<void
   await page.locator('.d4-dialog').waitFor({timeout: 15000});
 }
 
-// Manual backend switch through the hamburger ≡ menu (real DOM clicks), on the same widget.
+// Backend switch through the hamburger menu, on the same widget.
 async function switchBackendViaMenu(page: import('@playwright/test').Page, friendlyName: string): Promise<void> {
   await page.locator('.d4-dialog .fa-bars.d4-input-options').click();
   await page.waitForTimeout(800);
   await page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${friendlyName}$`)}).first().click();
-  // External backends load a remote widget — wait until the switch lands on the same handle.
+  // external backends load a remote widget — wait until the switch lands on the same handle
   await page.waitForFunction((b) =>
     (window as any).DG?.chem?.currentSketcherType === b && (window as any).__sk?.sketcher,
   friendlyName, {timeout: 60000});
@@ -179,10 +134,7 @@ test('Chem: Sketcher battery — OpenChemLib → Ketcher → ChemDraw (UI backen
     await openSketcher(page);
   });
 
-  // Select OpenChemLib explicitly via the menu too: the dialog's initial backend is whatever
-  // the user's last-selected sketcher was (Chem package init restores it from userSettings,
-  // package.ts:188-197), so the starting state is not deterministic. Selecting via the menu
-  // makes all three backends symmetric and the OCL step deterministic.
+  // Select OCL via the menu too — initial backend is the user's last-selected (non-deterministic).
   await softStep('Select OpenChemLib via hamburger menu — battery', async () => {
     await switchBackendViaMenu(page, 'OpenChemLib');
     const res = await runBattery(page, 'OpenChemLib');
@@ -207,15 +159,11 @@ test('Chem: Sketcher battery — OpenChemLib → Ketcher → ChemDraw (UI backen
     assertBattery(res, 'ChemDraw');
   });
 
-  // Restore the user's default sketcher so this run doesn't leave ChemDraw persisted
-  // (Chem init reads userSettings 'sketcher'/'selected' on the next session).
+  // Restore the user's default sketcher so this run doesn't leave ChemDraw persisted.
   await page.evaluate(() => {
     try { grok.userSettings.add('sketcher', 'selected', 'OpenChemLib'); } catch (e) {}
     grok.shell.closeAll();
   }).catch(() => {});
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

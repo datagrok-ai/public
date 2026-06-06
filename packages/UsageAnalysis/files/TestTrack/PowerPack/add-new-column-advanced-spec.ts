@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func, powerpack.dialogs.prepare-add-column-call, powerpack.formula.is-formula-column, powerpack.dialogs]
---- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {openTableFromFile, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
 test.use(specTestOptions);
@@ -13,7 +11,6 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
   const projectName = `AutoTest-AddNewColAdvanced-${stamp}`;
   let projectId: string | null = null;
   let tableInfoId: string | null = null;
-  // ---- Login + workspace reset ----
   await loginToDatagrok(page);
   await page.evaluate(() => {
     const grok = (window as any).grok;
@@ -24,33 +21,19 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
   });
   await page.waitForTimeout(500);
   try {
-    // -----------------------------------------------------------------
-    // Setup (scenario Setup steps 1 + 2): open demog.csv via the
-    // OpenFile recorder so df.tags['.script'] = 'Demog = OpenFile(...)'
-    // datasync provenance is wired (the precondition for Step 6's
-    // save-with-datasync to actually persist the source binding on
-    // reopen). The WEIGHT column from demog is the parametric `WEIGHT`
-    // source column from scenario Setup step 2.
-    // -----------------------------------------------------------------
+    // Setup: open demog.csv with datasync provenance so the GROK-17109 invariant can be tested.
     await softStep('Setup: open System:DemoFiles/demog.csv with datasync provenance', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
-      // Wait for grid to render before the dialog interactions.
       await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
       await page.waitForTimeout(1000);
-      // Verify provenance is wired (Gate E-PROV-01 inline check) — without
-      // this, Step 6 save-with-datasync silently degrades to snapshot-only
-      // and the GROK-17109 invariant cannot be tested at all.
+      // Without wired provenance, save-with-datasync degrades to snapshot-only and GROK-17109 can't be tested.
       await assertProvenanceScript(page, 'files', opened.script);
-      // Sanity: WEIGHT column present (the formula's source column).
       const cols = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
         return df ? df.columns.names() : [];
       });
       expect(cols).toContain('WEIGHT');
     });
-    // -----------------------------------------------------------------
-    // Step 1: Open the Add New Column dialog (first time) — UI driving.
-    // -----------------------------------------------------------------
     await softStep('Step 1: open Add New Column dialog via toolbar icon (first time)', async () => {
       const icon = page.locator('[name="icon-add-new-column"]').first();
       await icon.waitFor({timeout: 30_000, state: 'visible'});
@@ -59,9 +42,6 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
       await dlg.waitFor({timeout: 30_000});
       await expect(dlg).toBeVisible();
     });
-    // -----------------------------------------------------------------
-    // Step 2: Add the first calculated column — name=Weight2,
-    // formula=${WEIGHT}+100 — via UI driving (Name input UI fill +
     await softStep('Step 2: add Weight2 = ${WEIGHT}+100 via dialog UI; verify column added', async () => {
       const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
       await page.evaluate(() => {
@@ -367,8 +347,5 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
       try { (window as any).grok.shell.closeAll(); } catch (_) {}
     }).catch(() => {});
   }
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

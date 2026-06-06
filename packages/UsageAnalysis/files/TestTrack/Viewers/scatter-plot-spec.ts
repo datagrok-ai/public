@@ -8,9 +8,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 // -- UI Helpers --
 
-/** Set a Scatter plot column via the column-combobox UI flow. Thin alias over
- *  helpers/viewers.ts:pickColumnViaSelector that fills in viewerType='Scatter plot'
- *  for every call site below. */
+/** Set a Scatter plot column via the column-combobox UI flow (pickColumnViaSelector alias). */
 const setCol = (page: Page, comboboxSuffix: string, columnName: string, propName: string) =>
   v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName});
 
@@ -62,31 +60,8 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 5000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath});
 
-  // Phase 3: Add scatter plot via Toolbox icon click (UI)
   await page.evaluate(() => {
     document.querySelector('[name="icon-scatter-plot"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });

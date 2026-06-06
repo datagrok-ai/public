@@ -1,15 +1,5 @@
-/* ---
-sub_features_covered: [legend.visibility, legend.position, legend.column, legend.item.click, legend.item.cross-click, legend.item.color-picker, legend.allow-item-coloring, legend.splitter-resize, legend.mini-icon, legend.auto-show, legend.auto-position, legend.show-nulls, legend.corner.collapse]
-related_bugs: [GROK-17438, GROK-17222, github-3132, GROK-17278, GROK-19083, GROK-19041]
-pyramid_layer: ui-smoke
---- */
-// Paired scenario: visibility-and-positioning.md. UI-smoke section covering the
-// 5 UI-driven flows (color-picker dialog, resize-handle, mini-icon-toggle,
-// corner-collapse chevron, no-value swatch). JS-API flows delegated per
-// SR L29-47. Full prose moved to visibility-and-positioning.md.
-
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -18,9 +8,8 @@ test('Legend visibility and positioning', async ({page}) => {
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
-  // Setup steps 2-4: 7 viewers + Stereo Category legend on each.
   await softStep('Setup steps 2-4: 7 viewers + Stereo Category legend on each', async () => {
     await v.addLegendViewers(page, {
       column: 'Stereo Category',
@@ -35,9 +24,7 @@ test('Legend visibility and positioning', async ({page}) => {
     expect(legends).toBeGreaterThan(0);
   });
 
-  // Sc2 exercises legend-column-property-selector UI flow (previously
-  // delegated). First switch goes through the column-combobox UI; second
-  // switch stays on the JS API path (settled state for downstream steps).
+  // First switch goes through the column-combobox UI; second uses the JS API path.
   await softStep('Sc2 steps 1-4: legend redraws on column change (Series ↔ Stereo Category)', async () => {
     await v.openViewerGear(page, 'Scatter plot');
     await v.pickColumnViaSelector(page, {
@@ -128,7 +115,6 @@ test('Legend visibility and positioning', async ({page}) => {
       const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
       try { return JSON.parse(col.tags['.color-coding-categorical'] ?? '{}')[cat] ?? null; } catch (_) { return null; }
     }, {cat: targetCategory});
-    let cancelExercised = false;
     try {
       const item = page.locator(`[name="viewer-Scatter-plot"] [name="legend"] .d4-legend-item`)
         .filter({has: page.locator('.d4-legend-value', {hasText: new RegExp(`^${targetCategory.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`)})}).first();
@@ -149,19 +135,13 @@ test('Legend visibility and positioning', async ({page}) => {
       await page.waitForTimeout(200);
       await page.locator(`.d4-dialog[name="${dlgName}"] [name="button-CANCEL"]`).click({timeout: 5000});
       await page.waitForTimeout(500);
-      cancelExercised = true;
-    } catch (_) {
-      cancelExercised = false;
-    }
-    if (cancelExercised) {
-      const afterCancel = await page.evaluate(({cat}) => {
-        const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
-        try { return JSON.parse(col.tags['.color-coding-categorical'] ?? '{}')[cat] ?? null; } catch (_) { return null; }
-      }, {cat: targetCategory});
-      expect(afterCancel ?? null).toEqual(beforeTag ?? null);
-    } else {
-      expect(true).toBe(true);
-    }
+    } catch (_) { /* best-effort UI; the tag-unchanged assertion below holds regardless */ }
+    // Cancel (or a no-op dialog) must leave the category's color tag unchanged.
+    const afterCancel = await page.evaluate(({cat}) => {
+      const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
+      try { return JSON.parse(col.tags['.color-coding-categorical'] ?? '{}')[cat] ?? null; } catch (_) { return null; }
+    }, {cat: targetCategory});
+    expect(afterCancel ?? null).toEqual(beforeTag ?? null);
   });
 
   await softStep('Sc5 steps 5-7: color picker OK commits + propagates (UI + API fallback)', async () => {
@@ -175,9 +155,6 @@ test('Legend visibility and positioning', async ({page}) => {
       return null;
     });
     if (!targetCategory) return;
-    // Drive the picker via the verbatim-extraction helper. The helper's UI
-    // path is the same one this softStep would inline; the fallback ensures
-    // the post-condition is observed even if the dialog can't open.
     await v.changeLegendItemColor(page, {
       viewerType: 'Scatter plot',
       category: targetCategory,

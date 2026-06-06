@@ -1,14 +1,6 @@
-/* ---
-sub_features_covered:
-  - bio.search.subsequence
-  - bio.search.subsequence.top-menu
-  - bio.search.subsequence.editor
-  - bio.search.subsequence.filter
---- */
-//   related_bugs: [] (scenario carries no related_bugs — GROK-16111
-// restores full row count. Multi-subsystem integration (atlas
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) => {
   test.setTimeout(300_000);
@@ -116,9 +108,6 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       input.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true}));
       input.dispatchEvent(new KeyboardEvent('keyup', {key: 'Enter', code: 'Enter', bubbles: true}));
     }, subsequence);
-    // Filter compute is async. Poll until trueCount converges (no
-    // simple "loader hidden" probe — bio.md notes the .grok-loader
-    // toggles transiently). Cap at 30s for cold filter widget init.
     await page.waitForFunction(() => {
       const df = grok.shell.tv.dataFrame;
       return df.filter.trueCount < df.rowCount;
@@ -131,28 +120,16 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       return {value: input.value, filtered: df.filter.trueCount, total: df.rowCount};
     });
     expect(state.value).toBe(subsequence);
-    // Scenario step 3: "Verify there is 1 row."
     expect(state.filtered).toBe(1);
     expect(state.total).toBe(baseRows);
   });
-  // Scenario step 4 — Click Reset Filter. The filter-group-header
-  // rotate-left icon ([name="icon-arrow-rotate-left"] — live-MCP-observed
-  // 2026-06-02, see Selector recon-notes above) resets all filters in
-  // the panel. Empirical: NO confirmation dialog is raised on this
-  // surface; df.filter.trueCount returns to df.rowCount synchronously;
-  // the filter widget is briefly torn down + rebuilt and the
-  // substructure input.value settles back to '' within ~2 s.
   await softStep('Click Reset Filter -> all rows present', async () => {
     await page.locator('[name="viewer-Filters"] .d4-filter-group-header [name="icon-arrow-rotate-left"]')
       .click();
-    // Wait for the BitSet to reset first (synchronous on click).
     await page.waitForFunction(() => {
       const df = grok.shell.tv.dataFrame;
       return df.filter.trueCount === df.rowCount;
     }, null, {timeout: 15_000});
-    // Then wait for the widget DOM to re-mount with an empty input.
-    // The reset path tears down + rebuilds the filter widget; querying
-    // input.value too early returns null (input not in DOM yet).
     await page.waitForFunction(() => {
       const input = document.querySelector(
         '[name="viewer-Filters"] input[placeholder="Substructure"]',
@@ -166,16 +143,9 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       ) as HTMLInputElement | null;
       return {value: input?.value ?? null, filtered: df.filter.trueCount, total: df.rowCount};
     });
-    // Scenario step 5: "Verify all rows should be present."
     expect(state.filtered).toBe(state.total);
     expect(state.total).toBe(baseRows);
-    // Reset clears the substructure input — empirical 2026-06-02 MCP
-    // observation; the filter widget re-mounts with .value === ''
-    // within ~2 s of the reset click.
     expect(state.value).toBe('');
   });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

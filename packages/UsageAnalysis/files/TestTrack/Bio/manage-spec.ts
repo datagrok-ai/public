@@ -1,12 +1,6 @@
-/* ---
-sub_features_covered:
-  - bio.manage.libraries-view
-  - bio.detector
---- */
-//     curated bug-library entries)
-// view-name assertion → checkbox enumeration → toggle-and-restore.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
   test.setTimeout(300_000);
@@ -90,7 +84,6 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     expect(view.type).toBe('view');
     expect(view.hasDuplicateHeading).toBe(true);
   });
-  // SCOPE_REDUCTION (within-slice): scenario step 3 asks to assert a
   await softStep('View renders per-library checkbox listing (>=1 row) + checkbox element per row', async () => {
     const listing = await page.evaluate(() => {
       const root = grok.shell.v.root;
@@ -118,7 +111,6 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     expect(listing.eachRowHasCheckbox).toBe(true);
   });
   await softStep('Toggle two libraries independently — per-row state isolation holds', async () => {
-    // the first). After the test, restore the original states so the
     const result = await page.evaluate(async () => {
       const root = grok.shell.v.root;
       const form = root.querySelector('.monomer-lib-controls-form');
@@ -150,7 +142,6 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
         .filter(Boolean);
       const a2 = cbs3[idxA].checked;
       const b2 = cbs3[idxB].checked;
-      // Restore: toggle A back, toggle B back. Order chosen so both end
       cbs3[idxA].click();
       await new Promise((r) => setTimeout(r, 2000));
       cbs3[idxB].click();
@@ -180,12 +171,8 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     expect(result.bUnchangedAfterAToggle).toBe(true);
     expect(result.bToggledOnSecondClick).toBe(true);
     expect(result.aUnchangedAfterBToggle).toBe(true);
-    // Idempotent restore so subsequent runs/users don't inherit toggled state.
     expect(result.aRestored).toBe(true);
     expect(result.bRestored).toBe(true);
   });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

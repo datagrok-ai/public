@@ -1,12 +1,4 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.visibility, legend.splitter-resize]
-related_bugs: [GROK-17438]
-coverage_type: regression
-bug_url: https://reddata.atlassian.net/browse/GROK-17438
---- */
-// Fix invariant: when color is changed on one viewer, the legend remains visible on
-// other viewers with the same legend; recovery paths (resize, set visibility=Always)
-// restore the legend if hidden. Full prose moved to legend-grok-17438.md.
+// GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
@@ -19,14 +11,13 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Scatter plot', 'Bar chart'],
     settleMs: 2000,
   });
 
-  // Step 2 (bug repro): legend present on each viewer (baseline before color change).
   await softStep('Step 2: legend present on Histogram + Scatter + Bar (baseline)', async () => {
     const before = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
@@ -42,8 +33,6 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
     expect(present, 'at least 2 viewers show legend in baseline').toBeGreaterThanOrEqual(2);
   });
 
-  // Step 3 (bug repro): change color via Scatter plot legend. Legend MUST remain
-  // visible on the OTHER shared-legend viewers (Histogram + Bar).
   await softStep('Step 3 invariant: change R_ONE via Scatter legend; Histogram + Bar legends stay visible', async () => {
     await v.changeLegendItemColor(page, {
       viewerType: 'Scatter plot',

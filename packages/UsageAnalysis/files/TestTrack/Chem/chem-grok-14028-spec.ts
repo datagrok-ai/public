@@ -1,39 +1,15 @@
-/* ---
-sub_features_covered: [chem.search.substructure.filter, chem.search.substructure, chem.sketcher, chem.actions.copy-smiles]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.search.substructure.filter, .substructure, chem.sketcher, chem.actions.copy-smiles]
-//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice
-//   related_bugs: [GROK-14028]
-//
-// Bug invariant (regression-lock per bug-library/chem.yaml :: GROK-14028):
-//   Clear button on substructure filter widget MUST clear all 3 layers —
-//   (L1) BitSet, (L2) sketcher UI / summary line, (L3) leaked tags.
-//   Per references/chem.md "GROK-14028 regression-lock invariant" §:
-//     L2 = .chem-clear-sketcher-button absent from DOM after Clear
-//          AND .d4-filter-summary contains no SMARTS/SMILES pattern.
-//
-// Round 2 selectors recon: chem.md (2026-05-11) — validates .chem-clear-sketcher-button,
-// .d4-filter-summary, sketcher dialog SMILES input placeholder pattern.
-//
-// Paired scenario: chem-grok-14028.md
+// GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({page}) => {
   test.setTimeout(180_000);
 
-  // Post-breakthrough pattern (chem-new-2026-05-11-batch-2-breakthrough):
-  // split-evaluate setup + 30s outside-evaluate post-addTableView settle.
-  // Earlier warmChemPackage(page) pre-call removed — pre-warming BEFORE
-  // dataset opening is wasted budget; Chem autostart fires AS A SIDE-EFFECT
-  // of semType=Molecule detection on a Molecule column.
   await loginToDatagrok(page);
 
   await softStep('Setup: close all + selenium flags', async () => {
@@ -83,7 +59,6 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       await new Promise(r => setTimeout(r, 5000));
     });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
-    // Probe for the structure-filter sketch-link (up to 45s — chem-filter init is async + cold-start).
     const probeResult = await page.evaluate(async () => {
       for (let i = 0; i < 90; i++) {
         const filters = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
@@ -95,7 +70,6 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
           if (sketchLink) return {ready: true, atMs: (i+1)*500};
         }
         if (i === 89) {
-          // Final diagnostic dump
           return {
             ready: false,
             totalFilters: filters.length,
@@ -127,8 +101,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
           break;
         }
       }
-      // Sketcher dialog has position:fixed → offsetParent null but actually visible;
-      // detect via getBoundingClientRect width > 0.
+      // Sketcher dialog is position:fixed (offsetParent null but visible) — detect via getBoundingClientRect.
       for (let i = 0; i < 25; i++) {
         await new Promise(r => setTimeout(r, 400));
         const dlg = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -141,7 +114,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     });
     expect(sketcherOpened, 'Sketcher dialog did not open via Structure filter sketch-link').toBe(true);
 
-    // Fill SMILES input via DOM event sequence; native fill() may not reach Dart-side state.
+    // Fill SMILES input via DOM event sequence — native fill() may not reach Dart-side state.
     await page.evaluate(async () => {
       const smilesInput = Array.from(document.querySelectorAll('.d4-dialog input'))
         .find((i: any) => /smiles/i.test(i.placeholder || '')) as HTMLInputElement | undefined;
@@ -223,8 +196,5 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.workflow.sar-dialog, peptides.workflow.analyze-ui, peptides.workflow.start-analysis, peptides.model.add-sequence-space, peptides.viewers.cluster-max-activity, peptides.viewers.logo-summary-table, peptides.widgets.settings-dialog, peptides.compute.calculate-cluster-statistics]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 test('Peptide Space — top-menu SAR launch with sequence-space + MCL clustering', async ({page}) => {
@@ -182,10 +180,6 @@ test('Peptide Space — top-menu SAR launch with sequence-space + MCL clustering
     expect(/setTrue|null/.test(state.lastError),
       `GROK-19145 invariant: post-OK MCL compute produced a null-receiver error: ${state.lastError}`).toBe(false);
   });
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

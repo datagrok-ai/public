@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -283,10 +284,5 @@ test('Matrix plot tests', async ({ page }) => {
     if (result.viewersFinal !== result.before) throw new Error('Clone not closed');
   });
 
-  if (stepErrors.length > 0) {
-    throw new Error(
-      'Some steps failed:\n' +
-      stepErrors.map(e => `  [${e.step}]: ${e.error}`).join('\n')
-    );
-  }
+  v.finishSpec();
 });

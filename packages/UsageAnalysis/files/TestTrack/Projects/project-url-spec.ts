@@ -1,9 +1,6 @@
-/* ---
-sub_features_covered: [projects.url-params.build-share-link, projects.url-params.apply, projects.shell.open, projects.view.browse]
-generated_from: project-url.md (Phase B canonical openers)
---- */
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, BASE_URL, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
@@ -32,8 +29,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
 
     await softStep('Step 3 equivalent: derive deep-link path for the project', async () => {
       if (!saved) throw new Error('no saved project');
-      // Use entity.path — server-canonical URL slug, e.g. `/p/QaPw.MyProject`
-      // (namespace separator is `.`, not `:` from nqName).
+      // Use entity.path — server-canonical URL slug, e.g. `/p/QaPw.MyProject` (namespace separator is `.`).
       projectPath = await page.evaluate(async (id) => {
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(id);
@@ -45,18 +41,12 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
 
     await softStep('Step 4-5: navigate to project URL and verify project loads (Data Sync re-runs)', async () => {
       if (!saved) throw new Error('no saved project');
-      // Use the existing page (same auth context). The test contract is
-      // "URL deep-link opens project"; routing path is the same regardless
-      // of new-tab vs same-tab.
       await evalJs(page, 'grok.shell.closeAll()');
       await page.waitForTimeout(500);
       await page.goto(`${BASE_URL}${projectPath}`);
       await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
-      // Verification signals (in priority order). Avoid `grok.shell.tables`
-      // accessor — Dart-side `Tn.grok_TableNames` throws on dev for
-      // URL-opened projects (verified live 2026-05-05).
-      // Primary: project.id matches our saved project id.
-      // Fallback: any active TableView dataFrame with rowCount > 0.
+      // Verify via project.id match (primary) or TableView rowCount > 0 (fallback). Avoid grok.shell.tables —
+      // Dart-side Tn.grok_TableNames throws on dev for URL-opened projects.
       const expectedId = saved.projectId;
       const result = await page.evaluate(async ({pid}) => {
         const grok = (window as any).grok;
@@ -67,7 +57,6 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
           const rc = grok?.shell?.tv?.dataFrame?.rowCount;
           lastProjId = projId ?? null;
           lastRc = typeof rc === 'number' ? rc : null;
-          // Strong signal: URL routed to OUR project + table materialized.
           if (projId === pid && typeof rc === 'number' && rc > 0)
             return {ok: true, signal: 'matched-id+rowCount', projId, rc};
           await new Promise((r) => setTimeout(r, 500));
@@ -75,10 +64,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
         return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid};
       }, {pid: expectedId});
       console.log('Project URL load result: ' + JSON.stringify(result));
-      // Weak fallback: if the strong signal didn't fire, the URL still
-      // routed somewhere (Browse element appeared); soft-warn rather than
-      // hard-fail. The strong path is the test contract; the weak path
-      // reflects dev SPA quirks (project.id may not propagate fast enough).
+      // Soft-warn (not hard-fail) if the strong signal didn't fire but the URL routed (Browse appeared).
       if (!result.ok) {
         console.warn(
           'project-url soft-warn: strong-signal timeout. ' +
@@ -86,9 +72,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
           'See projects-ui-smoke-spec.ts for related dev-SPA save/route quirks.',
         );
       }
-      // Test passes if either:
-      //  - strong signal fired, OR
-      //  - we at least observed shell.project set (URL routing did something).
+      // Passes if the strong signal fired OR shell.project was set (URL routing did something).
       const minimalSignal = result.ok || (result.projId != null);
       expect(minimalSignal).toBe(true);
     });
@@ -100,8 +84,5 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

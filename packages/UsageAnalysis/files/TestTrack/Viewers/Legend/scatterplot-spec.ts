@@ -1,22 +1,10 @@
-/* ---
-sub_features_covered: [legend.column, legend.extra-column, legend.show-main-item-icons, legend.item.color-picker, legend.allow-item-coloring, legend.refresh.on-data-change, legend.item.click, legend.color-scale.numerical, legend.use-custom-color-coding]
-related_bugs: [GROK-17438, GROK-17222, github-3132, GROK-17278, GROK-19083]
-strategy: chained_tests
---- */
-// Paired scenario: scatterplot.md. Scenarios 1, 3, 5 carry [coverage_type: edge]
-// markers post-SR. Full prose moved to scatterplot.md. Sc1 step 10 numerical-
-// formula sub-bullet rendering test lives in legend-ui.md §4 (canvas gradient
-// swatch — no DOM children to assert).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
-// Validator B 2026-05-09: scatterplot exhibits 3x runtime variance driven by
-// transient dapi/FiltersGroup hangs in 1 of 3 runs. test.retry(1) gives a
-// single retry to absorb infra-level transient slowness.
+// retry(1) absorbs transient dapi/FiltersGroup hangs causing ~3x runtime variance.
 test.describe.configure({retries: 1});
 
 async function cleanupAll(page: any, layoutId?: string | null, projectId?: string | null): Promise<void> {
@@ -33,7 +21,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Sc1 steps 2-4: Color=Series + Marker=Series → combined legend', async () => {
     const items = await page.evaluate(async () => {
@@ -58,7 +46,6 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       .first().waitFor({timeout: 5000});
   });
 
-  // Sc1 step 5: change first-available category color via picker dialog.
   await softStep('Sc1 step 5: change category color via legend picker (UI + API fallback)', async () => {
     const targetCategory = await page.evaluate(() => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
@@ -79,9 +66,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     });
   });
 
-  // Sc1 steps 6-7: layout round-trip — color persists. dapi.layouts.* wrapped
-  // in inline withTimeout — Validator B run 3 surfaced these hanging under
-  // transient dev slowness.
+  // dapi.layouts.* wrapped in withTimeout — they can hang under transient dev slowness.
   let layoutId: string | null = null;
   await softStep('Sc1 steps 6-7: save+reapply layout, color persists', async () => {
     const res = await page.evaluate(async () => {
@@ -114,7 +99,6 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     }
   });
 
-  // Sc1 steps 8-9: project round-trip with FK graceful-degrade.
   let projectId: string | null = null;
   await softStep('Sc1 steps 8-9: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
@@ -149,7 +133,6 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     }
   });
 
-  // Sc1 step 10: categorical-formula color column → categorical legend.
   await softStep('Sc1 step 10: categorical formula → categorical legend', async () => {
     const count = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -175,7 +158,6 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     expect(count).toBeGreaterThan(0);
   });
 
-  // Sc1 step 11: Color=ID, Marker=Core legend renders. GROK-19083 baseline.
   await softStep('Sc1 step 11: Color=ID, Marker=Core', async () => {
     const count = await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
@@ -197,7 +179,7 @@ test('Legend scatterplot — axis change', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Sc2 steps 2-5: setup col1/col2 + scatter Color=Stereo Category, X=col1', async () => {
     const a = await page.evaluate(async () => {
@@ -256,7 +238,7 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Sc3 steps 2-5: scatter + Marker=Stereo Category + filter to R_ONE/S_UNKN', async () => {
     const res = await page.evaluate(async () => {
@@ -321,7 +303,7 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Sc4 steps 2-4: scatter + Chemical Space X/Y, Color=Primary Scaffold Name, Marker=Stereo Category', async () => {
     await page.evaluate(async () => {
@@ -340,8 +322,7 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
     await page.locator('[name="viewer-Filters"]').first().waitFor({timeout: 15000});
   });
 
-  // Sc4 steps 5-6: Filter Panel narrows high-cardinality column. fg.updateOrAdd
-  // on ~100 categories can hang; wrap with timeout + df.filter fallback.
+  // fg.updateOrAdd on ~100 categories can hang — wrap with timeout + df.filter fallback.
   await softStep('Sc4 steps 5-6: Filter Panel narrows Primary Scaffold Name', async () => {
     const res = await page.evaluate(async () => {
       const withTimeout = <T>(p: Promise<T>, ms: number, label: string): Promise<T> => {
@@ -385,7 +366,6 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
     expect(res.filtered).toBeGreaterThan(0);
   });
 
-  // Sc4 steps 7-8: click R_ONE in Stereo Category legend → composes with FP filter (GROK-17222).
   await softStep('Sc4 steps 7-8: click R_ONE in legend → composes with FP filter (GROK-17222)', async () => {
     await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
@@ -430,7 +410,7 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Sc5 steps 2-3: scatter + box + PC plots, scatter Color=Chemical Space X', async () => {
     await page.evaluate(async () => {

@@ -1,18 +1,8 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.add-relation, projects.shell.share-via-context-menu, projects.api.get-by-id]
-related_bugs: [GROK-19103]
-generated_from: projects-lifecycle-derived.md (Phase B canonical openers + uploadProject + reopen-verify)
---- */
-// Derived-source lifecycle. Phase B 2026-05-05 — replaces the broken
-// `df.groupBy().aggregate()` JS-API path (which did NOT write df.tags['.script']
-// and so left the project's derived table without a re-execution recipe) with
-// the canonical UI flow: Aggregate Rows / Pivot Table → Add to workspace,
-// captured live in .claude/diagnostics/mcp-capture-derived.md.
-//
-// GROK-19103 invariant: derivation lands in the active workspace
-// (grok.shell.tables grows by 1), NOT as a stray separate project.
+// Derived-source lifecycle via the UI Aggregate Rows / Pivot Table → Add to workspace flow.
+// GROK-19103 invariant: derivation lands in the active workspace (tables grows by 1), not a stray project.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromFile,
@@ -60,18 +50,12 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       expect(derived.script).toMatch(/Aggregate\("demog"/);
       derivedTableId = derived.tableInfoId;
 
-      // GROK-19103 invariant: derivation lands in active workspace
-      // (tables.length grows by exactly 1), NOT as a stray separate project.
+      // GROK-19103 invariant: tables.length grows by exactly 1, not a stray separate project.
       const tablesAfter = await evalJs<number>(page, '(grok.shell.tables?.length || 0)');
       expect(tablesAfter).toBe(tablesBefore + 1);
     });
 
     await softStep('Step 3: save with provenance (project carries base + derived TableInfos)', async () => {
-      // saveProjectWithProvenance saves the *active* TableView (the derived).
-      // The base table + relationship is persisted via project.addChild
-      // already wired up at the JS-API level when both tables share the
-      // same TableView session. Verify the project lists both tables
-      // post-save via dapi.projects.find.
       saved = await saveProjectWithProvenance(page, projectName);
       expect(saved.projectId).toBeTruthy();
     });
@@ -79,11 +63,8 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
     await softStep('Step 4: reopen → verify base AND derived re-materialize with provenance', async () => {
       if (!saved) throw new Error('no saved project');
       const result = await reopenAndAssertProvenance(page, saved.projectId);
-      // Active TV after reopen should have one of the two tables.
-      // tablesAfter should be >= 2 (base + derived).
       expect(result.tablesAfter).toBeGreaterThanOrEqual(1);
 
-      // Inspect both tables' .script tags after reopen.
       const tagInspect = await evalJs<{tables: Array<{name: string; script: string}>}>(page, `(() => {
         const out = [];
         for (const t of (grok.shell.tables || [])) {
@@ -94,8 +75,7 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
         return {tables: out};
       })()`);
 
-      // At least one table should match files-source (base) and one should
-      // match derived. Server may rematerialize them in any order.
+      // At least one table should match base or derived provenance (server may rematerialize in any order).
       const hasBaseProvenance = tagInspect.tables.some(t => /OpenFile\("System:DemoFiles\/demog\.csv"\)/.test(t.script));
       const hasDerivedProvenance = tagInspect.tables.some(t => /Aggregate\("demog"/.test(t.script));
       expect(hasBaseProvenance || hasDerivedProvenance).toBe(true);
@@ -114,8 +94,7 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       expect(renameR.ok).toBe(true);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for
-    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
+    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 5b: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: true});
@@ -134,8 +113,5 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       await deleteProjectWithCleanup(page, {tableInfoId: derivedTableId});
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

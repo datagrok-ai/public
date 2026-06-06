@@ -1,20 +1,6 @@
-/* ---
-sub_features_covered: [bio.analyze.msa, bio.analyze.msa.dialog, bio.engines.msa-pepsea, bio.rendering.column-header, bio.detector]
---- */
-//   related_bugs: [GROK-15176]
-//   GROK-15176 — Bio's to-atomic-level produces molfiles with invalid isotope
-//     convert.md:Step 2 is owned by bug_focused_candidates[GROK-15176]
-// MCP recon (round-2 retry — category test-bug, mcp_status: used):
-// MCP recon (round-3 retry — category test-bug, mcp_status: used):
-// Round-1 retry round (preserved for back-reference): test-bug category,
-// Round-2 retry round (preserved): test-bug category, addressed cellType
-// Round-3 retry round (this round): test-bug category — distinct from R1/R2
-// Root cause #1 (test-bug — same paradigm): the dialog-status polling
-// Root cause #2 (test-bug — same paradigm): the fallback path's
-// Round-2 fix (same-paradigm tactical — test-bug category, NO paradigm pivot):
-// Round-1 fixes (preserved — same-paradigm tactical, test-bug):
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio PepSeA MSA on HELM', async ({page}) => {
   test.setTimeout(600_000);
@@ -63,7 +49,6 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
     expect(info.hasMacro).toBe(true);
     expect(info.units).toBe('helm');
   });
-  // Round-3 retry fix (test-bug, same-paradigm tactical) — addresses Gate-B
   await softStep('Add new column Clusters = RandBetween(0, 5)', async () => {
     await page.evaluate(async () => {
       (document.querySelector('[name="div-Edit"]') as HTMLElement).click();
@@ -312,19 +297,10 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
               break;
             } catch (e) { lastErr = e; r = null; }
           }
-          // Round-1 retry fix #d: hard-fail on FIRST cluster if no fn-name
-          // resolves — propagating the exception ensures the spec FAILs
-          // visibly rather than silently sliding into a wait-for-cellType
-          // timeout 60s later. Subsequent clusters reuse pickedFn so this
-          // check only matters for the bootstrap cluster.
           if (!r) {
             const fnTried = (pickedFn ? [pickedFn] : fnNames).join(', ');
             throw new Error(`No PepSeA-equivalent sequenceMSA fn reachable on cluster ${cat} (tried: ${fnTried}). Last err: ${String(lastErr)}`);
           }
-          // Round-1 retry fix #e: defensive result-type read. r is either a
-          // DG.Column (fast-path from grok.functions.call resolving to the
-          // function's typed output) OR a FuncCall wrapper (some Datagrok
-          // versions). Detect by checking for the .get(i) method.
           const resultCol: any = (typeof r?.get === 'function')
             ? r
             : (typeof r?.getOutputParamValue === 'function' ? r.getOutputParamValue() : null);
@@ -335,32 +311,15 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         const name = df.columns.getUnusedName(`msa(${helmCol.name})`);
         const msaCol = DG.Column.fromStrings(name, resultArr) as any;
         msaCol.semType = 'Macromolecule';
-        // Mirror createPepseaResultColumn (pepsea.ts L121-130) exactly so
-        // the Macromolecule cell renderer binds.
         msaCol.meta.units = 'separator';
         msaCol.setTag('separator', PEPSEA_SEPARATOR);
         msaCol.setTag('aligned', 'SEQ.MSA');
         msaCol.setTag('alphabet', 'UN');
         msaCol.setTag('.alphabetIsMultichar', 'true');
         df.columns.add(msaCol);
-        // Round-1 retry fix: call detectSemanticTypes to bind the cell
-        // renderer — mirrors the dialog OK path exactly (multiple-sequence-
-        // alignment-ui.ts L321). Without this, gridCol.cellType stays
-        // 'string' even though the column carries semType=Macromolecule +
-        // units=separator. The Bio cellRenderer registry routes on
-        // {quality=Macromolecule, units=separator} → separatorSequenceCellRenderer
-        // (package.ts L330-340), but the binding only happens via detectSemanticTypes.
+        // detectSemanticTypes binds the Macromolecule cell renderer (mirrors the dialog OK path).
         await grok.data.detectSemanticTypes(df);
       });
-      // Wait for the cell renderer to bind. cellType resolves to the
-      // function-name suffix matching the registered cellRenderer:
-      //   - 'sequence' for units in {fasta, separator, biln, custom}
-      //     (Bio package.ts L302-355 — `customSequenceCellRenderer` etc.)
-      //   - 'helm' for units='helm' (HELM-specific renderer registration)
-      // The fallback path produces units='separator' → cellType='sequence';
-      // we still accept 'helm' defensively (e.g. dialog races back during
-      // the budgeted window and the happy-path column carries the helm
-      // renderer).
       await page.waitForFunction(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -370,13 +329,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         return gridCol?.cellType === 'sequence' || gridCol?.cellType === 'helm';
       }, null, {timeout: 60_000});
     } else {
-      // Happy path — dialog produced the column. The OK handler already
-      // called grok.data.detectSemanticTypes(table) (multiple-sequence-
-      // alignment-ui.ts L321) so the renderer-bind is in flight. Poll for
-      // gridCol.cellType to flip to either 'sequence' (separator/fasta/biln/
-      // custom Bio renderers) or 'helm' (HELM-specific Bio renderer). MCP
-      // recon 2026-06-02 confirmed the happy-path PepSeA result binds to
-      // cellType='helm' on healthy dev.
+      // Happy path — dialog produced the column; poll for the renderer to bind.
       await page.waitForFunction(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -392,12 +345,6 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
       const msa: any = cols.find((c: any) => c.name.toLowerCase().includes('msa'));
       const clusters: any = df.col('Clusters');
       const gridCol = (grok.shell.tv as any).grid?.col?.(msa.name);
-      // Per-cluster monomer count — handle both notation shapes:
-      //   - SEPARATOR (PepSeA result): split on the column's separator tag.
-      //     PEPSEA_SEPARATOR is `.` (Bio constants.ts L58-59).
-      //   - HELM: tokens between '{' and '}' split by `.`.
-      // Char length varies with monomer name length in both notations, so
-      // a length-based check would false-positive on broken alignments.
       let separatorTag = '.';
       try { separatorTag = msa.getTag('separator') || '.'; } catch { /* ignore */ }
       const units = msa?.meta?.units ?? '';
@@ -410,9 +357,6 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
           const m = s.match(/\{([^}]*)\}/);
           count = m ? m[1].split('.').length : -1;
         } else {
-          // SEPARATOR / CUSTOM — split on the column's separator. Empty
-          // tokens count as gaps, so include them; alignment within a
-          // cluster forces the count to match across rows.
           count = s.split(separatorTag).length;
         }
         (countByCluster[key] ||= new Set()).add(count);
@@ -430,38 +374,12 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         clusterCount: Object.keys(countByCluster).length,
       };
     });
-    // Step 7: result aligned MSA column was added to the table.
     expect(result.msaName).toBeTruthy();
     expect(result.semType).toBe('Macromolecule');
-    // The dialog happy path produces units='custom' per multiple-sequence-
-    // alignment-ui.ts L271; the fallback path produces units='separator'
-    // per pepsea.ts L123 (mirror of createPepseaResultColumn). Either is
-    // acceptable — the canonical signal is the renderer bind (cellType
-    // assertion below), NOT the units string.
     expect(['separator', 'helm', 'custom']).toContain(result.units);
-    // Step 8: MSA column-header renderer is wired (atlas
-    // bio.rendering.column-header). The deterministic JS-API signal is
-    // gridCol.cellType ∈ {'sequence','helm'}:
-    //   - 'sequence' covers units ∈ {fasta, separator, biln, custom}
-    //     (Bio package.ts L302-355 — the four `*SequenceCellRenderer`
-    //      decorators all register with meta.cellType: 'sequence' and
-    //      dispatch via per-units columnTags filters).
-    //   - 'helm' covers units='helm' (the HELM-specific renderer
-    //     registration that the happy-path PepSeA result binds to —
-    //     MCP-confirmed 2026-06-02 on dev).
-    // cellType === 'string' (or anything outside the above set) would
-    // mean no Macromolecule renderer ever bound — that's the failure mode.
     expect(['sequence', 'helm']).toContain(result.cellType);
-    // Step 9: per-cluster alignment invariant. PepSeA aligns within each
-    // Cluster group; monomer counts are equal within a cluster (cross-cluster
-    // counts may differ).
     expect(result.allEqualPerCluster).toBe(true);
-    // Non-vacuous: >1 cluster confirms the per-cluster check is meaningful
-    // (with only 1 cluster the assertion is trivially true).
     expect(result.clusterCount).toBeGreaterThan(1);
   });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

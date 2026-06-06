@@ -1,29 +1,8 @@
-/* ---
-sub_features_covered: [chem.panels, chem.panels.rendering, chem.panels.highlights, chem.panels.descriptors, chem.panels.drug-likeness, chem.panels.properties, chem.panels.structural-alerts, chem.panels.pharmacophore, chem.panels.identifiers, chem.panels.structure-2d, chem.panels.structure-3d, chem.panels.toxicity, chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer, chem.notation.detect-smiles]
---- */
-// Frontmatter extraction:
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: see /* --- ... --- */ above (16 sub_features)
-//   ui_coverage_responsibility: [chem-info-panel-{rendering,highlights,descriptors,
-//     drug-likeness,properties,structural-alerts,pharmacophore,identifiers,
-//     structure-2d,structure-3d,toxicity}, context-panel-column-header-click,
-//     context-panel-cell-click]
-//   related_bugs: [] (GROK-16870/17964 awareness — owned by sibling bug-focused specs)
-//
-// SR-DEFERRED:
-//  - Phase A step 8 (scaffold alignment + Highlight panel custom color):
-//    chembl-scaffolds.csv-specific Rendering panel UI interactions require
-//    Chem package internals. JS API substitution acceptable per atlas
-//    chem.panels.rendering — column tag manipulation is the canonical path.
-//  - Phase B SMARTS slice: SMARTS_example_temp.csv at System:AppData/UsageAnalysis/
-//    test_datasets/ — opportunistic, may not exist on all envs. Skip if missing.
-//
-// Paired scenario: info-panels.md
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 const CHEMISTRY_PANES = ['Rendering', 'Highlights', 'Descriptors', 'Properties'];
 const BIOLOGY_PANES = ['Drug Likeness', 'Structural Alerts', 'Pharmacophore', 'Toxicity'];
@@ -44,7 +23,6 @@ async function expandAndVerifyPanes(page: Page, label: string, expectedPanes: st
   const seen = await page.evaluate(() =>
     Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
       .map(h => h.textContent!.trim()));
-  // Soft check — at least 1 expected pane should be visible.
   const found = expectedPanes.filter(p => seen.some(s => new RegExp(p, 'i').test(s)));
   console.log(`[${label}] panes seen: ${seen.length}, expected matches: ${found.length}/${expectedPanes.length}`);
 }
@@ -111,14 +89,12 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
-    // SR-DEFERRED: scaffold alignment + Highlight panel custom color via JS API
-    // (atlas chem.panels.rendering / chem.panels.highlights).
+    // SR-DEFERRED scaffold alignment + Highlight custom color: applied via JS API column tags.
     await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
       const scaffoldCol = tv.dataFrame.columns.toList().find((c: any) => /Scaffold/i.test(c.name));
       if (molCol && scaffoldCol) {
-        // Tag the mol column with scaffold alignment ref — canonical Chem rendering hook.
         molCol.setTag?.('chem-scaffold', scaffoldCol.name);
         molCol.setTag?.('chem-highlight-scaffold', 'true');
       }
@@ -135,7 +111,6 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       const tvs = Array.from(grok.shell.tableViews) as any[];
       const tv = tvs.find((v: any) => v.dataFrame === smiTable) || grok.shell.tv;
       if (tv) (grok.shell as any).v = tv;
-      // Drive Context Panel into molecule-cell mode via currentRow + currentCell.
       tv.dataFrame.currentRowIdx = 0;
       grok.shell.o = tv.dataFrame.currentCell;
       await new Promise(r => setTimeout(r, 2500));
@@ -202,8 +177,5 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

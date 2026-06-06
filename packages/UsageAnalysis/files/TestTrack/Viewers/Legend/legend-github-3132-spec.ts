@@ -1,12 +1,4 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.allow-item-coloring]
-related_bugs: [github-3132]
-coverage_type: regression
-bug_url: https://github.com/datagrok-ai/public/issues/3132
---- */
-// Fix invariant: each color change made through the legend persists independently;
-// changing color B must NOT reset previously-applied color A. Full prose moved to
-// legend-github-3132.md.
+// github-3132: each legend color change persists independently; changing B must not reset A.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
@@ -19,10 +11,9 @@ test('github-3132: sequential legend color changes persist independently', async
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
   await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Scatter plot']});
 
-  // Step 3 (bug repro): change FIRST colour through the legend (R_ONE → red).
   await softStep('Step 3: change R_ONE to red via legend picker', async () => {
     await v.changeLegendItemColor(page, {
       viewerType: 'Histogram',
@@ -33,8 +24,7 @@ test('github-3132: sequential legend color changes persist independently', async
     });
   });
 
-  // Step 4 (bug repro): change SECOND colour (S_UNKN → green). Bug invariant
-  // under test: this MUST NOT reset R_ONE to default. additive: R_ONE retained.
+  // Changing S_UNKN must not reset R_ONE — additive retains R_ONE.
   await softStep('Step 4: change S_UNKN to green via legend picker', async () => {
     await v.changeLegendItemColor(page, {
       viewerType: 'Histogram',
@@ -46,7 +36,6 @@ test('github-3132: sequential legend color changes persist independently', async
     });
   });
 
-  // Step 4 (bug invariant assertion): verify R_ONE STILL holds the previously-applied red.
   await softStep('Step 4 invariant: R_ONE retains red after S_UNKN change', async () => {
     const r = await page.evaluate(() => {
       const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');

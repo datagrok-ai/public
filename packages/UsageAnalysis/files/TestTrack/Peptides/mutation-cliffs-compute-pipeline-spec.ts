@@ -1,251 +1,14 @@
-/* ---
-sub_features_covered: [peptides.compute, peptides.compute.find-mutations, peptides.compute.parallel-mutation-cliffs, peptides.compute.mutation-cliffs-worker, peptides.compute.calculate-cliffs-statistics, peptides.compute.get-summary-stats, peptides.compute.calculate-cluster-statistics, peptides.util.extract-col-info, peptides.util.mutation-cliffs-to-mask-info, peptides.viewers.mutation-cliffs]
---- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (coverage_type: regression — non-ui-smoke; JS API
-//     permitted for state setup / model + viewer-internal cache reads; >=1
-//     DOM-driving call still REQUIRED — satisfied by the top-menu Bio |
-//     Analyze | SAR... DOM path, the wrench Settings dialog open, the
-//     Mutation-Cliffs radio toggle on the SVM, and the LST viewer-grid
-//     synthetic click below)
-//   sub_features_covered: [peptides.compute, peptides.compute.find-mutations,
-//     peptides.compute.parallel-mutation-cliffs, peptides.compute.mutation-cliffs-worker,
-//     peptides.compute.calculate-cliffs-statistics, peptides.compute.get-summary-stats,
-//     peptides.compute.calculate-cluster-statistics, peptides.util.extract-col-info,
-//     peptides.util.mutation-cliffs-to-mask-info, peptides.viewers.mutation-cliffs]
-//   ui_coverage_responsibility: [] (delegated_to: null)
-//   related_bugs: []
-//   produced_from: atlas-driven
-// Atlas provenance (derived_from):
-//   peptides.yaml#sub_features[peptides.compute] source:
-//     public/packages/Peptides/src/utils/algorithms.ts#L1
-//   peptides.yaml#sub_features[peptides.compute.find-mutations] source:
-//     public/packages/Peptides/src/utils/algorithms.ts#L33
-//   peptides.yaml#sub_features[peptides.compute.parallel-mutation-cliffs] source:
-//     public/packages/Peptides/src/utils/parallel-mutation-cliffs.ts#L10
-//   peptides.yaml#sub_features[peptides.compute.mutation-cliffs-worker] source:
-//     public/packages/Peptides/src/workers/mutation-cliffs-worker.ts#L1
-//   peptides.yaml#sub_features[peptides.compute.calculate-cliffs-statistics] source:
-//     public/packages/Peptides/src/utils/algorithms.ts#L54
-//   peptides.yaml#sub_features[peptides.compute.get-summary-stats] source:
-//     public/packages/Peptides/src/utils/algorithms.ts#L179
-//   peptides.yaml#sub_features[peptides.compute.calculate-cluster-statistics] source:
-//     public/packages/Peptides/src/utils/algorithms.ts#L242
-//   peptides.yaml#sub_features[peptides.util.extract-col-info] source:
-//     public/packages/Peptides/src/utils/misc.ts#L86
-//   peptides.yaml#sub_features[peptides.util.mutation-cliffs-to-mask-info] source:
-//     public/packages/Peptides/src/utils/misc.ts#L443
-//   peptides.yaml#sub_features[peptides.viewers.mutation-cliffs] source:
-//     public/packages/Peptides/src/package.ts#L205
-//
-// Mutation-cliffs compute pipeline — Scenario 1 asserts on the cached state
-// emitted by `findMutations` -> `ParallelMutationCliffs` (worker pool) ->
-// `calculateCliffsStatistics`, plus the three downstream consumers (SVM
-// Mutation-Cliffs mode cell glyphs, the dedicated Sequence Mutation Cliffs
-// line-chart viewer, and the Export Mutation Cliffs TableView). Scenario 2
-// adds the cluster-stats compute path (`calculateClusterStatistics`) via the
-// Logo Summary Table grid and the `getSummaryStats` round-trip into the
-// Context-Panel Distribution accordion.
-//
-// Sister of:
-//   - sar-viewer-lifecycle-spec.ts (model.add-* family + Settings dialog
-//     round-trip; same top-menu launch path, same dataset)
-//   - sar-spec.ts (context-panel Launch SAR + SVM mode-toggle + cell-click
-//     selection + Distribution panel)
-//   - peptides-spec.ts (Context-Panel Peptides pane parameters)
-// This spec is the per-compute-pipeline assertion that those three sister
-// specs do not specialize on — the worker-aggregated `mutationCliffs` Map +
-// per-position `monomerPositionStats` + per-cluster `clusterStats` are read
-// directly off the viewer instances and asserted for shape / sanity, then the
-// three downstream consumers are exercised to confirm the cliffs survive
-// round-trip into rendered UI / exported tables / context-panel summaries.
-//
-// Empirical recon notes (chrome-devtools MCP, dev.datagrok.ai, @datagrok/
-// peptides v1.27.9, live 2026-05-30 — drives the deterministic assertions,
-// not theory):
-//   - `model.mutationCliffs` does NOT exist as a getter on PeptidesModel
-//     (verified via Object.keys + typeof read). The aggregated cliffs Map is
-//     owned by the SVM / MPR viewers (sar-viewer.ts SARViewer base class L307
-//     `_mutationCliffs` / L315 `get mutationCliffs`); read it via
-//     `model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP).mutationCliffs`
-//     (returns a `Map<monomer, Map<position, Set<pair>>>` — size 21 in the
-//     recon session). The scenario .md step 3(a) text "model.mutationCliffs"
-//     is shorthand for "the SAR pipeline's aggregated cliffs Map"; the
-//     assertion still holds, just keyed off the SVM viewer instance.
-//   - `model.monomerPositionStats` IS a getter on PeptidesModel (model.ts
-//     #L127) — returns an object keyed by POSITION (not monomer) of shape
-//     `{[position]: {[monomer]: {count, pValue, mean, meanDifference, ratio,
-//     mask, aggValue}, general: {maxCount, minCount, maxMeanDifference,
-//     minMeanDifference, maxRatio, minRatio}}}`. Per-monomer entries (the
-//     non-"general" keys) carry the per-monomer t-test stats from
-//     `calculateMonomerPositionStatistics` (which uses `getSummaryStats` at
-//     algorithms.ts#L179 under the hood). The scenario .md step 3(b) text
-//     "non-empty entries for at least one (monomer, position) combination —
-//     each entry contains meanDifference, pValue, count, ratio" matches this
-//     shape exactly: assert any per-position bucket has at least one
-//     non-general inner key with finite numeric stats.
-//   - Default top-menu Bio | Analyze | SAR... launch with the dialog's
-//     default config (Generate clusters ON) on peptides.csv attaches: Grid +
-//     Sequence Variability Map + Most Potent Residues + MCL + Logo Summary
-//     Table (verified 5 SAR viewers). The MCL clustering produces `Cluster
-//     (MCL)` column on the DataFrame with 2 cluster ids (`1` and `-1`), and
-//     the LST viewer's `logoSummaryTable` DataFrame has 2 rows (one per
-//     cluster) with columns `[Cluster, Members, WebLogo, Distribution, Mean
-//     difference, P-Value, Ratio]`. Members.sum = 647 = tv.rowCount; meanDiff
-//     spans non-trivial range; pValue is in [0, 1]. These are the
-//     deterministic LST + cluster-stats invariants Scenario 2 asserts on.
-//   - The Sequence Mutation Cliffs viewer (`SEQUENCE_MUTATION_CLIFFS` =
-//     'Sequence Mutation Cliffs', model.ts#L69) is NOT in the default Launch
-//     SAR attach set — it must be added via `tv.addViewer('Sequence Mutation
-//     Cliffs')` (the JS-API equivalent of the scenario .md step 5 "Add viewer
-//     | Sequence Mutation Cliffs" gesture). Verified live: addViewer attaches
-//     a `Sequence Mutation Cliffs` viewer with `currentPosition = 1` and a
-//     non-null root; the viewer's own `mutationCliffs` getter delegates to
-//     the shared SVM/MPR pipeline (returns null on direct read because the
-//     internal `_mutationCliffs` cache is the shared SVM cache, not a
-//     per-MCViewer copy). The downstream-consumer assertion is that the
-//     viewer attaches without throwing AND `findViewer(VIEWER_TYPE.SEQUENCE_
-//     MUTATION_CLIFFS)` is non-null AND the viewer's root has at least one
-//     mounted child element. Per the scenario step 5 text "the line chart
-//     contains non-trivial trace data (>= 1 series with >= 1 plotted point)"
-//     — the line chart is canvas-rendered, so the assertion is on the root's
-//     presence + child count + the shared SVM `mutationCliffs` map being
-//     non-empty (verified by Step 3 already). See SR-01 below.
-//   - Export Mutation Cliffs context-menu trigger: per
-//     [[project-peptides-export-mutation-cliffs]] memory, the dialog OK is
-//     UI-drivable but the extra-column picker is NOT DOM-addressable. The
-//     default-export path (OK with empty selection) is the deterministic
-//     contract — verified live: `svm._doExportMutationCliffs([])` produces a
-//     new TableView named `Mutation Cliffs` with 6253 rows and columns
-//     `[Seq 1, Seq 2, Mutation, Seq 1 IC50, Seq 2 IC50, Delta]`. Per the SR
-//     in the export memory, the spec drives the context-menu trigger via
-//     real UI (canvas contextmenu dispatch + menu-item click — the
-//     deterministic part of the dialog round-trip) AND validates the
-//     production code path via the JS-API surface — `_doExportMutationCliffs`
-//     is the exact function the dialog OK handler invokes. The combined
-//     assertion is the round-trip from worker -> cliffs Map -> exported
-//     TableView row construction. See SR-02 below for the dialog-OK extras
-//     gap; for this scenario we drive the canonical empty-extras export and
-//     assert the TableView shape.
-//   - LST row click -> Distribution accordion + getSummaryStats: scenario .md
-//     step 5/6 says "click on a row in the LST grid to select a cluster" and
-//     then "the accordion's summary record per cluster ... should display
-//     non-null mean, p-value, count, ratio". The LST viewer's grid is a
-//     DG.Grid embedded in the viewer root; the LSTViewer exposes a
-//     `modifyClusterSelection(cluster, options)` method that drives the same
-//     code path the in-grid row-click handler invokes (logo-summary.ts
-//     #L807-L834). Verified live: calling `lst.modifyClusterSelection(
-//     {positionOrClusterType: 'original', monomerOrCluster: '1'}, {notify:
-//     true})` (a) populates `lst.clusterSelection.original = ['1']`, (b)
-//     drives `tv.dataFrame.selection.trueCount = 646` (cluster 1 has 646
-//     rows), (c) mounts a `[name="pane-Distribution"]` accordion pane with
-//     innerText carrying `Count\t646 (99.845%)`, `Mean difference\t0.000`,
-//     `Mean activity\t0.024` — exactly the per-cluster summary record from
-//     `getSummaryStats`. Switching to cluster `-1` (single-row cluster)
-//     updates the pane: `Count\t1 (0.155%)`, `Mean difference\t-0.000`. The
-//     selection cardinality flip (646 -> 1) AND the inner-text delta (646
-//     percentage vs 1 percentage) is the on-disk proof that `getSummaryStats`
-//     is re-invoked per cluster selection (not stale). See SR-03 below for
-//     the LST-row DOM-click gap that motivates the
-//     `modifyClusterSelection` JS-API substitution.
-//
-// scope_reduction_proposal:
-//   - SR-01: Scenario 1 step 5 "the dedicated `Sequence Mutation Cliffs`
-//     viewer's per-position line chart contains non-trivial trace data
-//     (>= 1 series with >= 1 plotted point)" — the SMC viewer is canvas-
-//     rendered (no per-point DOM nodes), and the viewer's own
-//     `mutationCliffs` getter delegates to the shared SVM/MPR pipeline cache
-//     (its internal `_mutationCliffs` is null because the viewer reads from
-//     the SVM/MPR Map by reference at render time, not by copy). The
-//     downstream-consumer assertion is reduced to: (a) addViewer
-//     ('Sequence Mutation Cliffs') attaches without throwing,
-//     (b) findViewer(SEQUENCE_MUTATION_CLIFFS) is non-null with a mounted
-//     root + >= 1 child element, (c) the shared cliffs Map on the SVM
-//     instance is non-empty (asserted in Step 3 already). The "line chart
-//     contains non-trivial trace data" is implicit in (c): the canvas-
-//     rendered chart reads from the same Map; if the Map is empty the chart
-//     renders empty, and if it is non-empty the chart renders non-empty. The
-//     atlas-cited `peptides.viewers.mutation-cliffs` consumer surface is
-//     exercised end-to-end through the addViewer attach + non-null root.
-//   - SR-02: Scenario 1 step 6 "the column-picker dialog opens; accept
-//     default columns and click OK. A new TableView opens containing one row
-//     per unique mutation-cliff pair." — per
-//     [[project-peptides-export-mutation-cliffs]] memory the dialog's OK
-//     handler is UI-drivable, but the extra-column ui.input.columns picker
-//     has a visibility:hidden drop-down with no enumerable per-column rows
-//     (the chosen-column value lives in an unreachable closure inside
-//     SARViewer.exportMutationCliffs). The spec drives the context-menu
-//     trigger via real UI (canvas contextmenu dispatch + menu-item DOM
-//     click + dialog OK click) AND asserts the resulting TableView's shape
-//     via the production code path. For the empty-extras default case (the
-//     scenario's "accept default columns" wording), the dialog OK -> 6253-row
-//     `Mutation Cliffs` TableView round-trip IS the contract — verified live.
-//     The extra-columns picker is out of scope per the cited memory's
-//     reduction; this spec asserts the default (empty extras) path which IS
-//     the scenario's "accept default columns and click OK" wording.
-//   - SR-03: Scenario 2 step 5 "Click on a row in the LST grid to select a
-//     cluster ... the Distribution property-panel accordion's summary record
-//     ... should display non-null mean, p-value, count, ratio." — the LST
-//     viewer-grid row-click handler at logo-summary.ts#L807-L834 invokes
-//     `modifyClusterSelection(this.getCluster(grid.cell(CLUSTER, rowIdx)))`,
-//     which requires the gridCell to be rendered (a DG.Grid synthetic-cell
-//     accessor can throw "Invalid argument (index): null" on cells whose
-//     row is not currently in the grid viewport — verified live, attempting
-//     `lst.viewerGrid.cell('Cluster', 0)` from outside the grid's render
-//     context threw). The spec invokes `modifyClusterSelection` directly
-//     with a constructed SelectionItem (the exact internal call shape) —
-//     the sanctioned canvas/JS-API-fallback per peptides.md pitfall pattern
-//     for surfaces whose DOM driver requires a synthetic grid-cell render.
-//     The `modifyClusterSelection` invocation drives the SAME settingsChanged
-//     dispatch the in-grid row-click drives, so the assertions on
-//     clusterSelection + tv.selection + Distribution accordion content are
-//     end-to-end identical to a real row click.
-//   - SR-04: Scenario 2 step 1 "ensure the Logo Summary Table viewer toggle
-//     is ON ... ensure the Sequence Space toggle is ON ... ensure the
-//     Clusters mode is set to MCL" — per sister sar-viewer-lifecycle-spec.ts
-//     SR-01 (referenced precedent), the Analyze Peptides config dialog on
-//     this build does NOT expose per-viewer toggles for LST or Sequence
-//     Space or a Clusters-mode discriminator. The only bool input is
-//     [name="input-Generate-clusters"] (default ON), which on the default
-//     dataset (peptides.csv) ALREADY triggers MCL clustering + LST attach
-//     via the MCL fallback path at widgets/peptides.ts#L332-L344 (the
-//     `addMCL` branch awaits `addMCLClusters()` then `addLogoSummaryTable
-//     (lstProps)` with a clustersColumn derived from the new `Cluster (MCL)`
-//     column). Verified live: default Launch SAR yields LST with 2 cluster
-//     rows + `Cluster (MCL)` column on the DataFrame — the Scenario 2
-//     prerequisites are satisfied by the default-config launch, no
-//     additional dialog driving needed.
-//
-// Selector recon-notes (class-2: live-MCP-observed, not yet in grok-browser
-// reference peptides.md — each confirmed live via chrome-devtools MCP on
-// dev.datagrok.ai, @datagrok/peptides v1.27.9, 2026-05-30):
-//   [name="div-Bio"], [name="div-Bio---Analyze"],
-//   [name="div-Bio---Analyze---SAR..."] — top-menu Bio | Analyze | SAR...
-//     path; same provenance as sar-viewer-lifecycle-spec.ts Selector
-//     recon-notes. Not in peptides.md (which carries a 1536px overflow
-//     caveat); at the spec viewport 1920x1080 the visible menubar IS
-//     deterministic and the SAR... menu item opens
-//     [name="dialog-Analyze-Peptides"]. Same selectors documented in
-//     [[project-peptides-top-menu-sar-and-mcl-rerender]] memory.
-//   [name="dialog-Analyze-Peptides"] — the analyzePeptidesUI config dialog
-//     (title "Analyze Peptides"), distinct from the wrench
-//     [name="dialog-Peptides-settings"]; opened by the SAR... menu item,
-//     accepted with [name="button-OK"]. Same as sar-viewer-lifecycle-spec.ts.
-//   [name="dialog-Export-Mutation-Cliffs"] — already documented in
-//     peptides.md under "Export to a new TableView". Cited here for
-//     completeness as the Scenario 1 step 6 lever.
+// Mutation-cliffs compute pipeline: cliffs Map + per-position stats + per-cluster stats survive
+// end-to-end into SVM Mutation-Cliffs mode, SMC viewer, Export TableView, LST grid, Distribution accordion.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 
-// VIEWER_TYPE values per public/packages/Peptides/src/model.ts#L62-L70 enum.
-// String values match the `type` registered on each DG.Viewer instance and
-// are the discriminator the PeptidesModel.findViewer(...) lookup keys on.
 const VIEWER_TYPE = {
   SEQUENCE_VARIABILITY_MAP: 'Sequence Variability Map',
   MOST_POTENT_RESIDUES: 'Most Potent Residues',
@@ -255,17 +18,8 @@ const VIEWER_TYPE = {
 };
 
 test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-position stats + per-cluster stats survive end-to-end into SVM Mutation-Cliffs mode, SMC viewer, Export Mutation Cliffs TableView, LST grid, and Distribution accordion', async ({page}) => {
-  // SAR launch + MCL clustering + SMC viewer attach + export round-trip + 2x
-  // LST cluster-select Distribution round-trip won't fit the default per-test
-  // budget. The 200-row Extract subset (Setup below) cuts the dominant MCL/LST
-  // attach + worker-pass latency from ~137 s (warm, full 647-row) to a few
-  // seconds; the remaining cold-start initPeptides cost is dataset-independent,
-  // bounded by the best-effort prewarm and re-paid inside Launch SAR. 300 s
-  // leaves ample headroom for cold init + the now-fast Scenarios 1 + 2.
   test.setTimeout(300_000);
   await loginToDatagrok(page);
-
-  // ---- Setup — open the peptides dataset, prewarm Peptides:initPeptides ----
 
   await softStep('Setup: open peptides dataset, prewarm Peptides:initPeptides', async () => {
     const result = await page.evaluate(async (path) => {
@@ -291,19 +45,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       }
       await new Promise((r) => setTimeout(r, 4000));
 
-      // GROK-17557 prewarm — also paves the worker-spawn path by ensuring
-      // the MonomerWorks + sequence-helper singletons are loaded before
-      // startAnalysis dispatches the parallel-mutation-cliffs worker chunks
-      // (peptides.compute.parallel-mutation-cliffs depends on extractColInfo
-      // packing the position columns, which in turn depends on MonomerWorks
-      // being initialized).
-      // Bound the prewarm via Promise.race. Warm initPeptides returns in ~8 ms
-      // but cold-load on a CI worker can stall on RDKit/MonomerWorks/
-      // sequence-helper download + Bio package init. The prewarm is best-effort
-      // (the catch path swallows any throw — startAnalysis re-runs the init
-      // internally on first SAR launch), so the ceiling converts a hung
-      // cold-init into a deterministic Setup-step trace line rather than
-      // letting it eat the entire outer test budget.
+      // GROK-17557 prewarm (best-effort, Promise.race-bounded so cold init can't eat the outer budget).
       try {
         await Promise.race([
           grok.functions.call('Peptides:initPeptides'),
@@ -323,17 +65,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(result.semType, 'AlignedSequence must be a Macromolecule column').toBe('Macromolecule');
   });
 
-  // ---- Setup: reduce to a fast 200-row working subset ----
-  // MCL clustering + LST attach + the parallel-mutation-cliffs worker pass all
-  // scale with row count — on the full 647-row dataset the SAR-attach-to-LST
-  // chain measured ~137 s (warm); on a 200-row subset it completes in seconds,
-  // which is what lets the readiness gates + outer test budget shrink (the
-  // cold-start initPeptides cost is dataset-independent and handled separately
-  // by the best-effort prewarm). The first 200 rows of this SAR series carry a
-  // dense single-mutation cliff population (2242 single-mutation pairs by
-  // static analysis of the source aligned.csv), so the mutation-cliffs compute
-  // pipeline is still exercised on real, non-empty cliffs (Step 3 asserts the
-  // aggregated cliffs Map is non-empty — the false-green guard).
+  // Reduce to a fast 200-row subset (MCL/LST/worker pass all scale with row count); still cliff-dense.
   await softStep('Setup: select first 200 rows, Select > Extract Selected Rows to a fast 200-row table', async () => {
     const result = await page.evaluate(async () => {
       const src = grok.shell.t;
@@ -344,8 +76,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       await fn.prepare().call();
       await new Promise((r) => setTimeout(r, 2500));
       const t = grok.shell.t;
-      // The extracted table becomes the current table; wait for semType
-      // detection so peptidesDialog / Launch SAR sees a Macromolecule column.
+      // Wait for semType detection so Launch SAR sees a Macromolecule column.
       await new Promise<void>((resolve) => {
         const sub = t.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
@@ -361,19 +92,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(result.semType, 'extracted AlignedSequence must remain a Macromolecule column').toBe('Macromolecule');
   });
 
-  // ---- Scenario 1 — SAR launch invokes the parallel mutation-cliffs ----
-  // ---- compute pipeline (findMutations -> ParallelMutationCliffs ----
-  // ---- -> worker pool -> calculateCliffsStatistics); the three ----
-  // ---- downstream consumers (SVM cell glyphs, SMC viewer, exporter) ----
-  // ---- all consume the same cliffs Map ----
-
-  // Steps 1-2: invoke Bio | Analyze | SAR... from the top menu, accept the
-  // default config (Generate clusters ON, per SR-04). This drives
-  // peptides.workflow.sar-dialog -> analyze-ui -> start-analysis via the
-  // deterministic DOM path AND triggers the parallel-mutation-cliffs worker
-  // dispatch inside startAnalysis (peptides.compute.find-mutations ->
-  // peptides.compute.parallel-mutation-cliffs -> peptides.compute.mutation-
-  // cliffs-worker chain).
   await softStep('Scenario 1 (steps 1-2): launch SAR via Bio | Analyze | SAR... top menu (Generate clusters ON)', async () => {
     const opened = await page.evaluate(async () => {
       const bio = document.querySelector('[name="div-Bio"]') as HTMLElement | null;
@@ -399,33 +117,16 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(opened.sarFound, '[name="div-Bio---Analyze---SAR..."] menu item not found').toBe(true);
     expect(opened.dialogFound, '[name="dialog-Analyze-Peptides"] config dialog did not open').toBe(true);
 
-    // Accept the default config (Generate clusters ON), OK. Per SR-04, the
-    // default-config Launch SAR satisfies the Scenario 2 prerequisites
-    // (LST + Cluster (MCL) column) without additional dialog driving.
     await page.evaluate(async () => {
       const dlg = document.querySelector('[name="dialog-Analyze-Peptides"]');
       const ok = (dlg?.querySelector('[name="button-OK"]')
         ?? document.querySelector('[name="button-OK"]')) as HTMLElement | null;
       if (ok) ok.click();
     });
-    // SAR launch is async server compute (parallel-mutation-cliffs worker
-    // pool + MCL clustering + sequence-space embedding). Worker chunking +
-    // postMessage round-trip is the critical surface this scenario asserts
-    // on — wait until the PeptidesModel singleton is live before probing.
-    // page.waitForFunction takes (pageFunction, arg, options) — pass timeout
-    // in the 3rd-arg options object; a timeout passed as the 2nd arg is
-    // forwarded to the inner pageFunction as `arg` and silently ignored.
     await page.waitForFunction(() => {
       return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
     }, null, {timeout: 60000});
-    // Wait for the FULL SAR-attach chain to settle. model.isInitialized fires
-    // in <2 s but the MCL clustering + LST attach + Cluster (MCL) column
-    // emission are on a delayed background path. The deterministic readiness
-    // signal (MCP recon, dev.datagrok.ai) is
-    // `model.findViewer('Logo Summary Table')?.logoSummaryTable?.rowCount > 0`
-    // AND `df.columns.byName('Cluster (MCL)')` non-null AND
-    // `model.isInitialized === true`. On the 200-row subset this chain
-    // completes in seconds, so 90 s is generous headroom.
+    // Wait for the FULL SAR-attach chain (LST rowCount > 0 + Cluster (MCL) col + model.isInitialized).
     await page.waitForFunction(() => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']);
       if (!tv) return false;
@@ -437,44 +138,16 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       if (!colNames.some((n: string) => /^Cluster \(MCL\)$/.test(n))) return false;
       return true;
     }, null, {timeout: 90000});
-    // Post-settle pause for the SVM mutationCliffs Map to be populated by the
-    // worker-pool aggregation — parallel-mutation-cliffs workers post back
-    // after model.init returns and the Map fill is fire-and-forget, so it can
-    // lag the LST readiness condition above by a beat.
+    // Post-settle pause: SVM mutationCliffs Map fill is fire-and-forget after model.init returns.
     await page.waitForTimeout(2500);
   });
 
-  // Step 3: confirm the mutation-cliffs compute pipeline ran end-to-end by
-  // inspecting the SVM viewer's cached state (the aggregated cliffs Map
-  // owned by SARViewer base at sar-viewer.ts#L307 `_mutationCliffs`) and the
-  // PeptidesModel's monomerPositionStats getter (model.ts#L127 which calls
-  // calculateMonomerPositionStatistics + getSummaryStats per atlas). Per
-  // recon notes above:
-  //   - svm.mutationCliffs is a Map<monomer, Map<position, Set<pair>>>;
-  //     non-null + size > 0 confirms findMutations + ParallelMutationCliffs
-  //     + worker-pool aggregation ran end-to-end (peptides.compute.find-
-  //     mutations + peptides.compute.parallel-mutation-cliffs + peptides.
-  //     compute.mutation-cliffs-worker).
-  //   - model.monomerPositionStats is `{[position]: {[monomer]: {count,
-  //     pValue, mean, meanDifference, ratio, mask, aggValue}, general:
-  //     {...aggregates}}}`; non-empty with finite per-monomer stats
-  //     confirms calculateCliffsStatistics + getSummaryStats ran on the
-  //     aggregated cliffs Map (peptides.compute.calculate-cliffs-statistics
-  //     + peptides.compute.get-summary-stats).
-  //   - extractColInfo (peptides.util.extract-col-info) packed the position
-  //     columns + activity column into the raw form the workers consumed —
-  //     transitively verified by the non-empty cliffs Map AND the position
-  //     columns being present on the DataFrame ('1', '2', ... up to '17'
-  //     verified in recon).
   await softStep('Scenario 1 (step 3): confirm mutation-cliffs compute pipeline cache (cliffs Map + per-position stats)', async () => {
     const state = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = tv.dataFrame.temp['peptidesModel'];
       const svm = model.findViewer(VT.SEQUENCE_VARIABILITY_MAP);
 
-      // peptides.compute.find-mutations + peptides.compute.parallel-mutation-
-      // cliffs + peptides.compute.mutation-cliffs-worker: the aggregated
-      // cliffs Map owned by SARViewer base.
       const mc = svm?.mutationCliffs;
       const mcIsMap = mc instanceof Map;
       let mcMonomerCount = 0;
@@ -497,8 +170,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
         }
       }
 
-      // peptides.compute.calculate-cliffs-statistics + peptides.compute.get-
-      // summary-stats: the per-position per-monomer stats getter.
       const mps = model.monomerPositionStats;
       const mpsKeys = mps ? Object.keys(mps) : [];
       let foundStatSample: any = null;
@@ -525,15 +196,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
         }
       }
 
-      // peptides.util.extract-col-info — transitively verified: position
-      // columns must be present on the DataFrame for findMutations to have
-      // packed them via extractColInfo. Detect via combined column-name-regex
-      // (canonical /^\d+$/ — names '1', '2', ..., '17') AND `isPositionCol`
-      // tag check. The Peptides Splitter at `src/utils/misc.ts`
-      // `splitAlignedSequences` creates these by numeric index, so the name
-      // pattern is deterministic and survives any post-SAR-launch state
-      // mutation that might transiently clear column tags — the regex path is
-      // the primary fallback for that tag-presence divergence.
+      // Position columns present (name /^\d+$/ or isPositionCol tag) implies extractColInfo packed them.
       const posColCount = tv.dataFrame.columns.toList().filter((c: any) =>
         /^\d+$/.test(c.name)
         || (c.getTag && c.getTag('isPositionCol') === 'true')).length;
@@ -549,7 +212,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
 
     expect(state.modelPresent, 'PeptidesModel singleton must attach after Launch SAR').toBe(true);
     expect(state.svmPresent, 'Sequence Variability Map must attach (owns the cliffs Map)').toBe(true);
-    // peptides.compute.find-mutations / parallel-mutation-cliffs / mutation-cliffs-worker
     expect(state.mcIsMap,
       'svm.mutationCliffs must be a Map (aggregated by ParallelMutationCliffs from worker outputs)').toBe(true);
     expect(state.mcMonomerCount,
@@ -560,7 +222,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(state.sampleInnerPositionCount,
       'sample monomer\'s inner Map must have >= 1 position entry (mutation-cliffs-worker emitted at least one position)')
       .toBeGreaterThan(0);
-    // peptides.compute.calculate-cliffs-statistics / get-summary-stats
     expect(state.mpsKeyCount,
       'monomerPositionStats must have >= 1 position bucket (calculateMonomerPositionStatistics populated)')
       .toBeGreaterThan(0);
@@ -568,33 +229,14 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'monomerPositionStats must have >= 1 non-general inner entry with finite count/mean/meanDifference/ratio ' +
       '(getSummaryStats emitted a complete summary record for at least one (position, monomer))')
       .not.toBeNull();
-    // peptides.util.extract-col-info — transitively verified
     expect(state.posColCount,
       'position columns must be present on the DataFrame (extractColInfo packed them for the worker pool)')
       .toBeGreaterThan(0);
-    // Explicit non-empty-cliffs evidence (false-green guard): log the actual
-    // aggregated cliff population produced by the worker pool on the 200-row
-    // subset. The asserts above already fail the step if these are zero.
     console.log(`[cliffs] 200-row subset -> mutation-cliffs Map: ${state.mcMonomerCount} monomer entries, ` +
       `${state.mcTotalPairs} total qualifying (idx1,idx2) pairs; monomerPositionStats buckets=${state.mpsKeyCount}, ` +
       `position columns=${state.posColCount}`);
   });
 
-  // Step 4: switch the SVM to Mutation Cliffs mode + assert downstream
-  // consumer (the cell renderer at cell-renderer.ts#L52 reads from the
-  // mutationCliffs Map via mutationCliffsToMaskInfo / direct map traversal).
-  // The cell renderer is canvas (no per-cell DOM glyphs); the assertion is
-  // that the mode is in Mutation Cliffs AND the underlying viewer-grid
-  // canvas re-renders without throwing AND the SVM's mode getter reports the
-  // switched state. The "non-empty circle glyph" invariant from the scenario
-  // text is implicit: the cliffs Map is non-empty (asserted in Step 3); the
-  // canvas renderer reads from the same Map at render time; the only way the
-  // renderer produces empty cells given a non-empty Map is a regression in
-  // peptides.util.mutation-cliffs-to-mask-info (the projection step), which
-  // would itself surface as a thrown error during render. So Step 4 asserts:
-  // (a) mode switched, (b) no console errors raised during the switch, (c)
-  // the viewer-Sequence-Variability-Map root + its canvas children remain
-  // attached post-switch (the renderer mount survived).
   await softStep('Scenario 1 (step 4): SVM mode switch to Mutation Cliffs + cell-renderer mount survives', async () => {
     const errorsBefore = await page.evaluate(() => (grok.shell.lastError ?? '') + '');
     const switched = await page.evaluate((VT) => {
@@ -617,7 +259,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = tv.dataFrame.temp['peptidesModel'];
       const svm = model.findViewer(VT.SEQUENCE_VARIABILITY_MAP);
-      // Count canvas elements inside SVM root — canvas renderer mount survived.
       const canvasCount = svmRoot ? svmRoot.querySelectorAll('canvas').length : 0;
       return {
         mcCheckedAfter: !!mcRadio?.checked,
@@ -636,9 +277,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'renderMutationCliffs mounted; reads from svm.mutationCliffs via mutationCliffsToMaskInfo projection)')
       .toBeGreaterThan(0);
 
-    // Capture lastError for the no-fatal-error invariant in Step 7. The
-    // mutation-cliffs-to-mask-info projection step's regressions surface as
-    // thrown errors during render — capture them here pre-Step-7 aggregation.
     const errorsAfter = await page.evaluate(() => (grok.shell.lastError ?? '') + '');
     if (errorsAfter && errorsAfter !== errorsBefore) {
       console.log('[note] grok.shell.lastError surfaced during SVM mode switch (pre-Step-7 capture):',
@@ -646,15 +284,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     }
   });
 
-  // Step 5: add the dedicated `Sequence Mutation Cliffs` viewer via
-  // tv.addViewer (the JS-API equivalent of the scenario's "Add viewer |
-  // Sequence Mutation Cliffs" gesture — sanctioned canvas/JS-API-fallback
-  // per peptides.md pitfall pattern for Add-Viewer surfaces). Per SR-01,
-  // the assertion is reduced to (a) addViewer attaches without throwing,
-  // (b) findViewer(VIEWER_TYPE.SEQUENCE_MUTATION_CLIFFS) is non-null with a
-  // mounted root, (c) the shared cliffs Map on the SVM instance is
-  // non-empty (already asserted in Step 3 — re-asserted here for clarity:
-  // the SMC viewer reads from the same Map by reference).
   await softStep('Scenario 1 (step 5): add Sequence Mutation Cliffs viewer + attach contract', async () => {
     const before = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -674,7 +303,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
         smcRootAttached: !!smc?.root && smc.root.isConnected,
         smcRootChildCount: smc?.root?.children?.length ?? 0,
         smcType: smc?.type,
-        // Re-confirm the shared cliffs Map is non-empty (SMC reads from it).
         sharedMcSize: svm?.mutationCliffs instanceof Map ? svm.mutationCliffs.size : 0,
       };
     }, VIEWER_TYPE);
@@ -688,10 +316,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'Sequence Mutation Cliffs viewer root must have >= 1 mounted child element').toBeGreaterThan(0);
     expect(result.smcType,
       'findViewer(...).type must report "Sequence Mutation Cliffs"').toBe(VIEWER_TYPE.SEQUENCE_MUTATION_CLIFFS);
-    // peptides.viewers.mutation-cliffs downstream consumer: reads from the
-    // shared cliffs Map; if the Map is non-empty the canvas chart renders
-    // non-empty (no per-point DOM nodes; canvas-content assertion is on the
-    // Map's size — already asserted in Step 3, re-confirmed here).
     expect(result.sharedMcSize,
       'Shared svm.mutationCliffs Map (consumed by MutationCliffsViewer) must remain non-empty post-add')
       .toBeGreaterThan(0);
@@ -701,17 +325,8 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     }
   });
 
-  // Step 6: trigger Export Mutation Cliffs via the SVM context-menu, accept
-  // the empty-extras dialog OK, assert the resulting TableView shape. Per
-  // [[project-peptides-export-mutation-cliffs]] and SR-02, the
-  // context-menu trigger + dialog OK round-trip is UI-drivable for the
-  // default (empty extras) case — this IS the scenario's "accept default
-  // columns and click OK" wording. The extra-column ui.input.columns picker
-  // is not DOM-addressable on this build and is out of scope per the cited
-  // memory.
   await softStep('Scenario 1 (step 6): Export Mutation Cliffs context-menu + dialog OK round-trip', async () => {
-    // Drive the context-menu trigger via real UI: contextmenu MouseEvent on
-    // the SVM's largest canvas (per recon: small canvases are scrollbars).
+    // contextmenu on the SVM's largest canvas (small canvases are scrollbars).
     const triggered = await page.evaluate(() => {
       const svmRoot = document.querySelector('[name="viewer-Sequence-Variability-Map"]') as HTMLElement | null;
       if (!svmRoot) return {error: 'SVM root not found'};
@@ -730,11 +345,8 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect((triggered as any).error, 'context-menu trigger setup failed').toBeFalsy();
     await page.waitForTimeout(800);
 
-    // Hover Export submenu, click Export Mutation Cliffs... — the label text
-    // is the SARViewer context-menu's leaf at sar-viewer.ts#L730. The submenu
-    // mount happens on mouseenter of the Export menu-item.
+    // Hover Export submenu (mounts on mouseenter), click Export Mutation Cliffs...
     const opened = await page.evaluate(async () => {
-      // Find the Export submenu group at top level of the menu popup.
       const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'));
       const exportLabel = labels.find((el) => el.textContent?.trim() === 'Export') as HTMLElement | undefined;
       if (!exportLabel) return {error: 'Export submenu label not found at menu top level'};
@@ -743,7 +355,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       exportItem.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       exportItem.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
       await new Promise((r) => setTimeout(r, 700));
-      // Now find Export Mutation Cliffs... at any depth of the menu popup tree.
       const mcLabel = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
         .find((el) => el.textContent?.trim() === 'Export Mutation Cliffs...') as HTMLElement | undefined;
       if (!mcLabel) return {error: 'Export Mutation Cliffs... label not found post submenu hover'};
@@ -757,7 +368,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect((opened as any).dialogFound,
       '[name="dialog-Export-Mutation-Cliffs"] dialog must open after Export Mutation Cliffs... menu click').toBe(true);
 
-    // Accept defaults (empty extras): click OK.
     const viewBefore = await page.evaluate(() =>
       Array.from(grok.shell.tableViews).map((v) => v.name));
     await page.evaluate(() => {
@@ -765,9 +375,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const ok = dlg?.querySelector('[name="button-OK"]') as HTMLElement | null;
       if (ok) ok.click();
     });
-    // The new TableView name is `Mutation Cliffs` (appended to
-    // grok.shell.tableViews). Wait for it to materialize — timeout goes in the
-    // 3rd-arg options object.
     await page.waitForFunction(() =>
       Array.from(grok.shell.tableViews).some((v) =>
         v.name && /^Mutation Cliffs/.test(v.name)), null, {timeout: 15000});
@@ -776,10 +383,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const mc = Array.from(grok.shell.tableViews).find((v) =>
         v.name && /^Mutation Cliffs/.test(v.name) && !before.includes(v.name));
       if (!mc) return {error: 'new Mutation Cliffs view not found after OK'};
-      // Tag the exported view's dataframe with a sentinel temp key so the
-      // post-assertion close step can find it by identity, not by name regex
-      // — eliminates the risk of closing the wrong view if the SAR view's name
-      // happens to start with "Mutation Cliffs".
+      // Sentinel temp key so the close step finds it by identity, not name regex.
       mc.dataFrame.temp['__test_mutation_cliffs_export_view__'] = true;
       return {
         name: mc.name,
@@ -803,10 +407,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect((exported as any).colNames,
       'Exported TableView must carry the Delta column').toContain('Delta');
 
-    // Close the exported scratch view by identity (the sentinel temp tag set
-    // above), not by name regex. Re-focus the SAR TableView by `peptidesModel`
-    // lookup — Scenario 2 must operate on the same SAR model state Scenario 1
-    // left behind.
+    // Close the scratch view by sentinel tag; re-focus the SAR TableView for Scenario 2.
     await page.evaluate(() => {
       const mc = Array.from(grok.shell.tableViews).find(
         (v) => v.dataFrame.temp['__test_mutation_cliffs_export_view__'] === true);
@@ -819,26 +420,8 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     await page.waitForTimeout(500);
   });
 
-  // ---- Scenario 2 — cluster-stats compute path + Distribution accordion ----
-
-  // Step 1: per SR-04, the default Launch SAR (Generate clusters ON) already
-  // produced the `Cluster (MCL)` column + LST attach during Scenario 1.
-  // Re-validate the prerequisites here for Scenario 2 isolation.
-  //
-  // Re-poll for LST readiness BEFORE the assertion. The LST viewer can
-  // transiently report null from model.findViewer(...) during/after MCL
-  // re-clustering triggered by Step 4's SVM mode switch (settingsChanged →
-  // MCL re-attach race). A bounded waitForFunction converts the race into a
-  // deterministic resolution: if LST re-attaches within the budget, proceed;
-  // if not, the explicit poll-timeout error is more diagnosable than the
-  // downstream "Cannot read of null" cascade across the subsequent steps.
   await softStep('Scenario 2 (step 1): confirm default-launch already produced MCL clusters + LST attach', async () => {
-    // The four readiness conditions (peptidesModel attached + isInitialized +
-    // LST present with rowCount >= 1 + Cluster (MCL) column) are satisfied
-    // immediately in a healthy SAR state — Step 4 mode flip, Step 5
-    // addViewer(SMC), and Step 6 export-close-refocus do not regress LST or
-    // model state. This poll shares the Scenario-1 step-1-2 budget so it
-    // tolerates a worst-case Scenario-1 edge-of-budget resolution.
+    // Re-poll for LST readiness (can transiently report null during MCL re-clustering race).
     await page.waitForFunction((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']);
       if (!tv) return false;
@@ -871,12 +454,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'DataFrame must carry the LST clustersColumnName as a real column').toContain(state.clustersColumnName);
   });
 
-  // Step 2: confirm the clusters column has >= 2 distinct ids (calculate-
-  // cluster-statistics emits one stats entry per cluster — single-cluster
-  // output would not exercise the per-cluster row enumeration).
-  // Defensive null-check for tv/model/lst inside the evaluate; return {error}
-  // short-circuit instead of dereferencing a null, to avoid a "Cannot read of
-  // null" cascade.
   await softStep('Scenario 2 (step 2): MCL clusters column has >= 2 distinct ids', async () => {
     const state = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -894,12 +471,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       return {clusterCount: uniq.size, sample: Array.from(uniq).slice(0, 6)};
     }, VIEWER_TYPE);
     expect((state as any).error, 'clusters-column lookup failed').toBeFalsy();
-    // On the 200-row subset MCL may cluster into a single group (the
-    // cliff-dense SAR series is highly connected). The compute-pipeline
-    // contract is that MCL emitted >= 1 cluster id and calculateClusterStatistics
-    // ran; the multi-cluster row-enumeration coverage (>= 2) is exercised on
-    // the full dataset and recorded here as a scope reduction when the subset
-    // yields one cluster. Log the actual count for audit.
+    // On the 200-row subset MCL may yield a single cluster; assert >= 1 (multi-cluster on full dataset).
     console.log(`[clusters] 200-row subset -> MCL distinct cluster ids: ${(state as any).clusterCount} ` +
       `(sample: ${JSON.stringify((state as any).sample)})`);
     expect((state as any).clusterCount,
@@ -907,11 +479,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       .toBeGreaterThanOrEqual(1);
   });
 
-  // Step 3-4: read the LST viewer's logoSummaryTable + sanity-check the per-
-  // row stats. peptides.compute.calculate-cluster-statistics emits the per-
-  // cluster stats consumed by the LST grid: Members, Mean difference,
-  // P-Value, Ratio. Per recon: 2 cluster rows, Members.sum = tv.rowCount,
-  // meanDiff spans non-trivial range, pValue in [0, 1].
   await softStep('Scenario 2 (steps 3-4): LST grid per-cluster stats from calculateClusterStatistics', async () => {
     const state = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -926,7 +493,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       const memCol = lstDf.col('Members');
       const meanCol = lstDf.col('Mean difference');
       const pvCol = lstDf.col('P-Value');
-      // Inner per-cluster stats from calculateClusterStatistics
       const csOrigKeys = lst.clusterStats?.original ? Object.keys(lst.clusterStats.original) : [];
       return {
         rowCount: lstDf.rowCount,
@@ -951,14 +517,12 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect((state as any).rowCount,
       'LST must have >= 1 cluster row (calculateClusterStatistics emit shape; multi-cluster on full dataset)')
       .toBeGreaterThanOrEqual(1);
-    // calculateClusterStatistics column shape per atlas
     expect((state as any).colNames,
       'LST grid must carry the Members column').toContain('Members');
     expect((state as any).colNames,
       'LST grid must carry the Mean difference column').toContain('Mean difference');
     expect((state as any).colNames,
       'LST grid must carry the P-Value column').toContain('P-Value');
-    // Sanity: per-row stats non-null per scenario step 3
     expect((state as any).nonNullMembersCount,
       'every LST row must have non-null Members value (calculateClusterStatistics emit invariant)')
       .toBe((state as any).rowCount);
@@ -966,34 +530,21 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'every LST row must have non-null Mean difference value').toBe((state as any).rowCount);
     expect((state as any).nonNullPValueCount,
       'every LST row must have non-null P-Value value (t-test-against-rest stat per atlas)').toBe((state as any).rowCount);
-    // Step 4 sanity: Members.sum = tv.rowCount (every source row in exactly one cluster, incl. DBSCAN noise -1)
     expect((state as any).membersSum,
       'Sum of Members across all LST rows must equal source DataFrame row count')
       .toBe((state as any).tvRowCount);
-    // Step 4 sanity: mean-difference spans non-trivial range
     expect((state as any).meanRange.max - (state as any).meanRange.min,
       'Mean difference column must span a non-trivial range (max - min > 0)').toBeGreaterThan(0);
-    // Step 4 sanity: p-value in [0, 1]
     expect((state as any).pvRange.min,
       'p-value column min must be >= 0').toBeGreaterThanOrEqual(0);
     expect((state as any).pvRange.max,
       'p-value column max must be <= 1').toBeLessThanOrEqual(1);
-    // Inner clusterStats (consumed by Distribution accordion via getSummaryStats)
     expect((state as any).clusterStatsOriginalKeyCount,
       'lst.clusterStats.original must have >= 1 entry per cluster id (consumed by getSummaryStats on row select)')
       .toBeGreaterThanOrEqual(1);
   });
 
-  // Step 5: select a cluster row -> Distribution accordion summary record
-  // populates via getSummaryStats. Per SR-03, we drive via
-  // `lst.modifyClusterSelection(cluster, {notify: true})` — the exact
-  // internal call that the in-grid row-click handler invokes (logo-summary
-  // .ts#L807-L834). Cluster id `1` selected first (the larger cluster per
-  // recon: 646 members of 647). The selection drives:
-  //   (a) lst.clusterSelection.original = ['1']
-  //   (b) tv.dataFrame.selection.trueCount = 646
-  //   (c) [name="pane-Distribution"] mounts with Count\t646 (~99.8%) +
-  //       Mean difference + Mean activity values from getSummaryStats.
+  // modifyClusterSelection is the exact internal call the in-grid row-click handler invokes.
   let cluster1Distribution = '';
   await softStep('Scenario 2 (step 5): cluster row select drives Distribution accordion summary via getSummaryStats', async () => {
     const result = await page.evaluate(async (VT) => {
@@ -1005,9 +556,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       if (!lst) return {error: 'LST viewer is null at step 5 (model state regressed)'};
       const lstDf = lst.logoSummaryTable;
       if (!lstDf) return {error: 'lst.logoSummaryTable is null at step 5'};
-      // Pick the largest cluster (max Members) — the more populated cluster
-      // drives a non-edge-case getSummaryStats invocation. The cluster id is
-      // the Cluster-column value at the row of the Members.max index.
+      // Pick the largest cluster (max Members) for a non-edge-case getSummaryStats invocation.
       const memCol = lstDf.col('Members');
       const clusterCol = lstDf.col('Cluster');
       let maxIdx = 0; let maxVal = -1;
@@ -1016,7 +565,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
         if (v != null && v > maxVal) { maxVal = v; maxIdx = i; }
       }
       const largestClusterId = String(clusterCol.get(maxIdx));
-      // Drive modifyClusterSelection with the constructed SelectionItem.
       const cluster = {positionOrClusterType: 'original', monomerOrCluster: largestClusterId};
       lst.modifyClusterSelection(cluster, {shiftPressed: false, ctrlPressed: false, notify: true});
       await new Promise((r) => setTimeout(r, 1500));
@@ -1047,19 +595,12 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       '[name="pane-Distribution"] must be mounted in the Context Panel after cluster selection').toBe(true);
     expect(result.distContentDisplay,
       '[name="pane-Distribution"] .d4-accordion-pane-content must be visible (display !== none)').not.toBe('none');
-    // peptides.compute.get-summary-stats consumer assertion: the accordion's
-    // summary record carries Count + Mean difference + Mean activity (the
-    // collapsed summary tuple from getSummaryStats per atlas). Per recon
-    // the innerText carries each label as a tab-separated key-value pair.
     expect(result.distText,
       'Distribution accordion must carry a Count summary line (from getSummaryStats)').toMatch(/Count/);
     expect(result.distText,
       'Distribution accordion must carry a Mean difference summary line (from getSummaryStats)').toMatch(/Mean difference/);
     expect(result.distText,
       'Distribution accordion must carry a Mean activity summary line (from getSummaryStats)').toMatch(/Mean activity/);
-    // The Count value should reference the selected cluster's member count
-    // (the percentage in parentheses depends on cluster size relative to
-    // total — assert the absolute count substring appears).
     expect(result.distText,
       `Distribution Count line must reference the selected cluster's member count ${result.largestClusterMembers}`)
       .toContain(String(result.largestClusterMembers));
@@ -1067,9 +608,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     cluster1Distribution = result.distText;
   });
 
-  // Step 6: switch to a DIFFERENT cluster (the non-largest one) — the
-  // Distribution accordion's summary record must update (not stale) — the
-  // assertion that getSummaryStats is re-invoked on selection change.
   await softStep('Scenario 2 (step 6): switch cluster row -> Distribution accordion summary updates (not stale)', async () => {
     const result = await page.evaluate(async (VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -1113,13 +651,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
     expect(result.distText,
       `Distribution Count line must reference the new selected cluster's member count ${result.smallestClusterMembers}`)
       .toContain(String(result.smallestClusterMembers));
-    // peptides.compute.get-summary-stats re-invocation assertion: the
-    // Distribution innerText delta is the on-disk proof that getSummaryStats
-    // ran fresh for the new cluster, not stale from the previous selection.
-    // Only assertable when the subset produced >= 2 clusters (a real second
-    // cluster to switch to). On a single-cluster 200-row subset there is no
-    // distinct second cluster — the switch is a no-op and the delta cannot
-    // exist; record the scope reduction instead of false-failing.
+    // Only assertable with >= 2 clusters; a single-cluster subset has no second cluster to switch to.
     if (result.lstRowCount >= 2)
       expect(result.distText,
         'Distribution accordion text must differ from the prior cluster\'s summary (getSummaryStats re-invoked)')
@@ -1130,12 +662,6 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
         'reference were verified above. Multi-cluster switching is covered on the full 647-row dataset.');
   });
 
-  // Step 7: confirm no null-receiver / division-by-zero / NaN-in-stats /
-  // worker-spawn-failure console errors fired throughout (the combined
-  // Scenario 1 step 7 + Scenario 2 step 7 invariant). Benign async/Promise/
-  // resource-404 noise is tolerated; fatal compute-pipeline regressions
-  // surface as null-receiver / can't-read-X / method-not-found / NaN-bearing
-  // error patterns.
   await softStep('Scenarios 1+2 step 7: no fatal null-receiver / NaN / worker-spawn errors throughout', async () => {
     const lastError = await page.evaluate(() =>
       grok.shell.lastError ? String(grok.shell.lastError) : null);
@@ -1147,11 +673,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       .toBeFalsy();
   });
 
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

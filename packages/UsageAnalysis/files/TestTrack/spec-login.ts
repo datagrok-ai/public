@@ -25,6 +25,13 @@ export async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
+// Wait until the top-menu Chem entry registers — it appears only after the
+// Molecule semType is detected on the active table and the Chem package is
+// ready. Polls up to ~15s for the `[name="div-Chem"]` element to be present.
+export async function waitForChemMenu(page: Page) {
+  await page.locator('[name="div-Chem"]').first().waitFor({state: 'attached', timeout: 15_000});
+}
+
 async function injectToken(page: Page, token: string) {
   // Navigate to the origin first so the cookie/localStorage entries are
   // attached to the right host. The `/oauth/` path matches what `grok test`

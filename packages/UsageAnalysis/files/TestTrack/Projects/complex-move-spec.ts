@@ -1,11 +1,6 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.api.namespaces, projects.move.move-entity, projects.move.commit]
-generated_from: complex-move.md (Phase B canonical openers)
---- */
-// JS API path is primary; UI right-click `Move to` doesn't exist on dev,
-// drag-drop unautomatable — both UI paths captured in complex-ui.md Step 10.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
@@ -59,9 +54,7 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
       if (!saved) throw new Error('no saved project');
       const r = await evalJs<{ok: boolean; reason?: string; spaceId?: string}>(page, `(async () => {
         try {
-          // Note: shipped API is createRootSpace(name), NOT createRoot — verified
-          // 2026-05-05. Older specs/scenarios sometimes name createRoot; that
-          // symbol does not exist on js-api/src/dapi.ts (SpacesDataSource).
+          // Shipped API is createRootSpace(name), NOT createRoot.
           if (typeof grok.dapi.spaces?.createRootSpace !== 'function')
             return {ok: false, reason: 'spaces.createRootSpace not implemented'};
           const space = await grok.dapi.spaces.createRootSpace('${spaceName}');
@@ -97,8 +90,5 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
     }
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

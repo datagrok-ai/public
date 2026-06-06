@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.workflow.start-analysis, peptides.model.init, peptides.model, peptides.workflow.sar-dialog, peptides.viewers.monomer-position]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const projectName = 'SarSaveReopenAuto' + Date.now();
@@ -242,8 +240,5 @@ test('SAR — save project with SAR layout + selection + scaling, reopen and ver
     } catch (e) { console.log('[cleanup] project delete threw (non-fatal):', String(e)); }
     grok.shell.closeAll();
   }, projectName);
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

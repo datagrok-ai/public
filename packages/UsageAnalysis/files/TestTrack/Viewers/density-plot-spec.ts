@@ -25,10 +25,7 @@ async function togglePropCheckbox(page: Page, rowName: string) {
   }, rowName);
 }
 
-/** Open the density plot column popup via mousedown, type column name, confirm with Enter.
- *  Thin alias over helpers/viewers.ts:pickColumnViaSelector that scopes the combobox
- *  lookup to the Density-plot viewer (the same suffix can appear elsewhere) and uses
- *  the backdrop-poll wait strategy that this spec originally relied on. */
+/** Thin alias over helpers/viewers.ts:pickColumnViaSelector scoped to the Density-plot viewer. */
 const setColumnViaPopup = (page: Page, axis: 'x' | 'y', colName: string) =>
   v.pickColumnViaSelector(page, {
     comboboxSuffix: axis,
@@ -42,10 +39,8 @@ const setColumnViaPopup = (page: Page, axis: 'x' | 'y', colName: string) =>
 test('Density plot tests', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Login (canonical flow — same as every other spec)
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset — combine setup + open in one evaluate
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -60,7 +55,6 @@ test('Density plot tests', async ({page}: {page: Page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Density Plot by clicking toolbox icon
   await page.evaluate(() => {
     (document.querySelector('[name="icon-density-plot"]') as HTMLElement)?.click();
   });

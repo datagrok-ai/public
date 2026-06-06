@@ -1,20 +1,9 @@
-/* ---
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.viewer, chem.analyze.scaffold-tree.add, chem.analyze.scaffold-tree.generate, chem.analyze.scaffold-tree.filter]
---- */
-// Frontmatter extraction:
-//   target_layer: playwright
-//   pyramid_layer: ui-smoke
-//   sub_features_covered: [chem.analyze.scaffold-tree, .viewer, .add, .generate, .filter]
-//   ui_coverage_responsibility: [chem-add-scaffold-tree, chem-scaffold-tree-magic-wand-generate,
-//     chem-scaffold-tree-node-click-filter, chem-scaffold-tree-toolbox,
-//     chem-scaffold-tree-property-panel]
-//   related_bugs: []
-//
 // Paired scenario: Advanced/scaffold-tree-functions.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';
+import {finishSpec} from '../../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + property-panel', async ({page}) => {
   test.setTimeout(360_000);
@@ -122,8 +111,5 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

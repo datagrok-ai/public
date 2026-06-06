@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.workflow.sar-dialog, peptides.workflow.analyze-ui, peptides.workflow.start-analysis, peptides.viewers.monomer-position, peptides.viewers.most-potent-residues, peptides.viewers.mutation-cliffs, peptides.viewers.logo-summary-table, peptides.widgets.settings-dialog, peptides.widgets.distribution, peptides.widgets.mutation-cliffs, peptides.panels.peptides]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 test('SAR — Launch and verify viewers (context-panel entry path)', async ({page}) => {
@@ -138,8 +136,6 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(errors.filter((e) => /setTrue|null/.test(e)).length,
       `GROK-19145 invariant: post-OK compute produced a null-receiver error: ${errors.join('; ')}`).toBe(0);
   });
-  // ---- Scenario 3 — Toggle Mutation Cliffs / Invariant Map, click a cell ----
-  // Step 10: switch between Mutation Cliffs and Invariant Map modes on the SVM.
   await softStep('Scenario 3 (step 10): toggle Mutation Cliffs / Invariant Map mode', async () => {
     const toggled = await page.evaluate(async () => {
       const svm = document.querySelector('[name="viewer-Sequence-Variability-Map"]')!;
@@ -162,9 +158,6 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(toggled.afterIM, 'switching to Invariant Map did not flip the radios').toEqual({mc: false, im: true});
     expect(toggled.afterMC, 'switching back to Mutation Cliffs did not flip the radios').toEqual({mc: true, im: false});
   });
-  // Step 11: click the first non-empty cell at a deterministic position in the
-  // SVM grid (canvas-rendered) — drive a real grid-body click, assert via JS API.
-  // Step 12: verify the Context Panel shows Mutation Cliffs pairs + Distribution.
   await softStep('Scenario 3 (steps 11-12): cell click populates the Context Panel', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -181,8 +174,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       }
       if (!canvas) return {canvasFound: false, selBefore, selAfter: selBefore};
       const r = canvas.getBoundingClientRect();
-      // Deterministic data-cell position: into the grid body past the row-header
-      // column and the column-header WebLogo row.
+      // Deterministic data-cell position past the row-header column and WebLogo header row.
       const cx = r.x + 120;
       const cy = r.y + 120;
       const opts = {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0, view: window};
@@ -207,10 +199,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(result.namedPanes, 'Context Panel did not surface the Distribution pane')
       .toContain('pane-Distribution');
   });
-  // ---- Scenario 4 — Adjust Distribution panel parameters ----
-  // Step 13: change a single representative non-default parameter on the
-  // Distribution panel and verify it re-renders. Per SR-01 spirit, exhaustive
-  // parameter-matrix verification is deferred.
+  // Scenario 4 — change one representative Distribution parameter and verify re-render.
   await softStep('Scenario 4 (step 13): adjust a Distribution panel parameter', async () => {
     const result = await page.evaluate(async () => {
       const distPane = document.querySelector('[name="pane-Distribution"]');
@@ -235,10 +224,6 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(result.childCount, 'Distribution pane lost its rendered content after the parameter change')
       .toBeGreaterThan(5);
   });
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

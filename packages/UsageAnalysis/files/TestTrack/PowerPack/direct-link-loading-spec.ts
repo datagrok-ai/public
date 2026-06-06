@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.lifecycle.init, powerpack.welcome.view, powerpack.dashboards]
---- */
 import {test, expect, BrowserContext, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 async function injectTokenInNewContext(ctx: BrowserContext): Promise<Page> {
   const token = process.env.DATAGROK_AUTH_TOKEN;
@@ -38,11 +36,6 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
   let secondaryContext: BrowserContext | null = null;
   try {
     await softStep('Setup: create a project with a known direct-link URL (Setup step 2 of scenario)', async () => {
-      // Mirror the scenario's Setup step 2 "create one first" branch via
-      // JS API — JS-API project creation is acceptable for setup that is
-      // not in ui_coverage_responsibility (the scenario Notes do not pin
-      // Setup to UI). Result: a saved project pointing at demog with a
-      // server-assigned ID + the current user as owner.
       await page.evaluate(async () => {
         const grok = (window as any).grok;
         document.body.classList.add('selenium');
@@ -87,66 +80,36 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(projectId).toBeTruthy();
       expect(ownerLogin).toBeTruthy();
     });
-    // The direct-link URL form per scenario Setup step 2:
-    //   https://<server>/p/<owner>.<project>
-    const directLinkPath = `/p/${ownerLogin}.${projectName}`;
-    // ============================================================
-    // Scenario 1: Direct-link entry (fresh browser context)
-    // ============================================================
+    const directLinkPath = `/p/${ownerLogin}.${projectName}`; // direct-link URL form: /p/<owner>.<project>
+
+    // Scenario 1: Direct-link entry (fresh browser context).
     await softStep('Scenario 1 Step 1+2: open fresh context and navigate to direct-link URL', async () => {
-      // Step 1: fresh browser context — new BrowserContext is independent
-      // of the primary `page`'s context (no shared cookies, no shared
-      // localStorage), so PowerPack's powerPackInit runs from scratch on
-      // this navigation. This matches the scenario's "incognito / private
-      // window OR a new browser profile" requirement.
+      // Fresh context (no shared cookies/localStorage) so PowerPack's powerPackInit runs from scratch.
       secondaryContext = await browser.newContext({
         viewport: specTestOptions.viewport,
       });
       const freshPage = await injectTokenInNewContext(secondaryContext);
-      // Step 2: navigate to the direct-link URL. page.goto returns once
-      // the document fires `load`; the welcome view / project view may
-      // still be mounting after that. We move into Step 3/4 immediately
-      // to capture the loading-window state.
       await freshPage.goto(baseUrl + directLinkPath);
-      // Stash the freshPage on the context so subsequent softSteps can
-      // reach it without re-creating.
       (secondaryContext as any)._freshPage = freshPage;
     });
     await softStep('Scenario 1 Step 3: observe PowerPack loading window during page load (no zero-dimension cropping)', async () => {
       const freshPage: Page = (secondaryContext as any)._freshPage;
-      // GROK-18721 INVARIANT: while the page is loading, the welcome view
-      // (or whichever loading affordance PowerPack hosts) must NOT render
-      // as a degenerate box — width AND height must either both be 0 (not
-      // yet mounted) or both non-zero (mounted properly). The pre-fix
-      // failure mode was width=0 while height>0 (or vice versa) — the
-      // "cropped" presentation.
-      //
-      // Capture rect snapshots at short intervals during the load window.
-      // Any snapshot where the welcome view is found AND has a degenerate
-      // (one-zero / one-non-zero) box constitutes a regression.
+      // GROK-18721 invariant: while loading, the welcome view must not render as a degenerate box (one dim
+      // zero, the other non-zero — the pre-fix "cropped" presentation). Snapshot rects across the load window.
       const snapshots: Array<{t: number; box: {found: boolean; w: number; h: number}}> = [];
       for (let i = 0; i < 30; i++) {
         const box = await getBoxOf(freshPage, '.power-pack-welcome-view');
         snapshots.push({t: i * 200, box});
-        // Once the welcome view yields to the project view (grid mounts),
-        // we have observed the full load lifecycle — exit the loop.
         const gridMounted = await freshPage.evaluate(() =>
           !!document.querySelector('[name="viewer-Grid"] canvas'));
         if (gridMounted) break;
         await freshPage.waitForTimeout(200);
       }
-      // Bug invariant: no snapshot where the welcome view is present AND
-      // exactly one of (w, h) is zero.
       const degenerate = snapshots.filter((s) =>
         s.box.found &&
         ((s.box.w === 0 && s.box.h > 0) || (s.box.h === 0 && s.box.w > 0)));
       expect(degenerate, `GROK-18721 invariant: no cropped loading window with one-zero-one-nonzero dimensions. Offending snapshots: ${JSON.stringify(degenerate)}`).toEqual([]);
-      // Additional invariant: whenever the welcome view IS found with
-      // non-zero dimensions, both width and height must clear a sane
-      // minimum (≥ 100px each) — degenerate cropping to a 1-px sliver
-      // also constitutes the bug surface per scenario step 3 "loading
-      // window's contents (PowerPack spinner / branding / progress
-      // affordance ...) are fully visible — no cropping along any edge".
+      // Also: a mounted welcome view must clear ≥100px in both dimensions (no 1-px sliver crop).
       const tinyBoxes = snapshots.filter((s) =>
         s.box.found && s.box.w > 0 && s.box.h > 0 &&
         (s.box.w < 100 || s.box.h < 100));
@@ -175,38 +138,19 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(tableMeta).not.toBeNull();
       expect(tableMeta!.rowCount).toBeGreaterThan(0);
       expect(tableMeta!.colCount).toBeGreaterThan(0);
-      // Welcome view should have yielded — either entirely removed from
-      // the DOM, or present but offscreen / display:none. Asserting that
-      // the welcome view is not actively occupying the project-view real
-      // estate.
+      // Welcome view must have yielded — removed, hidden, or zero-box (not occupying the project-view area).
       const welcomeStillActive = await freshPage.evaluate(() => {
         const w = document.querySelector('.power-pack-welcome-view') as HTMLElement | null;
-        if (!w) return false; // cleanly removed — best outcome
+        if (!w) return false;
         const cs = getComputedStyle(w);
         if (cs.display === 'none' || cs.visibility === 'hidden') return false;
-        // Still mounted and visible — check whether it's still in the
-        // primary view area (could be a hidden home-view fragment OK to
-        // ignore). Treat presence in active layout as "still active".
         const r = w.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
       });
       expect(welcomeStillActive, 'Welcome view should have yielded to the project view after load').toBe(false);
     });
-    // ============================================================
-    // Scenario 2: In-app navigation control (warm session, primary page)
-    // ============================================================
+    // Scenario 2: in-app navigation control (warm session). URL goto is equivalent to a Recent Projects click.
     await softStep('Scenario 2 Step 1+2: from inside Datagrok, navigate to the same project via direct-link URL (warm session)', async () => {
-      // Step 1: start from inside Datagrok — primary `page` is already
-      // logged in and has a warm session.
-      // Step 2: scenario lists three in-app entry paths (Recent Projects
-      // widget, Browse | Projects, global search). For the regression
-      // control the entry mechanism is not the bug surface — the bug is
-      // entry-path-dependent only because direct-link bypasses warm
-      // session, NOT because of the specific in-app widget used. We
-      // exercise the URL-based in-app navigation (page.goto on the warm
-      // session) as the most reliable cross-environment path; this is
-      // semantically equivalent to a Recent Projects widget click which
-      // also resolves to the same direct-link URL under the hood.
       await page.evaluate(async () => {
         const grok = (window as any).grok;
         try { grok.shell.closeAll(); } catch (_) {}
@@ -215,11 +159,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       await page.goto(baseUrl + directLinkPath);
     });
     await softStep('Scenario 2 Step 3: observe loading window during in-app open (control case — no cropping)', async () => {
-      // Same invariant capture as Scenario 1 Step 3, against the primary
-      // (warm-session) page. Pre-fix, this path NEVER reproduced the
-      // glitch (control behavior); post-fix, both paths must satisfy the
-      // invariant. A regression where the warm path develops the bug
-      // would also fail this assertion.
+      // Same invariant against the warm-session page (control: pre-fix this path never reproduced the glitch).
       const snapshots: Array<{t: number; box: {found: boolean; w: number; h: number}}> = [];
       for (let i = 0; i < 30; i++) {
         const box = await getBoxOf(page, '.power-pack-welcome-view');
@@ -240,8 +180,6 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       await page.waitForTimeout(1500);
     });
     await softStep('Scenario 2 Step 5: compare against Scenario 1 outcome (same visual quality)', async () => {
-      // Same render-quality assertions as Scenario 1 Step 5 — direct-link
-      // entry MUST match in-app navigation's visual outcome (post-fix).
       const gridBox = await getBoxOf(page, '[name="viewer-Grid"]');
       expect(gridBox.found).toBe(true);
       expect(gridBox.w).toBeGreaterThan(100);
@@ -256,9 +194,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(tableMeta!.colCount).toBeGreaterThan(0);
     });
   } finally {
-    // ---- Cleanup contract: delete the project + table info from the server,
-    // close both contexts to release server-side TableView state. Mirrors
-    // the try/finally cleanup in complex-derived-tables-spec.ts.
+    // Cleanup: delete the project + table info, close both contexts.
     try {
       if (projectId || tableInfoId) {
         await page.evaluate(async (ids) => {
@@ -283,8 +219,5 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       try { await secondaryContext.close(); } catch (_) {}
     }
   }
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,68 +1,13 @@
-/* ---
-sub_features_covered: [projects.shell.share-via-context-menu, projects.api.namespaces, projects.shell.open]
---- */
-// Selector sources (grok-browser/references):
-//   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
-//   projects.md:232 — SAVE ribbon button is the reliable Save Project trigger
-//   projects.md:118-144 — Sharing via JS API: grok.dapi.permissions.grant(p, user, edit)
-//     where edit=false → View-and-Use, edit=true → Full
-//   projects.md:146-165 — Re-auth via helpers.playwright.session.logoutAndLoginAs
-//     (token-based; switches the authenticated session by re-injecting the
-//     second-user token — requires DATAGROK_AUTH_TOKEN_2).
-//
-// Wave 1b/2C complex-split: covers Step (share with second user +
-// recipient open) sub-bullet of complex.md scenario — specifically
-// Step 12 (configure project sharing for another user at View-and-Use
-// AND Full access levels). Targets the share-grant → recipient-side
-// open flow that verifies cross-user project visibility after share.
-// Helper-3 (logoutAndLoginAs) dependency: uses logoutAndLoginAs to
-// switch users mid-test (GROK-18345 partial regression invariant —
-// bug-library entry exists; full reproduction requires Spaces dataset
-// + datasync + recipient open).
-//
-// Bug-focused slice satellite of complex.md per Decision 2.6 expanded
-// pattern 2 (orphan-without-its-own-parent-.md acceptable when the spec
-// self-documents via header cross-reference to parent .md + functionality
-// slice + GROK ticket). Parent canonical scenario: complex.md.
-//
-// Scope: share existing project to second user at both grant levels +
-// (when Helper-3 is registered) recipient logs in + recipient opens
-// shared project. Sub-bullets of complex.md NOT covered here (Pivot,
-// Aggregate, Join, Clone, derived tables, multi-source, rename) belong
-// to other satellites of the complex.md decomposition.
-//
-// Step 13 (log in as second user, locate + open the shared project) is now
-// wired via token-injection re-auth (loginAsSecondUser, needs
-// DATAGROK_AUTH_TOKEN_2 — provided by the runner from DATAGROK_DEV_KEY_2 /
-// config key2). To make the recipient-open verifiable, the share grant now
-// targets the SECOND user specifically (its login is probed via a token2
-// re-auth round-trip) instead of an arbitrary other user. When no
-// second-user token is configured the spec falls back to sharing with any
-// other user and skips only the recipient-open leg — so it still runs (no
-// hard failure) without token2.
-//
-// Scope reductions (documented):
-//   * Step 12 right-click Share dialog UI is replaced with
-//     grok.dapi.permissions.grant JS API per projects.md:28 documented
-//     preferred default (and projects.md:242 — context menu items have
-//     no name= attributes). This is consistent with share-project-spec
-//     pattern.
-//   * GROK-18345 full reproduction (Spaces dataset + datasync + share)
-//     is PARTIAL: the share + datasync touch points are exercised, but
-//     the cross-user open verification requires re-auth.
-//   * Defensive skip-with-note pattern for both grant levels (matches
-//     share-project-spec). On dev the recipient-user lookup may fail with FK
-//     violation on permissions table — defensive handling absorbs it.
+// GROK-18345: share a project with a second user at View-and-Use + Full, then verify recipient can open it.
+// Share grant uses grok.dapi.permissions.grant; recipient re-auth via loginAsSecondUser (needs DATAGROK_AUTH_TOKEN_2).
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);
 
-// This is a two-user test: the second user is MANDATORY. loginAsSecondUser
-// resolves the token from DATAGROK_AUTH_TOKEN_2 or the config `key2:` and
-// THROWS if neither exists — so a misconfigured environment FAILS the test
-// rather than silently passing without exercising the second user.
+// Two-user test: second user is MANDATORY. loginAsSecondUser THROWS if no token2 is configured.
 const readLogin = (page: Page): Promise<string | null> =>
   page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
 
@@ -79,8 +24,7 @@ async function saveProject(page: Page, name: string) {
   await page.keyboard.press('Control+a');
   await page.keyboard.type(name);
   await dialog.locator('[name="button-OK"]').click();
-  // Defensive share-dialog handling per Wave 1a Validator hypothesis cycle 1
-  // canonical pattern.
+  // Defensive auto-Share dialog handling.
   const shareDialog = page.locator('.d4-dialog').filter({hasText: `Share ${name}`});
   if (await shareDialog.isVisible({timeout: 30000}).catch(() => false)) {
     await shareDialog.locator('[name="button-CANCEL"]').click();
@@ -106,11 +50,7 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
   await setupSession(page);
 
   const ownerLogin = await readLogin(page);
-  // Learn the second user's login from the token claim — NO page switch (the
-  // old "switch in / read / switch back" probe cost two extra reloads and ran
-  // before the project even existed). getSecondUserLogin THROWS if no second
-  // user is configured → the test fails (never a silent skip). The session
-  // stays on the primary (owner) user; the only re-auth is Step 13.
+  // Learn the second user's login from the token claim (no page switch). THROWS if no second user configured.
   const secondLogin = await getSecondUserLogin();
   console.log(`[two-user] owner='${ownerLogin}', second-user='${secondLogin}' (from token claim, no page switch)`);
   expect(secondLogin, 'second-user login must resolve').toBeTruthy();
@@ -122,17 +62,9 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
   try {
     await softStep('Setup: build project (file source, Sync ON)', async () => {
       await closeAll(page);
-      // INTENTIONAL legacy `grok.data.files.openTable` (no `.script`
-      // provenance written). Required because this spec exercises the UI
-      // Save dialog flow (`saveProject` helper at line 51 — toolbar SAVE
-      // button click → dialog → OK). The canonical `openTableFromFile`
-      // helper writes a dot-form `.script` tag and triggers bug 2b
-      // (toolbar SAVE button collapses to offsetWidth=0 in Playwright),
-      // which makes the UI Save dialog unreachable. The legacy path
-      // keeps the SAVE button visible — verified live 2026-05-05.
-      // DO NOT migrate to `openTableFromFile` without first migrating
-      // `saveProject` away from the UI dialog flow (e.g. to inline JS
-      // API save like complex-rename-spec / complex-derived-tables-spec).
+      // INTENTIONAL legacy `grok.data.files.openTable` (no `.script` tag) — keeps the toolbar SAVE button
+      // visible for the UI Save dialog flow. `openTableFromFile` writes a .script tag that triggers bug 2b
+      // (SAVE button collapses to offsetWidth=0). Don't migrate without first moving saveProject off the UI dialog.
       await evalJs(page, `(async () => {
         const df = await grok.data.files.openTable('System:DemoFiles/demog.csv');
         const tv = grok.shell.addTableView(df);
@@ -140,10 +72,7 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
       })()`);
       await page.waitForTimeout(2000);
       await saveProject(page, projectName);
-      // 60s poll: dev save commits can lag under load; 30s window too tight per
-      // Wave 1b hypothesis cycle 1 (environmental-flake) — same class as Wave 1a
-      // project-url issue but on the project-existence side rather than the
-      // share-dialog side.
+      // 60s poll: dev save commits can lag under load.
       await expect.poll(async () => evalJs(page,
         `(async () => {
           const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
@@ -166,8 +95,7 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
           }
           if (!target) return { skipped: true, reason: 'no target user found' };
           const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-          // Permissions attach to GROUPS — grant to the user's personal group
-          // (granting the User directly violates permissions_user_group_id_fkey).
+          // Permissions attach to GROUPS — grant to the user's personal group (User grant violates FK).
           await grok.dapi.permissions.grant(p, target.group, false);
           return { skipped: false, login: target.login, groupId: target.group.id, level: 'view-and-use' };
         } catch (e) {
@@ -181,8 +109,7 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
       expect(result.login).toBeTruthy();
       recipientLogin = result.login;
 
-      // Verify the recipient's group appears in the project's granted
-      // permissions (permissions.get returns {view, edit} group lists).
+      // Verify the recipient's group appears in the project's granted permissions.
       const listed = await evalJs(page, `(async () => {
         try {
           const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
@@ -222,17 +149,12 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
       console.log(`[two-user] Step 12: elevated to Full access for '${result.login}' — share complete, STILL OWNER (no user switch performed yet)`);
     });
 
-    // Step 13 (complex.md): the second user logs in (token2 injection),
-    // locates the shared project, and OPENS it — the cross-user open invariant
-    // (GROK-18345 / GROK-19403: "recipient cannot open shared project").
-    // Restores the primary session afterwards so the finally-block cleanup
-    // (delete) runs as the owner.
+    // Step 13: second user logs in (token2), locates + opens the shared project (GROK-18345 / GROK-19403).
     // The share MUST have targeted the second user — assert it, do not skip.
     expect(recipientLogin, 'Step 12 must have granted to the second user').toBe(secondLogin);
     await softStep('Step 13: second user logs in, sees AND opens the shared project', async () => {
       await loginAsSecondUser(page);
       try {
-        // Prove we are actually running AS the second user now (not the owner).
         const liveLogin = await readLogin(page);
         console.log(`[two-user] Step 13: now authenticated as '${liveLogin}' (expected second-user '${secondLogin}', owner was '${ownerLogin}')`);
         expect(liveLogin).toBe(secondLogin);
@@ -247,9 +169,7 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
         ), {timeout: 30_000, intervals: [1000, 2000, 5000]}).toBe(true);
         console.log(`[two-user] Step 13: recipient '${liveLogin}' CAN see shared project '${projectName}'`);
 
-        // (b) the recipient can OPEN it (per complex.md Expected results:
-        // "View-and-Use access can OPEN the project"). Materialised tables /
-        // a non-null shell.project prove the open succeeded cross-user.
+        // (b) the recipient can OPEN it — materialized tables / non-null shell.project prove cross-user open.
         const opened = await evalJs(page, `(async () => {
           try {
             grok.shell.closeAll();
@@ -276,8 +196,5 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
     await closeAll(page);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

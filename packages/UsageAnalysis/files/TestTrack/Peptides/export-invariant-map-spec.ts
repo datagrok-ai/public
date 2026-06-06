@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [peptides.viewers.sar-base.export-invariant-map, peptides.viewers.sar-base, peptides.viewers.monomer-position, peptides.workflow.start-analysis]
---- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const MONOMER_COL = 'AAR';
@@ -278,10 +276,6 @@ test('Peptides — Export Invariant Map to a new TableView (SARViewer-base contr
       `MPR Export raised a null-reference console error (SARViewer-base contract violated): ${JSON.stringify(nullRefErrors)}`)
       .toEqual([]);
   });
-  // Cleanup.
   await page.evaluate(() => grok.shell.closeAll());
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

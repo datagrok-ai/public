@@ -1,16 +1,7 @@
-/* ---
-sub_features_covered: [legend.use-custom-color-coding, legend.item.color-picker, legend.allow-item-coloring]
-related_bugs: [GROK-17438, github-3132, GROK-17278]
-coverage_type: edge
---- */
-// Paired scenario: color-consistency.md. Scenario 2 picker UI is exercised on
-// Histogram (not Bar chart as scenario text reads) because Bar chart's legend
-// block does not reliably render from JS-API split config alone — it appears
-// only after a column-color edit triggers a rebuild. Histogram exposes the
-// same cross-viewer invariant. Full prose moved to color-consistency.md.
+// Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -19,13 +10,12 @@ test('Legend color consistency', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
 
-  // Scenario 1, steps 1-2: enable categorical color coding via grid, change two colors.
   await softStep('Categorical color coding from grid: R_ONE=red, S_UNKN=green', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
@@ -51,7 +41,6 @@ test('Legend color consistency', async ({page}) => {
     expect(String(res.sUnknTag).toLowerCase()).toBe('#00ff00');
   });
 
-  // Scenario 1, step 3: every viewer's legend reflects new colors (DOM truth).
   await softStep('Every viewer reflects R_ONE=red and S_UNKN=green (DOM)', async () => {
     const result = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
@@ -78,7 +67,6 @@ test('Legend color consistency', async ({page}) => {
     expect(viewersWithLegend, 'at least 1 viewer renders legend with the configured DOM colors').toBeGreaterThanOrEqual(1);
   });
 
-  // Scenario 2: per-category color change via legend picker propagates everywhere.
   await softStep('Open color picker via legend, change R_ONE to blue', async () => {
     await v.changeLegendItemColor(page, {
       viewerType: 'Histogram',
@@ -109,7 +97,6 @@ test('Legend color consistency', async ({page}) => {
     expect(viewersChecked, 'picker change reflected in legend DOM on at least 1 viewer').toBeGreaterThanOrEqual(1);
   });
 
-  // Scenario 3: layout round-trip preserves customized palette (positive baseline for GROK-17278).
   await softStep('Save + re-apply layout — custom palette persists (tag verification)', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -128,7 +115,6 @@ test('Legend color consistency', async ({page}) => {
     expect(res.rOneAfterReload).toBe('#1f77b4');
   });
 
-  // Scenario 4: project round-trip — save, close, reopen, verify palette (FK graceful-degrade).
   await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
     const res = await page.evaluate(async () => {
       let projectId: string | null = null;

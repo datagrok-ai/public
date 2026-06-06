@@ -1,14 +1,7 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.add-relation, projects.shell.share-via-context-menu, projects.api.get-by-id]
-generated_from: projects-lifecycle-db.md (Phase B canonical openers + uploadProject + reopen-verify)
---- */
-// DB-source lifecycle. Two paths: provisioned saved query on System:Datagrok
-// + ad-hoc DB table (DbQuery on System:Datagrok public.groups). Both
-// prerequisites are created within the test via helpers/openers.ts
-// (provisionSystemDatagrokQuery / built-in System:Datagrok connection) —
-// no Samples package or external DB provisioning required.
+// DB-source lifecycle: provisioned saved query + ad-hoc DB table on System:Datagrok public.groups.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -99,10 +92,7 @@ test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source'
     if (provisioned) await provisioned.cleanup();
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });
 
 // ---------------------------------------------------------------------------
@@ -154,8 +144,5 @@ test('Projects / Lifecycle DB / Table: System:Datagrok public.groups via DbQuery
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

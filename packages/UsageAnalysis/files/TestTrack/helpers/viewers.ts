@@ -15,7 +15,7 @@ import {Page, expect} from '@playwright/test';
 import {stepErrors, StepError} from '../spec-login';
 
 // ---------------------------------------------------------------------------
-// 1. openTableForLegend — canonical 22-line prelude used by every Legend spec.
+// 1. openTable — canonical open prelude used by Legend + FilterPanel specs.
 // ---------------------------------------------------------------------------
 
 export interface OpenTableOptions {
@@ -23,31 +23,61 @@ export interface OpenTableOptions {
   path?: string;
   /** When true, prime the Filter Panel (Filters viewer) after open. */
   withFilterPanel?: boolean;
+  /** Semantic type hint (unused by the open path; reserved for callers). */
+  semType?: 'Molecule' | 'Macromolecule';
+  /** Force the OpenFile path (also auto-detected for .sdf/.nwk/.pdb). */
+  sdf?: boolean;
+  /** Extra settle after the Grid is visible (ms). */
+  settleMs?: number;
+  /** Cap on the semantic-type-detection race (ms). Defaults to 5000; pass 3000
+   * to match the shorter inline prelude that the Viewers specs hand-rolled. */
+  semTypeTimeoutMs?: number;
 }
 
 /**
- * Open a demo CSV, attach the default TableView, wait for semantic-type
+ * Open a demo table, attach the default TableView, wait for semantic-type
  * detection + Bio/Chem render settle, and (optionally) prime the Filter Panel.
  *
- * Verbatim extraction of the prelude block pasted into every Legend spec.
- * Selenium class + simpleMode + showFiltersIconsConstantly are set the same
- * way as in the inline form so spec behavior is unchanged.
+ * Superset of the prelude block pasted into every Legend / FilterPanel spec.
+ * CSV sources go through `readCsv` + `addTableView`; .sdf/.nwk/.pdb (or
+ * `sdf: true`) route through the OpenFile function-call recorder (verbatim from
+ * openers.ts openTableFromFile). Selenium class + simpleMode +
+ * showFiltersIconsConstantly are set the same way as in the inline form so
+ * spec behavior is unchanged.
  */
-export async function openTableForLegend(
-  page: Page,
-  options: OpenTableOptions = {},
-): Promise<void> {
-  const path = options.path ?? 'System:DemoFiles/SPGI.csv';
-  await page.evaluate(async (p) => {
+export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
+  const p = options?.path ?? 'System:DemoFiles/SPGI.csv';
+  const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
+  const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
+  await page.evaluate(async ({path, openFile, semTypeTimeoutMs}) => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
-    const df = await (window as any).grok.dapi.files.readCsv(p);
-    (window as any).grok.shell.addTableView(df);
+    let df: any;
+    if (openFile) {
+      const DG = (window as any).DG;
+      const grok = (window as any).grok;
+      const fns = DG.Func.find({name: 'OpenFile'});
+      if (!fns?.length) throw new Error('OpenFile function not registered');
+      const fullPathForOpen = path.replace(/^([^:/]+):/, '$1.');
+      await fns[0].prepare({fullPath: fullPathForOpen}).call(undefined, undefined, {processed: false});
+      for (let i = 0; i < 24; i++) {
+        const tv = grok.shell.tv;
+        if (tv?.dataFrame && typeof tv.addViewer === 'function') {
+          df = tv.dataFrame;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      if (!df) throw new Error(`OpenFile("${path}") did not produce a TableView (12s settle)`);
+    } else {
+      df = await (window as any).grok.dapi.files.readCsv(path);
+      (window as any).grok.shell.addTableView(df);
+    }
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 5000);
+      setTimeout(resolve, semTypeTimeoutMs);
     });
     const hasBioChem = Array.from({length: df.columns.length}, (_, i: number) => df.columns.byIndex(i))
       .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
@@ -59,16 +89,39 @@ export async function openTableForLegend(
       }
       await new Promise((r) => setTimeout(r, 5000));
     }
-  }, path);
+  }, {path: p, openFile: useOpenFile, semTypeTimeoutMs});
   await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
-  if (options.withFilterPanel) {
-    await page.evaluate(() => (window as any).grok.shell.tv.getFiltersGroup());
-    await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
-    // Real DOM gesture on the Filter Panel — exercises the documented
-    // hover-to-reveal header-icons interaction and adds an observable
-    // Playwright-driven call alongside JS-API operations.
-    await page.locator('[name="viewer-Filters"] .d4-filter').first().hover();
-  }
+  if (options?.settleMs) await page.waitForTimeout(options.settleMs);
+  if (options?.withFilterPanel) await openFilterPanel(page);
+}
+
+/**
+ * Prime the Filter Panel (Filters viewer) on the active TableView: open the
+ * filters group, wait for the first `.d4-filter`, and hover it. Extracted from
+ * the withFilterPanel half of the original openTable prelude.
+ */
+export async function openFilterPanel(page: Page): Promise<void> {
+  await page.evaluate(() => (window as any).grok.shell.tv.getFiltersGroup());
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
+  // Real DOM gesture on the Filter Panel — exercises the documented
+  // hover-to-reveal header-icons interaction and adds an observable
+  // Playwright-driven call alongside JS-API operations.
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().hover();
+}
+
+/**
+ * Add a viewer by clicking its ribbon/toolbox icon, then wait for the viewer to
+ * attach. Verbatim equivalent of the `querySelector('[name="icon-<icon>"]')`
+ * click + `[name="viewer-<name>"]` waitFor block pasted into the Viewers specs.
+ * Pass a non-default `timeoutMs` only when a call-site used a different wait.
+ */
+export async function addViewerByIcon(
+  page: Page, iconName: string, viewerName: string, timeoutMs = 5000,
+): Promise<void> {
+  await page.evaluate((n) => {
+    (document.querySelector('[name="icon-' + n + '"]') as HTMLElement).click();
+  }, iconName);
+  await page.locator('[name="viewer-' + viewerName + '"]').waitFor({timeout: timeoutMs});
 }
 
 // ---------------------------------------------------------------------------
@@ -626,7 +679,49 @@ export async function cleanupShell(
 }
 
 // ---------------------------------------------------------------------------
-// 9. finishSpec — trailing soft-step assertion (throws if any softStep failed).
+// 9. setViewerProps — drive a viewer's props through a set→wait→read-back ladder.
+// ---------------------------------------------------------------------------
+
+export interface ViewerPropStep {
+  /** Props to assign this step (one or many, in insertion order). */
+  set: Record<string, any>;
+  /** Settle delay in ms after the assignment (default `delayMs`). */
+  wait?: number;
+  /** Prop name → its value is collected; array → an object keyed by those names; omitted → nothing. */
+  read?: string | string[];
+}
+
+/**
+ * Collapses the repeated `h.props.x = v; await sleep; r.push(h.props.x)` ladders
+ * that fill the viewer specs. Finds the current table view's viewer by `type`,
+ * then for each step assigns `set`, waits, and reads back `read`. Returns the
+ * collected values in order. Behaviourally identical to the hand-rolled blocks:
+ * same set order, same per-step delay, read-back happens after the wait.
+ */
+export async function setViewerProps(
+  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
+): Promise<any[]> {
+  return page.evaluate(async ({viewerType, steps, delayMs}) => {
+    const h = Array.from((window as any).grok.shell.tv.viewers)
+      .find((x: any) => x.type === viewerType) as any;
+    const out: any[] = [];
+    for (var step of steps) {
+      for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
+      await new Promise((res) => setTimeout(res, step.wait ?? delayMs));
+      if (step.read === undefined) continue;
+      if (Array.isArray(step.read)) {
+        const obj: Record<string, any> = {};
+        for (var rk of step.read) obj[rk] = h.props[rk];
+        out.push(obj);
+      } else
+        out.push(h.props[step.read]);
+    }
+    return out;
+  }, {viewerType, steps, delayMs});
+}
+
+// ---------------------------------------------------------------------------
+// 10. finishSpec — trailing soft-step assertion (throws if any softStep failed).
 // ---------------------------------------------------------------------------
 
 /**

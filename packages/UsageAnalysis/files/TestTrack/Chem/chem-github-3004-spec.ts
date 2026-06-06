@@ -1,35 +1,13 @@
-/* ---
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.viewer, chem.analyze.scaffold-tree.add]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.analyze.scaffold-tree, .viewer, .add]
-//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice
-//   related_bugs: [github-3004]
-//
-// Bug invariant (regression-lock per references/bug-library/chem.yaml :: github-3004):
-//   With ≥2 table views open, Top-menu `Chem | Analyze | Scaffold Tree` MUST
-//   bind the new Scaffold Tree viewer to the ACTIVE table view
-//   (grok.shell.tv.dataFrame), NOT the first-opened. github-3004 NIBR
-//   customer-signal bug — fixed in 1.21.0.
-// Parallel-coverage with Advanced/scaffold-tree.md (single-table walk,
-// coverage_type=regression) and Advanced/scaffold-tree-functions.md (JS API
-// function walk).
-//
-// Paired scenario: chem-github-3004.md
+// github-3004: Scaffold Tree from active TableView must bind to the active TableView, not first-opened (fixed 1.21.0).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-// storageState consumes auth.json captured via `npx playwright codegen --save-storage=auth.json`
-// (refreshed 2026-05-11; DATAGROK_LOGIN/PASSWORD env not set in this session).
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: github-3004 Scaffold Tree from active TableView binds to active TableView (multi-table)', async ({page}) => {
   test.setTimeout(180_000);
 
-  // github-3004 is status: fixed, fixed_in: 1.21.0 per bug-library. Spec
-  // exercises the post-fix invariant as a regression-lock.
   await loginToDatagrok(page);
 
   await softStep('Setup: close all + selenium flags', async () => {
@@ -112,7 +90,6 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
       if (!stItem) throw new Error('Top-menu "Scaffold Tree" sub-menu item not found');
       (stItem.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
-    // Wait for the Scaffold Tree viewer to materialize on the active TableView B.
     await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 10000});
   });
 
@@ -150,8 +127,5 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

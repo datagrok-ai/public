@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -15,7 +16,6 @@ test('Map Viewer: add map, set color/size/renderType', async ({page}) => {
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = false;
 
-    // Use earthquakes.csv (MYmeteoritesTest.csv not found)
     const df = await grok.dapi.files.readCsv('System:DemoFiles/geo/earthquakes.csv');
     grok.shell.addTableView(df);
     await new Promise(resolve => {
@@ -70,10 +70,7 @@ test('Map Viewer: add map, set color/size/renderType', async ({page}) => {
     expect(result.renderType).toBe('markers');
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

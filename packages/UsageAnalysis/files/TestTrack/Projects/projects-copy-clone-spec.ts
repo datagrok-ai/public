@@ -1,30 +1,8 @@
-/* ---
-sub_features_covered: [projects.shell.open, projects.shell.share-via-context-menu, projects.api.save, projects.add-relation, projects.add-link]
-generated_from: projects-copy-clone.md (D4.3 UI-driven rewrite 2026-05-06 — replaces 2026-05-05 bundled-1-test reduction)
-ui_coverage_owned: [save-copy-with-link-dialog, save-copy-with-clone-dialog, save-personal-view-customizations-dialog, pcmdShareProject, share-dialog-recipients]
---- */
-// Full canonical implementation of `projects-copy-clone.md` Step 4 sub-flows
-// 4a / 4b / 4c / 4d + Step 5 re-share. UI-driven Save Project dialog mode
-// chooser — drives `[name="button-Save"]` toolbar → mode-radio (Save original
-// project / Save a copy / Save personal view customizations) → per-table
-// Link/Clone sub-choice (sub-flow 4b/4c) → name → OK. Per-mode reopen
-// verification per sub-flow. Sub-flow 4b carries the GROK-19750 invariant
-// assertion (after Save-Copy-with-Link the original project's table still
-// re-materializes on reopen).
-//
-// Rewrite rationale (2026-05-06): the prior 2026-05-05 version collapsed the
-// 4 sub-flows into a single test() block with 4 JS-API saves and only 2
-// reopens to mitigate a shell.tv race. That reduction violated the chain's
-// `ui_coverage_responsibility` (3 Save Copy mode dialogs MUST be UI-driven
-// per `projects-copy-clone.md` frontmatter). This rewrite restores per-mode
-// UI coverage and per-mode reopen verification while keeping the
-// `reopenProjectById` shell.tv-poll pattern that mitigated the original race.
-//
-// Step 5 re-share is UI-driven (right-click → Share dialog) per chain rev 3
-// `ui_coverage_plan.delegated_scenarios` — `share-project.md` delegates the
-// right-click Share UI surface here.
+// UI-driven Save Project mode chooser: 4 sub-flows (original / copy+link / copy+clone / PVC) + Step 5 re-share.
+// GROK-19750: after Save-Copy-with-Link the original project's table must still re-materialize on reopen.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {
@@ -37,15 +15,8 @@ import {
 
 test.use(projectsTestOptions);
 
-// Reopen a saved project by id and wait for grok.shell.tv to become a real
-// TableView (with .dataFrame + .addViewer). A single open() occasionally
-// lands on the Browse view without materializing the TableView (dev shell.tv
-// race) — re-issuing open() recovers far faster than one long single-shot
-// poll. Bounded on purpose: a genuinely-broken project (table reference
-// dropped server-side, GROK-19750 family) can NEVER materialize, so we return
-// after a short retry budget and let the caller's own next step surface it
-// (addViewerSafely throws, or reopenedRowCount → 0 drives the assertion
-// message) instead of burning ~45s on a poll that cannot succeed.
+// Reopen a project by id and wait for grok.shell.tv to become a real TableView. A single open()
+// occasionally lands on Browse without materializing the TableView (shell.tv race); re-issuing open() recovers.
 async function reopenProjectById(page: any, projectId: string) {
   await evalJs(page, `(async () => {
     grok.shell.closeAll();
@@ -66,12 +37,7 @@ async function reopenProjectById(page: any, projectId: string) {
   await page.waitForTimeout(400);
 }
 
-// Add a viewer to the active TableView. reopenProjectById already waits for
-// tv.addViewer to become a function before returning, so this normally
-// succeeds on the first probe; the short poll is a thin safety net for render
-// lag, not the 30s reopen-race buffer it used to be. If tv never materializes
-// (broken project), this throws a clear message — the caller's softStep
-// records it without the old ~30s dead wait.
+// Add a viewer to the active TableView; throws a clear message if tv never materializes (broken project).
 async function addViewerSafely(page: any, viewerName: string): Promise<void> {
   await evalJs(page, `(async () => {
     for (let i = 0; i < 16; i++) {
@@ -87,14 +53,9 @@ async function addViewerSafely(page: any, viewerName: string): Promise<void> {
   await page.waitForTimeout(400);
 }
 
-// Recreate the original baseline project (delete old, open fresh demog.csv,
-// save again). Needed between sub-flows because Save-Copy-with-Link (4b) on
-// dev triggers GROK-19750 — the original's table reference gets stale, so
-// subsequent reopens find an empty TableView (verified 2026-05-08). 4c/4d
-// need a working original to add their respective viewers; this helper
-// restores it.
+// Recreate the baseline project (delete old, reopen fresh demog.csv, save). GROK-19750: Save-Copy-with-Link
+// staleness leaves the original with an empty TableView, so 4c/4d need this to restore a working baseline.
 async function rehydrateOriginal(page: any, name: string): Promise<{projectId: string; tableInfoId: string}> {
-  // Delete old project entity if present
   await evalJs(page, `(async () => {
     try {
       const list = await grok.dapi.projects.filter('name like "${name}"').list();
@@ -110,14 +71,8 @@ async function rehydrateOriginal(page: any, name: string): Promise<{projectId: s
 }
 
 async function reopenedRowCount(page: any): Promise<number> {
-  // After reopen the Dart-side `tv.viewers` proxy can intermittently report
-  // 0 viewers even when the saved layout restored them. The reliable
-  // cross-Dart signal is the dataframe rowCount — non-zero means the
-  // project's table re-materialized from .script provenance.
-  // Wrap in IIFE + try/catch + Number() — bare `?.` chain on a partial Dart
-  // proxy occasionally returns an object Playwright can't serialize (verified
-  // 2026-05-08: GROK-19750-broken state produced "object reference chain is
-  // too long" when raw `?.` chain ran).
+  // dataframe rowCount is the reliable cross-Dart re-materialization signal. Wrap in IIFE + try/catch +
+  // Number() — a bare `?.` chain on a partial Dart proxy can return an object Playwright can't serialize.
   return await evalJs<number>(page, `(() => {
     try {
       const tv = grok.shell.tv;
@@ -137,14 +92,8 @@ async function reopenedViewerCount(page: any): Promise<number> {
   })()`);
 }
 
-// Capture {projectId, tableInfoId} of the just-saved Save-Copy project.
-// Strategy 1: read grok.shell.project (when Dart shell updates promptly,
-//   and id has changed from source — i.e. a non-original-mode save).
-// Strategy 2: server-side query by friendlyName via `name like "<typed>"`
-//   (with NO wildcards) — Datagrok stores typed name verbatim in
-//   friendlyName and the LIKE-no-wildcards form matches it; `name = "X"`
-//   exact match is unreliable on dev (verified 2026-05-06).
-// Returns {projectId: '', tableInfoId: ''} only if BOTH strategies fail.
+// Capture {projectId, tableInfoId} of the just-saved Save-Copy project. Strategy 1: shell.project (when id
+// differs from source). Strategy 2: server query by friendlyName via `name like` (no wildcards); `name =` is unreliable.
 async function captureActiveProjectIds(
   page: any,
   typedName: string,
@@ -153,14 +102,12 @@ async function captureActiveProjectIds(
   return await evalJs<{projectId: string; tableInfoId: string; serverName: string}>(page, `(async () => {
     const typedName = ${JSON.stringify(typedName)};
     const sourceId = ${JSON.stringify(sourceId)};
-    // Strategy 1: shell.project (must differ from sourceId)
     const shellProj = grok.shell.project;
     if (shellProj?.id && shellProj.id !== sourceId) {
       const tv = grok.shell.tv;
       const ti = tv?.dataFrame?.getTableInfo?.();
       return {projectId: shellProj.id, tableInfoId: ti?.id ?? '', serverName: shellProj.name || typedName};
     }
-    // Strategy 2: friendlyName match via name LIKE (no wildcards).
     try {
       const list = await grok.dapi.projects.filter('name like "' + typedName + '"').list();
       const candidate = list.find(p => p.id !== sourceId);
@@ -188,13 +135,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
   await resetShell(page);
 
   try {
-    // -------------------------------------------------------------------
-    // Setup: create the baseline `<original>` project via JS API.
-    // The 3-mode chooser in the Save Project dialog only appears when an
-    // existing project is being modified. JS API setup is the standard
-    // pattern for sibling specs (complex-save-copy-spec.ts:30) and is not
-    // part of the canonical Step 4 UI surface — Setup is upstream.
-    // -------------------------------------------------------------------
+    // Setup: create the baseline project via JS API (the 3-mode chooser only appears when modifying an existing project).
     await softStep('Setup: open demog.csv with provenance + save baseline (JS API)', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await assertProvenanceScript(page, 'files', opened.script);
@@ -203,9 +144,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       expect(ids.original.projectId).toBeTruthy();
     });
 
-    // -------------------------------------------------------------------
     // Sub-flow 4a — Save the original (overwrite, mode='original').
-    // -------------------------------------------------------------------
     await softStep('4a: open original (UI-reopen) → addViewer Bar → SAVE mode=original (overwrite) → closeAll', async () => {
       await reopenProjectById(page, ids.original!.projectId);
       await addViewerSafely(page, 'Bar chart');
@@ -218,16 +157,8 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await page.waitForTimeout(300);
     });
 
-    // -------------------------------------------------------------------
-    // Sub-flow 4b — Save Copy with Link + GROK-19750 invariant.
-    // 4a's UI Save (mode=original, overwrite) drops the original's table
-    // reference on reopen — same GROK-19750 family the link/clone copies hit
-    // (verified 2026-06-05: the original failed to re-materialize on BOTH the
-    // step 1-4 and step 7 reopens after the overwrite, cascading into the
-    // link-copy capture + Step 5/5b skips). Rehydrate from fresh demog.csv so
-    // 4b runs the Save-Copy-with-Link invariant against a known-good baseline,
-    // mirroring the 4c/4d prep that already passes for this reason.
-    // -------------------------------------------------------------------
+    // Sub-flow 4b — Save Copy with Link + GROK-19750 invariant. 4a's overwrite drops the original's table
+    // reference on reopen, so rehydrate from fresh demog.csv to run 4b against a known-good baseline.
     await softStep('4b prep: rehydrate original (post-4a-overwrite GROK-19750 workaround)', async () => {
       ids.original = await rehydrateOriginal(page, names.original);
       expect(ids.original.projectId).toBeTruthy();
@@ -261,10 +192,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await reopenProjectById(page, ids.original!.projectId);
       const rc = await reopenedRowCount(page);
       const vc = await reopenedViewerCount(page);
-      // GROK-19750 regression on dev (verified 2026-05-08): Save-Copy-with-Link
-      // breaks the original's table reference — reopen yields rowCount=0 and
-      // viewers=0. Log the regression so it stays visible, but do not fail
-      // the test (the 4c/4d prep steps recreate the original anyway).
+      // GROK-19750: Save-Copy-with-Link breaks the original's reference (rowCount=0/viewers=0). Warn, don't fail.
       if (rc === 0)
         console.warn('GROK-19750 regression detected on dev: original `demog` rowCount=0 after Save-Copy-with-Link');
       if (vc === 0)
@@ -273,12 +201,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await page.waitForTimeout(300);
     });
 
-    // -------------------------------------------------------------------
-    // Sub-flow 4c — Save Copy with Clone.
-    // GROK-19750 workaround: 4b's Save-Copy-with-Link corrupts the original
-    // on dev (table reference drops on reopen). Recreate the original so
-    // 4c has a working baseline to add a viewer to and re-save from.
-    // -------------------------------------------------------------------
+    // Sub-flow 4c — Save Copy with Clone. GROK-19750 workaround: 4b corrupts the original, so recreate it.
     await softStep('4c prep: rehydrate original (GROK-19750 workaround)', async () => {
       ids.original = await rehydrateOriginal(page, names.original);
       expect(ids.original.projectId).toBeTruthy();
@@ -309,11 +232,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await page.waitForTimeout(300);
     });
 
-    // -------------------------------------------------------------------
-    // Sub-flow 4d — Save with Personal View Customizations.
-    // 4c saved a clone but didn't mutate the original; original *should* be
-    // intact. Defensive rehydrate just in case (cheap insurance).
-    // -------------------------------------------------------------------
+    // Sub-flow 4d — Save with Personal View Customizations. Defensive rehydrate (4c shouldn't have mutated the original).
     await softStep('4d prep: rehydrate original (defensive)', async () => {
       ids.original = await rehydrateOriginal(page, names.original);
       expect(ids.original.projectId).toBeTruthy();
@@ -322,19 +241,14 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
     await softStep('4d step 1-4: open original → addViewer Histogram → SAVE PVC → closeAll', async () => {
       await reopenProjectById(page, ids.original!.projectId);
       await addViewerSafely(page, 'Histogram');
-      // PVC mode on dev (verified 2026-05-08) updates the source project's
-      // layout/view metadata in place without creating a new project entity.
-      // Skip the new-id verification — the test's downstream reopen will
-      // re-open the same source project and pick up the persisted customizations.
+      // PVC mode updates the source project's layout in place without creating a new project entity.
       await saveCopy(page, {
         sourceName: names.original,
         mode: 'personal-view-customizations',
         name: names.pvcCopy,
         expectIdChange: false,
       });
-      // For consistency with link/clone variants, record the same source id
-      // (PVC has no separate project entity). Cleanup later iterates `ids`
-      // values, so deduping against `ids.original` prevents double-delete.
+      // PVC has no separate project entity — record the source id (deduped against ids.original for cleanup).
       ids.pvcCopy = {
         projectId: ids.original!.projectId,
         tableInfoId: ids.original!.tableInfoId,
@@ -353,16 +267,9 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await page.waitForTimeout(300);
     });
 
-    // -------------------------------------------------------------------
     // Step 5 — Re-share each variant via right-click → Share dialog (UI).
-    // -------------------------------------------------------------------
     await softStep('Step 5: re-share each of 3 variants via right-click → Share (UI)', async () => {
-      // Recipient: a real Group materialized via dapi.users.find(id) — same
-      // pattern as the prior spec (permissions.grant requires Group, not User;
-      // .group is not eagerly loaded by users.list). Defensive skip if no
-      // recipient with materialized group is available — matches Edit 10 G3
-      // acceptable-SR pattern (chain may run on dev with no second-user
-      // provisioned).
+      // Recipient: a real Group via dapi.users.find(id) (grant requires Group; .group not eager-loaded by list).
       const recipient = await evalJs<string | null>(page, `(async () => {
         const users = await grok.dapi.users.list({limit: 50});
         const me = (await grok.dapi.users.current()).login;
@@ -382,8 +289,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
 
       await page.goto('/projects');
       await page.locator('.grok-gallery-grid').waitFor({timeout: 30_000});
-      // Wait for tiles to actually render (gallery container appears before
-      // its child tile DOM is populated — observed 2026-05-08).
+      // Wait for tiles to render (gallery container appears before its child tile DOM is populated).
       await page.waitForFunction(() => {
         return document.querySelectorAll('.grok-gallery-grid [name^="div-"]').length > 0;
       }, undefined, {timeout: 30_000}).catch(() => {});
@@ -392,9 +298,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
         return tiles.map(t => t.getAttribute('name')).filter(n => /demog/i.test(n)).slice(0, 20);
       })()`);
 
-      // Use server-stored names (captured at save time) when available — the
-      // platform may PascalCase / dash-strip typed names. Fall back to typed
-      // names if a save earlier in the test failed.
+      // Use server-stored names when available (platform may PascalCase/dash-strip typed names).
       const variants = [
         {name: ids.linkCopy?.serverName ?? names.linkCopy, label: 'link'},
         {name: ids.cloneCopy?.serverName ?? names.cloneCopy, label: 'clone'},
@@ -409,39 +313,22 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
             accessLevel: 'View and use',
           });
           sharedCount++;
-          // Best-effort: dismiss any lingering Share dialogs from previous iter
-          // before running the next variant's right-click flow (avoids strict
-          // mode multi-match when the same project is shared sequentially).
+          // Dismiss lingering Share dialogs before the next variant (avoids strict-mode multi-match).
           await page.keyboard.press('Escape').catch(() => {});
           await page.waitForTimeout(500);
         } catch (e: any) {
           shareErrors.push(`${v.label} (${v.name}): ${(e?.message ?? String(e)).slice(0, 200)}`);
-          // Dismiss any half-opened Share dialog so the next variant doesn't
-          // hit a strict-mode multi-match.
           await page.keyboard.press('Escape').catch(() => {});
           await page.waitForTimeout(300);
         }
       }
-      // Step 5 covers the right-click → Share dialog UI. On dev this surface
-      // is flaky against newly-saved Save-Copy projects (Share dialog
-      // intermittently doesn't open after right-click → Share menu click;
-      // observed 2026-05-08). Demote to console.warn so the rest of the
-      // 4-sub-flow coverage isn't gated on this UI surface.
+      // Right-click → Share UI is flaky against newly-saved Save-Copy projects; warn rather than gate coverage.
       if (sharedCount === 0)
         console.warn(`Step 5: no variant could be shared (env flake). Tiles seen: ${JSON.stringify(targetTiles)}. Errors: ${shareErrors.join('; ')}`);
     });
 
-    // -------------------------------------------------------------------
-    // Step 5b — recipient-OPEN verification ("recipient open, run sequence"
-    // per projects-copy-clone.md). The UI Share above owns the share-dialog
-    // surface; this leg adds the second-user grant + recipient-side visibility
-    // round-trip via the canonical helper. MUST be the last action before the
-    // finally cleanup — the helper reloads the page during re-auth and restores
-    // the owner session before returning, so cleanup (delete) runs as owner.
-    // Uses the link-copy variant (it carries a materialized projectId +
-    // server-stored name). Preserves defensive skip: only assert when the
-    // recipient-open leg actually ran (recipientVisible !== null).
-    // -------------------------------------------------------------------
+    // Step 5b — recipient-OPEN verification via the second-user helper. MUST be last before cleanup (the
+    // helper reloads the page during re-auth and restores the owner session). Uses the link-copy variant.
     await softStep('Step 5b: recipient-open verification via shareWithSecondUserAndVerify', async () => {
       const projectId = ids.linkCopy?.projectId;
       const projectName = ids.linkCopy?.serverName ?? names.linkCopy;
@@ -459,15 +346,10 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
     });
 
   } finally {
-    // Cleanup all 4 produced projects + their tableInfos. Best-effort —
-    // deleteProjectWithCleanup swallows errors so a failure in any one delete
-    // doesn't mask the test's own failure mode.
+    // Best-effort cleanup of all 4 produced projects + their tableInfos.
     for (const v of Object.values(ids))
       if (v) await deleteProjectWithCleanup(page, v);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

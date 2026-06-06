@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -483,10 +484,5 @@ test('Pivot table tests', async ({ page }) => {
     if (result.finalTitle !== 'Inline Title') throw new Error('Inline title not set');
   });
 
-  if (stepErrors.length > 0) {
-    throw new Error(
-      'Some steps failed:\n' +
-      stepErrors.map(e => `  [${e.step}]: ${e.error}`).join('\n')
-    );
-  }
+  v.finishSpec();
 });

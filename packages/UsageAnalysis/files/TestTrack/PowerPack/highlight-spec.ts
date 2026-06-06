@@ -1,8 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func, powerpack.dialogs.prepare-add-column-call, powerpack.formula.is-formula-column, powerpack.dialogs]
---- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const CM_SELECTOR = '.d4-dialog .add-new-column-dialog-cm-div .cm-content';
 async function dispatchEditorReplace(
@@ -355,8 +353,5 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
   await page.evaluate(() => {
     try { (window as any).grok.shell.closeAll(); } catch (_) { /* best effort */ }
   }).catch(() => {});
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

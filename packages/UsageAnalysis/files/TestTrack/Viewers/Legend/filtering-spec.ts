@@ -1,17 +1,5 @@
-/* ---
-sub_features_covered: [legend.refresh.on-data-change, legend.column, legend.show-nulls, legend.extra-column]
-related_bugs: [GROK-17222]
-strategy: chained_tests
---- */
-// Paired scenario: filtering.md. Scenario 9 carries [coverage_type: edge].
-// Click-to-filter on Bar / Pie via real Playwright `locator.click({position})`;
-// Trellis via synthetic PointerEvent + MouseEvent on the parent `.d4-trellis-plot-cell` DIV
-// (inner-viewer canvas does NOT propagate to the Trellis filter handler, recon-validated
-// 2026-05-08). Scatter zoom-filter uses `sp.props.filter` (alt-drag canvas brittle).
-// Full prose moved to filtering.md.
-
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -20,13 +8,12 @@ test('Legend filtering', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page, {withFilterPanel: true});
+  await v.openTable(page, {withFilterPanel: true});
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
 
-  // Scenario 1, steps 1-2: numerical filter via Filter Panel.
   await softStep('Numerical filter: Average Mass > 400 (≈1588)', async () => {
     const count = await page.evaluate(async () => {
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
@@ -38,14 +25,12 @@ test('Legend filtering', async ({page}) => {
     expect(count).toBeLessThan(1700);
   });
 
-  // Scenario 1, steps 4-5: categorical filter on Stereo Category.
   await softStep('Categorical filter: R_ONE, S_UNKN only (legend=2)', async () => {
     await v.applyCategoricalFilter(page, 'Stereo Category', ['R_ONE', 'S_UNKN']);
     const {itemCount} = await v.readLegend(page, 'Scatter plot');
     expect(itemCount).toBe(2);
   });
 
-  // Scenario 1, steps 6-7: structure filter on Core (env-dependent — Chem optional).
   await softStep('Structure filter on Core — platform API available (env-dependent)', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
@@ -63,7 +48,6 @@ test('Legend filtering', async ({page}) => {
     expect(res.applied || res.chemMissing).toBe(true);
   });
 
-  // Scenario 2: save + re-apply layout — filter state survives round-trip.
   await softStep('Save + re-apply layout (filter state + ≥3s settle)', async () => {
     const res = await page.evaluate(async () => {
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
@@ -89,7 +73,6 @@ test('Legend filtering', async ({page}) => {
     expect(res.after).toBe(res.before);
   });
 
-  // Scenario 3 + 4: reset all filters, then in-viewer Scatter filter property.
   await softStep('Reset + in-viewer Scatter plot filter', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
@@ -103,7 +86,6 @@ test('Legend filtering', async ({page}) => {
     expect(res.filter).toContain('Stereo Category');
   });
 
-  // Scenario 5: compose Filter Panel filter on top of in-viewer filter.
   await softStep('Add Filter Panel filter Average Mass > 300 (composed)', async () => {
     const res = await page.evaluate(async () => {
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
@@ -116,9 +98,7 @@ test('Legend filtering', async ({page}) => {
     expect(res.legendItems).toBe(2);
   });
 
-  // Scenario 6.1-6.2: Scatter zoom-filter via sp.props.filter numeric range.
-  // In-viewer filter on numerical column may collapse the legend block entirely
-  // when no categorical values remain in the visible subset. Non-increasing only.
+  // In-viewer numeric filter may collapse the legend block when no categories remain visible.
   await softStep('Scatter plot zoom-filter via sp.props.filter range expression', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -139,22 +119,18 @@ test('Legend filtering', async ({page}) => {
     expect(res.afterItems).toBeLessThanOrEqual(res.beforeItems);
   });
 
-  // Scenario 6.3-6.4: Bar chart click-to-filter narrows to one category.
   await softStep('Bar chart canvas click-to-filter narrows to one category', async () => {
     const result = await v.clickCanvasFilter(page, {viewerType: 'Bar chart', column: 'Stereo Category'});
     expect(result.survivors).toBe(1);
     expect(result.totalFiltered).toBeGreaterThan(0);
   });
 
-  // Scenario 6.5-6.6: Pie chart click-to-filter narrows the dataset.
   await softStep('Pie chart canvas click-to-filter narrows the dataset', async () => {
     const result = await v.clickCanvasFilter(page, {viewerType: 'Pie chart', column: 'Stereo Category'});
     expect(result.totalFiltered).toBeGreaterThan(0);
   });
 
-  // Scenario 6.7-6.8: Trellis plot click-to-filter narrows the dataset.
-  // Inner-viewer canvas does NOT propagate to the Trellis filter handler — must
-  // dispatch synthetic PointerEvent + MouseEvent on the parent `.d4-trellis-plot-cell` DIV.
+  // Inner-viewer canvas doesn't propagate to the Trellis filter handler — dispatch on the cell DIV.
   await softStep('Trellis plot cell click-to-filter narrows the dataset', async () => {
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -184,9 +160,7 @@ test('Legend filtering', async ({page}) => {
     expect(result.after).not.toBe(result.before);
   });
 
-  // Scenario 7: layout persistence — click-to-filter state survives save+reload.
-  // Platform observation 2026-05-08: click-to-filter state NOT preserved across
-  // layout save/load. Relaxed to round-trip-mechanics until platform persists it.
+  // Platform doesn't persist click-to-filter state across layout save/load — assert round-trip mechanics only.
   await softStep('Layout persistence: click-to-filter state survives save+reload', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -215,7 +189,6 @@ test('Legend filtering', async ({page}) => {
     expect(res.viewersAfter).toBeGreaterThan(1);
   });
 
-  // Scenario 8: Scatter Row Source cycles — legend reflects each row source.
   await softStep('Scatter plot Row Source cycles', async () => {
     const res = await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
@@ -235,8 +208,7 @@ test('Legend filtering', async ({page}) => {
     expect(res.Filtered).toBeGreaterThan(0);
   });
 
-  // Scenario 9 [coverage_type: edge]: Bar chart Stack with includeNulls=false —
-  // legend should list ONLY stack categories still drawn (no ghost entries).
+  // Bar chart Stack with includeNulls=false — legend lists only still-drawn categories.
   await softStep('Bar chart stack edge case — includeNulls=false', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
@@ -261,7 +233,6 @@ test('Legend filtering', async ({page}) => {
     expect(res.legendItems).toBeLessThanOrEqual(2);
   });
 
-  // Cleanup: drop saved layouts and clear views before next test.
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([id1, id2]) => {
       for (const id of [id1, id2]) {

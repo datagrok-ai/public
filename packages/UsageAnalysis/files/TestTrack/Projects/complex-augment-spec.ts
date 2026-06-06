@@ -1,11 +1,6 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.add-relation, projects.tree.add-entity-node]
-generated_from: complex-augment.md (Phase B canonical openers)
---- */
-// JS API addRelation primary path; UI drag-drop deferred per
-// b2-2026-05-03-drag-drop-ui-only-reclassification (covered by complex-ui.md).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
@@ -39,17 +34,13 @@ test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page
         const p = await grok.dapi.projects.find('${saved.projectId}');
         const skipped = [];
         let added = 0;
-        // dapi.files.list requires trailing slash on the namespace path
-        // (verified live 2026-05-05); without it errors with handlerPath/null url.
+        // dapi.files.list requires trailing slash on the namespace path, else handlerPath/null url error.
         const list = await grok.dapi.files.list('System:DemoFiles/');
         for (const fn of ${JSON.stringify(additional)}) {
           try {
             const file = (list || []).find(f => f.name === fn);
             if (!file) { skipped.push(fn + ': not found'); continue; }
-            // Register the FileInfo as an entity (gets a UUID), then link
-            // to the project via the instance addLink method. addRelation
-            // does NOT exist on dapi.projects (verified live 2026-05-05);
-            // the canonical Link mode API is project.addLink(entity).
+            // Register the FileInfo as an entity (gets a UUID), then link via project.addLink (addRelation doesn't exist).
             const saved = await file.save();
             p.addLink(saved);
             added++;
@@ -87,8 +78,5 @@ test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

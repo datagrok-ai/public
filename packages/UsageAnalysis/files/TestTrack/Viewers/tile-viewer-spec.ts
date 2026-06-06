@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -319,6 +320,5 @@ test('Tile Viewer tests', async ({page}) => {
     });
   });
 
-  if (stepErrors.length > 0)
-    throw new Error('Steps failed:\n' + stepErrors.map(e => `  ${e.step}: ${e.error}`).join('\n'));
+  v.finishSpec();
 });

@@ -1,36 +1,8 @@
-/* ---
-sub_features_covered: [chem.analyze.chemical-space, chem.analyze.chemical-space.top-menu, chem.analyze.chemical-space.transform, chem.analyze.chemical-space.editor, chem.analyze.chemical-space.embeddings]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: integration (per chain YAML scenario-chains/chem.yaml rev 2)
-//   sub_features_covered: [chem.analyze.chemical-space, .top-menu, .transform, .editor, .embeddings]
-//   ui_coverage_responsibility: [chem-add-chemical-space, chem-chemical-space-editor-dialog,
-//     chem-chemical-space-method-selector, chem-chemical-space-cluster-mcs-toggle]
-//     (delegated_to: null)
-//   related_bugs: [] (GROK-18407 owned by chem-grok-18407-spec.ts parallel-coverage)
-//
-// SCOPE — Multi-format walk per scenario chemical-space.md (rev 2):
-// D1: smiles.csv (Variant A — canonical SMILES)
-// D2: mol1K.sdf (Variant B — V2000 molblock)
-// D3: ApprovedDrugs2015.sdf (Variant C — V3000 molblock)
-// Each dataset × 7 steps:
-//   1. Open dataset + wait for Molecule semType
-//   2. Open Chem → Analyze → Chemical Space... dialog
-//   3. OK (defaults) → verify Scatter plot + Embed_X/Y cols tagged `.%chem-space-embedding-col`
-//   4. Re-open dialog
-//   5. Change at least one param (Method UMAP→t-SNE; for D3 also toggle Cluster MCS)
-//   6. OK (custom) → verify fresh Embed_X_N+1 cols
-//   7. Close active view
-//
-// Selectors per chem.md § Chemical Space dialog (rev 2026-05-12 with MCP recon):
-//   [name="input-Method"], [name="input-Cluster-MCS"], [name="button-OK"]
-//
-// Paired scenario: chemical-space.md
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string) {
   await softStep(`[${label}] Open ${datasetPath} + wait for Chem menu (Molecule semType)`, async () => {
@@ -50,8 +22,6 @@ async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetP
       }
     }, {path: datasetPath, isSdf});
     await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
-    // Chem top-menu registers only after Molecule semType detected on the
-    // active table — wait for [name="div-Chem"] presence (15s per pattern).
     await waitForChemMenu(page);
   });
 }
@@ -146,14 +116,11 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   test.setTimeout(900_000); // 15 min for 3 × 7-step walks on cold session
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000); // brief settle after login per Chem-menu warmup pattern
+  await page.waitForTimeout(3000);
 
   await runChemicalSpaceWalk(page, 'D1 smiles-50', 'System:AppData/Chem/tests/smiles-50.csv', 'method');
   await runChemicalSpaceWalk(page, 'D2 molV2000', 'System:AppData/Chem/mol1K.sdf', 'method');
   await runChemicalSpaceWalk(page, 'D3 molV3000', 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf', 'cluster-mcs');
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

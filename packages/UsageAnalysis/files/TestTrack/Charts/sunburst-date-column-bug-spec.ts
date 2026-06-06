@@ -1,15 +1,3 @@
-/* ---
-sub_features_covered: [charts.sunburst, charts.echart-base]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [charts.sunburst, charts.echart-base]
-//   ui_coverage_responsibility: []
-//   related_bugs: [github-2954]
-//   produced_from: atlas-driven
-// Bug-library cross-reference: github-2954 — Sunburst hierarchy with date
-// column raises NullError in toForest/toTree. Fix in Charts 1.21.0.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -47,7 +35,6 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
       await new Promise((r) => setTimeout(r, 3000));
       const types: string[] = [];
       for (const v of tv.viewers) types.push(v.type);
-      // Find date columns
       const dateColumns: string[] = [];
       for (const c of df.columns) {
         const t = String(c.type || '').toLowerCase();
@@ -56,7 +43,6 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
       return {types, dateColumns};
     }, aePath);
     expect(result.types).toContain('Sunburst');
-    // ae.csv should have date-time columns (AESTDTC/AEENDTC/AEDTC)
     expect(result.dateColumns.length).toBeGreaterThan(0);
   });
 
@@ -68,7 +54,6 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
       let sunburst: any = null;
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {ok: false};
-      // Find a date column to use
       const df = tv.dataFrame;
       let dateCol: string | null = null;
       for (const c of df.columns) {
@@ -98,10 +83,8 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
     expect(result.ok).toBe(true);
     // github-2954 invariant: setOptions does NOT throw with date column.
     expect(result.setOptionsThrew).toBe(false);
-    // Visual stability: viewer remains rendered (not white-screen)
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);
-    // Console errors during the date-column hierarchy: must be empty.
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
   });

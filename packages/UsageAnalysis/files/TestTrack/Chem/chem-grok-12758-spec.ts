@@ -1,38 +1,12 @@
-/* ---
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.viewer, chem.analyze.scaffold-tree.filter, chem.search.substructure, chem.search.substructure.api, chem.sketcher.cell-editor]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.analyze.scaffold-tree, .viewer, .filter, chem.search.substructure, .api, chem.sketcher.cell-editor]
-//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice
-//   related_bugs: [GROK-12758]
-//
-// Bug invariant (regression-lock per references/bug-library/chem.yaml :: GROK-12758):
-//   Opening a scaffold tree node in the Sketcher (per-node Edit pencil icon),
-//   dismissing via CANCEL, then clicking the per-node filter checkbox on the
-//   SAME node MUST NOT corrupt substructure-search state. No console errors
-//   matching /Search pattern cannot be set|searchSubstructure/i; df.filter
-//   applies cleanly; df.selection untouched.
-//   Status: regression-risk per bug-library; spec may currently FAIL → mark
-//   test.fixme() until fixed.
-//
-// Paired scenario: chem-grok-12758.md
+// GROK-12758: Scaffold Tree node Edit→CANCEL then per-node filter checkbox must not corrupt substructure-search state.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt substructure-search state', async ({page}) => {
   test.setTimeout(180_000);
-
-  // Round 2 (2026-05-12T17:50Z) — JS API substitution authorized by user.
-  // Replace the wand-click bootstrap (which never fires generateTree() in
-  // cold Playwright sessions) with direct `viewer.generateTree()` invocation
-  // per chem.md "JS API alternatives" section. The bug invariant (Edit
-  // dialog CANCEL → filter checkbox does not corrupt search state) is
-  // unchanged — only the tree-population mechanism shifts from UI to API.
-  // SR-PATTERN cited in test verdict: tree-bootstrap-jsapi-substitution.
 
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);
@@ -82,12 +56,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
     await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 10000});
   });
 
-  await softStep('Generate scaffold tree via viewer.generateTree() JS API (SR-PATTERN tree-bootstrap-jsapi-substitution)', async () => {
-    // JS API substitution authorized 2026-05-12T17:50Z. Per chem.md
-    // "JS API alternatives" — viewer.generateTree() is the canonical
-    // bootstrap path that the magic-wand icon calls internally. Cold
-    // Playwright session reliably executes the JS API but not the wand
-    // click handler binding to the molecule-column.
+  await softStep('Generate scaffold tree via viewer.generateTree() JS API', async () => {
     const ok = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       const viewer: any = Array.from(tv.viewers).find((v: any) => /Scaffold Tree/i.test(v.type || ''));
@@ -97,7 +66,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
           await viewer.generateTree();
           return {ok: true, method: 'viewer.generateTree()'};
         }
-        // Fallback: function call
         await (window as any).grok.functions.call('Chem:GenerateScaffoldTree', {table: tv.dataFrame});
         return {ok: true, method: 'Chem:GenerateScaffoldTree'};
       } catch (e) {
@@ -147,7 +115,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
     });
     expect((opened as any).ok, `Edit-scaffold click failed: ${JSON.stringify(opened)}`).toBe(true);
     await page.locator('.d4-dialog').waitFor({timeout: 8000});
-    // Confirm dialog title — "Edit Scaffold..." per chem.md recon 2026-05-12
     const dialogTitle = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog');
       const title = dlg?.querySelector('.d4-dialog-header, .d4-dialog-title');
@@ -177,7 +144,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       return {ok: true, beforeChecked, afterChecked: checkbox.checked};
     });
     expect((clicked as any).ok, `Checkbox click failed: ${JSON.stringify(clicked)}`).toBe(true);
-    // Settle for filter application (substructure search runs async; can be slow on cold session).
     await page.waitForTimeout(6000);
   });
 
@@ -214,8 +180,5 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

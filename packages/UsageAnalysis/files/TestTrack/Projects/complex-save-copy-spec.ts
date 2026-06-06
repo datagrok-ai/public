@@ -1,9 +1,6 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.api.files.sync, projects.add-relation]
-generated_from: complex-save-copy.md (Phase B canonical openers)
---- */
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
@@ -72,8 +69,5 @@ test('Projects / Complex Save Copy: round-trip Save Copy with sync OFF/ON', asyn
       await deleteProjectWithCleanup(page, ids);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

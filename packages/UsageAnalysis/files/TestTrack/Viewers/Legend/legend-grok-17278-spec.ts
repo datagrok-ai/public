@@ -1,12 +1,4 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.column]
-related_bugs: [GROK-17278]
-coverage_type: regression
-bug_url: https://reddata.atlassian.net/browse/GROK-17278
---- */
-// Fix invariant: color customizations made through the legend serialize into BOTH
-// layout file and project state, restored exactly on reopen. Full prose moved to
-// legend-grok-17278.md.
+// GROK-17278: legend color customizations serialize into both layout and project state.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
@@ -19,9 +11,8 @@ test('GROK-17278: line chart legend color persists across layout + project round
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
-  // Steps 2-3: add Line chart + set Split = Stereo Category.
   await softStep('Steps 2-3: add Line chart, Split = Stereo Category', async () => {
     const items = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -36,8 +27,6 @@ test('GROK-17278: line chart legend color persists across layout + project round
     expect(items).toBeGreaterThan(0);
   });
 
-  // Step 4: change colour for one legend category (R_ONE → blue) via legend picker.
-  // Line chart container name varies across builds — helper tries both forms.
   await softStep('Step 4: change R_ONE colour via legend picker (Line chart)', async () => {
     await v.changeLegendItemColor(page, {
       viewerType: 'Line chart',
@@ -48,7 +37,6 @@ test('GROK-17278: line chart legend color persists across layout + project round
     });
   });
 
-  // Step 5 + Step 9 invariant: save + re-apply layout — colour persists.
   let layoutId: string | null = null;
   await softStep('Step 5 + Step 9 invariant: save + re-apply layout, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
@@ -83,7 +71,6 @@ test('GROK-17278: line chart legend color persists across layout + project round
     }
   });
 
-  // Steps 6-8: project save + closeAll + reopen. FK graceful-degrade.
   let projectId: string | null = null;
   await softStep('Steps 6-8 + Step 8 invariant: project save+closeAll+reopen, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
@@ -125,7 +112,6 @@ test('GROK-17278: line chart legend color persists across layout + project round
     }
   });
 
-  // Cleanup: drop layout/project + close all views.
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([lid, pid]: [string | null, string | null]) => {
       if (lid) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}

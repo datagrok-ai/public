@@ -1,14 +1,6 @@
-/* ---
-sub_features_covered: [bio.analyze.msa, bio.analyze.msa.dialog, bio.analyze.msa.align-sequences, bio.rendering.column-header, bio.detector]
---- */
-//   related_bugs: [GROK-18474, GROK-15176]
-//   GROK-18474 — MSA column-header click handler crashes on FASTA-aligned data;
-//     is owned by bug_focused_candidates[GROK-18474] (atlas
-//   GROK-15176 — Bio's to-atomic-level produces molfiles with invalid isotope;
-//     convert.md:Step 2 — owned by bug_focused_candidates[GROK-15176].
-// failure_keys=[]): hypothesis category = test-bug (cold-start race in
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio MSA on FASTA', async ({page}) => {
   test.setTimeout(600_000);
@@ -36,7 +28,6 @@ test('Bio MSA on FASTA', async ({page}) => {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise((r) => setTimeout(r, 200));
     }
-    // restores the deterministic top-menu reachability the scenario
     await new Promise((r) => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
@@ -80,7 +71,6 @@ test('Bio MSA on FASTA', async ({page}) => {
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
       return cols.some((c: any) => c.name === 'Clusters' && c.type === 'int');
     }, null, {timeout: 60000});
-    // B-STAB-01 stabilization (test-bug fix, retry round 1, hypothesis_retry
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const c: any = df.col('Clusters');
@@ -152,7 +142,6 @@ test('Bio MSA on FASTA', async ({page}) => {
     });
     expect(displayed).toContain('Clusters');
   });
-  // Round-1 hypothesis (test-bug): the prior spec used `.first().click()`,
   await softStep('Alignment parameters button toggles input parameters', async () => {
     const before: boolean = await page.evaluate(() => {
       const dlg = document.querySelector('[name="dialog-MSA"]')!;
@@ -254,8 +243,5 @@ test('Bio MSA on FASTA', async ({page}) => {
     expect(result.hasGaps).toBe(true);
     expect(result.clusterCount).toBeGreaterThan(1);
   });
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

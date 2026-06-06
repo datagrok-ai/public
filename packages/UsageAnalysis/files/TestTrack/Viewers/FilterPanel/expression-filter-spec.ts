@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -10,24 +11,7 @@ test('Filter panel — Expression filter', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  // Phase 3: Open filters
-  await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
+  await v.openTable(page, {path: datasetPath, withFilterPanel: true});
 
   await softStep('Add expression filter with 5 rules', async () => {
     const count = await page.evaluate(async () => {
@@ -146,8 +130,5 @@ test('Filter panel — Expression filter', async ({page}) => {
     expect(result.gridValues).toEqual([false, false, false, false, true, true]);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

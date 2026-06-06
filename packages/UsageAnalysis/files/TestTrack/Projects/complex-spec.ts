@@ -1,14 +1,7 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.shell.open, projects.add-relation, projects.shell.share-via-context-menu]
-generated_from: complex.md (Phase B canonical openers)
---- */
-// Thin smoke for complex.md. The full 13-step scope is realized as 3
-// satellite specs (complex-derived-tables-spec.ts, complex-rename-spec.ts,
-// complex-share-second-user-spec.ts). This spec smokes the canonical save +
-// rename + share entry points end-to-end on a single file source so the
-// full chain has *some* witness even if the satellites don't run.
+// Thin smoke: save + rename + share on a single file source (full scope in satellite specs).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup, shareWithSecondUserAndVerify} from '../helpers/projects';
@@ -44,7 +37,7 @@ test('Projects / Complex (smoke): save, rename, share', async ({page}) => {
         if (!p) return {ok: false, persistedName: null};
         p.name = '${renamed}';
         await grok.dapi.projects.save(p);
-        // Verify by id (filter-by-name lags after rename — see helpers/projects.ts:rename).
+        // Verify by id (filter-by-name lags after rename).
         const verify = await grok.dapi.projects.find('${saved.projectId}');
         return {ok: verify?.name === '${renamed}', persistedName: verify?.name ?? null};
       })()`);
@@ -52,10 +45,7 @@ test('Projects / Complex (smoke): save, rename, share', async ({page}) => {
       expect(r.persistedName).toBe(renamed);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for
-    // second-user re-auth, so nothing UI/JS-state-dependent may follow it.
-    // The project was renamed to `renamed` in the prior step, so the
-    // recipient-side visibility lookup uses that name (id grant is unaffected).
+    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 12 equiv: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});
@@ -70,8 +60,5 @@ test('Projects / Complex (smoke): save, rename, share', async ({page}) => {
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

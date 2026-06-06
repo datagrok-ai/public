@@ -1,11 +1,5 @@
-/* ---
-sub_features_covered: [legend.show-main-item-icons, legend.column, legend.item.marker-picker, legend.refresh.on-data-change]
-related_bugs: [GROK-19083]
---- */
-// Paired scenario: structure-rendering.md. Full prose moved there.
-
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -16,7 +10,7 @@ test('Legend structure rendering', async ({page}) => {
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
-  await v.openTableForLegend(page);
+  await v.openTable(page);
 
   await softStep('Add 7 viewers, set legend column to Core, Always visible', async () => {
     await v.addLegendViewers(page, {

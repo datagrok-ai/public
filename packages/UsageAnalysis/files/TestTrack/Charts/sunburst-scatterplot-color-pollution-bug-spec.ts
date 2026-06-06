@@ -1,16 +1,3 @@
-/* ---
-sub_features_covered: [charts.sunburst, charts.sunburst.inherit-from-grid]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [charts.sunburst, charts.sunburst.inherit-from-grid]
-//   ui_coverage_responsibility: []
-//   related_bugs: [github-3412]
-//   produced_from: atlas-driven
-// Bug-library cross-reference: github-3412 — Sunburst x Scatterplot color
-// pollution. Fix in Charts 1.25. Real DOM color-editor popup driving is
-// selector-pending; programmatic substitute via dataFrame.col.meta.colors.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -46,7 +33,6 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
-      // Find first string column with multiple distinct values (cardinality > 1)
       const candidates: {name: string, distinct: number}[] = [];
       for (const c of df.columns) {
         const t = String(c.type || '').toLowerCase();
@@ -72,12 +58,10 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
     const result = await page.evaluate(async (col) => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
-      // Sunburst hierarchy
       const sunburst = tv.addViewer('Sunburst');
       await new Promise((r) => setTimeout(r, 3000));
       try { sunburst.setOptions({hierarchyColumnNames: [col]}); } catch (e) {}
       await new Promise((r) => setTimeout(r, 1500));
-      // Scatterplot color
       const scatterplot = tv.addViewer('Scatter plot');
       await new Promise((r) => setTimeout(r, 1500));
       try { scatterplot.setOptions({colorColumnName: col}); } catch (e) {}
@@ -105,26 +89,18 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
       const colObj = df.col(col);
-      // Programmatic color-state mutation: invalidate color-meta if API supports
       let mutationApplied = false;
       try {
-        // Datagrok column meta for categorical colors lives on column.meta.colors
-        // OR via grok.shell color category overrides. The bug is about shared
-        // storage corruption; mutating col-level meta exercises the invariant.
         if (colObj.meta && typeof colObj.meta.colors !== 'undefined') {
-          // Attempt no-op or small mutation
           const before = colObj.meta.colors;
           mutationApplied = true;
         }
       } catch (e) {}
-      // Even if mutation API isn't directly accessible, verify Sunburst's
-      // color binding survives Scatterplot interaction (the broader contract).
       let sunburst: any = null, scatterplot: any = null;
       for (const v of tv.viewers) {
         if (v.type === 'Sunburst') sunburst = v;
         if (v.type === 'Scatter plot') scatterplot = v;
       }
-      // Re-read Sunburst's binding after Scatterplot exists
       let sbHierarchyAfter: any = null;
       try { sbHierarchyAfter = sunburst ? sunburst.props.get('hierarchyColumnNames') : null; } catch (e) {}
       const root = sunburst ? sunburst.root as HTMLElement : null;
@@ -156,9 +132,8 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
       let sunburst: any = null;
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {ok: false};
-      try { sunburst.detach(); } catch (e) { /* may not be available */ }
+      try { sunburst.detach(); } catch (e) {}
       await new Promise((r) => setTimeout(r, 1000));
-      // Re-add
       const sunburst2 = tv.addViewer('Sunburst');
       await new Promise((r) => setTimeout(r, 3000));
       try { sunburst2.setOptions({hierarchyColumnNames: [col]}); } catch (e) {}

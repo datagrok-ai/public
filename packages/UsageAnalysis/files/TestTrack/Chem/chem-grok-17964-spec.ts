@@ -1,38 +1,13 @@
-/* ---
-sub_features_covered: [chem.notation, chem.notation.action, chem.notation.convert-mol]
---- */
-// Frontmatter extraction (Section 1 of automator-prompt):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: [chem.notation, .action, .convert-mol]
-//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice, no specialty flow ownership
-//   related_bugs: [GROK-17964]
-//
-// Bug invariant (regression-lock per references/bug-library/chem.yaml :: GROK-17964):
-//   The `Convert Notation...` action in the column-level Context Panel is
-//   registered EXACTLY ONCE per applicable molecule column. The registration
-//   count remains 1 across the action lifecycle — cancellation, successful
-//   completion (which creates a new molecule column), repeated invocations.
-//   Duplicate registration after a handler invocation is the GROK-17964 surface.
-// Parallel-coverage with info-panels.md (Context Panel walk, coverage_type=regression)
-// and sketcher.md (notation round-trip via clipboard, coverage_type=regression).
-//
-// Paired scenario: chem-grok-17964.md
+// GROK-17964: Convert Notation column-action must register exactly once across cancel/commit/repeat invocations.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
-// storageState consumes auth.json captured via `npx playwright codegen --save-storage=auth.json`
-// (cycle bootstrap 2026-05-11; DATAGROK_LOGIN/PASSWORD env not set in this session).
-// Future cycles set credentials in env and remove the storageState override.
-test.use({...specTestOptions, storageState: 'auth.json'});
+test.use(specTestOptions);
 
 test('Chem: GROK-17964 Convert Notation column-action registration is exactly-once', async ({page}) => {
   test.setTimeout(180_000);
 
-  // GROK-17964 is status: fixed per bug-library. Spec exercises the post-fix
-  // invariant as a regression-lock. Chem package autostart fires AS A
-  // SIDE-EFFECT of opening a dataset with a Molecule column — wait 10s
-  // AFTER addTableView (not before).
   await loginToDatagrok(page);
 
   await softStep('Setup: close all + selenium flags', async () => {
@@ -59,9 +34,6 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
   });
 
   await softStep('Find molecule column + focus column on Context Panel + expand panes', async () => {
-    // Use grok.shell.t (active table) instead of cached __df — semType detection
-    // may complete on the shell-tracked df ref even when the __df reference was
-    // captured earlier without the detector having fired yet.
     const result = await page.evaluate(async () => {
       for (let i = 0; i < 30; i++) {
         const df = grok.shell.t;
@@ -81,9 +53,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected on smiles-50.csv after 30s poll. cols=${JSON.stringify(result.allCols)}`);
     await page.waitForTimeout(2000);
-    // Expand all accordion panes — chem action labels render only when the
-    // containing Actions pane is expanded. In fresh Playwright sessions panes
-    // default to collapsed; MCP warm sessions have them pre-expanded.
+    // Expand all accordion panes — chem action labels render only when the Actions pane is expanded.
     await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
       for (const p of panes) {
@@ -139,7 +109,6 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
 
   await softStep('Successful completion path: Convert Notation → molblock, OK, wait for completion', async () => {
     await page.evaluate(async () => {
-      // Defensive: ensure no stale dialog open before reopening
       const stale = document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement | null;
       if (stale && (stale.closest('.d4-dialog') as HTMLElement | null)?.offsetParent !== null) stale.click();
       await new Promise(r => setTimeout(r, 500));
@@ -151,13 +120,11 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
       const dlg = document.querySelector('.d4-dialog');
       const targetSelect = dlg?.querySelector('[name="input-Target-Notation"]') as HTMLSelectElement;
       if (targetSelect) {
-        // Valid target options (MCP-validated 2026-05-11): smiles, cxsmiles, smarts, cxsmarts, molblock, v3Kmolblock
         targetSelect.value = 'molblock';
         targetSelect.dispatchEvent(new Event('change', {bubbles: true}));
       }
     });
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    // Wait for conversion to complete (smiles → molblock on 50 rows).
     await page.waitForTimeout(15_000);
   });
 
@@ -180,7 +147,6 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
   });
 
   await softStep('Multi-invocation hardening: open + CANCEL twice on original column, recount', async () => {
-    // Refocus original column + verify link is present before starting
     const ready = await page.evaluate(async () => {
       const molColName = (window as any).__grok17964_origMolCol;
       grok.shell.o = grok.shell.t.col(molColName);
@@ -220,10 +186,6 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
   });
 
   await softStep('Global final assertion: only one panel-attached Convert Notation entry visible', async () => {
-    // Active Context Panel renders a single column's Actions pane; per-column
-    // entries do not stack. Hidden `.d4-menu-item-label` "Convert Notation..." in
-    // the menu fragment (rect.w === 0) is excluded by the `label.d4-link-action`
-    // selector. Global count = panel-attached count.
     const globalCount = await page.evaluate(() => {
       const entries = Array.from(document.querySelectorAll('label.d4-link-action'))
         .filter(l => (l.textContent ?? '').trim().startsWith('Convert Notation'));
@@ -237,8 +199,5 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

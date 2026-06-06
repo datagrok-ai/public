@@ -1,20 +1,8 @@
-/* ---
-sub_features_covered:
-  - bio.analyze.activity-cliffs
-  - bio.analyze.activity-cliffs.top-menu
-  - bio.analyze.activity-cliffs.editor
-  - bio.analyze.activity-cliffs.transform
-  - bio.analyze.activity-cliffs.init
---- */
-//   related_bugs: [GROK-19150, GROK-19928, GROK-16111] (cross-cutting invariants
-//     delegated to chain bug_focused_candidates: bio-grok-19150-spec.ts /
-//     bio-grok-19928-spec.ts; GROK-16111 empty-input is atlas-cross-cutting
-// SCOPE_REDUCTIONS honoured from scenario frontmatter:
-//   SR-01 (A-CONT-01) — "arbitrary Similarity/Method edit set" not defined in
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
+import * as bio from '../helpers/bio';
 test.use(specTestOptions);
-// Round-1 retry test-bug fix (cycle 2026-06-01-bio-migrate-02): the original
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/samples/FASTA.csv'},
   {name: 'HELM', path: 'System:AppData/Bio/samples/HELM.csv'},
@@ -25,8 +13,6 @@ for (const ds of datasets) {
     test.setTimeout(600_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
-    // Setup phase: open dataset, wait for Macromolecule semType detection +
-    // Bio package init (cell renderer + filter registration).
     await page.evaluate(async (path) => {
       document.body.classList.add('selenium');
       grok.shell.settings.showFiltersIconsConstantly = true;
@@ -49,21 +35,6 @@ for (const ds of datasets) {
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-    // Bio top-menu + init-completion readiness (cycle-2 retry pattern from
-    // analyze-spec.ts — closes the analogous MSA cold-boot flake where the
-    // first softStep dialog never materialized within 15s on a truly-cold
-    // Bio package init).
-    //
-    // Layer 1 — DOM-level top-menu visibility: the Bio top-menu entry appears
-    // only once the Bio package functions are registered against the active
-    // Macromolecule TableView.
-    //
-    // Layer 2 — init-order serialization probe: per bio.md "Init-order
-    // invariant" (line 566), initBio registers _package.completeInit after
-    // building the SeqHelper / MonomerLibManager singletons; the runtime
-    // serializes grok.functions.call('Bio:<...>') after init. Awaiting
-    // Bio:getSeqHelper is a deterministic "Bio package ready" probe — it
-    // blocks until init completes, not error.
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
@@ -72,10 +43,6 @@ for (const ds of datasets) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-    // Per-leaf function-registration probe (cycle-2 retry refinement). The
-    // init probe above guarantees init COMPLETION; it does NOT guarantee that
-    // the Bio:activityCliffsTopMenu leaf is findable in the function registry
-    // yet. Bounded poll until findable, with a short defensive settle if not.
     await page.evaluate(async () => {
       const candidates = ['Bio:activityCliffsTopMenu', 'Bio:activityCliffs', 'Bio:macromoleculeActivityCliffs'];
       const findAny = (names: string[]): boolean => {
@@ -91,57 +58,18 @@ for (const ds of datasets) {
         if (findAny(candidates)) return;
         await new Promise((r) => setTimeout(r, 300));
       }
-      // Defensive settle if no candidate name resolves (function-rename across
-      // Bio versions) — the 60s dialog tolerance below is the defensive ceiling.
       await new Promise((r) => setTimeout(r, 1500));
     });
     await page.waitForTimeout(2000);
-    // Scenario 1, Step 2 — Open Bio > Analyze > Activity Cliffs... (defaults run).
-    // Atlas: bio.analyze.activity-cliffs.top-menu (package.ts#L537),
-    // bio.analyze.activity-cliffs.editor (SeqActivityCliffsEditor — package.ts#L268).
-    //
-    // Click pattern per bio.md ("Click pattern (MCP-validated, mirrors chem.md)"):
-    // click [name="div-Bio"] → 400ms → mouseover [name="div-Bio---Analyze"] →
-    // 300ms → click leaf. Hover-not-click on the group is required to surface
-    // the leaves. Top-menu submenu opening is hover-driven; CDP synthetic
-    // clicks alone do not trigger the Dart onMouseEnter listener that calls
-    // _showSubMenu (per the prior run-log retrospective).
     await softStep(`${ds.name}: Open Bio > Analyze > Activity Cliffs (defaults)`, async () => {
-      // Source text says "Bio > Search > Sequence Activity Cliffs" but atlas
-      // and live platform have it at "Bio > Analyze > Activity Cliffs..."
-      // (the function is internally named "Sequence Activity Cliffs"). The
-      // migrated scenario uses the atlas-canonical path.
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Analyze"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 300));
-        (document.querySelector('[name="div-Bio---Analyze---Activity-Cliffs..."]') as HTMLElement).click();
-      });
-      // Cold-start tolerance: 60s tolerates the empirical cold ceiling
-      // (analyze-spec.ts cycle-2 evidence; per bio.md the Bio package
-      // function dispatch can take >15s on a first-ever cold MSA boot).
+      await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Activity Cliffs');
     });
-    // Scenario 1, Step 3 — Click OK to run with default parameters.
-    // Atlas: bio.analyze.activity-cliffs.transform (seqActivityCliffsTransform
-    // — package.ts#L658). Stamps seqActivityCliffsParams tag on the table;
-    // embedding X/Y columns + SALI scoring column appended (per bio.md
-    // post-OK invariants line 157).
-    //
-    // Scenario 1, Step 4 — Verify ScatterPlot viewer titled "Activity cliffs"
-    // docks (atlas bio.analyze.activity-cliffs.init,
-    // seqActivityCliffsInitFunction — package.ts#L625) and embedding columns
-    // are appended.
     await softStep(`${ds.name}: Run with default parameters — ScatterPlot + embeddings appended`, async () => {
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
-      // Compound invariant: column count grows (embedding X/Y + SALI) AND a
-      // Scatter plot viewer mounts on the active TableView. The 240s budget
-      // tolerates the embedding compute on a cold first-run boot.
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base &&
           Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
@@ -154,46 +82,19 @@ for (const ds of datasets) {
       }));
       expect(result.hasScatter).toBe(true);
       expect(result.scatterCount).toBe(1);
-      // Tag is a transform-side invariant per bio.md (line 157, "atlas
-      // bio.analyze.activity-cliffs.transform writes the tag").
       expect(result.hasParamsTag).toBe(true);
     });
-    // Close the scatter plot from the first run so the second run's
-    // structural invariant (distinct viewer mount) is clearly observable.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-    // Scenario 2, Step 5 — Re-open Bio > Analyze > Activity Cliffs.
-    // Editor input re-binding contract (bio.analyze.activity-cliffs.editor).
     await softStep(`${ds.name}: Re-open Bio > Analyze > Activity Cliffs`, async () => {
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Analyze"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 300));
-        (document.querySelector('[name="div-Bio---Analyze---Activity-Cliffs..."]') as HTMLElement).click();
-      });
+      await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
     });
-    // Scenario 2, Step 6 — Change Similarity + Method (edit-then-run flow).
-    // Per SR-01: source text says "arbitrarily" — atlas does not pin a
-    // canonical edit set. The concrete picks below (UMAP → t-SNE, Hamming →
-    // Levenshtein) come from the prior run log; they exercise the editor
-    // input re-binding contract (inputs must accept new selections via the
-    // <select> widget surface) but are NOT canonical for correctness.
-    //
-    // Per bio.md "Bool toggle UX" + Activity Cliffs editor table (line 152-153):
-    // Method options [UMAP, t-SNE, MCL] and Similarity options
-    // [Hamming, Levenshtein, Monomer chemical distance, Needlemann-Wunsch]
-    // are addressed by [name="input-Method"] / [name="input-Similarity"]
-    // SELECTs directly (NOT input-host wrappers).
     await softStep(`${ds.name}: Change Method to t-SNE and Similarity to Levenshtein`, async () => {
       await page.evaluate(async () => {
         const dlg = document.querySelector('.d4-dialog')!;
-        // Try direct [name="input-*"] SELECT first (per bio.md table), fall back
-        // to [name="input-host-*"] wrapper if a build wraps the SELECT differently.
         const methodSel = (dlg.querySelector('[name="input-Method"]') as HTMLSelectElement)
           ?? (dlg.querySelector('[name="input-host-Method"] select') as HTMLSelectElement);
         const simSel = (dlg.querySelector('[name="input-Similarity"]') as HTMLSelectElement)
@@ -217,14 +118,6 @@ for (const ds of datasets) {
       expect(verified.method).toBe('t-SNE');
       expect(verified.sim).toBe('Levenshtein');
     });
-    // Scenario 2, Step 7 — Click OK to run with edited parameters.
-    // Structural invariant survives SR-01 deferral: a second Activity Cliffs
-    // Scatter plot must dock (distinct from the first run's viewer — the
-    // first was closed above). Total Scatter-plot viewer count = 1 at this
-    // point (the closed first run); after the edited-parameter run it must
-    // be 1 again (the new viewer) with the dataframe columns growing by a
-    // fresh embedding+SALI triplet. The correctness assertion on the edited
-    // SALI distribution is deferred per SR-01.
     await softStep(`${ds.name}: Run with edited parameters — second cliff result docks`, async () => {
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
@@ -237,20 +130,12 @@ for (const ds of datasets) {
         cols: grok.shell.tv.dataFrame.columns.length,
       }));
       expect(result.hasScatter).toBe(true);
-      // Structural-only assertion: a Scatter plot is present and the dataframe
-      // grew by an embedding+SALI triplet. The "edited result differs
-      // meaningfully from defaults" assertion is deferred per SR-01.
       expect(result.cols).toBeGreaterThan(baseCols);
     });
-    // Final cleanup: close non-Grid viewers so subsequent dataset iterations
-    // observe a clean TableView.
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
         if ((v as any).type !== 'Grid') (v as any).close();
     });
-    if (stepErrors.length > 0) {
-      const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-      throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-    }
+    finishSpec();
   });
 }

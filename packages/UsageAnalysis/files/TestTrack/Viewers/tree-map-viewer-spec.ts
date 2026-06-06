@@ -1,5 +1,6 @@
 import {test} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -9,19 +10,7 @@ test('Tree Map tests', async ({page}) => {
   await loginToDatagrok(page);
 
   // Setup: selenium class + open demog + wait for semType
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    (grok as any).shell.settings.showFiltersIconsConstantly = true;
-    (grok as any).shell.windows.simpleMode = true;
-    (grok as any).shell.closeAll();
-    const df = await (grok as any).dapi.files.readCsv('System:DemoFiles/demog.csv');
-    (grok as any).shell.addTableView(df);
-    await new Promise((resolve: any) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
   // Add Tree Map
   await page.evaluate(() => {
@@ -29,12 +18,6 @@ test('Tree Map tests', async ({page}) => {
     el?.click();
   });
   await page.locator('[name="viewer-Tree-map"]').waitFor({timeout: 10000});
-
-  // Helper: get Tree Map viewer via JS API
-  const getTmViewer = async () => page.evaluate(async () => {
-    const tv = (grok as any).shell.tv;
-    return Array.from(tv.viewers as any[]).find((v: any) => v.type === 'Tree map');
-  });
 
   // Helper: set options on Tree Map viewer
   const setTmOptions = (opts: Record<string, any>) => page.evaluate(
@@ -359,10 +342,5 @@ test('Tree Map tests', async ({page}) => {
   });
 
   // Final error check
-  if (stepErrors.length > 0) {
-    throw new Error(
-      'Some steps failed:\n' +
-      stepErrors.map(e => `  [${e.step}] ${e.error}`).join('\n')
-    );
-  }
+  v.finishSpec();
 });

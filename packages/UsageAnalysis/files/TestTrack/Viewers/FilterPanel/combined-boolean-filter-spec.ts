@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -10,26 +11,8 @@ test('Combined boolean filter', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, withFilterPanel: true});
 
-  // Phase 3: Open filter panel
-  await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
-
-  // Step 3: Add SEX_bool calculated column
   await softStep('Add SEX_bool calculated column', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
@@ -44,7 +27,6 @@ test('Combined boolean filter', async ({page}) => {
   // Close and reopen filter panel to pick up new boolean column, then add combined boolean
   await softStep('Add Combined Boolean filter', async () => {
     await page.evaluate(async () => {
-      // Close filter panel
       const filterViewer = document.querySelector('[name="viewer-Filters"]');
       let el = filterViewer;
       while (el && !el.classList.contains('panel-base')) el = el.parentElement;
@@ -63,7 +45,6 @@ test('Combined boolean filter', async ({page}) => {
     await page.locator('.d4-bool-combined-filter').waitFor({timeout: 5000});
   });
 
-  // Step 5: Verify CONTROL and SEX_bool in combined filter
   await softStep('Verify boolean columns in Combined Boolean filter', async () => {
     const result = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -76,7 +57,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(result.sexBoolTrue).toBe(3243);
   });
 
-  // Step 7: Apply combined filter — CONTROL=true OR SEX_bool=false → 2632
   await softStep('Apply combined boolean filter (CONTROL=true OR SEX_bool=false)', async () => {
     const result = await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
@@ -97,7 +77,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(result.filterCount).toBe(2632);
   });
 
-  // Step 8: Apply RACE=Asian + AGE 50-89
   await softStep('Apply RACE=Asian and AGE 50-89 filters', async () => {
     const result = await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
@@ -108,7 +87,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(result.filterCount).toBe(8);
   });
 
-  // Step 9: Save layout
   let layoutId: string;
   await softStep('Save layout', async () => {
     layoutId = await page.evaluate(async () => {
@@ -120,7 +98,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(layoutId).toBeTruthy();
   });
 
-  // Step 10: Close filter panel
   await softStep('Close filter panel', async () => {
     await page.evaluate(() => {
       const filterViewer = document.querySelector('[name="viewer-Filters"]');
@@ -131,7 +108,6 @@ test('Combined boolean filter', async ({page}) => {
     await expect(page.locator('[name="viewer-Filters"]')).not.toBeVisible({timeout: 5000});
   });
 
-  // Step 11: Apply saved layout — verify
   await softStep('Apply saved layout and verify restored state', async () => {
     const result = await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
@@ -143,7 +119,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(result.filterCount).toBe(8);
   });
 
-  // Step 12: Remove all filters via hamburger menu
   await softStep('Remove all filters via hamburger menu', async () => {
     await page.evaluate(() => {
       const filterViewer = document.querySelector('[name="viewer-Filters"]');
@@ -168,7 +143,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(result).toBe(5850);
   });
 
-  // Step 13: Close filter panel
   await softStep('Close filter panel after remove all', async () => {
     await page.evaluate(() => {
       const filterViewer = document.querySelector('[name="viewer-Filters"]');
@@ -179,7 +153,6 @@ test('Combined boolean filter', async ({page}) => {
     await expect(page.locator('[name="viewer-Filters"]')).not.toBeVisible({timeout: 5000});
   });
 
-  // Step 14: Reopen filter panel — Combined Boolean should auto-add
   await softStep('Reopen filter panel — Combined Boolean auto-added', async () => {
     await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
@@ -192,7 +165,6 @@ test('Combined boolean filter', async ({page}) => {
     expect(hasBool).toBe(true);
   });
 
-  // Step 15: Apply saved layout again — verify
   await softStep('Apply saved layout after reopen and verify', async () => {
     const result = await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
@@ -210,8 +182,5 @@ test('Combined boolean filter', async ({page}) => {
     await grok.dapi.layouts.delete(saved);
   }, layoutId!);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });
