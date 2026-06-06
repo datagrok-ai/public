@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import {category, test, expect, before, delay, awaitCheck} from './_timed-test';
+import {category, test, expect, before, after, delay, awaitCheck} from './_timed-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -70,6 +70,10 @@ category('clone and layout tests', async () => {
       await chemCommonRdKit.initRdKitModuleLocal();
     }
     DG.chem.currentSketcherType = 'OpenChemLib';
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
   });
 
   test('1_clone_layout_scenario', async () => {
@@ -816,6 +820,11 @@ category('clone and layout tests', async () => {
 });
 
 async function createTableView(df: DG.DataFrame): Promise<DG.TableView> {
+  // Each scenario opens 2+ table views and substructure filters but most don't close
+  // them; without this the views/dataframes/filters accumulate in the shell across the
+  // 34 scenarios (~600 MB), pushing the CI renderer into an OOM freeze. Every scenario
+  // enters through here first, so closing prior views here cleans up between tests.
+  grok.shell.closeAll();
   await grok.data.detectSemanticTypes(df);
   const tvInitial = grok.shell.addTableView(df);
   return tvInitial;
