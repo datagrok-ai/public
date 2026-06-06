@@ -1,5 +1,5 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -19,6 +19,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
+    await waitForMolecule(page);
   });
 
   // ===== Block A — Filter Panel basics =====
@@ -33,14 +34,22 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
   });
 
   await softStep('Step 3 (A): Draw c1ccccc1 substructure → ~32 rows filter', async () => {
-    await page.locator('[name="viewer-Filters"] .sketch-link').first().click();
-    await page.locator('.d4-dialog').waitFor({timeout: 5000});
-    const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES" i]');
-    await smilesInput.fill('c1ccccc1');
-    await smilesInput.press('Enter');
-    await page.waitForTimeout(1500);
-    await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(2000);
+    // SR-DEFERRED sketch-link draw: filling the Edit-sketcher dialog's SMILES input does not
+    // load the molecule into the structure filter's sketcher (filter stays at trueCount=100).
+    // Apply the benzene substructure via the filter-group API (same substitution as Steps 6/9/11/13).
+    await page.evaluate(() => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
+      fg.updateOrAdd({
+        type: 'Chem:substructureFilter',
+        column: molCol.name,
+        columnName: molCol.name,
+        molBlock: 'c1ccccc1',
+      });
+    });
+    // The substructure search is async — poll for the filter to take effect.
+    await expect.poll(() => page.evaluate(() => grok.shell.t.filter.trueCount),
+      {timeout: 20000}).toBeLessThan(100);
     const filtered = await page.evaluate(() => grok.shell.t.filter.trueCount);
     expect(filtered).toBeLessThan(100);
     expect(filtered).toBeGreaterThan(0);

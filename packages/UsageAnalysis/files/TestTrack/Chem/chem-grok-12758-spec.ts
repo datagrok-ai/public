@@ -1,6 +1,6 @@
 // GROK-12758: Scaffold Tree node Edit→CANCEL then per-node filter checkbox must not corrupt substructure-search state.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -19,6 +19,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
+    await waitForMolecule(page);
     await page.evaluate(() => {
       (window as any).__df = grok.shell.t;
       (window as any).__grok12758_errors = [];

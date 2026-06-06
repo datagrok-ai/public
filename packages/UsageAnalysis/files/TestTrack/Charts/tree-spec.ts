@@ -62,9 +62,11 @@ test('Tree viewer (Charts package)', async ({page}) => {
     }
 
     if (dialogOpened) {
-      // 3) Click the Tree tile via page.locator
+      // 3) Click the Tree tile via page.locator. Exact-text match — a plain
+      // 'Tree' substring also matches the 'Tree map' and 'Scaffold Tree' tiles
+      // (and 'Tree map' sorts first), which would add the wrong viewer.
       await page.locator('[name="dialog-Add-Viewer"] .d4-item-card.viewer-gallery')
-        .filter({hasText: 'Tree'}).first().click({timeout: 5000});
+        .filter({hasText: /^\s*Tree\s*$/}).first().click({timeout: 5000});
       // Charts package webpack-lazy-loads — wait before probing.
       await page.waitForTimeout(4500);
       // Close any residual gallery dialog

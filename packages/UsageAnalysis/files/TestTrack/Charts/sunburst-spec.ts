@@ -3,7 +3,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
-const spgiPath = 'System:DemoFiles/test/spgi-100.csv';
+const spgiPath = 'System:DemoFiles/SPGI.csv';
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Sunburst viewer', async ({page}) => {

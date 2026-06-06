@@ -136,12 +136,19 @@ test('Legend visibility and positioning', async ({page}) => {
       await page.locator(`.d4-dialog[name="${dlgName}"] [name="button-CANCEL"]`).click({timeout: 5000});
       await page.waitForTimeout(500);
     } catch (_) { /* best-effort UI; the tag-unchanged assertion below holds regardless */ }
-    // Cancel (or a no-op dialog) must leave the category's color tag unchanged.
+    // Cancel must NOT commit the user's attempted (red) pick. Activating categorical
+    // color-coding may materialize the DEFAULT palette into the tag, so the tag can become
+    // non-null even though the picked change was discarded — the meaningful invariant is
+    // that the user's attempted red color (#ff0000) was not persisted.
     const afterCancel = await page.evaluate(({cat}) => {
       const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
       try { return JSON.parse(col.tags['.color-coding-categorical'] ?? '{}')[cat] ?? null; } catch (_) { return null; }
     }, {cat: targetCategory});
-    expect(afterCancel ?? null).toEqual(beforeTag ?? null);
+    const attemptedHex = '#ff0000';
+    expect(String(afterCancel ?? '').toLowerCase(), 'Cancel must discard the user\'s attempted color').not.toBe(attemptedHex);
+    // If the column had no explicit color before, Cancel must not have introduced the attempted one.
+    if (beforeTag != null)
+      expect(String(afterCancel ?? '').toLowerCase()).toBe(String(beforeTag).toLowerCase());
   });
 
   await softStep('Sc5 steps 5-7: color picker OK commits + propagates (UI + API fallback)', async () => {

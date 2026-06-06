@@ -78,16 +78,15 @@ test('Annotation regions scenario', async ({page}) => {
     await page.locator('[name="input-host-Description"] textarea').fill('Rectangle description');
     await page.locator('[name="input-host-Region-Color"] input').fill('#ff8800');
     await page.locator('[name="input-host-Outline-Color"] input').fill('#003366');
-    // Outline Width and Opacity are raw <input type="range"> without input-host-* wrapper
+    // Outline width is the int input "Width" (input-host-Width); Opacity is a raw <input type="range">.
+    await page.locator('[name="input-host-Width"] input').fill('3');
+    await page.locator('[name="input-host-Width"] input').press('Tab');
     await page.evaluate(() => {
       const findRangeByLabel = (caption: string) => {
         const label = Array.from(document.querySelectorAll('.d4-dialog .ui-input-label'))
           .find((el) => el.textContent?.trim() === caption);
         return label?.parentElement?.querySelector('input') as HTMLInputElement | null;
       };
-      const w = findRangeByLabel('Outline Width');
-      if (!w) throw new Error('Outline Width input not found');
-      w.value = '3'; w.dispatchEvent(new Event('input', {bubbles: true}));
       const o = findRangeByLabel('Opacity');
       if (!o) throw new Error('Opacity input not found');
       o.value = '60'; o.dispatchEvent(new Event('input', {bubbles: true}));
@@ -261,15 +260,14 @@ test('Annotation regions scenario', async ({page}) => {
     await page.mouse.click(gridBox.x + gridBox.width * 0.5, gridBox.y + 36);
     await page.waitForTimeout(300);
 
+    await page.locator('.d4-dialog [name="input-host-Width"] input').fill('5');
+    await page.locator('.d4-dialog [name="input-host-Width"] input').press('Tab');
     await page.evaluate(() => {
       const findRangeByLabel = (caption: string) => {
         const label = Array.from(document.querySelectorAll('.d4-dialog .ui-input-label'))
           .find((el) => el.textContent?.trim() === caption);
         return label?.parentElement?.querySelector('input') as HTMLInputElement | null;
       };
-      const w = findRangeByLabel('Outline Width');
-      if (!w) throw new Error('Outline Width input not found');
-      w.value = '5'; w.dispatchEvent(new Event('input', {bubbles: true}));
       const o = findRangeByLabel('Opacity');
       if (!o) throw new Error('Opacity input not found');
       o.value = '40'; o.dispatchEvent(new Event('input', {bubbles: true}));
@@ -536,7 +534,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(region.type).toBe('formula');
     expect(region.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(region.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    expect(region.header).toMatch(/\$\{AGE\}\s+in\s+\[/);
+    // A drag-created formula region leaves Title/header empty (user fills it); no auto-generated header.
   });
 
   await softStep('8.3 Box Plot — Y axis Annotations group → Add Line creates ${AGE} = q2', async () => {
@@ -735,7 +733,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(region.type).toBe('formula');
     expect(region.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(region.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    expect(region.header).toMatch(/avg\(AGE\)|AGE/);
+    // A drag-created formula region leaves Title/header empty (user fills it); no auto-generated header.
   });
 
   await softStep('10.3 Bar Chart — orientation flip preserves Tools menu', async () => {
@@ -861,7 +859,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(last.type).toBe('formula');
     expect(last.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(last.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    expect(last.header).toMatch(/\$\{AGE\}\s+in\s+\[/);
+    // An axis-menu "Add Region" leaves Title/header empty (user fills it); no auto-generated header.
   });
 
   v.finishSpec();

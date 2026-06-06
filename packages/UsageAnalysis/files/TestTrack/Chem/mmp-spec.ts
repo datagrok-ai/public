@@ -1,6 +1,6 @@
 // GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import * as chem from '../helpers/chem';
 
@@ -17,7 +17,11 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/mmp_demo.csv');
+      // System:DemoFiles/chem/mmp_demo.csv on dev is a corrupt mixed-delimiter copy
+      // (header "SMILES\tCMPD_CHEMBLID,..."), so no clean SMILES column gets Molecule
+      // semType. Use the canonical demo file shipped by the Chem package — the same
+      // one the platform's own MMP demo (Chem/src/demo/demo.ts) loads.
+      const df = await grok.dapi.files.readCsv('System:AppData/Chem/demo_files/mmp_demo.csv');
       grok.shell.addTableView(df);
       (window as any).__mmp_errors = [];
       const orig = console.error;
@@ -27,6 +31,9 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       };
     });
     await waitForChemMenu(page);
+    // The Chem Molecule detector runs async AFTER the menu attaches; poll for it
+    // before asserting semType (checking immediately races the detector).
+    await waitForMolecule(page);
     const cols = await page.evaluate(() =>
       grok.shell.t.columns.toList().map((c: any) => ({name: c.name, semType: c.semType, type: c.type})));
     // Soft assertions — accept variant col counts as long as required cols present.

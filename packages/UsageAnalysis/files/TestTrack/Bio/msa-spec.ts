@@ -45,32 +45,19 @@ test('Bio MSA on FASTA', async ({page}) => {
     expect(info.rows).toBeGreaterThan(0);
     expect(info.hasMacro).toBe(true);
   });
-  await softStep('Add new column Clusters = RandBetween(0,5)', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Edit"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 300));
-      (document.querySelector('[name="div-Edit---Add-New-Column..."]') as HTMLElement).click();
-    });
-    await page.locator('[name="dialog-Add-New-Column"]').waitFor({timeout: 15000});
-    await page.locator('[name="dialog-Add-New-Column"] input.ui-input-addnewcolumn-name').click();
-    await page.keyboard.type('Clusters', {delay: 20});
-    await page.locator('[name="dialog-Add-New-Column"] .cm-content').click();
-    await page.keyboard.type('RandBetween(0, 5)', {delay: 20});
-    const formulaText: string = await page.locator('[name="dialog-Add-New-Column"] .cm-content').textContent() ?? '';
-    if (!formulaText.includes('RandBetween')) {
-      await page.locator('[name="dialog-Add-New-Column"] [name="button-Add-New-Column---CANCEL"]').click();
-      await page.evaluate(async () => {
-        const df = grok.shell.tv.dataFrame;
-        await (df.columns as any).addNewCalculated('Clusters', 'RandBetween(0, 5)');
-      });
-    } else {
-      await page.locator('[name="dialog-Add-New-Column"] [name="button-Add-New-Column---OK"]').click();
-    }
-    await page.waitForFunction(() => {
+  await softStep('Add deterministic int Clusters column (setup for per-cluster MSA)', async () => {
+    // Create the Clusters column directly via the JS API. The Add-New-Column UI + RandBetween
+    // formula path is flaky on dev (CodeMirror autocomplete intercepts the editor click; the
+    // formula compute occasionally exceeds 60s), and this column is pure setup — its values are
+    // overwritten just below. The Add-New-Column dialog itself is covered by
+    // PowerPack/add-new-column-spec.ts. 0..5 matches the original RandBetween(0,5) range.
+    await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      return cols.some((c: any) => c.name === 'Clusters' && c.type === 'int');
-    }, null, {timeout: 60000});
+      if (df.col('Clusters') != null) df.columns.remove('Clusters');
+      const col = DG.Column.int('Clusters', df.rowCount);
+      for (let i = 0; i < df.rowCount; i++) col.set(i, i % 6, false);
+      df.columns.add(col);
+    });
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const c: any = df.col('Clusters');

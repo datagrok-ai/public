@@ -1,5 +1,5 @@
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -51,6 +51,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       };
     });
     await waitForChemMenu(page);
+    await waitForMolecule(page);
   });
 
   await softStep('Phase A — Step 2: Molecule semType + RDKit renderer (canonical_smiles)', async () => {

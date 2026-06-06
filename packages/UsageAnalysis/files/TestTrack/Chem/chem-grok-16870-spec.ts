@@ -1,6 +1,6 @@
 // GROK-16870: hovering a Box Plot point on a Molecule-column table must not crash the RDKit cell renderer (fixed 1.22.0).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -37,6 +37,7 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
 
   await softStep('Wait for Chem menu registration (Molecule detector + RDKit renderer ready)', async () => {
     await waitForChemMenu(page);
+    await waitForMolecule(page);
   });
 
   await softStep('Verify Molecule semType + add Box Plot (Chem now warm)', async () => {

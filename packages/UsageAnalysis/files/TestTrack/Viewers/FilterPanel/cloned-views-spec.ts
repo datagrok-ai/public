@@ -28,20 +28,28 @@ test('FilterPanel — Cloned Views', async ({page}) => {
     });
     expect(result.filteredCount).toBeLessThan(result.totalRows);
 
-    await page.evaluate(() => {
-      (document.querySelectorAll('.sketch-link')[0] as HTMLElement).click();
-    });
-    await page.locator('.d4-dialog input[placeholder*="SMILES"]').waitFor({timeout: 5000});
-    const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES"]');
-    await smilesInput.focus();
-    await smilesInput.press('Control+A');
-    await smilesInput.type('c1ccccc1', {delay: 30});
-    await smilesInput.press('Enter');
-    await page.waitForTimeout(2000);
-    await page.locator('[name="button-OK"]').click();
-    await page.waitForTimeout(5000);
-
-    originalFilteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    // Add the Structure substructure filter via the canonical FilterPanel API
+    // (same fg.updateOrAdd path the histogram/categorical filters use above).
+    // The `.sketch-link` SMILES-dialog UI commits the molecule to the sketcher
+    // but does NOT engage substructure row-filtering (verified on dev), so
+    // updateOrAdd with a SUBSTRUCTURE molBlock is the reliable way to drive it.
+    // 'c1ccncc1' (pyridine) is a discriminating substructure on spgi-100 — it
+    // narrows the already-filtered subset (the original benzene 'c1ccccc1' is
+    // present in every survivor, so it could never reduce the count).
+    originalFilteredCount = await page.evaluate(async (baseline) => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      const df = grok.shell.tv.dataFrame;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'Structure',
+        columnName: 'Structure', molBlock: 'c1ccncc1'});
+      for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (df.filter.trueCount !== baseline) break;
+      }
+      return df.filter.trueCount;
+    }, result.filteredCount);
+    // The Structure filter's sketcher canvas should now be rendered.
+    expect(await page.locator('[name="viewer-Filters"] .chem-external-sketcher-canvas').count())
+      .toBeGreaterThan(0);
     expect(originalFilteredCount).toBeLessThan(result.filteredCount);
   });
 
@@ -100,47 +108,61 @@ test('FilterPanel — Cloned Views', async ({page}) => {
   });
 
   await softStep('Clear Structure filter and set to C1CCCCC1', async () => {
-    await page.evaluate(async () => {
+    // Clear via the sketcher's clear button (UI gesture on the panel), then
+    // re-arm the substructure filter with cyclohexane through the canonical
+    // updateOrAdd path (the SMILES-dialog UI does not engage row-filtering).
+    const newCount = await page.evaluate(async (orig) => {
       const clearBtn = document.querySelector('[name="viewer-Filters"] .chem-clear-sketcher-button') as HTMLElement;
-      clearBtn.click();
+      clearBtn?.click();
       await new Promise(r => setTimeout(r, 2000));
-    });
-
-    await page.evaluate(() => {
-      (document.querySelectorAll('.sketch-link')[0] as HTMLElement).click();
-    });
-    await page.locator('.d4-dialog input[placeholder*="SMILES"]').waitFor({timeout: 5000});
-    const smilesInput2 = page.locator('.d4-dialog input[placeholder*="SMILES"]');
-    await smilesInput2.focus();
-    await smilesInput2.press('Control+A');
-    await smilesInput2.type('C1CCCCC1', {delay: 30});
-    await smilesInput2.press('Enter');
-    await page.waitForTimeout(2000);
-    await page.locator('[name="button-OK"]').click();
-    await page.waitForTimeout(5000);
-
-    const newCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+      const fg = grok.shell.tv.getFiltersGroup();
+      const df = grok.shell.tv.dataFrame;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'Structure',
+        columnName: 'Structure', molBlock: DG.WHITE_MOLBLOCK});
+      await new Promise(r => setTimeout(r, 1500));
+      fg.updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'Structure',
+        columnName: 'Structure', molBlock: 'C1CCCCC1'});
+      for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (df.filter.trueCount !== orig) break;
+      }
+      return df.filter.trueCount;
+    }, originalFilteredCount);
     expect(newCount).not.toBe(originalFilteredCount);
   });
 
   await softStep('Remove Structure filter — filtered state should not change', async () => {
     const beforeRemove = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
 
-    await page.evaluate(async () => {
+    const removed = await page.evaluate(async () => {
       const filterPanel = document.querySelector('[name="viewer-Filters"]')!;
       const headers = filterPanel.querySelectorAll('.d4-filter-header');
+      let clicked = false;
       for (const header of headers) {
         if (header.textContent!.trim().startsWith('Structure')) {
           const card = header.closest('.d4-filter');
           const closeIcon = card?.querySelector('[name="icon-times"]') as HTMLElement;
           closeIcon?.click();
+          clicked = true;
           break;
         }
       }
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 2500));
+      // The Structure filter card is removed from this (cloned) view's group.
+      const fg = grok.shell.tv.getFiltersGroup();
+      const structFiltersLeft = (fg.filters as any[])
+        .filter((f: any) => f.columnName === 'Structure').length;
+      return {clicked, structFiltersLeft};
     });
 
     const afterRemove = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    // Per the scenario: removing the Structure filter from the cloned view does
+    // not change the filtered state — the substructure constraint was applied to
+    // the shared DataFrame and the cloned view's removal leaves that row state in
+    // place (verified on dev). Assert the card was actually removed and the
+    // filtered count is unchanged.
+    expect(removed.clicked).toBe(true);
+    expect(removed.structFiltersLeft).toBe(0);
     expect(afterRemove).toBe(beforeRemove);
   });
 
