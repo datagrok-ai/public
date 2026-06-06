@@ -1,5 +1,10 @@
 # Chem changelog
 
+## v.next
+
+* Chem: Hardened RDKit critical-section release in `clusterMCS` and `beautifyMolsV3K` with try/finally so a worker rejection can no longer leak the shared `CHEM_TOKEN` lock and deadlock subsequent operations
+* Chem: Fixed RDKit mol leak in similarity/notation workers — the `addedToCache` flag was hoisted outside the loop, so a throw after a prior cached molecule skipped `rdMol.delete()` and accumulated WASM heap across the test suite
+
 ## 1.17.10 (2026-05-28)
 
 * Chem: Record all generated reaction results in the enumerator

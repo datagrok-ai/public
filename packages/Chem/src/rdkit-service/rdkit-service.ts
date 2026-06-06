@@ -606,41 +606,44 @@ export class RdKitService {
    */
   async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
     await chemBeginCriticalSection();
-    const nWorkers = this.parallelWorkers.length;
     const res = new Array<string>(clusteredMolecules.length).fill('');
-    const lock = new LockedEntity(0);
-    const process = async (workerIndex: number, resolver: Function) => {
-      await lock.unlockPromise();
-      lock.lock();
-      const index = lock.value;
-      lock.value = index + 1;
-      lock.release();
-      if (index >= clusteredMolecules.length) {
-        console.log(index);
-        return;
-      }
-      const mols = clusteredMolecules[index];
-      if (mols.length < 2)
-        res[index] = mols.length === 1 ? mols[0] : '';
-      else {
-        const t = setTimeout(async () => {
-          console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
-          this.restartWorker(workerIndex);
-          resolver(); // no point in waiting... its probably stuck
-        }, 45000); // if it is running for more than 30s, restart the worker
-        const r = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
-        clearTimeout(t);
-        res[index] = r;
-      }
-      await process(workerIndex, resolver);
-    };
+    try {
+      const nWorkers = this.parallelWorkers.length;
+      const lock = new LockedEntity(0);
+      const process = async (workerIndex: number, resolver: Function) => {
+        await lock.unlockPromise();
+        lock.lock();
+        const index = lock.value;
+        lock.value = index + 1;
+        lock.release();
+        if (index >= clusteredMolecules.length) {
+          console.log(index);
+          return;
+        }
+        const mols = clusteredMolecules[index];
+        if (mols.length < 2)
+          res[index] = mols.length === 1 ? mols[0] : '';
+        else {
+          const t = setTimeout(async () => {
+            console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
+            this.restartWorker(workerIndex);
+            resolver(); // no point in waiting... its probably stuck
+          }, 45000); // if it is running for more than 30s, restart the worker
+          const r = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+          clearTimeout(t);
+          res[index] = r;
+        }
+        await process(workerIndex, resolver);
+      };
 
-    const promises = new Array(nWorkers).fill(null).map((_, i) => {
-      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
-    });
+      const promises = new Array(nWorkers).fill(null).map((_, i) => {
+        return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
+      });
 
-    await Promise.all(promises);
-    chemEndCriticalSection();
+      await Promise.all(promises);
+    } finally {
+      chemEndCriticalSection();
+    }
     return res.map((it) => {
       if (!it)
         return '';
@@ -656,16 +659,19 @@ export class RdKitService {
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
     await chemBeginCriticalSection();
-    const segmentLength = Math.ceil(molfiles.length / this.workerCount);
-    const res = await this._doParallel(
-      (i: number, _: number) => {
-        return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
-      },
-      (data) => {
-        return data.flat();
-      },
-    );
-    chemEndCriticalSection();
-    return res;
+    try {
+      const segmentLength = Math.ceil(molfiles.length / this.workerCount);
+      const res = await this._doParallel(
+        (i: number, _: number) => {
+          return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
+        },
+        (data) => {
+          return data.flat();
+        },
+      );
+      return res;
+    } finally {
+      chemEndCriticalSection();
+    }
   }
 }

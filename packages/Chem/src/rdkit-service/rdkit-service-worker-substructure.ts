@@ -272,7 +272,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
-    let addedToCache = false;
     const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
       (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
     const results = new Array<string>(molecules.length).fill(result);
@@ -296,6 +295,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           rdMol.is_qmol = mol?.isQMol;
       }
       if (rdMol) {
+        let addedToCache = false;
         if (kekulize) {
           try {
             rdMol.convert_to_kekule_form();
