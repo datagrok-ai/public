@@ -62,10 +62,14 @@ export function test(name: string, fn: () => Promise<any>, options?: TestOptions
       // Chem-wide afterEach: many tests open table views / viewers / filters and never close
       // them, so views, dataframes and their RDKit-backed caches accumulate across the suite
       // until the CI runner runs out of memory and the whole job is killed (the "hanging" tests).
-      // Closing everything between tests keeps peak memory bounded. Tests that need shared state
-      // across the category must set it up in before() (only the disabled 3d-hover category does).
+      // closeAll() only closes VIEWS, not tables — the dataframes (with their attached
+      // fingerprint/scaffold-highlight caches) stay registered in the shell and keep growing.
+      // So also close every remaining table to release them. Tests that need shared state across
+      // the category must set it up in before() (only the disabled 3d-hover category does).
       try {
         grok.shell.closeAll();
+        for (const t of [...grok.shell.tables])
+          grok.shell.closeTable(t);
       } catch {/* ignore */}
     }
   }, options);
