@@ -418,6 +418,9 @@ export class SubstructureFilter extends DG.Filter {
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
     super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
+    //detach the sketcher so its underlying editor/canvas/DOM is released — otherwise every filter
+    //leaks a heavy sketcher instance, accumulating memory across the test suite (and in production).
+    this.sketcher?.detach();
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {
