@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import {take} from 'rxjs/operators';
@@ -152,4 +153,67 @@ export async function until(cond: () => boolean, ms: number = 2000): Promise<voi
 // Build a DataFrame from named lists. Each entry: [name, dartType, values].
 export function df(cols: Array<[string, string, any[]]>): DG.DataFrame {
   return DG.DataFrame.fromColumns(cols.map(([n, t, v]) => DG.Column.fromList(t as DG.ColumnType, n, v)));
+}
+
+// Async sibling of until(): polls an async predicate until it holds (until() is sync-only).
+export async function untilAsync(
+  cond: () => Promise<boolean>, ms: number = 3000, step: number = 150): Promise<boolean> {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (await cond())
+      return true;
+    await wait(step);
+  }
+  return false;
+}
+
+// Unique class/name marker for DOM/dock tests (stable within a call, distinct across calls).
+let _uid = 0;
+export const uniqueName = (prefix: string): string => `${prefix}-${Date.now()}-${_uid++}`;
+
+// A simple marked panel element for dock-manager tests.
+export const markedPanel = (cls: string): HTMLElement => ui.div([ui.span(['ai dock test'])], {classes: cls});
+
+// Attach a standalone View to the shell, optionally let it render, run body, always close.
+export async function withAttachedView<T extends DG.View>(
+  create: () => T, body: (v: T) => Promise<void> | void, awaitRender: boolean = true): Promise<void> {
+  const v = create();
+  grok.shell.addView(v);
+  try {
+    if (awaitRender)
+      await wait();
+    await body(v);
+  } finally {
+    v.close();
+  }
+}
+
+// Open a table view, grab its (empty) filter group, then run body. Fresh view per call.
+// Pass settleMs>0 only when init timing is load-bearing (e.g. updateOrAdd with requestFilter=false).
+export async function withFilterGroup(
+  data: DG.DataFrame, body: (fg: DG.FilterGroup, tv: DG.TableView) => Promise<void> | void,
+  settleMs: number = 0): Promise<void> {
+  await withTableView(data, async (tv) => {
+    const fg = tv.getFiltersGroup({createDefaultFilters: false});
+    if (settleMs > 0)
+      await wait(settleMs);
+    await body(fg, tv);
+  });
+}
+
+// Add a filter and return the first GridFilterBase it produces (categorical/grid filters).
+export async function addAndGetFilter(fg: DG.FilterGroup, type: string, column: string): Promise<DG.GridFilterBase> {
+  fg.add({type, column});
+  await until(() => fg.filters.some((f) => f instanceof DG.GridFilterBase));
+  const filter = fg.filters.find((f) => f instanceof DG.GridFilterBase) as DG.GridFilterBase;
+  expect(filter instanceof DG.GridFilterBase, true);
+  return filter;
+}
+
+// Attach a viewer over a (typically boundary) frame and assert that reading its options does not throw.
+export async function expectAttachesNoThrow(
+  data: DG.DataFrame, type: string, opts: {[k: string]: any} = {}): Promise<void> {
+  await withAttachedViewer<DG.Viewer>(data, type, opts, async (v) => {
+    expectNoThrow(() => v.getOptions(true));
+  });
 }

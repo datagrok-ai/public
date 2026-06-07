@@ -118,6 +118,9 @@ export interface IDartApi {
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
   grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
+  grok_TableView_GetViewerColumns(v: any): any;
+  grok_TableView_CloseAllViewers(v: any): any;
+  grok_TableView_Focus(v: any): any;
   grok_TableView_ReloadData(v: any, enrich: Bool): Promise<any>;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
@@ -403,6 +406,17 @@ export interface IDartApi {
   grok_PcPlotViewer_Get_ChartW(p: any): any;
   grok_PcPlotViewer_Get_IsFiltering(p: any): any;
   grok_CalendarViewer_Get_DateColumn(c: any): any;
+  grok_ConfusionMatrix_Get_IsBinary(m: any): any;
+  grok_ConfusionMatrix_Get_Categories(m: any): any;
+  grok_ConfusionMatrix_Get_Accuracy(m: any): any;
+  grok_ConfusionMatrix_Get_Sensitivity(m: any): any;
+  grok_ConfusionMatrix_GetRowShare(m: any, i: Num): any;
+  grok_ConfusionMatrix_GetColumnShare(m: any, i: Num): any;
+  grok_RocCurve_CalculateAuc(target: any, prediction: any, positiveClass: String): any;
+  grok_CorrelationPlot_GetCorrelation(c: any, c1: any, c2: any): any;
+  grok_TrellisPlot_Get_OneColumnOnly(t: any): any;
+  grok_TrellisPlot_Get_XCategoriesCount(t: any): any;
+  grok_TrellisPlot_Get_YCategoriesCount(t: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;
@@ -1255,7 +1269,6 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
-  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
@@ -1315,6 +1328,7 @@ export interface IDartApi {
   grok_Column_Get_Tags(c: any): any;
   grok_Column_Matches(c: any, filter: String): any;
   grok_Column_Init(c: any, indexToValue: any): any;
+  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_Column_Clone(c: any, mask: any): any;
   grok_Column_SetAllValues(c: any, value: any): any;
   grok_Column_Get_ValueComparer(c: any): any;
@@ -1557,8 +1571,8 @@ export interface IDartApi {
   grok_BitSet_SetBuffer(b: any, data: any, notify: Bool): any;
   grok_PictureMixin_Get_PictureUrl(p: any): any;
   grok_Project_Get_Path(p: any): any;
-  grok_Project_Get_Options(p: any): any;
   grok_Project_Get_Meta(p: any): any;
+  grok_Project_Get_Options(p: any): any;
   grok_Project_From_Id(id: String): any;
   grok_Project_Get_IsOnServer(p: any): any;
   grok_Project_GetRelations(p: any, link: Bool): any;

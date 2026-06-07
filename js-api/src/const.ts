@@ -700,7 +700,8 @@ export enum VIEWER {
   SURFACE_PLOT = 'Surface plot',
   SCAFFOLD_TREE = 'Scaffold Tree',
   PIVOT_TABLE = 'Pivot table',
-  CONFUSION_MATRIX = 'Confusion matrix'
+  CONFUSION_MATRIX = 'Confusion matrix',
+  ROC_CURVE = 'Roc curve'
 }
 
 /** @enum {CORE_VIEWER} */
@@ -729,7 +730,8 @@ export enum CORE_VIEWER {
   TREE_MAP = 'Tree map',
   TRELLIS_PLOT = 'Trellis plot',
   PIVOT_TABLE = 'Pivot table',
-  CONFUSION_MATRIX = 'Confusion matrix'
+  CONFUSION_MATRIX = 'Confusion matrix',
+  ROC_CURVE = 'Roc curve'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */
