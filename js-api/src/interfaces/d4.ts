@@ -575,32 +575,6 @@ export interface IScatterPlotSettings {
   /// Label inner content size.
   labelContentSize: number;
 
-  /// Regression line visibility (toggle by pressing R)
-  showRegressionLine: boolean;
-
-  showRegressionLineEquation: boolean;
-
-  showSpearmanCorrelation: boolean;
-
-  showPearsonCorrelation: boolean;
-
-  showMeanAbsoluteError: boolean;
-
-  showRootMeanSquareError: boolean;
-
-  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
-  regressionPerCategory: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
   /// Controls the indication of the current row
   showCurrentPoint: boolean;
 
@@ -653,11 +627,7 @@ export interface IScatterPlotSettings {
 
   gridLineColor: number;
 
-  regressionLineColor: number;
-
   whiskerColor: number;
-
-  regressionLineTransparency: number;
 
   linearColorScheme: Array<number>;
 
@@ -666,14 +636,6 @@ export interface IScatterPlotSettings {
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
   axesUseColumnFormat: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
 
   viewport: string;
 
@@ -710,10 +672,6 @@ export interface IScatterPlotSettings {
   axisFont: string;
 
   labelFont: string;
-
-  formulaFont: string;
-
-  annotationFont: string;
 
   defaultRenderer: boolean;
 
@@ -763,6 +721,49 @@ export interface IScatterPlotSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  /// Regression line visibility (toggle by pressing R).
+  showRegressionLine: boolean;
+
+  showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
+
+  /// Splits the regression by category. Supports up to 20 categories;
+  /// otherwise, a common regression line is shown.
+  regressionPerCategory: boolean;
+
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -899,28 +900,6 @@ export interface IBarChartSettings {
 
   minTextHeight: number;
 
-  formulaFont: string;
-
-  annotationFont: string;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of viewer-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
   /// When enabled, shows hatched areas and arrows on bars
   /// that are clipped by the value axis range.
   showClippedBarIndicators: boolean;
@@ -1001,6 +980,28 @@ export interface IBarChartSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -1189,28 +1190,6 @@ export interface IBoxPlotSettings {
 
   statisticsFont: string;
 
-  formulaFont: string;
-
-  annotationFont: string;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of viewer-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
   whiskerLineWidth: number;
 
   /// Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow.
@@ -1298,6 +1277,28 @@ export interface IBoxPlotSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -1599,30 +1600,8 @@ export interface IDensityPlotSettings {
 
   backColor: number;
 
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of viewer-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
   /// When true, lasso area selector is used instead of the rectangular one when drawing annotation regions.
   lassoTool: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  formulaFont: string;
-
-  annotationFont: string;
 
   viewport: string;
 
@@ -1668,6 +1647,28 @@ export interface IDensityPlotSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -1922,28 +1923,6 @@ export interface IHistogramSettings {
 
   axisFont: string;
 
-  formulaFont: string;
-
-  annotationFont: string;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of viewer-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
   filteredBinsColor: number;
 
   selectedBinsColor: number;
@@ -2012,6 +1991,28 @@ export interface IHistogramSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -2139,7 +2140,7 @@ export interface ILineChartSettings {
   overviewAggrType: string;
 
   /// Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/).
-  showStaticalProcessControl: boolean;
+  showStatisticalProcessControl: boolean;
 
   /// Shows/hides upper and lower control limits.
   showControlLimits: boolean;
@@ -2222,8 +2223,6 @@ export interface ILineChartSettings {
   /// If false, the specified *X Axis Height*
   autoAxisSize: boolean;
 
-  annotationFont: string;
-
   /// Requires *Auto Axis Size* to be turned off.
   xAxisHeight: number;
 
@@ -2250,29 +2249,6 @@ export interface ILineChartSettings {
   gridLineColor: number;
 
   selectedRowsColor: number;
-
-  /// Regression line visibility (toggle by pressing R).
-  showRegressionLine: boolean;
-
-  showRegressionLineEquation: boolean;
-
-  showSpearmanCorrelation: boolean;
-
-  showPearsonCorrelation: boolean;
-
-  showMeanAbsoluteError: boolean;
-
-  showRootMeanSquareError: boolean;
-
-  /// Splits the regression by the *Split* column(s). Supports up to 20 categories;
-  /// otherwise, a common regression line is shown.
-  regressionPerCategory: boolean;
-
-  regressionLineColor: number;
-
-  regressionLineTransparency: number;
-
-  formulaFont: string;
 
   statisticalProcessLineColor: number;
 
@@ -2319,12 +2295,6 @@ export interface ILineChartSettings {
 
   multiAxisLegendPosition: keyof typeof FlexExtendedPosition;
 
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
   /// Enables lasso region drawing mode (instead of polygon drawing default one).
   lassoTool: boolean;
 
@@ -2345,18 +2315,6 @@ export interface ILineChartSettings {
   outerChartMarginBottom: number;
 
   viewport: string;
-
-  formulaLines: string;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
 
   aggTooltipColumns: string;
 
@@ -2414,6 +2372,49 @@ export interface ILineChartSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  /// Regression line visibility (toggle by pressing R).
+  showRegressionLine: boolean;
+
+  showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
+
+  /// Splits the regression by category. Supports up to 20 categories;
+  /// otherwise, a common regression line is shown.
+  regressionPerCategory: boolean;
+
+  regressionLineColor: number;
+
+  regressionLineTransparency: number;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of viewer-level formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 

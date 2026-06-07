@@ -320,16 +320,6 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Label Color As Marker | boolean | To display labels separately or as markers (works for non-text labels). |
 | Label As Marker Size | number | Marker size in which label is inscribed. |
 | Label Content Size | number | Label inner content size. |
-| **Lines** | | |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R) |
-| Show Regression Line Equation | boolean |  |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Supports up to 20 categories. Otherwise, a common regression line is shown. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Selection** | | |
 | Show Current Point | boolean | Controls the indication of the current row |
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
@@ -347,9 +337,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Axis Line Color | number |  |
 | Axis Text Color | number |  |
 | Grid Line Color | number |  |
-| Regression Line Color | number |  |
 | Whisker Color | number |  |
-| Regression Line Transparency | number |  |
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list |  |
 | Axes Use Column Format | boolean | Determines whether the axes should follow the non-precision-related format (such as money) set for the corresponding column. |
@@ -358,12 +346,11 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Y Axis Width | number | Requires *Auto Axis Size* to be turned off. |
 | Axis Font | string |  |
 | Label Font | string |  |
-| Formula Font | string |  |
-| Annotation Font | string |  |
 | Controls Font | string | Viewer controls elements font. |
-| **Annotation regions** | | |
-| Show Viewer Annotation Regions | boolean |  |
-| Show Dataframe Annotation Regions | boolean |  |
+| Regression Line Color | number |  |
+| Regression Line Transparency | number |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -373,6 +360,19 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Row Group Tooltip | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 
 See also:
