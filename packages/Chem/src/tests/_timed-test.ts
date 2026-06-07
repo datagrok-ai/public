@@ -14,6 +14,7 @@ import {
 
 export * from '@datagrok-libraries/test/src/test';
 import {_rdKitModule} from '../utils/chem-common-rdkit';
+import * as grok from 'datagrok-api/grok';
 
 let _currentCategory = '';
 
@@ -58,6 +59,14 @@ export function test(name: string, fn: () => Promise<any>, options?: TestOptions
       return await fn();
     } finally {
       log('TEST', 'END', cat, name, performance.now() - t0);
+      // Chem-wide afterEach: many tests open table views / viewers / filters and never close
+      // them, so views, dataframes and their RDKit-backed caches accumulate across the suite
+      // until the CI runner runs out of memory and the whole job is killed (the "hanging" tests).
+      // Closing everything between tests keeps peak memory bounded. Tests that need shared state
+      // across the category must set it up in before() (only the disabled 3d-hover category does).
+      try {
+        grok.shell.closeAll();
+      } catch {/* ignore */}
     }
   }, options);
 }
