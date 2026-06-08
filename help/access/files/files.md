@@ -1,6 +1,7 @@
 ---
 title: "Files"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

@@ -1,7 +1,8 @@
 ---
 title: "Scripting features"
 sidebar_position: 1
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

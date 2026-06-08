@@ -1,7 +1,8 @@
 ---
 title: "Complex data types"
 sidebar_position: 3
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

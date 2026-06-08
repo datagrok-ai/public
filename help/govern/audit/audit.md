@@ -1,6 +1,7 @@
 ---
 title: "Audit"
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 2
 toc_max_heading_level: 3
 unlisted: false

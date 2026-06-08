@@ -1,6 +1,7 @@
 ---
 title: "Scatterplot"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 A scatterplot displays data points on the X and Y axes

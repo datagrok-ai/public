@@ -1,6 +1,7 @@
 ---
 title: "Getting started"
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 1
 ---
 

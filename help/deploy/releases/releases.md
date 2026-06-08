@@ -1,6 +1,7 @@
 ---
 title: "What's new"
-format: mdx
+mdx:
+  format: mdx
 keywords:
   - release history
   - release highlights

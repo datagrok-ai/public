@@ -1,6 +1,7 @@
 ---
 title: SureChEMBL integration
-format: mdx
+mdx:
+  format: mdx
 ---
 
 The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) 

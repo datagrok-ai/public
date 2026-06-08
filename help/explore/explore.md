@@ -1,6 +1,7 @@
 ---
 title: "Explore data"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 * [Data augmentation](data-augmentation/data-augmentation.md)
