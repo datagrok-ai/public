@@ -15,6 +15,7 @@ import {
 export * from '@datagrok-libraries/test/src/test';
 import {_rdKitModule} from '../utils/chem-common-rdkit';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 let _currentCategory = '';
 
@@ -74,7 +75,13 @@ export function test(name: string, fn: () => Promise<any>, options?: TestOptions
           grok.shell.closeTable(t);
         const viewsAfter = [...grok.shell.tableViews].length;
         const tablesAfter = grok.shell.tables.length;
-        console.warn(`[LEAK-DIAG] afterEach cleanup: views ${viewsBefore}->${viewsAfter} tables ${tablesBefore}->${tablesAfter}`);
+        // Definitive leak probe: length of the global array inside ui.tools.waitForElementInDom that
+        // retains elements whose DOM insertion never happens. If this grows across the suite, the
+        // waitForElementInDom retention IS the leak (and since the Chem-side call sites are already
+        // bounded, the growth would be coming from the platform Sketcher's internal calls).
+        const wfeLen = (ui.tools as any)?.mutationObserverElements?.length ?? 'n/a';
+        console.warn(`[LEAK-DIAG] afterEach cleanup: views ${viewsBefore}->${viewsAfter} ` +
+          `tables ${tablesBefore}->${tablesAfter} waitForElementInDom.pending=${wfeLen}`);
       } catch (e) {
         console.warn(`[LEAK-DIAG] afterEach cleanup threw: ${e}`);
       }
