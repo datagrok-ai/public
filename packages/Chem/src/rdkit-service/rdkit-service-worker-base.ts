@@ -10,19 +10,7 @@ export class RdKitServiceWorkerBase {
   _molsCache: LRUCache<string, RDMol> | null = null;
   _cacheCounter = 0;
   _requestTerminated = false;
-  /** Per-op cancellation set. Lets one op be cancelled without affecting concurrent work. */
-  _terminatedOps: Set<string> = new Set<string>();
   _terminationCheckDelay = 50;
-
-  isOpTerminated(opId?: string): boolean {
-    return opId !== undefined && this._terminatedOps.has(opId);
-  }
-
-  setOpTerminate(opId: string, flag: boolean): void {
-    if (flag) this._terminatedOps.add(opId);
-    else this._terminatedOps.delete(opId);
-  }
-
   constructor(module: RDModule, webRoot: string) {
     this._rdKitModule = module;
     this._webRoot = webRoot;

@@ -271,9 +271,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false,
-    opId?: string): Promise<string[]> {
-    if (!molecules || this.isOpTerminated(opId))
+  async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
       return [];
     let addedToCache = false;
     const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
@@ -284,7 +283,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       //every N molecules check for termination flag
       if (i % this._terminationCheckDelay === 0)
         await new Promise((r) => setTimeout(r, 0));
-      if (this.isOpTerminated(opId))
+      if (this._requestTerminated)
         return results;
       const item = molecules[i];
       if (!item || item === '') {
@@ -414,8 +413,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 
-  async rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string,
-    opId?: string): Promise<IRGroupAnalysisResult> {
+  async rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string):
+    Promise<IRGroupAnalysisResult> {
     let mols: MolList | null = null;
     let res: RGroupDecomp | null = null;
     let core: RDMol | null = null;
@@ -431,8 +430,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     const emptyResult = (): IRGroupAnalysisResult =>
       ({colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []});
     try {
-      if (this.isOpTerminated(opId))
-        return emptyResult();
+      // R-Group is cancelled by killing the worker (its process() call can't be polled), so it
+      // deliberately ignores the cooperative _requestTerminated flag used by the other operations.
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
         core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
@@ -452,17 +451,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       for (let i = 0; i < molecules.length; i ++) {
         if (i % this._terminationCheckDelay === 0)
           await new Promise((r) => setTimeout(r, 0));
-        if (this.isOpTerminated(opId))
-          return emptyResult();
         const match = res!.add(mols!.at(i));
         if (match == -1)
           unmatches.push(i);
       }
 
       res!.process();
-
-      if (this.isOpTerminated(opId))
-        return emptyResult();
 
       cols = res!.get_rgroups_as_columns();
       colNames = Object.keys(cols).filter((it) => it !== molColName); //exclude Mol column from result since we do not need it
@@ -481,8 +475,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           for (let j = 0; j < molecules.length; j++) {
             if (j % this._terminationCheckDelay === 0)
               await new Promise((r) => setTimeout(r, 0));
-            if (this.isOpTerminated(opId))
-              return emptyResult();
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {

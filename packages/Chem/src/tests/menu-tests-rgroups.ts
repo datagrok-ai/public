@@ -199,29 +199,18 @@ M  END
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
 
-  test('rgroups.cancel.workerRespectsFlag', async () => {
+  test('rgroups.run', async () => {
+    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    expect(res.rGroups.length > 0, true, 'Expected R-Group results');
+  }, {timeout: 30000});
+
+  // Cancelling R-Group kills + restarts its worker; this checks the pool recovers so a subsequent
+  // R-Group (and any other RDKit op) still works on the restarted worker.
+  test('rgroups.cancel.recovery', async () => {
     const svc = await chemCommonRdKit.getRdKitService();
-    const opId = 'rgroups-test-cancel';
-    const smiles = sampleTable.col('smiles')!;
-
-    await svc.setOpTerminate(opId, true);
-    const res = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts, opId);
-    const emptyResult = res.rGroups.length === 0 ||
-      res.rGroups.every((c) => c.toList().every((v) => !v));
-    expect(emptyResult, true, 'Expected empty result when opId terminate is pre-set');
-
-    await svc.setOpTerminate(opId, false);
-    const res2 = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts, opId);
-    expect(res2.rGroups.length > 0, true, 'Expected results after opId reset');
-
-    // Regression guard: the legacy global flag must not cancel R-Group.
-    await svc.setTerminateFlag(true);
-    try {
-      const res3 = await rGroupsMinilib(smiles, 'c1ccccc1', false, 0, rGroupOpts);
-      expect(res3.rGroups.length > 0, true, 'R-Group must ignore the legacy global flag');
-    } finally {
-      await svc.setTerminateFlag(false);
-    }
+    await svc.restartWorkers([0]); // simulate the worker-kill that a cancel triggers
+    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    expect(res.rGroups.length > 0, true, 'R-Group works after its worker is restarted');
   }, {timeout: 30000});
 });
 

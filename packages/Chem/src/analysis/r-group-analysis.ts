@@ -4,13 +4,15 @@ import * as DG from 'datagrok-api/dg';
 
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {Chem} from '../scripts-api';
-import {PackageFunctions} from '../package';
+import {PackageFunctions, _package} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
-import {hasNewLines, hexToPercentRgb} from '../utils/chem-common';
+import {cancelChemOp, chemBeginCriticalSection, chemEndCriticalSection, hasNewLines, hexToPercentRgb,
+  newChemOpId} from '../utils/chem-common';
+import {WorkerCancelledError} from '../worker-message-bus-client';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -244,7 +246,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
   let progressBar: DG.TaskBarProgressIndicator | undefined;
   let cancelSub: Subscription | undefined;
-  const opId = `rgroup-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const opId = newChemOpId('rgroup');
   try {
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
@@ -258,9 +260,13 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     if (coreIsQMol)
       core = coreSmarts;
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
-    cancelSub = progressBar.onCanceled.subscribe(async () => {
-      const svc = await getRdKitService();
-      await svc.setOpTerminate(opId, true);
+    cancelSub = progressBar.onCanceled.subscribe(() => {
+      // Start the kill FIRST and synchronously: cancelChemOp terminates the worker before yielding, so a
+      // queued run can't grab the section + worker mid-cancel. Doing it before close() also means a
+      // close() failure can't skip cancellation.
+      cancelChemOp(opId).catch((e) => _package.logger.debug(`R-Group cancel failed: ${e instanceof Error ? e.message : e}`));
+      // Close this run's task bar right away, even if it is only queued (immediate feedback).
+      progressBar?.close();
     });
 
     const rGroupOptions = {
@@ -271,7 +277,23 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
     if (progressBar.canceled) return;
 
-    const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions, opId);
+    // Hold the section so cancellation can target this op; R-Group runs only on worker 0, so a cancel
+    // restarts just that worker (getRGroups -> parallelWorkers[0]) and leaves the rest alone.
+    await chemBeginCriticalSection({opId, workers: [0]});
+    let rgRes: RGroupsRes;
+    try {
+      // Cancelled while queued for the section, before any worker was killed — bail before dispatching.
+      if (progressBar.canceled) return;
+      rgRes = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+    } catch (e) {
+      // Cancelled: the worker was killed, so the call rejected. Just unwind — the section is freed below,
+      // and the next op fences on whenWorkersReady inside chemBeginCriticalSection before it dispatches.
+      if (e instanceof WorkerCancelledError) return;
+      throw e;
+    } finally {
+      chemEndCriticalSection(opId);
+    }
+    const {rGroups, highlightCol} = rgRes;
 
     if (progressBar.canceled) return;
 
@@ -357,19 +379,18 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
   } finally {
     cancelSub?.unsubscribe();
     progressBar?.close();
-    getRdKitService().then((svc) => svc.setOpTerminate(opId, false)).catch(() => {});
   }
 }
 
 
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
-    { [key: string]: string | boolean }, opId?: string): Promise<RGroupsRes> {
+    { [key: string]: string | boolean }): Promise<RGroupsRes> {
   if (!coreMolecule)
     throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
-      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '', opId);
+      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
   const resCols: DG.Column<string>[] = [];
   for (let i = 0; i < res.colNames.length; i++) {
     const col = DG.Column.string(res.colNames[i], molecules.length).init((j) => res.smiles[i][j]);
