@@ -687,9 +687,14 @@ export class PackageFunctions {
   })
   static async trainLinearRegression(
     df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<Uint8Array> {
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'initialValue': '1000', 'description': 'Maximum gradient descent epochs (early-stopped by tolerance).'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Tolerance', 'min': '0', 'initialValue': '0.0000001', 'description': 'Early-stopping threshold on |Δloss|.'}}) tolerance: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain OLS.'}}) alpha: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain OLS.'}}) lambda: number): Promise<Uint8Array> {
     const features = df.columns;
-    const params = await getLinearRegressionParams(features, predictColumn);
+    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, tolerance);
 
     return new Uint8Array(params.buffer);
   }

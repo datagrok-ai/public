@@ -318,12 +318,24 @@ export async function _fitSoftmax(
  * The standardised intercept is ~0 (centred data) and, as in the C++, is
  * not carried into the raw bias.
  *
+ * `l1`/`l2` add Elastic Net regularisation in the standardised space (a
+ * capability the C++ lacked). Both default to `0` — plain OLS, preserving
+ * parity with the retired backend. The standardised->raw rescale above is
+ * a fixed linear map and stays valid for any penalty (the intercept is
+ * never regularised).
+ *
+ * `lr`/`epochs`/`tol` are the gradient-descent controls; they default to
+ * the OLS preset (`OLS_LR`/`OLS_EPOCHS`/`OLS_TOL`) so the default call is
+ * unchanged. The remaining `WasmElasticNet` knobs (full-batch, seed,
+ * fit_intercept) keep their kernel defaults.
+ *
  * Note: unlike the C++ `_fit...`, this is async (the wasm needs a one-time
  * init), so the call site awaits it.
  */
 export async function _fitLinearRegressionParamsWithDataNormalizing(
   features: DG.ColumnList, featureAvgs: DG.Column, featureStdDevs: DG.Column, targets: DG.Column,
   targetsAvg: number, targetsStdDev: number, paramsCount: number,
+  l1 = 0, l2 = 0, lr = OLS_LR, epochs = OLS_EPOCHS, tol = OLS_TOL,
 ): Promise<DG.Column> {
   await ensureEdaMlInit();
 
@@ -350,8 +362,9 @@ export async function _fitLinearRegressionParamsWithDataNormalizing(
   for (let i = 0; i < nRows; ++i)
     stdY[i] = (ry[i] - targetsAvg) / ySd;
 
-  // OLS via full-batch GD; no feature stats -> standardised-space coeffs.
-  const model = new WasmElasticNet(OLS_LR, OLS_EPOCHS, 0, 0, OLS_TOL);
+  // OLS (or Elastic Net when l1/l2 > 0) via full-batch GD; no feature
+  // stats -> standardised-space coeffs.
+  const model = new WasmElasticNet(lr, epochs, l1, l2, tol);
   try {
     model.fit(flatX, nRows, stdY);
     const cwb = model.coefficientsWithBias(); // [w_std_0 … w_std_{m-1}, b_std]

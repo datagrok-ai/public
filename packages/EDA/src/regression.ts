@@ -60,8 +60,13 @@ export function isLinearRegressionInteractive(features: DG.ColumnList, target: D
   return true;
 }
 
-/** Compute coefficients of linear regression */
-export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Promise<Float32Array> {
+/** Compute coefficients of linear regression.
+ * `l1`/`l2` add Elastic Net regularisation; both `0` (default) give plain OLS.
+ * `lr`/`epochs`/`tol` are the gradient-descent controls; omit them to use the
+ * OLS preset (left `undefined` -> the eda-api defaults apply). */
+export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column,
+  l1: number = 0, l2: number = 0,
+  lr?: number, epochs?: number, tol?: number): Promise<Float32Array> {
   const featuresCount = features.length;
   const samplesCount = targets.length;
 
@@ -115,6 +120,11 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
       yAvg,
       yStdev,
       nonConstFeaturesCount + 1,
+      l1,
+      l2,
+      lr,
+      epochs,
+      tol,
     )).getRawData();
 
     // Extract params taking into account non-constant columns

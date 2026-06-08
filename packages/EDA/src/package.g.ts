@@ -366,11 +366,16 @@ export async function kNNImputationForTable(table: DG.DataFrame) : Promise<void>
 
 //input: dataframe df 
 //input: column predictColumn 
+//input: double rate = 0.1 { caption: Rate; min: 0; description: Gradient descent learning rate. }
+//input: int iterations = 1000 { caption: Iterations; min: 1; description: Maximum gradient descent epochs (early-stopped by tolerance). }
+//input: double tolerance = 0.0000001 { caption: Tolerance; min: 0; description: Early-stopping threshold on |Δloss|. }
+//input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain OLS. }
+//input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain OLS. }
 //output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
-export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column) : Promise<Uint8Array> {
-  return await PackageFunctions.trainLinearRegression(df, predictColumn);
+export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, tolerance: number, alpha: number, lambda: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainLinearRegression(df, predictColumn, rate, iterations, tolerance, alpha, lambda);
 }
 
 //input: dataframe df 
