@@ -60,48 +60,49 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    if (this.explicitMol?.notation === 'smiles')
+    if (this.explicitMol?.notation === DG.chem.Notation.Smiles)
       return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getSmiles() : '';
   }
 
   set smiles(s) {
-    this.explicitMol = {notation: 'smiles', value: s};
+    this.explicitMol = {notation: DG.chem.Notation.Smiles, value: s};
     this.importing = true;
     this._sketcher?.setSmiles(s);
   }
 
   get molFile() {
-    if (this.explicitMol?.notation === 'molblock')
+    if (this.explicitMol?.notation === DG.chem.Notation.MolBlock)
       return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getMolFile() : '';
   }
 
   set molFile(s) {
-    this.explicitMol = {notation: 'molblock', value: s};
+    this.explicitMol = {notation: DG.chem.Notation.MolBlock, value: s};
     this.importing = true;
     this._sketcher?.setMolFile(s);
   }
 
   get molV3000() {
-    if (this.explicitMol?.notation === 'molblockV3000')
+    if (this.explicitMol?.notation === DG.chem.Notation.V3KMolBlock)
       return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getMolFileV3() : '';
   }
 
   set molV3000(s) {
-    this.explicitMol = {notation: 'molblockV3000', value: s};
+    this.explicitMol = {notation: DG.chem.Notation.V3KMolBlock, value: s};
     this.importing = true;
     this._sketcher?.setMolFile(s);
   }
 
   async getSmarts(): Promise<string> {
+    if (this.explicitMol?.notation === DG.chem.Notation.Smarts)
+      return this.explicitMol.value;
     return PackageFunctions.convertMolNotation(this.molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   }
 
   set smarts(s: string) {
-    //@ts-ignore
-    this.explicitMol = {notation: 'smarts', value: s};
+    this.explicitMol = {notation: DG.chem.Notation.Smarts, value: s};
     this.importing = true;
     this.convertAndSetSmarts(s);
   }
