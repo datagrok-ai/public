@@ -1,5 +1,46 @@
 # Compute2 changelog
 
+## 1.5.3 (2026-06-05)
+
+- Fix navigation tree desync after a drag reorder: clear stranded `dragNode` state in the after-drop handler and treat the driver tree as the single source of truth
+- Repair tree selection when the chosen step is removed: climb to the nearest surviving ancestor instead of leaving a dead uuid selected
+- Stream pipeline-validator results to the navigation tree so the validator icon updates as soon as the validator resolves
+- Pick up compute-utils 1.46.2
+
+## 1.5.2 (2026-06-04)
+
+- Default focus to the Inputs tab when the form is shown as a tab
+- Pick up compute-utils file-input and `pipelineValidator` changes
+
+## 1.5.1 (2026-06-04)
+
+- Fix float-display test for the `#0.###` default mask
+
+## 1.5.0 (2026-06-03)
+
+### Features
+
+- Per-step funccall history in the tree wizard
+- `inputsHidden` with inline toggle; `formAsTab` replaces `formOnly`
+- Inspector: parsed link IOs rendered structurally, clickable link badges on error-log items, actions vs. links distinguished, unified inputs/outputs shape across tabs
+- Honor RTD action visibility in TreeWizard; render `nodeMeta` body on the pipeline action page
+- Output category groups for scalar outputs; hide empty outputs with tab persistence
+- Render boolean scalars in the scalars table
+
+### Build
+
+- Default build now uses rspack (webpack kept as `build-webpack`); added rspack + tsgo option, Babel for `.tsx`
+
+### UI
+
+- Default float mask `#0.###` across outputs and grids
+- Hide ribbon actions and input viewer panels when UI is blocked / `meta.hidden` is set
+
+### Bug fixes
+
+- Fixed latent type errors surfaced by tsgo
+- Refresh RFV scalars after buffer-collapsed re-runs; focus/persist Inputs tab when `formAsTab` is on
+
 ## 1.4.1 (2026-04-24)
 
 ### Features

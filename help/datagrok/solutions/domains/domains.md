@@ -1,5 +1,6 @@
 ---
-format: mdx
+mdx:
+  format: mdx
 title: "Domains"
 ---
 

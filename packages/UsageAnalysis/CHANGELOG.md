@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## v.next
+
+* Metrics: Added Admin Metrics dashboard tab
+
 ## 2.5.1 (2026-05-21)
 
 * TestTrack: Wired Playwright suite (`files/TestTrack`) into `grok test` via the new `playwrightTests` opt-in; specs now authenticate via the same dev-key→token flow as the Puppeteer pass and run in CI alongside existing tests

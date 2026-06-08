@@ -9,6 +9,7 @@ import {
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {STEP_HISTORY_OPTION} from '../History/History';
 import {TreeNode} from './TreeNode';
@@ -23,8 +24,8 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
-  reportTree,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -154,9 +155,11 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
+      const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
       ui.dialog(`Update confirmation`)
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
-        .onOK(() => runSequence(startUuid, rerunWithConsistent))
+        .add(includeInfoInput.root)
+        .onOK(() => runSequence(startUuid, rerunWithConsistent, undefined, includeInfoInput.value ?? false))
         .show({center: true, modal: true});
     };
 
@@ -350,25 +353,25 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
+      if (!treeState.value || !chosenStepUuid.value)
         return null;
-
-      if (!chosenStepUuid.value)
-        chosenStepUuid.value = treeState.value.uuid;
-
-      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
-
-      if (step)
-        return step;
-
-      // step with current uuid is removed from the tree, try setting the current step by the route
-      const currentURL = new URL(window.location.href);
-      const currentStep = currentURL.searchParams.get('currentStep');
-      if (currentStep)
-        setCurrentStepByPath(currentStep, treeState.value);
-
-      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) ?? null;
     });
+
+    // Owns chosenStepUuid: defaults it on first load and repairs it when the
+    // selected node disappears (e.g. the selected step was removed). Falls back
+    // along the old positional path to the nearest surviving ancestor, so a
+    // removed last child resolves to its parent instead of dangling.
+    Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
+      if (!treeState)
+        return;
+      const fallbackPath = searchParams.currentStep ?
+        searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
+        undefined;
+      const next = resolveChosenUuid(chosenStepUuid.value, treeState, fallbackPath);
+      if (next !== chosenStepUuid.value)
+        chosenStepUuid.value = next;
+    }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
@@ -577,7 +580,7 @@ export const TreeWizard = Vue.defineComponent({
     const isEachDraggable = (stat: AugmentedStat) => {
       return stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIDragging);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
@@ -596,12 +599,22 @@ export const TreeWizard = Vue.defineComponent({
         if (oldIndex !== newIndex)
           moveStep(draggedStep.data.uuid, newIndex);
       }
+      // he-tree skips inbound modelValue rebuilds while its `dragNode` data is set. A slow
+      // frame or a debugger pause during drag-end can strand `dragNode` truthy, which then
+      // freezes every later structural update (added/removed steps stop rendering). The
+      // library clears it in its own `dragend` handler, but that path is unreliable under
+      // interruption; `after-drop` fires reliably, so clear it here too.
+      const inst = treeInstance.value as any;
+      if (inst) {
+        inst.dragNode = null;
+        inst.dragOvering = false;
+      }
     };
 
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIRemoving);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////
@@ -728,6 +741,7 @@ export const TreeWizard = Vue.defineComponent({
 
                 rootDroppable={false}
                 treeLine
+                updateBehavior='disabled'
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
                 statHandler={restoreOpenedNodes}
@@ -754,6 +768,7 @@ export const TreeWizard = Vue.defineComponent({
                         stat={stat}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
+                        pipelineValidationState={states.pipelineValidations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
@@ -763,7 +778,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
@@ -835,7 +850,7 @@ export const TreeWizard = Vue.defineComponent({
                       }
                       { hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                         <BigButton
-                          onClick={() => runSequence(chosenStepUuid.value!, true)}
+                          onClick={() => runSubtreeWithConfirm(chosenStepUuid.value!, true)}
                         >
                            Update
                         </BigButton>

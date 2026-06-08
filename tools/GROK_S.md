@@ -27,7 +27,7 @@ browser or a logged-in session.
 | Run a registered function                                   | `grok s functions run 'Pkg:fn(arg1,arg2)'`             |
 | List functions with rich filters                            | `grok s functions list --type script --language python --package Chem` |
 | List / browse files in a file share                         | `grok s files list "System:AppData" -r`                |
-| Upload / download a table (CSV)                             | `grok s tables upload <name> file.csv` / `tables download <name> -O out.csv` |
+| Upload / download a table (CSV or d42)                      | `grok s tables upload <name> file.csv\|file.d42` / `tables download <name> -O out.csv` |
 | Check whether a package is deployed                         | `grok s packages list --filter "MyPlugin"`             |
 | Hit any undocumented endpoint                               | `grok s raw GET /api/users/current`                    |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
@@ -205,21 +205,26 @@ the `source` before sending).
 
 ## Tables
 
-CSV-level table I/O — the shell counterpart to Python's `grok.tables.upload/download`.
+Table I/O — the shell counterpart to Python's `grok.tables.upload/download`.
 Unlike `files put`, this registers a proper Datagrok table entity (returns `{ID, ...}`).
 
 ```bash
 grok s tables upload MyTable ./data.csv                         # CSV → table
+grok s tables upload MyTable ./data.d42                         # d42 binary → table
 grok s tables upload MyTable ./data.csv --output json           # get ID and markup back
 grok s tables download MyTable                                  # CSV to stdout (pipe-friendly)
 grok s tables download MyTable -O ./data.csv                    # CSV to a local file
 grok s tables download <uuid>                                   # UUID or namespace:name both work
 ```
 
-Upload streams raw bytes with `Content-Type: text/csv` so it handles large tables
-without loading the whole file into a JSON envelope. `-O` / `--output-file` avoids
-colliding with the format flag (`--output table|json|csv|quiet`), which still controls
-how the upload result is printed.
+Upload streams raw bytes — `Content-Type: text/csv` for `.csv` and
+`application/octet-stream` for `.d42` (auto-detected from the file extension). Both
+formats handle large tables without loading the whole file into a JSON envelope.
+`-O` / `--output-file` avoids colliding with the format flag (`--output
+table|json|csv|quiet`), which still controls how the upload result is printed.
+
+Download is CSV-only — the server reads the stored d42 blob and converts. If you
+need the raw d42 bytes, hit `/tables/data/<id>` directly via `grok s raw`.
 
 ## Server health
 

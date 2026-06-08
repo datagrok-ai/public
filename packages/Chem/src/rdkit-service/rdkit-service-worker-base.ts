@@ -35,16 +35,26 @@ export class RdKitServiceWorkerBase {
     });
   }
 
+  /**
+   * Registers one processed molecule of the current dataset and caches it while the
+   * per-dataset budget (MAX_MOL_CACHE_SIZE) is not exhausted. `_cacheCounter` counts
+   * molecules *processed* — cache hits included — so the budget reflects "the first N
+   * molecules of the dataset" even when the dataset overlaps a previously cached one.
+   * Reset on dataset switch via invalidateCache().
+   * Returns true if the cache owns `rdMol` (the caller must NOT delete it).
+   */
   addToCache(rdMol: RDMol): boolean {
-    let added = false;
-    const key = rdMol.get_smiles();
-    if (this._molsCache?.has(key))
+    const key = rdMol.get_smiles(); // throws for invalid input -> empty rows don't consume budget
+    if (this._molsCache?.has(key)) {
+      if (this._cacheCounter < MAX_MOL_CACHE_SIZE)
+        this._cacheCounter++; // a cache hit is still a processed dataset molecule
       return true;
-    if (this._cacheCounter < MAX_MOL_CACHE_SIZE && !this._molsCache?.has(key)) {
-      this._molsCache?.set(key, rdMol!);
-      this._cacheCounter++; //need this additional counter (instead of i) not to consider empty molecules
-      added = true;
     }
-    return added;
+    if (this._cacheCounter < MAX_MOL_CACHE_SIZE) {
+      this._molsCache?.set(key, rdMol);
+      this._cacheCounter++;
+      return true;
+    }
+    return false;
   }
 }

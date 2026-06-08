@@ -1,6 +1,7 @@
 ---
 title: "Self-guided learning"
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 2
 ---
 

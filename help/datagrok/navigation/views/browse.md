@@ -5,7 +5,8 @@ keywords:
  - file explorer
  - hierarchical tree
  - data catalog
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 2
 unlisted: true
 ---

@@ -14,6 +14,7 @@ module.exports = (env) => {
 
   const config = {
     mode,
+    cache: false,
     entry: {
       test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
       package: './src/package.ts',
@@ -27,7 +28,7 @@ module.exports = (env) => {
     module: {
       rules: [
 	{test: /\.tsx?$/, loader: 'babel-loader', options: {
-          cacheDirectory: true,
+          cacheDirectory: false,
           'plugins': [['@vue/babel-plugin-jsx', { isCustomElement: tag => tag.startsWith('dg-') || tag === 'dock-spawn-ts' }]],
 	}},
 	{test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
@@ -52,7 +53,7 @@ module.exports = (env) => {
       new BundleAnalyzerPlugin({
         defaultSizes: 'parsed',
         generateStatsFile: stats,
-        generateStatsFile: 'stats.json',
+        statsFilename: 'stats.json',
         analyzerMode: 'disabled',
       }),
       new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),

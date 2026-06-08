@@ -256,6 +256,78 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogTail', { date, groups, packages });
   }
 
+  export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
+  }
+
+  export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
+  }
+
+  export async function metricsDbStats(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
+  }
+
+  export async function metricsTableHealthSummary(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', { limit });
+  }
+
+  export async function metricsConnections(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsConnections', {});
+  }
+
+  export async function metricsConnectionsOffenders(limit: number , idleXactSec: number , activeSec: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsConnectionsOffenders', { limit, idleXactSec, activeSec });
+  }
+
+  export async function metricsTopSlowestQueries(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueries', { limit });
+  }
+
+  export async function metricsTopMostCalledQueries(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueries', { limit });
+  }
+
+  export async function metricsWorstCacheHitQueries(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueries', { limit });
+  }
+
+  export async function metricsTopSlowestQueriesPg12(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueriesPg12', { limit });
+  }
+
+  export async function metricsTopMostCalledQueriesPg12(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueriesPg12', { limit });
+  }
+
+  export async function metricsWorstCacheHitQueriesPg12(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueriesPg12', { limit });
+  }
+
+  export async function metricsLargestTables(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsLargestTables', { limit });
+  }
+
+  export async function metricsTableHealth(limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsTableHealth', { limit });
+  }
+
+  export async function metricsErrorsCount(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsErrorsCount', { date });
+  }
+
+  export async function metricsSessionsCount(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
+  }
+
+  export async function metricsLatency(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsLatency', { date });
+  }
+
+  export async function metricsHttpRoutes(date: string , limit: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsHttpRoutes', { date, limit });
+  }
+
   export async function uniqueUsersList(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UniqueUsersList', { date });
   }
@@ -476,6 +548,10 @@ export namespace funcs {
 
   export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn });
+  }
+
+  export async function metricsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:MetricsApp', {});
   }
 
   export async function testTrackApp(): Promise<void> {

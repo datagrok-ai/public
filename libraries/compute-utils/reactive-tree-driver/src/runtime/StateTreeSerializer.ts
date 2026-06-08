@@ -53,6 +53,23 @@ export function getValidations(nodeTree: BaseTree<StateTreeNode>) {
   return Object.fromEntries(entries);
 }
 
+export function getPipelineValidations(nodeTree: BaseTree<StateTreeNode>) {
+  const entries = nodeTree.traverse(nodeTree.root, (acc, node) => {
+    const item = node.getItem();
+    if (!isFuncCallNode(item)) {
+      const merged$ = item.pipelineValidations$.pipe(
+        map((validations) => {
+          const reactive = Object.values(validations);
+          return reactive.length ? mergeValidationResults(...reactive) : undefined;
+        }),
+      );
+      return [...acc, [item.uuid, merged$] as const];
+    }
+    return acc;
+  }, [] as (readonly [string, Observable<ValidationResult | undefined>])[]);
+  return Object.fromEntries(entries);
+}
+
 export function getConsistency(nodeTree: BaseTree<StateTreeNode>) {
   const entries = nodeTree.traverse(nodeTree.root, (acc, node) => {
     const item = node.getItem();

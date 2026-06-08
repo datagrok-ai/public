@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {viewerTypesMapping} from './consts';
+import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
 import {delay, getPropViewers} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -159,7 +159,7 @@ export const richFunctionViewReport = async (
             caption: scalarOutput.options['caption'] ?? scalarOutput.name,
             value: lastCall.outputs[scalarOutput.name] ?? '',
             units: scalarOutput.options['units'] ?? '',
-            format: scalarOutput.format,
+            format: scalarOutput.format || DEFAULT_FLOAT_FORMAT,
           })),
           validationStates,
           consistencyStates,
@@ -322,7 +322,7 @@ const dfToSheet = (
       const col = df.col(colIdx)!;
       const rawVal = df.get(col.name, rowIdx);
       if (col?.type === 'double') {
-        const format = col?.tags?.['format'] ?? '0.00';
+        const format = col?.tags?.['format'] ?? DEFAULT_FLOAT_FORMAT;
         const val = formatNumber(rawVal, format);
         row.push(val);
       } else

@@ -20,7 +20,7 @@ Cheminformatics is an *in silico* discipline serving to handle chemical entities
 - generate possible chemical structures [all possible](https://gdb.unibe.ch/downloads/) or
   with [synthetic rules implementation](https://cactus.nci.nih.gov/download/savi_download/);
 - storing
-  compounds [collections](https://www.merckgroup.com/en/research/open-innovation/biopharma-open-innovation-portal/open-compound-sourcing.html)
+  compounds [collections](https://www.merckgroup.com/en/research/open-innovation/biopharma-open-innovation-portal.html)
   ;
 - facilitation of chemists' work via visualization and reaction prediction;
 - prediction of physical and chemical properties of the compounds (QSPR) and biological activities of the

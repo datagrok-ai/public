@@ -3,6 +3,7 @@
 ## v.next
 
 * Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar
+* Add New Column dialog: Fixed TypeError when typing into the Name or Type input before CodeMirror finishes its async init
 
 ## 1.8.1 ()
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (SVM, linear regression, softmax, PLS, gradient boosting via XGBoost), ANOVA, missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
+EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (SVM, linear regression, softmax, PLS, gradient boosting via XGBoost), group comparison (two-sample t-test, ANOVA, control comparisons), missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
 
 ## Build Commands
 
@@ -79,6 +79,15 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - **NIST tests** (`category 'ANOVA: NIST StRD'`): fixtures in `src/tests/anova-fixtures.ts`, regenerated via `tools/generate-anova-fixtures.py` (requires scipy ≥ 1.16 + network to itl.nist.gov). Tolerances for SmLs07/09 are intentionally loose — Float64 Welford loses precision on 11-constant-digit stiff data; tests document observed accuracy, not gold-standard.
 - **UI test caveat:** `DG.Column.fromStrings(['1','2',...])` auto-promotes purely numeric labels to an INT column, which breaks setStats indexing. Tests prefix labels with `g` (`factorCol` helper).
 
+#### Control comparisons (`control-comparisons/`)
+- **Many-to-one** comparison of each group against a single control (`control-comparisons-tools.ts`, `control-comparisons-ui.ts`). Two methods: **Dunnett** (default; pooled variance, joint reference distribution) and **Holm-Welch** (pairwise Welch's t-tests + Holm step-down over the k−1 control-vs-each p-values).
+- API: `controlComparisons(cats, vals, controlCode, uniqueCount, {method, alpha})` → `ControlComparisonsReport`. Reuses the ANOVA `factorize`; Holm-Welch reuses `twoSampleTTestFromStats` (the package's Welch kernel) — no second Welch implementation.
+- **Numerical guarantees — do not revert:**
+  - `dunnettMaxCdf` integrates over the scale `s = S/σ ~ chi(df)/√df`. The outer window **must** be the adaptive Wilson–Hilferty bracket, never a fixed `[1e-3, 6]` grid: the peak narrows as `~1/√(2·df)`, so a fixed grid under-resolves it at large df and the adjusted p-values become garbage (e.g. raw p ≈ 2e-9 but adj p ≈ 0.2 on demog WEIGHT-by-RACE). Regression: `category 'Control comparisons: large df'` (union-bound invariant `raw ≤ adj ≤ m·raw`).
+  - Holm is applied to exactly the **k−1** control-vs-each p-values, not all k(k−1)/2 pairs. Guard: `category 'Control comparisons: Holm family size'`.
+  - One Γ-exact `hedgesCorrection` (from `ttest-tools.ts`) for **both** methods — do not mix in a second effect-size formula.
+- **Fixtures** (`src/tests/control-comparisons-fixtures.ts`, hand-maintained): `FIXTURES` are synthetic/published cases (scipy.stats.dunnett, scipy ttest_ind, statsmodels Holm). `DEMOG_FIXTURES` cross-validate against real data — the test reads `System:DemoFiles/demog.csv` (`DEMOG_FILE`) so nothing large ships in the package. Caveats baked into the demog tolerances: Datagrok stores FLOAT columns as **float32** (so demog WEIGHT/HEIGHT agree only to ~1e-5; INT AGE is exact), and a group column with nulls loads as a literal `''` category (so only no-null group columns RACE/SEX/DIS_POP are used).
+
 #### Pareto Optimization (`pareto-optimization/`)
 - **ParetoOptimizer** (`pareto-optimizer.ts`): Multi-objective optimization
 - **ParetoFrontViewer** (`pareto-front-viewer.ts`): Custom JsViewer for visualizing Pareto fronts
@@ -143,6 +152,8 @@ Tests are organized by feature in `src/tests/`:
 - `classifiers-tests.ts`: SVM, softmax, XGBoost
 - `mis-vals-imputation-tests.ts`: KNN imputation
 - `anova-tests.ts`: One-way ANOVA
+- `ttest-tests.ts`: Two-sample t-test
+- `control-comparisons-tests.ts`: Control comparisons (Dunnett, Holm-Welch)
 - `pmpo-tests.ts`: Probabilistic scoring
 - `pareto-tests.ts`: Pareto optimization
 

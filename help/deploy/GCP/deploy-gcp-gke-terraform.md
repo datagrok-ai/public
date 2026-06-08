@@ -25,7 +25,7 @@ provisioned together.
 * GCP project with billing enabled and the
   [GKE](https://cloud.google.com/kubernetes-engine/docs/quickstarts/create-cluster),
   [Cloud SQL](https://cloud.google.com/sql/docs/postgres/quickstart),
-  [Cloud Storage](https://cloud.google.com/storage/docs/quickstart),
+  [Cloud Storage](https://cloud.google.com/storage/docs/discover-object-storage-console),
   and Compute Engine APIs enabled.
 * Terraform 1.5+ and a GCP service account credential with `Project Owner` (or the
   equivalent narrower permissions: GKE admin, Cloud SQL admin, Storage admin, IAM admin,

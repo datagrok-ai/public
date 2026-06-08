@@ -5,6 +5,7 @@ import './test/viewers-hook';
 import './test/app-launch';
 import './test/rfv';
 import './test/navigation';
+import './test/float-display';
 
 export const _package = new DG.Package();
 export {tests};

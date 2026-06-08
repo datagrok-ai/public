@@ -139,7 +139,7 @@ export class DashboardTutorial extends Tutorial {
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
     const shareDlg = await this.openDialog('Click "OK"', `Share ${projectName}`,
-      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[1]);
+      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2]);
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
 
     const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';

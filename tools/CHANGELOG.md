@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.2.6 (2026-05-26)
+
+* `grok s tables upload` — accepts `.d42` binary blobs in addition to `.csv`. Content-Type is auto-detected from the file extension (`application/octet-stream` for d42, `text/csv` otherwise); server content-negotiates and persists either form against the same `/public/v1/tables/{name}` endpoint.
+
 ## 6.2.5 (2026-05-21)
 
 * `grok report read` — renamed `--extract-actions` to `--extract-client-log`; sidecar is now `<stem>_client_log.json`. The old flag is no longer accepted.

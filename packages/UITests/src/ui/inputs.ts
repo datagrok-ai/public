@@ -352,8 +352,9 @@ category('UI: Table input new', () => {
   });
 
   test('non-nullable', async () => {
-    grok.shell.addTableView(grok.data.demo.demog(10));
-    const t = ui.input.table('test', { nullable: false });
+    const df = grok.data.demo.demog(10);
+    grok.shell.addTableView(df);
+    const t = ui.input.table('test', {nullable: false, items: [df]});
 
     const view = grok.shell.newView();
     view.append(t);

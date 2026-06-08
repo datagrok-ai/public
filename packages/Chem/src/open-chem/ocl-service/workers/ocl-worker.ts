@@ -1,5 +1,6 @@
 import {MolNotationType, OCLServiceCall} from '../consts';
 import * as OCL from 'openchemlib/full';
+import {MAX_SMILES_LENGTH} from '../../../utils/chem-constants';
 
 type OCLWorkerReturnType = {res: {[key: string]: Array<number>}, errors: string[]};
 
@@ -28,7 +29,7 @@ function isSmiles(notationType: string): boolean {
 }
 
 function oclMol(mol: string, notationType: string): OCL.Molecule {
-  if (isSmiles(notationType) && mol.length > 5000)
+  if (isSmiles(notationType) && mol.length > MAX_SMILES_LENGTH)
     throw new Error('Invalid molecule string');
   return isSmiles(notationType) ? OCL.Molecule.fromSmiles(mol) : OCL.Molecule.fromMolfile(mol);
 }

@@ -10,6 +10,7 @@ import {
   ifOverlapping,
   IconImage,
   useUnwrappedCallMeta,
+  DEFAULT_FLOAT_FORMAT,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -27,7 +28,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, getViewers} from '../../utils';
 
 
 interface ScalarsState {
@@ -116,8 +117,6 @@ const getEmptyTabToProperties = () => ({
   outputs: new Map() as TabContent,
 });
 
-const DEFAULT_FLOAT_PRECISION = 4;
-
 const isEmptyScalar = (v: any) =>
   v == null || v === '' || v === DG.FLOAT_NULL || v === DG.INT_NULL;
 
@@ -137,7 +136,7 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
     else if (prop.options.precision)
       formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
     else
-      formattedScalarValue = scalarValue.toFixed(DEFAULT_FLOAT_PRECISION);
+      formattedScalarValue = DG.format(scalarValue, DEFAULT_FLOAT_FORMAT);
   } else if (typeof scalarValue === 'boolean')
     formattedScalarValue = String(scalarValue);
   const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
@@ -372,6 +371,45 @@ export const RichFunctionView = Vue.defineComponent({
       ];
     };
 
+    // Per-function preferred tab, tracked separately for the input and output sides and pushed
+    // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
+    // (see the watcher below); a user click sets it directly so the click is respected until
+    // the next restore.
+    const inputKey = () => `opened_input_tab_${currentCall.value?.func?.nqName}`;
+    const outputKey = () => `opened_output_tab_${currentCall.value?.func?.nqName}`;
+    const preferredTab = Vue.ref<string | null>(null);
+
+    const sideTabs = (side: 'inputs' | 'outputs') =>
+      visibleTabLabels.value.filter((l) => tabToPropertiesMap.value[side].has(l));
+
+    // Saved tab if still visible, else the default for the side (not persisted): the last output
+    // tab (typically the final result) but the first input tab.
+    const resolveSide = (side: 'inputs' | 'outputs', key: string) => {
+      const tabs = sideTabs(side);
+      const saved = sessionStorage.getItem(key);
+      if (saved && tabs.includes(saved))
+        return saved;
+      return (side === 'outputs' ? tabs[tabs.length - 1] : tabs[0]) ?? null;
+    };
+
+    // formAsTab forces the 'Inputs' tab; otherwise input vs output side by run state.
+    const resolvePreferredTab = () =>
+      formAsTab.value ? 'Inputs' :
+        (isOutputOutdated.value ?
+          resolveSide('inputs', inputKey()) :
+          resolveSide('outputs', outputKey()));
+
+    const handleTabClicked = (title: string | null) => {
+      if (!title)
+        return;
+      preferredTab.value = title;
+      // 'Inputs' (form tab or side-panel) is not persisted: forced by formAsTab or a sticky panel.
+      if (tabToPropertiesMap.value.inputs.has(title))
+        sessionStorage.setItem(inputKey(), title);
+      else if (tabToPropertiesMap.value.outputs.has(title))
+        sessionStorage.setItem(outputKey(), title);
+    };
+
     Vue.watch(currentCall, (call) => {
       rebuildTabs(call);
       userClosed.value = new Set();
@@ -403,6 +441,14 @@ export const RichFunctionView = Vue.defineComponent({
           tabContent: map.inputs.get(tabLabel) ?? map.outputs.get(tabLabel)!,
           isInput: !!map.inputs.has(tabLabel),
         }));
+
+      // Restore the preferred tab on function switch (incl. initial mount) and on run completion
+      // (isOutputOutdated true->false). A plain visibleTabLabels change touches neither, so a
+      // mid-step tab show/hide leaves focus untouched.
+      const switched = prevCall !== call;
+      const justRan = !switched && !!prevCallState?.isOutputOutdated && !!callState && !callState.isOutputOutdated;
+      if (switched || justRan)
+        preferredTab.value = resolvePreferredTab();
     }, {immediate: true});
 
     Vue.watch(currentCall, async (call) => {
@@ -455,40 +501,6 @@ export const RichFunctionView = Vue.defineComponent({
         const next = new Set(userClosed.value);
         next.add(closedLabel);
         userClosed.value = next;
-      }
-    };
-
-    let rebuildInFlight = false;
-    let rebuildTimeoutId: ReturnType<typeof setTimeout> | undefined;
-    const clearRebuildFlag = () => {
-      rebuildInFlight = false;
-      if (rebuildTimeoutId !== undefined) {
-        clearTimeout(rebuildTimeoutId);
-        rebuildTimeoutId = undefined;
-      }
-    };
-    Vue.watch(tabLabels, () => {
-      rebuildInFlight = true;
-      if (rebuildTimeoutId !== undefined) clearTimeout(rebuildTimeoutId);
-      rebuildTimeoutId = setTimeout(clearRebuildFlag, 50);
-    });
-    Vue.onUnmounted(clearRebuildFlag);
-
-    // 'Inputs' is the form side-panel unless formAsTab is on. Don't persist or
-    // restore it as an active tab — it's a sticky panel, not a tab the user switches to.
-    const isInputsSidePanel = (n: string | null) => n === 'Inputs' && !formAsTab.value;
-
-    const handlePanelChanged = (name: string | null, oldName: string | null) => {
-      // Restore on initial mount OR when an inflight rebuild auto-focused away from
-      // the user's saved tab — push the saved tab back if it's still visible.
-      if (oldName == null || rebuildInFlight) {
-        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
-        if (savedName && visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
-          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName));
-      }
-      if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
-        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
-        clearRebuildFlag();
       }
     };
 
@@ -641,7 +653,8 @@ export const RichFunctionView = Vue.defineComponent({
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}
-          onUpdate:activePanelTitle={handlePanelChanged}
+          preferredPanelTitle={preferredTab.value ?? undefined}
+          onTabClicked={handleTabClicked}
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
@@ -731,7 +744,12 @@ export const RichFunctionView = Vue.defineComponent({
                         options={options}
                         dataFrame={tabContent.df.value}
                         class='w-full'
-                        onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
+                        onViewerChanged={(v) => {
+                          setViewerRef(v, tabContent.name, options['type'] as string);
+                          applyDefaultGridFloatFormat(v, options['type'] as string);
+                        }}
+                        onViewerDataFrameChanged={(v) =>
+                          applyDefaultGridFloatFormat(v, options['type'] as string)}
                       />
                     }
                   </div>;

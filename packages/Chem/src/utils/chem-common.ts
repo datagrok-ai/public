@@ -6,8 +6,38 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 export const defaultMorganFpRadius = 2;
 export const defaultMorganFpLength = 2048;
 
-const lockPromiseForKey: any = {};
-const unlockFunctionForKey: any = {};
+/**
+ * Per-key promise-chain mutex (adapted from https://github.com/mistval/locko).
+ * `begin(key)` returns a promise that resolves when the previous holder of `key`
+ * calls `end(key)`; `end(key)` hands the lock to the next waiter. State is
+ * confined to the class so callers can't reach into it from anywhere in the file.
+ */
+class LockManager {
+  private lockPromiseForKey = new Map<string, Promise<void>>();
+  private unlockFunctionForKey = new Map<string, () => void>();
+
+  async begin(key: string): Promise<void> {
+    const takeLockPromise = this.lockPromiseForKey.get(key) ?? Promise.resolve();
+    this.lockPromiseForKey.set(key, takeLockPromise.then(() => new Promise<void>((fulfill) => {
+      this.unlockFunctionForKey.set(key, fulfill);
+    })));
+    return takeLockPromise;
+  }
+
+  end(key: string): void {
+    const unlock = this.unlockFunctionForKey.get(key);
+    if (unlock) {
+      unlock();
+      this.unlockFunctionForKey.delete(key);
+    }
+  }
+
+  has(key: string): boolean {
+    return this.unlockFunctionForKey.has(key);
+  }
+}
+
+const chemLockManager = new LockManager();
 
 export enum Fingerprint {
   Morgan = 'Morgan',
@@ -19,30 +49,19 @@ export enum Fingerprint {
   TopologicalTorsion = 'TopologicalTorsion'
 }
 
-/* By https://github.com/mistval/locko */
-
-export async function criticalSectionBegin(key: string): Promise<any> {
-  if (!lockPromiseForKey[key])
-    lockPromiseForKey[key] = Promise.resolve();
-  const takeLockPromise = lockPromiseForKey[key];
-  lockPromiseForKey[key] = takeLockPromise.then(() => new Promise((fulfill) => {
-    unlockFunctionForKey[key] = fulfill;
-  }));
-  return takeLockPromise;
+export async function criticalSectionBegin(key: string): Promise<void> {
+  return chemLockManager.begin(key);
 }
 
 export function criticalSectionEnd(key: string): void {
-  if (unlockFunctionForKey[key]) {
-    unlockFunctionForKey[key]();
-    delete unlockFunctionForKey[key];
-  }
+  chemLockManager.end(key);
 }
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
 export async function chemBeginCriticalSection(token = CHEM_TOKEN): Promise<void> {
   let warned = false;
-  if (unlockFunctionForKey[token]) {
+  if (chemLockManager.has(token)) {
     console.warn('Chem | Is already in a critical section, waiting...');
     warned = true;
   }

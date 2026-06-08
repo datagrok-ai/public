@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {BehaviorSubject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
@@ -9,6 +10,7 @@ import {
   RichFunctionView as RichFunctionViewInst,
   PipelineView as PipelineViewInst,
   UiUtils,
+  FuncCallInput,
 } from '@datagrok-libraries/compute-utils';
 import {
   ValidationInfo,
@@ -28,6 +30,37 @@ import {
 
 export * from './package.g';
 export const _package = new DG.Package();
+
+class InputMock implements FuncCallInput {
+  _value = new BehaviorSubject<any>(null);
+  notify = true;
+  enabled = true;
+  root = ui.div('', {style: {width: '100%'}});
+  input = ui.input.toggle('test', {value: true});
+
+  constructor() {
+    this.root.append(this.input.root);
+  }
+
+  set value(v: any) {
+    const nv = v ? JSON.parse(v) : '';
+    this._value.next(nv);
+  }
+
+  get value() {
+    if (!this._value.value)
+      return '';
+
+    return JSON.stringify(this._value.value);
+  }
+
+  onInput(fn: Function) {
+    return this._value.subscribe(() => {
+      if (this.notify)
+        fn(this.value);
+    });
+  }
+}
 
 // for compute-api pakage
 export const testPipeline = testPipelineInst;
@@ -251,4 +284,52 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'input'}]})
+  static async CustomInputMock(
+    @grok.decorators.param({type: 'object'}) params: any): Promise<FuncCallInput> {
+    return new InputMock();
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static RangeValidatorFactory(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const {min, max} = params;
+    return (val: number) => {
+      if (val < min || val > max)
+        return makeValidationResultInst({errors: [`Out of range [${min}, ${max}] value: ${val}`]});
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static AsyncValidatorDemoFactory(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return async (val: number) => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (val === 0)
+        return makeValidationResultInst({warnings: [`Try non-null value`]});
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static GlobalValidatorDemoFactory(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const {max} = params;
+    return async (_val: number, info: ValidationInfo) => {
+      if (info.isRevalidation) {
+        if (info.context?.isOk)
+          return makeValidationResultInst();
+        return makeValidationResultInst({warnings: [`Try lowering a value as well`]});
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const {a, b, c} = info.funcCall.inputs;
+      const s = a + b + c;
+      const isOk = s <= max;
+      const valRes = isOk ? makeValidationResultInst() : makeValidationResultInst({warnings: [`Try lowering a value`]});
+      const fields = ['a', 'b', 'c'].filter((p) => p !== info.param);
+      return makeRevalidationInst(fields, {isOk}, valRes);
+    };
+  }
 }

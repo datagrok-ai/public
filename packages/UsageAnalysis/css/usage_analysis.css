@@ -207,3 +207,233 @@
 .performance-downgrade-button {
   justify-content: flex-start !important;
 }
+
+/* --- Metrics dashboard --- */
+
+.ua-metrics {
+  overflow: auto;
+  padding: 12px 16px;
+}
+
+.ua-metrics-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ua-metrics-header {
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.ua-metrics-asof {
+  color: var(--grey-4);
+  font-size: 12px;
+}
+
+button.ui-btn.ui-btn-raised.ua-metrics-btn {
+  background: var(--blue-2);
+}
+
+button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
+  background: var(--white);
+  color: var(--text-color);
+  border: 1px solid var(--grey-2);
+}
+
+.ua-metrics-cards-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ua-metrics-card {
+  flex: 1 1 140px;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 12px 14px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ua-metrics-card-title {
+  font-size: 12px;
+  color: var(--grey-5);
+}
+
+.ua-metrics-card-value {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 300;
+  color: var(--text-color);
+}
+
+.ua-metrics-card-sub {
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.ua-metrics-green { color: var(--green-2); }
+.ua-metrics-orange { color: var(--orange-2); }
+.ua-metrics-red { color: var(--red-3); }
+.ua-metrics-info { color: var(--grey-5); }
+
+.ua-metrics-panel {
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: var(--white);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ua-metrics-panel-header {
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+
+.ua-metrics-panel-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.ua-metrics-link {
+  font-size: 12px;
+  color: var(--blue-2);
+}
+
+.ua-metrics-add-icon {
+  color: var(--blue-1);
+  cursor: pointer;
+}
+
+.ua-metrics-reset-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ua-metrics-btn-danger {
+  color: var(--red-3) !important;
+}
+
+.ua-metrics-btn-danger:hover {
+  color: var(--red-4) !important;
+}
+
+.ua-metrics-mode-toggle.d4-toggle-button-group {
+  display: inline-flex;
+  flex-direction: row;
+  overflow: hidden;
+  margin-right: 0;
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+}
+
+.ua-metrics-mode-toggle .d4-toggle-button {
+  height: 24px;
+  font-size: 12px;
+}
+
+.ua-metrics-grid-host {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.ua-metrics-grid-host.ua-metrics-queries-host {
+  height: 240px;
+}
+
+.ua-metrics-tables-row {
+  display: flex;
+  gap: 12px;
+}
+
+.ua-metrics-tables-row > .ua-metrics-panel {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ua-metrics-footnote {
+  font-size: 11px;
+  color: var(--grey-4);
+  font-style: italic;
+}
+
+.ua-metrics-degraded {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--grey-5);
+  background: var(--grey-1);
+  border-radius: 3px;
+}
+
+.ua-metrics-tt {
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+.ua-metrics-tt-dim {
+  color: var(--grey-4);
+}
+
+.ua-metrics-tt-table {
+  margin-top: 6px;
+}
+
+.ua-metrics-tt-head {
+  font-weight: 500;
+}
+
+.ua-metrics-tt-col-prefix {
+  flex: 1;
+}
+
+.ua-metrics-tt-col-num {
+  width: 70px;
+  text-align: right;
+}
+
+.ua-metrics-tt-col-pct {
+  width: 50px;
+  text-align: right;
+}
+
+.ua-metrics-tt-wide {
+  max-width: 560px;
+}
+
+.ua-metrics-tt-col-state {
+  width: 110px;
+}
+
+.ua-metrics-tt-col-app {
+  width: 110px;
+}
+
+.ua-metrics-tt-col-user {
+  width: 80px;
+}
+
+.ua-metrics-tt-col-query {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}

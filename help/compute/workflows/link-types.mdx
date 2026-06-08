@@ -429,10 +429,12 @@ Pipeline validators attach a validation result to one or more workflow
 nodes rather than to a script io. They have type `pipelineValidator`.
 Unlike regular validators, they target workflow nodes — the
 link-defining workflow, a named descendant, or several at once via an
-array `to`. The handler writes a single `ValidationResult`, which is
-broadcast to every matched target. Multiple pipeline validators on the
-same node combine their results, and the merged outcome is exposed on
-the workflow state as `structureCheckResults`.
+array `to`. Like every other link type, each `to` entry is named, and
+the handler writes a result per name with `setValidation(name, result)`,
+so it can validate a single matched node or several independently.
+Multiple pipeline validators on the same node combine their results, and
+the merged outcome is exposed on the workflow state as
+`structureCheckResults`.
 
 Pipeline validators are reactive in two ways:
 
@@ -452,12 +454,15 @@ The pipeline validator controller has the following methods:
 #### `setValidation` (pipeline validator)
 
 ```
-setValidation(validation?: ValidationResult): void;
+setValidation(name: string, validation?: ValidationResult): void;
 ```
 
-Sets (or clears) this validator's contribution to the merged
-`structureCheckResults` of the target workflow node. Pass `undefined` to
-remove the contribution.
+Sets (or clears) this validator's contribution for the `to` output named
+`name`, merged into the `structureCheckResults` of that target workflow
+node. `name` is the output's name in the `to` query (for example, `to:
+'check:first(inner)'` is named `check`). Omit the validation to remove the
+contribution. To write the same result to every matched target, call
+`setValidation` once per name.
 
 #### `getOutline`
 

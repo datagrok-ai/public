@@ -518,10 +518,10 @@ from our server.
    ```
 
    There are several methods you can use to open a table. For demo files, the simplest way is
-   [grok.data.getDemoTable](https://datagrok.ai/api/js/api/dg/classes/Data#getdemotable). For files outside of the
+   [grok.data.getDemoTable](https://datagrok.ai/api/js/dg/classes/Data#getdemotable). For files outside of the
    `Demo:Files` [file share](../../access/files/files.md), you can use
-   [grok.data.files.openTable](https://datagrok.ai/api/js/api/dg/classes/Files#opentable), or execute a command
-   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/api/js/api/dg/classes/Functions#eval) (to see how it
+   [grok.data.files.openTable](https://datagrok.ai/api/js/dg/classes/Files#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/api/js/dg/classes/Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
    `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
    
@@ -831,7 +831,7 @@ connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) a
 coronavirus.
 
 1. Obtain a ENA's Swagger JSON file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
-   following [this link](https://www.ebi.ac.uk/ena/browser/api/v2/api-docs). It usually takes you some effort to reach
+   following [this link](https://www.ebi.ac.uk/ena/browser/api/). It usually takes you some effort to reach
    the JSON Swagger at the API Browser link. The rule of thumb there is to use the browser's "Network" tab in the
    Developers Console (available by F12), and identify there a resource called "
    api-docs". Usually, when there's an [API Navigator][018], there's also a JSON Swagger. It's also possible to
@@ -1025,6 +1025,6 @@ A simple keyword search in the ENA database (with navigation)
 
 [020]: ../../access/open-api#troubleshooting "OpenAPI connections troubleshooting"
 
-<!--[021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"-->
+<!--[021]: https://github.com/datagrok-ai/public/tree/master/packages/Samples/swaggers "Datagrok Swaggers samples"-->
 
 [022]: #exercise-9-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"

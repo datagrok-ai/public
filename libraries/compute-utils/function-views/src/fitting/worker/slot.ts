@@ -35,6 +35,11 @@ export class Slot {
   hasSession(id: SessionId): boolean { return this.sessions.has(id); }
   hasPendingSetup(id: SessionId): boolean { return this.pendingSetups.has(id); }
 
+  // Session of the in-flight job, for attributing a worker crash to its cause.
+  runningSessionId(): SessionId | null {
+    return this.runState.phase === 'running' ? this.runState.job.spec.sessionId : null;
+  }
+
   claim(job: RunJob, runTimeoutMs: number, onTimeout: () => void): void {
     const runTimer = setTimeout(onTimeout, runTimeoutMs);
     job.startRunning(runTimer);

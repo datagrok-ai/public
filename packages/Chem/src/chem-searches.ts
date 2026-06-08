@@ -46,8 +46,8 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString, fingerprints);
-  const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
-  const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
+  const limit = Math.min(settings.limit ?? len, len);
+  const minScore = settings.minScore ?? 0.0;
   const sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
     const a1 = distances[i1];
     const a2 = distances[i2];
@@ -95,7 +95,8 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
-  const diversities = new Array(limit).fill('');
+  // Pre-allocated to the known length; every slot is written below so no need to .fill('').
+  const diversities = new Array<string>(limit);
 
   for (let i = 0; i < limit; i++)
     diversities[i] = molStringsColumn.get(indexes[diverseIndexes[i]]);
@@ -219,7 +220,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
       _chemGetSimilarities(queryMolString, fingerprints)) : null;
 }
@@ -241,7 +242,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
   assure.notNull(queryMolString, 'queryMolString');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
 }
 
@@ -261,7 +262,7 @@ before returning (required for compatibility)
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, filterType = FILTER_TYPES.substructure,
   columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
-  fp = Fingerprint.Morgan): Promise<BitArray> {
+  fp = Fingerprint.Morgan, includeMask: BitArray | null = null): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
@@ -323,7 +324,7 @@ export async function chemSubstructureSearchLibrary(
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
         molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp,
-        updateNumOfCalculatedFpBatches);
+        updateNumOfCalculatedFpBatches, includeMask);
     const saveProcessedColumns = () => {
       try {
         //save procecced columns only in case at least one fp batch has been calculated.

@@ -468,12 +468,14 @@ export function createDynamicForm(
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
 
-  ui.onSizeChanged(form.root).subscribe(() => {
+  form.subs.push(ui.onSizeChanged(form.root).subscribe(() => {
+    if (!form.root.isConnected)
+      return;
     const containerWidth = form.root.clientWidth;
     if (!containerWidth) return;
     const updatedFormState = generator.generateFormState(containerWidth);
     form.form.state = JSON.stringify(updatedFormState);
-  });
+  }));
   return form;
 }
 

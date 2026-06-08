@@ -245,7 +245,7 @@ export class SubstructureFilter extends DG.Filter {
   attach(dataFrame: DG.DataFrame): void {
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
-        this.sketcher.root.children[0].classList.add('chem-hide-filter');
+        this.sketcher.root.children[0]?.classList.add('chem-hide-filter');
         this.sketcher.root.append(this.errorDiv);
         return;
       });
@@ -298,7 +298,7 @@ export class SubstructureFilter extends DG.Filter {
         this._peerFilterDisabled = !state.active;
     }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+      if (state.colName === this.columnName && this.tableName === state.tableName && this.filterId !== state.filterId) {
         /* setting syncEvent to true if base sketcher is initialized or sketcher is in inplace mode and we are setting new molecule.
         If base sketcher is initialized, it will fire onChange event */
         _package.logger.debug(`********** sync event sent by filter ${state.filterId} to ${this.filterId}`);
@@ -335,7 +335,7 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+      if (state.colName === this.columnName && this.tableName === state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) {
           if (DG.chem.currentSketcherType !== this.sketcherType &&
             this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
@@ -347,14 +347,14 @@ export class SubstructureFilter extends DG.Filter {
     }));
 
     this.subs.push(grok.events.onCustomEvent(ALIGN_SYNC_EVENT).subscribe((state: AlignHighlightSync) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+      if (state.colName === this.columnName && this.tableName === state.tableName && this.filterId !== state.filterId) {
         this.alignSync = true;
         setTimeout(() => this.sketcher.align = state.align, 0);
       }
     }));
 
     this.subs.push(grok.events.onCustomEvent(HIGHLIGHT_SYNC_EVENT).subscribe((state: AlignHighlightSync) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+      if (state.colName === this.columnName && this.tableName === state.tableName && this.filterId !== state.filterId) {
         this.highlightSync = true;
         setTimeout(() => this.sketcher.highlight = state.highlight, 0);
       }
@@ -372,13 +372,22 @@ export class SubstructureFilter extends DG.Filter {
     //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
-      this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
+      if (this.syncEvent === true)
+        this.syncEvent = false;
+      else
+        await this._onSketchChanged();
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {
-      this.alignSync === true ? this.alignSync = false : this.setFilterScaffoldTagAndFireSync(true);
+      if (this.alignSync === true)
+        this.alignSync = false;
+      else
+        this.setFilterScaffoldTagAndFireSync(true);
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onHighlightChanged.subscribe(async (_: any) => {
-      this.highlightSync === true ? this.highlightSync = false : this.setFilterScaffoldTagAndFireSync();
+      if (this.highlightSync === true)
+        this.highlightSync = false;
+      else
+        this.setFilterScaffoldTagAndFireSync();
     }));
     this.onSketcherChangedSubs?.push(this.searchTypeChanged.subscribe(async (_: any) => {
       await this._onSketchChanged();
@@ -557,7 +566,7 @@ export class SubstructureFilter extends DG.Filter {
         this.recalculateFilter = true; //in case applyState was called on disabled filter -> need to recalculate results
       else
         this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary('')}; //sketcher was cleared -> current sketcher becomes the active one
-      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null; //TODO
+      this.bitset = !this.active ? DG.BitSet.create(this.column!.length) : null;
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
