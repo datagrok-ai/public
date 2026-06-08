@@ -76,11 +76,11 @@ You can add multiple views to the same table, each maintaining its own layout co
 
 All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
 
-### Add view
+#### Add view
 
 To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
 
-### Clone view
+#### Clone view
 
 To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
 
