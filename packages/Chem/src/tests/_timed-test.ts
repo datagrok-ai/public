@@ -80,8 +80,19 @@ export function test(name: string, fn: () => Promise<any>, options?: TestOptions
         // waitForElementInDom retention IS the leak (and since the Chem-side call sites are already
         // bounded, the growth would be coming from the platform Sketcher's internal calls).
         const wfeLen = (ui.tools as any)?.mutationObserverElements?.length ?? 'n/a';
+        // The renderer climbs to ~1 GB JS heap during the memory-heavy "clone and layout tests"
+        // category (each scenario opens/clones table views + substructure filters). closeAll()/
+        // closeTable() above drop the references, but the synchronous test loop never yields long
+        // enough for V8 to reclaim them before the next heavy test, so the peak keeps rising until
+        // the headless renderer OOM-crashes — and because the runner launches Puppeteer with
+        // protocolTimeout: 0, the single page.evaluate that drives the whole suite then hangs until
+        // the CI step timeout (the "test hang"). Chrome is started with --js-flags=--expose-gc, so
+        // force a collection here to keep the peak well below the crash threshold.
+        const gc = (globalThis as any).gc;
+        if (typeof gc === 'function')
+          gc();
         console.warn(`[LEAK-DIAG] afterEach cleanup: views ${viewsBefore}->${viewsAfter} ` +
-          `tables ${tablesBefore}->${tablesAfter} waitForElementInDom.pending=${wfeLen}`);
+          `tables ${tablesBefore}->${tablesAfter} waitForElementInDom.pending=${wfeLen} gc=${typeof gc === 'function'}`);
       } catch (e) {
         console.warn(`[LEAK-DIAG] afterEach cleanup threw: ${e}`);
       }
