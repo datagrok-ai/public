@@ -34,6 +34,34 @@ const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let chemFilterid = 0;
 let liveSubstructureFilters = 0; // LEAK-DIAG: created minus detached, to find the test-suite memory leak
 
+// Bounded replacement for ui.tools.waitForElementInDom. That platform helper keeps the element
+// and its resolve callback in a module-level array forever when the element never enters the DOM
+// (e.g. a filter in a cloned view or a closed hamburger menu), retaining the whole filter graph —
+// the root cause of the Chem test-suite memory growth / CI OOM (regression from GROK-14952, which
+// made refresh() call it on every refresh). This version disconnects and drops all references
+// after timeoutMs if the element hasn't appeared, so nothing is retained beyond that window.
+function waitForElementInDomBounded(element: HTMLElement, timeoutMs = 10000): Promise<HTMLElement | null> {
+  if (document.contains(element))
+    return Promise.resolve(element);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (el: HTMLElement | null): void => {
+      if (done)
+        return;
+      done = true;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve(el);
+    };
+    const observer = new MutationObserver(() => {
+      if (document.contains(element))
+        finish(element);
+    });
+    observer.observe(document.body, {childList: true, subtree: true});
+    const timer = setTimeout(() => finish(null), timeoutMs);
+  });
+}
+
 const searchTypeHints = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
   [SubstructureSearchType.INCLUDED_IN]: 'search structures for which sketched pattern is a superstructure',
@@ -390,8 +418,12 @@ export class SubstructureFilter extends DG.Filter {
   refresh() {
     if (!this.sketcher.sketcherTypeChanged)
       this.sketcher.sketcher?.refresh();
-    //restore molfile in hamburger menu filter after DOM reattach or sketcher type change
-    ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+    //restore molfile in hamburger menu filter after DOM reattach or sketcher type change.
+    //bounded wait (not ui.tools.waitForElementInDom) so a filter whose sketcher never enters the
+    //DOM doesn't get retained forever — see waitForElementInDomBounded above.
+    waitForElementInDomBounded(this.sketcher.root).then((el) => {
+      if (!el)
+        return;
       const molFile = this.getSketcherMolecule();
       if (this.currentMolecule && molFile !== this.currentMolecule) {
         this.syncEvent = true;
