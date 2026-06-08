@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Public datasets"
 sidebar_position: 4
 ---
