@@ -572,18 +572,21 @@ jobs:
         working-directory: js-api
         run: |
           # Validate js-api source changes against the running bleeding-edge stand
-          # without publishing js-api or rebuilding any docker image: compile ui.ts
-          # locally and copy the resulting ui.js over the one the browser loads.
+          # without publishing js-api or rebuilding any docker image. The browser loads
+          # the webpack bundle js/api/js-api.js (NOT the standalone ui.js, which the
+          # platform never serves), so build that bundle and copy it over the one in
+          # the running container.
           npm ci
-          npx tsc
+          npx webpack --config webpack.config.js --output-path "$PWD/_overlay_bundle"
           datagrok_container=$(docker ps --filter "ancestor=datagrok/datagrok:bleeding-edge" --format '{{.ID}}' | head -n1)
           if [ -z "$datagrok_container" ]; then
             echo "::error title=Chem::Could not locate running datagrok stand container for js-api overlay"
             exit 1
           fi
-          docker cp ui.js "$datagrok_container":/home/grok/datagrok/public/js-api/ui.js
-          [ -f ui.js.map ] && docker cp ui.js.map "$datagrok_container":/home/grok/datagrok/public/js-api/ui.js.map || true
-          echo "::notice title=Chem::Overlaid locally-built js-api/ui.js onto the running stand (no publish, no image rebuild)"
+          target=/home/grok/datagrok/html.build/web/js/api/js-api.js
+          docker cp _overlay_bundle/js-api.js "$datagrok_container":"$target"
+          [ -f _overlay_bundle/js-api.js.map ] && docker cp _overlay_bundle/js-api.js.map "$datagrok_container":"$target".map || true
+          echo "::notice title=Chem::Overlaid locally-built js-api bundle (js/api/js-api.js) onto the running stand (no publish, no image rebuild)"
       - name: Configuration setuid sandbox
         run: |
           linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)
