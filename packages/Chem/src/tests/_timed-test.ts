@@ -67,10 +67,17 @@ export function test(name: string, fn: () => Promise<any>, options?: TestOptions
       // So also close every remaining table to release them. Tests that need shared state across
       // the category must set it up in before() (only the disabled 3d-hover category does).
       try {
+        const viewsBefore = [...grok.shell.tableViews].length;
+        const tablesBefore = grok.shell.tables.length;
         grok.shell.closeAll();
         for (const t of [...grok.shell.tables])
           grok.shell.closeTable(t);
-      } catch {/* ignore */}
+        const viewsAfter = [...grok.shell.tableViews].length;
+        const tablesAfter = grok.shell.tables.length;
+        console.warn(`[LEAK-DIAG] afterEach cleanup: views ${viewsBefore}->${viewsAfter} tables ${tablesBefore}->${tablesAfter}`);
+      } catch (e) {
+        console.warn(`[LEAK-DIAG] afterEach cleanup threw: ${e}`);
+      }
     }
   }, options);
 }

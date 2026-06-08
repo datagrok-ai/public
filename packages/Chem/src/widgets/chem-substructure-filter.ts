@@ -32,6 +32,7 @@ const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let chemFilterid = 0;
+let liveSubstructureFilters = 0; // LEAK-DIAG: created minus detached, to find the test-suite memory leak
 
 const searchTypeHints = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
@@ -170,6 +171,7 @@ export class SubstructureFilter extends DG.Filter {
     super();
     initRdKitService(); // No await
     this.filterId = chemFilterid++;
+    console.warn(`[LEAK-DIAG] SubstructureFilter created id=${this.filterId} live=${++liveSubstructureFilters}`);
     this.root = ui.divV([]);
     this.calculating = false;
 
@@ -421,6 +423,7 @@ export class SubstructureFilter extends DG.Filter {
     //detach the sketcher so its underlying editor/canvas/DOM is released — otherwise every filter
     //leaks a heavy sketcher instance, accumulating memory across the test suite (and in production).
     this.sketcher?.detach();
+    console.warn(`[LEAK-DIAG] SubstructureFilter detached id=${this.filterId} live=${--liveSubstructureFilters}`);
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {
