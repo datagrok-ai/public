@@ -6,7 +6,6 @@ export const SUBJECT_ID = 'USUBJID';
 export const VISIT_DAY = 'VISITDY';
 export const VISIT = 'VISIT';
 export const VISIT_NUM = 'VISITNUM';
-export const VISIT_DAY_STR = 'VISITDY_STR';
 //dm
 export const ACT_TRT_ARM = 'ACTARM';
 export const PLANNED_TRT_ARM = 'ARM';
@@ -17,8 +16,6 @@ export const ETHNIC = 'ETHNIC';
 export const SUBJ_REF_STDT = 'RFSTDTC';
 export const SUBJ_REF_ENDT = 'RFENDTC';
 export const DEATH_DATE = 'DTHDTC';
-export const SPECIES = 'SPECIES';
-export const AGETXT = 'AGETXT';
 //ae
 export const AE_START_DAY = 'AESTDY';
 export const AE_START_DAY_CALCULATED = 'AESTDY_CALCULATED';
@@ -69,14 +66,6 @@ export const LAB_TEST_CAT = 'LBCAT';
 export const VS_TEST = 'VSTEST';
 export const VS_RES_N = 'VSSTRESN';
 export const VS_DAY = 'VSDY';
-//bw
-export const BW_TEST = 'BWTEST';
-export const BW_RES_N = 'BWSTRESN';
-export const BW_DAY = 'BWDY';
-//bg
-export const BG_TEST = 'BGTEST';
-export const BG_RES_N = 'BGSTRESN';
-export const BG_DAY = 'BGDY';
 //mh
 export const MH_DECOD_TERM = 'MHDECOD';
 export const MH_CATEGORY = 'MHCAT';
@@ -94,23 +83,9 @@ export const QS_RES_N = 'QSSTRESN';
 export const TSPARMCD = 'TSPARMCD';
 export const TSPARM = 'TSPARM';
 export const TSVAL = 'TSVAL';
-//cl
-export const CLORRES = 'CLORRES';
-
-//mi
-export const MISTRESC = 'MISTRESC';
-export const MISPEC = 'MISPEC';
-export const MISEV = 'MISEV';
-export const MIDY = 'MIDY';
-export const MILAT = 'MILAT';
-export const MIDIR = 'MIDIR';
-export const MIANTREG = 'MIANTREG';
-export const MIDY_STR = 'MIDY_STR';
 
 
 export const HAS_VALIDATION_ERRORS_COL = 'HasValidationErrors';
 export const VIOLATED_RULES_COL = 'ViolatedRules';
 export const COL_HAS_ERRORS_POSTFIX = '_hasErrors';
 export const ERRORS_POSTFIX = '_errors';
-
-

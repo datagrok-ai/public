@@ -20,6 +20,6 @@ modform <- as.formula(paste("Surv(time, status)", inputStrata, sep = " ~ "))
 
 km_trt_fit <- survfit(modform, data=survivalDf, conf.int = as.numeric(confInt))
 
-autoplot(km_trt_fit) +
-  theme_bw()
+print(autoplot(km_trt_fit) +
+  theme_bw())
 

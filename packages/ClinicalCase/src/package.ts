@@ -17,28 +17,24 @@ import {TreeMapView} from './views/tree-map-view';
 import {MedicalHistoryView} from './views/medical-history-view';
 import {VisitsView} from './views/visits-view';
 import {StudyConfigurationView} from './views/study-config-view';
-import {ConfigurationView} from './views/configuration-view';
 import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME,
-  ANIMAL_PROFILE_VIEW_NAME,
   CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
-  MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
-  CONFIGURATION_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
   MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+  MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
+  SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
   TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
-  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME,
-  MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME} from './constants/view-names-constants';
+  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
 import {createClinCaseTableView} from './utils/views-creation-utils';
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
-import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './utils/types';
+import {ClinCaseTableView, ClinStudyConfig, SDTM} from './utils/types';
 import {ClinicalStudy} from './clinical-study';
 import '../css/clinical-case.css';
 import {scripts} from './package-api';
 import dayjs from 'dayjs';
 import {createInitialSatistics} from './utils/initial-statistics-widget';
 import {cdiscAppTB, CLINICAL_CASE_APP_PATH, createStudiesFromAppData,
-  openApp, PRECLINICAL_CASE_APP_PATH,
-  studies} from './utils/app-utils';
+  openApp, studies} from './utils/app-utils';
 // Import renderer to ensure it's registered
 import './utils/rule-violation-cell-renderer';
 
@@ -76,7 +72,7 @@ export class PackageFunctions {
     'icon': '/img/clin_case_icon.png',
   })
   static async clinicalCaseApp(): Promise<DG.ViewBase | void> {
-    return await openApp(CDISC_STANDARD.SDTM);
+    return await openApp(SDTM);
   }
 
 
@@ -84,21 +80,20 @@ export class PackageFunctions {
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${CLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, `/${CDISC_STANDARD.SDTM}`) : '';
+      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, `/${SDTM}`) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-    await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
+    await cdiscAppTB(treeNode, SDTM, studyAndView.study, studyAndView.viewName);
   }
-
 
 
   @grok.decorators.func({
     'name': 'Get list of studies',
-    'description': 'Return list of clinical and preclinical studies loaded into Clinical Case application',
+    'description': 'Return list of clinical studies loaded into Clinical Case application',
   })
   static async getListOfStudies(
     @grok.decorators.param({type: 'string', options: {optional: true}}) name?: string,
     // eslint-disable-next-line max-len
-    @grok.decorators.param({type: 'string', options: {optional: true, description: 'More detailed study information including species, drug, dosing'}}) description?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'More detailed study information including drug, dosing'}}) description?: string,
     @grok.decorators.param({type: 'int', options: {optional: true}}) numSubjects?: number,
     // eslint-disable-next-line max-len
     @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) numSubjectsOperator?: string,
@@ -109,20 +104,16 @@ export class PackageFunctions {
     // eslint-disable-next-line max-len
     @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) endDateOperator?: string,
     // eslint-disable-next-line max-len
-    @grok.decorators.param({type: 'bool', options: {optional: true}}) ongoing?: boolean,
-    // eslint-disable-next-line max-len
-    @grok.decorators.param({type: 'string', options: {optional: true, description: 'CDISC data format, either SDTM or SEND'}})
-      standard?: CDISC_STANDARD): Promise<DG.Widget> {
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) ongoing?: boolean): Promise<DG.Widget> {
     const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-      .getOrCreateGroup(standard === CDISC_STANDARD.SEND ? 'Preclinical Case' : 'Clinical Case');
-    await createStudiesFromAppData(clinicalCaseNode, standard ?? CDISC_STANDARD.SDTM);
+      .getOrCreateGroup('Clinical Case');
+    await createStudiesFromAppData(clinicalCaseNode, SDTM);
     const filterConfig: ClinStudyConfig = {
       name: name ? name : undefined,
       description: description ? description : undefined,
       totalSubjects: numSubjects,
       startDate,
       endDate,
-      standard: standard ? standard : undefined,
     };
     let filteredStudies: ClinicalStudy[] = [];
     for (const study of Object.values(studies)) {
@@ -244,7 +235,7 @@ export class PackageFunctions {
   static async runCoreValidate(
     @grok.decorators.param({
       'name': 'standard',
-      'description': 'CDISC standard (e.g., sendig, sdtmig)',
+      'description': 'CDISC standard (e.g., sdtmig)',
     }) standard: string,
     @grok.decorators.param({
       'name': 'dataPath',
@@ -267,7 +258,7 @@ export class PackageFunctions {
   ): Promise<string> {
     const containers = await grok.dapi.docker.dockerContainers.filter('name = "clinical-case"').list();
     if (containers.length === 0)
-      throw new Error('Clinical Case validation container "clinical-case" is not available on this server');
+      throw new Error('Clinical Case validation container "clinical-case" is not available');
 
     const result = await grok.functions.call('ClinicalCase:run_core_validate', {
       standard,
@@ -280,16 +271,11 @@ export class PackageFunctions {
   }
 }
 
-export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
-  [CDISC_STANDARD.SDTM]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME,
-    ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME,
-    CORRELATIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
-    VISITS_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, VALIDATION_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME,
-    AE_BROWSER_VIEW_NAME],
-
-  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
-    MEASUREMENT_PROFILE_TABLE_VIEW_NAME, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, CONFIGURATION_VIEW_NAME],
-};
+export const SUPPORTED_VIEWS: string[] = [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME,
+  PATIENT_PROFILE_VIEW_NAME, ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME,
+  DISTRIBUTIONS_VIEW_NAME, CORRELATIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
+  MEDICAL_HISTORY_VIEW_NAME, VISITS_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, VALIDATION_VIEW_NAME,
+  QUESTIONNAIRES_VIEW_NAME, AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME];
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
 
@@ -298,7 +284,6 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [TIMELINES_VIEW_NAME]: (studyId) => new TimelinesView(TIMELINES_VIEW_NAME, studyId),
   [LABORATORY_VIEW_NAME]: (studyId) => new LaboratoryView(LABORATORY_VIEW_NAME, studyId),
   [PATIENT_PROFILE_VIEW_NAME]: (studyId) => new PatientProfileView(PATIENT_PROFILE_VIEW_NAME, studyId),
-  [ANIMAL_PROFILE_VIEW_NAME]: (studyId) => new PatientProfileView(ANIMAL_PROFILE_VIEW_NAME, studyId),
   [ADVERSE_EVENTS_VIEW_NAME]: (studyId) => new AdverseEventsView(ADVERSE_EVENTS_VIEW_NAME, studyId),
   [AE_RISK_ASSESSMENT_VIEW_NAME]: (studyId) => new AERiskAssessmentView(AE_RISK_ASSESSMENT_VIEW_NAME, studyId),
   [SURVIVAL_ANALYSIS_VIEW_NAME]: (studyId) => new SurvivalAnalysisView(SURVIVAL_ANALYSIS_VIEW_NAME, studyId),
@@ -310,15 +295,12 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId, addView?: boolean) =>
     new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId, addView),
-  [CONFIGURATION_VIEW_NAME]: (studyId) => new ConfigurationView(CONFIGURATION_VIEW_NAME, studyId),
   [VALIDATION_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, VALIDATION_VIEW_NAME),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
   [MATRIX_TABLE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, MATRIX_TABLE_VIEW_NAME),
   [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: (studyId) =>
     createClinCaseTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME),
-  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: (studyId) =>
-    createClinCaseTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME),
 };
 
 

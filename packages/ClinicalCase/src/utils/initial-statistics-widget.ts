@@ -25,7 +25,7 @@ export function createInitialSatistics(clinicalCaseNode: DG.TreeViewGroup, confi
   const table = ui.table(statsObj, (item) => {
     return [
       ui.link(item.name, async () => {
-        openStudy(clinicalCaseNode, studies[item.name].config.standard, item.name, SUMMARY_VIEW_NAME);
+        openStudy(clinicalCaseNode, item.name, SUMMARY_VIEW_NAME);
       }, 'Open study'),
       item.standard,
       item.protocol,

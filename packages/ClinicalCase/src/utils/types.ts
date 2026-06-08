@@ -1,6 +1,7 @@
-/* eslint-disable no-unused-vars */
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
+
+export const SDTM = 'SDTM';
 
 export type ClinStudyConfig = {
     protocol?: string;
@@ -10,13 +11,9 @@ export type ClinStudyConfig = {
     startDate?: dayjs.Dayjs;
     endDate?: dayjs.Dayjs;
     other?: {[key: string]: string};
-    standard?: CDISC_STANDARD;
+    standard?: string;
+    standardVersion?: string;
     fieldsDefinitions?: {[key: string]: string};
-}
-
-export enum CDISC_STANDARD {
-    SDTM = 'SDTM',
-    SEND = 'SEND',
 }
 
 export type ClinCaseTableView = {

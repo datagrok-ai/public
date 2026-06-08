@@ -23,10 +23,10 @@ export namespace funcs {
   }
 
   /**
-  Return list of clinical and preclinical studies loaded into Clinical Case application
+  Return list of clinical studies loaded into Clinical Case application
   */
-  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , ongoing?: boolean , standard?: string ): Promise<any> {
-    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard });
+  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , ongoing?: boolean ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing });
   }
 
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {

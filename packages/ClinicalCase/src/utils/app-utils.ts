@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {_package, SUPPORTED_VIEWS, VIEW_CREATE_FUNC} from '../package';
-import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
+import {ClinCaseTableView, ClinStudyConfig, SDTM} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
   studyConfigJsonFileName} from '../constants/constants';
 import X2JS from 'x2js';
@@ -25,7 +25,6 @@ import {setupTableViewLayout} from './layout-utils';
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
 export const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase/ClinicalCase';
-export const PRECLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase/PreclinicalCase';
 export const studyLoadedSubject = new Subject<{name: string, loaded: boolean, errorDomains?: string[]}>();
 export const studies: {[key: string]: ClinicalStudy} = {};
 
@@ -36,23 +35,23 @@ export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
   const loaderItem = treeNode.item(loaderDiv);
   //create import study view
   const importStudyItem = treeNode.item('Import study');
-  importStudyItem.onSelected.subscribe(() => createImportStudyView(standard));
+  importStudyItem.onSelected.subscribe(() => createImportStudyView());
   //this creates studies objects and tree view nodes
-  await createStudiesFromAppData(treeNode, standard as CDISC_STANDARD);
+  await createStudiesFromAppData(treeNode, standard);
   //opens exact study and view
-  openStudy(treeNode, standard, currentStudy, currentViewName);
+  openStudy(treeNode, currentStudy, currentViewName);
   loaderItem.remove();
 }
 
-export function createImportStudyView(standard: string) {
+export function createImportStudyView() {
   currentOpenedView = DG.View.create();
   currentOpenedView.root.classList.add('clinical-case-study-import-view');
-  currentOpenedView.name = `Import Study - ${standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case'}`;
+  currentOpenedView.name = `Import Study - Clinical Case`;
 
   let studyConfig: ClinStudyConfig | null = null;
   // Get the tree node for creating study config
   const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
-    getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
+    getOrCreateGroup('Clinical Case');
 
   const fileNamesDiv = ui.div();
   const errorDiv = ui.div();
@@ -160,7 +159,7 @@ export function createImportStudyView(standard: string) {
     grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${studyConfigJsonFileName}`,
       JSON.stringify(studyConfig));
     addStudyToBrowseTree(studies[studyConfig.name], clinicalCaseNode, filesInput.value);
-    openStudy(clinicalCaseNode, studyConfig.standard, studyConfig.name, SUMMARY_VIEW_NAME);
+    openStudy(clinicalCaseNode, studyConfig.name, SUMMARY_VIEW_NAME);
   });
 
   importStudyButton.disabled = true;
@@ -176,10 +175,9 @@ export function createImportStudyView(standard: string) {
   grok.shell.addView(currentOpenedView);
 }
 
-export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | void> {
+export async function openApp(standard: string): Promise<DG.ViewBase | void> {
   const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + `/img/${standard === CDISC_STANDARD.SDTM ?
-      'clin_case_icon.png' : 'preclinical_case_icon.png'}`,
+    iconPath: _package.webRoot + `/img/clin_case_icon.png`,
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
     description:
       `-  Visualize and explore your ${standard} data\n` +
@@ -192,7 +190,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
 
   const studiesHeader = ui.h1('Studies');
   const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
-    getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
+    getOrCreateGroup('Clinical Case');
   clinicalCaseNode.currentItem = null;
   //this creates studies objects and tree view nodes
   await createStudiesFromAppData(clinicalCaseNode, standard);
@@ -209,9 +207,8 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   importStudyDiv.append(importStudyButton);
   currentOpenedView?.close();
   currentOpenedView = DG.View.create();
-  currentOpenedView.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
-  currentOpenedView.path = standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
-    CLINICAL_CASE_APP_PATH;
+  currentOpenedView.name = 'Clinical Case';
+  currentOpenedView.path = CLINICAL_CASE_APP_PATH;
   currentOpenedView.root.append(ui.divV([
     appHeader,
     studiesHeader,
@@ -222,7 +219,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
 }
 
 
-export async function createStudiesFromAppData(treeNode: DG.TreeViewGroup, standard: CDISC_STANDARD) {
+export async function createStudiesFromAppData(treeNode: DG.TreeViewGroup, standard: string) {
   const folders = await _package.files.list(`${standard}`);
   for (const folder of folders) {
     try {
@@ -251,23 +248,30 @@ async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.TreeView
     //if study is loaded for the first time and no config has been saved previously
     //firsts extract all key fields from define.xml
     if (!config) {
-      config = {standard: CDISC_STANDARD.SDTM};
+      config = {standard: SDTM};
       //look for define.xml
       const defineXml = files.filter((it) => it.name === defineXmlFileName);
       if (defineXml.length) {
+        const defineXmlText = await defineXml[0].readAsString();
         const parser = new X2JS();
-        const defineJson = parser.xml2js(await defineXml[0].readAsString()) as any;
+        const defineJson = parser.xml2js(defineXmlText) as any;
         config.name = defineJson?.ODM?.Study?.GlobalVariables?.StudyName;
         config.protocol = defineJson?.ODM?.Study?.GlobalVariables?.ProtocolName;
         config.description = defineJson?.ODM?.Study?.GlobalVariables?.StudyDescription;
-        // eslint-disable-next-line max-len
-        if (defineJson?.ODM?.Study?.MetaDataVersion?.['_def:StandardName'] && defineJson?.ODM?.Study.MetaDataVersion?.['_def:StandardName'].toLowerCase().includes('send'))
-          config.standard = CDISC_STANDARD.SEND;
+        //extract the SDTM-IG version published in define.xml (def:StandardVersion on MetaDataVersion).
+        //X2JS keeps the namespace prefix in the key; some configurations strip it, so we also try
+        //'_StandardVersion' before falling back to a regex over the raw XML.
+        const mdv = defineJson?.ODM?.Study?.MetaDataVersion;
+        let standardVersion: string | undefined =
+          mdv?.['_def:StandardVersion'] ?? mdv?._StandardVersion;
+        if (!standardVersion)
+          standardVersion = defineXmlText.match(/def:StandardVersion="([^"]+)"/)?.[1];
+        if (standardVersion)
+          config.standardVersion = standardVersion;
         //create fields descriptions
-        if (defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef &&
-          Array.isArray(defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef)) {
+        if (mdv?.ItemDef && Array.isArray(mdv.ItemDef)) {
           config.fieldsDefinitions = {};
-          for (const field of defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef) {
+          for (const field of mdv.ItemDef) {
             if (field._Name) {
               if (field.Description?.__text)
                 config.fieldsDefinitions[field._Name] = field.Description.__text;
@@ -364,7 +368,7 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
           sub.unsubscribe();
           if (data.loaded) {
             //adding views to tree only after data is loaded since we need all domains to perform validation
-            for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
+            for (const viewName of SUPPORTED_VIEWS) {
               //do not add view in case validation not passed
               const validator = new ValidationHelper(getRequiredColumnsByView(study.studyId)[viewName], study.studyId);
               if (!validator.validate())
@@ -480,6 +484,21 @@ async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, curre
   loadView(study, currentViewName, node);
 }
 
+/** Re-creates the Validation view for a study after async validate() has settled.
+ * The view itself decides whether validation is ready; if not it'll wire up
+ * another subscription. Idempotent — does nothing when the tree node is gone. */
+export function reloadValidationView(studyId: string) {
+  const study = studies[studyId];
+  const node = validationNodes[studyId];
+  if (!study || !node)
+    return;
+  const parent = node.parent as DG.TreeViewGroup | undefined;
+  if (!parent)
+    return;
+  delete study.views[VALIDATION_VIEW_NAME];
+  loadView(study, VALIDATION_VIEW_NAME, parent);
+}
+
 async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.TreeViewGroup) {
   let view = studies[study.studyId].views[viewName];
   let helper: any;
@@ -514,12 +533,10 @@ async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.T
     (view as ClinicalCaseViewBase).load();
   else
     helper?.propertyPanel();
-  view.path =
-        `${study.config.standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
-          CLINICAL_CASE_APP_PATH}/${encodeURI(study.studyId)}/${encodeURI(viewName)}`;
+  view.path = `${CLINICAL_CASE_APP_PATH}/${encodeURI(study.studyId)}/${encodeURI(viewName)}`;
 };
 
-export function openStudy(treeNode: DG.TreeViewGroup, standard: string,
+export function openStudy(treeNode: DG.TreeViewGroup,
   currentStudyName: string, currentViewName: string) {
   if (currentStudyName && !Object.keys(studies).includes(currentStudyName))
     grok.shell.error(`Study ${currentStudyName} doesn't exist`);

@@ -2,3 +2,5 @@ datagrok-celery-task
 celery
 datagrok-api>=0.0.9
 filelock
+pandas<3.0
+pyreadstat

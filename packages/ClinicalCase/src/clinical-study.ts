@@ -7,7 +7,7 @@ import {COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_CO
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol,
   calculateLBBaselineColumns} from './data-preparation/data-preparation';
 import {createFilters, removeExtension} from './utils/utils';
-import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
+import {ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
@@ -17,75 +17,60 @@ import {COLUMN_FROM_DM_TAG} from './constants/constants';
 
 export class ClinicalDomains {
   // Domains listed in alphabetical order
-  ae: DG.DataFrame = null; // AE – Adverse Events (SDTM-IG v3.4; limited use in SEND)
-  ag: DG.DataFrame = null; // AG – Additional Genetic Tests (SEND-IG, Genomics)
+  ae: DG.DataFrame = null; // AE – Adverse Events (SDTM-IG v3.4)
   apce: DG.DataFrame = null; // APCE – Associated Persons Clinical Events (SDTM-IG v3.4)
   apcm: DG.DataFrame = null; // APCM – Associated Persons Concomitant Medications (SDTM-IG v3.4)
   apeg: DG.DataFrame = null; // APEG – Associated Persons ECG (SDTM-IG v3.4)
   aplb: DG.DataFrame = null; // APLB – Associated Persons Laboratory Tests (SDTM-IG v3.4)
   apmh: DG.DataFrame = null; // APMH – Associated Persons Medical History (SDTM-IG v3.4)
   apvs: DG.DataFrame = null; // APVS – Associated Persons Vital Signs (SDTM-IG v3.4)
-  bg: DG.DataFrame = null; // BG – Background Genetics (SEND-IG, SEND-only)
-  bw: DG.DataFrame = null; // BW – Body Weights (SEND-IG, SEND-only)
   ce: DG.DataFrame = null; // CE – Clinical Events (SDTM-IG v3.4)
-  cl: DG.DataFrame = null; // CL – Clinical Observations (SEND-IG, SEND-only)
   cm: DG.DataFrame = null; // CM – Concomitant Medications (SDTM-IG v3.4)
-  co: DG.DataFrame = null; // CO – Comments (SDTM & SEND, Special Purpose)
-  da: DG.DataFrame = null; // DA – Drug Accountability (SDTM-IG v3.4; not used in SEND)
+  co: DG.DataFrame = null; // CO – Comments (SDTM, Special Purpose)
+  da: DG.DataFrame = null; // DA – Drug Accountability (SDTM-IG v3.4)
   dd: DG.DataFrame = null; // DD – Death Details (SDTM-IG v3.4)
-  dm: DG.DataFrame = null; // DM – Demographics (SDTM & SEND)
+  dm: DG.DataFrame = null; // DM – Demographics (SDTM)
   ds: DG.DataFrame = null; // DS – Disposition (SDTM-IG v3.4)
   dv: DG.DataFrame = null; // DV – Protocol Deviations (SDTM-IG v3.4)
-  ec: DG.DataFrame = null; // EC – Exposure as Collected (SDTM & SEND)
-  eg: DG.DataFrame = null; // EG – Electrocardiograms (SDTM & SEND)
-  ex: DG.DataFrame = null; // EX – Exposure (SDTM & SEND)
-  ey: DG.DataFrame = null; // EY – Eye Examinations (SEND-IG, SEND-only)
-  fa: DG.DataFrame = null; // FA – Findings About (SDTM-IG v3.4; not used in SEND)
+  ec: DG.DataFrame = null; // EC – Exposure as Collected (SDTM)
+  eg: DG.DataFrame = null; // EG – Electrocardiograms (SDTM)
+  ex: DG.DataFrame = null; // EX – Exposure (SDTM)
+  fa: DG.DataFrame = null; // FA – Findings About (SDTM-IG v3.4)
   ft: DG.DataFrame = null; // FT – Functional Tests (SDTM-IG v3.4)
-  fw: DG.DataFrame = null; // FW – Food and Water Consumption (SEND-IG, SEND-only)
   gf: DG.DataFrame = null; // GF – Genetic Features (SDTM Genomics v2.0)
-  ho: DG.DataFrame = null; // HO – Healthcare Encounters (SDTM-IG v3.4; not used in SEND)
+  ho: DG.DataFrame = null; // HO – Healthcare Encounters (SDTM-IG v3.4)
   ie: DG.DataFrame = null; // IE – Inclusion/Exclusion Criteria Not Met (SDTM-IG v3.4)
-  ig: DG.DataFrame = null; // IG – In-Life Gestational Findings (SEND-IG, SEND-only)
   is: DG.DataFrame = null; // IS – Immunogenicity Specimen Assessments (SDTM-IG v3.4)
-  lb: DG.DataFrame = null; // LB – Laboratory Test Results (SDTM & SEND)
-  ma: DG.DataFrame = null; // MA – Macroscopic Findings (SEND-IG, SEND-only)
+  lb: DG.DataFrame = null; // LB – Laboratory Test Results (SDTM)
   mb: DG.DataFrame = null; // MB – Microbiology Findings (SDTM-IG v3.4)
-  mh: DG.DataFrame = null; // MH – Medical History (SDTM-IG v3.4; rarely sponsor-defined in SEND)
-  mi: DG.DataFrame = null; // MI – SDTM: Microbiology Findings | SEND: Microscopic Findings (⚠ semantic conflict)
-  ml: DG.DataFrame = null; // ML – Morphology / Localization (SEND Genomics extension)
+  mh: DG.DataFrame = null; // MH – Medical History (SDTM-IG v3.4)
+  mi: DG.DataFrame = null; // MI – Microbiology Findings (SDTM)
   ms: DG.DataFrame = null; // MS – Microbiology Susceptibility (SDTM-IG v3.4)
-  nc: DG.DataFrame = null; // NC – Neurobehavioral Findings (SEND-IG, SEND-only)
   oe: DG.DataFrame = null; // OE – Objective Evidence (SDTM-IG v3.4)
-  om: DG.DataFrame = null; // OM – Organ Measurements (SEND-IG, SEND-only)
-  pc: DG.DataFrame = null; // PC – Pharmacokinetic Concentrations (SDTM & SEND)
-  pe: DG.DataFrame = null; // PE – Physical Examination (SDTM-IG v3.4; not used in SEND)
-  pm: DG.DataFrame = null; // PM – SEND: Palpable Masses | SDTM: Pharmacometrics (⚠ semantic conflict)
-  po: DG.DataFrame = null; // PO – Physical Observations (SEND-IG, SEND-only)
-  pp: DG.DataFrame = null; // PP – Pharmacokinetic Parameters (SDTM & SEND)
+  pc: DG.DataFrame = null; // PC – Pharmacogenetics / Genomics (SDTM)
+  pe: DG.DataFrame = null; // PE – Physical Examination (SDTM-IG v3.4)
+  pm: DG.DataFrame = null; // PM – Pharmacometrics (SDTM)
+  pp: DG.DataFrame = null; // PP – Pharmacokinetic Parameters (SDTM)
   pr: DG.DataFrame = null; // PR – Procedures (SDTM-IG v3.4)
   qs: DG.DataFrame = null; // QS – Questionnaires (SDTM-IG v3.4)
-  relrec: DG.DataFrame = null; // RELREC – Related Records (SDTM & SEND)
+  relrec: DG.DataFrame = null; // RELREC – Related Records (SDTM)
   rp: DG.DataFrame = null; // RP – Reproductive Findings (SDTM-IG v3.4)
-  rs: DG.DataFrame = null; // RS – Disease Response / Clinical Classification (SDTM Oncology; not used in SEND)
+  rs: DG.DataFrame = null; // RS – Disease Response / Clinical Classification (SDTM Oncology)
   sc: DG.DataFrame = null; // SC – Subject Characteristics (SDTM-IG v3.4)
   se: DG.DataFrame = null; // SE – Subject Elements (SDTM-IG v3.4)
   sm: DG.DataFrame = null; // SM – Subject Milestones (SDTM-IG v3.4)
-  sr: DG.DataFrame = null; // SR – Short-Term Routine Observations (SEND-IG, SEND-only)
   su: DG.DataFrame = null; // SU – Substance Use (SDTM-IG v3.4)
   sv: DG.DataFrame = null; // SV – Subject Visits (SDTM-IG v3.4)
-  ta: DG.DataFrame = null; // TA – Trial Arms (SDTM-IG v3.4; not used in SEND)
+  ta: DG.DataFrame = null; // TA – Trial Arms (SDTM-IG v3.4)
   td: DG.DataFrame = null; // TD – Trial Disease Assessments (SDTM-IG v3.4)
   te: DG.DataFrame = null; // TE – Trial Elements (SDTM-IG v3.4)
-  tf: DG.DataFrame = null; // TF – Tumor Findings (SEND-IG, SEND-only)
   ti: DG.DataFrame = null; // TI – Trial Inclusion/Exclusion Criteria (SDTM-IG v3.4)
   tm: DG.DataFrame = null; // TM – Trial Disease Milestones (SDTM-IG v3.4)
-  tr: DG.DataFrame = null; // TR – Tumor/Lesion Results (SDTM Oncology; not used in SEND)
+  tr: DG.DataFrame = null; // TR – Tumor/Lesion Results (SDTM Oncology)
   ts: DG.DataFrame = null; // TS – Trial Summary (SDTM-IG v3.4)
-  tu: DG.DataFrame = null; // TU – Tumor/Lesion Identification (SDTM Oncology; not used in SEND)
+  tu: DG.DataFrame = null; // TU – Tumor/Lesion Identification (SDTM Oncology)
   tv: DG.DataFrame = null; // TV – Trial Visits (SDTM-IG v3.4)
-  tx: DG.DataFrame = null; // TX – SEND Trial Summary (SEND-IG, SEND-only)
-  vs: DG.DataFrame = null; // VS – Vital Signs (SDTM & SEND)
+  vs: DG.DataFrame = null; // VS – Vital Signs (SDTM)
   supp: DG.DataFrame[] = [];
 
   all(): DG.DataFrame[] {
@@ -100,6 +85,11 @@ export class ClinicalStudy {
   subjectsCount: number;
   sitesCount: number;
   validationResults: ValidationResult;
+  // Dataframes for the two big arrays in the report. Built once when validate()
+  // loads the cached results; the validation view consumes them directly so we
+  // never run DG.DataFrame.fromObjects on 50k+ rows on the main thread.
+  issueSummaryDf: DG.DataFrame | null = null;
+  issueDetailsDf: DG.DataFrame | null = null;
   errorsByDomain: {[key: string]: number};
   dmFilters: DG.Viewer;
   studyId: string;
@@ -146,28 +136,26 @@ export class ClinicalStudy {
 
 
   private process(): void {
-    if (this.config.standard === CDISC_STANDARD.SDTM) {
-      if (!this.subjSitesCountsProcessed)
-        this.processSitesAndSubjectCount();
-      createEventStartEndDaysCol(this.studyId);
-      addVisitDayFromTvDomain(this.studyId);
-      if (this.domains.dm) {
-        this.dmFilters = createFilters(this.domains.dm);
-        this.domains.dm.onFilterChanged.subscribe(() => {
-        });
-        grok.shell.topMenu
-          .group('Cohort')
-          .item('Filter', () => {
-            const dialog = ui.dialog({title: ''})
-              .add(ui.div(this.dmFilters.root))
-            //@ts-ignore
-              .onOK(() => {})
-              .show();
-            dialog.root.addEventListener('mouseenter', (event) => {
-              this.dmFilters.root.removeAttribute('data-widget');
-            });
+    if (!this.subjSitesCountsProcessed)
+      this.processSitesAndSubjectCount();
+    createEventStartEndDaysCol(this.studyId);
+    addVisitDayFromTvDomain(this.studyId);
+    if (this.domains.dm) {
+      this.dmFilters = createFilters(this.domains.dm);
+      this.domains.dm.onFilterChanged.subscribe(() => {
+      });
+      grok.shell.topMenu
+        .group('Cohort')
+        .item('Filter', () => {
+          const dialog = ui.dialog({title: ''})
+            .add(ui.div(this.dmFilters.root))
+          //@ts-ignore
+            .onOK(() => {})
+            .show();
+          dialog.root.addEventListener('mouseenter', (event) => {
+            this.dmFilters.root.removeAttribute('data-widget');
           });
-      }
+        });
     }
     this.domains.all().forEach((it) => {
       if (it.name !== 'dm' && it.columns.names().includes(SUBJECT_ID)) {
@@ -209,22 +197,71 @@ export class ClinicalStudy {
   }
 
   async validate(): Promise<void> {
-    let validationResStr = '';
-    if (await grok.dapi.files
-      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`)) {
-      validationResStr = await grok.dapi.files
-        // eslint-disable-next-line max-len
-        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`);
-    } else {
-      validationResStr = await funcs.runCoreValidate(
-        this.config.standard === CDISC_STANDARD.SEND ? 'sendig' : 'sdtmig',
-        `ClinicalCase/${this.config.standard!}/${this.studyId}`, '3.1', 'json', undefined);
-      grok.dapi.files
-        // eslint-disable-next-line max-len
-        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`,
-          validationResStr);
+    const base = `System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}`;
+    const d42Path = `${base}/validation_results.d42`;
+    const jsonPath = `${base}/validation_results.json`;
+    const summaryCsvPath = `${base}/issue_summary.csv`;
+    const detailsCsvPath = `${base}/issue_details.csv`;
+
+    // Fast path: per-study binary cache produced from a previous load. d42
+    // deserialization is much faster than CSV/JSON parsing for large reports.
+    if (await grok.dapi.files.exists(d42Path)) {
+      const dfs = await grok.dapi.files.readBinaryDataFrames(d42Path);
+      this.issueSummaryDf = dfs.find((df) => df.name === 'Issue_Summary') ?? dfs[0] ?? null;
+      this.issueDetailsDf = dfs.find((df) => df.name === 'Issue_Details') ?? dfs[1] ?? null;
+      // Best-effort metadata: tiny file, parse cost negligible.
+      if (await grok.dapi.files.exists(jsonPath)) {
+        const meta = await grok.dapi.files.readAsText(jsonPath);
+        this.validationResults = JSON.parse(meta) as ValidationResult;
+      }
+      this.validated = true;
+      this.validationCompleted.next(true);
+      return;
     }
+
+    // Container output is missing — run validation in the container. After this,
+    // AppData should contain the slim JSON + the two CSV files (see app.py).
+    if (!await grok.dapi.files.exists(jsonPath)) {
+      await funcs.runCoreValidate(
+        'sdtmig',
+        `ClinicalCase/${this.config.standard!}/${this.studyId}`,
+        resolveSdtmigVersion(this.config.standardVersion), 'json', undefined);
+    }
+
+    // Preferred: CSV-per-table format. Skips DG.DataFrame.fromObjects entirely.
+    const haveCsvs = await Promise.all([
+      grok.dapi.files.exists(summaryCsvPath),
+      grok.dapi.files.exists(detailsCsvPath),
+    ]);
+    if (haveCsvs.every(Boolean)) {
+      const [summaryCsv, detailsCsv, metaText] = await Promise.all([
+        grok.dapi.files.readAsText(summaryCsvPath),
+        grok.dapi.files.readAsText(detailsCsvPath),
+        grok.dapi.files.readAsText(jsonPath),
+      ]);
+      this.issueSummaryDf = DG.DataFrame.fromCsv(summaryCsv);
+      this.issueSummaryDf.name = 'Issue_Summary';
+      this.issueDetailsDf = DG.DataFrame.fromCsv(detailsCsv);
+      this.issueDetailsDf.name = 'Issue_Details';
+      this.validationResults = JSON.parse(metaText) as ValidationResult;
+      // Write the d42 cache so the next open is fast. Best-effort: failing to
+      // write should not break the current view.
+      grok.dapi.files
+        .writeBinaryDataFrames(d42Path, [this.issueSummaryDf, this.issueDetailsDf])
+        .catch((e) => grok.shell.warning(`Failed to write d42 cache: ${e?.message ?? e}`));
+      this.validated = true;
+      this.validationCompleted.next(true);
+      return;
+    }
+
+    // Fallback: old-format report — single fat JSON with Issue_Summary / Issue_Details
+    // embedded. Slowest path; only happens when the container hasn't been rebuilt yet.
+    const validationResStr = await grok.dapi.files.readAsText(jsonPath);
     this.validationResults = JSON.parse(validationResStr) as ValidationResult;
+    if (this.validationResults.Issue_Summary?.length)
+      this.issueSummaryDf = DG.DataFrame.fromObjects(this.validationResults.Issue_Summary) ?? null;
+    if (this.validationResults.Issue_Details?.length)
+      this.issueDetailsDf = DG.DataFrame.fromObjects(this.validationResults.Issue_Details) ?? null;
     this.validated = true;
     this.validationCompleted.next(true);
   }
@@ -254,65 +291,86 @@ export class ClinicalStudy {
    * - A string column containing JSON array of IssueDetail objects for violated rules
    */
   private addValidationColumnsToDomains(): void {
-    if (!this.validationResults || !this.validationResults.Issue_Details)
+    // Issue details now live on a DataFrame (CSV/d42-backed). Read columns directly
+    // from the dataframe — no per-row IssueDetail object reconstruction.
+    const df = this.issueDetailsDf;
+    if (!df || df.rowCount === 0)
       return;
 
-    // Group issues by domain (dataset)
-    const issuesByDomain: {[domain: string]: {[row: number]: IssueDetail[]}} = {};
+    const datasetCol = df.col('dataset');
+    const rowCol = df.col('row');
+    if (!datasetCol || !rowCol)
+      return;
 
-    for (const issue of this.validationResults.Issue_Details) {
-      if (!issue.dataset)
+    // Group dataframe row indices by domain → row-in-domain. We store indices
+    // (not records) and look up issue fields directly when applying them.
+    const issuesByDomain: {[domain: string]: {[row: number]: number[]}} = {};
+    for (let i = 0; i < df.rowCount; i++) {
+      const dataset = datasetCol.get(i);
+      if (!dataset)
         continue;
-      const domain = removeExtension(issue.dataset.toLowerCase());
+      const domain = removeExtension(String(dataset).toLowerCase());
 
-      // Parse row number - it can be string or number
-      let rowNum: number;
-      if (typeof issue.row === 'string') {
-        rowNum = parseInt(issue.row, 10);
-        if (isNaN(rowNum))
-          continue;
-      } else
-        rowNum = issue.row;
+      // The `row` column can be int, NaN, empty string, or a numeric string.
+      const rawRow = rowCol.get(i);
+      let rowNum = NaN;
+      if (typeof rawRow === 'number')
+        rowNum = rawRow;
+      else if (typeof rawRow === 'string' && rawRow.length)
+        rowNum = parseInt(rawRow, 10);
+      if (Number.isNaN(rowNum))
+        continue;
 
-      // Initialize domain entry if needed
       if (!issuesByDomain[domain])
         issuesByDomain[domain] = {};
-
-      // Initialize row entry if needed
       if (!issuesByDomain[domain][rowNum])
         issuesByDomain[domain][rowNum] = [];
-
-      // Add IssueDetail object to the row
-      issuesByDomain[domain][rowNum].push(issue);
+      issuesByDomain[domain][rowNum].push(i);
     }
 
-    const addValidationColumns = (domainName: string, domain: DG.DataFrame) => {
-      const domainLower = domainName.toLowerCase();
-      const domainIssues = issuesByDomain[domainLower];
-
-      if (!domainIssues) {
-        // No issues for this domain, but still add columns with false/empty values
-        this.addValidationColumnsToDomain(domain, {});
-        return;
-      }
-
-      this.addValidationColumnsToDomain(domain, domainIssues);
-    };
-
-    // Process each domain and add columns
     for (const domain of this.domains.all())
-      addValidationColumns(domain.name, domain);
+      this.addValidationColumnsToDomain(domain, issuesByDomain[domain.name.toLowerCase()] ?? {});
+  }
+
+  /** Reconstructs an IssueDetail object from a row in issueDetailsDf.
+   * Issue_Details no longer lives on validationResults — it's only on the
+   * CSV/d42-backed dataframe — so consumers go through this helper.
+   * @param {number} row Row index in issueDetailsDf.
+   * @return {IssueDetail} Reconstructed record (or an empty object if no df). */
+  issueDetailFromRow(row: number): IssueDetail {
+    const df = this.issueDetailsDf;
+    if (!df)
+      return {} as IssueDetail;
+    const detail: any = {};
+    for (const col of df.columns.names()) {
+      const v = df.col(col)?.get(row);
+      if (col === 'variables' || col === 'values')
+        detail[col] = parseArrayCell(v);
+      else
+        detail[col] = v;
+    }
+    return detail as IssueDetail;
   }
 
   /**
-   * Adds validation columns to a specific domain dataframe
+   * Adds validation columns to a specific domain dataframe. Reads issue fields
+   * directly from `issueDetailsDf` using the row indices supplied in `issuesByRow`
+   * — no IssueDetail object allocation per row.
    * @param {DG.DataFrame} domain - The domain dataframe to add columns to
-   * @param {Object} issuesByRow - Map of row index to array of IssueDetail objects
+   * @param {Object} issuesByRow - Map of "row in domain" → array of issueDetailsDf row indices
    */
   private addValidationColumnsToDomain(
     domain: DG.DataFrame,
-    issuesByRow: {[row: number]: IssueDetail[]},
+    issuesByRow: {[row: number]: number[]},
   ): void {
+    const detailsDf = this.issueDetailsDf;
+    if (!detailsDf)
+      return;
+    const coreIdCol = detailsDf.col('core_id');
+    const messageCol = detailsDf.col('message');
+    const variablesCol = detailsDf.col('variables');
+    const valuesCol = detailsDf.col('values');
+
     // Create boolean column for validation errors
     const hasErrorsCol = domain.columns.addNewBool(HAS_VALIDATION_ERRORS_COL);
 
@@ -339,48 +397,63 @@ export class ClinicalStudy {
     };
 
     // Iterate through rows that have issues
-    for (const [rowIndexStr, rowIssues] of Object.entries(issuesByRow)) {
+    for (const [rowIndexStr, issueIndices] of Object.entries(issuesByRow)) {
       const rowIndex = parseInt(rowIndexStr, 10) - 1; //rows in issues are numbered starting from 1
-      if (isNaN(rowIndex) || !rowIssues || rowIssues.length === 0)
+      if (isNaN(rowIndex) || !issueIndices || issueIndices.length === 0)
+        continue;
+      // CORE occasionally references row numbers beyond what the domain actually
+      // has (stale validation results, mismatched ingest). Skip rather than blow up.
+      if (rowIndex < 0 || rowIndex >= domain.rowCount)
         continue;
 
       hasErrorsCol.set(rowIndex, true);
-      // Serialize IssueDetail objects as JSON array string
-      violatedRulesCol.set(rowIndex, JSON.stringify(rowIssues));
+
+      // Build the JSON payload for the violated-rules column by reading directly
+      // from the issue-details dataframe rather than materialising IssueDetail objects.
+      const rowIssuesJson = issueIndices.map((idx) => ({
+        core_id: coreIdCol?.get(idx) ?? '',
+        message: messageCol?.get(idx) ?? '',
+        variables: parseArrayCell(variablesCol?.get(idx)),
+        values: parseArrayCell(valuesCol?.get(idx)),
+      }));
+      violatedRulesCol.set(rowIndex, JSON.stringify(rowIssuesJson));
 
       // Process issues, collect errors by variable, create columns, and set values in one loop
       const errorsByVariable: {[variable: string]: Array<{ruleID: string, message: string, value: string}>} = {};
 
-      for (const issue of rowIssues) {
-        if (issue.variables && issue.values) {
-          // Iterate through variables and values arrays
-          for (let varIndex = 0; varIndex < issue.variables.length; varIndex++) {
-            const variable = issue.variables[varIndex];
+      for (const issueIdx of issueIndices) {
+        const variables = parseArrayCell(variablesCol?.get(issueIdx));
+        const values = parseArrayCell(valuesCol?.get(issueIdx));
+        const coreId = String(coreIdCol?.get(issueIdx) ?? '');
+        const message = String(messageCol?.get(issueIdx) ?? '');
+        if (!variables.length)
+          continue;
 
-            if (domain.col(variable)?.getTag(COLUMN_FROM_DM_TAG))
-              continue;
+        for (let varIndex = 0; varIndex < variables.length; varIndex++) {
+          const variable = variables[varIndex];
+          if (domain.col(variable)?.getTag(COLUMN_FROM_DM_TAG))
+            continue;
 
-            const value = varIndex < issue.values.length ? issue.values[varIndex] : '';
+          const value = varIndex < values.length ? values[varIndex] : '';
 
-            // Create columns for this variable if they don't exist
-            ensureVariableColumns(variable);
+          // Create columns for this variable if they don't exist
+          ensureVariableColumns(variable);
 
-            // Only process if this variable has an error column (exists in domain)
-            if (variableErrorColumns[variable]) {
-              if (!errorsByVariable[variable])
-                errorsByVariable[variable] = [];
-              errorsByVariable[variable].push({
-                ruleID: issue.core_id,
-                message: issue.message,
-                value: value,
-              });
+          // Only process if this variable has an error column (exists in domain)
+          if (variableErrorColumns[variable]) {
+            if (!errorsByVariable[variable])
+              errorsByVariable[variable] = [];
+            errorsByVariable[variable].push({
+              ruleID: coreId,
+              message: message,
+              value: value,
+            });
 
-              // Set values immediately - update JSON string and set boolean flag
-              const errorCol = variableErrorColumns[variable];
-              const varHasErrorsCol = variableHasErrorsColumns[variable];
-              errorCol.set(rowIndex, JSON.stringify(errorsByVariable[variable]));
-              varHasErrorsCol.set(rowIndex, true);
-            }
+            // Set values immediately - update JSON string and set boolean flag
+            const errorCol = variableErrorColumns[variable];
+            const varHasErrorsCol = variableHasErrorsColumns[variable];
+            errorCol.set(rowIndex, JSON.stringify(errorsByVariable[variable]));
+            varHasErrorsCol.set(rowIndex, true);
           }
         }
       }
@@ -394,5 +467,48 @@ export class ClinRow {
 
   constructor(row: DG.Row) {
     this.row = row;
+  }
+}
+
+// CDISC CORE only ships rule sets for SDTMIG 3.2, 3.3, 3.4 (and uses `list-rule-sets` to expose them).
+// We default to 3.4 when define.xml/standardVersion is missing, and clamp anything < 3.2 up to 3.2
+// so that pre-3.2 studies still get validated against the oldest available rule set rather than
+// silently producing an empty report.
+const MIN_SDTMIG_VERSION = '3.2';
+const DEFAULT_SDTMIG_VERSION = '3.4';
+
+function resolveSdtmigVersion(declared?: string): string {
+  if (!declared)
+    return DEFAULT_SDTMIG_VERSION;
+  return compareVersions(declared, MIN_SDTMIG_VERSION) < 0 ? MIN_SDTMIG_VERSION : declared;
+}
+
+function compareVersions(a: string, b: string): number {
+  const aParts = a.split('.').map((p) => parseInt(p, 10) || 0);
+  const bParts = b.split('.').map((p) => parseInt(p, 10) || 0);
+  const len = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < len; i++) {
+    const diff = (aParts[i] ?? 0) - (bParts[i] ?? 0);
+    if (diff !== 0)
+      return diff;
+  }
+  return 0;
+}
+
+/** Reads a cell that should hold an array. Returns it as-is when already an
+ * array (old fat-JSON fallback path), JSON-parses string cells (CSV / d42 path),
+ * and returns [] for empty / unparseable cells.
+ * @param {any} v Raw cell value.
+ * @return {string[]} The decoded array, or [] on empty/unparseable input. */
+function parseArrayCell(v: any): string[] {
+  if (Array.isArray(v))
+    return v;
+  if (typeof v !== 'string' || v.length === 0)
+    return [];
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }

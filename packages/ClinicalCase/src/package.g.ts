@@ -18,9 +18,9 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> 
 }
 
 //name: Get list of studies
-//description: Return list of clinical and preclinical studies loaded into Clinical Case application
+//description: Return list of clinical studies loaded into Clinical Case application
 //input: string name { optional: true }
-//input: string description { optional: true; description: More detailed study information including species, drug, dosing }
+//input: string description { optional: true; description: More detailed study information including drug, dosing }
 //input: int numSubjects { optional: true }
 //input: string numSubjectsOperator { optional: true; description: >, <, = }
 //input: datetime startDate { optional: true }
@@ -28,10 +28,9 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> 
 //input: datetime endDate { optional: true }
 //input: string endDateOperator { optional: true; description: >, <, = }
 //input: bool ongoing { optional: true }
-//input: string standard { optional: true; description: CDISC data format, either SDTM or SEND }
 //output: widget result
-export async function getListOfStudies(name?: string, description?: string, numSubjects?: number, numSubjectsOperator?: string, startDate?: any, startDateOperator?: string, endDate?: any, endDateOperator?: string, ongoing?: boolean, standard?: any) : Promise<any> {
-  return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard);
+export async function getListOfStudies(name?: string, description?: string, numSubjects?: number, numSubjectsOperator?: string, startDate?: any, startDateOperator?: string, endDate?: any, endDateOperator?: string, ongoing?: boolean) : Promise<any> {
+  return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing);
 }
 
 //input: file folder 

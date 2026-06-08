@@ -1,120 +1,4 @@
-# Preclinical Case
-
-**Preclinical Case** is designed for the analysis and exploration of preclinical study data represented in the [SEND](https://www.cdisc.org/standards/foundational/send).
-
-## Overview
-
-Preclinical Case provides a comprehensive suite of analytical tools specifically tailored for preclinical studies, enabling researchers, toxicologists, and data scientists to:
-
-- Visualize and explore SEND-formatted preclinical data
-- Analyze animal study data across multiple domains
-- Track laboratory findings, clinical observations, and pathology data over time
-- Validate SEND data against CDISC standards
-- Identify patterns and trends in preclinical study results
-- Explore data at both study-wide and individual animal levels
-
-Initial application page contains the list of pre-loaded studies. Click study name to open it. Study summary page is opened. Also study is opened in a tree browser on the left panel. Navigate through available views using tree nodes.
-
-![Initial page](views_help/preclinical_case_initial_page.png)
-
-![Navigation](views_help/navigation.gif)
-
-### Key Features
-
-#### Data Import
-
-To import a preclinical study:
-
-- Launch the **Preclinical Case** application from the Apps menu
-- Click **Import study** tree item
-- Select SEND data files (`.xpt`, `.csv`, or `.xml` format)
-- The application will automatically:
-   - Detect the study from `define.xml`
-   - Extract study metadata and summary
-   - Load all SEND domains
-   - Perform initial validation
-
-![Import study](views_help/import_study.gif)
-
-### Domains
-
-Once imported, domains are easily accessible and can be added to the workspace for further analysis and examination. To select a specific domain, open the **Domains** tree group and choose the required one.
-Domains are added as standard Datagrok table views, allowing you to:
-
-- Add viewers and calculated columns
-- Run custom scripts on the data
-- Filter
-- Link tables
-- And other Datagrok analytical
-
-![Domains](views_help/domains.gif)
-
-### Preclinical Case Views
-
-Preclinical Case provides the following specialized views for analyzing preclinical data:
-
-#### Summary
-
-The Summary view provides an overview of the preclinical study, including key study characteristics and some statistical charts.
-
-### Validation
-
-Validation is performed on study import using [CDISC Rules Engine](https://github.com/cdisc-org/cdisc-rules-engine)
-
-To filter invalid domain rows, select the corresponding rule in a table view. Cells with errors are marked with a red mark. Hover over the mark to see the tooltip with details.
-For some of the rules, fixes may be proposed. To apply a fix:
-
-- Select the corresponding rule and click fix in the 'action' column
-- Observe fixes preview in the context panel
-- If satisfied with the fixes, click 'Apply fixes' on the ribbon panel
-
-![Validation](views_help/validation_view.gif)
-
-#### Laboratory
-
-Comprehensive analysis of laboratory findings from the LB domain and other findings domains:
-
-- **Laboratory Distribution**: Box plots showing the distribution of selected laboratory values at different study days, grouped by treatment arm or other parameters
-- **Results Table**: Full laboratory findings table
-- **Baseline-Endpoint**: Scatter plot to compare a subject's initial status (baseline) with their condition at endpoint
-
-![Laboratory](views_help/laboratory_view.png)
-
-#### Distributions
-
-Analyzes the distribution of biomarkers and other values like vital signs, etc., across animals:
-
-- **Box Plots**: Shows median, quartiles, outliers, and p-value for selected biomarkers
-- **Grouping**: Distributions can be grouped by treatment arm or sex
-- **Visit Selection**: Analyze distributions at specific study days
-- **Statistical Comparison**: Visually compare distributions between groups
-
-![Distributions](views_help/distributions_view.png)
-
-#### Time Profile
-
-Line charts showing biomarker dynamics over time:
-
-- **Grouping**: Split by treatment arm or other parameters
-- **Distribution Representation**: Each point shows the median with quartiles (whiskers)
-
-This view helps identify trends and patterns in biomarker changes throughout the study duration.
-
-![Time profile](views_help/time_profile_view.png)
-
-#### Matrix Table
-
-A comprehensive matrix view that pivots laboratory and findings data:
-
-- **Pivoted Data**: Test results pivoted by animal and study day
-- **Matrix Plot**: Interactive matrix visualization showing relationships between tests
-- **Filtering**: Easily filter by any parameter, including demographic domain fields
-
-This view is particularly useful for identifying patterns across multiple tests and animals simultaneously.
-
-![Matrix view](views_help/matrix_view.gif)
-
-# Clinical Case
+﻿# Clinical Case
 
 Clinical Case is an application for exploration of clinical data represented in [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.
 
@@ -138,7 +22,7 @@ Here you can find number total number of subjects and sites along with the cumul
 
 'Errors' section contains number of errors revealed by validation process in each domain. Validation of SDTM tables (domains) is performed once at the start of application. By clicking on errors number you will be redirected to Validation view.
 
-Also there is a couple of charts with essential population characteristics – age, race, sex, treatment arm – which can be used to assess their distribution within population. Charts are interactive and linked with each other. For instance, by clicking on 'M' sex the other charts will show the proportion of male subjects.
+Also there is a couple of charts with essential population characteristics â€“ age, race, sex, treatment arm â€“ which can be used to assess their distribution within population. Charts are interactive and linked with each other. For instance, by clicking on 'M' sex the other charts will show the proportion of male subjects.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/summary.gif" height="500" width='800'/>
 
@@ -324,7 +208,7 @@ Each value on the line is drawn in form of distribution. By default points repre
 
 ### AE browser
 
-This view is useful for exploring adverse events in details including preceding events from domains other then ‘ae’.
+This view is useful for exploring adverse events in details including preceding events from domains other then â€˜aeâ€™.
 
 The view is basically 'ae' domain table which contains list of all registered adverse events. The table can be filtered.
 

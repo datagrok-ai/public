@@ -97,7 +97,7 @@ services:
     environment:
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
-      GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
+      GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-true}
     ports:
       - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
@@ -126,7 +126,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
     platform: linux/amd64
     networks:
       datagrok:

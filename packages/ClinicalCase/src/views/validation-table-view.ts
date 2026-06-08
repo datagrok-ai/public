@@ -3,27 +3,81 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ValidationResult, IssueDetail} from '../types/validation-result';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {studies} from '../utils/app-utils';
+import {reloadValidationView, studies} from '../utils/app-utils';
 import {validationFixFunctions} from '../utils/validation-fix-utils';
 import {setupValidationErrorColumns, setupValidationErrorIndicators} from '../utils/views-validation-utils';
 
+/** True for cells that represent "no specific row" — empty string, null, NaN. */
+function isEmptyCell(v: any): boolean {
+  return v == null || v === '' || (typeof v === 'number' && Number.isNaN(v));
+}
+
+/** Reads an array-valued cell. CSVs stringify arrays as JSON; the d42 cache keeps the
+ * JSON string verbatim. Fallback path (old JSON report) stored arrays directly.
+ * @param {DG.DataFrame} df Dataframe holding the cell.
+ * @param {string} col Column name.
+ * @param {number} row Row index.
+ * @return {string[]} Decoded array; empty when the cell is empty or unparseable. */
+function getArrayCell(df: DG.DataFrame, col: string, row: number): string[] {
+  const v = df.col(col)?.get(row);
+  if (v == null) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string' && v.length) {
+    try { return JSON.parse(v); } catch { return []; }
+  }
+  return [];
+}
+
 export function createValidationView(studyId: string): any {
   if (!studies[studyId].validated) {
-    grok.shell.warning('Validation in progress...');
-    studies[studyId].validationCompleted.subscribe(() => {
-      grok.shell.info(`Validation for study ${studyId} completed`);
+    // validate() is async — either we're streaming cached files in (seconds) or
+    // the container is still running CORE (minutes). Return a placeholder view
+    // with a persistent message so the user can navigate away and come back to
+    // see what state it's in. The auto-rebuild fires when validate() settles.
+    const sub = studies[studyId].validationCompleted.subscribe(() => {
+      sub.unsubscribe();
+      reloadValidationView(studyId);
     });
-    return;
+    const placeholderDf = DG.DataFrame.create();
+    const onTableViewAdded = async (tableView: DG.TableView) => {
+      if (tableView.grid?.root)
+        tableView.grid.root.style.display = 'none';
+
+      // Distinguish "reading cached files" (seconds) from "container running CORE" (minutes).
+      let cacheExists = true;
+      try {
+        const base = `System:AppData/ClinicalCase/${studies[studyId].config.standard!}/${studyId}`;
+        cacheExists = (await Promise.all([
+          grok.dapi.files.exists(`${base}/validation_results.d42`),
+          grok.dapi.files.exists(`${base}/issue_summary.csv`),
+        ])).some(Boolean);
+      } catch (_) { /* fall back to the optimistic message */ }
+
+      const text = cacheExists ?
+        'Loading validation results…' :
+        'Running CORE validation in the container. This can take several minutes — the view ' +
+          'will update automatically when results are ready.';
+      tableView.root.appendChild(ui.divText(text, {style: {padding: '24px', maxWidth: '640px'}}));
+    };
+    return {df: placeholderDf, onTableViewAddedFunc: onTableViewAdded};
   }
 
   const validationResults: ValidationResult = studies[studyId].validationResults;
+  // Dataframes were built once in validate() — from the d42 cache, the per-table
+  // CSVs, or as a last-resort fallback from the old fat JSON. Reuse them here
+  // instead of paying DG.DataFrame.fromObjects on the main thread.
+  const issueSummaryDf = studies[studyId].issueSummaryDf;
+  const issueDetailsDf = studies[studyId].issueDetailsDf;
 
-  if (!validationResults) {
+  if (!validationResults && !issueSummaryDf) {
     grok.shell.error('No validation results available');
     return;
   }
-  const issueDetailsDf = DG.DataFrame.fromObjects(validationResults.Issue_Details);
-  const issueSummaryDf = DG.DataFrame.fromObjects(validationResults.Issue_Summary);
+
+  if (!issueSummaryDf || !issueSummaryDf.rowCount) {
+    grok.shell.info(`No validation issues found for study ${studyId}`);
+    return;
+  }
 
   // Add 'action' column to issue summary
   // Store core_id in the cell if a fix function exists, otherwise leave empty
@@ -52,14 +106,15 @@ export function createValidationView(studyId: string): any {
     let grid: DG.Grid | null = null;
     //a general rule violated - show row from issueDetailsDf
     const firstIssueDetailsIdx = issueDetailsDf.filter.findNext(-1, true);
-    if (issueDetailsDf.filter.trueCount === 1 &&
-      validationResults.Issue_Details[firstIssueDetailsIdx].row === '') {
+    if (issueDetailsDf.filter.trueCount === 1 && isEmptyCell(issueDetailsDf.get('row', firstIssueDetailsIdx))) {
       grid = issueDetailsDf.plot.grid();
       header = 'Issue details';
       currentDomainDf = null;
     } else { //collect data from corresponding domain
       const domain: string = issueSummaryDf.get('dataset', issueSummaryDf.currentRowIdx);
-      const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '');
+      // CORE reports dataset names in uppercase (e.g. "AE"), but the in-memory
+      // domain map uses lowercase keys (ae, dm, lb, …) — normalise before lookup.
+      const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '').toLowerCase();
       let domainDf: DG.DataFrame | null = null;
       if (domainWithoutExtension.startsWith('supp')) {
         const domainIdx = studies[studyId].domains.supp.findIndex((it) => it.name === domainWithoutExtension);
@@ -69,9 +124,10 @@ export function createValidationView(studyId: string): any {
         domainDf = studies[studyId].domains[domainWithoutExtension];
       if (domainDf) {
         //check if the violated rule related to metadata (variables in rules do not contain domain variables)
+        const variables = getArrayCell(issueDetailsDf, 'variables', firstIssueDetailsIdx);
+        const values = getArrayCell(issueDetailsDf, 'values', firstIssueDetailsIdx);
         const colNames = domainDf.columns.names().map((it) => it.toLowerCase());
-        const ruleContainsDomainCols = validationResults.Issue_Details[firstIssueDetailsIdx].variables
-          .filter((it) => colNames.includes(it.toLowerCase())).length;
+        const ruleContainsDomainCols = variables.filter((it) => colNames.includes(it.toLowerCase())).length;
         if (!ruleContainsDomainCols) {
           grid = issueDetailsDf.plot.grid();
           header = 'Issue details';
@@ -79,9 +135,9 @@ export function createValidationView(studyId: string): any {
         } else {
           let columnName = '';
           //find the first variable name to scroll grid to corresponding column
-          for (let i = 0; i < validationResults.Issue_Details[firstIssueDetailsIdx].variables.length; i++) {
-            if (validationResults.Issue_Details[firstIssueDetailsIdx].values[i].toLowerCase() !== 'not in dataset') {
-              columnName = validationResults.Issue_Details[firstIssueDetailsIdx].variables[i];
+          for (let i = 0; i < variables.length; i++) {
+            if ((values[i] ?? '').toLowerCase() !== 'not in dataset') {
+              columnName = variables[i];
               break;
             }
           }
@@ -106,6 +162,14 @@ export function createValidationView(studyId: string): any {
       }
     }
 
+    // Fallback: if no domain was matched, still show the issue details grid
+    // rather than crashing on `grid.root` below.
+    if (!grid) {
+      grid = issueDetailsDf.plot.grid();
+      header = 'Issue details';
+      currentDomainDf = null;
+    }
+
     grid.root.prepend(ui.h1(header, {style: {margin: '0px 0px 10px 10px'}}));
     grid.root.style.width = '100%';
     grid.root.style.height = '95%';
@@ -122,11 +186,12 @@ export function createValidationView(studyId: string): any {
       return;
     }
 
-    // Get affected issue details
+    // Get affected issue details. Reconstruct IssueDetail records from the dataframe
+    // — the validationResults metadata JSON no longer carries the Issue_Details array.
     const affectedIssueDetails: IssueDetail[] = [];
     for (let i = 0; i < issueDetailsDf.rowCount; i++) {
       if (issueDetailsDf.filter.get(i))
-        affectedIssueDetails.push(validationResults.Issue_Details[i]);
+        affectedIssueDetails.push(studies[studyId].issueDetailFromRow(i));
     }
 
     if (affectedIssueDetails.length === 0)

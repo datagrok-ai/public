@@ -15,6 +15,6 @@ modform <- as.formula(paste("Surv(time, status)", coVariates, sep = " ~ "))
 
 aa_fit <- aareg(modform, data = covariatesDf)
 
-autoplot(aa_fit) +
-  theme_bw()
+print(autoplot(aa_fit) +
+  theme_bw())
 

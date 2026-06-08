@@ -2,12 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {_package} from '../package';
-import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR,
-  BW_TEST, BW_RES_N, BG_TEST, BG_RES_N,
+import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N,
   VISIT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {CDISC_STANDARD} from '../utils/types';
 import {studies} from '../utils/app-utils';
 
 
@@ -17,11 +14,9 @@ export class MatrixesView extends ClinicalCaseViewBase {
   matrixDataframe: DG.DataFrame;
   matrixTableView: DG.TableView | null = null;
   matrixFiltersGroup: HTMLElement | null = null;
-  domains = ['lb', 'vs', 'bw', 'bg'];
-  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
-    'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
+  domains = ['lb', 'vs'];
+  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
   initialDataframe: DG.DataFrame;
-  isSend = false;
   xColumns: DG.Column[] = [];
   yColumns: DG.Column[] = [];
   plotType: 'correlation' | 'matrix' = 'correlation';
@@ -35,15 +30,11 @@ export class MatrixesView extends ClinicalCaseViewBase {
   loaded = false;
 
   createView(): void {
-    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
     this.domains = this.domains.filter((it) => studies[this.studyId].domains[it] !== null &&
       !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach((it) => {
-      if (this.isSend)
-        createVisitDayStrCol(studies[this.studyId].domains[it]);
-
       const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID,
-        this.isSend ? VISIT_DAY_STR : VISIT,
+        VISIT,
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
@@ -56,7 +47,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
 
     // Set default values for xColumns and yColumns as first 5 columns (or less if fewer available)
     const availableColumnNames = this.matrixDataframe.columns.names()
-      .filter((name) => name !== SUBJECT_ID && name !== (this.isSend ? VISIT_DAY_STR : VISIT));
+      .filter((name) => name !== SUBJECT_ID && name !== VISIT);
     const defaultColumnNames = availableColumnNames.slice(0, Math.min(5, availableColumnNames.length));
     this.xColumns = defaultColumnNames.map((name) => this.matrixDataframe.col(name)).filter((col) => col !== null);
     this.yColumns = defaultColumnNames.map((name) => this.matrixDataframe.col(name)).filter((col) => col !== null);
@@ -102,7 +93,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
 
   private createCorrelationMatrixDataframe(df: DG.DataFrame) {
     this.matrixDataframe = df
-      .groupBy([SUBJECT_ID, this.isSend ? VISIT_DAY_STR : VISIT])
+      .groupBy([SUBJECT_ID, VISIT])
       .pivot('test')
       .avg('res')
       .aggregate();

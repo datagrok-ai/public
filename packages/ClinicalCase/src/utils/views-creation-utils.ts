@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
-  MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
-  VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
+  TIMELINES_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
@@ -16,7 +15,6 @@ import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
 import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
-import {createMICrossDomainView} from '../views/mi-cross-domain-analysis';
 
 
 export function createAEBrowserHelper(studyId: string): any {
@@ -67,15 +65,20 @@ export function createTableView(
   let viewHelper;
   const validator = new ValidationHelper(domainsAndColsToCheck, studyId);
   if (validator.validate()) {
-    const {helper, df, onTableViewAddedFunc} = createViewHelper(studyId, paramsForHelper);
-    tableView = DG.TableView.create(df, false);
-    viewHelper = helper;
-    if (onTableViewAddedFunc)
-      onTableViewAddedFunc(tableView as DG.TableView);
-    //wait for grid to become available to set validation columns invisible
-    awaitCheck(() => (tableView as DG.TableView).grid !== null, `${viewName} hasn't been added`, 10000)
-      .then(() => hideValidationColumns(tableView as DG.TableView))
-      .catch(() => {});
+    // createViewHelper may return undefined (e.g. validation-in-progress in the Validation view)
+    const result = createViewHelper(studyId, paramsForHelper);
+    if (result) {
+      const {helper, df, onTableViewAddedFunc} = result;
+      tableView = DG.TableView.create(df, false);
+      viewHelper = helper;
+      if (onTableViewAddedFunc)
+        onTableViewAddedFunc(tableView as DG.TableView);
+      //wait for grid to become available to set validation columns invisible
+      awaitCheck(() => (tableView as DG.TableView).grid !== null, `${viewName} hasn't been added`, 10000)
+        .then(() => hideValidationColumns(tableView as DG.TableView))
+        .catch(() => {});
+    } else
+      tableView = DG.View.create();
   } else {
     tableView = DG.View.create();
     updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains,
@@ -103,8 +106,5 @@ export const TABLE_VIEWS_META = {
   },
   [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: {
     createViewHelper: createMeasurementProfileTableView,
-  },
-  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: {
-    createViewHelper: createMICrossDomainView,
   },
 };

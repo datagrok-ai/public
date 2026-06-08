@@ -2,13 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {studies} from '../utils/app-utils';
-import {CDISC_STANDARD} from '../utils/types';
-import {createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {DOMAIN, PLANNED_TRT_ARM, SEX, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
+import {DOMAIN, PLANNED_TRT_ARM, SEX, SUBJECT_ID} from '../constants/columns-constants';
 import {createSubjectProfileView} from './subject-profile-view';
+import {coerceColType} from '../utils/utils';
 
 export function createMeasurementProfileTableView(studyId: string): any {
-  const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
   let resDf: DG.DataFrame | null = null;
 
   //first creating a long dataframe with results from all applicable domains
@@ -17,10 +15,6 @@ export function createMeasurementProfileTableView(studyId: string): any {
       `${it.name.toUpperCase()}STRESN`, `${it.name.toUpperCase()}STRESC`,
       `${it.name.toUpperCase()}STRESU`, `${it.name.toUpperCase()}DY`];
     if (requiredColumns.every((colName) => it.columns.names().includes(colName))) {
-      if (isSend) {
-        createVisitDayStrCol(it);
-        requiredColumns = requiredColumns.concat([VISIT_DAY_STR]);
-      }
       // if there is a category or specimen type column,
       // create temporary test column name, containing both category and test name
       const catColName = `${it.name.toUpperCase()}CAT`;
@@ -58,6 +52,11 @@ export function createMeasurementProfileTableView(studyId: string): any {
       df.getCol(`${it.name.toUpperCase()}DY`).name = 'visit_day';
       df.getCol(`${it.name.toUpperCase()}STRESC`).name = 'string_result';
       df.getCol(`${it.name.toUpperCase()}STRESU`).name = 'units';
+
+      // coerce types so that dataframes from different domains can be appended without conflicts:
+      // STRESC is sometimes inferred as numeric when all values are numbers, STRESN occasionally as int
+      coerceColType(df, 'string_result', DG.TYPE.STRING);
+      coerceColType(df, 'result', DG.TYPE.FLOAT);
 
       // remove temporary full test name column
       if (containsCatOrSpecCol)

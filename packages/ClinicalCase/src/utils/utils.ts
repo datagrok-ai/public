@@ -2,14 +2,27 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {scripts} from '../package-api';
 import {ClinStudyConfig} from './types';
-import {ACT_TRT_ARM, AGE, AGETXT, COL_HAS_ERRORS_POSTFIX, DEATH_DATE, ERRORS_POSTFIX,
-  ETHNIC, HAS_VALIDATION_ERRORS_COL, PLANNED_TRT_ARM, RACE, SEX, SPECIES, SUBJ_REF_ENDT,
+import {ACT_TRT_ARM, AGE, COL_HAS_ERRORS_POSTFIX, DEATH_DATE, ERRORS_POSTFIX,
+  ETHNIC, HAS_VALIDATION_ERRORS_COL, PLANNED_TRT_ARM, RACE, SEX, SUBJ_REF_ENDT,
   SUBJ_REF_STDT, SUBJECT_ID, VIOLATED_RULES_COL} from '../constants/columns-constants';
 import {studies} from './app-utils';
 
 export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
   div.append(content);
+}
+
+/** Coerces a column to the target type if needed, so that dataframes from different
+ * domains can be appended without column-type conflicts (e.g. one domain has STRESN
+ * inferred as string while another has it as double).
+ */
+export function coerceColType(df: DG.DataFrame, colName: string, type: string) {
+  const col = df.col(colName);
+  if (col && col.type !== type) {
+    const converted = col.convertTo(type);
+    df.columns.remove(colName);
+    df.columns.add(converted);
+  }
 }
 
 export function createFilters(df: DG.DataFrame) {
@@ -80,8 +93,8 @@ export function hideValidationColumns(tv: DG.TableView) {
 
 export function addDomainFilters(tv: DG.TableView, studyId: string): DG.FilterGroup | null {
   const dmDomainColNames = studies[studyId].domains.dm.columns.names();
-  const firstColumnsNames = [SUBJ_REF_ENDT, SUBJ_REF_STDT, DEATH_DATE, SPECIES, ETHNIC, RACE, SEX,
-    AGETXT, AGE, PLANNED_TRT_ARM, ACT_TRT_ARM, SUBJECT_ID];
+  const firstColumnsNames = [SUBJ_REF_ENDT, SUBJ_REF_STDT, DEATH_DATE, ETHNIC, RACE, SEX,
+    AGE, PLANNED_TRT_ARM, ACT_TRT_ARM, SUBJECT_ID];
   const otherCols = dmDomainColNames
     .filter((it) => !firstColumnsNames.includes(it) && it !== HAS_VALIDATION_ERRORS_COL);
   const filterCols: {colName: string, filterType: DG.FILTER_TYPE}[] = [];

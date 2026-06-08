@@ -1,5 +1,3 @@
-import {VISIT_DAY_STR} from '../constants/columns-constants';
-import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {studies} from '../utils/app-utils';
 
 
@@ -55,9 +53,6 @@ export class ValidationHelper {
     const reqCols: string[] = requiredDomainsAndCols[domain]['req'] ?? [];
     //at least one of optional columns should exist in domain
     const optCols: string[] = requiredDomainsAndCols[domain]['opt'] ?? [];
-    //adding calculated columns
-    if (reqCols.concat(optCols).includes(VISIT_DAY_STR))
-      createVisitDayStrCol(studies[this.studyId].domains[domain]);
     const domainColumns = studies[this.studyId].domains[domain] ?
       studies[this.studyId].domains[domain].columns.names() : [];
     const missingReqColumns = reqCols.filter((it) => !domainColumns.includes(it));

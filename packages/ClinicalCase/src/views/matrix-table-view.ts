@@ -1,30 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {studies} from '../utils/app-utils';
-import {CDISC_STANDARD} from '../utils/types';
-import {createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
-import {addDomainFilters} from '../utils/utils';
+import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID} from '../constants/columns-constants';
+import {addDomainFilters, coerceColType} from '../utils/utils';
 
 export function createMatrixTableView(studyId: string): any {
-  const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
   let resDf: DG.DataFrame | null = null;
   let pivotedDF = DG.DataFrame.create();
 
   //first creating a long dataframe with results from all applicable domains
   studies[studyId].domains.all().forEach((it) => {
-    let requiredColumns = [SUBJECT_ID, DOMAIN, `${it.name.toUpperCase()}TEST`,
+    const requiredColumns = [SUBJECT_ID, DOMAIN, `${it.name.toUpperCase()}TEST`,
       `${it.name.toUpperCase()}STRESN`, `${it.name.toUpperCase()}DY`];
     if (requiredColumns.every((colName) => it.columns.names().includes(colName))) {
-      if (isSend) {
-        createVisitDayStrCol(it);
-        requiredColumns = requiredColumns.concat([VISIT_DAY_STR]);
-      }
-
       const df = it.clone(null, requiredColumns);
       df.getCol(`${it.name.toUpperCase()}TEST`).name = 'test';
       df.getCol(`${it.name.toUpperCase()}STRESN`).name = 'res_num';
       df.getCol(`${it.name.toUpperCase()}DY`).name = 'visit_day';
+
+      // coerce types so that dataframes from different domains can be appended without conflicts:
+      // STRESN is sometimes inferred as string when all values look like numbers but the column also has empties
+      coerceColType(df, 'res_num', DG.TYPE.FLOAT);
+      coerceColType(df, 'visit_day', DG.TYPE.INT);
+
       if (!resDf)
         resDf = df;
       else
@@ -33,7 +31,7 @@ export function createMatrixTableView(studyId: string): any {
   });
   if (resDf) {
     const matrixDataframe = resDf
-      .groupBy([SUBJECT_ID, 'visit_day', VISIT_DAY_STR])
+      .groupBy([SUBJECT_ID, 'visit_day'])
       .pivot('test')
       .avg('res_num')
       .aggregate();
@@ -58,9 +56,9 @@ export function createMatrixTableView(studyId: string): any {
     const matrixViewer = await DG.Viewer.fromType(DG.VIEWER.MATRIX_PLOT, pivotedDF, {cellPlotType: 'Scatter plot'});
     matrixViewer.setOptions({
       xColumnNames: matrixViewer.getOptions().look.xColumnNames
-        .filter((it) => ![SUBJECT_ID, 'visit_day', VISIT_DAY_STR].includes(it)),
+        .filter((it) => ![SUBJECT_ID, 'visit_day'].includes(it)),
       yColumnNames: matrixViewer.getOptions().look.yColumnNames
-        .filter((it) => ![SUBJECT_ID, 'visit_day', VISIT_DAY_STR].includes(it)),
+        .filter((it) => ![SUBJECT_ID, 'visit_day'].includes(it)),
     });
     if (pivotedDF.columns.names().includes(PLANNED_TRT_ARM)) {
       const l = matrixViewer.getOptions().look.innerViewerLook;
@@ -70,9 +68,6 @@ export function createMatrixTableView(studyId: string): any {
       });
     }
     tableView.dockManager.dock(matrixViewer, DG.DOCK_TYPE.FILL);
-    //const correlationViewer = await DG.Viewer.fromType(DG.VIEWER.CORR_PLOT, pivotedDF);
-    // tableView.addViewer(matrixViewer);
-    //tableView.addViewer(correlationViewer);
     addDomainFilters(tableView, studyId);
   };
 

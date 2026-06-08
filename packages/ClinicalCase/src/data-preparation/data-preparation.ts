@@ -6,7 +6,7 @@ import {ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AST, BILIRUBIN, DOMAINS_WITH_EVENT
 import {addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls} from './utils';
 import {ACT_TRT_ARM, AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_DAY, LAB_HI_LIM_N,
   LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, PLANNED_TRT_ARM, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
-  VISIT, VISIT_START_DATE, VISIT_DAY_STR, LAB_TEST_CAT} from '../constants/columns-constants';
+  VISIT, VISIT_START_DATE, LAB_TEST_CAT} from '../constants/columns-constants';
 import {studies} from '../utils/app-utils';
 const {jStat} = require('jstat');
 
@@ -503,33 +503,6 @@ export function getSubjectBaselineDates(studyId: string) {
     .where(`${VISIT_DAY} = 1`)
     .aggregate();
   return subjBaselineDates;
-}
-
-export function createVisitDayStrCol(df: DG.DataFrame, visitColNamesDict?: {[key: string]: string}) {
-  if (!df)
-    return;
-
-  const getVisitDayCol = () => {
-    const visitDayCol = df.col(VISIT_DAY);
-    //TODO!!! For some interval related tests, like body weight gain, there are two columns:
-    // BGDY(start of interval) and BGENDY (end of interval) - need to decide which to use and in which cases
-    const domainSpecificVisitDayCol = df.col(`${df.name.toUpperCase()}DY`);
-    const colToUse = visitDayCol ?? domainSpecificVisitDayCol;
-    return colToUse;
-  };
-  const visitDayCol = getVisitDayCol();
-  if (!df.col(VISIT_DAY_STR) && visitDayCol) {
-    //create categorical visit day column
-    df.columns.addNewString(VISIT_DAY_STR)
-      .init((i) => visitDayCol.isNone(i) ? undefined : visitDayCol.get(i).toString());
-  }
-  //set visit day column in case it is domain specific
-  if (visitColNamesDict) {
-    if (visitDayCol)
-      visitColNamesDict[df.name] = visitDayCol.name;
-    else
-      delete visitColNamesDict[df.name];
-  }
 }
 
 /**
