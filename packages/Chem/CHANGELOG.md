@@ -4,6 +4,7 @@
 
 * Chem: Hardened RDKit critical-section release in `clusterMCS` and `beautifyMolsV3K` with try/finally so a worker rejection can no longer leak the shared `CHEM_TOKEN` lock and deadlock subsequent operations
 * Chem: Fixed RDKit mol leak in similarity/notation workers — the `addedToCache` flag was hoisted outside the loop, so a throw after a prior cached molecule skipped `rdMol.delete()` and accumulated WASM heap across the test suite
+* Chem: Fixed the CI test-suite hang — the JS heap ratcheted up through the memory-heavy "clone and layout tests" category until the headless renderer OOM-crashed, which (with Puppeteer `protocolTimeout: 0` driving the whole suite in one `page.evaluate`) hung the job until the step timeout; the per-test afterEach now forces a `gc()` so the heap plateaus and the full suite completes in ~16 min
 
 ## 1.17.10 (2026-05-28)
 
