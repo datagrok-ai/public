@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_fitSoftmax} from '../wasm/EDAAPI';
+// Softmax migrated to Rust + WASM (sci-comp-ml); _fitSoftmax is now async.
+import {_fitSoftmax} from '../wasm/eda-api';
 
 const ROWS_EXTRA = 1;
 const COLS_EXTRA = 2;
@@ -192,7 +193,7 @@ export class SoftmaxClassifier {
 
     try {
       // call wasm-computations
-      const paramCols = _fitSoftmax(
+      const paramCols = (await _fitSoftmax(
         features,
         DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
         DG.Column.fromFloat32Array('stdevs', this.stdevs, this.featuresCount),
@@ -200,7 +201,7 @@ export class SoftmaxClassifier {
         classesCount,
         iterations, rate, penalty, tolerance,
         this.featuresCount + 1, classesCount,
-      ).columns as DG.ColumnList;
+      )).columns as DG.ColumnList;
 
       this.params = new Array<Float32Array>(classesCount);
       for (let i = 0; i < classesCount; ++i)

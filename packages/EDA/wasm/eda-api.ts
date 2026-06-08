@@ -15,7 +15,7 @@
 
 import * as DG from 'datagrok-api/dg';
 
-import {WasmPca} from './sci_comp_ml.js';
+import {WasmPca, WasmPls, WasmSoftmax} from './sci_comp_ml.js';
 import {ensureEdaMlInit} from '../src/wasm-loader';
 
 // Convergence controls of the retired C++ NIPALS (PCA.h: TOL, MAX_ITER).
@@ -94,5 +94,200 @@ export async function _principalComponentAnalysisNipalsInWebWorker(
     return DG.DataFrame.fromColumns(outCols);
   } finally {
     pca.free();
+  }
+}
+
+/**
+ * Partial least squares regression (PLS1).
+ *
+ * Drop-in for the `EDAAPI` export of the same name. Returns an array
+ * indexed by `WASM_OUTPUT_IDX`:
+ *   [0] prediction       — `D · b` (raw features, **no intercept**), length rowCount
+ *   [1] regr_coeffs      — raw-space coefficients `b`, length = #features
+ *   [2] tScores          — X-scores, `componentsCount` columns of length rowCount
+ *   [3] uScores          — Y-scores, `componentsCount` columns of length rowCount
+ *   [4] xLoadings        — X-loadings, `componentsCount` columns of length #features
+ *   [5] yLoadings        — Y-loadings `q`, one column of length componentsCount
+ *
+ * Matches the retired C++ `partialLeastSquareExtended`: predictors and
+ * response are standardised here with the population std (`||x - mean|| /
+ * sqrt(n)`), the kernel trains on the standardised data, coefficients are
+ * unwound to raw space via the stats, and `prediction = D · b` is computed
+ * on the raw predictors without the intercept (the consumer adds the bias
+ * via `debiasedPrediction`).
+ */
+export async function _partialLeastSquareRegressionInWebWorker(
+  table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, componentsCount: number,
+): Promise<[DG.Column, DG.Column, DG.Column[], DG.Column[], DG.Column[], DG.Column]> {
+  await ensureEdaMlInit();
+
+  const cols = features.toList();
+  const m = cols.length;
+  const nRows = table.rowCount;
+
+  // Raw predictor arrays (kept for the D·b prediction) + population stats,
+  // building the standardised flat [col0, col1, ...] boundary form.
+  const raw = cols.map((c) => c.getRawData()); // each capacity may exceed nRows
+  const xMeans = new Float64Array(m);
+  const xStds = new Float64Array(m);
+  const flatX = new Float64Array(m * nRows);
+  for (let j = 0; j < m; ++j) {
+    const r = raw[j];
+    let sum = 0;
+    for (let i = 0; i < nRows; ++i)
+      sum += r[i];
+    const mean = sum / nRows;
+
+    let ss = 0;
+    for (let i = 0; i < nRows; ++i) {
+      const d = r[i] - mean;
+      ss += d * d;
+    }
+    let sigma = Math.sqrt(ss / nRows);
+    if (sigma === 0)
+      sigma = 1;
+
+    xMeans[j] = mean;
+    xStds[j] = sigma;
+    const base = j * nRows;
+    for (let i = 0; i < nRows; ++i)
+      flatX[base + i] = (r[i] - mean) / sigma;
+  }
+
+  // Response stats + standardised response.
+  const ry = predict.getRawData();
+  let ysum = 0;
+  for (let i = 0; i < nRows; ++i)
+    ysum += ry[i];
+  const yMean = ysum / nRows;
+  let yss = 0;
+  for (let i = 0; i < nRows; ++i) {
+    const d = ry[i] - yMean;
+    yss += d * d;
+  }
+  let yStd = Math.sqrt(yss / nRows);
+  if (yStd === 0)
+    yStd = 1;
+  const stdY = new Float64Array(nRows);
+  for (let i = 0; i < nRows; ++i)
+    stdY[i] = (ry[i] - yMean) / yStd;
+
+  const pls = new WasmPls(componentsCount);
+  try {
+    pls.setFeatureStats(xMeans, xStds, yMean, yStd);
+    pls.fit(flatX, nRows, stdY);
+
+    const b = pls.regressionCoefficients(); // raw space, length m
+
+    // prediction = D · b on raw predictors, no intercept (C++ parity).
+    const predData = new Float32Array(nRows);
+    for (let i = 0; i < nRows; ++i) {
+      let s = 0;
+      for (let j = 0; j < m; ++j)
+        s += b[j] * raw[j][i];
+      predData[i] = s;
+    }
+
+    const tFlat = pls.tScores(); // A x nRows
+    const uFlat = pls.uScores(); // A x nRows
+    const pFlat = pls.xLoadings(); // A x m
+    const qArr = pls.yLoadings(); // length A
+    const a = qArr.length;
+
+    const tScores: DG.Column[] = [];
+    const uScores: DG.Column[] = [];
+    for (let k = 0; k < a; ++k) {
+      const tcol = new Float32Array(nRows);
+      const ucol = new Float32Array(nRows);
+      const base = k * nRows;
+      for (let i = 0; i < nRows; ++i) {
+        tcol[i] = tFlat[base + i];
+        ucol[i] = uFlat[base + i];
+      }
+      tScores.push(DG.Column.fromFloat32Array((k + 1).toString(), tcol));
+      uScores.push(DG.Column.fromFloat32Array((k + 1).toString(), ucol));
+    }
+
+    const xLoadings: DG.Column[] = [];
+    for (let k = 0; k < a; ++k) {
+      const pcol = new Float32Array(m);
+      const base = k * m;
+      for (let j = 0; j < m; ++j)
+        pcol[j] = pFlat[base + j];
+      xLoadings.push(DG.Column.fromFloat32Array((k + 1).toString(), pcol));
+    }
+
+    const prediction = DG.Column.fromFloat32Array('0', predData);
+    const regrCoeffs = DG.Column.fromFloat32Array('0', Float32Array.from(b));
+    const yLoadings = DG.Column.fromFloat32Array('0', Float32Array.from(qArr));
+
+    return [prediction, regrCoeffs, tScores, uScores, xLoadings, yLoadings];
+  } finally {
+    pls.free();
+  }
+}
+
+/**
+ * Softmax (multinomial logistic) classifier training.
+ *
+ * Drop-in for the `EDAAPI` export of the same name. Returns a
+ * `DG.DataFrame` whose `.columns` are `classesCount` parameter columns of
+ * length `featuresCount + 1` — the `[W | B]` layout (per class: weights
+ * then bias) the `SoftmaxClassifier` consumer slices by index.
+ *
+ * Matches the retired C++ `fitSoftmax`: the predictors are standardised
+ * here with the caller-supplied per-feature `featureAvgs`/`featureStdDevs`
+ * (`(x - avg) / stdev`, leaving a column merely centred when `stdev <= 0`,
+ * as the C++ did); the kernel trains on the standardised columns with the
+ * reference class-frequency weighting (the `WasmSoftmax` default). The
+ * parameters come back in standardised space — the consumer's `predict`
+ * standardises its input with the same stats before applying them.
+ *
+ * Note: unlike the C++ `_fitSoftmax`, this is async (the wasm needs a
+ * one-time init), so the call site awaits it.
+ */
+export async function _fitSoftmax(
+  features: DG.ColumnList, featureAvgs: DG.Column, featureStdDevs: DG.Column, targets: DG.Column,
+  classesCount: number, iterCount: number, learningRate: number, penalty: number, tolerance: number,
+  paramsRows: number, _paramsCols: number,
+): Promise<DG.DataFrame> {
+  await ensureEdaMlInit();
+
+  const cols = features.toList();
+  const m = cols.length;
+  const nRows = targets.length;
+  const avgs = featureAvgs.getRawData();
+  const stdevs = featureStdDevs.getRawData();
+
+  // Standardise predictors with the supplied stats into the flat boundary form.
+  const flatX = new Float64Array(m * nRows);
+  for (let j = 0; j < m; ++j) {
+    const r = cols[j].getRawData(); // capacity may exceed nRows
+    const avg = avgs[j];
+    const sd = stdevs[j] > 0 ? stdevs[j] : 1; // C++ leaves column centred when stdev <= 0
+    const base = j * nRows;
+    for (let i = 0; i < nRows; ++i)
+      flatX[base + i] = (r[i] - avg) / sd;
+  }
+
+  const labels = (targets.getRawData() as Int32Array).subarray(0, nRows);
+
+  const sm = new WasmSoftmax(classesCount, learningRate, iterCount, penalty, tolerance);
+  try {
+    sm.fit(flatX, nRows, labels);
+
+    const params = sm.params(); // flat c x (n+1) row-major [W|B]
+    const outCols: DG.Column[] = [];
+    for (let c = 0; c < classesCount; ++c) {
+      const colData = new Float32Array(paramsRows);
+      const base = c * paramsRows;
+      for (let r = 0; r < paramsRows; ++r)
+        colData[r] = params[base + r];
+      outCols.push(DG.Column.fromFloat32Array((c + 1).toString(), colData));
+    }
+
+    return DG.DataFrame.fromColumns(outCols);
+  } finally {
+    sm.free();
   }
 }
