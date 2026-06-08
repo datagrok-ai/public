@@ -360,18 +360,10 @@ export async function chemSubstructureSearchLibrary(
 
     // in case there are no saved columns -> recompute all
     const recomputeAll = !hasSaved;
-    const rowsToRecompute: number[] = [];
-    if (!recomputeAll) {
-      if (includeMask) {
-        for (let i = includeMask.findNext(-1); i !== -1; i = includeMask.findNext(i)) {
-          if (i < molStringsColumn.length)
-            rowsToRecompute.push(i);
-        }
-      } else if (changedRows) {
-        for (const i of changedRows)
-          rowsToRecompute.push(i);
-      }
-    }
+    // fps/canonical smiles are recomputed ONLY for changed rows. includeMask is unrelated to changes
+    // (e.g. the scaffold tree passes the parent scaffold's matches to limit the search) and must not
+    // trigger fp recompute — it only affects the substructure search itself.
+    const rowsToRecompute: number[] = !recomputeAll && changedRows ? changedRows : [];
 
     let canonicalSmilesList: (string | null)[];
     let fgsList: (Uint8Array | null)[];

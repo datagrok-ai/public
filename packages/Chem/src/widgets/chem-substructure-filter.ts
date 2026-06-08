@@ -328,13 +328,13 @@ export class SubstructureFilter extends DG.Filter {
           this.fpSync = true;
           this.fpInput.value = state.fp;
         }
-        const molblock = !state.molblock ? DG.WHITE_MOLBLOCK : state.molblock;
+        const molecule = !state.molblock ? DG.WHITE_MOLBLOCK : state.molblock;
         if (updateMolecule) {
           //call setMolFile only in case new molecule differs from previous one
           _package.logger.debug(`setting new molecule in sync event , syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
-          this.sketcher.setMolFile(molblock);
+          this.sketcher.setMolecule(molecule);
         }
-        this.updateFilterUiOnSketcherChanged(molblock);
+        this.updateFilterUiOnSketcherChanged(molecule);
       }
     }));
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
