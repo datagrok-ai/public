@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
+// Linear regression migrated to Rust + WASM (sci-comp-ml); now async.
+import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/eda-api';
 import {getPlsAnalysis} from './pls/pls-tools';
 
 // Default PLS components count
@@ -106,7 +107,7 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
       return params;
 
     // Compute parameters of linear regression
-    const tempParams = _fitLinearRegressionParamsWithDataNormalizing(
+    const tempParams = (await _fitLinearRegressionParamsWithDataNormalizing(
       DG.DataFrame.fromColumns(nonConstFeatureCols).columns,
       DG.Column.fromFloat32Array('xAvgs', nonConstFeatureAvgs, nonConstFeaturesCount),
       DG.Column.fromFloat32Array('xStdevs', nonConstFeatureStdevs, nonConstFeaturesCount),
@@ -114,7 +115,7 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
       yAvg,
       yStdev,
       nonConstFeaturesCount + 1,
-    ).getRawData();
+    )).getRawData();
 
     // Extract params taking into account non-constant columns
     for (let i = 0; i < nonConstFeaturesCount; ++i)

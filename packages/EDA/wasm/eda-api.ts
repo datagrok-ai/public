@@ -15,13 +15,23 @@
 
 import * as DG from 'datagrok-api/dg';
 
-import {WasmPca, WasmPls, WasmSoftmax} from './sci_comp_ml.js';
+import {WasmElasticNet, WasmPca, WasmPls, WasmSoftmax} from './sci_comp_ml.js';
 import {ensureEdaMlInit} from '../src/wasm-loader';
 
 // Convergence controls of the retired C++ NIPALS (PCA.h: TOL, MAX_ITER).
 // Reproduced here so the Rust kernel iterates identically.
 const PCA_TOL = 1e-6;
 const PCA_MAX_ITER = 100;
+
+// OLS-via-gradient-descent controls for the linear-regression path. The
+// retired C++ solved the normal equations in closed form; here full-batch
+// GD on standardised data (l1 = l2 = 0) approaches the same least-squares
+// solution. Data is unit-variance, so a modest rate is stable; epochs are
+// capped to keep the large-sample Performance run within budget, and the
+// loss `tol` early-stops once converged.
+const OLS_LR = 0.1;
+const OLS_EPOCHS = 1000;
+const OLS_TOL = 1e-7;
 
 /**
  * Principal component analysis via NIPALS.
@@ -289,5 +299,75 @@ export async function _fitSoftmax(
     return DG.DataFrame.fromColumns(outCols);
   } finally {
     sm.free();
+  }
+}
+
+/**
+ * Linear-regression coefficients with internal data normalisation.
+ *
+ * Drop-in for the `EDAAPI` export of the same name. Returns a single
+ * `DG.Column` of length `paramsCount` (= #features + 1): the raw-space
+ * weights `[w0 … w_{m-1}]` followed by the bias.
+ *
+ * Matches the retired C++ `fitLinearRegressionParamsWithDataNormalizing`:
+ * predictors and response are standardised with the caller-supplied stats
+ * (`(x - avg) / stdev`, `(y - yAvg) / yStdev`), OLS is solved on the
+ * standardised data, then coefficients are rescaled back to raw space:
+ *   w_raw_j = w_std_j · yStdev / stdev_j
+ *   bias    = yAvg − Σ w_raw_j · avg_j
+ * The standardised intercept is ~0 (centred data) and, as in the C++, is
+ * not carried into the raw bias.
+ *
+ * Note: unlike the C++ `_fit...`, this is async (the wasm needs a one-time
+ * init), so the call site awaits it.
+ */
+export async function _fitLinearRegressionParamsWithDataNormalizing(
+  features: DG.ColumnList, featureAvgs: DG.Column, featureStdDevs: DG.Column, targets: DG.Column,
+  targetsAvg: number, targetsStdDev: number, paramsCount: number,
+): Promise<DG.Column> {
+  await ensureEdaMlInit();
+
+  const cols = features.toList();
+  const m = cols.length;
+  const nRows = targets.length;
+  const xAvgs = featureAvgs.getRawData();
+  const xStdevs = featureStdDevs.getRawData();
+
+  // Standardise predictors and response with the supplied stats.
+  const flatX = new Float64Array(m * nRows);
+  for (let j = 0; j < m; ++j) {
+    const r = cols[j].getRawData(); // capacity may exceed nRows
+    const avg = xAvgs[j];
+    const sd = xStdevs[j] > 0 ? xStdevs[j] : 1;
+    const base = j * nRows;
+    for (let i = 0; i < nRows; ++i)
+      flatX[base + i] = (r[i] - avg) / sd;
+  }
+
+  const ry = targets.getRawData();
+  const ySd = targetsStdDev > 0 ? targetsStdDev : 1;
+  const stdY = new Float64Array(nRows);
+  for (let i = 0; i < nRows; ++i)
+    stdY[i] = (ry[i] - targetsAvg) / ySd;
+
+  // OLS via full-batch GD; no feature stats -> standardised-space coeffs.
+  const model = new WasmElasticNet(OLS_LR, OLS_EPOCHS, 0, 0, OLS_TOL);
+  try {
+    model.fit(flatX, nRows, stdY);
+    const cwb = model.coefficientsWithBias(); // [w_std_0 … w_std_{m-1}, b_std]
+
+    const out = new Float32Array(paramsCount);
+    let sum = 0;
+    for (let j = 0; j < m; ++j) {
+      const sd = xStdevs[j] > 0 ? xStdevs[j] : 1;
+      const wRaw = cwb[j] * targetsStdDev / sd;
+      out[j] = wRaw;
+      sum += wRaw * xAvgs[j];
+    }
+    out[m] = targetsAvg - sum;
+
+    return DG.Column.fromFloat32Array('params', out, paramsCount);
+  } finally {
+    model.free();
   }
 }
