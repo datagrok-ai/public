@@ -371,6 +371,45 @@ export const RichFunctionView = Vue.defineComponent({
       ];
     };
 
+    // Per-function preferred tab, tracked separately for the input and output sides and pushed
+    // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
+    // (see the watcher below); a user click sets it directly so the click is respected until
+    // the next restore.
+    const inputKey = () => `opened_input_tab_${currentCall.value?.func?.nqName}`;
+    const outputKey = () => `opened_output_tab_${currentCall.value?.func?.nqName}`;
+    const preferredTab = Vue.ref<string | null>(null);
+
+    const sideTabs = (side: 'inputs' | 'outputs') =>
+      visibleTabLabels.value.filter((l) => tabToPropertiesMap.value[side].has(l));
+
+    // Saved tab if still visible, else the default for the side (not persisted): the last output
+    // tab (typically the final result) but the first input tab.
+    const resolveSide = (side: 'inputs' | 'outputs', key: string) => {
+      const tabs = sideTabs(side);
+      const saved = sessionStorage.getItem(key);
+      if (saved && tabs.includes(saved))
+        return saved;
+      return (side === 'outputs' ? tabs[tabs.length - 1] : tabs[0]) ?? null;
+    };
+
+    // formAsTab forces the 'Inputs' tab; otherwise input vs output side by run state.
+    const resolvePreferredTab = () =>
+      formAsTab.value ? 'Inputs' :
+        (isOutputOutdated.value ?
+          resolveSide('inputs', inputKey()) :
+          resolveSide('outputs', outputKey()));
+
+    const handleTabClicked = (title: string | null) => {
+      if (!title)
+        return;
+      preferredTab.value = title;
+      // 'Inputs' (form tab or side-panel) is not persisted: forced by formAsTab or a sticky panel.
+      if (tabToPropertiesMap.value.inputs.has(title))
+        sessionStorage.setItem(inputKey(), title);
+      else if (tabToPropertiesMap.value.outputs.has(title))
+        sessionStorage.setItem(outputKey(), title);
+    };
+
     Vue.watch(currentCall, (call) => {
       rebuildTabs(call);
       userClosed.value = new Set();
@@ -402,6 +441,14 @@ export const RichFunctionView = Vue.defineComponent({
           tabContent: map.inputs.get(tabLabel) ?? map.outputs.get(tabLabel)!,
           isInput: !!map.inputs.has(tabLabel),
         }));
+
+      // Restore the preferred tab on function switch (incl. initial mount) and on run completion
+      // (isOutputOutdated true->false). A plain visibleTabLabels change touches neither, so a
+      // mid-step tab show/hide leaves focus untouched.
+      const switched = prevCall !== call;
+      const justRan = !switched && !!prevCallState?.isOutputOutdated && !!callState && !callState.isOutputOutdated;
+      if (switched || justRan)
+        preferredTab.value = resolvePreferredTab();
     }, {immediate: true});
 
     Vue.watch(currentCall, async (call) => {
@@ -455,26 +502,6 @@ export const RichFunctionView = Vue.defineComponent({
         next.add(closedLabel);
         userClosed.value = next;
       }
-    };
-
-    // The user's chosen tab, persisted per function and pushed to the dock as the
-    // preferred tab so it survives tab adds/rebuilds without the dock stealing focus.
-    // Updated only on real user tab clicks (the dock's `tabClicked` event).
-    const tabStorageKey = Vue.computed(() => `opened_tab_${currentCall.value?.func?.nqName}`);
-    const preferredTab = Vue.ref<string | null>(null);
-    Vue.watch([tabStorageKey, formAsTab], ([key]) => {
-      preferredTab.value = sessionStorage.getItem(key) ?? (formAsTab.value ? 'Inputs' : null);
-    }, {immediate: true});
-
-    // 'Inputs' is the form side-panel unless formAsTab is on — a sticky panel, not a
-    // tab the user switches to, so don't persist it as the preferred output tab.
-    const isInputsSidePanel = (n: string | null) => n === 'Inputs' && !formAsTab.value;
-
-    const handleTabClicked = (title: string | null) => {
-      if (!title || isInputsSidePanel(title))
-        return;
-      preferredTab.value = title;
-      sessionStorage.setItem(tabStorageKey.value, title);
     };
 
     ////
