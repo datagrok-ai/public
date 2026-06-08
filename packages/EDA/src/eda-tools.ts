@@ -4,12 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_principalComponentAnalysisInWebWorker, _principalComponentAnalysis,
-  _partialLeastSquareRegressionInWebWorker,
-  _principalComponentAnalysisNipals, _principalComponentAnalysisNipalsInWebWorker,
-} from '../wasm/EDAAPI';
+import {_partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
+// PCA migrated to Rust + WASM (sci-comp-ml); always NIPALS now.
+import {_principalComponentAnalysisNipalsInWebWorker} from '../wasm/eda-api';
 
-import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs, NIPALS_PREFER_COLS_COUNT,
+import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs,
   getRowsOfNumericalColumnns, centerScaleDataFrame, extractNonConstantColsDf} from './utils';
 
 // Principal components analysis (PCA)
@@ -36,20 +35,10 @@ export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, c
   const zeroColsToAdd = (nonConstColsCount < components) ? (components - nonConstColsCount) : 0;
   const componentsToCompute = Math.min(components, nonConstColsCount);
 
-  let output: DG.DataFrame | undefined = undefined;
-
-  // PCA
-  if (nonConstColsCount > NIPALS_PREFER_COLS_COUNT)
-    output = await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
-  else {
-    //try to apply the classic algorithm
-    const res = await _principalComponentAnalysisInWebWorker(table, features, componentsToCompute);
-
-    if (res !== -1) // the classic succeed
-      output = centerScaleDataFrame(res, toCenter, toScale);
-    else // the classic failed
-      output = await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
-  }
+  // PCA — always NIPALS (Rust + WASM). The classic correlation-matrix
+  // branch was dropped as part of the C++ -> Rust migration.
+  let output: DG.DataFrame | undefined =
+    await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
 
   if (output === undefined)
     throw new Error('Failed to compute PCA');
