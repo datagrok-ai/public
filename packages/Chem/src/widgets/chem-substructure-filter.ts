@@ -274,14 +274,18 @@ export class SubstructureFilter extends DG.Filter {
 
   attach(dataFrame: DG.DataFrame): void {
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
-      ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+      waitForElementInDomBounded(this.sketcher.root).then((el) => {
+        if (!el)
+          return;
         this.sketcher.root.children[0].classList.add('chem-hide-filter');
         this.sketcher.root.append(this.errorDiv);
         return;
       });
     };
     //this fix is required for Marvin JS sync between filter panel and hamburger menu
-    ui.tools.waitForElementInDom(this.sketcher.root).then(async () => {
+    waitForElementInDomBounded(this.sketcher.root).then(async (el) => {
+      if (!el)
+        return;
       let inplaceSketcher = !this.root.closest('.d4-filter');
       try {
         if (!inplaceSketcher)
