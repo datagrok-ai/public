@@ -85,7 +85,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | PCA...',
-    'description': 'Principal component analysis (PCA)',
+    'description': 'Principal component analysis (PCA).',
     'helpUrl': '/help/explore/dim-reduction#pca',
   })
   static async PCA(
@@ -312,7 +312,7 @@ export class PackageFunctions {
     table: DG.DataFrame,
     @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical'}}) features: DG.ColumnList,
     @grok.decorators.param({'type': 'column', 'options': {'type': 'numerical'}}) predict: DG.Column,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '3'}}) components: number,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '3', 'description': 'Number of latent factors the model extracts from the predictors.'}}) components: number,
     @grok.decorators.param({'type': 'column', 'options': {'type': 'string'}}) names: DG.Column): Promise<PlsOutput> {
     return await getPlsAnalysis({
       table: table,
@@ -689,10 +689,10 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'description': 'Gradient descent learning rate.'}}) rate: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'initialValue': '1000', 'description': 'Maximum gradient descent epochs (early-stopped by tolerance).'}}) iterations: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Tolerance', 'min': '0', 'initialValue': '0.0000001', 'description': 'Early-stopping threshold on |Δloss|.'}}) tolerance: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain OLS.'}}) alpha: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain OLS.'}}) lambda: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Tolerance', 'min': '0', 'initialValue': '0.0000001', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
     const features = df.columns;
     const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, tolerance);
 
@@ -753,10 +753,10 @@ export class PackageFunctions {
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Learning rate.'}}) rate: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Fitting iterations count'}}) iterations: number,
+    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
     @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Fitting tolerance.'}}) tolerance: number): Promise<Uint8Array> {
+    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
     const features = df.columns;
 
     const model = new SoftmaxClassifier({
