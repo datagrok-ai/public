@@ -577,6 +577,9 @@ jobs:
           # platform never serves), so build that bundle and copy it over the one in
           # the running container.
           npm ci
+          # tsc first: js-api source uses explicit ESM ./*.js imports that only resolve
+          # after tsc emits the compiled .js files (mirrors the normal `tsc && webpack` build).
+          npx tsc
           npx webpack --config webpack.config.js --output-path "$PWD/_overlay_bundle"
           datagrok_container=$(docker ps --filter "ancestor=datagrok/datagrok:bleeding-edge" --format '{{.ID}}' | head -n1)
           if [ -z "$datagrok_container" ]; then
