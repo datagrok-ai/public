@@ -1328,12 +1328,21 @@ export class tools {
     api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.dart);
   }
 
-  /** Waits until the specified element is in the DOM. */
+  /** Timeout (ms) after which {@link waitForElementInDom} stops waiting and releases the
+   * pending entry, so an element that never attaches does not leak its resolve closure. */
+  static waitForElementInDomTimeout = 30000;
+
+  /** Waits until the specified element is in the DOM. Resolves once it is attached, or after
+   * {@link waitForElementInDomTimeout} if it never attaches — in both cases the pending entry
+   * (and the closure it captures) is removed, avoiding the unbounded growth of
+   * {@link mutationObserverElements} for detached/hidden elements. */
   static waitForElementInDom(element: HTMLElement): Promise<HTMLElement> {
     if (_isDartium()) {
       return new Promise(resolve => {
+        let elapsed = 0;
         const intervalId = setInterval(function() {
-          if (document.contains(element)) {
+          elapsed += 100;
+          if (document.contains(element) || elapsed >= tools.waitForElementInDomTimeout) {
             clearInterval(intervalId);
             return resolve(element);
           }
@@ -1342,12 +1351,14 @@ export class tools {
     }
 
     tools.mutationObserver ??=  new MutationObserver((_) => {
-      tools.mutationObserverElements.forEach((item, index) => {
-        if (document.contains(item.element)) {
-          item.resolveF(item.element);
-          tools.mutationObserverElements.splice(index, 1);
-        }
-      })
+      tools.mutationObserverElements = tools.mutationObserverElements.filter((item) => {
+        if (!document.contains(item.element))
+          return true;
+        item.resolveF(item.element);
+        return false;
+      });
+      if (tools.mutationObserverElements.length === 0)
+        tools.mutationObserver!.disconnect();
     });
     tools.mutationObserver.observe(document.body, {
       childList: true,
@@ -1357,7 +1368,17 @@ export class tools {
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
-      tools.mutationObserverElements.push({element: element, resolveF: resolve, timestamp: Date.now()});
+      const item = {element: element, resolveF: resolve, timestamp: Date.now()};
+      tools.mutationObserverElements.push(item);
+      setTimeout(() => {
+        const index = tools.mutationObserverElements.indexOf(item);
+        if (index === -1)
+          return;
+        tools.mutationObserverElements.splice(index, 1);
+        if (tools.mutationObserverElements.length === 0)
+          tools.mutationObserver?.disconnect();
+        resolve(element);
+      }, tools.waitForElementInDomTimeout);
     });
   }
 
