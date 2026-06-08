@@ -53,12 +53,11 @@ To save:
    * **For new entities**: Enter a name and, optionally, a
       description for your project. By default, new entities are saved to your personal project under **My stuff**. 
    * **For existing (modified) entities**: Remove any tables you don't want to save. By default, all open tables are included. Select one of the following: 
-          * **Save original project**: Updates the original project.
-          * **Save a copy**: Useful when you want to edit the project, but don't have the privilege to modify the original one. If you choose this option, you must also decide what happens to each table included in your new project:
-              * **Clone**: Creates a copy of the table in your new project.
-              * **Move**: Moves the table to the new project, leaving a read-only linked copy in the original project. The linked copy updates with changes made to the table in the new project.
-              * **Link**: Creates a read-only linked copy of the original table in your project. Changes to the table in the original project are automatically reflected in the linked table in your project.
-          * **Personal view customizations**: Saves personalized layout changes visible to you only, without changing the layout seen by others.
+      * **Save original project**: Updates the original project.
+      * **Save a copy**: Useful when you want to edit the project, but don't have the privilege to modify the original one. If you choose this option, you must also decide what happens to each table included in your new project:
+          * **Clone**: Creates a copy of the table in your new project.
+          * **Link**: Creates a read-only linked copy of the original table in your project. Changes to the table in the original project are automatically reflected in the linked table in your project.
+      * **Personal view customizations**: Saves personalized layout changes visible to you only, without changing the layout seen by others.
    * Optional:
       * To update the data every time you open a project, toggle **Data sync**.
          This feature is commonly used to create [dynamic dashboards](../../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)
