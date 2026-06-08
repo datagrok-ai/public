@@ -805,8 +805,25 @@ To run MMP analysis:
     property values. For each activity, you can set:
       * **Difference type**: _delta_ (x − y) or _ratio_ (x / y)
       * **Scaling**: _none_, _log10_, or _−log10_ (log options are available only when all values are non-negative)
-    * **Cutoff**: The maximum allowed fragment size relative to the core (default 0.4)
+    * **Cutoff**: The maximum allowed fragment size relative to the core (default 0.4).
+      This ratio controls whether large substituents are included, but it does **not**
+      affect H↔R pairs (see note below).
 3. Click **OK**. An MMP analysis is added to the view with four tabs:
+
+> **Note — H↔R transformations are not shown by design.**
+> When one fragment is a bare hydrogen (e.g., adding a methyl group where only an H existed),
+> the algorithm represents the core as an empty string (`''`).  
+> In `mmpa-fragments.ts` the pairing loop explicitly skips any pair whose core SMILES is
+> empty — this filter runs *before* the cutoff ratio is checked, so **lowering the cutoff
+> will not reveal H↔R pairs**.  
+>
+> **Workarounds:**
+> * **Preprocess structures** — encode the hydrogen explicitly as part of the scaffold
+>   before running MMP so the pair no longer produces an empty core.
+> * **R-group decomposition** — use **Chem > Analyze > R-Groups Analysis**, which
+>   explicitly handles H vs. substituent at each R-group position.
+> * **Feature request** — the empty-core filter is a design choice rather than a
+>   fundamental limitation; open a feature request if optional H↔R support would be useful.
 
 When you first open the analysis, interactive **hints** guide you through the
 key features on each tab. Click **Next** to advance or **Do not show** to
