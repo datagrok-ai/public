@@ -24,7 +24,7 @@ export namespace funcs {
   }
 
   /**
-  Principal component analysis (PCA)
+  Principal component analysis (PCA).
   */
   export async function pca(table: DG.DataFrame , features: string[] , components: number , center: boolean , scale: boolean ): Promise<void> {
     return await grok.functions.call('EDA:PCA', { table, features, components, center, scale });

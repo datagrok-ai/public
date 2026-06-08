@@ -753,10 +753,10 @@ export class PackageFunctions {
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
+    @grok.decorators.param({'options': {'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'options': {'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'options': {'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
+    @grok.decorators.param({'options': {'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
     const features = df.columns;
 
     const model = new SoftmaxClassifier({

@@ -25,7 +25,7 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
   return await PackageFunctions.dbScan(df, xCol, yCol, epsilon, minPts);
 }
 
-//description: Principal component analysis (PCA)
+//description: Principal component analysis (PCA).
 //input: dataframe table { caption: Table }
 //input: column_list features { type: numerical; nullable: false }
 //input: int components = 2 { showPlusMinus: true; caption: Components; nullable: false; min: 1; description: Number of components. }
@@ -119,7 +119,7 @@ export function markovClusteringViewer() : any {
 //input: dataframe table 
 //input: column_list features { type: numerical }
 //input: column predict { type: numerical }
-//input: int components = 3 
+//input: int components = 3 { description: Number of latent factors the model extracts from the predictors. }
 //input: column names { type: string }
 //output: object plsResults
 export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number, names: DG.Column) : Promise<any> {
@@ -367,10 +367,10 @@ export async function kNNImputationForTable(table: DG.DataFrame) : Promise<void>
 //input: dataframe df 
 //input: column predictColumn 
 //input: double rate = 0.1 { caption: Rate; min: 0; description: Gradient descent learning rate. }
-//input: int iterations = 1000 { caption: Iterations; min: 1; description: Maximum gradient descent epochs (early-stopped by tolerance). }
-//input: double tolerance = 0.0000001 { caption: Tolerance; min: 0; description: Early-stopping threshold on |Δloss|. }
-//input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain OLS. }
-//input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain OLS. }
+//input: int iterations = 1000 { caption: Iterations; min: 1; description: Largest number of training steps before training stops. }
+//input: double tolerance = 0.0000001 { caption: Tolerance; min: 0; description: Smallest improvement worth continuing training for. }
+//input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain ordinary least squares. }
+//input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain ordinary least squares. }
 //output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
@@ -407,10 +407,10 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate = 1.0 { category: Hyperparameters; min: 0.001; max: 20; description: Learning rate. }
-//input: double iterations = 100 { category: Hyperparameters; min: 1; max: 10000; step: 10; description: Fitting iterations count }
-//input: double penalty = 0.1 { category: Hyperparameters; min: 0.0001; max: 1; description: Regularization rate. }
-//input: double tolerance = 0.001 { category: Hyperparameters; min: 0.00001; max: 0.1; description: Fitting tolerance. }
+//input: double rate = 1.0 { min: 0.001; max: 20; description: Gradient descent learning rate. }
+//input: double iterations = 100 { min: 1; max: 10000; step: 10; description: Largest number of training steps before training stops. }
+//input: double penalty = 0.1 { min: 0.0001; max: 1; description: Regularization rate. }
+//input: double tolerance = 0.001 { min: 0.00001; max: 0.1; description: Smallest improvement worth continuing training for. }
 //output: dynamic model
 //meta.mlname: Softmax
 //meta.mlrole: train

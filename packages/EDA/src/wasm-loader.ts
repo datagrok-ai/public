@@ -7,7 +7,7 @@
 //
 // The binary is emitted next to the bundle in `dist/` (via the `.wasm`
 // file-loader rule in webpack.config.js). We resolve it relative to the
-// served bundle URL rather than `_package.webRoot`: the latter reads the
+// served bundle URL rather than `_package.webRoot` - the latter reads the
 // package handle, which is not initialised in the separate
 // `package-test.js` bundle, so it would throw under `grok test`.
 //
