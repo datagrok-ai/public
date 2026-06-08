@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.17.11",
+  "version": "1.17.13",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -49,7 +49,7 @@
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.2",
+    "datagrok-api": "^1.27.6",
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
     "js-yaml": "^4.1.1",
