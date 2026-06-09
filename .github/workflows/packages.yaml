@@ -6,11 +6,6 @@ on:
         description: 'Packages separated by spaces'
         required: true
         type: string
-      datagrok_version:
-        description: 'datagrok/datagrok image tag to test against (e.g. 1.27.2, 1.27.3, bleeding-edge)'
-        required: false
-        default: 'bleeding-edge'
-        type: string
   push:
     paths:
       - 'packages/**'
@@ -365,8 +360,7 @@ jobs:
           # docker system prune -af --volumes
 
           # TODO: revert to 'latest' after next release (bleeding-edge needed for docker 'changed' status fix)
-          # Version bisection: workflow_dispatch can override via datagrok_version input; defaults to bleeding-edge for push/PR.
-          DATAGROK_VERSION='${{ github.event.inputs.datagrok_version || 'bleeding-edge' }}'
+          DATAGROK_VERSION='bleeding-edge'
           # if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
           #   DATAGROK_VERSION='latest'
           # else
