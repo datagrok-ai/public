@@ -109,9 +109,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   static async getUserGroups() {
-    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-    const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-    return userGroups;
+    return await grok.dapi.groups.currentUserGroups();
   }
 
   static getMissingGroups(func: DG.Func, userGroups: DG.Group[]) {

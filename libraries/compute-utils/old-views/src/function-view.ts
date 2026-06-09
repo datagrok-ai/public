@@ -615,8 +615,7 @@ export abstract class FunctionView extends DG.ViewBase {
       ribbonMenu.item('Help', () => this.getHelp!());
 
     setTimeout(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      const userGroups = await grok.dapi.groups.currentUserGroups();
 
       if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
         const testingGroup = ribbonMenu.group('Test runner');
