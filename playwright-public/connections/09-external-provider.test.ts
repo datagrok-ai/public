@@ -153,11 +153,15 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
       // platform reports completion via a green balloon or by clearing the
       // running indicator. Wait for either: a balloon appears, or the play
       // icon's spinner stops. We assert no error balloons remain.
+      // 90s, not 60s: the first DDL query against the in-network `world` demo
+      // Postgres pays a cold grok_connect connection-pool warm-up, which can
+      // exceed 60s on a loaded CI agent (build 62 timed out here while build 55
+      // passed). The query itself is trivial once the pool is up.
       await page.waitForFunction(() =>
         !!document.querySelector('.grok-balloon, .d4-balloon')
         || !!document.querySelector('[name="viewer-Grid"] canvas'),
         undefined,
-        { timeout: 60_000 });
+        { timeout: 90_000 });
       await page.waitForTimeout(1500);
 
       const errors = await page.evaluate(() => Array.from(document.querySelectorAll('.d4-balloon-error, .grok-balloon-error'))

@@ -30,13 +30,17 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
 
     await softStep('Step 2: Click "Save to Model Hub" icon', async () => {
       await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
-      // The platform shows a balloon on success. "Save to Model Hub" writes a *file*
-      // (e.g. "Saved to Library as PK-PD(14).ivp"), not a tagged script — so match that
-      // text and do NOT poll `grok.dapi.scripts` (the .ivp never appears there).
+      // The platform flashes a balloon on success ("Saved to Library as PK-PD(14).ivp",
+      // a *file* — not a tagged script, so don't poll grok.dapi.scripts). The balloon
+      // auto-dismisses after a few seconds, so on a slow CI it can appear and vanish
+      // before we look — treat it as a best-effort signal, not a hard gate. The
+      // authoritative proof the save worked is Step 3 (the PK-PD card in the Model Hub).
       const balloon = page.locator('.d4-balloon, .grok-notification').filter({
         hasText: /Saved to Library/i,
       });
-      await expect(balloon.first()).toBeVisible({ timeout: 15_000 });
+      const sawBalloon = await balloon.first().isVisible({ timeout: 15_000 }).catch(() => false);
+      if (!sawBalloon)
+        console.warn('[catalog] "Saved to Library" balloon not observed; relying on Step 3 card check');
       // Let the file-save POST settle before the next step navigates the shell.
       await page.waitForTimeout(2000);
     });

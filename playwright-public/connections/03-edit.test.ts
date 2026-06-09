@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_DB,
   PG_LOGIN,
   PG_PASSWORD,
+  PG_PORT,
+  PG_SERVER,
   applyAutomationSetup,
   clickConnectionTest,
   clickConnectionSave,
@@ -37,9 +40,29 @@ test.describe.serial('Connections / Edit (Postgres)', () => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
-    const before = await findConnectionByFriendlyName(page, NAME_BEFORE);
-    if (!before)
-      throw new Error(`prerequisite: connection "${NAME_BEFORE}" must exist (run adding.test.ts first)`);
+    let before = await findConnectionByFriendlyName(page, NAME_BEFORE);
+    if (!before) {
+      // 01-adding normally creates test_postgres via the UI; if that run flaked
+      // (or this file runs in isolation), self-provision it through the JS API
+      // against the in-CI northwind demo so the rename/edit flow has a subject,
+      // rather than hard-failing the whole describe. Mirrors the connection
+      // bootstrap in queries/visual-query-and-params (server:'host:port' +
+      // explicit port + ssl:false so grok_connect doesn't default to TLS).
+      await page.evaluate(({ name, server, port, db, login, password }) => {
+        const grok = (window as any).grok;
+        const DG = (window as any).DG;
+        const conn = DG.DataConnection.create(name, {
+          dataSource: 'Postgres',
+          server: `${server}:${port}`,
+          port: Number(port),
+          db, ssl: false, login, password,
+        });
+        return grok.dapi.connections.save(conn);
+      }, { name: NAME_BEFORE, server: PG_SERVER, port: PG_PORT, db: PG_DB, login: PG_LOGIN, password: PG_PASSWORD });
+      before = await findConnectionByFriendlyName(page, NAME_BEFORE);
+      if (!before)
+        throw new Error(`prerequisite: could not provision connection "${NAME_BEFORE}"`);
+    }
     // If a previous interrupted run left a renamed leftover, drop it so the rename test passes.
     const renamed = await findConnectionByFriendlyName(page, NAME_AFTER);
     if (renamed) await deleteConnectionByFriendlyName(page, NAME_AFTER);

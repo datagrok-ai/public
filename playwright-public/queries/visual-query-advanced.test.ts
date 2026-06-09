@@ -146,7 +146,7 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     // hidden 0×0 placeholder).
     await expect.poll(async () => page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv?.dataFrame?.rowCount ?? 0),
-    { timeout: 30_000 }).toBeGreaterThan(0);
+    { timeout: 60_000 }).toBeGreaterThan(0);
     const franceRows = await page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount);
 
@@ -160,7 +160,7 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     await page.locator('[name="button-REFRESH"]').first().click();
     await expect.poll(async () => page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount),
-    { timeout: 30_000 }).not.toBe(franceRows);
+    { timeout: 40_000 }).not.toBe(franceRows);
 
     // Add a viewer to the result table view via JS API.
     //

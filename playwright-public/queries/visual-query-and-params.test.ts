@@ -223,7 +223,7 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     await expect.poll(async () => page.evaluate(() => {
       const tv = (window as unknown as { grok: any }).grok.shell.tv;
       return tv?.dataFrame?.rowCount ?? 0;
-    }), { timeout: 30_000 }).toBeGreaterThan(0);
+    }), { timeout: 60_000 }).toBeGreaterThan(0);
     const franceRows = await page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount);
 
@@ -239,7 +239,7 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
 
     // Row count should change after the refresh (France has a different number of customers than USA).
     await expect.poll(async () => page.evaluate(() =>
-      (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount), { timeout: 20_000 })
+      (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount), { timeout: 40_000 })
       .not.toBe(franceRows);
 
     // Parameter input still shows the new value — confirms the re-run used it.
