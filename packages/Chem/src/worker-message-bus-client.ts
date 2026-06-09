@@ -1,12 +1,3 @@
-/** Thrown into in-flight {@link WorkerMessageBusClient.call} promises when their worker is killed,
- * so awaiting callers can recognize cancellation and unwind quietly instead of erroring. */
-export class WorkerCancelledError extends Error {
-  constructor(reason = 'Worker terminated') {
-    super(reason);
-    this.name = 'WorkerCancelledError';
-  }
-}
-
 export class WorkerMessageBusClient {
   _worker: Worker;
   /** In-flight calls, so {@link terminate} can reject them instead of leaving callers hung forever. */
@@ -37,7 +28,7 @@ export class WorkerMessageBusClient {
     // Reject in-flight calls so awaiting callers fail fast instead of hanging once the worker is gone.
     for (const pending of this._pending) {
       pending.port.close();
-      pending.reject(new WorkerCancelledError());
+      pending.reject(new Error('Worker terminated'));
     }
     this._pending.clear();
     this._worker.terminate();

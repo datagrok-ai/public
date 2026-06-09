@@ -430,8 +430,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     const emptyResult = (): IRGroupAnalysisResult =>
       ({colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []});
     try {
-      // R-Group is cancelled by killing the worker (its process() call can't be polled), so it
-      // deliberately ignores the cooperative _requestTerminated flag used by the other operations.
+      if (this._requestTerminated)
+        return emptyResult();
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
         core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
@@ -451,12 +451,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       for (let i = 0; i < molecules.length; i ++) {
         if (i % this._terminationCheckDelay === 0)
           await new Promise((r) => setTimeout(r, 0));
+        if (this._requestTerminated)
+          return emptyResult();
         const match = res!.add(mols!.at(i));
         if (match == -1)
           unmatches.push(i);
       }
 
       res!.process();
+
+      if (this._requestTerminated)
+        return emptyResult();
 
       cols = res!.get_rgroups_as_columns();
       colNames = Object.keys(cols).filter((it) => it !== molColName); //exclude Mol column from result since we do not need it
@@ -475,6 +480,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           for (let j = 0; j < molecules.length; j++) {
             if (j % this._terminationCheckDelay === 0)
               await new Promise((r) => setTimeout(r, 0));
+            if (this._requestTerminated)
+              return emptyResult();
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {

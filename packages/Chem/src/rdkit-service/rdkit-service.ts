@@ -39,9 +39,6 @@ export class RdKitService {
   segmentLength: number = 0;
   moleculesSegmentsLengths: Uint32Array;
   webRoot?: string;
-  /** Set while {@link restartWorkers} is reloading the pool; dispatch waits on it so no call is sent to a
-   * worker that is still re-initializing its WASM module (which would error or hang). */
-  private _restartPromise: Promise<void> | null = null;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
@@ -604,41 +601,11 @@ export class RdKitService {
     return await this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch);
   }
 
-  private async restartWorker(workerIndex: number) {
+  async restartWorker(workerIndex: number) {
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
     await workerClient.moduleInit(this.webRoot ?? '');
-  }
-
-  /**
-   * Kills and recreates the given workers (defaults to the whole pool). Pending `call()` promises on them
-   * reject with {@link WorkerCancelledError} so their callers unwind, and their caches are dropped. Used by
-   * R-Group's cancel to stop its blocking `rGroupAnalysis` call (which can't be polled); it passes only
-   * worker 0 (the one R-Group runs on) so the rest of the pool is untouched. The inits run concurrently
-   * because {@link restartWorker} does its terminate + spawn synchronously before awaiting `moduleInit`.
-   */
-  async restartWorkers(indices?: number[]): Promise<void> {
-    const idx = indices?.length ? indices : Array.from({length: this.workerCount}, (_, i) => i);
-    const restart = Promise.all(idx.map((i) => this.restartWorker(i))).then(() => {});
-    this._restartPromise = restart;
-    try {
-      await restart;
-    } finally {
-      if (this._restartPromise === restart)
-        this._restartPromise = null;
-    }
-  }
-
-  /** Resolves once any in-progress {@link restartWorkers} has finished, so a caller never dispatches to a
-   * worker that is still reloading its WASM module. No-op when the pool is ready.
-   *
-   * `chemBeginCriticalSection` awaits this after acquiring the lock, so every section-taking op waits for a
-   * pending restart before it dispatches. Ops that do NOT take the section (e.g. molecule rendering via
-   * `getCoordGenCoords`) are deliberately not fenced and could still be collaterally hit by a restart. */
-  async whenWorkersReady(): Promise<void> {
-    while (this._restartPromise)
-      await this._restartPromise;
   }
   /**
    * gets MCS for every cluster of molecules

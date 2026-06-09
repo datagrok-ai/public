@@ -59,52 +59,33 @@ export function criticalSectionEnd(key: string): void {
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-/** The cancellable op currently holding the section: its id and a `restart` callback (service + worker
- * indices captured at acquire time) that kills exactly the worker(s) it uses. See {@link cancelChemOp}. */
-let runningOp: {opId: string, restart: () => Promise<void>} | null = null;
+// opId of the operation currently holding the section (running on the worker), or null.
+let runningOpId: string | null = null;
 
-/** Generates a unique id for a cancellable RDKit operation. */
 export function newChemOpId(prefix = 'op'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/**
- * Cancels a running RDKit operation: kills + restarts the worker(s) it uses, rejecting its in-flight
- * `call()` promises so it unwinds and frees the section. No-op if {@link opId} isn't the running op (only
- * queued, or already finished). NOT `async` on purpose: it invokes the captured `restart` synchronously,
- * which terminates the worker and arms {@link RdKitService.whenWorkersReady} before returning to the event
- * loop — so a queued op can't acquire the section and dispatch onto the worker about to be killed.
- */
-export function cancelChemOp(opId: string): Promise<void> {
-  return runningOp?.opId === opId ? runningOp.restart() : Promise.resolve();
+// True if opId is the operation currently running on the worker (not just queued for the section).
+export function isChemOpRunning(opId: string): boolean {
+  return runningOpId === opId;
 }
 
-/**
- * Acquires the Chem critical section. Pass `op` for a cancellable operation — `op.workers` are the indices
- * it dispatches to, so {@link cancelChemOp} restarts only those (e.g. R-Group passes `[0]`). Requiring the
- * worker set with the id keeps a cancellable op from silently defaulting to a whole-pool restart on cancel.
- * After acquiring the lock it awaits {@link RdKitService.whenWorkersReady} so it never dispatches onto a
- * worker a just-cancelled op is still restarting.
- */
-export async function chemBeginCriticalSection(op?: {opId: string, workers: number[]}, token = CHEM_TOKEN): Promise<void> {
+export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN): Promise<void> {
   let warned = false;
   if (chemLockManager.has(token)) {
     console.warn('Chem | Is already in a critical section, waiting...');
     warned = true;
   }
   await criticalSectionBegin(token);
-  const {getRdKitService} = await import('./chem-common-rdkit');
-  const svc = await getRdKitService();
-  await svc.whenWorkersReady();
-  if (op)
-    runningOp = {opId: op.opId, restart: () => svc.restartWorkers(op.workers)};
+  if (opId)
+    runningOpId = opId;
   if (warned)
     console.warn('Chem | Left the critical section');
 }
 
-export function chemEndCriticalSection(opId?: string, token = CHEM_TOKEN): void {
-  if (opId && runningOp?.opId === opId)
-    runningOp = null;
+export function chemEndCriticalSection(token = CHEM_TOKEN): void {
+  runningOpId = null;
   criticalSectionEnd(token);
 }
 
