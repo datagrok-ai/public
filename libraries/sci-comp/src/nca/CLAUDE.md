@@ -13,10 +13,11 @@ src/nca/
     prng.ts                         # mulberry32 + deriveWorkerSeeds
     blq.ts                          # applyBlqStrategy — 4 BLQ rules × 4 phases
     auc.ts                          # AUC: 3 methods × {naive, Neumaier-compensated} = 6 + neumaierSum + aucExtrapolateToInfinity
+    aumc.ts                         # AUMC first-moment: 3 methods × {naive, compensated} = 6 + two-term aumcExtrapolateToInfinity
     cmax.ts                         # findCmax — first-occurrence Cmax/Tmax
     lambda-z.ts                     # lambdaZBestFit (auto subset, adj-R² + tie-break) + lambdaZManual; centered-sum OLS
     c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation;
-    derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated
+    derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
     compute-nca.ts                  # computeNca orchestrator — full pipeline
     __tests__/                      # Per-module tests + reference-suite vs fixtures
   __tests__/                        # Cross-module assets
@@ -34,4 +35,8 @@ src/nca/
 
 - **Status flag separates degeneracy modes**: `'failed'` (no measurable point), `'partial'` (Cmax/AUClast computed but lambda_z not estimable → no AUCinf, t½, CL, Vz), `'ok'` (all parameters). All numeric fields default to `NaN` when not computed.
 
-- **Reference data lives with tests**: CSV inputs in `__tests__/datasets/` and JSON fixtures in `__tests__/fixtures/` are committed source artifacts.
+- **Reference data lives with tests**: CSV inputs in `__tests__/datasets/` and JSON fixtures in `__tests__/fixtures/` are committed source artifacts. Regenerate via `__tests__/regen-fixtures.R` + `merge-fixtures.mjs` (PKNCA 0.12.1 oracle) — see `__tests__/REGEN.md`.
+
+- **Route gates live in the orchestrator, not the kernels**: `vss` is `NaN` for non-IV routes (an extravascular Vss would be `Vss/F` confounded by absorption); `tlag` is `NaN` for IV routes (no absorption phase). `meanResidenceTime`/`volumeSteadyState`/`tlag` stay pure and route-agnostic; `computeNca` applies the gate and copies the `NaN` sentinel. The writer in nca-studio copies the sentinel — it never re-derives the gate.
+
+- **AUMC has its OWN moment kernels** (`aumc.ts`), not AUC of a `t·C` array — the log-linear interval has a distinct closed form. The infinite tail is **two-term** (`(tLast·cLast)/λz + cLast/λz²`); the one-term form silently under-reports AUMC/MRT/Vss. MRT is a single unified column for all routes (`aumcInf/aucInf − T_inf/2`, `T_inf = 0` for bolus/EV).

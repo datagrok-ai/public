@@ -17,6 +17,10 @@ export {
   clearance,
   volumeTerminal,
   pctExtrapolated,
+  meanResidenceTime,
+  volumeSteadyState,
+  pctExtrapolatedAumc,
+  tlag,
 } from './derived';
 export {computeNca} from './compute-nca';
 export {
@@ -29,3 +33,12 @@ export {
   aucExtrapolateToInfinity,
   neumaierSum,
 } from './auc';
+export {
+  aumcLinearNaive,
+  aumcLogLinearNaive,
+  aumcLinearUpLogDownNaive,
+  aumcLinearCompensated,
+  aumcLogLinearCompensated,
+  aumcLinearUpLogDownCompensated,
+  aumcExtrapolateToInfinity,
+} from './aumc';
