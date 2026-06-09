@@ -49,8 +49,10 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   if (view.parentCall?.aux?.view)
     view.parentView = view.parentCall.aux.view;
 
-  if (call?.func?.name)
-    view.basePath = `/${call.func.name}`;
+  if (call?.func?.name) {
+    const parentBasePath = view.parentView?.basePath ?? '';
+    view.basePath = `${parentBasePath}/${call.func.name}`;
+  }
 }
 
 function setVueAppOptions(app: Vue.App<any>) {
