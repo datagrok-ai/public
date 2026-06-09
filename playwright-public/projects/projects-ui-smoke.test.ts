@@ -36,7 +36,11 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   let actualName = projectName; // populated from grok.shell.project.name after save — server may normalize typed names (PascalCase rule for hyphen-separated inputs); use the stored form verbatim for tile lookups
 
   // ---- Setup: navigate, wait for shell ----
-  await page.goto('/browse');
+  // `domcontentloaded` (not the default 'load'): the SPA's load event is
+  // unreliable on the CI client and intermittently never fires. Gate on the
+  // Browse sidebar (SPA booted) before probing grok.shell, mirroring gotoApp().
+  await page.goto('/browse', {waitUntil: 'domcontentloaded', timeout: 120_000});
+  await page.locator('[name="Browse"]').first().waitFor({state: 'visible', timeout: 90_000});
   await page.waitForFunction(() => {
     try { return !!(window.grok?.shell?.user?.login); } catch { return false; }
   }, {timeout: 60_000});

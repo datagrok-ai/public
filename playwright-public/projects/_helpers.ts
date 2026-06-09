@@ -22,8 +22,13 @@ export async function evalJs<T = any>(page: Page, script: string): Promise<T> {
 }
 
 export async function gotoApp(page: Page) {
-  await page.goto(BASE_URL);
-  await page.locator('[name="Browse"]').first().waitFor({state: 'visible', timeout: 60_000});
+  // `waitUntil: 'domcontentloaded'` (not the default 'load'): the Datagrok SPA
+  // keeps fetching lazy bundles + holds long-poll/websocket connections, so the
+  // `load` event is unreliable and intermittently never fires — that is what
+  // timed out gotoApp ("navigating to … waiting until load", 120s) on the CI
+  // client. Mirrors e2e/global-setup.ts and connections/helpers.ts goHome().
+  await page.goto(BASE_URL, {waitUntil: 'domcontentloaded', timeout: 120_000});
+  await page.locator('[name="Browse"]').first().waitFor({state: 'visible', timeout: 90_000});
   // Cold CI Datlas: the Browse sidebar attaches before `#grok-preloader`
   // detaches; while the preloader is up it covers the rootDiv and intercepts
   // every click. Mirrors what connections/helpers.ts goHome() does.

@@ -33,10 +33,14 @@ export async function goHome(page: Page): Promise<void> {
   // becomes visible BEFORE the preloader is dismissed; while present, the
   // preloader covers rootDiv and intercepts every click (including inside
   // dialogs), surfacing as "subtree intercepts pointer events" timeouts.
+  // Best-effort: a cold CI Datlas occasionally keeps the preloader element in
+  // the DOM well past 90s even though the app is interactive. The style-tag
+  // below neutralises its pointer interception regardless, so a lingering
+  // preloader must not hard-fail goHome (this was the "11b" 90s timeout).
   await page.waitForFunction(
     () => document.querySelector('#grok-preloader, .grok-preloader') == null,
     undefined, { timeout: 90_000 },
-  );
+  ).catch(() => { /* tolerate a lingering preloader — neutralised below */ });
   await page.waitForTimeout(500);
   // Suppress Datagrok hover-tooltips for the duration of this page. They overlay tree
   // nodes and other clickable elements during Playwright's wait-for-stable check,
