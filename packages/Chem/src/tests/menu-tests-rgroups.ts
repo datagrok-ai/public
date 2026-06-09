@@ -7,6 +7,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {getMCS} from '../utils/most-common-subs';
 import {rGroupsMinilib} from '../analysis/r-group-analysis';
+import {newChemOpId, runCancellableChemOp} from '../utils/chem-common';
 
 
 category('top menu r-groups', () => {
@@ -211,6 +212,34 @@ M  END
     const res2 = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
     expect(res2.rGroups.length > 0, true, 'Expected results after flag reset');
   }, {timeout: 30000});
+
+  // --- kill-based cancellation machinery ---
+
+  test('cancellable.runCancellableChemOp', async () => {
+    expect(await runCancellableChemOp(newChemOpId(), () => false, async () => 42), 42, 'returns result when not cancelled');
+    // cancelled while still queued: bails before running work
+    const queuedCancel = await runCancellableChemOp(newChemOpId(), () => true, async () => 42);
+    expect(queuedCancel === undefined, true, 'cancelled-before-work => undefined');
+    // cancelled mid-run: a killed worker's rejected call must surface as undefined, not an error
+    let canceled = false;
+    const killed = await runCancellableChemOp(newChemOpId(), () => canceled, async () => {
+      canceled = true; throw new Error('worker terminated');
+    });
+    expect(killed === undefined, true, 'cancelled + throw => undefined');
+    let threw = false;
+    try {
+      await runCancellableChemOp(newChemOpId(), () => false, async () => {throw new Error('real failure');});
+    } catch (_) {threw = true;}
+    expect(threw, true, 'a real error is rethrown, not swallowed');
+  });
+
+  test('rgroups.cancel.recovery', async () => {
+    const svc = await chemCommonRdKit.getRdKitService();
+    await svc.restartWorker(0); // kill + reload worker 0 — what a cancel does
+    await svc.whenWorkersReady();
+    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    expect(res.rGroups.length > 0, true, 'R-Group works after its worker is restarted');
+  }, {timeout: 60000});
 });
 
 const sampleTable = DG.DataFrame.fromCsv(`smiles

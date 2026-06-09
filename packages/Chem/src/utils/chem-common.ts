@@ -88,9 +88,10 @@ export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN
     console.warn('Chem | Left the critical section');
 }
 
-export function chemEndCriticalSection(token = CHEM_TOKEN): void {
-  // Single-holder section, so clearing unconditionally is safe.
-  runningOpId = null;
+export function chemEndCriticalSection(opId?: string, token = CHEM_TOKEN): void {
+  // Clear only if this op is the registered holder, so a non-cancellable / different op can't wipe a running op's id.
+  if (runningOpId === opId)
+    runningOpId = null;
   criticalSectionEnd(token);
 }
 
@@ -101,7 +102,7 @@ export async function withChemCriticalSection<T>(work: () => Promise<T>, opId?: 
   try {
     return await work();
   } finally {
-    chemEndCriticalSection();
+    chemEndCriticalSection(opId);
   }
 }
 
