@@ -344,7 +344,7 @@ Convert a Diff Studio model to a JavaScript script to unlock advanced platform f
 2. Add metadata for the catalog:
 
    ```javascript
-   //tags: model
+   //meta.role: model
    //description: Brief description
    ```
 
