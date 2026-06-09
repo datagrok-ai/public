@@ -71,7 +71,6 @@ export class WorkspaceTab {
   build(): HTMLElement {
     try
     {
-      grok.shell.info('building');
       const root = ui.divV([], 'pp-workspace-root');
 
       const user = DG.User.current();
