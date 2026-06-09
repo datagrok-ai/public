@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## v.next
+
+* GROK-14160: ModelCatalog: Switched group-membership request from raw fetch() to grok.dapi.groups.requestMembership()
+
 ## 1.46.2 (2026-06-05)
 
 - Fitting: charge worker-replacement reprime budget only to the session that killed the slot, so a misbehaving fit no longer drains a concurrent fit's budget

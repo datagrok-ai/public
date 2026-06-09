@@ -81,6 +81,19 @@ category('Dapi: groups', () => {
     }
   }, {stressTest: true});
 
+  test('request membership', async () => {
+    let target: _DG.Group | undefined;
+    try {
+      target = await grok.dapi.groups.createNew(`js-api-test-target_${DG.Utils.randomString(6)}`);
+      await grok.dapi.groups.requestMembership(target, grok.shell.user.group);
+    } finally {
+      try {
+        if (target)
+          await grok.dapi.groups.delete(target);\
+      } catch (_) {}
+    }
+  }, {stressTest: true});
+
   test('current user groups', async () => {
     const groups = await grok.dapi.groups.currentUserGroups();
     expect(Array.isArray(groups) && groups.length > 0, true);

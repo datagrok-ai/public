@@ -57,8 +57,7 @@ async function requestMembership(groupName: string) {
 
     const group = groups[0];
 
-    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
-    await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
+    await grok.dapi.groups.requestMembership(group, grok.shell.user.group);
 
     grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`);
   } catch (e: any) {

@@ -569,6 +569,12 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   async currentUserGroups(): Promise<Group[]> {
     return toJs(await api.grok_Dapi_Get_CurrentUserGroups());
   }
+
+  /** Requests that `requester` be added as a member of `group`.
+   *  An admin of `group` must approve before the membership takes effect. */
+  async requestMembership(group: Group, requester: Group): Promise<void> {
+    return api.grok_Dapi_RequestMembership(group.id, requester.id);
+  }
 }
 
 
