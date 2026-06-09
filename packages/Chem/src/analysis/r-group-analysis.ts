@@ -7,11 +7,10 @@ import {Chem} from '../scripts-api';
 import {PackageFunctions} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
-import {getRdKitService} from '../utils/chem-common-rdkit';
+import {cancelChemOp, getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
-import {chemBeginCriticalSection, chemEndCriticalSection, hasNewLines, hexToPercentRgb, isChemOpRunning,
-  newChemOpId} from '../utils/chem-common';
+import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -257,13 +256,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
     if (coreIsQMol)
       core = coreSmarts;
-    const opId = newChemOpId();
+    const opId = newChemOpId('rgroup');
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
-    cancelSub = progressBar.onCanceled.subscribe(async () => {
-      // Kill the worker only if this op is the one running on it; a queued op just bails after the section.
-      if (isChemOpRunning(opId))
-        (await getRdKitService()).restartWorker(0);
-    });
+    // R-Group runs on worker 0; cancelChemOp restarts it only if this operation is the one running there.
+    cancelSub = progressBar.onCanceled.subscribe(() => cancelChemOp(opId, [0]).catch(() => {}));
 
     const rGroupOptions = {
       matchingStrategy: params.rGroupMatchingStrategy,
@@ -271,22 +267,11 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       onlyMatchAtRGroups: params.onlyMatchAtRGroups,
     };
 
-    if (progressBar.canceled) return;
-
-    await chemBeginCriticalSection(opId);
-    let rgRes: RGroupsRes;
-    try {
-      if (progressBar.canceled) return; // check after beginning the section: user may have already cancelled
-      rgRes = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
-    } catch (e) {
-      if (progressBar.canceled) return; // worker was killed by cancel — unwind quietly
-      throw e;
-    } finally {
-      chemEndCriticalSection();
-    }
+    // Run the R-Group call as a cancellable operation (undefined => cancelled).
+    const rgRes = await runCancellableChemOp(opId, () => !!progressBar?.canceled,
+      () => rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
+    if (rgRes === undefined) return;
     const {rGroups, highlightCol} = rgRes;
-
-    if (progressBar.canceled) return;
 
     const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {

@@ -6,7 +6,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {hasNewLines, isMolBlock} from './chem-common';
+import {hasNewLines, isChemOpRunning, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -80,6 +80,15 @@ export async function getRdKitService(): Promise<RdKitService> {
   if (!_rdKitService)
     throw new Error('RdKit Service isn\'t initialized');
   return _rdKitService;
+}
+
+// Cancels operation `opId` if it's the running one, by restarting the worker(s) it uses (rejecting its
+// in-flight call). No-op for a queued operation — that bails on its own canceled check after taking the section.
+export async function cancelChemOp(opId: string, workers: number[]): Promise<void> {
+  if (!isChemOpRunning(opId))
+    return;
+  const svc = await getRdKitService();
+  await Promise.all(workers.map((w) => svc.restartWorker(w)));
 }
 
 export function getRdKitWebRoot() {

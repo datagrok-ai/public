@@ -59,14 +59,17 @@ export function criticalSectionEnd(key: string): void {
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-// opId of the operation currently holding the section (running on the worker), or null.
+// opId of the operation currently holding the section, or null.
 let runningOpId: string | null = null;
 
+// Monotonic counter → unique operation ids (isChemOpRunning matches by id, so ids must not collide).
+let chemOpCounter = 0;
+
 export function newChemOpId(prefix = 'op'): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${++chemOpCounter}`;
 }
 
-// True if opId is the operation currently running on the worker (not just queued for the section).
+// True if opId is the running operation, not just queued for the section.
 export function isChemOpRunning(opId: string): boolean {
   return runningOpId === opId;
 }
@@ -78,6 +81,7 @@ export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN
     warned = true;
   }
   await criticalSectionBegin(token);
+  // Mark this operation as the section holder so a cancel can tell it apart from queued operations.
   if (opId)
     runningOpId = opId;
   if (warned)
@@ -85,8 +89,36 @@ export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN
 }
 
 export function chemEndCriticalSection(token = CHEM_TOKEN): void {
+  // Single-holder section, so clearing unconditionally is safe.
   runningOpId = null;
   criticalSectionEnd(token);
+}
+
+// Runs `work` inside the Chem critical section, always releasing it — so a concurrent cancel (which restarts
+// a worker) can't kill the operation mid-flight. Pass `opId` for a cancellable operation (see runCancellableChemOp).
+export async function withChemCriticalSection<T>(work: () => Promise<T>, opId?: string): Promise<T> {
+  await chemBeginCriticalSection(opId);
+  try {
+    return await work();
+  } finally {
+    chemEndCriticalSection();
+  }
+}
+
+// Runs `work` as a cancellable operation; returns undefined if cancelled, else the result.
+export async function runCancellableChemOp<T>(
+  opId: string, isCanceled: () => boolean, work: () => Promise<T>): Promise<T | undefined> {
+  return withChemCriticalSection(async (): Promise<T | undefined> => {
+    if (isCanceled())
+      return undefined;
+    try {
+      return await work();
+    } catch (e) {
+      if (isCanceled())
+        return undefined;
+      throw e;
+    }
+  }, opId);
 }
 
 export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray | null {
