@@ -117,7 +117,12 @@ export class PackageFunctions {
     outputs: [{type: 'view', name: 'result'}],
   })
   static modelCatalog() {
-    return startModelCatalog(modelCatalogOptions);
+    const view = startModelCatalog(modelCatalogOptions);
+    if (view && Array.from(grok.shell.views).includes(view)) {
+      grok.shell.v = view;
+      return null;
+    }
+    return view;
   }
 
 
