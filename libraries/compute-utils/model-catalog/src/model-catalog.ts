@@ -25,10 +25,6 @@ function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
     const mfc = mc.prepare();
     view.parentCall = mfc;
   }
-  if (!view.basePath) {
-    const pkgMetaUrl = _package.meta?.url ?? `/${_package.name}`;
-    view.basePath = `/apps${pkgMetaUrl}`;
-  }
 }
 
 function findOrCreateViewWithCore(options: ModelCatalogConfig) {

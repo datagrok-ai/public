@@ -50,8 +50,13 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
     view.parentView = view.parentCall.aux.view;
 
   if (call?.func?.name) {
-    const parentBasePath = view.parentView?.basePath ?? '';
-    view.basePath = `${parentBasePath}/${call.func.name}`;
+    const pcFunc = view.parentCall?.func;
+    let prefix = '';
+    if (pcFunc?.options?.role === 'app' && pcFunc.package) {
+      const pkgUrl = pcFunc.package.meta?.url ?? `/${pcFunc.package.name}`;
+      prefix = `/apps${pkgUrl}`;
+    }
+    view.basePath = `${prefix}/${call.func.name}`;
   }
 }
 
