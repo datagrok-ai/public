@@ -595,6 +595,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
+    // meta: { role: 'model' },
+    outputs: [{type: 'object', name: 'result'}]
   })
   static async TestCustomView() {
     const view = new MyView();

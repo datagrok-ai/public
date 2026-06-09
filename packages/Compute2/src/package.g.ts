@@ -139,9 +139,10 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 }
 
 //name: Custom View (Compute 2 Test)
+//output: object result
 //editor: Compute2:CustomFunctionViewEditor
-export async function TestCustomView() : Promise<void> {
-  await PackageFunctions.TestCustomView();
+export async function TestCustomView() {
+  return await PackageFunctions.TestCustomView();
 }
 
 //description: Test for optimization: multiple scalars output
