@@ -429,9 +429,19 @@ function getResultingAtomBondCounts(
     // 3'-terminal modifier (e.g. GalNAc) that IS the chain end.
     const has3pTerm = !!roles && roles.length > 0 &&
       roles[roles.length - 1] === NucleotideRole.TERMINAL_3P;
-    if (has3pTerm)
+    if (has3pTerm) {
       needsCapping = false;
-    else
+      // Mirror the peptide branch (which does both atomCount-- and bondCount--
+      // when it skips the terminal cap). `bondCount += monomerCount` above
+      // reserves one chain-extending slot per monomer; the LAST monomer's slot
+      // is normally filled by the terminal OH cap bond. With a 3'-terminal
+      // modifier there is no cap, so that last reserved slot stays empty —
+      // leaving the declared bond count one higher than the emitted bond
+      // lines. Drop it so the V3000 COUNTS line matches the bond block exactly
+      // (otherwise the pre-OCL molfile is malformed and only survives because
+      // the OCL chirality pass re-derives the counts).
+      bondCount -= 1;
+    } else
       atomCount += 1; // OH cap atom (rides on trailing P or on last sugar's R2)
   } else { // nucleotides — bases-only legacy path with default sugar/phosphate
     const sugar = (alphabet === ALPHABET.DNA) ?
