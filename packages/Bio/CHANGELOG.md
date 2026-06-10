@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.27.14 (2026-06-10)
+## 2.27.15 (2026-06-10)
 
 * Support complex entities in linear translation workflow, like, multiple linkers, conjugates, multi-phosphates, etc.
 

@@ -541,7 +541,12 @@ category('toAtomicLevelHelmRna', async () => {
     if (begin < 0) return atoms;
     const end = molfile.indexOf('M  V30 END ATOM', begin);
     const block = molfile.substring(begin, end >= 0 ? end : molfile.length);
-    const lineRe = /^M\s+V30\s+(\d+)\s+(\S+)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/gm;
+    // Capture the x/y coordinate TOKENS as `\S+` (not a strict numeric pattern)
+    // so a non-finite coordinate ('NaN' / 'Infinity' / '-Infinity') is still
+    // matched and surfaces as a NaN/Infinity from parseFloat — that is what
+    // lets `expectNoNaN`'s finite-check below actually fire. A strict numeric
+    // capture would silently skip the bad atom line and hide the defect.
+    const lineRe = /^M\s+V30\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)/gm;
     let m: RegExpExecArray | null;
     while ((m = lineRe.exec(block))) {
       const idx = parseInt(m[1]) - 1;
@@ -1155,7 +1160,9 @@ category('toAtomicLevelHelmRna', async () => {
     withMol(molfile, (mol) => {
       expect(countAtoms(mol, 15), 3, 'expected 3 phosphorus atoms');
       // Deoxyribose still has a ring oxygen ⇒ matches the furanose pattern.
-      expect(countSmarts(mol, SMARTS.FURANOSE) >= 2, true, 'expected 2 (deoxy)furanose rings');
+      // Each monocyclic (deoxy)furanose matches exactly once (RDKit uniquify),
+      // so the count is exactly 2 — assert it exactly like the ribose tests.
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected exactly 2 (deoxy)furanose rings');
       expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
     });
   });
@@ -1206,9 +1213,35 @@ category('toAtomicLevelHelmRna', async () => {
         'expected N-acetyl group from ac4C');
       // No bridging oxygen lost anywhere along this dense backbone.
       expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
-      // The non-canonical linker run still forms P-O-P bridges.
-      expect(countSmarts(mol, SMARTS.P_O_P) >= 1, true,
-        'expected P-O-P bridges across the linker run');
+      // The non-canonical linker run forms exactly two P-O-P bridges at the
+      // two consecutive-phosphate joints p–Rsp and Rsp–s2p.
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges across the linker run');
+    });
+  });
+
+  // 5'-leading phosphate combined with a 3'-terminal modifier (GalNAc).
+  // Chain: HO-P-O-r(A)-p-r(C)-GalNAc. This is the layout that exercises BOTH
+  // a leading phosphate AND the has3pTerm branch of getResultingAtomBondCounts
+  // (no trailing OH cap): the declared bond count must equal the emitted bond
+  // lines so the produced molfile is well-formed before the OCL pass — not
+  // only after it. The terminal modifier replaces the trailing phosphate.
+  test('rna-5p-leading-phosphate-3p-galnac', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{p.r(A)p.r(C)[GalNAc]}$$$$V2.0`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // leading p + inter-nucleotide p = 2 phosphorus (GalNAc replaces the
+      // trailing phosphate, so no 3' P).
+      expect(countAtoms(mol, 15), 2, 'expected 2 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+      // GalNAc's N-acetyl group at the 3' terminus.
+      expect(countSmarts(mol, SMARTS.N_ACETYL) >= 1, true,
+        'expected N-acetyl group from the 3\' GalNAc');
+      // GalNAc is a hexopyranose (6-membered ring with one O).
+      expect(hasSmarts(mol, '[#6]1[#6][#6][#6][#6][O]1'), true,
+        'expected a pyranose ring from GalNAc');
     });
   });
 });
