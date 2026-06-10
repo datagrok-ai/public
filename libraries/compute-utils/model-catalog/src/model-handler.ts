@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {filter, map, take} from 'rxjs/operators';
-import {getContextHelp, getPackage} from '../../shared-utils/utils';
+import {getContextHelp, getCurrentUserGroups, getPackage, requestGroupMembership} from '../../shared-utils/utils';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -57,7 +57,7 @@ async function requestMembership(groupName: string) {
 
     const group = groups[0];
 
-    await grok.dapi.groups.requestMembership(group, grok.shell.user.group);
+    await requestGroupMembership(group, grok.shell.user.group);
 
     grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`);
   } catch (e: any) {
@@ -108,7 +108,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   static async getUserGroups() {
-    return await grok.dapi.groups.currentUserGroups();
+    return await getCurrentUserGroups();
   }
 
   static getMissingGroups(func: DG.Func, userGroups: DG.Group[]) {

@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {deepCopy, getContextHelp, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
+import {deepCopy, getContextHelp, getCurrentUserGroups, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {RunComparisonView} from '../../function-views';
 import {HistoryPanel} from '../../old-components/src/history-panel';
@@ -615,7 +615,7 @@ export abstract class FunctionView extends DG.ViewBase {
       ribbonMenu.item('Help', () => this.getHelp!());
 
     setTimeout(async () => {
-      const userGroups = await grok.dapi.groups.currentUserGroups();
+      const userGroups = await getCurrentUserGroups();
 
       if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
         const testingGroup = ribbonMenu.group('Test runner');

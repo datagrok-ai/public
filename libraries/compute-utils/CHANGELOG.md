@@ -2,7 +2,7 @@
 
 ## v.next
 
-* GROK-14160: ModelCatalog: Switched group-membership request from raw fetch() to grok.dapi.groups.requestMembership()
+* GROK-14159/GROK-14160: Use grok.dapi.groups.currentUserGroups()/requestMembership() when available, falling back to raw fetch() on older API versions
 
 ## 1.46.2 (2026-06-05)
 
