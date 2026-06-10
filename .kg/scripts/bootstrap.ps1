@@ -24,12 +24,17 @@ Write-Host "[bootstrap] installing requirements ..."
 & $VenvPy -m pip install --quiet --upgrade pip
 & $VenvPy -m pip install --quiet -r $Reqs
 
-# 3. Build DB if missing
+# 3. Materialize DB if missing: prefer the prebuilt artifact, fall back to a full build
 if (-not (Test-Path $Db)) {
-    Write-Host "[bootstrap] kg.kuzu/ missing — building from JSONL (~3 min) ..."
-    & $VenvPy (Join-Path $KgDir "build.py")
+    & $VenvPy (Join-Path $PSScriptRoot "unpack.py")
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[bootstrap] restored kg.kuzu from .kg-dist"
+    } else {
+        Write-Host "[bootstrap] no prebuilt artifact — building from JSONL (~20 min) ..."
+        & $VenvPy (Join-Path $KgDir "build.py")
+    }
 } else {
-    Write-Host "[bootstrap] kg.kuzu/ already exists, skipping build"
+    Write-Host "[bootstrap] kg.kuzu already exists, skipping"
 }
 
 # 4. Smoke test

@@ -51,12 +51,16 @@ echo "[bootstrap] installing requirements ..."
 "$VENV_PY" -m pip install --quiet --upgrade pip
 "$VENV_PY" -m pip install --quiet -r "$REQS"
 
-# 3. Build DB if missing
+# 3. Materialize DB if missing: prefer the prebuilt artifact, fall back to a full build
 if [[ ! -e "$DB" ]]; then
-    echo "[bootstrap] kg.kuzu/ missing — building from JSONL (~3 min) ..."
-    "$VENV_PY" "$KG_DIR/build.py"
+    if "$VENV_PY" "$SCRIPT_DIR/unpack.py"; then
+        echo "[bootstrap] restored kg.kuzu from .kg-dist"
+    else
+        echo "[bootstrap] no prebuilt artifact — building from JSONL (~20 min) ..."
+        "$VENV_PY" "$KG_DIR/build.py"
+    fi
 else
-    echo "[bootstrap] kg.kuzu/ already exists, skipping build"
+    echo "[bootstrap] kg.kuzu already exists, skipping"
 fi
 
 # 4. Smoke test
