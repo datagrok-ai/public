@@ -33,7 +33,18 @@ export interface ParsedConjugate {
   raw: string;
 }
 
-export type ParsedMonomer = ParsedNucleotide | ParsedConjugate;
+/** A standalone backbone linker monomer (`p`, `[sp]`, …) — a phosphate-type
+ * unit with no base of its own. Rendered as an arc (no chip), like the trailing
+ * phosphate of a nucleotide, and counted as a linkage (not a conjugate). */
+export interface ParsedLinker {
+  kind: 'linker';
+  position: number;
+  /** Phosphate HELM symbol, normalized (no brackets) — e.g. `p`, `sp`. */
+  symbol: string;
+  raw: string;
+}
+
+export type ParsedMonomer = ParsedNucleotide | ParsedConjugate | ParsedLinker;
 
 export interface ParsedStrand {
   /** 'RNA' | 'DNA' | 'CHEM' */
@@ -227,6 +238,15 @@ export function canonicalSugarSymbol(sugar: string): string {
 /** Canonicalize a phosphate symbol via the alias map. */
 export function canonicalPhosphateSymbol(phosphate: string): string {
   return PHOSPHATE_ALIASES[phosphate] ?? phosphate;
+}
+
+/** True if `symbol` is a known backbone linker / phosphate (`p`, `sp`, `s2p`,
+ * `mp`, or a legacy alias like `P`, `sP`). Static — no monomer-library lookup.
+ * Library-driven detection (custom symbols whose natural analog is `p`) is
+ * layered on top of this in `alignment.isLinkerMonomer`. */
+export function isLinkerSymbol(symbol: string): boolean {
+  if (!symbol) return false;
+  return canonicalPhosphateSymbol(symbol) in PHOSPHATE_MODS;
 }
 
 /** Resolve a sugar HELM symbol to (color + meta). Accepts canonical or aliased input. */

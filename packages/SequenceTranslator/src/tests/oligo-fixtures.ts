@@ -123,6 +123,22 @@ export const COMPLEX_CUSTOM_EXPLICIT =
   'RNA1,RNA2,2:pair-17:pair|RNA1,RNA2,5:pair-14:pair|RNA1,RNA2,8:pair-11:pair|' +
   'RNA1,RNA2,11:pair-8:pair|RNA1,RNA2,14:pair-5:pair|RNA1,RNA2,17:pair-2:pair$$$V2.0';
 
+// Single strand with standalone backbone linkers: a 3-phosphate 5' cap
+// (`p.p.p`) and three consecutive mid-strand `[sp]` linkers. 19 nucleotides,
+// 6 standalone linkers. (The user's reference HELM.) Linkers render as arcs.
+export const LINKER_SS =
+  'RNA1{p.p.p.r(C)p.r(A)p.r(C)p.r(A)p.r(A)p.r(G)p.r(T)p.r(T)p.r(T)p.[sp].[sp].[sp].' +
+  'r(A)p.r(T)p.r(A)p.r(T)p.r(T)p.r(C)p.r(A)p.r(G)p.r(T)p.r(C)}$$$$';
+
+// Blunt 19/19 duplex where the SENSE strand has two consecutive standalone `[sp]`
+// linkers mid-strand (after base 9) that the antisense lacks → bases stay aligned,
+// the gap widens, and the antisense draws a single wider arc across it.
+export const LINKER_BULGE =
+  'RNA1{m(G)p.m(A)p.m(C)p.m(U)p.m(G)p.m(A)p.m(A)p.m(U)p.m(A)p.m(U)p.[sp].[sp].' +
+  'm(A)p.m(A)p.m(A)p.m(C)p.m(U)p.m(U)p.m(G)p.m(U)p.m(G)}|' +
+  'RNA2{m(C)p.m(A)p.m(C)p.m(A)p.m(A)p.m(G)p.m(U)p.m(U)p.m(U)p.m(A)p.m(U)p.m(A)p.m(U)p.' +
+  'm(U)p.m(C)p.m(A)p.m(G)p.m(U)p.m(C)}$$$$';
+
 // Strand swap: RNA1 is the antisense, RNA2 (GalNAc-conjugated) is the sense, per annotation.
 export const COMPLEX_SWAP_CONJ =
   'RNA1{m(C)[sp].m(A)[sp].m(C)p.m(A)p.m(A)p.m(G)p.m(U)p.m(U)p.m(U)p.m(A)p.m(U)p.m(A)p.m(U)p.m(U)p.m(C)p.m(A)p.' +

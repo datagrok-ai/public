@@ -15,8 +15,8 @@
 
 import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
 import {
-  canonicalPhosphateSymbol, canonicalSugarSymbol,
-  DuplexPair, ParsedConjugate, ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
+  canonicalPhosphateSymbol, canonicalSugarSymbol, isLinkerSymbol,
+  DuplexPair, ParsedConjugate, ParsedDuplex, ParsedLinker, ParsedMonomer, ParsedNucleotide, ParsedStrand,
 } from './types';
 
 /** Parse the whole HELM string. Tolerant of whitespace and missing `$$$$`.
@@ -145,8 +145,14 @@ function parseMonomer(s: string, position: number): ParsedMonomer {
     }
   }
 
-  // No base → it's a conjugate / linker / cap (e.g. [GalNAc], [Chol], [L3])
+  // No base → either a standalone backbone linker (`p`, `[sp]`, …) or a
+  // conjugate / cap (`[GalNAc]`, `[Chol]`, `[L3]`). Known phosphate symbols
+  // become linkers (drawn as arcs); everything else is a conjugate.
   if (base === null) {
+    if (isLinkerSymbol(sugar)) {
+      const lnk: ParsedLinker = {kind: 'linker', position, symbol: sugar, raw};
+      return lnk;
+    }
     const conj: ParsedConjugate = {kind: 'conjugate', position, symbol: sugar, raw};
     return conj;
   }
@@ -312,6 +318,10 @@ function shiftFromPairs(pairs: DuplexPair[], antiLen: number): number {
  * and using canonical (HELMCore) sugar / phosphate codes. */
 function serializeCanonicalMonomer(m: ParsedMonomer): string {
   if (m.kind === 'conjugate') return `[${m.symbol}]`;
+  if (m.kind === 'linker') {
+    const phos = canonicalPhosphateSymbol(m.symbol);
+    return phos.length === 1 ? phos : `[${phos}]`;
+  }
   const nt = m as ParsedNucleotide;
   const sugar = canonicalSugarSymbol(nt.sugar);
   const phos = canonicalPhosphateSymbol(nt.phosphate);

@@ -21,7 +21,7 @@ import {
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
 import {getMonomerColors} from './monomer-colors';
-import {describeOverhangs} from './alignment';
+import {describeOverhangs, isLinkerMonomer} from './alignment';
 
 export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
@@ -44,6 +44,9 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
       if (nt.phosphate) bump(phosCounts, nt.phosphate);
       if (nt.base && !isCanonicalBase(nt.base))
         bump(baseCounts, nt.base);
+    } else if (isLinkerMonomer(m)) {
+      // Standalone backbone linker (`p`, `[sp]`, …) — counted as a linkage.
+      bump(phosCounts, m.symbol);
     } else {
       bump(conjCounts, m.symbol);
     }

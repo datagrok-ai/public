@@ -25,10 +25,20 @@
  */
 
 import {
-  DuplexAlignment, ParsedDuplex, ParsedNucleotide, ParsedStrand,
-  isCanonicalBase,
+  DuplexAlignment, ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
+  isCanonicalBase, isLinkerSymbol,
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
+
+/** True if a monomer is a standalone backbone linker — either tagged `linker`
+ * by the parser (statically-known phosphate), or a conjugate whose natural
+ * analog is `p` per the monomer library. Such monomers render as arcs (no
+ * chip) and participate in alignment as linker slots, not paired columns. */
+export function isLinkerMonomer(m: ParsedMonomer): boolean {
+  if (m.kind === 'linker') return true;
+  if (m.kind === 'conjugate') return isLinkerSymbol(m.symbol) || getNaturalAnalog(m.symbol) === 'p';
+  return false;
+}
 
 /** Reduce any base symbol to its canonical A/C/G/U/T letter (uppercase) for
  * pairing, via the natural-analog lookup. Returns null when missing / no

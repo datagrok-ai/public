@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.10.26 (2026-06-10)
+
+* OligoNucleotide renderer: standalone backbone linkers (`p`, `[sp]`, or any monomer whose natural analog is `p`) — whether a 5'/3' cap, mid-strand, or a consecutive run — now render as linkage arcs (no chip), instead of being mistaken for conjugate pills. Recognized from the monomer library.
+* OligoNucleotide renderer: alignment now accounts for standalone linkers. A run of linkers on one strand that the other lacks opens a gap (bases stay aligned / paired), and the partner strand draws a single wider arc across it.
+* Demo data (`files/samples/sirna-demo.csv`): added a phosphate-capped single strand with mid-strand linkers and a duplex with a sense-only linker bulge.
+
 ## 1.10.25 (2026-06-09)
 
 * OligoNucleotide renderer: strand alignment is now driven by the HELM when present — `strandtype` annotations decide the sense/antisense roles (chains are swapped accordingly) and `$connections$` `pair` entries fix the base-pair register.
