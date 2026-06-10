@@ -506,7 +506,8 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => this.parallelWorkers[i].getStructuralAlerts(alerts), fooGather));
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
+  // Internal: worker 0 only, caller MUST hold the critical section (don't call bare). Use rGroupsMinilib instead.
+  async _getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
     Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
@@ -520,8 +521,6 @@ export class RdKitService {
       }
       return {colNames: colNames, smiles: cols};
     }); */
-
-    // Worker 0 only; caller must hold the critical section (don't call bare).
     return this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
   }
 
@@ -607,9 +606,10 @@ export class RdKitService {
         if (mols.length < 2)
           res[index] = mols.length === 1 ? mols[0] : '';
         else {
-          const t = setTimeout(async () => {
+          const t = setTimeout(() => {
             console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
-            this.restartWorker(workerIndex);
+            this.restartWorker(workerIndex).catch((e) =>
+              console.warn(`RDKit worker ${workerIndex} restart failed: ${e instanceof Error ? e.message : e}`));
             resolver(); // no point in waiting... its probably stuck
           }, 45000); // if it is running for more than 30s, restart the worker
           try {

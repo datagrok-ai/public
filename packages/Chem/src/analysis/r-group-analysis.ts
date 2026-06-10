@@ -382,7 +382,7 @@ async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: str
     throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
-      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
+      ._getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
   const resCols: DG.Column<string>[] = [];
   for (let i = 0; i < res.colNames.length; i++) {
     const col = DG.Column.string(res.colNames[i], molecules.length).init((j) => res.smiles[i][j]);
