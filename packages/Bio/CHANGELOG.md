@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.27.14 (2026-06-10)
+
+* Support complex entities in linear translation workflow, like, multiple linkers, conjugates, multi-phosphates, etc.
+
 ## 2.27.11 (2026-05-15)
 
 * Sequence Space / Sequence Activity Cliffs editors: bail with a clear error when no current table or Macromolecule column is available (prevents NullError in DimReductionBaseEditor)
