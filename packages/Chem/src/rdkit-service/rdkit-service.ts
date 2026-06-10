@@ -530,7 +530,8 @@ export class RdKitService {
       return {colNames: colNames, smiles: cols};
     }); */
 
-    // R group analysis does not support parallelization, so we will use the first worker
+    // No parallelization (worker 0 only). Unlike sibling methods, the critical section is owned by the
+    // caller (runCancellableChemOp) so it spans the whole cancellable operation — don't call this bare.
     return this.dispatch(0, (w) => w.rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options));
   }
 
@@ -584,27 +585,28 @@ export class RdKitService {
     return withChemCriticalSection(() => this.dispatch(0, (w) => w.mostCommonStructure(molecules, exactAtomSearch, exactBondSearch)));
   }
 
-  // Set while a worker is being killed + reloaded, so callers can wait it out (whenWorkersReady).
-  private _restartPromise: Promise<void> | null = null;
+  // A worker index is present while it's being killed + reloaded, so callers can wait it out (whenWorkersReady).
+  // Keyed by index so concurrent restarts of different workers don't clobber each other.
+  private _restartPromises = new Map<number, Promise<void>>();
 
   async restartWorker(workerIndex: number) {
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
     const restart = workerClient.moduleInit(this.webRoot ?? '');
-    this._restartPromise = restart;
+    this._restartPromises.set(workerIndex, restart);
     try {
       await restart;
     } finally {
-      if (this._restartPromise === restart)
-        this._restartPromise = null;
+      if (this._restartPromises.get(workerIndex) === restart)
+        this._restartPromises.delete(workerIndex);
     }
   }
 
-  // Resolves once any in-progress restartWorker has finished, so callers don't dispatch to a reloading worker.
+  // Resolves once all in-progress restartWorker calls have finished, so callers don't dispatch to a reloading worker.
   async whenWorkersReady(): Promise<void> {
-    while (this._restartPromise)
-      await this._restartPromise;
+    while (this._restartPromises.size)
+      await Promise.all(this._restartPromises.values());
   }
 
   // Single-worker dispatch: waits out any in-progress restart, then calls the worker. (Fan-out goes via _doParallel.)
@@ -619,48 +621,51 @@ export class RdKitService {
    * @param exactBondSearch
    */
   async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
-    await chemBeginCriticalSection();
-    const nWorkers = this.parallelWorkers.length;
     const res = new Array<string>(clusteredMolecules.length).fill('');
-    const lock = new LockedEntity(0);
-    const process = async (workerIndex: number, resolver: Function) => {
-      await lock.unlockPromise();
-      lock.lock();
-      const index = lock.value;
-      lock.value = index + 1;
-      lock.release();
-      if (index >= clusteredMolecules.length) {
-        console.log(index);
-        return;
-      }
-      const mols = clusteredMolecules[index];
-      if (mols.length < 2)
-        res[index] = mols.length === 1 ? mols[0] : '';
-      else {
-        const t = setTimeout(async () => {
-          console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
-          this.restartWorker(workerIndex);
-          resolver(); // no point in waiting... its probably stuck
-        }, 45000); // if it is running for more than 30s, restart the worker
-        try {
-          res[index] = await this.dispatch(workerIndex, (w) => w.mostCommonStructure(mols, exactAtomSearch, exactBondSearch));
-        } catch (e) {
-          // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
-          console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+    await chemBeginCriticalSection();
+    try {
+      const nWorkers = this.parallelWorkers.length;
+      const lock = new LockedEntity(0);
+      const process = async (workerIndex: number, resolver: Function) => {
+        await lock.unlockPromise();
+        lock.lock();
+        const index = lock.value;
+        lock.value = index + 1;
+        lock.release();
+        if (index >= clusteredMolecules.length) {
+          console.log(index);
           return;
-        } finally {
-          clearTimeout(t);
         }
-      }
-      await process(workerIndex, resolver);
-    };
+        const mols = clusteredMolecules[index];
+        if (mols.length < 2)
+          res[index] = mols.length === 1 ? mols[0] : '';
+        else {
+          const t = setTimeout(async () => {
+            console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
+            this.restartWorker(workerIndex);
+            resolver(); // no point in waiting... its probably stuck
+          }, 45000); // if it is running for more than 30s, restart the worker
+          try {
+            res[index] = await this.dispatch(workerIndex, (w) => w.mostCommonStructure(mols, exactAtomSearch, exactBondSearch));
+          } catch (e) {
+            // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
+            console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+            return;
+          } finally {
+            clearTimeout(t);
+          }
+        }
+        await process(workerIndex, resolver);
+      };
 
-    const promises = new Array(nWorkers).fill(null).map((_, i) => {
-      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
-    });
+      const promises = new Array(nWorkers).fill(null).map((_, i) => {
+        return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
+      });
 
-    await Promise.all(promises);
-    chemEndCriticalSection();
+      await Promise.all(promises);
+    } finally {
+      chemEndCriticalSection();
+    }
     return res.map((it) => {
       if (!it)
         return '';
@@ -676,16 +681,18 @@ export class RdKitService {
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
     await chemBeginCriticalSection();
-    const segmentLength = Math.ceil(molfiles.length / this.workerCount);
-    const res = await this._doParallel(
-      (i: number, _: number) => {
-        return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
-      },
-      (data) => {
-        return data.flat();
-      },
-    );
-    chemEndCriticalSection();
-    return res;
+    try {
+      const segmentLength = Math.ceil(molfiles.length / this.workerCount);
+      return await this._doParallel(
+        (i: number, _: number) => {
+          return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
+        },
+        (data) => {
+          return data.flat();
+        },
+      );
+    } finally {
+      chemEndCriticalSection();
+    }
   }
 }
