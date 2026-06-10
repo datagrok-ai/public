@@ -5,6 +5,7 @@
 * GROK-19683: Charts | Tree viewer: Option to customize molecule label size
 * GROK-20084: Radar, Tree, Timelines: Broken help page
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
+* GROK-16846: Charts | Word cloud: Fixed words cut off on the left with empty area on the right; shape property now has visible effect (drawOutOfBound defaults to false)
 
 ## 1.7.0 (2026-03-20)
 

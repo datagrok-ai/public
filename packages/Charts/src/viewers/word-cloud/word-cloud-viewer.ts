@@ -52,7 +52,7 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.gridSize = this.int('gridSize', 8);
 
-    this.drawOutOfBound = this.bool('drawOutOfBound', true);
+    this.drawOutOfBound = this.bool('drawOutOfBound', false);
 
     this.fontFamily = this.string('fontFamily', 'sans-serif', { choices: ['sans-serif', 'serif', 'monospace'] });
 
@@ -123,8 +123,8 @@ export class WordCloudViewer extends DG.JsViewer {
       return;
 
     const margin = { top: 10, right: 10, bottom: 10, left: 10 };
-    const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
-    const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
+    const width = this.root.clientWidth - margin.left - margin.right;
+    const height = this.root.clientHeight - margin.top - margin.bottom;
     const strColumn = this.dataFrame.getCol(this.strColumnName);
     const words = strColumn.categories;
     const data: any = []; //echarts.SeriesOption[] = [];
@@ -144,15 +144,13 @@ export class WordCloudViewer extends DG.JsViewer {
     this.chart = echarts.init(<HTMLDivElement | HTMLCanvasElement> this.root);
 
     this.chart.setOption({
-      width: width + margin.left + margin.right,
-      height: height + margin.top + margin.bottom,
       series: [{
         type: 'wordCloud',
         shape: this.shape,
         left: 'center',
         top: 'center',
-        width: `${width}`,
-        height: `${height}`,
+        width: width,
+        height: height,
         right: null,
         bottom: null,
         sizeRange: [this.minTextSize, this.maxTextSize],
