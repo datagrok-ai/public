@@ -67,15 +67,21 @@ test.describe('Browse Dashboards (Browse-Dash-*)', () => {
     await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
     await page.waitForTimeout(1500);
 
-    // CI: the demo dashboards aren't deployed on the minimal stack — skip when the first
-    // one isn't searchable in the Projects gallery.
+    // CI: the demo dashboards aren't deployed on the minimal stack — skip unless BOTH
+    // dashboards this test compares are searchable in the Projects gallery.
     {
       const probe = page.locator('input[placeholder^="Search projects"]').first();
-      await probe.fill('chemical_space_demo');
-      await page.waitForTimeout(2000);
-      const hasDemo = await page.locator('.grok-gallery-grid-item-title', { hasText: /^chemical_space_demo$/i })
-        .first().isVisible().catch(() => false);
-      test.skip(!hasDemo, 'Demo dashboards (chemical_space_demo) not present on this stack');
+      const present = async (term: string, name: RegExp): Promise<boolean> => {
+        await probe.fill('');
+        await probe.fill(term);
+        await page.waitForTimeout(2000);
+        return page.locator('.grok-gallery-grid-item-title', { hasText: name }).first()
+          .isVisible().catch(() => false);
+      };
+      const hasBoth = (await present('chemical_space_demo', /^chemical_space_demo$/i))
+        && (await present('demo-datagrok-api', /^demo-datagrok-api$/i));
+      test.skip(!hasBoth,
+        'Demo dashboards (chemical_space_demo / demo-datagrok-api) not present on this stack');
       await probe.fill('');
     }
 

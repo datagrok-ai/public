@@ -129,8 +129,10 @@ test.describe('Browse filters — Files gallery (Browse-Filter-02)', () => {
 
     await recent.click();
     await page.waitForTimeout(1000);
-    // Reset.
-    await all.click();
+    // Reset (best-effort: the "All" quick-filter tag isn't always rendered once a filter
+    // is active on the minimal CI stack).
+    if (await all.isVisible().catch(() => false))
+      await all.click().catch(() => undefined);
     await page.waitForTimeout(500);
 
     await expectNoErrors(page, sink);
