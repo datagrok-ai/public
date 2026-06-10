@@ -1,0 +1,64 @@
+{
+  "package_id": "pkg:Boltz1",
+  "features": [
+    {
+      "id": "feature:Boltz1:protein-structure-prediction",
+      "implements": [
+        {
+          "path": "packages/Boltz1/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Boltz1/src/utils/boltz-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Boltz1/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Boltz1/src/demo/boltz-app.ts",
+          "role": "demo",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Boltz1/src/css/boltz.css",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers Boltz (folding/docking top-menu), runBoltz, and getBoltzConfigFolders; BoltzService.folding/docking/runBoltz/getBoltzConfigFolders contain the Docker-container-backed prediction logic; constants.ts holds the Config types and container path; boltz-app is the Boltz-1 demo app view with the prediction input form."
+    },
+    {
+      "id": "feature:Boltz1:boltz1-info-panel",
+      "implements": [
+        {
+          "path": "packages/Boltz1/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Boltz1/src/utils/boltz-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Boltz1/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Boltz1/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers the Boltz-1 panel widget (boltzWidget) and the isApplicableBoltz condition; BoltzService.boltzWidget builds the Biostructure viewer + property table; utils.ts (getFromPdbs/prop) parses REMARK lines and renders per-row properties; constants.ts supplies BOLTZ_PROPERTY_DESCRIPTIONS and the CACHED_RESULTS cache."
+    }
+  ]
+}

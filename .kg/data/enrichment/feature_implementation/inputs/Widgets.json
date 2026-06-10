@@ -1,0 +1,184 @@
+{
+  "package": {
+    "id": "pkg:Widgets",
+    "name": "Widgets",
+    "friendly_name": "Widgets",
+    "category": "Visualizations",
+    "description": "A collection of commonly used widgets, viewers, filters, and cell renderers."
+  },
+  "files": {
+    "src": [
+      "packages/Widgets/src/filters/multi-value-filter.ts",
+      "packages/Widgets/src/filters/radio-button-filter.ts",
+      "packages/Widgets/src/package.ts",
+      "packages/Widgets/src/styles/widgets.css",
+      "packages/Widgets/src/widgets.ts"
+    ],
+    "tests": [],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Widgets/CREDITS.md",
+      "packages/Widgets/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Widgets:category-filters",
+      "name": "Category Filters",
+      "description": "Provides Single Choice and Multi Choice filters for categorical and multi-value columns, letting users narrow table data by selecting one or multiple category values.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Widgets:Single Choice",
+          "kind": "RegisteredFunction",
+          "name": "Single Choice",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "A filter that lets you select exactly one category",
+          "tags": []
+        },
+        {
+          "id": "func:Widgets:Multi Choice",
+          "kind": "RegisteredFunction",
+          "name": "Multi Choice",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "A filter that works with columns of multi-value cells (such as lists of identifiers)",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/widgets",
+          "kind": "DocPage",
+          "title": "Widgets",
+          "url": "/help/visualize/widgets"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/filters",
+          "kind": "DocPage",
+          "title": "Filters",
+          "url": "/help/visualize/viewers/filters"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Widgets/src/filters/multi-value-filter.ts",
+          "packages/Widgets/src/filters/radio-button-filter.ts",
+          "packages/Widgets/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Widgets:table-summary-viewer",
+      "name": "Table Summary Viewer",
+      "description": "A viewer that displays an at-a-glance summary of a data table, suitable for dashboards and quick data exploration.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Widgets:TableSummary",
+          "kind": "RegisteredFunction",
+          "name": "TableSummary",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/widgets",
+          "kind": "DocPage",
+          "title": "Widgets",
+          "url": "/help/visualize/widgets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Widgets/src/package.ts",
+          "packages/Widgets/src/widgets.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Widgets:time-widget",
+      "name": "Time Widget",
+      "description": "A home-page widget that displays the current time, serving as a reference implementation for building dashboard widgets.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Widgets:TimeWidget",
+          "kind": "RegisteredFunction",
+          "name": "TimeWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": "Shows current time",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/home-page-widgets",
+          "kind": "DocPage",
+          "title": "Develop widgets for home page",
+          "url": "/help/develop/how-to/packages/home-page-widgets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Widgets/src/package.ts",
+          "packages/Widgets/src/widgets.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Widgets:multi-curve-viewer",
+      "name": "Multi Curve Viewer",
+      "description": "A viewer for rendering multiple curves in a single chart, documented in the platform help pages.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+          "kind": "DocPage",
+          "title": "Multi curve viewer",
+          "url": "/help/visualize/viewers/multi-curve-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Widgets:custom-value-editors",
+      "name": "Custom Value Editors",
+      "description": "Demonstrates how to register custom input editors for semantic types, allowing plugins to supply specialised UI controls for domain-specific column values.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Widgets:fooInput",
+          "kind": "RegisteredFunction",
+          "name": "fooInput",
+          "friendly_name": null,
+          "role": "valueEditor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Widgets:inputDemo",
+          "kind": "RegisteredFunction",
+          "name": "inputDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Widgets/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

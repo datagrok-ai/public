@@ -1,0 +1,95 @@
+{
+  "package": {
+    "id": "pkg:Prism",
+    "name": "Prism",
+    "friendly_name": "Prism",
+    "category": "Data Access",
+    "description": "Support for GraphPad Prism .prism files: import, preview, navigation, and visualization"
+  },
+  "files": {
+    "src": [
+      "packages/Prism/src/package.ts",
+      "packages/Prism/src/prism/prism-curves.ts",
+      "packages/Prism/src/prism/prism-graph-viewer.ts",
+      "packages/Prism/src/prism/prism-parser.ts",
+      "packages/Prism/src/prism/prism-to-dataframe.ts",
+      "packages/Prism/src/prism/prism-types.ts",
+      "packages/Prism/src/prism/prism-viewer.ts"
+    ],
+    "tests": [
+      "packages/Prism/src/package-test.ts",
+      "packages/Prism/src/tests/prism-import-test.ts",
+      "packages/Prism/src/tests/prism-parser-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Prism/CREDITS.md",
+      "packages/Prism/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Prism:file-import",
+      "name": "Prism File Import",
+      "description": "Registers a file handler for .prism (GraphPad Prism) files, allowing users to open and import them directly into the Datagrok platform.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Prism:importPrism",
+          "kind": "RegisteredFunction",
+          "name": "importPrism",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens GraphPad Prism file",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Prism/readme.md",
+          "kind": "DocPage",
+          "title": "Prism",
+          "url": "/packages/Prism/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Prism/src/package.ts",
+          "packages/Prism/src/prism/prism-curves.ts",
+          "packages/Prism/src/prism/prism-parser.ts",
+          "packages/Prism/src/prism/prism-to-dataframe.ts",
+          "packages/Prism/src/prism/prism-types.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Prism:file-preview",
+      "name": "Prism File Preview",
+      "description": "Provides an in-place file viewer for .prism files, rendering a preview view when browsing or selecting Prism files without a full import.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Prism:previewPrism",
+          "kind": "RegisteredFunction",
+          "name": "previewPrism",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Prism/src/package.ts",
+          "packages/Prism/src/prism/prism-graph-viewer.ts",
+          "packages/Prism/src/prism/prism-parser.ts",
+          "packages/Prism/src/prism/prism-to-dataframe.ts",
+          "packages/Prism/src/prism/prism-types.ts",
+          "packages/Prism/src/prism/prism-viewer.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

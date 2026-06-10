@@ -1,0 +1,149 @@
+{
+  "package": {
+    "id": "pkg:OligoBatchCalculator",
+    "name": "OligoBatchCalculator",
+    "friendly_name": "Oligo Batch Calculator",
+    "category": "Bioinformatics",
+    "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)"
+  },
+  "files": {
+    "src": [
+      "packages/OligoBatchCalculator/src/additional-modifications.ts",
+      "packages/OligoBatchCalculator/src/calculations-simplified.ts",
+      "packages/OligoBatchCalculator/src/constants.ts",
+      "packages/OligoBatchCalculator/src/helpers.ts",
+      "packages/OligoBatchCalculator/src/package.ts",
+      "packages/OligoBatchCalculator/src/validation.ts"
+    ],
+    "tests": [
+      "packages/OligoBatchCalculator/src/package-test.ts",
+      "packages/OligoBatchCalculator/src/tests/sequence-validation.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/OligoBatchCalculator/CHANGELOG.md",
+      "packages/OligoBatchCalculator/CREDITS.md",
+      "packages/OligoBatchCalculator/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:OligoBatchCalculator:oligo-batch-calculator-app",
+      "name": "Oligo Batch Calculator App",
+      "description": "A browser-accessible application registered under 'Peptides | Oligo Toolkit' in the Browse tree that provides a unified UI for computing oligonucleotide batch properties. It is the primary user-facing entry point for…",
+      "category": "bio",
+      "members": [
+        {
+          "id": "func:OligoBatchCalculator:Oligo Batch Calculator",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Batch Calculator",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/OligoBatchCalculator/readme.md",
+          "kind": "DocPage",
+          "title": "[Oligo Batch Calculator](https://public.datagrok.ai/apps/Oligobatchcalculator/)",
+          "url": "/packages/OligoBatchCalculator/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        },
+        {
+          "id": "doc:/packages/OligoBatchCalculator/credits.md",
+          "kind": "DocPage",
+          "title": "Oligo Batch Calculator — Third-Party Libraries",
+          "url": "/packages/OligoBatchCalculator/credits.md"
+        },
+        {
+          "id": "clog:OligoBatchCalculator:1.2.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:OligoBatchCalculator:1.2.0:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:OligoBatchCalculator:oligonucleotide-property-calculation",
+      "name": "Oligonucleotide Property Calculation",
+      "description": "Computes key oligonucleotide batch properties — Optical Density, nMoles, Molecular Mass, Molecular Weight, and Extinction Coefficient (nearest-neighbour method) — exposed as individual typed functions callable from the…",
+      "category": "bio",
+      "members": [
+        {
+          "id": "func:OligoBatchCalculator:opticalDensity",
+          "kind": "RegisteredFunction",
+          "name": "opticalDensity",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:OligoBatchCalculator:nMole",
+          "kind": "RegisteredFunction",
+          "name": "nMole",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:OligoBatchCalculator:molecularMass",
+          "kind": "RegisteredFunction",
+          "name": "molecularMass",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:OligoBatchCalculator:molecularWeight",
+          "kind": "RegisteredFunction",
+          "name": "molecularWeight",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:OligoBatchCalculator:getUnits",
+          "kind": "RegisteredFunction",
+          "name": "getUnits",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:OligoBatchCalculator:1.0.6:1",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+          "kind": "DocPage",
+          "title": "Oligonucleotide Sequence Design",
+          "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/OligoBatchCalculator/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

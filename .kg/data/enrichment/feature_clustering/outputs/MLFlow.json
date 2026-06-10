@@ -1,0 +1,46 @@
+{
+  "package_id": "pkg:MLFlow",
+  "features": [
+    {
+      "id": "feature:MLFlow:mlflow-model-tracking",
+      "name": "MLflow Model Tracking & Serving",
+      "description": "Integrates Datagrok with an MLflow server to run, track, and manage ML models, including containerized serving via a boto-enabled compute backend.",
+      "category": "ml",
+      "confidence": 0.72,
+      "members": [
+        {"id": "func:MLFlow:info",              "weight": 0.7,  "role": "core"},
+        {"id": "doc:/help/learn/mlflow",         "weight": 1.0,  "role": "doc"},
+        {"id": "doc:/packages/MLFlow/readme.md", "weight": 0.85, "role": "doc"},
+        {"id": "clog:MLFlow:1.0.1:0",            "weight": 0.8,  "role": "related"},
+        {"id": "clog:MLFlow:1.0.0:0",            "weight": 0.6,  "role": "related"},
+        {"id": "clog:MLFlow:0.0.1:0",            "weight": 0.6,  "role": "related"}
+      ],
+      "evidence_summary": "The user-facing guide 'Using MLFlow models', the README, and the boto/container changelog entries all describe a single integration theme: connecting Datagrok to an MLflow backend to run and track ML models."
+    },
+    {
+      "id": "feature:MLFlow:mlflow-info-panel",
+      "name": "MLflow Model Info Panel",
+      "description": "Surfaces MLflow model metadata (runs, metrics, parameters) as a Datagrok context/info panel displayed alongside data in the workspace.",
+      "category": "viz",
+      "confidence": 0.58,
+      "members": [
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",  "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",   "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",         "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "Three info-panel platform docs are bundled with this plugin, indicating it registers a Datagrok info panel to display MLflow model details in context."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:MLFlow:mlflow-info-panel",
+      "to":   "feature:MLFlow:mlflow-model-tracking",
+      "kind": "subfeature"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/MLFlow/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "clog:MLFlow:1.1.1:0"
+  ]
+}

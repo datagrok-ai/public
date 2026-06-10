@@ -1,0 +1,152 @@
+{
+  "package_id": "pkg:NLP",
+  "features": [
+    {
+      "id": "feature:NLP:sentence-similarity-search",
+      "implements": [
+        {
+          "path": "packages/NLP/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/NLP/src/utils/sentence-similarity-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/stemming-tools.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/stemming-ui.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/metrics.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers Sentence Similarity Search viewer, sentenceSearch top-menu, Similar/Distance widgets; viewer class lives in utils/sentence-similarity-viewer.ts; stemming-tools provides getClosest/getMarkedString/setStemmingCash; stemming-ui provides the Distance edit modal."
+    },
+    {
+      "id": "feature:NLP:text-embeddings",
+      "implements": [
+        {
+          "path": "packages/NLP/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/NLP/src/minilm-feature-worker.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts implements Sentence Embeddings preprocessor, Compute Text Embeddings dialog, getEmbeddings (docker fetchProxy), and Radial Coloring; minilm-feature-worker.ts is the in-browser fallback embedding extractor; constants.ts supplies TINY/POLAR_FREQ used by Radial Coloring."
+    },
+    {
+      "id": "feature:NLP:stemming-based-search",
+      "implements": [
+        {
+          "path": "packages/NLP/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/stemming-tools.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/stemming-ui.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/metrics.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/NLP/src/stemming-tools/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "Stem Column preprocessing function in package.ts wraps stemmColumn from stemming-tools.ts; stemming-ui.ts hosts the context/distance edit panels; metrics.ts and constants.ts provide the metric definitions and stop-word/separator constants."
+    },
+    {
+      "id": "feature:NLP:sentiment-analysis",
+      "implements": [],
+      "tests": [],
+      "notes": "Implementation lives entirely in scripts/ (sentiment-analysis.py, vader-sentiment-analysis.py, sentiment.R) which are outside files.src; no TS wrappers."
+    },
+    {
+      "id": "feature:NLP:text-summarization",
+      "implements": [],
+      "tests": [
+        {
+          "path": "packages/NLP/src/tests/nlp-panels.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Implementation is the Python script scripts/extractive-summarizer-file.py (not in files.src); nlp-panels.ts tests the 'Summary' file panel that the script powers."
+    },
+    {
+      "id": "feature:NLP:language-and-text-statistics",
+      "implements": [],
+      "tests": [
+        {
+          "path": "packages/NLP/src/tests/nlp-panels.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Implementation is in scripts/language-detection.py and scripts/readability-score-file.py (outside files.src); nlp-panels.ts exercises the 'Text Statistics' file panel."
+    },
+    {
+      "id": "feature:NLP:translation",
+      "implements": [
+        {
+          "path": "packages/NLP/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/NLP/src/code2lang.json",
+          "role": "config",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/NLP/src/lang2code.json",
+          "role": "config",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Translation widget (translationPanel) and AWS Translate init (initAWS) are in package.ts; code2lang.json/lang2code.json provide the supported-language code mappings; depends at runtime on NLP:TextExtractor and NLP:LanguageDetector scripts."
+    },
+    {
+      "id": "feature:NLP:text-extraction",
+      "implements": [],
+      "tests": [],
+      "notes": "Implementation is the Python script scripts/text-extractor.py (outside files.src); no TS wrapper."
+    }
+  ]
+}

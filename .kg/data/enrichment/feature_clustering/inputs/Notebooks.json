@@ -1,0 +1,241 @@
+{
+  "package": {
+    "id": "pkg:Notebooks",
+    "name": "Notebooks",
+    "friendly_name": null,
+    "version": "1.5.0",
+    "category": "Compute",
+    "description": "JupyterLab Notebooks integration package",
+    "extras": {
+      "npm_name": "@datagrok/notebooks",
+      "fullName": "Notebooks",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Notebooks:initContainer",
+      "name": "initContainer",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:Notebooks:Notebook",
+      "name": "Notebook",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "view"
+      ],
+      "description": "Creates a Notebook View",
+      "input_types": [
+        "map",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:Notebooks:convertNotebook",
+      "name": "convertNotebook",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts notebook file content into specified format",
+      "input_types": [
+        "string",
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        "blob"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Notebooks/credits.md",
+      "title": "Notebooks — Third-Party Libraries",
+      "url": "/packages/Notebooks/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Notebooks/readme.md",
+      "title": "Notebooks",
+      "url": "/packages/Notebooks/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Notebooks:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "Bug fixes, datagarok-api >= 1.26.0"
+    },
+    {
+      "id": "clog:Notebooks:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-04-08",
+      "ticket": null,
+      "text": "Bug fixes, Docker container with jupyter_notebook server"
+    },
+    {
+      "id": "clog:Notebooks:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2024-10-28",
+      "ticket": null,
+      "text": "Fixed corrupted styles for the platform that used to appear after opening a notebook."
+    },
+    {
+      "id": "clog:Notebooks:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Initial release of notebooks package"
+    }
+  ],
+  "stats": {
+    "functions": 3,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 18,
+    "changelog": 4
+  }
+}

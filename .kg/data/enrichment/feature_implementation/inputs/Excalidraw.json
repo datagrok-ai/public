@@ -1,0 +1,84 @@
+{
+  "package": {
+    "id": "pkg:Excalidraw",
+    "name": "Excalidraw",
+    "friendly_name": "Excalidraw",
+    "category": null,
+    "description": "Excalidraw sketcher integration for Datagrok"
+  },
+  "files": {
+    "src": [
+      "packages/Excalidraw/src/excal-component.tsx",
+      "packages/Excalidraw/src/excal.css",
+      "packages/Excalidraw/src/package.ts"
+    ],
+    "tests": [
+      "packages/Excalidraw/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Excalidraw/CHANGELOG.md",
+      "packages/Excalidraw/CREDITS.md",
+      "packages/Excalidraw/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Excalidraw:excalidraw-app",
+      "name": "Excalidraw Sketcher App",
+      "description": "An interactive whiteboard application powered by Excalidraw embedded as a Datagrok view, accessible from the Misc browser path. Allows users to create and edit hand-drawn-style diagrams directly inside the platform.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Excalidraw:Excalidraw",
+          "kind": "RegisteredFunction",
+          "name": "Excalidraw",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Excalidraw/readme.md",
+          "kind": "DocPage",
+          "title": "excalidraw",
+          "url": "/packages/Excalidraw/readme.md"
+        },
+        {
+          "id": "clog:Excalidraw:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Excalidraw:file-viewer",
+      "name": "Excalidraw File Viewer",
+      "description": "A Datagrok file-viewer extension that renders .excalidraw files in-platform when opened from the file browser, without requiring a separate app launch.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Excalidraw:excalfileViewer",
+          "kind": "RegisteredFunction",
+          "name": "excalfileViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": "Excalidraw viewer",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Excalidraw/src/excal-component.tsx",
+          "packages/Excalidraw/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

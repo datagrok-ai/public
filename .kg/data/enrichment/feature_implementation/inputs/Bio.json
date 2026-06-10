@@ -1,0 +1,1643 @@
+{
+  "package": {
+    "id": "pkg:Bio",
+    "name": "Bio",
+    "friendly_name": "Bio",
+    "category": "Bioinformatics",
+    "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details."
+  },
+  "files": {
+    "src": [
+      "packages/Bio/src/analysis/sequence-activity-cliffs.ts",
+      "packages/Bio/src/analysis/sequence-diversity-viewer.ts",
+      "packages/Bio/src/analysis/sequence-search-base-viewer.ts",
+      "packages/Bio/src/analysis/sequence-similarity-viewer.ts",
+      "packages/Bio/src/analysis/sequence-space.ts",
+      "packages/Bio/src/apps/get-region-app.ts",
+      "packages/Bio/src/apps/web-logo-app.ts",
+      "packages/Bio/src/calculations/monomerLevelMols.ts",
+      "packages/Bio/src/const.ts",
+      "packages/Bio/src/demo/bio01-similarity-diversity.ts",
+      "packages/Bio/src/demo/bio01a-hierarchical-clustering-and-sequence-space.ts",
+      "packages/Bio/src/demo/bio01b-hierarchical-clustering-and-activity-cliffs.ts",
+      "packages/Bio/src/demo/bio03-atomic-level.ts",
+      "packages/Bio/src/demo/bio05-helm-msa-sequence-space.ts",
+      "packages/Bio/src/demo/utils.ts",
+      "packages/Bio/src/function-edtiors/split-to-monomers-editor.ts",
+      "packages/Bio/src/package-types.ts",
+      "packages/Bio/src/package.ts",
+      "packages/Bio/src/seq_align.ts",
+      "packages/Bio/src/substructure-search/substructure-search.ts",
+      "packages/Bio/src/utils/agg.ts",
+      "packages/Bio/src/utils/annotations/annotation-actions.ts",
+      "packages/Bio/src/utils/annotations/annotation-manager-ui.ts",
+      "packages/Bio/src/utils/annotations/annotation-manager.ts",
+      "packages/Bio/src/utils/annotations/liability-scanner-ui.ts",
+      "packages/Bio/src/utils/annotations/liability-scanner.ts",
+      "packages/Bio/src/utils/annotations/numbering-ui.ts",
+      "packages/Bio/src/utils/antibody-numbering/immunum-client.ts",
+      "packages/Bio/src/utils/antibody-numbering/immunum-glue.js",
+      "packages/Bio/src/utils/antibody-numbering/immunum.worker.ts",
+      "packages/Bio/src/utils/antibody-numbering/number-antibody.ts",
+      "packages/Bio/src/utils/antibody-numbering/types.ts",
+      "packages/Bio/src/utils/biln.ts",
+      "packages/Bio/src/utils/calculate-scores.ts",
+      "packages/Bio/src/utils/cell-renderer.ts",
+      "packages/Bio/src/utils/check-input-column.ts",
+      "packages/Bio/src/utils/compare-sequences.ts",
+      "packages/Bio/src/utils/constants.ts",
+      "packages/Bio/src/utils/context-menu.ts",
+      "packages/Bio/src/utils/convert.ts",
+      "packages/Bio/src/utils/detect-macromolecule-probe.ts",
+      "packages/Bio/src/utils/get-region-func-editor.ts",
+      "packages/Bio/src/utils/get-region.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/connection-list.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/const.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/converter.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/helm.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/index.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-atoms-v2k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-atoms-v3k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-atoms.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-bonds-v2k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-bonds-v3k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-bonds.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper-factory.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper-old.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper-v2k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper-v3k.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/monomer-wrapper.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/polymer.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/position-handler.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/r-group-handler.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/simple-polymer.ts",
+      "packages/Bio/src/utils/helm-to-molfile/converter/types.ts",
+      "packages/Bio/src/utils/helm-to-molfile/utils.ts",
+      "packages/Bio/src/utils/macromolecule-column-widget.ts",
+      "packages/Bio/src/utils/monomer-cell-renderer-base.ts",
+      "packages/Bio/src/utils/monomer-cell-renderer.ts",
+      "packages/Bio/src/utils/monomer-lib/consts.ts",
+      "packages/Bio/src/utils/monomer-lib/lib-manager.ts",
+      "packages/Bio/src/utils/monomer-lib/library-file-manager/file-validator.ts",
+      "packages/Bio/src/utils/monomer-lib/library-file-manager/monomers-lib-provider.ts",
+      "packages/Bio/src/utils/monomer-lib/library-file-manager/style.css",
+      "packages/Bio/src/utils/monomer-lib/library-file-manager/ui.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-collection-handler.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-collections-view.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-colors.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-lib-base.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-lib.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-manager/const.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-manager/duplicate-monomer-manager.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-manager/match-molecules.ts",
+      "packages/Bio/src/utils/monomer-lib/monomer-manager/monomer-manager.ts",
+      "packages/Bio/src/utils/monomer-lib/smiles2Monomer.ts",
+      "packages/Bio/src/utils/monomer-lib/web-editor-monomer-dummy.ts",
+      "packages/Bio/src/utils/monomer-lib/web-editor-monomer-of-library.ts",
+      "packages/Bio/src/utils/multiple-sequence-alignment-ui.ts",
+      "packages/Bio/src/utils/multiple-sequence-alignment.ts",
+      "packages/Bio/src/utils/pepsea.ts",
+      "packages/Bio/src/utils/save-as-fasta.ts",
+      "packages/Bio/src/utils/seq-helper/index.ts",
+      "packages/Bio/src/utils/seq-helper/seq-handler.ts",
+      "packages/Bio/src/utils/seq-helper/seq-helper.ts",
+      "packages/Bio/src/utils/sequence-column-input.ts",
+      "packages/Bio/src/utils/sequence-to-mol.ts",
+      "packages/Bio/src/utils/split-to-monomers.ts",
+      "packages/Bio/src/utils/types.ts",
+      "packages/Bio/src/utils/ui-utils.ts",
+      "packages/Bio/src/viewers/utils.ts",
+      "packages/Bio/src/viewers/vd-regions-viewer.ts",
+      "packages/Bio/src/viewers/web-logo-viewer.ts",
+      "packages/Bio/src/widgets/bio-substructure-filter-helm.ts",
+      "packages/Bio/src/widgets/bio-substructure-filter.ts",
+      "packages/Bio/src/widgets/composition-analysis-widget.ts",
+      "packages/Bio/src/widgets/monomer-info-widget.ts",
+      "packages/Bio/src/widgets/package-settings-editor-widget.ts",
+      "packages/Bio/src/widgets/representations.ts",
+      "packages/Bio/src/widgets/sequence-scrolling-widget.ts",
+      "packages/Bio/src/widgets/to-atomic-level-widget.ts"
+    ],
+    "tests": [
+      "packages/Bio/src/package-test.ts",
+      "packages/Bio/src/tests/Palettes-test.ts",
+      "packages/Bio/src/tests/WebLogo-layout-tests.ts",
+      "packages/Bio/src/tests/WebLogo-positions-test.ts",
+      "packages/Bio/src/tests/WebLogo-project-tests.ts",
+      "packages/Bio/src/tests/_first-tests.ts",
+      "packages/Bio/src/tests/activity-cliffs-tests.ts",
+      "packages/Bio/src/tests/activity-cliffs-utils.ts",
+      "packages/Bio/src/tests/antibody-numbering-tests.ts",
+      "packages/Bio/src/tests/biln-tests.ts",
+      "packages/Bio/src/tests/bio-tests.ts",
+      "packages/Bio/src/tests/checkInputColumn-tests.ts",
+      "packages/Bio/src/tests/converters-test.ts",
+      "packages/Bio/src/tests/detectors-benchmark-tests.ts",
+      "packages/Bio/src/tests/detectors-tests.ts",
+      "packages/Bio/src/tests/detectors-weak-and-likely-tests.ts",
+      "packages/Bio/src/tests/fasta-export-tests.ts",
+      "packages/Bio/src/tests/fasta-handler-test.ts",
+      "packages/Bio/src/tests/helm-tests.ts",
+      "packages/Bio/src/tests/lib-tests.ts",
+      "packages/Bio/src/tests/mm-distance-tests.ts",
+      "packages/Bio/src/tests/monomer-libraries-tests.ts",
+      "packages/Bio/src/tests/msa-tests.ts",
+      "packages/Bio/src/tests/pepsea-tests.ts",
+      "packages/Bio/src/tests/projects-tests.ts",
+      "packages/Bio/src/tests/renderers-monomer-placer-tests.ts",
+      "packages/Bio/src/tests/renderers-test.ts",
+      "packages/Bio/src/tests/scoring.ts",
+      "packages/Bio/src/tests/seq-handler-get-helm-tests.ts",
+      "packages/Bio/src/tests/seq-handler-get-region-tests.ts",
+      "packages/Bio/src/tests/seq-handler-splitted-tests.ts",
+      "packages/Bio/src/tests/seq-handler-tests.ts",
+      "packages/Bio/src/tests/sequence-space-test.ts",
+      "packages/Bio/src/tests/sequence-space-utils.ts",
+      "packages/Bio/src/tests/similarity-diversity-tests.ts",
+      "packages/Bio/src/tests/splitters-test.ts",
+      "packages/Bio/src/tests/substructure-filters-tests.ts",
+      "packages/Bio/src/tests/to-atomic-level-tests.ts",
+      "packages/Bio/src/tests/to-atomic-level-ui-tests.ts",
+      "packages/Bio/src/tests/types.ts",
+      "packages/Bio/src/tests/utils.ts",
+      "packages/Bio/src/tests/utils/detectors-utils.ts",
+      "packages/Bio/src/tests/utils/sequences-generators.ts",
+      "packages/Bio/src/tests/utils/test-logger.ts",
+      "packages/Bio/src/tests/viewers.ts"
+    ],
+    "scripts": [
+      "packages/Bio/scripts/embed.py",
+      "packages/Bio/scripts/generate_fasta_csv_for_alphabets.R",
+      "packages/Bio/scripts/mol-to-helm.py",
+      "packages/Bio/scripts/read-tree-pkl.py",
+      "packages/Bio/scripts/sequence_generator.md",
+      "packages/Bio/scripts/sequence_generator.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Bio/CHANGELOG.md",
+      "packages/Bio/CLAUDE.md",
+      "packages/Bio/CREDITS.md",
+      "packages/Bio/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Bio:bio-sequence-detection",
+      "name": "Macromolecule Detection & Notation Refinement",
+      "description": "Automatically detects macromolecule semantic types (DNA, RNA, peptides) in columns and refines their notation (HELM, FASTA, BILN, separator) using configurable detectors.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Bio:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semTypeDetector",
+          "description": null,
+          "tags": [
+            "semTypeDetector"
+          ]
+        },
+        {
+          "id": "func:Bio:refineNotationProviderForBiln",
+          "kind": "RegisteredFunction",
+          "name": "refineNotationProviderForBiln",
+          "friendly_name": null,
+          "role": "notationRefiner",
+          "description": null,
+          "tags": [
+            "notationRefiner"
+          ]
+        },
+        {
+          "id": "func:Bio:detectMacromoleculeProbe",
+          "kind": "RegisteredFunction",
+          "name": "detectMacromoleculeProbe",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:detectMacromoleculeEnableStore",
+          "kind": "RegisteredFunction",
+          "name": "detectMacromoleculeEnableStore",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:testDetectMacromolecule",
+          "kind": "RegisteredFunction",
+          "name": "testDetectMacromolecule",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/biln.ts",
+          "packages/Bio/src/utils/detect-macromolecule-probe.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-cell-rendering",
+      "name": "Sequence Cell Rendering",
+      "description": "Renders macromolecule sequence columns in the Datagrok grid with notation-specific cell renderers (FASTA, HELM, BILN, separator, custom) and per-column tooltips and header panels.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Bio:customSequenceCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "customSequenceCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:fastaSequenceCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "fastaSequenceCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:separatorSequenceCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "separatorSequenceCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:bilnSequenceCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "bilnSequenceCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:monomerCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "monomerCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:Bioinformatics | Sequence Renderer",
+          "kind": "RegisteredFunction",
+          "name": "Bioinformatics | Sequence Renderer",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": [
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:sequenceTooltip",
+          "kind": "RegisteredFunction",
+          "name": "sequenceTooltip",
+          "friendly_name": null,
+          "role": "tooltip",
+          "description": null,
+          "tags": [
+            "tooltip"
+          ]
+        },
+        {
+          "id": "func:Bio:longSeqTableSeparator",
+          "kind": "RegisteredFunction",
+          "name": "longSeqTableSeparator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:longSeqTableFasta",
+          "kind": "RegisteredFunction",
+          "name": "longSeqTableFasta",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:longSeqTableHelm",
+          "kind": "RegisteredFunction",
+          "name": "longSeqTableHelm",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/annotations/annotation-manager.ts",
+          "packages/Bio/src/utils/cell-renderer.ts",
+          "packages/Bio/src/utils/constants.ts",
+          "packages/Bio/src/utils/macromolecule-column-widget.ts",
+          "packages/Bio/src/utils/monomer-cell-renderer-base.ts",
+          "packages/Bio/src/utils/monomer-cell-renderer.ts",
+          "packages/Bio/src/viewers/web-logo-viewer.ts",
+          "packages/Bio/src/widgets/representations.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-difference-rendering",
+      "name": "Sequence Difference Rendering",
+      "description": "Compares two macromolecule sequence columns to build a per-position difference representation and renders it via a dedicated difference cell renderer.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Bio:MacromoleculeDifferenceCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "MacromoleculeDifferenceCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:Bio:Compare Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Compare Sequences",
+          "friendly_name": null,
+          "role": null,
+          "description": "Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:sequenceAlignment",
+          "kind": "RegisteredFunction",
+          "name": "sequenceAlignment",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/cell-renderer.ts",
+          "packages/Bio/src/utils/compare-sequences.ts",
+          "packages/Bio/src/utils/constants.ts",
+          "packages/Bio/src/utils/monomer-cell-renderer-base.ts",
+          "packages/Bio/src/utils/ui-utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:notation-conversion",
+      "name": "Notation Conversion",
+      "description": "Converts macromolecule columns between supported sequence notations (FASTA, HELM, BILN, separator, custom) via an interactive conversion dialog.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Bio:Convert Notation...",
+          "kind": "RegisteredFunction",
+          "name": "Convert Notation...",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:convertDialog",
+          "kind": "RegisteredFunction",
+          "name": "convertDialog",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+          "kind": "DocPage",
+          "title": "Polytool",
+          "url": "/help/datagrok/solutions/domains/bio/polytool"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+          "kind": "DocPage",
+          "title": "FAQ: Peptides",
+          "url": "/help/datagrok/solutions/domains/bio/faq_bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/convert.ts",
+          "packages/Bio/src/utils/ui-utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:molecule-to-helm",
+      "name": "Molecule to HELM Conversion",
+      "description": "Converts small-molecule structures (molfiles / SDF) to HELM notation by matching atoms against a monomer library, enabling peptide enumeration workflows.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Bio:Molecules to HELM",
+          "kind": "RegisteredFunction",
+          "name": "Molecules to HELM",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts Peptide molecules to HELM notation by matching with monomer library",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Molecule to HELM Single",
+          "kind": "RegisteredFunction",
+          "name": "Molecule to HELM Single",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts a single molecule to HELM notation without requiring a table or column",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:getMolFromHelm",
+          "kind": "RegisteredFunction",
+          "name": "getMolFromHelm",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:SDF to JSON Library",
+          "kind": "RegisteredFunction",
+          "name": "SDF to JSON Library",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Bio:molToHelmConverterPy",
+          "kind": "Script",
+          "name": "molToHelmConverterPy",
+          "language": "python",
+          "description": "Converts molecules to HELM notation based on monomer library"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package-api.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/helm-to-molfile/utils.ts",
+          "packages/Bio/src/utils/seq-helper/index.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:atomic-level-structure",
+      "name": "Atomic Level Structure",
+      "description": "Expands macromolecule sequences (HELM / FASTA / BILN) into full atomic-level molblocks and displays 2D / 3D molecular structures in the property panel.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Bio:To Atomic Level",
+          "kind": "RegisteredFunction",
+          "name": "To Atomic Level",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts sequences to molblocks",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:To Atomic Level...",
+          "kind": "RegisteredFunction",
+          "name": "To Atomic Level...",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:To Atomic Level Single sequence",
+          "kind": "RegisteredFunction",
+          "name": "To Atomic Level Single sequence",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts a single sequence to molblock",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:seq2atomic",
+          "kind": "RegisteredFunction",
+          "name": "seq2atomic",
+          "friendly_name": "seq2atomic",
+          "role": null,
+          "description": "Converts a `Macromolecule` sequence to its atomic level `Molecule` representation",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Molecular Structure",
+          "kind": "RegisteredFunction",
+          "name": "Molecular Structure",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": [
+            "bio",
+            "widgets",
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:Molecular 3D Structure",
+          "kind": "RegisteredFunction",
+          "name": "Molecular 3D Structure",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": [
+            "bio",
+            "widgets",
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:demoBioAtomicLevel",
+          "kind": "RegisteredFunction",
+          "name": "demoBioAtomicLevel",
+          "friendly_name": null,
+          "role": null,
+          "description": "Atomic level structure of Macromolecules",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/demo/bio03-atomic-level.ts",
+          "packages/Bio/src/demo/utils.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/check-input-column.ts",
+          "packages/Bio/src/utils/sequence-to-mol.ts",
+          "packages/Bio/src/utils/ui-utils.ts",
+          "packages/Bio/src/widgets/to-atomic-level-widget.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/to-atomic-level-tests.ts",
+          "packages/Bio/src/tests/to-atomic-level-ui-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:file-import-export",
+      "name": "File Import / Export (FASTA, BAM)",
+      "description": "Imports FASTA / nucleotide files and BAM alignment files directly into Datagrok tables and exports sequence columns back to FASTA format.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Bio:importFasta",
+          "kind": "RegisteredFunction",
+          "name": "importFasta",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens FASTA file",
+          "tags": [
+            "fileHandler"
+          ]
+        },
+        {
+          "id": "func:Bio:importBam",
+          "kind": "RegisteredFunction",
+          "name": "importBam",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Bam file",
+          "tags": [
+            "fileHandler"
+          ]
+        },
+        {
+          "id": "func:Bio:saveAsFasta",
+          "kind": "RegisteredFunction",
+          "name": "saveAsFasta",
+          "friendly_name": null,
+          "role": "fileExporter",
+          "description": "As FASTA...",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+          "kind": "DocPage",
+          "title": "Oligonucleotide Sequence Design",
+          "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+          "kind": "DocPage",
+          "title": "FAQ: Peptides",
+          "url": "/help/datagrok/solutions/domains/bio/faq_bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/save-as-fasta.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/detectors-tests.ts",
+          "packages/Bio/src/tests/renderers-test.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:monomer-library-management",
+      "name": "Monomer Library Management",
+      "description": "Provides a full CRUD UI to manage HELM monomer libraries and collections, including browsing, editing monomers, matching molecules to monomers, and standardising library JSON.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Bio:Manage Monomer Libraries",
+          "kind": "RegisteredFunction",
+          "name": "Manage Monomer Libraries",
+          "friendly_name": null,
+          "role": null,
+          "description": "Manage HELM monomer libraries",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Manage Monomer Libraries View",
+          "kind": "RegisteredFunction",
+          "name": "Manage Monomer Libraries View",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:manageMonomersView",
+          "kind": "RegisteredFunction",
+          "name": "manageMonomersView",
+          "friendly_name": null,
+          "role": null,
+          "description": "Edit and create monomers",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Monomer Manager Tree Browser",
+          "kind": "RegisteredFunction",
+          "name": "Monomer Manager Tree Browser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Monomer Collections",
+          "kind": "RegisteredFunction",
+          "name": "Monomer Collections",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:Bio:Bioinformatics | Manage Monomer Libraries",
+          "kind": "RegisteredFunction",
+          "name": "Bioinformatics | Manage Monomer Libraries",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": [
+            "exclude-actions-panel"
+          ]
+        },
+        {
+          "id": "func:Bio:getMonomerLibHelper",
+          "kind": "RegisteredFunction",
+          "name": "getMonomerLibHelper",
+          "friendly_name": null,
+          "role": null,
+          "description": "Returns an instance of the monomer library helper",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:standardiseMonomerLibrary",
+          "kind": "RegisteredFunction",
+          "name": "standardiseMonomerLibrary",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:matchWithMonomerLibrary",
+          "kind": "RegisteredFunction",
+          "name": "matchWithMonomerLibrary",
+          "friendly_name": null,
+          "role": null,
+          "description": "Matches molecules in a column with monomers from the selected library(s)",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Monomer",
+          "kind": "RegisteredFunction",
+          "name": "Monomer",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": [
+            "bio",
+            "panel"
+          ]
+        },
+        {
+          "id": "doc:/help/_internal/tests/collections-test",
+          "kind": "DocPage",
+          "title": "Tests: Collections",
+          "url": "/help/_internal/tests/collections-test"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+          "kind": "DocPage",
+          "title": "FAQ: Peptides",
+          "url": "/help/datagrok/solutions/domains/bio/faq_bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/constants.ts",
+          "packages/Bio/src/utils/monomer-lib/consts.ts",
+          "packages/Bio/src/utils/monomer-lib/lib-manager.ts",
+          "packages/Bio/src/utils/monomer-lib/library-file-manager/monomers-lib-provider.ts",
+          "packages/Bio/src/utils/monomer-lib/library-file-manager/ui.ts",
+          "packages/Bio/src/utils/monomer-lib/monomer-collection-handler.ts",
+          "packages/Bio/src/utils/monomer-lib/monomer-collections-view.ts",
+          "packages/Bio/src/utils/monomer-lib/monomer-lib.ts",
+          "packages/Bio/src/utils/monomer-lib/monomer-manager/duplicate-monomer-manager.ts",
+          "packages/Bio/src/utils/monomer-lib/monomer-manager/monomer-manager.ts",
+          "packages/Bio/src/widgets/monomer-info-widget.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:split-to-monomers",
+      "name": "Split to Monomers",
+      "description": "Splits a macromolecule sequence column into individual per-position monomer columns, enabling position-level analysis of peptide libraries.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Bio:Split to Monomers",
+          "kind": "RegisteredFunction",
+          "name": "Split to Monomers",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:SplitToMonomersEditor",
+          "kind": "RegisteredFunction",
+          "name": "SplitToMonomersEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:Bio:Bio: getHelmMonomers",
+          "kind": "RegisteredFunction",
+          "name": "Bio: getHelmMonomers",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/function-edtiors/split-to-monomers-editor.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/check-input-column.ts",
+          "packages/Bio/src/utils/constants.ts",
+          "packages/Bio/src/utils/split-to-monomers.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/splitters-test.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:get-region",
+      "name": "Get Region",
+      "description": "Extracts a named subsequence region (e.g. CDR loop, variable domain) from a macromolecule column into a new column, via an interactive panel, top-menu action, or region input widget.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Bio:Bioinformatics | Get Region",
+          "kind": "RegisteredFunction",
+          "name": "Bioinformatics | Get Region",
+          "friendly_name": null,
+          "role": "panel",
+          "description": "Creates a new column with sequences of the region between start and end",
+          "tags": [
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:GetRegionEditor",
+          "kind": "RegisteredFunction",
+          "name": "GetRegionEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:Bio:getRegion",
+          "kind": "RegisteredFunction",
+          "name": "getRegion",
+          "friendly_name": null,
+          "role": null,
+          "description": "Gets a new column with sequences of the region between start and end",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Get Region Top Menu",
+          "kind": "RegisteredFunction",
+          "name": "Get Region Top Menu",
+          "friendly_name": null,
+          "role": null,
+          "description": "Get sequences for a region specified from a Macromolecule",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Sequence Column Input",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Column Input",
+          "friendly_name": null,
+          "role": null,
+          "description": "Creates a new input for sequence columns with ability to extract a region",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:getRegionApp",
+          "kind": "RegisteredFunction",
+          "name": "getRegionApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:getRegionHelmApp",
+          "kind": "RegisteredFunction",
+          "name": "getRegionHelmApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/apps/get-region-app.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/annotations/annotation-manager.ts",
+          "packages/Bio/src/utils/get-region-func-editor.ts",
+          "packages/Bio/src/utils/get-region.ts",
+          "packages/Bio/src/utils/sequence-column-input.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/seq-handler-get-region-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:weblogo-composition-analysis",
+      "name": "WebLogo & Composition Analysis",
+      "description": "Visualizes the positional monomer composition of a sequence set as a WebLogo plot, with aggregate and per-row composition panels.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Bio:WebLogo",
+          "kind": "RegisteredFunction",
+          "name": "WebLogo",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "WebLogo",
+          "tags": [
+            "viewer",
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:Composition Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Composition Analysis",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Visualizes sequence composition on a WebLogo plot",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Composition analysis",
+          "kind": "RegisteredFunction",
+          "name": "Composition analysis",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": [
+            "bio",
+            "widgets",
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:webLogoLargeApp",
+          "kind": "RegisteredFunction",
+          "name": "webLogoLargeApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:webLogoAggApp",
+          "kind": "RegisteredFunction",
+          "name": "webLogoAggApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/web-logo",
+          "kind": "DocPage",
+          "title": "WebLogo",
+          "url": "/help/visualize/viewers/web-logo"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/apps/web-logo-app.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/agg.ts",
+          "packages/Bio/src/utils/check-input-column.ts",
+          "packages/Bio/src/viewers/utils.ts",
+          "packages/Bio/src/viewers/web-logo-viewer.ts",
+          "packages/Bio/src/widgets/composition-analysis-widget.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/WebLogo-layout-tests.ts",
+          "packages/Bio/src/tests/WebLogo-positions-test.ts",
+          "packages/Bio/src/tests/WebLogo-project-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:multiple-sequence-alignment",
+      "name": "Multiple Sequence Alignment",
+      "description": "Aligns a set of macromolecule sequences using built-in engine or PepSeA (MAFFT-based) alignment algorithms, including support for non-canonical peptides and HELM.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:MSA",
+          "kind": "RegisteredFunction",
+          "name": "MSA",
+          "friendly_name": null,
+          "role": "panel",
+          "description": "Performs multiple sequence alignment",
+          "tags": [
+            "bio",
+            "panel"
+          ]
+        },
+        {
+          "id": "func:Bio:Multiple Sequence Alignment",
+          "kind": "RegisteredFunction",
+          "name": "Multiple Sequence Alignment",
+          "friendly_name": null,
+          "role": null,
+          "description": "Multiple sequence alignment",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:PepSeA",
+          "kind": "RegisteredFunction",
+          "name": "PepSeA",
+          "friendly_name": null,
+          "role": "sequenceMSA",
+          "description": "Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)",
+          "tags": []
+        },
+        {
+          "id": "script:Bio:read-tree-pkl",
+          "kind": "Script",
+          "name": "read-tree-pkl",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Bio:Sequence generator",
+          "kind": "Script",
+          "name": "Sequence generator",
+          "language": "python",
+          "description": "Create the model peptides/DNA sequences with peptides data"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/check-input-column.ts",
+          "packages/Bio/src/utils/constants.ts",
+          "packages/Bio/src/utils/multiple-sequence-alignment-ui.ts",
+          "packages/Bio/src/utils/multiple-sequence-alignment.ts",
+          "packages/Bio/src/utils/pepsea.ts",
+          "packages/Bio/src/utils/types.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/checkInputColumn-tests.ts",
+          "packages/Bio/src/tests/detectors-tests.ts",
+          "packages/Bio/src/tests/msa-tests.ts",
+          "packages/Bio/src/tests/pepsea-tests.ts",
+          "packages/Bio/src/tests/similarity-diversity-tests.ts",
+          "packages/Bio/src/tests/splitters-test.ts",
+          "packages/Bio/src/tests/substructure-filters-tests.ts",
+          "packages/Bio/src/tests/utils/sequences-generators.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-space",
+      "name": "Sequence Space",
+      "description": "Projects macromolecule sequences into a 2D scatter plot via dimensionality reduction of pairwise distances, enabling visual exploration of chemical diversity.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Sequence Space",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Space",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates 2D sequence space with projected sequences by pairwise distance",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:sequenceSpaceTransform",
+          "kind": "RegisteredFunction",
+          "name": "sequenceSpaceTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:SequenceSpaceEditor",
+          "kind": "RegisteredFunction",
+          "name": "SequenceSpaceEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:Bio:Encode Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Encode Sequences",
+          "friendly_name": null,
+          "role": "dim-red-preprocessing-function",
+          "description": null,
+          "tags": [
+            "dim-red-preprocessing-function"
+          ]
+        },
+        {
+          "id": "func:Bio:demoBioSequenceSpace",
+          "kind": "RegisteredFunction",
+          "name": "demoBioSequenceSpace",
+          "friendly_name": null,
+          "role": null,
+          "description": "Exploring sequence space of Macromolecules, comparison with hierarchical clustering results",
+          "tags": []
+        },
+        {
+          "id": "script:Bio:Embed",
+          "kind": "Script",
+          "name": "Embed",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        },
+        {
+          "id": "doc:/help/explore/dim-reduction",
+          "kind": "DocPage",
+          "title": "Dimensionality reduction",
+          "url": "/help/explore/dim-reduction"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/analysis/sequence-space.ts",
+          "packages/Bio/src/demo/bio01a-hierarchical-clustering-and-sequence-space.ts",
+          "packages/Bio/src/demo/utils.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/check-input-column.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/activity-cliffs-tests.ts",
+          "packages/Bio/src/tests/projects-tests.ts",
+          "packages/Bio/src/tests/sequence-space-utils.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-activity-cliffs",
+      "name": "Sequence Activity Cliffs",
+      "description": "Detects pairs of macromolecule sequences that are structurally similar but have a large difference in a measured biological activity, highlighting SAR discontinuities.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Sequence Activity Cliffs",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Activity Cliffs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Detects pairs of molecules with similar structure and significant difference in any given property",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:seqActivityCliffsInitFunction",
+          "kind": "RegisteredFunction",
+          "name": "seqActivityCliffsInitFunction",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:seqActivityCliffsTransform",
+          "kind": "RegisteredFunction",
+          "name": "seqActivityCliffsTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:SeqActivityCliffsEditor",
+          "kind": "RegisteredFunction",
+          "name": "SeqActivityCliffsEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:Bio:demoBioActivityCliffs",
+          "kind": "RegisteredFunction",
+          "name": "demoBioActivityCliffs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Activity Cliffs analysis on Macromolecules data",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+          "kind": "DocPage",
+          "title": "Peptides SAR",
+          "url": "/help/datagrok/solutions/domains/bio/peptides-sar"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/analysis/sequence-activity-cliffs.ts",
+          "packages/Bio/src/demo/bio01b-hierarchical-clustering-and-activity-cliffs.ts",
+          "packages/Bio/src/demo/utils.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/substructure-search/substructure-search.ts",
+          "packages/Bio/src/utils/cell-renderer.ts",
+          "packages/Bio/src/utils/check-input-column.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/activity-cliffs-tests.ts",
+          "packages/Bio/src/tests/activity-cliffs-utils.ts",
+          "packages/Bio/src/tests/projects-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-similarity-diversity",
+      "name": "Sequence Similarity & Diversity Search",
+      "description": "Interactive viewers to find the most similar sequences to a query and to pick the most diverse subset from a macromolecule dataset.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Sequence Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Similarity Search",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "func:Bio:similaritySearch",
+          "kind": "RegisteredFunction",
+          "name": "similaritySearch",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Finds similar sequences",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Sequence Diversity Search",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Diversity Search",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "func:Bio:diversitySearch",
+          "kind": "RegisteredFunction",
+          "name": "diversitySearch",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Finds the most diverse sequences",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:demoBioSimilarityDiversity",
+          "kind": "RegisteredFunction",
+          "name": "demoBioSimilarityDiversity",
+          "friendly_name": null,
+          "role": null,
+          "description": "Sequence similarity tracking and evaluation dataset diversity",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/analysis/sequence-activity-cliffs.ts",
+          "packages/Bio/src/analysis/sequence-diversity-viewer.ts",
+          "packages/Bio/src/analysis/sequence-search-base-viewer.ts",
+          "packages/Bio/src/analysis/sequence-similarity-viewer.ts",
+          "packages/Bio/src/analysis/sequence-space.ts",
+          "packages/Bio/src/calculations/monomerLevelMols.ts",
+          "packages/Bio/src/demo/bio01-similarity-diversity.ts",
+          "packages/Bio/src/demo/utils.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/ui-utils.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/similarity-diversity-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:subsequence-search",
+      "name": "Subsequence Search & Substructure Filter",
+      "description": "Searches for a motif or subsequence within macromolecule columns and provides a grid filter widget to interactively narrow rows by substructure match.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Subsequence Search",
+          "kind": "RegisteredFunction",
+          "name": "Subsequence Search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Bio:SearchSubsequenceEditor",
+          "kind": "RegisteredFunction",
+          "name": "SearchSubsequenceEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:Bio:Bio Substructure Filter",
+          "kind": "RegisteredFunction",
+          "name": "Bio Substructure Filter",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "Substructure filter for macromolecules",
+          "tags": [
+            "filter"
+          ]
+        },
+        {
+          "id": "func:Bio:Bio Substructure Filter Test",
+          "kind": "RegisteredFunction",
+          "name": "Bio Substructure Filter Test",
+          "friendly_name": null,
+          "role": null,
+          "description": "Substructure filter for Helm package tests",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/_internal/tests/substructure-filter",
+          "kind": "DocPage",
+          "title": "Tests: Substructure Filter",
+          "url": "/help/_internal/tests/substructure-filter"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/calculations/monomerLevelMols.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/substructure-search/substructure-search.ts",
+          "packages/Bio/src/utils/ui-utils.ts",
+          "packages/Bio/src/widgets/bio-substructure-filter-helm.ts",
+          "packages/Bio/src/widgets/bio-substructure-filter.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/substructure-filters-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-identity-scoring",
+      "name": "Sequence Identity & Similarity Scoring",
+      "description": "Computes per-row identity or monomer-fingerprint similarity scores relative to a reference sequence, adding scored result columns to the table.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Identity",
+          "kind": "RegisteredFunction",
+          "name": "Identity",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds a column with fraction of matching monomers",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Similarity",
+          "kind": "RegisteredFunction",
+          "name": "Similarity",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:seqIdentity",
+          "kind": "RegisteredFunction",
+          "name": "seqIdentity",
+          "friendly_name": "seqIdentity",
+          "role": null,
+          "description": "Gets identity to a reference sequence",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Helm Fingerprints",
+          "kind": "RegisteredFunction",
+          "name": "Helm Fingerprints",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/calculations/monomerLevelMols.ts",
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/substructure-search/substructure-search.ts",
+          "packages/Bio/src/utils/calculate-scores.ts",
+          "packages/Bio/src/utils/ui-utils.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/activity-cliffs-tests.ts",
+          "packages/Bio/src/tests/scoring.ts",
+          "packages/Bio/src/tests/similarity-diversity-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Bio:antibody-numbering",
+      "name": "Antibody Numbering & Annotations",
+      "description": "Assigns standard antibody numbering schemes (IMGT, Kabat, Chothia, AHo) to sequence columns and lets users view and manage CDR / framework region annotations.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Apply Numbering Scheme",
+          "kind": "RegisteredFunction",
+          "name": "Apply Numbering Scheme",
+          "friendly_name": null,
+          "role": null,
+          "description": "Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Immunum",
+          "kind": "RegisteredFunction",
+          "name": "Immunum",
+          "friendly_name": null,
+          "role": "antibodyNumbering",
+          "description": "Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library",
+          "tags": []
+        },
+        {
+          "id": "func:Bio:Manage Annotations",
+          "kind": "RegisteredFunction",
+          "name": "Manage Annotations",
+          "friendly_name": null,
+          "role": null,
+          "description": "View and manage sequence annotations on macromolecule columns",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/annotations/annotation-manager-ui.ts",
+          "packages/Bio/src/utils/annotations/annotation-manager.ts",
+          "packages/Bio/src/utils/annotations/numbering-ui.ts",
+          "packages/Bio/src/utils/antibody-numbering/immunum-client.ts",
+          "packages/Bio/src/utils/antibody-numbering/number-antibody.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:liability-scanning",
+      "name": "Liability Scanning",
+      "description": "Scans macromolecule sequences for chemical liabilities such as deamidation and oxidation sites that affect biologic drug stability.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Scan Liabilities",
+          "kind": "RegisteredFunction",
+          "name": "Scan Liabilities",
+          "friendly_name": null,
+          "role": null,
+          "description": "Scans macromolecule sequences for deamidation, oxidation, and other liabilities",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/utils/annotations/liability-scanner-ui.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:vd-regions",
+      "name": "VD Regions Viewer",
+      "description": "Visualizes V-Domain antibody regions and CDR loops in a dedicated grid viewer, showing aligned region positions across a sequence library.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Bio:VdRegions",
+          "kind": "RegisteredFunction",
+          "name": "VdRegions",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "V-Domain regions viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/vdregions",
+          "kind": "DocPage",
+          "title": "V-Domain",
+          "url": "/help/visualize/viewers/vdregions"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/package.ts",
+          "packages/Bio/src/viewers/vd-regions-viewer.ts",
+          "packages/Bio/src/viewers/web-logo-viewer.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Bio:sequence-encoding",
+      "name": "Sequence Encoding for ML",
+      "description": "Encodes macromolecule sequences as numeric feature vectors to feed into dimensionality reduction and other machine-learning pipelines.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Bio:Encode Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Encode Sequences",
+          "friendly_name": null,
+          "role": "dim-red-preprocessing-function",
+          "description": null,
+          "tags": [
+            "dim-red-preprocessing-function"
+          ]
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Bio/src/analysis/sequence-space.ts",
+          "packages/Bio/src/package.ts"
+        ],
+        "tests": [
+          "packages/Bio/src/tests/activity-cliffs-tests.ts",
+          "packages/Bio/src/tests/projects-tests.ts",
+          "packages/Bio/src/tests/sequence-space-utils.ts"
+        ]
+      }
+    }
+  ]
+}

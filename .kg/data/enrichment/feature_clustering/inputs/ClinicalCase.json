@@ -1,0 +1,379 @@
+{
+  "package": {
+    "id": "pkg:ClinicalCase",
+    "name": "ClinicalCase",
+    "friendly_name": "Clinical Case",
+    "version": "1.4.0",
+    "category": "Health",
+    "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) and [SEND](https://www.cdisc.org/standards/foundational/send) formats.",
+    "extras": {
+      "npm_name": "@datagrok/clinical-case",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:ClinicalCase:Clinical Case",
+      "name": "Clinical Case",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:clinicalCaseAppTreeBrowser",
+      "name": "clinicalCaseAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:Get list of studies",
+      "name": "Get list of studies",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": "Return list of clinical and preclinical studies loaded into Clinical Case application",
+      "input_types": [
+        "string",
+        "string",
+        "int",
+        "string",
+        "datetime",
+        "string",
+        "datetime",
+        "string",
+        "bool",
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:clinicalCaseFolderLauncher",
+      "name": "clinicalCaseFolderLauncher",
+      "friendly_name": null,
+      "role": "folderViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file",
+        null
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "folderViewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:xptFileHandler",
+      "name": "xptFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "xpt"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:Run CDISC CORE Validation",
+      "name": "Run CDISC CORE Validation",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Run CDISC CORE validation on datasets",
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "dynamic"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ClinicalCase:sdiscRuleViolationRenderer",
+      "name": "sdiscRuleViolationRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:ClinicalCase:covariates",
+      "name": "covariates",
+      "language": "r",
+      "description": null
+    },
+    {
+      "id": "script:ClinicalCase:ReadSas",
+      "name": "ReadSas",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:ClinicalCase:survivalPlot",
+      "name": "survivalPlot",
+      "language": "r",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/ClinicalCase/credits.md",
+      "title": "ClinicalCase — Third-Party Libraries",
+      "url": "/packages/ClinicalCase/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ClinicalCase/readme.md",
+      "title": "Preclinical Case",
+      "url": "/packages/ClinicalCase/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/concepts/concepts",
+      "title": "Core Datagrok concepts",
+      "url": "/help/datagrok/concepts/concepts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/PreclinicalCase/readme.md",
+      "title": "Preclinical Case",
+      "url": "/packages/PreclinicalCase/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:ClinicalCase:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "xpt file handler + linter fixes"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:1",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": "GROK-19146",
+      "text": "GROK-19146: File input: Ability to select directory"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:2",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Validation using CDISC core engine"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:3",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Ability to show/hide validation errors"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:4",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Import study view"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:5",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Open domains from tree"
+    },
+    {
+      "id": "clog:ClinicalCase:1.4.0:6",
+      "version": "1.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Columns descriptions (extracted from define.xml)"
+    },
+    {
+      "id": "clog:ClinicalCase:1.3.3:0",
+      "version": "1.3.3",
+      "released_at": "2025-10-20",
+      "ticket": "GROK-19038",
+      "text": "GROK-19038: Clinical case: Invalid argument error for study"
+    },
+    {
+      "id": "clog:ClinicalCase:1.3.2:0",
+      "version": "1.3.2",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Modified application initial view"
+    },
+    {
+      "id": "clog:ClinicalCase:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-03-31",
+      "ticket": "GROK-17804",
+      "text": "GROK-17804: Apps: Clinical case: Run error: \"properties of undefined (reading 'initCompleted')\""
+    },
+    {
+      "id": "clog:ClinicalCase:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Dependency: datgarok-api >= 1.25.0"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.8:0",
+      "version": "1.0.8",
+      "released_at": "2024-07-24",
+      "ticket": null,
+      "text": "Dependency: datgarok-api >= 1.20.0"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.7:0",
+      "version": "1.0.7",
+      "released_at": "2024-02-12",
+      "ticket": null,
+      "text": "AE Risk Assessment: removed lines titles from scatter plot"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.6:0",
+      "version": "1.0.6",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Timelines viewer not opening"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Provides tools for exploration of clinical data represented in [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format."
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:1",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Study summary"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:2",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Subjects events flow in time"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:3",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Individual subject's profile"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:4",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Adverse events summary and adverse events browser"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:5",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Laboratory (results summary, Hy's law plot, baseline/endpoint plot, boxplots)"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:6",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Kaplan-Meier curves and covariates analysis"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:7",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Biomarkers distributions"
+    },
+    {
+      "id": "clog:ClinicalCase:1.0.5:8",
+      "version": "1.0.5",
+      "released_at": "2024-02-07",
+      "ticket": null,
+      "text": "Biomarkers correlation matrixes"
+    }
+  ],
+  "stats": {
+    "functions": 7,
+    "scripts": 3,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 4,
+    "changelog": 23
+  }
+}

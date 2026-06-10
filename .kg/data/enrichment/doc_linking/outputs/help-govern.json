@@ -1,0 +1,167 @@
+{
+  "slice_id": "help-govern",
+  "links": [
+    {
+      "doc_id": "doc:/help/govern/_deprecated/group",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.70,
+      "evidence": "doc covers user-group management; server-api feature explicitly lists 'manage user groups' as a demonstrated capability"
+    },
+    {
+      "doc_id": "doc:/help/govern/_deprecated/user",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.70,
+      "evidence": "doc describes the User entity and its fields; server-api feature covers 'inspect the current user, and persist user settings'"
+    },
+    {
+      "doc_id": "doc:/help/govern/access-control/group-test",
+      "target_id": "feature:ApiTests:projects-collaboration",
+      "confidence": 0.75,
+      "evidence": "test doc for group management (membership requests, chat, member viewing); projects-collaboration feature covers user registration, sharing, and inviting collaborators — the same multi-user surface"
+    },
+    {
+      "doc_id": "doc:/help/govern/access-control/users-and-groups",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.75,
+      "evidence": "comprehensive user/group management doc; server-api feature demonstrates 'manage user groups, inspect the current user, and persist user settings' via grok.dapi"
+    },
+    {
+      "doc_id": "doc:/help/govern/access-control/users-and-groups",
+      "target_id": "feature:ApiTests:projects-collaboration",
+      "confidence": 0.70,
+      "evidence": "users-and-groups doc covers registration, invitations, and multi-user roles; projects-collaboration tests the same collaboration surface"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/audit",
+      "target_id": "feature:UsageAnalysis:usage-analysis-app",
+      "confidence": 0.85,
+      "evidence": "audit doc describes platform telemetry and user-activity insights; usage-analysis-app is the admin dashboard for 'events, users, packages, functions, and errors across configurable time ranges'"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/audit",
+      "target_id": "feature:UsageAnalysis:user-session-analytics",
+      "confidence": 0.80,
+      "evidence": "audit doc focuses on understanding how users interact with the platform; user-session-analytics tracks unique users, sessions, and per-user event breakdowns"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/audit-test",
+      "target_id": "feature:UsageAnalysis:usage-analysis-app",
+      "confidence": 0.72,
+      "evidence": "audit test doc validates the audit system that feeds Usage Analysis; usage-analysis-app is the primary consumer of that audit data"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "pkg:UsageAnalysis",
+      "confidence": 0.98,
+      "evidence": "doc title is 'Usage Analysis' and explicitly names 'packages/UsageAnalysis' in the public git repository link"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:usage-analysis-app",
+      "confidence": 0.97,
+      "evidence": "doc describes the main Usage Analysis application; feature is 'the main admin application that provides a unified dashboard for platform telemetry'"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "func:UsageAnalysis:Usage Analysis",
+      "confidence": 0.97,
+      "evidence": "doc URL slug 'usage-analysis' exactly matches the registered app function 'Usage Analysis' in pkg:UsageAnalysis"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:user-session-analytics",
+      "confidence": 0.90,
+      "evidence": "doc covers monitoring user activity; user-session-analytics tracks users, sessions, and event breakdowns — a core section of the described app"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:error-tracking-reports",
+      "confidence": 0.88,
+      "evidence": "doc mentions error and report tracking as part of Usage Analysis; feature surfaces and ranks platform errors and powers the Reports app"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:function-call-analytics",
+      "confidence": 0.88,
+      "evidence": "doc describes Usage Analysis covering function usage; feature measures how often each registered function is called and by whom"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:package-analytics",
+      "confidence": 0.88,
+      "evidence": "doc covers package-level usage tracking; feature shows which packages are most used and provides per-package drilldowns"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:service-log-viewer",
+      "confidence": 0.85,
+      "evidence": "doc covers the Service Logs app within Usage Analysis; feature streams and summarises server-side service logs"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:click-tracking",
+      "confidence": 0.85,
+      "evidence": "doc describes Usage Analysis recording UI interaction; click-tracking records and visualises UI element click events across the platform"
+    },
+    {
+      "doc_id": "doc:/help/govern/audit/usage-analysis",
+      "target_id": "feature:UsageAnalysis:data-source-query-analytics",
+      "confidence": 0.82,
+      "evidence": "doc mentions data source usage tracking; feature ranks connections, data sources, and SQL queries by usage frequency"
+    },
+    {
+      "doc_id": "doc:/help/govern/bug-reports",
+      "target_id": "feature:UsageAnalysis:error-tracking-reports",
+      "confidence": 0.88,
+      "evidence": "doc describes built-in error reporting (bug reports submitted from the platform); feature 'powers the Reports app where users can file, browse, and manage error reports with optional Jira ticket creation'"
+    },
+    {
+      "doc_id": "doc:/help/govern/bug-reports",
+      "target_id": "func:UsageAnalysis:Reports",
+      "confidence": 0.87,
+      "evidence": "doc title 'Feedback' / slug 'bug-reports' maps directly to the 'Reports' app function in UsageAnalysis (role: app)"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/self-learning-platform",
+      "target_id": "feature:UsageAnalysis:user-session-analytics",
+      "confidence": 0.65,
+      "evidence": "doc describes the platform learning from observed user behavior; user-session-analytics captures the aggregate user activity that drives this feedback loop"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/self-learning-platform",
+      "target_id": "feature:UsageAnalysis:click-tracking",
+      "confidence": 0.65,
+      "evidence": "doc frames self-learning through UI interaction patterns; click-tracking records UI element interactions enabling the same analysis"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/semantic-types",
+      "target_id": "feature:ApiSamples:metadata-and-semantic-types",
+      "confidence": 0.90,
+      "evidence": "doc explains semantic types on columns; feature demonstrates 'detecting and assigning semantic types, qualified numbers, value-matchers'"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/semantic-types",
+      "target_id": "feature:ApiTests:semantic-type-detection",
+      "confidence": 0.88,
+      "evidence": "doc describes how semantic types work; feature tests 'registration and invocation of custom semantic-type detectors that classify column content at runtime'"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/sticky-meta",
+      "target_id": "feature:ApiSamples:metadata-and-semantic-types",
+      "confidence": 0.80,
+      "evidence": "sticky-meta doc covers tagging Datagrok entities with custom metadata; feature demonstrates tagging DataFrames and columns with metadata key-value pairs"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/tags",
+      "target_id": "feature:ApiSamples:metadata-and-semantic-types",
+      "confidence": 0.82,
+      "evidence": "tags doc covers annotating objects with metadata key-value pairs; feature demonstrates 'tagging columns and DataFrames with metadata'"
+    },
+    {
+      "doc_id": "doc:/help/govern/catalog/tags",
+      "target_id": "feature:ApiTests:ui-navigation-metadata",
+      "confidence": 0.80,
+      "evidence": "tags doc covers entity metadata and how objects can be searched by tags; ui-navigation-metadata tests 'entity tags, favorites, and entity collections'"
+    }
+  ]
+}

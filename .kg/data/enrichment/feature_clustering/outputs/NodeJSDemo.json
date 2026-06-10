@@ -1,0 +1,38 @@
+{
+  "package_id": "pkg:NodeJSDemo",
+  "features": [
+    {
+      "id": "feature:NodeJSDemo:todo-application",
+      "name": "Todo Application",
+      "description": "A Node.js-based Todo app registered as a Datagrok view-application, demonstrating how to build and launch a full UI app from a TypeScript plugin.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:NodeJSDemo:todoApplication", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/NodeJSDemo/readme.md",  "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "The 'todoApplication' function has role='app' and output type 'view'; the readme is titled 'Datagrok Todo App Plugin', directly documenting this entry point."
+    },
+    {
+      "id": "feature:NodeJSDemo:info-panel-demo",
+      "name": "Info Panel Demo",
+      "description": "Demonstrates registering a custom context-sensitive info panel (sidebar pane) from a TypeScript Datagrok plugin using the Node.js runtime.",
+      "category": "infra",
+      "confidence": 0.72,
+      "members": [
+        {"id": "func:NodeJSDemo:info",                                                  "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                           "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",                    "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",                     "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",    "weight": 0.45, "role": "related"}
+      ],
+      "evidence_summary": "The 'info' function name, combined with four platform docs all covering the info-panel registration pattern, signals this function registers a custom info panel."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:NodeJSDemo:todo-application", "to": "feature:NodeJSDemo:info-panel-demo", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/NodeJSDemo/credits.md"
+  ]
+}

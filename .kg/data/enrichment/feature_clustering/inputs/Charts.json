@@ -1,0 +1,745 @@
+{
+  "package": {
+    "id": "pkg:Charts",
+    "name": "Charts",
+    "friendly_name": "Charts",
+    "version": "1.7.0",
+    "category": "Visualizations",
+    "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
+    "extras": {
+      "npm_name": "@datagrok/charts",
+      "fullName": "Charts",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Charts:Timelines",
+      "name": "Timelines",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a timelines viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:flagCellRenderer",
+      "name": "flagCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:chordViewerDemo",
+      "name": "chordViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Chord viewer visualizes weighted relationships between several entities",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:radarViewerDemo",
+      "name": "radarViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Radar viewer is used on multivariate data to plot groups of values over several common variables",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:sankeyViewerDemo",
+      "name": "sankeyViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Sankey viewer depicts a flow from one set of values to another",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:sunburstViewerDemo",
+      "name": "sunburstViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Sunburst viewer displays hierarchical data",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:surfacePlotDemo",
+      "name": "surfacePlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Surface plot viewer displays a set of three-dimensional data as a mesh surface",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:timelinesViewerDemo",
+      "name": "timelinesViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Timelines viewer displays the flow of events over time",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:treeViewerDemo",
+      "name": "treeViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Tree viewer visualizes hierarchical data by categories",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:wordCloudViewerDemo",
+      "name": "wordCloudViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Word Cloud viewer visualizes unstructured text data",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Chord",
+      "name": "Chord",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a chord viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Globe",
+      "name": "Globe",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a globe viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Group Analysis",
+      "name": "Group Analysis",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a group analysis viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Multiplot",
+      "name": "Multiplot",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a multiplot viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Radar",
+      "name": "Radar",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a radar viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Sankey",
+      "name": "Sankey",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a sankey viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Sunburst",
+      "name": "Sunburst",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a sunburst viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Surface plot",
+      "name": "Surface plot",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a surface plot viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Tree",
+      "name": "Tree",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a tree viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:Word cloud",
+      "name": "Word cloud",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates a word cloud viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Charts:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Charts/credits.md",
+      "title": "Charts — Third-Party Libraries",
+      "url": "/packages/Charts/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Charts/readme.md",
+      "title": "Charts",
+      "url": "/packages/Charts/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/radar",
+      "title": "Radar viewer",
+      "url": "/help/visualize/viewers/radar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/timelines",
+      "title": "timelines",
+      "url": "/help/visualize/viewers/timelines",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/tree",
+      "title": "Tree viewer",
+      "url": "/help/visualize/viewers/tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/group-analysis",
+      "title": "Group analysis viewer",
+      "url": "/help/visualize/viewers/group-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/surface-plot",
+      "title": "Surface plot",
+      "url": "/help/visualize/viewers/surface-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/word-cloud",
+      "title": "Word cloud",
+      "url": "/help/visualize/viewers/word-cloud",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/access/files/shares/googlecloud",
+      "title": "Google Cloud",
+      "url": "/help/access/files/shares/googlecloud",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/workflows/eda",
+      "title": "Exploratory data analysis",
+      "url": "/help/datagrok/solutions/workflows/eda",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/help-pages/word-list",
+      "title": "Word list",
+      "url": "/help/develop/help-pages/word-list",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/explore/anova",
+      "title": "Analysis of variances",
+      "url": "/help/explore/anova",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/multivariate-analysis",
+      "title": "Multivariate analysis",
+      "url": "/help/explore/multivariate-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "title": "Tests: multivariate analysis",
+      "url": "/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/govern/_deprecated/group",
+      "title": "User group",
+      "url": "/help/govern/_deprecated/group",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/govern/access-control/group-test",
+      "title": "Tests: Group management",
+      "url": "/help/govern/access-control/group-test",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/govern/audit/usage-analysis",
+      "title": "Usage Analysis",
+      "url": "/help/govern/audit/usage-analysis",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/3d-scatter-plot",
+      "title": "3D Scatter plot",
+      "url": "/help/visualize/viewers/3d-scatter-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/box-plot",
+      "title": "Box plot",
+      "url": "/help/visualize/viewers/box-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/chord",
+      "title": "Chord",
+      "url": "/help/visualize/viewers/chord",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/correlation-plot",
+      "title": "Correlation plot",
+      "url": "/help/visualize/viewers/correlation-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/density-plot",
+      "title": "Density plot",
+      "url": "/help/visualize/viewers/density-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/globe",
+      "title": "Globe",
+      "url": "/help/visualize/viewers/globe",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/matrix-plot",
+      "title": "Matrix plot",
+      "url": "/help/visualize/viewers/matrix-plot",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Charts:1.7.0:0",
+      "version": "1.7.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Charts: Radar: Added legend"
+    },
+    {
+      "id": "clog:Charts:1.7.0:1",
+      "version": "1.7.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Charts: Timelines: Fixed legend color changes not reflected on chart"
+    },
+    {
+      "id": "clog:Charts:1.7.0:2",
+      "version": "1.7.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-15543",
+      "text": "GROK-15543: Charts | Sunburst: Does not support collaborative filtering"
+    },
+    {
+      "id": "clog:Charts:1.7.0:3",
+      "version": "1.7.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-18321",
+      "text": "GROK-18321: Charts | Tree viewer: Broken molecular label for radial layout"
+    },
+    {
+      "id": "clog:Charts:1.6.2:0",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": null,
+      "text": "Charts: Sankey: Add support for color-coding nodes and links"
+    },
+    {
+      "id": "clog:Charts:1.6.2:1",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-19376",
+      "text": "GROK-19376: Projects: errors for opening data with radar viewer"
+    },
+    {
+      "id": "clog:Charts:1.6.2:2",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": null,
+      "text": "[3221](https://github.com/datagrok-ai/public/issues/3221): Charts | Tree: Add configuration to hide overlapping labels"
+    },
+    {
+      "id": "clog:Charts:1.6.2:3",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-19226",
+      "text": "GROK-19226: Charts | Tree: Failed to load saved layout with attached tree viewer"
+    },
+    {
+      "id": "clog:Charts:1.6.2:4",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-19095",
+      "text": "GROK-19095: Charts | Radar: Trigger the label formatter when resizing"
+    },
+    {
+      "id": "clog:Charts:1.6.2:5",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-19097",
+      "text": "GROK-19097, GROK-19098: Charts: Chord: Row Source works incorrectly for some values"
+    },
+    {
+      "id": "clog:Charts:1.6.2:6",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-17788",
+      "text": "GROK-17788: Globe viewer: Doesn't react on filtering when rowSource = Filter"
+    },
+    {
+      "id": "clog:Charts:1.6.2:7",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-13833",
+      "text": "GROK-13833: Charts | Chord: Should respond on selecting groups"
+    },
+    {
+      "id": "clog:Charts:1.6.2:8",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-18757",
+      "text": "GROK-18757: Charts: Radar: Improve column label visualization to prevent their cutting"
+    },
+    {
+      "id": "clog:Charts:1.6.2:9",
+      "version": "1.6.2",
+      "released_at": "2026-02-06",
+      "ticket": "GROK-19035",
+      "text": "GROK-19035: Charts | Timelines: Range slider breaks in some cases"
+    },
+    {
+      "id": "clog:Charts:1.6.0:0",
+      "version": "1.6.0",
+      "released_at": "2025-07-28",
+      "ticket": "GROK-18408",
+      "text": "GROK-18408: Charts | Radar: Console errors when click None in Select columns dialog"
+    },
+    {
+      "id": "clog:Charts:1.6.0:1",
+      "version": "1.6.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "[3420](https://github.com/datagrok-ai/public/issues/3420): Charts | Tree: Move \"Show mouse over line\" to Style section in properties"
+    },
+    {
+      "id": "clog:Charts:1.6.0:2",
+      "version": "1.6.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "[3421](https://github.com/datagrok-ai/public/issues/3421): Charts | Tree: Different row source behavior for changing \"on click\" property"
+    },
+    {
+      "id": "clog:Charts:1.6.0:3",
+      "version": "1.6.0",
+      "released_at": "2025-07-28",
+      "ticket": "GROK-17772",
+      "text": "GROK-17772: Charts | Chord: Re-rendered only after click when filtering"
+    },
+    {
+      "id": "clog:Charts:1.6.0:4",
+      "version": "1.6.0",
+      "released_at": "2025-07-28",
+      "ticket": "GROK-18576",
+      "text": "GROK-18576: Charts | Radar: Errors when switching to earthquakes dataset"
+    },
+    {
+      "id": "clog:Charts:1.5.5:0",
+      "version": "1.5.5",
+      "released_at": "2025-07-03",
+      "ticket": null,
+      "text": "[3397](https://github.com/datagrok-ai/public/issues/3397): Tree viewer: selection and clicking issues"
+    },
+    {
+      "id": "clog:Charts:1.5.4:0",
+      "version": "1.5.4",
+      "released_at": "2025-05-29",
+      "ticket": null,
+      "text": "Charts: Sunburst: Limit number of rendered columns"
+    },
+    {
+      "id": "clog:Charts:1.5.3:0",
+      "version": "1.5.3",
+      "released_at": "2025-05-27",
+      "ticket": null,
+      "text": "[3377](https://github.com/datagrok-ai/public/issues/3377): Sunburst: Tooltip displays wrong number of rows"
+    },
+    {
+      "id": "clog:Charts:1.5.2:0",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "[3298](https://github.com/datagrok-ai/public/issues/3298): Tree:"
+    },
+    {
+      "id": "clog:Charts:1.5.2:1",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Added Ctrl+Click support for branch selection to enable filtering"
+    },
+    {
+      "id": "clog:Charts:1.5.2:2",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Implemented collaborative filtering"
+    },
+    {
+      "id": "clog:Charts:1.5.2:3",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": "GROK-18010",
+      "text": "GROK-18010: Charts | Sunburst: Viewer formatting reset on property changes"
+    },
+    {
+      "id": "clog:Charts:1.5.2:4",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": "GROK-18011",
+      "text": "GROK-18011: Charts | Sunburst: Molecules appear smaller/bigger than expected"
+    },
+    {
+      "id": "clog:Charts:1.5.2:5",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": "GROK-18009",
+      "text": "GROK-18009: Charts | Sunburst: Errors after changing table with opened 'Select columns' dialog"
+    },
+    {
+      "id": "clog:Charts:1.5.2:6",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": "GROK-18036",
+      "text": "GROK-18036: Charts | Sankey: Selecting an empty column in the context panel causes errors"
+    },
+    {
+      "id": "clog:Charts:1.5.2:7",
+      "version": "1.5.2",
+      "released_at": "2025-05-12",
+      "ticket": "GROK-18035",
+      "text": "GROK-18035: Charts | Sankey: Errors on hover after applying filters"
+    }
+  ],
+  "stats": {
+    "functions": 21,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 130
+  }
+}

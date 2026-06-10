@@ -1,0 +1,1012 @@
+{
+  "package": {
+    "id": "pkg:PowerGrid",
+    "name": "PowerGrid",
+    "friendly_name": "Power Grid",
+    "version": "1.8.2",
+    "category": "General",
+    "description": "Power Grid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
+    "extras": {
+      "npm_name": "@datagrok/power-grid",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:PowerGrid:binaryImageCellRenderer",
+      "name": "binaryImageCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Color",
+      "name": "Color",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:hyperlinkCellRenderer",
+      "name": "hyperlinkCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:imageUrlCellRenderer",
+      "name": "imageUrlCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Multi Choice",
+      "name": "Multi Choice",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Stars",
+      "name": "Stars",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:svgCellRenderer",
+      "name": "svgCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:htestCellRenderer",
+      "name": "htestCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:barCellRenderer",
+      "name": "barCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Sparklines",
+      "name": "Sparklines",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Bar Chart",
+      "name": "Bar Chart",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Pie Chart",
+      "name": "Pie Chart",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Radar",
+      "name": "Radar",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Smart Form",
+      "name": "Smart Form",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Tags",
+      "name": "Tags",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Confidence Interval",
+      "name": "Confidence Interval",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:summarizeColumns",
+      "name": "summarizeColumns",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Adds a sparkline column for the selected columns",
+      "input_types": [
+        "list"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:addFormColumn",
+      "name": "addFormColumn",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Adds a 'form' column for the selected columns",
+      "input_types": [
+        "list"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:testUnitsKgCellRenderer",
+      "name": "testUnitsKgCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:testUnitsTonCellRenderer",
+      "name": "testUnitsTonCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:demoTestUnitsCellRenderer",
+      "name": "demoTestUnitsCellRenderer",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:addPinnedColumn",
+      "name": "addPinnedColumn",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:_autoPowerGrid",
+      "name": "_autoPowerGrid",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [
+        "autostart"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Forms",
+      "name": "Forms",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Forms viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Content",
+      "name": "Content",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [
+        "widgets",
+        "panel"
+      ],
+      "description": "Image content",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:demoCellTypes",
+      "name": "demoCellTypes",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:_scWebGPURender",
+      "name": "_scWebGPURender",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:_scWebGPUPointHitTest",
+      "name": "_scWebGPUPointHitTest",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "dynamic"
+      ],
+      "output_types": [
+        "int"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:isWebGPUAvailable",
+      "name": "isWebGPUAvailable",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:isWebGPURenderValid",
+      "name": "isWebGPURenderValid",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:rawPng",
+      "name": "rawPng",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:Scatter Plot",
+      "name": "Scatter Plot",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerGrid:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/PowerGrid/readme.md",
+      "title": "Power Grid",
+      "url": "/packages/PowerGrid/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PowerGrid/credits.md",
+      "title": "PowerGrid — Third-Party Libraries",
+      "url": "/packages/PowerGrid/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PowerGrid/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/PowerGrid/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/3d-scatter-plot",
+      "title": "3D Scatter plot",
+      "url": "/help/visualize/viewers/3d-scatter-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/color-coding-test",
+      "title": "Tests: Color Coding",
+      "url": "/help/_internal/tests/color-coding-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tags-favorites-test",
+      "title": "Tests: Tags",
+      "url": "/help/_internal/tests/tags-favorites-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/smart-search",
+      "title": "Smart search",
+      "url": "/help/datagrok/_deprecated/smart-search",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/basic-tasks/_smart-bar",
+      "title": "Smart bar",
+      "url": "/help/datagrok/navigation/basic-tasks/_smart-bar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/help-pages/_stash/content-types",
+      "title": "Content types",
+      "url": "/help/develop/help-pages/_stash/content-types",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/folder-content-preview",
+      "title": "Custom folder content preview",
+      "url": "/help/develop/how-to/files/folder-content-preview",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/grid/customize-grid",
+      "title": "Customize a grid",
+      "url": "/help/develop/how-to/grid/customize-grid",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/govern/catalog/tags",
+      "title": "Tags",
+      "url": "/help/govern/catalog/tags",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/visualize/add-custom-form",
+      "title": "Add custom form",
+      "url": "/help/visualize/add-custom-form",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/bar-chart",
+      "title": "Bar chart",
+      "url": "/help/visualize/viewers/bar-chart",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/box-plot",
+      "title": "Box plot",
+      "url": "/help/visualize/viewers/box-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/correlation-plot",
+      "title": "Correlation plot",
+      "url": "/help/visualize/viewers/correlation-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/density-plot",
+      "title": "Density plot",
+      "url": "/help/visualize/viewers/density-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/form",
+      "title": "Form",
+      "url": "/help/visualize/viewers/form",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/forms",
+      "title": "Forms",
+      "url": "/help/visualize/viewers/forms",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/grid",
+      "title": "Grid",
+      "url": "/help/visualize/viewers/grid",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/line-chart",
+      "title": "Line chart",
+      "url": "/help/visualize/viewers/line-chart",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/matrix-plot",
+      "title": "Matrix plot",
+      "url": "/help/visualize/viewers/matrix-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "title": "Multi curve viewer",
+      "url": "/help/visualize/viewers/multi-curve-viewer",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/pc-plot",
+      "title": "Parallel coordinates plot",
+      "url": "/help/visualize/viewers/pc-plot",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/pie-chart",
+      "title": "Pie chart",
+      "url": "/help/visualize/viewers/pie-chart",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:PowerGrid:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Cell Renderers:"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:1",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "[#3654](https://github.com/datagrok-ai/public/issues/3654): Introduced 'Confidence interval' cell renderer"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:2",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "[#3653](https://github.com/datagrok-ai/public/issues/3653): Introduced 'Stars' cell renderer"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:3",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Sparklines:"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:4",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "[#3524](https://github.com/datagrok-ai/public/issues/3524): Added axis scale options to radar plots (normalize by column or by filtered data)"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:5",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added Tags renderer to summary columns"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:6",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added additional column properties to the column grid"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:7",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19588",
+      "text": "GROK-19588: Smartform: Improved layout for boolean columns with tag-style rendering"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:8",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-1255",
+      "text": "GROK-1255: Pinned columns feature removed from PowerGrid — column freezing is now natively available in the platform Grid"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:9",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Removed gridext library dependency"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:10",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Reduced bundle size by making MPO/Konva imports dynamic"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:11",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Updated WebGPU cache invalidation logic"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:12",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19810",
+      "text": "GROK-19810: Smartform preview rendering issues"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:13",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19769",
+      "text": "GROK-19769: Summary columns no longer throw an error when applying a saved layout"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:14",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19203",
+      "text": "GROK-19203: Smartform incorrect structure display; select columns now show selected items first"
+    },
+    {
+      "id": "clog:PowerGrid:1.8.0:15",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Fixed async issues"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.20:0",
+      "version": "1.7.20",
+      "released_at": "2025-12-15",
+      "ticket": "GROK-19378",
+      "text": "GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.18:0",
+      "version": "1.7.18",
+      "released_at": "2025-12-07",
+      "ticket": null,
+      "text": "#3546: Forms viewer: support sorting by specific columns"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.18:1",
+      "version": "1.7.18",
+      "released_at": "2025-12-07",
+      "ticket": null,
+      "text": "#3561: Forms: empty int value displays incorrectly"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.18:2",
+      "version": "1.7.18",
+      "released_at": "2025-12-07",
+      "ticket": null,
+      "text": "Forms: Synchronize color, background color, horizontal alignment, and font with grid"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.15:0",
+      "version": "1.7.15",
+      "released_at": "2025-11-01",
+      "ticket": null,
+      "text": "Raw PNG Renderer"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.10:0",
+      "version": "1.7.10",
+      "released_at": "2025-10-21",
+      "ticket": "GROK-19073",
+      "text": "GROK-19073: Forms Viewer: display incorrect row coloring when scrolling grid with pinned rows"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.9:0",
+      "version": "1.7.9",
+      "released_at": "2025-09-23",
+      "ticket": "GROK-18814",
+      "text": "GROK-18814: Forms Viewer: Add substructure highlighting support"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.5:0",
+      "version": "1.7.5",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "Summary columns: Added `onDetached` for viewers and some improvements on events with summary columns"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.5:1",
+      "version": "1.7.5",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "Smartforms: Show only first 10 columns by default"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.4:0",
+      "version": "1.7.4",
+      "released_at": "2025-08-08",
+      "ticket": null,
+      "text": "Made correct restoring of pinned columns"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.3:0",
+      "version": "1.7.3",
+      "released_at": "2025-08-07",
+      "ticket": null,
+      "text": "Fixed pinned columns issues"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.2:0",
+      "version": "1.7.2",
+      "released_at": "2025-07-29",
+      "ticket": "GROK-18597",
+      "text": "GROK-18597 Smart form: can't add categorical columns from the Context Panel"
+    },
+    {
+      "id": "clog:PowerGrid:1.7.2:1",
+      "version": "1.7.2",
+      "released_at": "2025-07-29",
+      "ticket": "GROK-18596",
+      "text": "GROK-18596 Smart Form: incorrect rendering on column resize"
+    },
+    {
+      "id": "clog:PowerGrid:1.6.2:0",
+      "version": "1.6.2",
+      "released_at": "2025-04-18",
+      "ticket": null,
+      "text": "Removed dependency from datagrok=tools"
+    }
+  ],
+  "stats": {
+    "functions": 33,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 123
+  }
+}

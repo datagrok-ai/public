@@ -1,0 +1,91 @@
+{
+  "package_id": "pkg:Python",
+  "features": [
+    {
+      "id": "feature:Python:python-script-runtime",
+      "name": "Python Script Runtime",
+      "description": "Provides a server-side Python execution environment for running Python scripts within Datagrok, with built-in pandas support for reading and writing tabular data.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Python:info",                              "weight": 0.8,  "role": "core"},
+        {"id": "script:Python:Sample A+B",                     "weight": 1.0,  "role": "sample"},
+        {"id": "script:Python:Sample pandas input",            "weight": 1.0,  "role": "sample"},
+        {"id": "script:Python:Sample pandas output",           "weight": 1.0,  "role": "sample"},
+        {"id": "doc:/packages/Python/readme.md",               "weight": 1.0,  "role": "doc"},
+        {"id": "doc:/packages/Python/credits.md",              "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/develop/python-api",                 "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/packages/python-functions", "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/compute/compute",                    "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "The info function, basic sample scripts (A+B, pandas), readme, and the Python API / Docker-app developer guides all describe the same core capability: executing Python code server-side."
+    },
+    {
+      "id": "feature:Python:rdkit-cheminformatics",
+      "name": "RDKit Cheminformatics",
+      "description": "Demonstrates RDKit-based cheminformatics computations (Gasteiger charge calculation) runnable as Python scripts on the Datagrok server.",
+      "category": "chem-compute",
+      "confidence": 0.82,
+      "members": [
+        {"id": "script:Python:Sample Gasteiger charges", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Script description explicitly names RDKit and targets cheminformatics property calculation."
+    },
+    {
+      "id": "feature:Python:sklearn-predictive-modeling",
+      "name": "Sklearn Predictive Modeling",
+      "description": "Provides a scikit-learn linear regression sample that integrates with Datagrok's predictive modeling toolkit, enabling Python-backed ML models.",
+      "category": "ml",
+      "confidence": 0.87,
+      "members": [
+        {"id": "script:Python:Sample Sklearn model", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Script description explicitly states compatibility with the Datagrok predictive modeling toolkit."
+    },
+    {
+      "id": "feature:Python:scripting-framework",
+      "name": "Scripting Framework",
+      "description": "Platform-wide scripting environment with a built-in editor, REST invocation, advanced input/output handling, UI customization, and output visualization — applicable to all scripting languages including Python.",
+      "category": "infra",
+      "confidence": 0.75,
+      "members": [
+        {"id": "doc:/help/compute/scripting/getting-started",                             "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/scripting-features",       "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",   "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/complex-input-output",     "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",         "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",    "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",          "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",            "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",       "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/compute/function-analysis",                                     "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/help/compute/models",                                                "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/help/compute/jupyter-notebook",                                      "weight": 0.55, "role": "related"},
+        {"id": "doc:/help/compute/diff-studio",                                           "weight": 0.5,  "role": "related"},
+        {"id": "doc:/packages/Compute/readme.md",                                         "weight": 0.65, "role": "doc"},
+        {"id": "doc:/packages/Compute/credits.md",                                        "weight": 0.55, "role": "doc"}
+      ],
+      "evidence_summary": "All scripting guide pages share the /help/compute/scripting/ path prefix and describe the platform-wide script execution framework that Python scripts run within."
+    },
+    {
+      "id": "feature:Python:info-panels",
+      "name": "Info Panels",
+      "description": "Developer guide for creating and registering context-sensitive info panels in Datagrok, including a reference of supported pane types and a how-to guide.",
+      "category": "infra",
+      "confidence": 0.5,
+      "members": [
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",                         "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",                          "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",         "weight": 0.6, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                                "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Four info-panel docs cluster by shared URL path and audience; they are general platform docs pulled in by the enrichment process, not Python-specific."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Python:rdkit-cheminformatics",    "to": "feature:Python:python-script-runtime", "kind": "subfeature"},
+    {"from": "feature:Python:sklearn-predictive-modeling", "to": "feature:Python:python-script-runtime", "kind": "subfeature"},
+    {"from": "feature:Python:scripting-framework",      "to": "feature:Python:python-script-runtime", "kind": "related"}
+  ],
+  "unassigned_member_ids": []
+}

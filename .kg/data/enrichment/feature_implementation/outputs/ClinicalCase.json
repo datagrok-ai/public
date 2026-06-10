@@ -1,0 +1,351 @@
+{
+  "package_id": "pkg:ClinicalCase",
+  "features": [
+    {
+      "id": "feature:ClinicalCase:app-shell",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/app-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/initial-statistics-widget.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/clinical-study.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/views-config.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/constants/view-names-constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ClinicalCase/src/tests/clinical-case-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/tests/utils.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "package.ts wires the app/appTreeBrowser/getListOfStudies functions; app-utils orchestrates studies tree, openApp, and study loading; initial-statistics-widget renders the studies list."
+    },
+    {
+      "id": "feature:ClinicalCase:data-import",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/app-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/clinical-study.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ClinicalCase/src/constants/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ClinicalCase/src/constants/columns-constants.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts declares clinicalCaseFolderLauncher and xptFileHandler; app-utils contains createImportStudyView/createStudyWithConfig/readClinicalData that ingest XPT/CSV/define.xml; the SAS reader script is in scripts/ (not a src/ file)."
+    },
+    {
+      "id": "feature:ClinicalCase:cdisc-validation",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/rule-violation-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/validation-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/validation-table-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/sdtm-validation/services/validation-service.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/sdtm-validation/services/common-validation-functions.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/sdtm-validation/validation-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/sdtm-validation/rules.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/helpers/validation-helper.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/utils/validation-fix-utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ClinicalCase/src/tests/clinical-case-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/tests/utils.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "package.ts hosts runCoreValidate and registers the sdiscRuleViolationRenderer (defined in rule-violation-cell-renderer); validation-view/validation-table-view render results; sdtm-validation/* contains the deterministic SDTM rule engine."
+    },
+    {
+      "id": "feature:ClinicalCase:adverse-events",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/views/adverse-events-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/ae-risk-assessment-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/helpers/ae-browser-helper.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/panels/adverse-event-handler.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/data-preparation/data-preparation.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "AE summary view, AE risk-assessment volcano plot, and the AE-browser context helper. data-preparation provides createAERiskAssessmentDataframe."
+    },
+    {
+      "id": "feature:ClinicalCase:laboratory-analysis",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/views/laboratory-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/custom-scatter-plots/custom-scatter-plots.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/custom-scatter-plots/event-handlers.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/custom-scatter-plots/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ClinicalCase/src/domain-specific-viewers/lb-domain.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/panels/lb-context-pane.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ClinicalCase/src/data-preparation/data-preparation.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ClinicalCase/src/tests/clinical-case-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/tests/utils.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "LaboratoryView hosts the Hy's law and baseline-vs-endpoint scatter plots (rendered via custom-scatter-plots); lb-domain and lb-context-pane add LB-specific heatmap/context UI; tests cover hysLaw, baselineEndpoint, labValuesByVisit and lab-changes calculations."
+    },
+    {
+      "id": "feature:ClinicalCase:survival-analysis",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/views/survival-analysis-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/data-preparation/data-preparation.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/custom-scatter-plots/event-handlers.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ClinicalCase/src/tests/clinical-case-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/tests/utils.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "SurvivalAnalysisView is the UI for KM curves and covariate regression; the actual fits are produced by survivalPlot.r and covariates.r scripts (in scripts/, not src/). createSurvivalData prepares the time/status dataframe; KaplanMeierRenderLines draws the curves."
+    },
+    {
+      "id": "feature:ClinicalCase:biomarkers-analysis",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/views/boxplots-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/matrixes-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/time-profile-view.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ClinicalCase/src/data-preparation/data-preparation.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "BoxPlotsView backs the DISTRIBUTIONS view (biomarker distributions across lb/vs/bw/bg domains); MatrixesView is the correlation/matrix viewer; TimeProfileView shows lab/biomarker trajectories over visits."
+    },
+    {
+      "id": "feature:ClinicalCase:subject-profiling",
+      "implements": [
+        {
+          "path": "packages/ClinicalCase/src/views/patient-profile-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/timelines-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/subject-profile-view.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/views/visits-view.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ClinicalCase/src/model/patient-visit.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/model/study-visit.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ClinicalCase/src/tests/clinical-case-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ClinicalCase/src/tests/utils.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "PatientProfileView and TimelinesView render per-subject multiplots and event timelines; subject-profile-view drives the SEND animal/measurement profile; PatientVisit/StudyVisit models drive per-visit drill-down (covered by patientVisit/studyVisit tests)."
+    }
+  ]
+}

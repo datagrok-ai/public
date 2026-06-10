@@ -1,0 +1,66 @@
+{
+  "package_id": "pkg:PreclinicalCase",
+  "features": [
+    {
+      "id": "feature:PreclinicalCase:preclinical-case-app",
+      "name": "Preclinical Case Application",
+      "description": "The main Datagrok app entry point for exploring preclinical trial studies, providing a tree-based navigation panel and named study views.",
+      "category": "health",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:PreclinicalCase:Preclinical Case",              "weight": 1.0,  "role": "core"},
+        {"id": "func:PreclinicalCase:preclinicalCaseAppTreeBrowser", "weight": 1.0,  "role": "core"},
+        {"id": "func:PreclinicalCase:openPreclinicalCaseView",       "weight": 0.7,  "role": "test"},
+        {"id": "doc:/packages/PreclinicalCase/readme.md",            "weight": 0.9,  "role": "doc"}
+      ],
+      "evidence_summary": "The app-role function, its tree-browser companion, and the test helper that opens named views all implement the same study-navigation application shell."
+    },
+    {
+      "id": "feature:PreclinicalCase:xpt-sas-import",
+      "name": "XPT / SAS Data Import",
+      "description": "Reads SAS transport (.xpt) files and parses their contents into Datagrok tables, enabling SEND/SDTM dataset ingestion.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:PreclinicalCase:xptFileHandler",   "weight": 1.0,  "role": "core"},
+        {"id": "script:PreclinicalCase:ReadSas",         "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "The fileHandler registered for the .xpt extension and the ReadSas Python script share the same data-ingestion purpose for SAS transport files."
+    },
+    {
+      "id": "feature:PreclinicalCase:cdisc-validation",
+      "name": "CDISC CORE Validation",
+      "description": "Runs the CDISC CORE rules engine against SEND datasets and renders rule violations inline in the data grid.",
+      "category": "health",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:PreclinicalCase:Run CDISC CORE Validation",  "weight": 1.0,  "role": "core"},
+        {"id": "func:PreclinicalCase:sdiscRuleViolationRenderer", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "The validation function and the rule-violation cell renderer are both named after the CDISC/SDISC standard and together form an end-to-end validation workflow."
+    },
+    {
+      "id": "feature:PreclinicalCase:study-measurements-visualization",
+      "name": "Study Measurements Visualization",
+      "description": "Custom grid cell renderers for displaying combined lab measurements and their y-axis labels within preclinical study data views.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:PreclinicalCase:combinedMeasurementsRenderer", "weight": 1.0,  "role": "core"},
+        {"id": "func:PreclinicalCase:yAxisRenderer",                "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "Both are cellRenderer-role functions that produce grid_cell_renderer outputs for measurement data and axis labeling, and naturally pair in a study data table."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:PreclinicalCase:xpt-sas-import",                  "to": "feature:PreclinicalCase:preclinical-case-app", "kind": "related"},
+    {"from": "feature:PreclinicalCase:cdisc-validation",                 "to": "feature:PreclinicalCase:preclinical-case-app", "kind": "related"},
+    {"from": "feature:PreclinicalCase:study-measurements-visualization",  "to": "feature:PreclinicalCase:preclinical-case-app", "kind": "subfeature"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/PreclinicalCase/credits.md",
+    "doc:/packages/PreclinicalCase/claude.md",
+    "doc:/packages/ClinicalCase/readme.md",
+    "doc:/help/datagrok/concepts/concepts"
+  ]
+}

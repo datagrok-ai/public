@@ -1,0 +1,108 @@
+{
+  "package_id": "pkg:Curves",
+  "features": [
+    {
+      "id": "feature:Curves:curve-fitting",
+      "name": "In-Cell Curve Fitting",
+      "description": "Automatically fits mathematical models (e.g. 4PL dose-response) to series of data points and renders interactive fitted curves directly inside grid cells.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Curves:Fit",            "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:Curve fitting",   "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:_initCurves",     "weight": 0.6, "role": "core"},
+        {"id": "func:Curves:<anonymous>",     "weight": 0.65, "role": "core"},
+        {"id": "doc:/packages/Curves/readme.md",                                        "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/workflows/_dose-response curves",          "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "The Fit cellRenderer, Curve fitting descriptor, and dose-response workflow doc all directly implement and describe in-grid curve fitting; the init and semTypeDetector are infra that exists solely to enable it."
+    },
+    {
+      "id": "feature:Curves:data-to-curves",
+      "name": "Data-to-Curves Transformation",
+      "description": "Converts raw tabular data (concentration, readout, and metadata columns) into a curve-encoded dataframe with per-compound fitted curves, accessible from the Data top menu.",
+      "category": "data-import",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Curves:dataToCurves",        "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:dataToCurvesTopMenu", "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Both functions share the 'dataToCurves' name root and represent the same pipeline (bulk transform + its menu entry), tracked consistently as 'Data-to-Curves' across multiple changelog versions."
+    },
+    {
+      "id": "feature:Curves:multi-curve-viewer",
+      "name": "Multi-Curve Viewer",
+      "description": "A standalone Datagrok viewer that superimposes multiple in-cell curves on one chart, with configurable axes, legend, and outlier display.",
+      "category": "viz",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Curves:MultiCurveViewer",                     "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/multi-curve-viewer",   "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "The viewer function and its dedicated help page share the exact name 'Multi curve viewer'; changelog entries track its parameter evolution (showOutliers, legendColumnName, min/max axes) as a distinct viewer feature."
+    },
+    {
+      "id": "feature:Curves:curve-format-import",
+      "name": "Curve Format Import",
+      "description": "Imports fitted curves from external file formats — GraphPad Prism PZFX, XML 3DX, and compact dose-response JSON — via a pluggable converter registry, with full file preview and handler support for PZFX.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Curves:convertXmlCurveToJsonFunc",   "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:convertCompactDrToJsonFunc",  "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:convertPzfxToJsonFunc",       "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:previewPzfx",                 "weight": 0.9, "role": "core"},
+        {"id": "func:Curves:pzfxFileHandler",             "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "All three converter functions share the 'curveConverter' role and identical output type; the PZFX viewer and handler extend this into full file-handling for GraphPad Prism, with changelog noting 'Added PZFX file viewer and handler' and 'Added dynamically extendable format support'."
+    },
+    {
+      "id": "feature:Curves:curve-statistics",
+      "name": "Curve Statistics Columns",
+      "description": "Extracts statistical parameters (e.g. IC50, Hill slope) from fitted curves and appends them as new dataframe columns, with both per-row and aggregated variants.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Curves:addStatisticsColumn",      "weight": 1.0, "role": "core"},
+        {"id": "func:Curves:addAggrStatisticsColumn",  "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Both transform-role functions append curve-derived statistics to a dataframe and differ only in aggregation level, making them two facets of the same statistics-extraction capability."
+    },
+    {
+      "id": "feature:Curves:msr-calculation",
+      "name": "Minimum Significant Ratio (MSR)",
+      "description": "Server-side Python analysis that computes the Minimum Significant Ratio for compounds from IC50 values, run dates, and assay metadata to assess inter-run assay reproducibility.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "script:Curves:Calculate MSR", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The Calculate MSR script and its changelog entries ('Added MSR script', 'Updated MSR env') consistently describe this as a self-contained reproducibility-analysis capability distinct from curve fitting itself."
+    },
+    {
+      "id": "feature:Curves:assay-plates",
+      "name": "Assay Plates",
+      "description": "Visualizes and manages assay plate data including well-level concentration, layout, and readout information for drug-screening workflows.",
+      "category": "viz",
+      "confidence": 0.72,
+      "members": [
+        {"id": "func:Curves:'Assay Plates',",      "weight": 0.8,  "role": "core"},
+        {"id": "doc:/packages/Plates/readme.md",   "weight": 0.75, "role": "doc"},
+        {"id": "doc:/packages/Plates/credits.md",  "weight": 0.4,  "role": "doc"}
+      ],
+      "evidence_summary": "The 'Assay Plates' function (concentration/layout/readout data) and the Plates package docs share a well/plate theme corroborated by changelog entries on plate rendering and well generation."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Curves:data-to-curves",      "to": "feature:Curves:curve-fitting",    "kind": "related"},
+    {"from": "feature:Curves:curve-format-import", "to": "feature:Curves:curve-fitting",    "kind": "related"},
+    {"from": "feature:Curves:curve-statistics",    "to": "feature:Curves:curve-fitting",    "kind": "subfeature"},
+    {"from": "feature:Curves:multi-curve-viewer",  "to": "feature:Curves:curve-fitting",    "kind": "sibling"},
+    {"from": "feature:Curves:msr-calculation",     "to": "feature:Curves:curve-statistics", "kind": "related"},
+    {"from": "feature:Curves:assay-plates",        "to": "feature:Curves:data-to-curves",   "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Curves/claude.md",
+    "doc:/packages/Curves/credits.md"
+  ]
+}

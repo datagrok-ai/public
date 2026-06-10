@@ -1,0 +1,504 @@
+{
+  "package_id": "pkg:SequenceTranslator",
+  "features": [
+    {
+      "id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/translator/model/format-converter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/translator/model/conversion-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/translator/view/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/oligo-toolkit-package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/parsing-validation/format-detector.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/parsing-validation/format-handler.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/parsing-validation/sequence-validator.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/monomer-lib/lib-wrapper.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/model/data-loader/json-loader.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/view/combined-app-ui.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/view/isolated-app-ui.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/common/view/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/plugins/mermade.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SequenceTranslator/src/tests/formats-to-helm.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/tests/formats-support.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/tests/helm-to-nucleotides.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Translator app + format conversion pipeline (HELM pivot), validation, code-to-weight map, and combined Oligo Toolkit shell."
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-modification-pattern",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/view/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/model/data-manager.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/model/event-bus.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/model/translator.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/model/router.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/model/subscription-manager.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-renderer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-display-manager.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/pattern/view/components/strand-editor/dialog.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Pattern designer app, EventBus state, SVG renderer; no dedicated test file."
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-duplex-rendering",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/canvas-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/helm-parser.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/types.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/legend-panel.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/structures-panel.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/tooltip.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/structure/view/ui.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/structure/model/oligo-structure.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/structure/model/sequence-to-molfile.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/cyclized.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/dimerized.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/cell-renderer-cyclized.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SequenceTranslator/src/tests/oligo-renderer-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "OligoNucleotide cell renderer subsystem, structure app, and cyclized/dimerized notation providers used as the harmonized notation refiner."
+    },
+    {
+      "id": "feature:SequenceTranslator:polytool-notation-to-molfile",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-convert-editor.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-conversion.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-atomic.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-synthetic.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-tools-parse.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-tools-helmmol.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/rule-manager.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/csv-to-json-monomer-lib-converter.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/monomer-lib-handler.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SequenceTranslator/src/tests/polytool-convert-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/tests/toAtomicLevel-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/tests/polytool-chain-from-notation-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "PolyTool conversion pipeline (Chain, rules, HELM/molfile bridges) plus the convert dialog/editor and CSV->JSON monomer library helper."
+    },
+    {
+      "id": "feature:SequenceTranslator:helm-sequence-enumeration",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-enumerate-seq-dialog.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-enumeration-helm.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-placeholders-input.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-placeholders-breadth-input.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/types.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/const.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SequenceTranslator/src/tests/polytool-enumerate-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/tests/polytool-enumerate-breadth-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "HELM enumerator dialog/app, single/parallel/matrix/breadth strategies, placeholder grid inputs."
+    },
+    {
+      "id": "feature:SequenceTranslator:chem-enumeration",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-chem-enum-dialog.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-chem-enum.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SequenceTranslator/src/tests/polytool-enumerate-chem-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Chem enumerator dialog/app and the pure-logic enumeration core (Zip/Cartesian, single-atom shortcut)."
+    },
+    {
+      "id": "feature:SequenceTranslator:sequence-combination",
+      "implements": [
+        {
+          "path": "packages/SequenceTranslator/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-combine-dialog.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-enumerate-seq-dialog.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/SequenceTranslator/src/polytool/pt-enumeration-helm.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/structure/model/mol-transformations.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/SequenceTranslator/src/apps/structure/model/oligo-structure.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/SequenceTranslator/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [],
+      "notes": "Combine Sequences dialog, oligo enumerator wrapper, and linkStrandsV3000 multi-strand assembly."
+    }
+  ]
+}

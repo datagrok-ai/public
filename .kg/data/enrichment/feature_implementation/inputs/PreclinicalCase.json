@@ -1,0 +1,207 @@
+{
+  "package": {
+    "id": "pkg:PreclinicalCase",
+    "name": "PreclinicalCase",
+    "friendly_name": "PreclinicalCase",
+    "category": "Health",
+    "description": "PreclinicalCase package"
+  },
+  "files": {
+    "src": [
+      "packages/PreclinicalCase/src/constants/columns-constants.ts",
+      "packages/PreclinicalCase/src/constants/constants.ts",
+      "packages/PreclinicalCase/src/constants/domains-constants.ts",
+      "packages/PreclinicalCase/src/constants/view-names-constants.ts",
+      "packages/PreclinicalCase/src/data-preparation/data-preparation.ts",
+      "packages/PreclinicalCase/src/package.ts",
+      "packages/PreclinicalCase/src/preclinical-study.ts",
+      "packages/PreclinicalCase/src/types/types.ts",
+      "packages/PreclinicalCase/src/types/validation-result.ts",
+      "packages/PreclinicalCase/src/utils/app-utils.ts",
+      "packages/PreclinicalCase/src/utils/combined-measurements-cell-renderer.ts",
+      "packages/PreclinicalCase/src/utils/initial-statistics-widget.ts",
+      "packages/PreclinicalCase/src/utils/layout-utils.ts",
+      "packages/PreclinicalCase/src/utils/rule-target-resolvers.ts",
+      "packages/PreclinicalCase/src/utils/rule-violation-cell-renderer.ts",
+      "packages/PreclinicalCase/src/utils/utils.ts",
+      "packages/PreclinicalCase/src/utils/validation-fix-utils.ts",
+      "packages/PreclinicalCase/src/utils/views-creation-utils.ts",
+      "packages/PreclinicalCase/src/utils/views-validation-utils.ts",
+      "packages/PreclinicalCase/src/utils/y-axis-cell-renderer.ts",
+      "packages/PreclinicalCase/src/views/configuration-view.ts",
+      "packages/PreclinicalCase/src/views/import-study-view.ts",
+      "packages/PreclinicalCase/src/views/matrix-table-view.ts",
+      "packages/PreclinicalCase/src/views/measurement-profile-table-view.ts",
+      "packages/PreclinicalCase/src/views/mi-cross-domain-analysis.ts",
+      "packages/PreclinicalCase/src/views/observation-timelines-view.ts",
+      "packages/PreclinicalCase/src/views/study-summary-view.ts",
+      "packages/PreclinicalCase/src/views/subject-profile-view.ts",
+      "packages/PreclinicalCase/src/views/validation-table-view.ts"
+    ],
+    "tests": [
+      "packages/PreclinicalCase/src/package-test.ts",
+      "packages/PreclinicalCase/src/tests/preclinical-case-tests.ts"
+    ],
+    "scripts": [
+      "packages/PreclinicalCase/scripts/readSas.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/PreclinicalCase/CHANGELOG.md",
+      "packages/PreclinicalCase/CLAUDE.md",
+      "packages/PreclinicalCase/CREDITS.md",
+      "packages/PreclinicalCase/README.md",
+      "packages/PreclinicalCase/views_help/configuration.md",
+      "packages/PreclinicalCase/views_help/matrix.md",
+      "packages/PreclinicalCase/views_help/measurements.md",
+      "packages/PreclinicalCase/views_help/microscopic_findings.md",
+      "packages/PreclinicalCase/views_help/observation_timelines.md",
+      "packages/PreclinicalCase/views_help/subject_profile.md",
+      "packages/PreclinicalCase/views_help/summary.md",
+      "packages/PreclinicalCase/views_help/validation.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:PreclinicalCase:preclinical-case-app",
+      "name": "Preclinical Case Application",
+      "description": "The main Datagrok app entry point for exploring preclinical trial studies, providing a tree-based navigation panel and named study views.",
+      "category": "health",
+      "members": [
+        {
+          "id": "func:PreclinicalCase:Preclinical Case",
+          "kind": "RegisteredFunction",
+          "name": "Preclinical Case",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PreclinicalCase:preclinicalCaseAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "preclinicalCaseAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PreclinicalCase:openPreclinicalCaseView",
+          "kind": "RegisteredFunction",
+          "name": "openPreclinicalCaseView",
+          "friendly_name": null,
+          "role": null,
+          "description": "Open a Preclinical Case view by name. Loads the study if needed. Used by tests.",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/PreclinicalCase/readme.md",
+          "kind": "DocPage",
+          "title": "Preclinical Case",
+          "url": "/packages/PreclinicalCase/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PreclinicalCase/src/package.ts"
+        ],
+        "tests": [
+          "packages/PreclinicalCase/src/tests/preclinical-case-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:PreclinicalCase:xpt-sas-import",
+      "name": "XPT / SAS Data Import",
+      "description": "Reads SAS transport (.xpt) files and parses their contents into Datagrok tables, enabling SEND/SDTM dataset ingestion.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:PreclinicalCase:xptFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "xptFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:PreclinicalCase:ReadSas",
+          "kind": "Script",
+          "name": "ReadSas",
+          "language": "python",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PreclinicalCase/src/package-api.ts",
+          "packages/PreclinicalCase/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PreclinicalCase:cdisc-validation",
+      "name": "CDISC CORE Validation",
+      "description": "Runs the CDISC CORE rules engine against SEND datasets and renders rule violations inline in the data grid.",
+      "category": "health",
+      "members": [
+        {
+          "id": "func:PreclinicalCase:Run CDISC CORE Validation",
+          "kind": "RegisteredFunction",
+          "name": "Run CDISC CORE Validation",
+          "friendly_name": null,
+          "role": null,
+          "description": "Run CDISC CORE validation on SEND datasets",
+          "tags": []
+        },
+        {
+          "id": "func:PreclinicalCase:sdiscRuleViolationRenderer",
+          "kind": "RegisteredFunction",
+          "name": "sdiscRuleViolationRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PreclinicalCase:study-measurements-visualization",
+      "name": "Study Measurements Visualization",
+      "description": "Custom grid cell renderers for displaying combined lab measurements and their y-axis labels within preclinical study data views.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PreclinicalCase:combinedMeasurementsRenderer",
+          "kind": "RegisteredFunction",
+          "name": "combinedMeasurementsRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PreclinicalCase:yAxisRenderer",
+          "kind": "RegisteredFunction",
+          "name": "yAxisRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

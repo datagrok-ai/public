@@ -1,0 +1,241 @@
+{
+  "package": {
+    "id": "pkg:JiraConnect",
+    "name": "JiraConnect",
+    "friendly_name": "Jira Connect",
+    "version": "1.2.3",
+    "category": null,
+    "description": "Pakcages for Jira integration into Datagrok",
+    "extras": {
+      "npm_name": "@datagrok/jiraconnect",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:JiraConnect:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:_init",
+      "name": "_init",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:projectsList",
+      "name": "projectsList",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:projectData",
+      "name": "projectData",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:issueData",
+      "name": "issueData",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:getJiraField",
+      "name": "getJiraField",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        null,
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:getJiraTicketsByFilter",
+      "name": "getJiraTicketsByFilter",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:JiraConnect:getJiraTicketsBulk",
+      "name": "getJiraTicketsBulk",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list",
+        "list",
+        "list"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/JiraConnect/readme.md",
+      "title": "Jira Connect",
+      "url": "/packages/JiraConnect/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/JiraConnect/credits.md",
+      "title": "JiraConnect — Third-Party Libraries",
+      "url": "/packages/JiraConnect/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_access/_06-connect-to-web-services",
+      "title": "Connect to web services",
+      "url": "/help/_access/_06-connect-to-web-services",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:JiraConnect:1.2.3:0",
+      "version": "1.2.3",
+      "released_at": "2025-08-28",
+      "ticket": null,
+      "text": "Added ability to detect few tickets in one cell"
+    },
+    {
+      "id": "clog:JiraConnect:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2025-05-28",
+      "ticket": null,
+      "text": "Added api"
+    },
+    {
+      "id": "clog:JiraConnect:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-03-26",
+      "ticket": null,
+      "text": "Added credential checks"
+    },
+    {
+      "id": "clog:JiraConnect:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-03-06",
+      "ticket": null,
+      "text": "Package release to NPM"
+    }
+  ],
+  "stats": {
+    "functions": 8,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 4
+  }
+}

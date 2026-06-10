@@ -1,0 +1,409 @@
+{
+  "package": {
+    "id": "pkg:BenchlingLink",
+    "name": "BenchlingLink",
+    "friendly_name": "BenchlingLink",
+    "category": null,
+    "description": "Enables seamless interaction with the Benchling platform"
+  },
+  "files": {
+    "src": [
+      "packages/BenchlingLink/src/aaSequencesApi.ts",
+      "packages/BenchlingLink/src/assayApi.ts",
+      "packages/BenchlingLink/src/credentials.ts",
+      "packages/BenchlingLink/src/dnaOligosApi.ts",
+      "packages/BenchlingLink/src/dnaSequencesApi.ts",
+      "packages/BenchlingLink/src/mixturesApi.ts",
+      "packages/BenchlingLink/src/moleculesApi.ts",
+      "packages/BenchlingLink/src/package.ts",
+      "packages/BenchlingLink/src/platesApi.ts",
+      "packages/BenchlingLink/src/projectsApi.ts",
+      "packages/BenchlingLink/src/types.ts",
+      "packages/BenchlingLink/src/utils.ts"
+    ],
+    "tests": [
+      "packages/BenchlingLink/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/BenchlingLink/CHANGELOG.md",
+      "packages/BenchlingLink/CLAUDE.md",
+      "packages/BenchlingLink/CREDITS.md",
+      "packages/BenchlingLink/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:BenchlingLink:benchling-app",
+      "name": "Benchling App",
+      "description": "Top-level Datagrok application and tree-browser panel that surfaces all Benchling LIMS data through a unified UI entry point under the Chem menu.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Benchling",
+          "kind": "RegisteredFunction",
+          "name": "Benchling",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:benchlingLinkAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "benchlingLinkAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/BenchlingLink/readme.md",
+          "kind": "DocPage",
+          "title": "BenchlingLink",
+          "url": "/packages/BenchlingLink/readme.md"
+        },
+        {
+          "id": "doc:/packages/BenchlingLink/claude.md",
+          "kind": "DocPage",
+          "title": "BenchlingLink",
+          "url": "/packages/BenchlingLink/claude.md"
+        },
+        {
+          "id": "doc:/packages/BenchlingLink/credits.md",
+          "kind": "DocPage",
+          "title": "BenchlingLink — Third-Party Libraries",
+          "url": "/packages/BenchlingLink/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:sequence-management",
+      "name": "Sequence Management",
+      "description": "Read and create amino-acid (AA) and DNA sequences stored in Benchling, returning structured dataframes for downstream analysis in Datagrok.",
+      "category": "bio-sequences",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get AA Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Get AA Sequences",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Get DNA Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Get DNA Sequences",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create AA Sequence",
+          "kind": "RegisteredFunction",
+          "name": "Create AA Sequence",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create DNA Sequence",
+          "kind": "RegisteredFunction",
+          "name": "Create DNA Sequence",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/sequence-variability-map",
+          "kind": "DocPage",
+          "title": "Sequence Variability Map viewer",
+          "url": "/help/visualize/viewers/sequence-variability-map"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/aaSequencesApi.ts",
+          "packages/BenchlingLink/src/dnaSequencesApi.ts",
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:dna-oligo-management",
+      "name": "DNA Oligo Management",
+      "description": "Retrieve and register short DNA oligonucleotide entries in Benchling, enabling oligo inventory and design workflows from within Datagrok.",
+      "category": "bio-sequences",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get DNA Oligos",
+          "kind": "RegisteredFunction",
+          "name": "Get DNA Oligos",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create DNA Oligo",
+          "kind": "RegisteredFunction",
+          "name": "Create DNA Oligo",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+          "kind": "DocPage",
+          "title": "Oligonucleotide Sequence Design",
+          "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/dnaOligosApi.ts",
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:assay-data-access",
+      "name": "Assay Data Access",
+      "description": "Fetch and create assay results and assay runs from Benchling, allowing scientists to pull experimental outcome data into Datagrok for visualization and analysis.",
+      "category": "assay-data",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get Assay Results",
+          "kind": "RegisteredFunction",
+          "name": "Get Assay Results",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Get Assay Runs",
+          "kind": "RegisteredFunction",
+          "name": "Get Assay Runs",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create Assay Result",
+          "kind": "RegisteredFunction",
+          "name": "Create Assay Result",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create Assay Run",
+          "kind": "RegisteredFunction",
+          "name": "Create Assay Run",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/assayApi.ts",
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:molecule-registry",
+      "name": "Molecule Registry",
+      "description": "Search and register small-molecule entities in the Benchling registry, bridging Benchling compound records with Datagrok chemical analytics.",
+      "category": "chem-registry",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get Molecules",
+          "kind": "RegisteredFunction",
+          "name": "Get Molecules",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create Molecule",
+          "kind": "RegisteredFunction",
+          "name": "Create Molecule",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/moleculesApi.ts",
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:plate-management",
+      "name": "Plate Management",
+      "description": "Query and create lab plates in Benchling, giving Datagrok users visibility into physical sample containers and enabling plate-based workflows.",
+      "category": "lab-inventory",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get Plates",
+          "kind": "RegisteredFunction",
+          "name": "Get Plates",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create Plate",
+          "kind": "RegisteredFunction",
+          "name": "Create Plate",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Plates/readme.md",
+          "kind": "DocPage",
+          "title": "Plates",
+          "url": "/packages/Plates/readme.md"
+        },
+        {
+          "id": "doc:/packages/Plates/credits.md",
+          "kind": "DocPage",
+          "title": "Plates — Third-Party Libraries",
+          "url": "/packages/Plates/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/platesApi.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:mixture-management",
+      "name": "Mixture Management",
+      "description": "Retrieve and create mixture (formulation) records from Benchling, supporting compound formulation and sample preparation tracking inside Datagrok.",
+      "category": "formulation",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get Mixtures",
+          "kind": "RegisteredFunction",
+          "name": "Get Mixtures",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BenchlingLink:Create Mixture",
+          "kind": "RegisteredFunction",
+          "name": "Create Mixture",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/mixturesApi.ts",
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BenchlingLink:project-management",
+      "name": "Project Management",
+      "description": "List Benchling projects accessible to the authenticated user, enabling project-scoped browsing and filtering of LIMS entities within Datagrok.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:BenchlingLink:Get Projects",
+          "kind": "RegisteredFunction",
+          "name": "Get Projects",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/_internal/tests/projects-browser-test",
+          "kind": "DocPage",
+          "title": "Tests: Projects Browser",
+          "url": "/help/_internal/tests/projects-browser-test"
+        },
+        {
+          "id": "doc:/help/_internal/tutorials/projects",
+          "kind": "DocPage",
+          "title": "Use Cases: Projects",
+          "url": "/help/_internal/tutorials/projects"
+        },
+        {
+          "id": "doc:/help/datagrok/_deprecated/create-project",
+          "kind": "DocPage",
+          "title": "Create project",
+          "url": "/help/datagrok/_deprecated/create-project"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BenchlingLink/src/package.ts",
+          "packages/BenchlingLink/src/projectsApi.ts",
+          "packages/BenchlingLink/src/types.ts",
+          "packages/BenchlingLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

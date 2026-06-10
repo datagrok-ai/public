@@ -1,0 +1,134 @@
+{
+  "package": {
+    "id": "pkg:Excalidraw",
+    "name": "Excalidraw",
+    "friendly_name": "Excalidraw",
+    "version": "1.0.0",
+    "category": null,
+    "description": "Excalidraw sketcher integration for Datagrok",
+    "extras": {
+      "npm_name": "@datagrok/excalidraw",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Excalidraw:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Excalidraw:Excalidraw",
+      "name": "Excalidraw",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Misc"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Excalidraw:excalfileViewer",
+      "name": "excalfileViewer",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": "Excalidraw viewer",
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "ext": "excalidraw",
+        "role": "fileViewer",
+        "fileViewer": "excalidraw"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Excalidraw/credits.md",
+      "title": "Excalidraw — Third-Party Libraries",
+      "url": "/packages/Excalidraw/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Excalidraw/readme.md",
+      "title": "excalidraw",
+      "url": "/packages/Excalidraw/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Excalidraw:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-06-19",
+      "ticket": null,
+      "text": "Excalidraw sketcher integration"
+    }
+  ],
+  "stats": {
+    "functions": 3,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 1
+  }
+}

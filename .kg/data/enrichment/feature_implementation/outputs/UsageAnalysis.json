@@ -1,0 +1,304 @@
+{
+  "package_id": "pkg:UsageAnalysis",
+  "features": [
+    {
+      "id": "feature:UsageAnalysis:usage-analysis-app",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/view-handler.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/ua-toolbox.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/tabs/ua.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/tabs/overview.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/widgets/usage-widget.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/filter.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/viewers/ua-filterable-query-viewer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UsageAnalysis/src/test-analysis/sticky-meta-initialization.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UsageAnalysis/src/tests/app.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/package-test.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "package.ts wires the app; ViewHandler builds the multi-view dashboard; UaToolbox supplies the filter; overview.ts is the default tab; usage-widget.ts is the registered Usage dashboard."
+    },
+    {
+      "id": "feature:UsageAnalysis:user-session-analytics",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/tabs/overview.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/widgets/usage-widget.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UsageAnalysis/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/UsageAnalysis/src/elements/choice-input-groups.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [],
+      "notes": "Unique-users / sessions queries are surfaced through the Overview tab and the Usage dashboard widget; loadUsers in utils.ts powers user lookups."
+    },
+    {
+      "id": "feature:UsageAnalysis:error-tracking-reports",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/reporting/reporting_app.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/widgets/reports-widget.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/tabs/errors.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UsageAnalysis/src/drilldown_viewers/panels/error_marking_panel.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts hosts reportsApp/createJiraTicket; reporting_app.ts implements the Reports app; errors.ts/error_marking_panel.ts surface error data."
+    },
+    {
+      "id": "feature:UsageAnalysis:function-call-analytics",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/tabs/functions.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/viewers/ua-filterable-query-viewer.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Functions tab is the only active TS implementation surfacing FunctionsUsage, TopFunctions, and per-function drill-down; tabs/function-errors.ts is currently commented out."
+    },
+    {
+      "id": "feature:UsageAnalysis:package-analytics",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/tabs/packages.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/widgets/package-usage-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/elements/choice-input-packages.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/UsageAnalysis/src/elements/choice-input-packages-categories.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [],
+      "notes": "Packages tab and the per-package widget render PackagesUsage / PackagesInstallationTime; package.ts registers packageUsageWidget and the autostart Usage pane."
+    },
+    {
+      "id": "feature:UsageAnalysis:data-source-query-analytics",
+      "implements": [],
+      "tests": [],
+      "notes": "All TypeScript drilldown viewers for data sources/queries (drilldown_viewers/data, top-data-sources, top-queries-using-data-source) are commented out; the feature is currently SQL-only."
+    },
+    {
+      "id": "feature:UsageAnalysis:test-track-quality-dashboards",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/test-track/app.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/test-track/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/test-analysis/test-analysis-manager.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/test-analysis/sticky-meta-initialization.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/handlers/test-grid-cell-handler.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UsageAnalysis/src/viewers/ua-test-dashboard-viewer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers Test Track app, TestsList, getTicketsVerdict, testDashboardsViewer; test-track/app.ts is the Test Track UI; test-analysis-manager.ts collects package & manual tests."
+    },
+    {
+      "id": "feature:UsageAnalysis:service-log-viewer",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/service_logs/service_logs.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts exposes the Service Logs app + tree browser; service_logs.ts implements the streaming log view."
+    },
+    {
+      "id": "feature:UsageAnalysis:click-tracking",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UsageAnalysis/src/widgets/click-events-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/tabs/clicks.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UsageAnalysis/src/tests/app.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "package.ts registers the Click Events panel; click-events-widget.ts provides the per-element widget; tabs/clicks.ts renders the Click Analysis tab using GetAggregatedClicks."
+    },
+    {
+      "id": "feature:UsageAnalysis:project-analytics",
+      "implements": [
+        {
+          "path": "packages/UsageAnalysis/src/tabs/projects.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UsageAnalysis/src/elements/choice-input-projects.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UsageAnalysis/src/view-handler.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UsageAnalysis/src/tests/app.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "Projects tab synchronises AccessCountPerPeriodPerProject / UniqueUsersPerProject / DailyProjectAccess viewers; choice-input-projects supplies the projects filter."
+    },
+    {
+      "id": "feature:UsageAnalysis:db-infrastructure-diagnostics",
+      "implements": [],
+      "tests": [],
+      "notes": "Backed entirely by SQL queries (PgStatStatements, GetSystemTableSizes, Schema columns); no dedicated TS file in src/."
+    }
+  ]
+}

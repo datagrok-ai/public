@@ -1,0 +1,1271 @@
+{
+  "package": {
+    "id": "pkg:BiostructureViewer",
+    "name": "BiostructureViewer",
+    "friendly_name": "Biostructure Viewer",
+    "version": "1.4.5",
+    "category": "Bioinformatics",
+    "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
+    "extras": {
+      "npm_name": "@datagrok/biostructure-viewer",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:BiostructureViewer:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:pdbCellRenderer",
+      "name": "pdbCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:chemCellRenderer",
+      "name": "chemCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:viewPdbById",
+      "name": "viewPdbById",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:viewPdbByData",
+      "name": "viewPdbByData",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:getNglGlService",
+      "name": "getNglGlService",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:viewBiostructure",
+      "name": "viewBiostructure",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:importPdb",
+      "name": "importPdb",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens PDB file",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "mmcif, cifCore, pdb, gro"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:importXYZ",
+      "name": "importXYZ",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens XYZ file",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "xyz"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:importWithNgl",
+      "name": "importWithNgl",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens biostructure files supported with NGL",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "mmtf, cns, top, prmtop, ply, obj, ccp4"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:importPdbqt",
+      "name": "importPdbqt",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens .pdbqt file with docking result ligand poses",
+      "input_types": [
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "pdbqt"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewNglStructure",
+      "name": "previewNglStructure",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "mmtf,cns,top,prmtop,pqr"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewNglSurface",
+      "name": "previewNglSurface",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "ply,obj"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewNglDensity",
+      "name": "previewNglDensity",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "ccp4"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewBiostructureStructure",
+      "name": "previewBiostructureStructure",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewBiostructureTopology",
+      "name": "previewBiostructureTopology",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "parm7,psf"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:previewBiostructureDensity",
+      "name": "previewBiostructureDensity",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "dsn6,brix,cube,cub,dx,dxbin,xplor,mrc,map"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:openPdbResidues",
+      "name": "openPdbResidues",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:PDB id viewer",
+      "name": "PDB id viewer",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:PDB Information",
+      "name": "PDB Information",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:nglForGridTestApp",
+      "name": "nglForGridTestApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Example app for NGL drawing in grid cells",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:nglViewerApp",
+      "name": "nglViewerApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test app for NglViewer",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:biostructureViewerApp",
+      "name": "biostructureViewerApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test app for BiostructureViewer (molstar)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:biotrackViewerApp",
+      "name": "biotrackViewerApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test app for BiotrackViewer (saguaro)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:biostructureAndTrackViewerApp",
+      "name": "biostructureAndTrackViewerApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:ligandsWithNglApp",
+      "name": "ligandsWithNglApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:ligandsWithBiostructureApp",
+      "name": "ligandsWithBiostructureApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:biostructureDataProviderApp",
+      "name": "biostructureDataProviderApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:NGL",
+      "name": "NGL",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [],
+      "description": "3D structure viewer for large biological molecules (proteins, DNA, and RNA)",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Biostructure",
+      "name": "Biostructure",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [],
+      "description": "3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Biotrack",
+      "name": "Biotrack",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [],
+      "description": "structure polymer annotation tracks",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:getPdbHelper",
+      "name": "getPdbHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:dockingDemo",
+      "name": "dockingDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:inGridDemo",
+      "name": "inGridDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Copy Biostructure raw value",
+      "name": "Copy Biostructure raw value",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Download Biostructure raw value",
+      "name": "Download Biostructure raw value",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Show Biostructure Viewer menu item",
+      "name": "Show Biostructure Viewer menu item",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Show NGL Viewer menu item",
+      "name": "Show NGL Viewer menu item",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Open PDB residues table menu item",
+      "name": "Open PDB residues table menu item",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:demoBioDockingConformations",
+      "name": "demoBioDockingConformations",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Display ligand poses along the structure",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:demoBioProteins",
+      "name": "demoBioProteins",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "View structures PDB in grids",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:demoFix1",
+      "name": "demoFix1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:demoFix2",
+      "name": "demoFix2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:demoFix3",
+      "name": "demoFix3",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:readAsText",
+      "name": "readAsText",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:readAsTextDapi",
+      "name": "readAsTextDapi",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:RCSB PDB",
+      "name": "RCSB PDB",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Get biostructure by id as PDB",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:RCSB mmCIF",
+      "name": "RCSB mmCIF",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Get biostructure by id as mmCIF",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:RCSB bCIF",
+      "name": "RCSB bCIF",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Get biostructure by id as BinaryCIF",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:biostructureDataToJson",
+      "name": "biostructureDataToJson",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Packs BiostructureData value into JSON string",
+      "input_types": [
+        "bool",
+        "object",
+        "string",
+        "map"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:3D Structure",
+      "name": "3D Structure",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:mol3dAtomPickerLinkWidget",
+      "name": "mol3dAtomPickerLinkWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:Fetch PDB Sequences",
+      "name": "Fetch PDB Sequences",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.",
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BiostructureViewer:autostart",
+      "name": "autostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": "BiostructureViewer bootstrap",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/BiostructureViewer/credits.md",
+      "title": "BiostructureViewer — Third-Party Libraries",
+      "url": "/packages/BiostructureViewer/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BiostructureViewer/readme.md",
+      "title": "Biostructure Viewer",
+      "url": "/packages/BiostructureViewer/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/biostructure",
+      "title": "Biostructure viewer",
+      "url": "/help/visualize/viewers/biostructure",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/ngl",
+      "title": "NGL viewer",
+      "url": "/help/visualize/viewers/ngl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_access/_01-open-files",
+      "title": "Open files",
+      "url": "/help/_access/_01-open-files",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/recently-open-test",
+      "title": "Tests: Recently Open Views",
+      "url": "/help/_internal/tests/recently-open-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/project-open",
+      "title": "Manual Test: Open Project",
+      "url": "/help/_internal/tests/release-cheklist-cases/project-open",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/most-potent-residues",
+      "title": "Most Potent Residues",
+      "url": "/help/visualize/viewers/most-potent-residues",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:BiostructureViewer:1.4.4:0",
+      "version": "1.4.4",
+      "released_at": "2025-11-11",
+      "ticket": "GROK-13650",
+      "text": "GROK-13650: DemoFiles: Bio: Some ngl formats are broken"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-09-16",
+      "ticket": null,
+      "text": "Fix caching for PdbGridCellRenderer"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-04-17",
+      "ticket": null,
+      "text": "Error handling for ligands and semtype check fix"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.3.3:0",
+      "version": "1.3.3",
+      "released_at": "2025-02-06",
+      "ticket": null,
+      "text": "* [#3244](https://github.com/datagrok-ai/public/issues/3244): BsV: Does not maintain opened structure file"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.3.2:0",
+      "version": "1.3.2",
+      "released_at": "2025-01-21",
+      "ticket": null,
+      "text": "Fix for renderers in non-grid views"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-01-09",
+      "ticket": null,
+      "text": "Support PDB-ID renderer in tooltips"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.4:0",
+      "version": "1.2.4",
+      "released_at": "2024-11-29",
+      "ticket": "GROK-11759",
+      "text": "GROK-11759: BsV: Switch molecule representation (cartoon, balls and sticks)"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.4:1",
+      "version": "1.2.4",
+      "released_at": "2024-11-29",
+      "ticket": null,
+      "text": "BsV: Initialize properties before setting the data"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.4:2",
+      "version": "1.2.4",
+      "released_at": "2024-11-29",
+      "ticket": null,
+      "text": "BsV: Implement resizing for the Mol* viewer within widgets"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.4:3",
+      "version": "1.2.4",
+      "released_at": "2024-11-29",
+      "ticket": null,
+      "text": "BsV: Resolve styling issues when building view without data"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.3:0",
+      "version": "1.2.3",
+      "released_at": "2024-11-22",
+      "ticket": null,
+      "text": "Moved Context menu items to detector"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.2:0",
+      "version": "1.2.2",
+      "released_at": "2024-10-32",
+      "ticket": null,
+      "text": "Fix opening files"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.2.1:0",
+      "version": "1.2.1",
+      "released_at": "2024-09-26",
+      "ticket": null,
+      "text": "Bump dependencies bio lib version"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.2:0",
+      "version": "1.1.2",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "MolstarViewer: Fixed styling issues when toggling the expanded viewport"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.2:1",
+      "version": "1.1.2",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "MolstarViewer: Enabled fullscreen mode when toggling the expanded viewport"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.2:2",
+      "version": "1.1.2",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "BiostructureViewer: Integrated the 3D structure panel into the context panel, replacing the previous docking to the view"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2024-06-10",
+      "ticket": null,
+      "text": "Fix .pdbqt parser assuming ROOT for MODEL"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.1:1",
+      "version": "1.1.1",
+      "released_at": "2024-06-10",
+      "ticket": null,
+      "text": "Fix .pdbqt to .pdb sorting atoms, add tests"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.1:2",
+      "version": "1.1.1",
+      "released_at": "2024-06-10",
+      "ticket": null,
+      "text": "Fix default representation to ball+stick for small molecule"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.1:3",
+      "version": "1.1.1",
+      "released_at": "2024-06-10",
+      "ticket": null,
+      "text": "Fix awaitNgl, test NgGlService/pdb"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.1:4",
+      "version": "1.1.1",
+      "released_at": "2024-06-10",
+      "ticket": null,
+      "text": "Fix MolstarPreview open .mmcif"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-05-01",
+      "ticket": null,
+      "text": "Use generalized cell renderer on async renderer base"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.27:0",
+      "version": "1.0.27",
+      "released_at": "2024-04-15",
+      "ticket": null,
+      "text": "Fix the description for Docking Conformations demo"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.26:0",
+      "version": "1.0.26",
+      "released_at": "2024-03-30",
+      "ticket": null,
+      "text": "#2707: Add original and canonical to monomer"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.25:0",
+      "version": "1.0.25",
+      "released_at": "2024-01-29",
+      "ticket": null,
+      "text": "MolstarViewer optimize buildView postponed, destroyView detach only"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.25:1",
+      "version": "1.0.25",
+      "released_at": "2024-01-29",
+      "ticket": null,
+      "text": "Fix MolstarViewer tests"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.25:2",
+      "version": "1.0.25",
+      "released_at": "2024-01-29",
+      "ticket": null,
+      "text": "Fix BiotrackViewer for arbitrary data frame error"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.25:3",
+      "version": "1.0.25",
+      "released_at": "2024-01-29",
+      "ticket": null,
+      "text": "Fix MolstarViewer test error Unsupported file extension bcif"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.25:4",
+      "version": "1.0.25",
+      "released_at": "2024-01-29",
+      "ticket": null,
+      "text": "Fix MolstarViewer for pdb_data test"
+    },
+    {
+      "id": "clog:BiostructureViewer:1.0.24:0",
+      "version": "1.0.24",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "Fix error on right click on row header, test"
+    }
+  ],
+  "stats": {
+    "functions": 55,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 20,
+    "changelog": 76
+  }
+}

@@ -1,0 +1,787 @@
+{
+  "package": {
+    "id": "pkg:HitTriage",
+    "name": "HitTriage",
+    "friendly_name": "Hit Triage",
+    "version": "1.10.1",
+    "category": "Cheminformatics",
+    "description": "Hit Triage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
+    "extras": {
+      "npm_name": "@datagrok/hit-triage",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "view",
+      "type": "string",
+      "choices": [],
+      "default": ""
+    },
+    {
+      "name": "edit",
+      "type": "string",
+      "choices": [],
+      "default": ""
+    },
+    {
+      "name": "defaultCampaignFolder",
+      "type": "string",
+      "choices": [],
+      "default": "System.AppData/HitTriage"
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:HitTriage:hitTriageAppTreeBrowser",
+      "name": "hitTriageAppTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:hitDesignAppTreeBrowser",
+      "name": "hitDesignAppTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:peptiHitAppTreeBrowser",
+      "name": "peptiHitAppTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Hit Triage",
+      "name": "Hit Triage",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Hit Design",
+      "name": "Hit Design",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:PeptiHit",
+      "name": "PeptiHit",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:pepTriageAppTreeBrowser",
+      "name": "pepTriageAppTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:PepTriage",
+      "name": "PepTriage",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Demo Molecules 100",
+      "name": "Demo Molecules 100",
+      "friendly_name": null,
+      "role": "hitTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Demo Molecules 5000",
+      "name": "Demo Molecules 5000",
+      "friendly_name": null,
+      "role": "hitTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Demo Molecules variable",
+      "name": "Demo Molecules variable",
+      "friendly_name": null,
+      "role": "hitTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Demo Peptide Sequences",
+      "name": "Demo Peptide Sequences",
+      "friendly_name": null,
+      "role": "pepTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "pepTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Demo File Submit",
+      "name": "Demo File Submit",
+      "friendly_name": null,
+      "role": "hitTriageSubmitFunction",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "hitTriageSubmitFunction"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:registerMoleculesToViD",
+      "name": "registerMoleculesToViD",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Hit Design V-iD",
+      "name": "Hit Design V-iD",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:gasteigerRenderer",
+      "name": "gasteigerRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:HitTriage:Hit Triage package settings editor",
+      "name": "Hit Triage package settings editor",
+      "friendly_name": null,
+      "role": "packageSettingsEditor",
+      "tags": [
+        "packageSettingsEditor"
+      ],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "packageSettingsEditor"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:HitTriage:acquireCampaignLock",
+      "name": "acquireCampaignLock",
+      "connection": "HitTriage:hitdesign",
+      "description": "Acquire a lock for a campaign. If the lock is expired, it will be removed and a new lock will be created.",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:releaseCampaignLock",
+      "name": "releaseCampaignLock",
+      "connection": "HitTriage:hitdesign",
+      "description": "Release a lock for a campaign.",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:getLastModified",
+      "name": "getLastModified",
+      "connection": "HitTriage:hitdesign",
+      "description": "Get the last modified time of a campaign lock release (same as save).",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:addMolecule",
+      "name": "addMolecule",
+      "connection": "HitTriage:hitdesign",
+      "description": "Add a molecule to the dictionary. Returns VID for new or existing molecule.",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:addMolecules",
+      "name": "addMolecules",
+      "connection": "HitTriage:hitdesign",
+      "description": "Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules.",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:getMoleculeByVid",
+      "name": "getMoleculeByVid",
+      "connection": "HitTriage:hitdesign",
+      "description": "Get a molecule's canonical SMILES by its VID.",
+      "tags": []
+    },
+    {
+      "id": "query:HitTriage:getCampaignsByVid",
+      "name": "getCampaignsByVid",
+      "connection": "HitTriage:hitdesign",
+      "description": "Get all campaigns and creators for a given VID.",
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/HitTriage/credits.md",
+      "title": "HitTriage — Third-Party Libraries",
+      "url": "/packages/HitTriage/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/HitTriage/readme.md",
+      "title": "Hit Triage",
+      "url": "/packages/HitTriage/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/HitTriage/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/HitTriage/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/hit_triage_system",
+      "title": "Building light-weighted hit triage system",
+      "url": "/help/develop/domains/chem/hit_triage_system",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/claude.md",
+      "title": "Chem Package",
+      "url": "/packages/Chem/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/contrib.md",
+      "title": "Contributor's guide for Chem package",
+      "url": "/packages/Chem/contrib.md",
+      "kind": "contrib",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:HitTriage:1.10.0:0",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Introduced PepTriage — a peptide-focused workflow alongside Hit Triage and Hit Design"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:1",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Hit Triage:"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:2",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Added campaign grouping by template, status, author, last modified user, or custom fields"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:3",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Added sortable campaigns table columns"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:4",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Added column visibility editor for the campaigns table"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:5",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Migrated the compute function engine to a shared implementation now used together with Chem MPO"
+    },
+    {
+      "id": "clog:HitTriage:1.10.0:6",
+      "version": "1.10.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Browse panel compatibility restored"
+    },
+    {
+      "id": "clog:HitTriage:1.9.0:0",
+      "version": "1.9.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "Global Vid system and molecule tracking across multiple campaigns."
+    },
+    {
+      "id": "clog:HitTriage:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2025-12-09",
+      "ticket": null,
+      "text": "Improved collaboration support"
+    },
+    {
+      "id": "clog:HitTriage:1.8.0:1",
+      "version": "1.8.0",
+      "released_at": "2025-12-09",
+      "ticket": null,
+      "text": "Automatic sygnaling of changes in campaigns between multiple users."
+    },
+    {
+      "id": "clog:HitTriage:1.7.7:0",
+      "version": "1.7.7",
+      "released_at": "2025-09-19",
+      "ticket": null,
+      "text": "Sortable campaigns table columns via doubleclick."
+    },
+    {
+      "id": "clog:HitTriage:1.7.7:1",
+      "version": "1.7.7",
+      "released_at": "2025-09-19",
+      "ticket": null,
+      "text": "Add campaingPropts to both visible columns and groupby options."
+    },
+    {
+      "id": "clog:HitTriage:1.7.5:0",
+      "version": "1.7.5",
+      "released_at": "2025-09-03",
+      "ticket": null,
+      "text": "Add Ability to hide or show custom columns in campaigns table."
+    },
+    {
+      "id": "clog:HitTriage:1.7.5:1",
+      "version": "1.7.5",
+      "released_at": "2025-09-03",
+      "ticket": null,
+      "text": "Improved styling of icons in the info view."
+    },
+    {
+      "id": "clog:HitTriage:1.7.3:0",
+      "version": "1.7.3",
+      "released_at": "2025-05-01",
+      "ticket": null,
+      "text": "Fix descriptors tree not scrolling"
+    },
+    {
+      "id": "clog:HitTriage:1.7.2:0",
+      "version": "1.7.2",
+      "released_at": "2025-04-09",
+      "ticket": null,
+      "text": "Ability to reorder/hide functions in new template or functions dialog."
+    },
+    {
+      "id": "clog:HitTriage:1.7.0:0",
+      "version": "1.7.0",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Fix not saving campaigns"
+    },
+    {
+      "id": "clog:HitTriage:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2025-03-01",
+      "ticket": null,
+      "text": "Add caching to loaded campaigns."
+    },
+    {
+      "id": "clog:HitTriage:1.5.0:1",
+      "version": "1.5.0",
+      "released_at": "2025-03-01",
+      "ticket": null,
+      "text": "Parallel loading of campaigns."
+    },
+    {
+      "id": "clog:HitTriage:1.5.0:2",
+      "version": "1.5.0",
+      "released_at": "2025-03-01",
+      "ticket": null,
+      "text": "Lazy loading of function dialogs."
+    },
+    {
+      "id": "clog:HitTriage:1.5.0:3",
+      "version": "1.5.0",
+      "released_at": "2025-03-01",
+      "ticket": null,
+      "text": "Fixes to url logic."
+    },
+    {
+      "id": "clog:HitTriage:1.5.0:4",
+      "version": "1.5.0",
+      "released_at": "2025-03-01",
+      "ticket": null,
+      "text": "Working with new browse version."
+    },
+    {
+      "id": "clog:HitTriage:1.4.4:0",
+      "version": "1.4.4",
+      "released_at": "2025-02-07",
+      "ticket": null,
+      "text": "Fix permission check for admin members"
+    },
+    {
+      "id": "clog:HitTriage:1.4.4:1",
+      "version": "1.4.4",
+      "released_at": "2025-02-07",
+      "ticket": null,
+      "text": "Add Default file storage for campaign files"
+    },
+    {
+      "id": "clog:HitTriage:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-02-06",
+      "ticket": null,
+      "text": "Fix campaign auto-naming when creating new campaigns"
+    },
+    {
+      "id": "clog:HitTriage:1.9.1:0",
+      "version": "1.9.1",
+      "released_at": "2025-02-03",
+      "ticket": null,
+      "text": "HD: Parallel running functions, fix table joining"
+    },
+    {
+      "id": "clog:HitTriage:1.9.1:1",
+      "version": "1.9.1",
+      "released_at": "2025-02-03",
+      "ticket": null,
+      "text": "Hit Design: Custom comparer for vid"
+    },
+    {
+      "id": "clog:HitTriage:1.9.1:2",
+      "version": "1.9.1",
+      "released_at": "2025-02-03",
+      "ticket": "GROK-19523",
+      "text": "GROK-19523: AppTreeBrowser decorator: Fixed behavior, so it finds the app properly, fixed usages"
+    },
+    {
+      "id": "clog:HitTriage:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-02-03",
+      "ticket": null,
+      "text": "Correctly set semantic types for all columns in joining dataframes"
+    },
+    {
+      "id": "clog:HitTriage:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2025-01-31",
+      "ticket": null,
+      "text": "Support current molecule sending to designer functions"
+    }
+  ],
+  "stats": {
+    "functions": 17,
+    "scripts": 0,
+    "queries": 7,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 83
+  }
+}

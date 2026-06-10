@@ -1,0 +1,120 @@
+{
+  "package": {
+    "id": "pkg:Minitab",
+    "name": "Minitab",
+    "friendly_name": "Minitab",
+    "category": "Data Access",
+    "description": "Support for Minitab files"
+  },
+  "files": {
+    "src": [
+      "packages/Minitab/src/formats/mpx/mpx-parser.ts",
+      "packages/Minitab/src/formats/mpx/mpx-to-dataframe.ts",
+      "packages/Minitab/src/formats/mpx/mpx-types.ts",
+      "packages/Minitab/src/formats/mpx/mpx-viewer.ts",
+      "packages/Minitab/src/formats/mwx/mwx-parser.ts",
+      "packages/Minitab/src/formats/mwx/mwx-to-dataframe.ts",
+      "packages/Minitab/src/formats/mwx/mwx-types.ts",
+      "packages/Minitab/src/formats/mwx/mwx-viewer.ts",
+      "packages/Minitab/src/formats/shared/sheet-parser.ts",
+      "packages/Minitab/src/package.ts"
+    ],
+    "tests": [
+      "packages/Minitab/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Minitab/CREDITS.md",
+      "packages/Minitab/README.md",
+      "packages/Minitab/docs/MINITAB_FILE_FORMATS.md",
+      "packages/Minitab/docs/MINITAB_PLUGIN.md",
+      "packages/Minitab/docs/MINITAB_STATISTICAL_METHODS.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Minitab:mwx-worksheet-support",
+      "name": "Minitab Worksheet (.mwx) Support",
+      "description": "Lets users import and preview Minitab Worksheet files (.mwx) inside Datagrok, surfacing worksheet data as a table.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Minitab:importMwx",
+          "kind": "RegisteredFunction",
+          "name": "importMwx",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Minitab Worksheet file",
+          "tags": []
+        },
+        {
+          "id": "func:Minitab:previewMwx",
+          "kind": "RegisteredFunction",
+          "name": "previewMwx",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Minitab/readme.md",
+          "kind": "DocPage",
+          "title": "Minitab",
+          "url": "/packages/Minitab/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Minitab/src/formats/mwx/mwx-parser.ts",
+          "packages/Minitab/src/formats/mwx/mwx-to-dataframe.ts",
+          "packages/Minitab/src/formats/mwx/mwx-types.ts",
+          "packages/Minitab/src/formats/mwx/mwx-viewer.ts",
+          "packages/Minitab/src/formats/shared/sheet-parser.ts",
+          "packages/Minitab/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Minitab:mpx-project-support",
+      "name": "Minitab Project (.mpx) Support",
+      "description": "Lets users import and preview Minitab Project files (.mpx), which may contain multiple worksheets and analysis outputs.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Minitab:importMpx",
+          "kind": "RegisteredFunction",
+          "name": "importMpx",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Minitab Project file",
+          "tags": []
+        },
+        {
+          "id": "func:Minitab:previewMpx",
+          "kind": "RegisteredFunction",
+          "name": "previewMpx",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Minitab/src/formats/mpx/mpx-parser.ts",
+          "packages/Minitab/src/formats/mpx/mpx-to-dataframe.ts",
+          "packages/Minitab/src/formats/mpx/mpx-types.ts",
+          "packages/Minitab/src/formats/mpx/mpx-viewer.ts",
+          "packages/Minitab/src/formats/mwx/mwx-to-dataframe.ts",
+          "packages/Minitab/src/formats/mwx/mwx-types.ts",
+          "packages/Minitab/src/formats/shared/sheet-parser.ts",
+          "packages/Minitab/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

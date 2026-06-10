@@ -1,0 +1,103 @@
+{
+  "package_id": "pkg:Biologics",
+  "features": [
+    {
+      "id": "feature:Biologics:demo-database-setup",
+      "name": "Demo Biologics Database Setup",
+      "description": "Initializes and populates the demo Biologics (ADC) database on package start, providing sample data for exploration and demonstration.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Biologics:createDemoBiologicsData", "weight": 1.0, "role": "core"},
+        {"id": "func:Biologics:autostartbiologics",      "weight": 1.0, "role": "core"},
+        {"id": "func:Biologics:info",                   "weight": 0.5, "role": "related"},
+        {"id": "doc:/packages/Biologics/readme.md",     "weight": 0.8, "role": "doc"},
+        {"id": "doc:/packages/Biologics/claude.md",     "weight": 0.6, "role": "doc"},
+        {"id": "doc:/packages/Biologics/credits.md",    "weight": 0.5, "role": "doc"},
+        {"id": "clog:Biologics:1.0.0:0",                "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "createDemoBiologicsData and autostartbiologics share the same initialization theme; the autostart role ensures demo data is ready when the package loads."
+    },
+    {
+      "id": "feature:Biologics:adc-glyph-rendering",
+      "name": "ADC Glyph Rendering",
+      "description": "Generates and populates visual glyph icons (PNG/base64) for ADC molecules, enabling rich visual representation of ADC compounds in grid and info-pane views.",
+      "category": "viz",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:Biologics:populateAdcGlyphs",                                      "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",                     "weight": 0.5, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",                      "weight": 0.5, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",     "weight": 0.4, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                            "weight": 0.4, "role": "doc"}
+      ],
+      "evidence_summary": "populateAdcGlyphs is the sole function for ADC visual icon generation; info-pane docs are linked because ADC glyphs surface inside Datagrok info panes."
+    },
+    {
+      "id": "feature:Biologics:antibody-profile-query",
+      "name": "Antibody Profile & Assay Query",
+      "description": "Queries the biologics database for comprehensive antibody profiles and assay results filtered by organism and target, including HC/LC chain data.",
+      "category": "data-import",
+      "confidence": 0.88,
+      "members": [
+        {"id": "query:Biologics:antibodyProfileByOrganismAndTarget", "weight": 1.0, "role": "core"},
+        {"id": "query:Biologics:assaysByOrganism",                   "weight": 0.9, "role": "core"},
+        {"id": "clog:Biologics:1.0.9:0",                             "weight": 0.7, "role": "related"},
+        {"id": "clog:Biologics:1.0.5:0",                             "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Both queries retrieve organism/target-scoped antibody and assay data from the same biologics connection; the changelog records a direct update to assaysByOrganism."
+    },
+    {
+      "id": "feature:Biologics:adc-activity-filtering",
+      "name": "ADC Activity & IC50 Filtering",
+      "description": "Finds ADCs that meet specified caspase-activity or IC50 thresholds, supporting compound triage by potency.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "query:Biologics:ADCsWithCapsazeActivityHigherThan", "weight": 1.0, "role": "core"},
+        {"id": "query:Biologics:ADCsWithIC50HLThan",               "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Both queries share the pattern of filtering ADCs by a numeric activity threshold (caspase activity and IC50), forming a cohesive compound-triage feature."
+    },
+    {
+      "id": "feature:Biologics:adc-drug-linkage",
+      "name": "ADC-Drug Linkage Query",
+      "description": "Retrieves ADCs linked to a specified drug identifier, enabling drug-centric ADC exploration across the biologics database.",
+      "category": "data-import",
+      "confidence": 0.82,
+      "members": [
+        {"id": "query:Biologics:adcsLinkedToDrug", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "adcsLinkedToDrug has a distinct drug-linkage lookup pattern that does not fit the activity-threshold or antibody-profile features."
+    },
+    {
+      "id": "feature:Biologics:dose-response-curve-retrieval",
+      "name": "Dose-Response Curve Retrieval",
+      "description": "Retrieves the dose-response curve JSON for a biologics assay result by its GROKCRV-###### identifier, enabling programmatic access to curve-fitting data.",
+      "category": "data-import",
+      "confidence": 0.8,
+      "members": [
+        {"id": "query:Biologics:getBiologicsCurveByAssayResultIdentifier", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "getBiologicsCurveByAssayResultIdentifier provides structured-ID point-lookup of dose-response curve JSON, distinct from the organism/target-scoped assay queries."
+    },
+    {
+      "id": "feature:Biologics:peptide-helm-sequence-retrieval",
+      "name": "Peptide HELM Sequence Retrieval",
+      "description": "Retrieves the HELM sequence notation for a biologics peptide by its GROKPEP-###### identifier, supporting sequence-level inspection of peptide therapeutics.",
+      "category": "data-import",
+      "confidence": 0.82,
+      "members": [
+        {"id": "query:Biologics:getBiologicsPeptideHelmByIdentifier", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "getBiologicsPeptideHelmByIdentifier is the sole query for peptide HELM notation lookup, a distinct sequence-retrieval concern separate from assay or ADC queries."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Biologics:adc-activity-filtering",        "to": "feature:Biologics:adc-drug-linkage",           "kind": "sibling"},
+    {"from": "feature:Biologics:dose-response-curve-retrieval", "to": "feature:Biologics:antibody-profile-query",     "kind": "related"},
+    {"from": "feature:Biologics:demo-database-setup",           "to": "feature:Biologics:antibody-profile-query",     "kind": "related"},
+    {"from": "feature:Biologics:demo-database-setup",           "to": "feature:Biologics:adc-activity-filtering",     "kind": "related"}
+  ],
+  "unassigned_member_ids": []
+}

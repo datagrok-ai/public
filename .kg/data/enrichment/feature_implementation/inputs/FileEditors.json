@@ -1,0 +1,171 @@
+{
+  "package": {
+    "id": "pkg:FileEditors",
+    "name": "FileEditors",
+    "friendly_name": "File Editors",
+    "category": "Data Access",
+    "description": "Support for previewing and opening text file formats (PDF, DOCX, TEX)"
+  },
+  "files": {
+    "src": [
+      "packages/FileEditors/src/latex/constants.ts",
+      "packages/FileEditors/src/latex/latex-viewer.ts",
+      "packages/FileEditors/src/latex/utils.ts",
+      "packages/FileEditors/src/package.ts"
+    ],
+    "tests": [
+      "packages/FileEditors/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/FileEditors/CHANGELOG.md",
+      "packages/FileEditors/CREDITS.md",
+      "packages/FileEditors/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:FileEditors:pdf-viewer",
+      "name": "PDF Viewer",
+      "description": "Lets users preview and open PDF files directly inside Datagrok via a dedicated file viewer and file handler.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:FileEditors:previewPdf",
+          "kind": "RegisteredFunction",
+          "name": "previewPdf",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:FileEditors:viewPdf",
+          "kind": "RegisteredFunction",
+          "name": "viewPdf",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/_access/_02-file-previews",
+          "kind": "DocPage",
+          "title": "File previews",
+          "url": "/help/_access/_02-file-previews"
+        },
+        {
+          "id": "doc:/packages/FileEditors/readme.md",
+          "kind": "DocPage",
+          "title": "File Editors",
+          "url": "/packages/FileEditors/readme.md"
+        },
+        {
+          "id": "clog:FileEditors:1.0.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:FileEditors:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/FileEditors/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:FileEditors:docx-viewer",
+      "name": "DOCX Viewer",
+      "description": "Lets users preview and open DOCX (Word) files inside Datagrok via a dedicated file viewer and file handler.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:FileEditors:previewDocx",
+          "kind": "RegisteredFunction",
+          "name": "previewDocx",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:FileEditors:viewDocx",
+          "kind": "RegisteredFunction",
+          "name": "viewDocx",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:FileEditors:1.0.0:2",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/FileEditors/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:FileEditors:rtf-viewer",
+      "name": "RTF Viewer",
+      "description": "Provides in-browser preview of RTF (Rich Text Format) files as a Datagrok file viewer.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:FileEditors:previewRtf",
+          "kind": "RegisteredFunction",
+          "name": "previewRtf",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/FileEditors/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:FileEditors:tex-viewer",
+      "name": "TeX Viewer",
+      "description": "Provides in-browser preview of LaTeX (.tex) files as a Datagrok file viewer, added in v1.3.1.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:FileEditors:previewTex",
+          "kind": "RegisteredFunction",
+          "name": "previewTex",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:FileEditors:1.3.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/FileEditors/src/latex/constants.ts",
+          "packages/FileEditors/src/latex/latex-viewer.ts",
+          "packages/FileEditors/src/latex/utils.ts",
+          "packages/FileEditors/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

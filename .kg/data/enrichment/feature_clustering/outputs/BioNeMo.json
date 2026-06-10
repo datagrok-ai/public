@@ -1,0 +1,70 @@
+{
+  "package_id": "pkg:BioNeMo",
+  "features": [
+    {
+      "id": "feature:BioNeMo:esm-fold",
+      "name": "ESMFold Protein Structure Prediction",
+      "description": "Predicts the 3D structure of a protein from its amino acid sequence using the ESMFold model via NVIDIA BioNeMo. Results are surfaced as a dataframe and an interactive panel in the Bio context.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BioNeMo:EsmFold",      "weight": 1.0,  "role": "core"},
+        {"id": "script:BioNeMo:esmfoldPython", "weight": 1.0, "role": "core"},
+        {"id": "func:BioNeMo:Bio | EsmFold", "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "EsmFold function, esmfoldPython script, and Bio|EsmFold widget share the ESMFold name root and collectively implement protein structure prediction from sequence."
+    },
+    {
+      "id": "feature:BioNeMo:diff-dock",
+      "name": "DiffDock Molecular Docking",
+      "description": "Predicts the 3D binding pose of a small molecule against a protein target using the DiffDock diffusion model, with a supporting context panel and target-file helper for batch workflows.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BioNeMo:DiffDock",           "weight": 1.0,  "role": "core"},
+        {"id": "script:BioNeMo:diffdockPython",    "weight": 1.0,  "role": "core"},
+        {"id": "func:BioNeMo:Biology | DiffDock",  "weight": 0.9,  "role": "core"},
+        {"id": "func:BioNeMo:diffDockModelScript", "weight": 0.8,  "role": "core"},
+        {"id": "func:BioNeMo:getTargetFiles",      "weight": 0.75, "role": "core"},
+        {"id": "clog:BioNeMo:1.3.1:0",            "weight": 0.8,  "role": "related"},
+        {"id": "clog:BioNeMo:1.2.0:1",            "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "DiffDock, diffDockModelScript, getTargetFiles, diffdockPython, and Biology|DiffDock panel share the DiffDock name root; changelog confirms docking menu naming and info-panel bug fixes."
+    },
+    {
+      "id": "feature:BioNeMo:mol-mim",
+      "name": "MolMIM Controlled Molecule Generation",
+      "description": "Generates novel molecules with desired properties using the MolMIM model, supporting controlled latent-space exploration with configurable generation parameters.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:BioNeMo:MolMIMModel",       "weight": 1.0, "role": "core"},
+        {"id": "script:BioNeMo:MolMIMGenerate",  "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "MolMIMModel function and MolMIMGenerate script share the MolMIM name root and together implement the controlled molecule generation workflow."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:BioNeMo:esm-fold", "to": "feature:BioNeMo:diff-dock", "kind": "related"},
+    {"from": "feature:BioNeMo:mol-mim",  "to": "feature:BioNeMo:esm-fold",  "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "clog:BioNeMo:1.0.0:0",
+    "clog:BioNeMo:1.0.0:1",
+    "clog:BioNeMo:1.2.0:0",
+    "doc:/packages/BioNeMo/credits.md",
+    "doc:/packages/BioNeMo/readme.md",
+    "doc:/help/datagrok/solutions/domains/bio/bio",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/help/datagrok/solutions/domains/bio/polytool",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md"
+  ]
+}

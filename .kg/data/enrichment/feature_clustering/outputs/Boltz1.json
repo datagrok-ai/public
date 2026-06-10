@@ -1,0 +1,59 @@
+{
+  "package_id": "pkg:Boltz1",
+  "features": [
+    {
+      "id": "feature:Boltz1:protein-structure-prediction",
+      "name": "Protein Structure Prediction",
+      "description": "Runs the Boltz-1 deep-learning model to predict 3-D protein and complex structures from sequence data supplied as a DataFrame column, returning structured results as a new DataFrame.",
+      "category": "ml",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Boltz1:Boltz",               "weight": 1.0,  "role": "core"},
+        {"id": "func:Boltz1:runBoltz",             "weight": 0.9,  "role": "core"},
+        {"id": "func:Boltz1:getBoltzConfigFolders","weight": 0.7,  "role": "core"},
+        {"id": "doc:/packages/Boltz1/readme.md",   "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/bio", "weight": 0.5, "role": "doc"},
+        {"id": "clog:Boltz1:v.next:0",             "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "All three functions share the 'Boltz'/'runBoltz' name root and form a clear sequence-in / structure-out pipeline: getBoltzConfigFolders prepares config, runBoltz executes the model, and Boltz exposes the end-to-end batch call."
+    },
+    {
+      "id": "feature:Boltz1:boltz1-info-panel",
+      "name": "Boltz-1 Info Panel",
+      "description": "Provides a contextual info-panel widget that triggers Boltz-1 structure prediction for a selected molecular or sequence value and renders the result directly in Datagrok's property panel.",
+      "category": "viz",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Boltz1:Boltz-1",             "weight": 1.0,  "role": "core"},
+        {"id": "func:Boltz1:isApplicableBoltz",   "weight": 0.9,  "role": "core"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",               "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",              "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels","weight": 0.6, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                     "weight": 0.6,  "role": "doc"}
+      ],
+      "evidence_summary": "func:Boltz1:Boltz-1 carries role 'widgets,panel' and domain 'chem', and isApplicableBoltz is the canonical applicability guard pattern used for all Datagrok info panels."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:Boltz1:boltz1-info-panel",
+      "to":   "feature:Boltz1:protein-structure-prediction",
+      "kind": "related"
+    }
+  ],
+  "unassigned_member_ids": [
+    "func:Boltz1:info",
+    "doc:/packages/Boltz1/credits.md",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/help/datagrok/solutions/domains/bio/polytool"
+  ]
+}

@@ -1,0 +1,1727 @@
+{
+  "package": {
+    "id": "pkg:ApiSamples",
+    "name": "ApiSamples",
+    "friendly_name": "API Samples",
+    "version": "1.2.2",
+    "category": "Development",
+    "description": "API Samples",
+    "extras": {
+      "npm_name": "@datagrok/api-samples",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [],
+  "scripts": [
+    {
+      "id": "script:ApiSamples:entities-polymorphic-save",
+      "name": "entities-polymorphic-save",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:fetch",
+      "name": "fetch",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:files",
+      "name": "files",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:groups",
+      "name": "groups",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:layouts-and-permissions",
+      "name": "layouts-and-permissions",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:projects-list",
+      "name": "projects-list",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:projects-open",
+      "name": "projects-open",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:spaces",
+      "name": "spaces",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sticky-meta-1-tags",
+      "name": "sticky-meta-1-tags",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sticky-meta-2-semtype",
+      "name": "sticky-meta-2-semtype",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:who-am-i",
+      "name": "who-am-i",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:ad-hoc-query",
+      "name": "ad-hoc-query",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:db-edit",
+      "name": "db-edit",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dynamic-query",
+      "name": "dynamic-query",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:parameterized-query",
+      "name": "parameterized-query",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:db-master-details-manual",
+      "name": "db-master-details-manual",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:file-exists",
+      "name": "file-exists",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:read-file",
+      "name": "read-file",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:load-csv",
+      "name": "load-csv",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:open-table-by-id",
+      "name": "open-table-by-id",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:output-layouts",
+      "name": "output-layouts",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:save-and-load-df",
+      "name": "save-and-load-df",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-category-order",
+      "name": "custom-category-order",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:qualified-numbers",
+      "name": "qualified-numbers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:semantic-type-detection",
+      "name": "semantic-type-detection",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:virtual-int-column",
+      "name": "virtual-int-column",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:aggregate-filter",
+      "name": "aggregate-filter",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:aggregate",
+      "name": "aggregate",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:get-groups",
+      "name": "get-groups",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:and-or-xor",
+      "name": "and-or-xor",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:from-bytes",
+      "name": "from-bytes",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:select-rows-fast",
+      "name": "select-rows-fast",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:similarity-metrics",
+      "name": "similarity-metrics",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:column-access",
+      "name": "column-access",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:compare-tables",
+      "name": "compare-tables",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:add-new-column",
+      "name": "add-new-column",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-from-columns",
+      "name": "create-from-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-from-csv-format",
+      "name": "create-from-csv-format",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-from-csv",
+      "name": "create-from-csv",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-from-json",
+      "name": "create-from-json",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-from-objects",
+      "name": "create-from-objects",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-image-column",
+      "name": "create-image-column",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:date-time",
+      "name": "date-time",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:current-elements",
+      "name": "current-elements",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:events",
+      "name": "events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:collaborative-filtering",
+      "name": "collaborative-filtering",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:update-filter-state",
+      "name": "update-filter-state",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:find-columns",
+      "name": "find-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:iterable",
+      "name": "iterable",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:join-tables",
+      "name": "join-tables",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:link-tables-dynamic",
+      "name": "link-tables-dynamic",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:link-tables",
+      "name": "link-tables",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dataframe-meta",
+      "name": "dataframe-meta",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:metadata",
+      "name": "metadata",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:add-columns",
+      "name": "add-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:add-qnum-from-columns",
+      "name": "add-qnum-from-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:append",
+      "name": "append",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:change-type",
+      "name": "change-type",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:double-precision",
+      "name": "double-precision",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:init-column",
+      "name": "init-column",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:manipulate",
+      "name": "manipulate",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:access",
+      "name": "access",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:patterns",
+      "name": "patterns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:select-rows",
+      "name": "select-rows",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-comparer",
+      "name": "custom-comparer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sorted-order",
+      "name": "sorted-order",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:stats",
+      "name": "stats",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:test-tables",
+      "name": "test-tables",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:value-matcher",
+      "name": "value-matcher",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:demo",
+      "name": "demo",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:stock-broker",
+      "name": "stock-broker",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:bioinformatics",
+      "name": "bioinformatics",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:chem-benchmark",
+      "name": "chem-benchmark",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:descriptors",
+      "name": "descriptors",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:diversity-search",
+      "name": "diversity-search",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:highlight-align-scaffolds",
+      "name": "highlight-align-scaffolds",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:mcs",
+      "name": "mcs",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:mol-rendering-canvas",
+      "name": "mol-rendering-canvas",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:mol-rendering",
+      "name": "mol-rendering",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:r-group",
+      "name": "r-group",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sketcher",
+      "name": "sketcher",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:substructure-search-benchmark",
+      "name": "substructure-search-benchmark",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:substructure-search-smarts-molfile-als",
+      "name": "substructure-search-smarts-molfile-als",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:substructure-search-smarts",
+      "name": "substructure-search-smarts",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:substructure-search",
+      "name": "substructure-search",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:cluster",
+      "name": "cluster",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:missing-values-imputation",
+      "name": "missing-values-imputation",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:pca",
+      "name": "pca",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:predictive-model",
+      "name": "predictive-model",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:random-data",
+      "name": "random-data",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:form-creation",
+      "name": "form-creation",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:function-events",
+      "name": "function-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:layout-events",
+      "name": "layout-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:prevented-event",
+      "name": "prevented-event",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:viewer-data-events",
+      "name": "viewer-data-events",
+      "language": "javascript",
+      "description": "Handling viewer events: onDataEvent, onDataSelected, onDataHovered, onDataRowClicked."
+    },
+    {
+      "id": "script:ApiSamples:viewer-events",
+      "name": "viewer-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:caching-results",
+      "name": "caching-results",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:calling",
+      "name": "calling",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:viewers",
+      "name": "viewers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:discover-functions",
+      "name": "discover-functions",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:get-result-views",
+      "name": "get-result-views",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:register-function",
+      "name": "register-function",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:auto-size",
+      "name": "auto-size",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:cell-renderer",
+      "name": "cell-renderer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dynamic-value-retrieval",
+      "name": "dynamic-value-retrieval",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:format-formula",
+      "name": "format-formula",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:hit-test",
+      "name": "hit-test",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:link-click",
+      "name": "link-click",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markup-link",
+      "name": "markup-link",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sparklines",
+      "name": "sparklines",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:visible-cells",
+      "name": "visible-cells",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:tags-multi-cell",
+      "name": "tags-multi-cell",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:category-colors",
+      "name": "category-colors",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:color-coding-conditional",
+      "name": "color-coding-conditional",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-cell-prepare",
+      "name": "custom-cell-prepare",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-cell-rendering-indexes",
+      "name": "custom-cell-rendering-indexes",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-cell-tooltip",
+      "name": "custom-cell-tooltip",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:html-dynamic-cells",
+      "name": "html-dynamic-cells",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:html-table-cells",
+      "name": "html-table-cells",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:plate-viewer",
+      "name": "plate-viewer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:scroll-to-cell",
+      "name": "scroll-to-cell",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:scroll-to-pixels",
+      "name": "scroll-to-pixels",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:order-columns",
+      "name": "order-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:order-rows",
+      "name": "order-rows",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:html-rendering",
+      "name": "html-rendering",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:column-width-type",
+      "name": "column-width-type",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:hide-columns",
+      "name": "hide-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:resize-columns",
+      "name": "resize-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:resize-events",
+      "name": "resize-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:column-cell-styles",
+      "name": "column-cell-styles",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:column-controlled-values",
+      "name": "column-controlled-values",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:data-format",
+      "name": "data-format",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:users-today",
+      "name": "users-today",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:paint",
+      "name": "paint",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:user-settings-storage",
+      "name": "user-settings-storage",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:hide-empty-columns",
+      "name": "hide-empty-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:all-chembl-structures",
+      "name": "all-chembl-structures",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:read-strings",
+      "name": "read-strings",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:PythonDup",
+      "name": "PythonDup",
+      "language": "python",
+      "description": "Duplicates a string in Python"
+    },
+    {
+      "id": "script:ApiSamples:RDup",
+      "name": "RDup",
+      "language": "r",
+      "description": "Duplicates a string in R"
+    },
+    {
+      "id": "script:ApiSamples:files-for-scripting",
+      "name": "files-for-scripting",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:package-scripting",
+      "name": "package-scripting",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:current-object-html",
+      "name": "current-object-html",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:current-object-js",
+      "name": "current-object-js",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:current-object",
+      "name": "current-object",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:last-error",
+      "name": "last-error",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:ui-parts",
+      "name": "ui-parts",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:shell-windows",
+      "name": "shell-windows",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:Pearson",
+      "name": "Pearson",
+      "language": "javascript",
+      "description": "Computes Pearson correlation for two numerical columns"
+    },
+    {
+      "id": "script:ApiSamples:bioreactor",
+      "name": "bioreactor",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:accordion",
+      "name": "accordion",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:balloons",
+      "name": "balloons",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:buttons",
+      "name": "buttons",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:color-palettes",
+      "name": "color-palettes",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:combo-popup",
+      "name": "combo-popup",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:drop-down",
+      "name": "drop-down",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:file-browser",
+      "name": "file-browser",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:html-tables",
+      "name": "html-tables",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:icons",
+      "name": "icons",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:iframe",
+      "name": "iframe",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:image",
+      "name": "image",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:info-bar",
+      "name": "info-bar",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:list",
+      "name": "list",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:loading-indicators",
+      "name": "loading-indicators",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markdown",
+      "name": "markdown",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:menu-advanced",
+      "name": "menu-advanced",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:menu-customization",
+      "name": "menu-customization",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:property-grid",
+      "name": "property-grid",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:range-slider",
+      "name": "range-slider",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sidebar",
+      "name": "sidebar",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:tab-control",
+      "name": "tab-control",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:taskbar_progress",
+      "name": "taskbar_progress",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:typography",
+      "name": "typography",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:update-indicator",
+      "name": "update-indicator",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:blocks",
+      "name": "blocks",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:box",
+      "name": "box",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:containers",
+      "name": "containers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:flexbox",
+      "name": "flexbox",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:panels",
+      "name": "panels",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:splitters",
+      "name": "splitters",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:css",
+      "name": "css",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dialogs-advanced",
+      "name": "dialogs-advanced",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dialogs",
+      "name": "dialogs",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:full-screen",
+      "name": "full-screen",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:modal",
+      "name": "modal",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:wizard",
+      "name": "wizard",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:docking-floating",
+      "name": "docking-floating",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:docking",
+      "name": "docking",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:auto-renderers",
+      "name": "auto-renderers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:dynamic-resolving",
+      "name": "dynamic-resolving",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:handlers",
+      "name": "handlers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:list-handlers",
+      "name": "list-handlers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markup-handlers",
+      "name": "markup-handlers",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-inputs",
+      "name": "custom-inputs",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:for-columns",
+      "name": "for-columns",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:for-properties",
+      "name": "for-properties",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:input-events",
+      "name": "input-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:input-form",
+      "name": "input-form",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:master-details",
+      "name": "master-details",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:choice-input",
+      "name": "choice-input",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:column-combo-box",
+      "name": "column-combo-box",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:forms",
+      "name": "forms",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:inputs",
+      "name": "inputs",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:parameter-expressions",
+      "name": "parameter-expressions",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:parameter-validation",
+      "name": "parameter-validation",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:drag-and-drop",
+      "name": "drag-and-drop",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:widget-status",
+      "name": "widget-status",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:render-items",
+      "name": "render-items",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:row-group-tooltips",
+      "name": "row-group-tooltips",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:ui-events",
+      "name": "ui-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:default-properties",
+      "name": "default-properties",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:init-function",
+      "name": "init-function",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:init-script",
+      "name": "init-script",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:sketch-form",
+      "name": "sketch-form",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:context-menu",
+      "name": "context-menu",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:create-viewers-dynamically",
+      "name": "create-viewers-dynamically",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-column-selector",
+      "name": "custom-column-selector",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:custom-scatterplot-rendering",
+      "name": "custom-scatterplot-rendering",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:filter-select-highlight",
+      "name": "filter-select-highlight",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:add-single-filter",
+      "name": "add-single-filter",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:multi-value-filter",
+      "name": "multi-value-filter",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:globe-viewer",
+      "name": "globe-viewer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:radar-viewer",
+      "name": "radar-viewer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:line-chart-multiple-series",
+      "name": "line-chart-multiple-series",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:list-viewers",
+      "name": "list-viewers",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:scatter-plot-events",
+      "name": "scatter-plot-events",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:style-settings",
+      "name": "style-settings",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:bar-chart",
+      "name": "bar-chart",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:box-plot",
+      "name": "box-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:calendar",
+      "name": "calendar",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:corr-plot",
+      "name": "corr-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:density-plot",
+      "name": "density-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:filters",
+      "name": "filters",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:form-advanced",
+      "name": "form-advanced",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:form",
+      "name": "form",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:globe",
+      "name": "globe",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:grid",
+      "name": "grid",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:heat-map",
+      "name": "heat-map",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:histogram",
+      "name": "histogram",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:line-chart",
+      "name": "line-chart",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markup-advanced",
+      "name": "markup-advanced",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markup-eeg",
+      "name": "markup-eeg",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:markup",
+      "name": "markup",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:matrix-plot",
+      "name": "matrix-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:network-diagram",
+      "name": "network-diagram",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:pc-plot",
+      "name": "pc-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:pie-chart",
+      "name": "pie-chart",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:scatter-plot-3d",
+      "name": "scatter-plot-3d",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:scatter-plot",
+      "name": "scatter-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:shape-map",
+      "name": "shape-map",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:statistics",
+      "name": "statistics",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:tile-viewer",
+      "name": "tile-viewer",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:tree-map",
+      "name": "tree-map",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:trellis-plot",
+      "name": "trellis-plot",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:word-cloud",
+      "name": "word-cloud",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:viewer-info",
+      "name": "viewer-info",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:currently-open-views",
+      "name": "currently-open-views",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:files-view",
+      "name": "files-view",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:layouts",
+      "name": "layouts",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:multi-view",
+      "name": "multi-view",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:navigation",
+      "name": "navigation",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:ribbon",
+      "name": "ribbon",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:toolbox-page",
+      "name": "toolbox-page",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:toolbox",
+      "name": "toolbox",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:views",
+      "name": "views",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:virtual-view",
+      "name": "virtual-view",
+      "language": "js",
+      "description": null
+    },
+    {
+      "id": "script:ApiSamples:widgets-tree",
+      "name": "widgets-tree",
+      "language": "js",
+      "description": null
+    }
+  ],
+  "queries": [
+    {
+      "id": "query:ApiSamples:MSSQLByInt",
+      "name": "MSSQLByInt",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:ApiSamples:Countries",
+      "name": "Countries",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:ApiSamples:CustomersInCountry",
+      "name": "CustomersInCountry",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/ApiSamples/claude.md",
+      "title": "ApiSamples",
+      "url": "/packages/ApiSamples/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ApiSamples/credits.md",
+      "title": "ApiSamples — Third-Party Libraries",
+      "url": "/packages/ApiSamples/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ApiSamples/readme.md",
+      "title": "API Samples",
+      "url": "/packages/ApiSamples/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/packages/_overview",
+      "title": "JavaScript Development Overview",
+      "url": "/help/develop/packages/_overview",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Samples/credits.md",
+      "title": "Samples — Third-Party Libraries",
+      "url": "/packages/Samples/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:ApiSamples:1.0.12:0",
+      "version": "1.0.12",
+      "released_at": "2024-10-17",
+      "ticket": null,
+      "text": "Add samples before for scripts"
+    },
+    {
+      "id": "clog:ApiSamples:1.0.12:1",
+      "version": "1.0.12",
+      "released_at": "2024-10-17",
+      "ticket": null,
+      "text": "Sample fixes"
+    },
+    {
+      "id": "clog:ApiSamples:1.0.11:0",
+      "version": "1.0.11",
+      "released_at": "2024-07-09",
+      "ticket": null,
+      "text": "Add samples for HelmInput"
+    },
+    {
+      "id": "clog:ApiSamples:1.0.7:0",
+      "version": "1.0.7",
+      "released_at": "2023-07-27",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.16.0*"
+    },
+    {
+      "id": "clog:ApiSamples:1.0.7:1",
+      "version": "1.0.7",
+      "released_at": "2023-07-27",
+      "ticket": null,
+      "text": "All examples now have auto tests"
+    }
+  ],
+  "stats": {
+    "functions": 0,
+    "scripts": 267,
+    "queries": 3,
+    "tutorials": 0,
+    "docs": 5,
+    "changelog": 5
+  }
+}

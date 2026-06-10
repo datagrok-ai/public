@@ -1,0 +1,79 @@
+{
+  "package_id": "pkg:nmrium",
+  "features": [
+    {
+      "id": "feature:nmrium:nmr-file-import",
+      "implements": [
+        {
+          "path": "packages/nmrium/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/nmrium/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/NMRiumWrapper.tsx",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/hooks/useLoadSpectra.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/events/event.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers jdx/dx/nmrium fileHandlers and checkNmriumJdx; utils.ts dispatches the file via the wrapper's postMessage bus to useLoadSpectra which parses the bytes."
+    },
+    {
+      "id": "feature:nmrium:nmr-spectrum-viewer",
+      "implements": [
+        {
+          "path": "packages/nmrium/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/nmrium/src/utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/NMRiumWrapper.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/hooks/usePreferences.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/hooks/useLoadSpectra.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/nmrium/nmrium-wrapper/src/events/event.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/nmrium/src/bp.css",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "previewNMRData/previewNMRFromDX mount the NMRium React component (via getNMRiumView -> getNMRiumComponent) as a Datagrok file-preview view, with Blueprint CSS for the embedded UI."
+    }
+  ]
+}

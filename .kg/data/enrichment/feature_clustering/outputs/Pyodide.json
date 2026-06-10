@@ -1,0 +1,131 @@
+{
+  "package_id": "pkg:Pyodide",
+  "features": [
+    {
+      "id": "feature:Pyodide:in-browser-python-scripting",
+      "name": "In-Browser Python Scripting",
+      "description": "Runs Python scripts directly in the browser via WebAssembly using the Pyodide engine, eliminating server round-trips and registering 'pyodide' as a first-class Datagrok script language.",
+      "category": "infra",
+      "confidence": 0.98,
+      "members": [
+        {"id": "func:Pyodide:initPyodide",                                                           "weight": 1.0,  "role": "core"},
+        {"id": "func:Pyodide:pyodideLanguageHandler",                                                "weight": 1.0,  "role": "core"},
+        {"id": "doc:/packages/Pyodide/readme.md",                                                    "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/compute/compute",                                                           "weight": 0.70, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/getting-started",                                        "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/scripting-features",                  "weight": 0.80, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",              "weight": 0.75, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",                    "weight": 0.70, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",                     "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",                       "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",                  "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "initPyodide bootstraps the WASM runtime and pyodideLanguageHandler is the registered scriptHandler routing all 'pyodide'-language scripts; the broad scripting docs describe the user experience built on top."
+    },
+    {
+      "id": "feature:Pyodide:script-vectorization",
+      "name": "Script Vectorization",
+      "description": "Automatically generates vectorized (columnar) code from element-wise Python scripts, enabling efficient batch processing of DataFrame columns without manual looping.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Pyodide:makeVectorCode",                 "weight": 1.0,  "role": "core"},
+        {"id": "script:Pyodide:Pyodide Calc Column",          "weight": 0.90, "role": "sample"},
+        {"id": "script:Pyodide:Pyodide Calc Column Call",     "weight": 0.75, "role": "sample"}
+      ],
+      "evidence_summary": "makeVectorCode generates vectorized column code; the Calc Column scripts demonstrate and test that vectorization path, and the v1.0.0 changelog explicitly mentions 'scripts vectorization for scripts with language set to pyodide'."
+    },
+    {
+      "id": "feature:Pyodide:type-marshaling",
+      "name": "Primitive Type Marshaling",
+      "description": "Converts Python primitive values (bool, int, float, string, datetime, map, blob, column list) to and from JavaScript types, enabling seamless data exchange between Pyodide scripts and the Datagrok runtime.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "script:Pyodide:Pyodide Bool",                                                        "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Int",                                                         "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Double",                                                      "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide String",                                                      "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Date",                                                        "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Map",                                                         "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Column List",                                                 "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:Pyodide Blob Input Output",                                           "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:SimpleInputsPy",                                                      "weight": 0.85, "role": "test"},
+        {"id": "script:Pyodide:SimpleInputsJS",                                                      "weight": 0.80, "role": "test"},
+        {"id": "script:Pyodide:DatetimeTestPy",                                                      "weight": 0.85, "role": "test"},
+        {"id": "script:Pyodide:DatetimeTestJS",                                                      "weight": 0.80, "role": "test"},
+        {"id": "doc:/help/compute/scripting/scripting-features/complex-input-output",                "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "Scripts named after each primitive type (Bool, Int, Double, String, Date, Map, Blob, Column List) plus SimpleInputs and DatetimeTest pairs form a coherent type-marshaling test suite, corroborated by the 'Complex data types' scripting guide."
+    },
+    {
+      "id": "feature:Pyodide:dataframe-io",
+      "name": "DataFrame Input/Output",
+      "description": "Passes Datagrok DataFrames into and out of Pyodide scripts, allowing Python code to read, transform, and return tabular data without serialization overhead.",
+      "category": "infra",
+      "confidence": 0.93,
+      "members": [
+        {"id": "script:Pyodide:EditDFPy",                    "weight": 1.0,  "role": "test"},
+        {"id": "script:Pyodide:EditDFJS",                    "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:DataFrameInputCallJS",        "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:DataFrameInputCallPy",        "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:Pyodide Empty Dataframe",     "weight": 0.85, "role": "test"},
+        {"id": "script:Pyodide:Pyodide Single Df",           "weight": 0.85, "role": "test"}
+      ],
+      "evidence_summary": "EditDF*, DataFrameInputCall*, Empty Dataframe, and Single Df scripts all handle DataFrames as inputs or outputs; the v1.2.1 changelog fixes a bug in 'code generation for dataframes', confirming this as a distinct feature axis."
+    },
+    {
+      "id": "feature:Pyodide:funccall-interop",
+      "name": "FuncCall Interop",
+      "description": "Allows Pyodide scripts to invoke other Datagrok FuncCalls synchronously (via run_sync / execFuncCall), enabling Python-scripted orchestration of server-side or JS functions.",
+      "category": "infra",
+      "confidence": 0.87,
+      "members": [
+        {"id": "script:Pyodide:SimpleInputsCallJS",          "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:SimpleInputsCallPy",          "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:DatetimeInputCallJS",         "weight": 0.90, "role": "test"},
+        {"id": "script:Pyodide:DatetimeInputCallPy",         "weight": 0.90, "role": "test"}
+      ],
+      "evidence_summary": "All four *Call* scripts test invoking external FuncCalls from within pyodide scripts, directly matching the v1.3.0 changelog entry 'Allow calling FuncCalls via run_sync and execFuncCall'."
+    },
+    {
+      "id": "feature:Pyodide:script-dependencies",
+      "name": "Script Package Dependencies",
+      "description": "Supports declaring Python package dependencies for Pyodide scripts via the meta.dependencies annotation, automatically loading the required packages before script execution.",
+      "category": "infra",
+      "confidence": 0.82,
+      "members": [
+        {"id": "script:Pyodide:Pyodide Deps Test",           "weight": 1.0,  "role": "test"}
+      ],
+      "evidence_summary": "The Deps Test script exercises the meta.dependencies mechanism introduced in v1.3.0 to auto-load Python packages inside the WASM sandbox."
+    },
+    {
+      "id": "feature:Pyodide:graphics-output",
+      "name": "Graphics Output",
+      "description": "Renders visual output (charts, plots) produced by Pyodide scripts directly in the Datagrok UI, returning a graphics output column as the result.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "script:Pyodide:Pyodide Graphics",                                                    "weight": 1.0,  "role": "sample"},
+        {"id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",               "weight": 0.80, "role": "doc"}
+      ],
+      "evidence_summary": "The Graphics script is explicitly described as 'graphics output column input' and maps directly to the 'Visualize output data' scripting guide."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Pyodide:type-marshaling",        "to": "feature:Pyodide:dataframe-io",                 "kind": "sibling"},
+    {"from": "feature:Pyodide:script-vectorization",   "to": "feature:Pyodide:in-browser-python-scripting",  "kind": "subfeature"},
+    {"from": "feature:Pyodide:funccall-interop",       "to": "feature:Pyodide:in-browser-python-scripting",  "kind": "related"},
+    {"from": "feature:Pyodide:script-dependencies",    "to": "feature:Pyodide:in-browser-python-scripting",  "kind": "related"},
+    {"from": "feature:Pyodide:graphics-output",        "to": "feature:Pyodide:in-browser-python-scripting",  "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/compute/diff-studio",
+    "doc:/help/compute/function-analysis",
+    "doc:/help/compute/jupyter-notebook",
+    "doc:/help/compute/models",
+    "doc:/packages/Pyodide/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/packages/Compute/credits.md"
+  ]
+}

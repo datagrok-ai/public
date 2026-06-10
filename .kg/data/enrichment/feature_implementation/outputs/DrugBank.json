@@ -1,0 +1,101 @@
+{
+  "package_id": "pkg:DrugBank",
+  "features": [
+    {
+      "id": "feature:DrugBank:substructure-search",
+      "implements": [
+        {
+          "path": "packages/DrugBank/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/widgets.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/searches.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DrugBank/src/tests/drugbank-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/tests/const.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "drugBankSubstructureSearchPanel in package.ts -> searchWidget in widgets.ts -> searchSubstructure in searches.ts; covered by 'substructure-search' test."
+    },
+    {
+      "id": "feature:DrugBank:similarity-search",
+      "implements": [
+        {
+          "path": "packages/DrugBank/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/widgets.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/searches.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DrugBank/src/tests/drugbank-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/tests/const.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "drugBankSimilaritySearchPanel in package.ts -> searchWidget in widgets.ts -> findSimilar in searches.ts; covered by 'similarity-search' test."
+    },
+    {
+      "id": "feature:DrugBank:drug-name-lookup",
+      "implements": [
+        {
+          "path": "packages/DrugBank/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DrugBank/src/widgets.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DrugBank/src/tests/drugbank-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "drugNameMolecule converter in package.ts delegates to drugNameMoleculeConvert in widgets.ts; covered by 'drugNameMolecule' test. searches.ts is unrelated."
+    },
+    {
+      "id": "feature:DrugBank:package-init",
+      "implements": [
+        {
+          "path": "packages/DrugBank/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "initDrugBank loads drugbank-open-structures.d42 into module-scoped dbdf, synonymsCol, moleculeCol; defined entirely in package.ts."
+    }
+  ]
+}

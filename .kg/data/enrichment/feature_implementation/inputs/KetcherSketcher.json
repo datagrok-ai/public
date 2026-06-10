@@ -1,0 +1,137 @@
+{
+  "package": {
+    "id": "pkg:KetcherSketcher",
+    "name": "KetcherSketcher",
+    "friendly_name": "Ketcher Sketcher",
+    "category": "Cheminformatics",
+    "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher."
+  },
+  "files": {
+    "src": [
+      "packages/KetcherSketcher/src/constants.ts",
+      "packages/KetcherSketcher/src/ketcher.tsx",
+      "packages/KetcherSketcher/src/package.ts"
+    ],
+    "tests": [
+      "packages/KetcherSketcher/src/package-test.ts",
+      "packages/KetcherSketcher/src/tests/ketcher-tests.ts",
+      "packages/KetcherSketcher/src/tests/ketcher-utils.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/KetcherSketcher/CHANGELOG.md",
+      "packages/KetcherSketcher/CLAUDE.md",
+      "packages/KetcherSketcher/CREDITS.md",
+      "packages/KetcherSketcher/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:KetcherSketcher:molecule-sketcher",
+      "name": "Ketcher Molecule Sketcher",
+      "description": "Integrates the Ketcher open-source chemical structure editor as an optional molecule sketcher widget in Datagrok, enabling interactive drawing and editing of molecular structures. Replaces or supplements the default…",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:KetcherSketcher:Ketcher",
+          "kind": "RegisteredFunction",
+          "name": "Ketcher",
+          "friendly_name": null,
+          "role": "moleculeSketcher",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/KetcherSketcher/readme.md",
+          "kind": "DocPage",
+          "title": "Ketcher",
+          "url": "/packages/KetcherSketcher/readme.md"
+        },
+        {
+          "id": "doc:/packages/KetcherSketcher/claude.md",
+          "kind": "DocPage",
+          "title": "KetcherSketcher",
+          "url": "/packages/KetcherSketcher/claude.md"
+        },
+        {
+          "id": "doc:/packages/KetcherSketcher/credits.md",
+          "kind": "DocPage",
+          "title": "KetcherSketcher — Third-Party Libraries",
+          "url": "/packages/KetcherSketcher/credits.md"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.4.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.4.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.4.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.4.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.3.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.2.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.2.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.2.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.10:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.9:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.8:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.7:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.6:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:KetcherSketcher:2.1.4:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/KetcherSketcher/src/constants.ts",
+          "packages/KetcherSketcher/src/ketcher.tsx",
+          "packages/KetcherSketcher/src/package.ts"
+        ],
+        "tests": [
+          "packages/KetcherSketcher/src/tests/ketcher-utils.ts"
+        ]
+      }
+    }
+  ]
+}

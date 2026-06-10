@@ -1,0 +1,349 @@
+{
+  "package": {
+    "id": "pkg:MolTrack",
+    "name": "MolTrack",
+    "friendly_name": "Mol Track",
+    "category": "Cheminformatics",
+    "description": "Enables registering, tracking, and searching chemical compounds and batches."
+  },
+  "files": {
+    "src": [
+      "packages/MolTrack/src/components/mapping_editor.ts",
+      "packages/MolTrack/src/package.ts",
+      "packages/MolTrack/src/services/moltrack-docker-service.ts",
+      "packages/MolTrack/src/utils/constants.ts",
+      "packages/MolTrack/src/utils/detectors.ts",
+      "packages/MolTrack/src/utils/fetch-utils.ts",
+      "packages/MolTrack/src/utils/layout.ts",
+      "packages/MolTrack/src/utils/registration-utils.ts",
+      "packages/MolTrack/src/utils/types.ts",
+      "packages/MolTrack/src/utils/utils.ts",
+      "packages/MolTrack/src/utils/view-utils.ts",
+      "packages/MolTrack/src/views/registration-assay-tab.ts",
+      "packages/MolTrack/src/views/registration-entity-base.ts",
+      "packages/MolTrack/src/views/registration-tab.ts",
+      "packages/MolTrack/src/views/registration-view-base.ts",
+      "packages/MolTrack/src/views/schema-view.ts",
+      "packages/MolTrack/src/views/search.ts",
+      "packages/MolTrack/src/widgets/moltrack-property-panel.ts"
+    ],
+    "tests": [
+      "packages/MolTrack/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/MolTrack/queries/search.sql",
+      "packages/MolTrack/queries/setup.sql"
+    ],
+    "docs": [
+      "packages/MolTrack/CHANGELOG.md",
+      "packages/MolTrack/CREDITS.md",
+      "packages/MolTrack/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:MolTrack:application-shell",
+      "name": "MolTrack Application Shell",
+      "description": "The top-level Datagrok app view for MolTrack, providing tree-based navigation, an info-panel widget that surfaces registry data for selected chemical structures, and the Chem browse-path entry point.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:MolTrack:MolTrack",
+          "kind": "RegisteredFunction",
+          "name": "MolTrack",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:molTrackAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "molTrackAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:Databases | MolTrack",
+          "kind": "RegisteredFunction",
+          "name": "Databases | MolTrack",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/MolTrack/readme.md",
+          "kind": "DocPage",
+          "title": "MolTrack",
+          "url": "/packages/MolTrack/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MolTrack/src/package-api.ts",
+          "packages/MolTrack/src/package.ts",
+          "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "packages/MolTrack/src/utils/constants.ts",
+          "packages/MolTrack/src/utils/layout.ts",
+          "packages/MolTrack/src/utils/types.ts",
+          "packages/MolTrack/src/utils/utils.ts",
+          "packages/MolTrack/src/utils/view-utils.ts",
+          "packages/MolTrack/src/views/registration-assay-tab.ts",
+          "packages/MolTrack/src/views/registration-entity-base.ts",
+          "packages/MolTrack/src/views/registration-tab.ts",
+          "packages/MolTrack/src/views/schema-view.ts",
+          "packages/MolTrack/src/views/search.ts",
+          "packages/MolTrack/src/widgets/moltrack-property-panel.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MolTrack:compound-registration",
+      "name": "Compound & Batch Registration",
+      "description": "Registers new small-molecule compounds, batches, and assays into the registry, including bulk import from file and programmatic property registration.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:MolTrack:registerMolTrackProperties",
+          "kind": "RegisteredFunction",
+          "name": "registerMolTrackProperties",
+          "friendly_name": null,
+          "role": null,
+          "description": "Registers compound properties in the MolTrack service using the provided JSON payload",
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:registerAssays",
+          "kind": "RegisteredFunction",
+          "name": "registerAssays",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:registerBulk",
+          "kind": "RegisteredFunction",
+          "name": "registerBulk",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:MolTrack:insertProperties",
+          "kind": "DataQuery",
+          "name": "insertProperties",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MolTrack/src/package.ts",
+          "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "packages/MolTrack/src/utils/constants.ts",
+          "packages/MolTrack/src/utils/types.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MolTrack:compound-search",
+      "name": "Compound & Batch Search",
+      "description": "Search and retrieve compounds or batches by corporate ID, free-text query, or a structured filter tree with user-specified output fields.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:MolTrack:search",
+          "kind": "RegisteredFunction",
+          "name": "search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:advancedSearch",
+          "kind": "RegisteredFunction",
+          "name": "advancedSearch",
+          "friendly_name": null,
+          "role": null,
+          "description": "Performs a structured MolTrack compound search. The caller must provide the \"output\": a list of fully-qualified field names to return; \"filter\": a structured…",
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:getCompoundByCorporateId",
+          "kind": "RegisteredFunction",
+          "name": "getCompoundByCorporateId",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:getBatchByCorporateId",
+          "kind": "RegisteredFunction",
+          "name": "getBatchByCorporateId",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:retrieveEntity",
+          "kind": "RegisteredFunction",
+          "name": "retrieveEntity",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:MolTrack:getCompounds",
+          "kind": "DataQuery",
+          "name": "getCompounds",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MolTrack/src/package-api.ts",
+          "packages/MolTrack/src/package.ts",
+          "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "packages/MolTrack/src/utils/constants.ts",
+          "packages/MolTrack/src/utils/layout.ts",
+          "packages/MolTrack/src/utils/types.ts",
+          "packages/MolTrack/src/utils/utils.ts",
+          "packages/MolTrack/src/utils/view-utils.ts",
+          "packages/MolTrack/src/views/search.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MolTrack:schema-management",
+      "name": "Schema & Property Management",
+      "description": "Expose and introspect the dynamic (user-defined) and static field schemas for compound and batch entities, powering both the registration UI and search filter construction.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:MolTrack:fetchCompoundProperties",
+          "kind": "RegisteredFunction",
+          "name": "fetchCompoundProperties",
+          "friendly_name": null,
+          "role": null,
+          "description": "Retrieves all properties defined for the 'compound' scope",
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:fetchBatchProperties",
+          "kind": "RegisteredFunction",
+          "name": "fetchBatchProperties",
+          "friendly_name": null,
+          "role": null,
+          "description": "Retrieves all properties defined for the 'batch' scope",
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:fetchSchema",
+          "kind": "RegisteredFunction",
+          "name": "fetchSchema",
+          "friendly_name": null,
+          "role": null,
+          "description": "Retrieves all dynamic fields",
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:fetchDirectSchema",
+          "kind": "RegisteredFunction",
+          "name": "fetchDirectSchema",
+          "friendly_name": null,
+          "role": null,
+          "description": "Retrieves all static fields",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MolTrack/src/package.ts",
+          "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "packages/MolTrack/src/utils/constants.ts",
+          "packages/MolTrack/src/utils/types.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MolTrack:database-initialization",
+      "name": "Database Initialization",
+      "description": "Bootstraps the MolTrack database on first run: creates the admin user, seeds semantic-type synonyms, default properties, settings, and standardisation rules, and checks whether the DB is already initialised.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:MolTrack:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MolTrack:initDB",
+          "kind": "RegisteredFunction",
+          "name": "initDB",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:MolTrack:insertAdminUser",
+          "kind": "DataQuery",
+          "name": "insertAdminUser",
+          "description": null
+        },
+        {
+          "id": "query:MolTrack:insertSemanticTypeSynonym",
+          "kind": "DataQuery",
+          "name": "insertSemanticTypeSynonym",
+          "description": null
+        },
+        {
+          "id": "query:MolTrack:insertSettings",
+          "kind": "DataQuery",
+          "name": "insertSettings",
+          "description": null
+        },
+        {
+          "id": "query:MolTrack:insertStandartization",
+          "kind": "DataQuery",
+          "name": "insertStandartization",
+          "description": null
+        },
+        {
+          "id": "query:MolTrack:checkDBInitialized",
+          "kind": "DataQuery",
+          "name": "checkDBInitialized",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MolTrack/src/package.ts",
+          "packages/MolTrack/src/utils/constants.ts",
+          "packages/MolTrack/src/utils/detectors.ts",
+          "packages/MolTrack/src/utils/fetch-utils.ts",
+          "packages/MolTrack/src/utils/registration-utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "package_id": "pkg:Compute",
+  "features": [
+    {
+      "id": "feature:Compute:rich-function-view",
+      "name": "Rich Function View",
+      "description": "Interactive UI for executing any registered function or script as a model, with auto-generated inputs, run controls, and structured output panels. Central model-execution surface of the legacy Compute framework.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Compute:openModelFromFuncall",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Compute:RichFunctionViewEditor", "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view", "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/compute/compute",           "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/models",            "weight": 0.8,  "role": "doc"}
+      ],
+      "evidence_summary": "openModelFromFuncall and RichFunctionViewEditor share the same funccall→view pipeline and are directly explained by the dedicated Rich Function View guide and the top-level Compute/Models docs."
+    },
+    {
+      "id": "feature:Compute:scripting",
+      "name": "Scripting Platform",
+      "description": "Author and run multi-language scripts (R, Python, JS) inside Datagrok, with a rich script editor, custom input widgets, REST invocation, and visualisation of outputs.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Compute:CustomStringInput",      "weight": 0.85, "role": "core"},
+        {"id": "script:Compute:Default get real data","weight": 0.7,  "role": "sample"},
+        {"id": "script:Compute:Data stats",           "weight": 0.7,  "role": "sample"},
+        {"id": "doc:/help/compute/scripting/getting-started",                              "weight": 1.0,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/scripting-features",        "weight": 1.0,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/complex-input-output",      "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",    "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",          "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",     "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",           "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",             "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "All docs under /help/compute/scripting/ form a coherent scripting guide hierarchy; CustomStringInput is a custom widget used within scripting UIs; the two sample scripts demonstrate the platform's default view and stats capabilities."
+    },
+    {
+      "id": "feature:Compute:diff-studio-ode-models",
+      "name": "Diff Studio ODE Models",
+      "description": "Solve and visualise systems of ordinary differential equations interactively using Diff Studio, with bundled canonical examples covering chaotic systems and ecological models.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "doc:/help/compute/diff-studio",        "weight": 1.0,  "role": "doc"},
+        {"id": "script:Compute:Logistic Map",          "weight": 0.9,  "role": "sample"},
+        {"id": "script:Compute:Lorenz Attractor",      "weight": 0.9,  "role": "sample"},
+        {"id": "script:Compute:LotkaVolterra",         "weight": 0.9,  "role": "sample"}
+      ],
+      "evidence_summary": "Logistic Map, Lorenz Attractor, and Lotka-Volterra are all classic ODE/dynamical-system examples that directly illustrate Diff Studio's ODE simulation capability, co-documented in the Diff Studio guide."
+    },
+    {
+      "id": "feature:Compute:object-cooling-demo",
+      "name": "Object Cooling Simulation Demo",
+      "description": "Interactive Newton's law of cooling simulation with per-parameter validators and a selector for cooling mode, serving as a self-contained demo of the Compute model framework.",
+      "category": "ml",
+      "confidence": 0.87,
+      "members": [
+        {"id": "script:Compute:Object cooling",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Compute:ObjectCoolingSelector",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Compute:SimTimeValidator",        "weight": 0.95, "role": "core"},
+        {"id": "func:Compute:DesiredTempValidator",    "weight": 0.95, "role": "core"},
+        {"id": "func:Compute:InitialTempValidator",    "weight": 0.95, "role": "core"},
+        {"id": "func:Compute:AmbTempValidator",        "weight": 0.95, "role": "core"},
+        {"id": "func:Compute:HeatCapValidator",        "weight": 0.95, "role": "core"},
+        {"id": "script:Compute:Heat Exchange",         "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "Five Validators (SimTime, DesiredTemp, InitialTemp, AmbTemp, HeatCap), ObjectCoolingSelector, and the Object cooling script share a common 'cooling simulation' naming root and domain; Heat Exchange is a related thermal simulation."
+    },
+    {
+      "id": "feature:Compute:model-optimization",
+      "name": "Model Optimization Tools",
+      "description": "Parameter fitting, sensitivity analysis, and outlier detection tooling for Compute models; core fitting and SA capabilities have migrated to Compute2 but documentation remains in this package.",
+      "category": "ml",
+      "confidence": 0.75,
+      "members": [
+        {"id": "doc:/help/compute/function-analysis",  "weight": 1.0,  "role": "doc"},
+        {"id": "func:Compute:OutliersSelectionViewer", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "The function-analysis guide covers model optimization (sensitivity analysis, fitting, outlier detection), and OutliersSelectionViewer is described as an 'outliers selection viewer' — closely related tooling confirmed by changelog entries for SA and Fitting."
+    },
+    {
+      "id": "feature:Compute:custom-data-upload",
+      "name": "Custom Data Upload",
+      "description": "Extensible widget and handler for uploading custom input data within a model or pipeline run, allowing users to provide non-standard data types via a configurable uploader UI.",
+      "category": "infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:Compute:CustomDataUploader", "weight": 1.0,  "role": "core"},
+        {"id": "func:Compute:CustomUploader",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Compute:CustomCustomizer",   "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "CustomDataUploader, CustomUploader (widget returning funccall), and CustomCustomizer share the 'Custom*' name prefix and the same data-upload / customisation domain."
+    },
+    {
+      "id": "feature:Compute:pipeline-step-editor",
+      "name": "Pipeline Step Editor",
+      "description": "Editor component that wraps a single function call as a step inside a multi-step model pipeline, enabling chaining of compute operations.",
+      "category": "ml",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:Compute:PipelineStepEditor", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "PipelineStepEditor takes a funccall and produces an object, matching the pattern of a pipeline composition primitive; the changelog references pipeline and browse-view rewrites."
+    },
+    {
+      "id": "feature:Compute:jupyter-notebook",
+      "name": "Jupyter Notebook Integration",
+      "description": "Run and display Jupyter notebooks as compute artefacts within the Datagrok platform, bridging notebook-based workflows with the model execution UI.",
+      "category": "ml",
+      "confidence": 0.7,
+      "members": [
+        {"id": "doc:/help/compute/jupyter-notebook", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "A dedicated user-facing guide exists for Jupyter Notebook integration under the /help/compute/ hierarchy, indicating it is a standalone user-facing capability."
+    },
+    {
+      "id": "feature:Compute:biomedical-scripts",
+      "name": "Biomedical Example Scripts",
+      "description": "Domain-specific demonstration scripts covering ECG interval analysis, antibody Fab arm exchange, and bioreactor filter sizing (Vmax), showcasing Compute's multi-language scripting for life-sciences applications.",
+      "category": "ml",
+      "confidence": 0.65,
+      "members": [
+        {"id": "script:Compute:IntervalsFromECG",  "weight": 0.85, "role": "sample"},
+        {"id": "script:Compute:Fab Arm Exchange",  "weight": 0.8,  "role": "sample"},
+        {"id": "script:Compute:Vmax",              "weight": 0.8,  "role": "sample"}
+      ],
+      "evidence_summary": "IntervalsFromECG (cardiology), Fab Arm Exchange (antibody biology), and Vmax (bioprocess engineering) are all life-sciences domain scripts that don't fit other feature clusters but form a coherent 'biomedical demos' group."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:Compute:object-cooling-demo",
+      "to": "feature:Compute:diff-studio-ode-models",
+      "kind": "subfeature"
+    },
+    {
+      "from": "feature:Compute:rich-function-view",
+      "to": "feature:Compute:scripting",
+      "kind": "related"
+    },
+    {
+      "from": "feature:Compute:model-optimization",
+      "to": "feature:Compute:rich-function-view",
+      "kind": "related"
+    },
+    {
+      "from": "feature:Compute:pipeline-step-editor",
+      "to": "feature:Compute:rich-function-view",
+      "kind": "related"
+    },
+    {
+      "from": "feature:Compute:custom-data-upload",
+      "to": "feature:Compute:pipeline-step-editor",
+      "kind": "sibling"
+    }
+  ],
+  "unassigned_member_ids": [
+    "func:Compute:init",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/packages/Compute2/claude.md",
+    "doc:/packages/Compute2/credits.md",
+    "doc:/packages/Compute2/readme.md"
+  ]
+}

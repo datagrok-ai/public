@@ -1,0 +1,710 @@
+{
+  "package": {
+    "id": "pkg:BenchlingLink",
+    "name": "BenchlingLink",
+    "friendly_name": "BenchlingLink",
+    "version": "0.0.1",
+    "category": null,
+    "description": "Enables seamless interaction with the Benchling platform",
+    "extras": {
+      "npm_name": "@datagrok/benchlinglink",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:BenchlingLink:Benchling",
+      "name": "Benchling",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:benchlingLinkAppTreeBrowser",
+      "name": "benchlingLinkAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get AA Sequences",
+      "name": "Get AA Sequences",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get DNA Sequences",
+      "name": "Get DNA Sequences",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Assay Results",
+      "name": "Get Assay Results",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "double",
+        "double",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Assay Runs",
+      "name": "Get Assay Runs",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "double",
+        "double",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create AA Sequence",
+      "name": "Create AA Sequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create DNA Sequence",
+      "name": "Create DNA Sequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "bool",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create Assay Result",
+      "name": "Create Assay Result",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create Assay Run",
+      "name": "Create Assay Run",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Molecules",
+      "name": "Get Molecules",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create Molecule",
+      "name": "Create Molecule",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Projects",
+      "name": "Get Projects",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Plates",
+      "name": "Get Plates",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "double",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create Plate",
+      "name": "Create Plate",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get Mixtures",
+      "name": "Get Mixtures",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create Mixture",
+      "name": "Create Mixture",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Get DNA Oligos",
+      "name": "Get DNA Oligos",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BenchlingLink:Create DNA Oligo",
+      "name": "Create DNA Oligo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/BenchlingLink/claude.md",
+      "title": "BenchlingLink",
+      "url": "/packages/BenchlingLink/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BenchlingLink/credits.md",
+      "title": "BenchlingLink — Third-Party Libraries",
+      "url": "/packages/BenchlingLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BenchlingLink/readme.md",
+      "title": "BenchlingLink",
+      "url": "/packages/BenchlingLink/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_access/_05-transform-query-results",
+      "title": "Transform query results",
+      "url": "/help/_access/_05-transform-query-results",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/projects-browser-test",
+      "title": "Tests: Projects Browser",
+      "url": "/help/_internal/tests/projects-browser-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/projects",
+      "title": "Use Cases: Projects",
+      "url": "/help/_internal/tutorials/projects",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/access/databases/create-custom-connectors",
+      "title": "Create custom connectors",
+      "url": "/help/access/databases/create-custom-connectors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/create-project",
+      "title": "Create project",
+      "url": "/help/datagrok/_deprecated/create-project",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/teams/it/stress-testing-results",
+      "title": "Stress testing results",
+      "url": "/help/datagrok/solutions/teams/it/stress-testing-results",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+      "title": "Create custom file viewers",
+      "url": "/help/develop/how-to/files/create-custom-file-viewers",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/file-exporters",
+      "title": "Create file exporters",
+      "url": "/help/develop/how-to/files/file-exporters",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/functions/cache-function-results",
+      "title": "Caching function results",
+      "url": "/help/develop/how-to/functions/cache-function-results",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/views/custom-views",
+      "title": "Create a custom view",
+      "url": "/help/develop/how-to/views/custom-views",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/sequence-variability-map",
+      "title": "Sequence Variability Map viewer",
+      "url": "/help/visualize/viewers/sequence-variability-map",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/OligoBatchCalculator/credits.md",
+      "title": "Oligo Batch Calculator — Third-Party Libraries",
+      "url": "/packages/OligoBatchCalculator/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/OligoBatchCalculator/readme.md",
+      "title": "[Oligo Batch Calculator](https://public.datagrok.ai/apps/Oligobatchcalculator/)",
+      "url": "/packages/OligoBatchCalculator/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Plates/credits.md",
+      "title": "Plates — Third-Party Libraries",
+      "url": "/packages/Plates/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Plates/readme.md",
+      "title": "Plates",
+      "url": "/packages/Plates/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/SequenceTranslator/readme.md",
+      "title": "Sequence Translator",
+      "url": "/packages/SequenceTranslator/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 19,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 21,
+    "changelog": 0
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "package_id": "pkg:JiraConnect",
+  "features": [
+    {
+      "id": "feature:JiraConnect:connection-setup",
+      "implements": [
+        {
+          "path": "packages/JiraConnect/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/app/credentials.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/app/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/JiraConnect/src/detectors.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/JiraConnect/src/jira-grid-cell-handler.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/JiraConnect/src/api/data.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/JiraConnect/src/api/objects.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "_init wires the projects detector and grid-cell handler; info exposes web root; credentials are read by getJiraCreds via package _package.getCredentials."
+    },
+    {
+      "id": "feature:JiraConnect:project-browser",
+      "implements": [
+        {
+          "path": "packages/JiraConnect/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/api/data.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/api/objects.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/JiraConnect/src/app/credentials.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/JiraConnect/src/app/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "projectsList/projectData in package.ts call loadProjectsList/loadProjectData in api/data.ts using AuthCreds from api/objects."
+    },
+    {
+      "id": "feature:JiraConnect:ticket-retrieval",
+      "implements": [
+        {
+          "path": "packages/JiraConnect/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/api/data.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/api/objects.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/JiraConnect/src/app/credentials.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/JiraConnect/src/app/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "issueData, getJiraTicketsByFilter, getJiraTicketsBulk delegate to loadIssueData/loadIssues/loadIssuesBulk; cache lives in package.ts."
+    },
+    {
+      "id": "feature:JiraConnect:jira-field-info-panel",
+      "implements": [
+        {
+          "path": "packages/JiraConnect/src/jira-grid-cell-handler.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/JiraConnect/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/JiraConnect/src/detectors.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/JiraConnect/src/api/data.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/JiraConnect/src/api/objects.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/JiraConnect/src/app/credentials.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/JiraConnect/src/app/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "JiraGridCellHandler renders the Jira Ticket info panel and grid cell; getJiraField in package.ts populates the column on demand; detectors flag Jira keys as the semantic type."
+    }
+  ]
+}

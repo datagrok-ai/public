@@ -1,0 +1,46 @@
+{
+  "package_id": "pkg:monomerDB",
+  "features": [
+    {
+      "id": "feature:monomerDB:monomer-library-provider",
+      "implements": [
+        {
+          "path": "packages/monomerDB/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/monomerDB/src/libraryProvider.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers the 'Monomers DB Provider' (monomerLibProvider role) and init; libraryProvider.ts implements DBLibraryProvider which backs the IMonomerLibProvider contract using listLibraries/getMonomersByLibrary queries."
+    },
+    {
+      "id": "feature:monomerDB:monomer-data-management",
+      "implements": [
+        {
+          "path": "packages/monomerDB/src/libraryProvider.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Write operations live in queries/monomersApi.sql (upsertMonomer, upsertMonomerProperty, createLibrary). The only TS-side consumer is libraryProvider.ts (updateOrAddMonomersInLibrary calls api.queries.upsertMonomer)."
+    },
+    {
+      "id": "feature:monomerDB:monomer-info-panel",
+      "implements": [
+        {
+          "path": "packages/monomerDB/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "The exported 'info' function in package.ts displays the package webRoot via grok.shell.info."
+    }
+  ]
+}

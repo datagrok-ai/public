@@ -1,0 +1,498 @@
+{
+  "package": {
+    "id": "pkg:Chemspace",
+    "name": "Chemspace",
+    "friendly_name": "Enamine ChemSpace",
+    "version": "1.2.3",
+    "category": "Cheminformatics",
+    "description": "Integration with Chemspace. Allows to search for molecules available in Chemspace, and provides contextual information for the current molecule.",
+    "extras": {
+      "npm_name": "@datagrok/chemspace",
+      "fullName": "Chemspace",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Chemspace:Chemspace",
+      "name": "Chemspace",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:Databases | Chemspace",
+      "name": "Databases | Chemspace",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": "Chemspace Samples",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:Chemspace Prices",
+      "name": "Chemspace Prices",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": "Chemspace Prices",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:getChemspaceIds",
+      "name": "getChemspaceIds",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        null,
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:getChemspacePrices",
+      "name": "getChemspacePrices",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        null,
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:queryMultipart",
+      "name": "queryMultipart",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Perform query with multipart form data",
+      "input_types": [
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chemspace:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semValueExtractor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "semantic_value"
+      ],
+      "meta": {
+        "role": "semValueExtractor"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Chemspace/claude.md",
+      "title": "Chemspace",
+      "url": "/packages/Chemspace/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chemspace/credits.md",
+      "title": "Chemspace — Third-Party Libraries",
+      "url": "/packages/Chemspace/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chemspace/readme.md",
+      "title": "Chemspace",
+      "url": "/packages/Chemspace/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Chemspace:1.2.3:0",
+      "version": "1.2.3",
+      "released_at": "2025-05-06",
+      "ticket": null,
+      "text": "Fixed token request"
+    },
+    {
+      "id": "clog:Chemspace:1.2.2:0",
+      "version": "1.2.2",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Removed swagger file"
+    },
+    {
+      "id": "clog:Chemspace:1.2.1:0",
+      "version": "1.2.1",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Moved application under Chem section in browse tree"
+    },
+    {
+      "id": "clog:Chemspace:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Datagrok api >= 1.25.0"
+    },
+    {
+      "id": "clog:Chemspace:1.1.6:0",
+      "version": "1.1.6",
+      "released_at": "2025-02-25",
+      "ticket": null,
+      "text": "Updated README"
+    },
+    {
+      "id": "clog:Chemspace:1.1.5:0",
+      "version": "1.1.5",
+      "released_at": "2025-02-17",
+      "ticket": null,
+      "text": "Updated tests"
+    },
+    {
+      "id": "clog:Chemspace:1.1.4:0",
+      "version": "1.1.4",
+      "released_at": "2024-11-18",
+      "ticket": null,
+      "text": "Added function to add Chemspace ids via 'Add new column' dialog"
+    },
+    {
+      "id": "clog:Chemspace:1.1.4:1",
+      "version": "1.1.4",
+      "released_at": "2024-11-18",
+      "ticket": null,
+      "text": "Highligh chemspace_id semantic type"
+    },
+    {
+      "id": "clog:Chemspace:1.1.4:2",
+      "version": "1.1.4",
+      "released_at": "2024-11-18",
+      "ticket": null,
+      "text": "Improved errors reporting"
+    },
+    {
+      "id": "clog:Chemspace:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2024-11-18",
+      "ticket": "GROK-17022",
+      "text": "GROK-17022: Chemspace: opening Similar in context panel causes errors"
+    },
+    {
+      "id": "clog:Chemspace:1.1.2:0",
+      "version": "1.1.2",
+      "released_at": "2024-10-16",
+      "ticket": null,
+      "text": "Fixed cache invalidating"
+    },
+    {
+      "id": "clog:Chemspace:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2024-08-28",
+      "ticket": null,
+      "text": "Caching results"
+    },
+    {
+      "id": "clog:Chemspace:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-07-31",
+      "ticket": null,
+      "text": "Updated to Chemspace API version 4.0"
+    },
+    {
+      "id": "clog:Chemspace:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2024-07-24",
+      "ticket": null,
+      "text": "Dependency: datgarok-api >= 1.20.0"
+    },
+    {
+      "id": "clog:Chemspace:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2024-05-23",
+      "ticket": null,
+      "text": "package complience to contemporary platform version"
+    },
+    {
+      "id": "clog:Chemspace:1.0.3:0",
+      "version": "1.0.3",
+      "released_at": "2023-12-19",
+      "ticket": null,
+      "text": "Fixed searching for molblocks"
+    },
+    {
+      "id": "clog:Chemspace:1.0.2:0",
+      "version": "1.0.2",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "This release focuses on improving package usability."
+    },
+    {
+      "id": "clog:Chemspace:1.0.2:1",
+      "version": "1.0.2",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Added similarity score for compounds in the similarity panel."
+    },
+    {
+      "id": "clog:Chemspace:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "App: Surfaced search errors instead of silently showing an empty table, and guarded against stale responses from rapid input changes"
+    },
+    {
+      "id": "clog:Chemspace:v.next:1",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Prices panel: Fixed caching — country switches now reuse rendered results instead of refetching"
+    },
+    {
+      "id": "clog:Chemspace:v.next:2",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Get Chemspace Prices: Offers with missing USD pricing now fall through to the next offer instead of being stored as undefined"
+    },
+    {
+      "id": "clog:Chemspace:v.next:3",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "queryMultipart: URL-encoded query params (raw joining broke on spaces and commas)"
+    },
+    {
+      "id": "clog:Chemspace:v.next:4",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "queryMultipart: Rewrote retry loop — a successful 401 refresh no longer throws, and refreshed tokens are actually used on retry"
+    }
+  ],
+  "stats": {
+    "functions": 7,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 23
+  }
+}

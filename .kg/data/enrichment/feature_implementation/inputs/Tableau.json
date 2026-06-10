@@ -1,0 +1,74 @@
+{
+  "package": {
+    "id": "pkg:Tableau",
+    "name": "Tableau",
+    "friendly_name": "Tableau",
+    "category": "Data Access",
+    "description": "Support for Tableau .twb workbook files: import and preview"
+  },
+  "files": {
+    "src": [
+      "packages/Tableau/src/package.ts",
+      "packages/Tableau/src/tableau/tableau-parser.ts",
+      "packages/Tableau/src/tableau/tableau-to-dataframe.ts",
+      "packages/Tableau/src/tableau/tableau-types.ts",
+      "packages/Tableau/src/tableau/tableau-viewer.ts"
+    ],
+    "tests": [
+      "packages/Tableau/src/package-test.ts",
+      "packages/Tableau/src/tests/tableau-import-test.ts",
+      "packages/Tableau/src/tests/tableau-parser-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Tableau/CREDITS.md",
+      "packages/Tableau/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Tableau:twb-file-integration",
+      "name": "Tableau Workbook (.twb) File Integration",
+      "description": "Enables Datagrok to open and preview Tableau .twb workbook files by registering a file-import handler and an in-browser file viewer for the format.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Tableau:importTwb",
+          "kind": "RegisteredFunction",
+          "name": "importTwb",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Tableau workbook file",
+          "tags": []
+        },
+        {
+          "id": "func:Tableau:previewTwb",
+          "kind": "RegisteredFunction",
+          "name": "previewTwb",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Tableau/readme.md",
+          "kind": "DocPage",
+          "title": "Tableau",
+          "url": "/packages/Tableau/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Tableau/src/package.ts",
+          "packages/Tableau/src/tableau/tableau-parser.ts",
+          "packages/Tableau/src/tableau/tableau-to-dataframe.ts",
+          "packages/Tableau/src/tableau/tableau-types.ts",
+          "packages/Tableau/src/tableau/tableau-viewer.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

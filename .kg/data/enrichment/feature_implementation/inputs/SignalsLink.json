@@ -1,0 +1,65 @@
+{
+  "package": {
+    "id": "pkg:SignalsLink",
+    "name": "SignalsLink",
+    "friendly_name": "Signals Link",
+    "category": null,
+    "description": "Integration with the Revvity Signals ELN"
+  },
+  "files": {
+    "src": [
+      "packages/SignalsLink/src/package.ts"
+    ],
+    "tests": [
+      "packages/SignalsLink/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/SignalsLink/CHANGELOG.md",
+      "packages/SignalsLink/CREDITS.md",
+      "packages/SignalsLink/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:SignalsLink:eln-app-browser",
+      "name": "Signals ELN App Browser",
+      "description": "Provides a Datagrok application and tree-browser sidebar panel for navigating and accessing data from the Revvity Signals electronic lab notebook. Users can browse ELN entries without leaving the Datagrok platform.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:SignalsLink:Signals",
+          "kind": "RegisteredFunction",
+          "name": "Signals",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SignalsLink:signalsAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "signalsAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/SignalsLink/readme.md",
+          "kind": "DocPage",
+          "title": "Signals Link",
+          "url": "/packages/SignalsLink/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SignalsLink/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

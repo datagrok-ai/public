@@ -1,0 +1,23 @@
+{
+  "package_id": "pkg:MLFlow",
+  "features": [
+    {
+      "id": "feature:MLFlow:mlflow-model-tracking",
+      "implements": [
+        {
+          "path": "packages/MLFlow/src/package.ts",
+          "role": "core",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Package is a stub: only registers an `info` function showing the package webRoot; no tracking logic in TS sources."
+    },
+    {
+      "id": "feature:MLFlow:mlflow-info-panel",
+      "implements": [],
+      "tests": [],
+      "notes": "No info-panel implementation present in package sources; feature members are doc pages only."
+    }
+  ]
+}

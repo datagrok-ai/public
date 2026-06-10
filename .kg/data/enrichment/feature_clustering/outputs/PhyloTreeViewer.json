@@ -1,0 +1,67 @@
+{
+  "package_id": "pkg:PhyloTreeViewer",
+  "features": [
+    {
+      "id": "feature:PhyloTreeViewer:phylocanvas-gl-viewer",
+      "name": "PhylocanvasGL Phylogenetic Tree Viewer",
+      "description": "Interactive WebGL-accelerated viewer for rendering phylogenetic trees from Newick data, registered as a Datagrok viewer type. Backed by a singleton service that other components can query.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:PhyloTreeViewer:PhylocanvasGL",          "weight": 1.0, "role": "core"},
+        {"id": "func:PhyloTreeViewer:getPhylocanvasGlService","weight": 0.8, "role": "core"},
+        {"id": "func:PhyloTreeViewer:phylocanvasGlViewerApp", "weight": 0.7, "role": "sample"},
+        {"id": "doc:/packages/PhyloTreeViewer/readme.md",     "weight": 0.9, "role": "doc"},
+        {"id": "clog:PhyloTreeViewer:1.2.9:1",               "weight": 0.8, "role": "related"}
+      ],
+      "evidence_summary": "PhylocanvasGL is the sole registered viewer; the service, demo app, readme, and 1.2.9 changelog entry all refer to the same PhylocanvasGL name root."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-in-grid",
+      "name": "Tree-in-Grid / Newick Cell Renderer",
+      "description": "Embeds phylogenetic tree thumbnails directly inside Datagrok grid cells, allowing users to view per-row trees alongside tabular data. Implemented by the TreeToGrid and TreeInGridCell utilities.",
+      "category": "viz",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:PhyloTreeViewer:TreeToGrid",    "weight": 1.0, "role": "core"},
+        {"id": "func:PhyloTreeViewer:TreeInGridCell","weight": 1.0, "role": "core"},
+        {"id": "clog:PhyloTreeViewer:1.2.9:2",      "weight": 0.9, "role": "related"}
+      ],
+      "evidence_summary": "TreeToGrid and TreeInGridCell share the 'tree in grid' concept; the 1.2.9 changelog explicitly describes the Newick cell renderer for trees in grid."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:newick-file-import",
+      "name": "Newick File Import",
+      "description": "Lets users open a Newick-format file and inject its tree data into an existing PhylocanvasGL viewer instance.",
+      "category": "data-import",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:PhyloTreeViewer:injectTree", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "injectTree is the only file-import entry point, described as 'Opens Newick file', and its signature takes a viewer + two string arguments (path/content)."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-cut",
+      "name": "Tree Cut / Subtree Extraction",
+      "description": "Provides the ability to cut a phylogenetic tree at a threshold and return the resulting subtree as a new tree object, enabling downstream analysis on clades.",
+      "category": "viz",
+      "confidence": 0.75,
+      "members": [
+        {"id": "func:PhyloTreeViewer:TreeCutAsTree", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "TreeCutAsTree is a standalone demo/utility with a self-describing name (cut → as tree) and no shared naming with other features."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:PhyloTreeViewer:newick-file-import", "to": "feature:PhyloTreeViewer:phylocanvas-gl-viewer", "kind": "related"},
+    {"from": "feature:PhyloTreeViewer:tree-in-grid",       "to": "feature:PhyloTreeViewer:phylocanvas-gl-viewer", "kind": "sibling"},
+    {"from": "feature:PhyloTreeViewer:tree-cut",           "to": "feature:PhyloTreeViewer:phylocanvas-gl-viewer", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/PhyloTreeViewer/credits.md",
+    "clog:PhyloTreeViewer:1.4.0:0",
+    "clog:PhyloTreeViewer:1.2.12:0",
+    "clog:PhyloTreeViewer:1.2.11:0",
+    "clog:PhyloTreeViewer:1.2.9:0"
+  ]
+}

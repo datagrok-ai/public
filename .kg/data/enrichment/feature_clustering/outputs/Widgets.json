@@ -1,0 +1,73 @@
+{
+  "package_id": "pkg:Widgets",
+  "features": [
+    {
+      "id": "feature:Widgets:category-filters",
+      "name": "Category Filters",
+      "description": "Provides Single Choice and Multi Choice filters for categorical and multi-value columns, letting users narrow table data by selecting one or multiple category values.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Widgets:Single Choice", "weight": 1.0, "role": "core"},
+        {"id": "func:Widgets:Multi Choice",  "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/widgets", "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'filter' role and target categorical column selection, differing only in single vs multi-value semantics."
+    },
+    {
+      "id": "feature:Widgets:table-summary-viewer",
+      "name": "Table Summary Viewer",
+      "description": "A viewer that displays an at-a-glance summary of a data table, suitable for dashboards and quick data exploration.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:Widgets:TableSummary", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "TableSummary carries a standalone 'viewer' role with no closely related functions in the package."
+    },
+    {
+      "id": "feature:Widgets:time-widget",
+      "name": "Time Widget",
+      "description": "A home-page widget that displays the current time, serving as a reference implementation for building dashboard widgets.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Widgets:TimeWidget", "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/develop/how-to/packages/home-page-widgets", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "TimeWidget is a canonical home-page widget paired directly with the 'Develop widgets for home page' developer guide."
+    },
+    {
+      "id": "feature:Widgets:multi-curve-viewer",
+      "name": "Multi Curve Viewer",
+      "description": "A viewer for rendering multiple curves in a single chart, documented in the platform help pages.",
+      "category": "viz",
+      "confidence": 0.65,
+      "members": [
+        {"id": "doc:/help/visualize/viewers/multi-curve-viewer", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Dedicated help page titled 'Multi curve viewer' implies a distinct viewer feature; no matching registered function appears in this package's current metadata snapshot."
+    },
+    {
+      "id": "feature:Widgets:custom-value-editors",
+      "name": "Custom Value Editors",
+      "description": "Demonstrates how to register custom input editors for semantic types, allowing plugins to supply specialised UI controls for domain-specific column values.",
+      "category": "infra",
+      "confidence": 0.72,
+      "members": [
+        {"id": "func:Widgets:fooInput",   "weight": 1.0, "role": "core"},
+        {"id": "func:Widgets:inputDemo",  "weight": 0.7, "role": "sample"}
+      ],
+      "evidence_summary": "fooInput (valueEditor for semType 'foo') and inputDemo share the input/editor theme and together illustrate the custom-editor registration pattern."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Widgets:category-filters",     "to": "feature:Widgets:table-summary-viewer", "kind": "sibling"},
+    {"from": "feature:Widgets:table-summary-viewer", "to": "feature:Widgets:multi-curve-viewer",   "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Widgets/readme.md",
+    "doc:/packages/Widgets/credits.md",
+    "doc:/help/develop/help-pages/_stash/single-source-of-truth"
+  ]
+}

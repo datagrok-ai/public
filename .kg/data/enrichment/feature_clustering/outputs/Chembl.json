@@ -1,0 +1,209 @@
+{
+  "package_id": "pkg:Chembl",
+  "features": [
+    {
+      "id": "feature:Chembl:substructure-search",
+      "name": "Substructure Search",
+      "description": "Lets users draw or paste a query molecule and search the ChEMBL database for all compounds containing that substructure, optionally combined with drug-mechanism and company filters.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chembl:Databases | ChEMBL | Substructure Search (Internal)", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:patternSubstructureSearch", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:QueryBySubstructure", "weight": 0.75, "role": "core"}
+      ],
+      "evidence_summary": "Panel function 'Substructure Search (Internal)', backing SQL query 'patternSubstructureSearch', and 'QueryBySubstructure' all share substructure-matching via the RDKit cartridge."
+    },
+    {
+      "id": "feature:Chembl:similarity-search",
+      "name": "Similarity Search",
+      "description": "Searches ChEMBL for compounds with molecular fingerprint similarity to a given structure, with optional Tanimoto threshold control.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chembl:Databases | ChEMBL | Similarity Search (Internal)", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:patternSimilaritySearch", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:patternSimilaritySearchWithThreshold", "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps", "weight": 0.70, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/fingerprints", "weight": 0.60, "role": "doc"}
+      ],
+      "evidence_summary": "Both UI functions share 'Similarity Search' in their name; the two SQL queries implement Tanimoto fingerprint similarity with and without a threshold cutoff."
+    },
+    {
+      "id": "feature:Chembl:id-conversion",
+      "name": "ID and Structure Conversion",
+      "description": "Converts between ChEMBL identifiers, molregno numbers, compound names, InChI Keys, InChI strings, and SMILES — supporting both single-value and batch dataframe inputs.",
+      "category": "data-import",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chembl:chemblIdToSmilesTs", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:chemblIdToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:molregnoToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:nameToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:namesToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:inchiKeyToChembl", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:inchiKeyToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:inchiKeyToInchi", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:chemblToSmiles", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:chemblToInchi", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:chemblToInchiKey", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:ChemblMolregNoBySmiles", "weight": 0.90, "role": "core"},
+        {"id": "doc:/packages/ChemblAPI/readme.md", "weight": 0.70, "role": "doc"}
+      ],
+      "evidence_summary": "All 12 members share the 'ToSmiles', 'ToInchi', 'ToChembl', or 'BySmiles' naming pattern and uniformly translate compound identifiers between formats."
+    },
+    {
+      "id": "feature:Chembl:compound-bioactivity",
+      "name": "Compound Bioactivity",
+      "description": "Retrieves bioactivity measurements (IC50, Ki, etc.) for compounds against specific ChEMBL targets or proteins, and identifies selectively active compounds across target pairs.",
+      "category": "chem-search",
+      "confidence": 0.90,
+      "members": [
+        {"id": "query:Chembl:compound activity details for @target", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_bioactivity data for bacterial targets for @organism", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:StructuresByOrganism", "weight": 0.90, "role": "core"},
+        {"id": "query:Chembl:compound activity details for all targets containing @protein", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_compounds which are selective to one target over a second target", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "All five queries retrieve bioactivity assay data linking compounds to targets, proteins, or organisms, including selectivity profiling."
+    },
+    {
+      "id": "feature:Chembl:compound-info-panels",
+      "name": "Compound Info Panels",
+      "description": "Context panels and widgets displaying detailed compound data — SMILES, names, properties, synonyms — when a ChEMBL ID or molregno is selected in a data grid.",
+      "category": "infra",
+      "confidence": 0.90,
+      "members": [
+        {"id": "query:Chembl:MolregnoInfo", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:ChemblInfo", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_cbFindByMolregno", "weight": 0.90, "role": "core"},
+        {"id": "query:Chembl:ByChemblIds", "weight": 0.80, "role": "core"},
+        {"id": "func:Chembl:chemblSearchWidgetLocalDb", "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels", "weight": 0.90, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "MolregnoInfo and ChemblInfo are tagged 'panel,widget'; _cbFindByMolregno retrieves full compound detail; ByChemblIds does batch lookup — all feed compound info displays."
+    },
+    {
+      "id": "feature:Chembl:chembl-browser",
+      "name": "ChEMBL Browser",
+      "description": "An interactive browser and demo view for exploring ChEMBL compounds with multi-filter search covering substructure, molecule type, name, max phase, and Lipinski violations.",
+      "category": "data-import",
+      "confidence": 0.88,
+      "members": [
+        {"id": "query:Chembl:_cbChemblBrowserQuery", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_cbAllChemblStructures", "weight": 0.90, "role": "core"},
+        {"id": "query:Chembl:ChemblNumberOfStructures", "weight": 0.85, "role": "core"},
+        {"id": "func:Chembl:Database Queries", "weight": 0.90, "role": "core"},
+        {"id": "doc:/packages/Chembl/readme.md", "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/chem", "weight": 0.50, "role": "doc"}
+      ],
+      "evidence_summary": "All '_cb*' queries share the ChEMBL-browser prefix; 'Database Queries' is the demo entry-point described as 'running queries to chemical databases'."
+    },
+    {
+      "id": "feature:Chembl:hit-triage",
+      "name": "Hit Triage Integration",
+      "description": "Provides ChEMBL compound sets and target lists as data sources and enrichment functions for the Datagrok Hit Triage workflow.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Chembl:Chembl targets by organism", "weight": 1.0, "role": "core"},
+        {"id": "func:Chembl:Chembl Compounds", "weight": 1.0, "role": "core"},
+        {"id": "func:Chembl:Chembl molregno", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All three functions carry the 'hitTriageDataSource' or 'hitTriageFunction' role, which is the Datagrok Hit Triage integration contract."
+    },
+    {
+      "id": "feature:Chembl:frac-classification",
+      "name": "FRAC Classification Search",
+      "description": "Searches ChEMBL compounds by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels, optionally combined with molecular substructure matching.",
+      "category": "chem-search",
+      "confidence": 0.93,
+      "members": [
+        {"id": "query:Chembl:FracClassification", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:FracClassificationWithSubstructure", "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs", "weight": 0.55, "role": "doc"}
+      ],
+      "evidence_summary": "Both queries share the 'FracClassification' name root and implement FRAC hierarchy-based compound filtering, with the second adding RDKit substructure matching."
+    },
+    {
+      "id": "feature:Chembl:pharmacokinetic-data",
+      "name": "Pharmacokinetic Data",
+      "description": "Retrieves curated pharmacokinetic parameters — dosage, route, regimen, and measured values — for a specified drug from ChEMBL's curated PK dataset.",
+      "category": "chem-search",
+      "confidence": 0.85,
+      "members": [
+        {"id": "query:Chembl:_PK data from 'Curated Drug Pharmacokinetic Data' source for @drug", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The single '_PK data' query explicitly targets the curated pharmacokinetic data source in ChEMBL and returns dosage/route/regimen measurements for a named drug."
+    },
+    {
+      "id": "feature:Chembl:target-protein-classification",
+      "name": "Target and Protein Classification",
+      "description": "Exposes the ChEMBL protein classification hierarchy (preferred names, definitions) for browsing and filtering compound targets by protein family.",
+      "category": "data-import",
+      "confidence": 0.82,
+      "members": [
+        {"id": "query:Chembl:_protein classification", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The '_protein classification' query returns the complete ChEMBL protein taxonomy tree used as a lookup/filter source in bioactivity queries."
+    },
+    {
+      "id": "feature:Chembl:db-explorer",
+      "name": "DB Explorer Integration",
+      "description": "Registers ChEMBL as a lazily-loaded DB Explorer data source with semantic type detection for ChEMBL ID columns, enabling chemically-aware browsing of any table containing ChEMBL identifiers.",
+      "category": "infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:Chembl:<anonymous>", "weight": 1.0, "role": "core"},
+        {"id": "func:Chembl:init", "weight": 0.70, "role": "core"}
+      ],
+      "evidence_summary": "Changelog entries 'Database explorer for ChEMBL' (v1.1.1), 'Lazy loaded DBExplorer' (v1.4.6), and 'In place registration of regexp detectors' (v1.4.7) document this feature; the anonymous semValueExtractor detects ChEMBL IDs in columns."
+    },
+    {
+      "id": "feature:Chembl:autocomplete-helpers",
+      "name": "Autocomplete Lookup Helpers",
+      "description": "A set of internal autocomplete queries that populate dropdown inputs throughout the ChEMBL UI — compound names, organisms, protein types, target types, assay types, and relationship types.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "query:Chembl:_compoundNames", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_organisms", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_proteinTypes", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_targetTypes", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_assayTypes", "weight": 1.0, "role": "core"},
+        {"id": "query:Chembl:_relationshipTypes", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All six queries share the underscore-prefix naming convention for internal helpers and their descriptions uniformly say 'Provides autocomplete suggestions'."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Chembl:substructure-search", "to": "feature:Chembl:similarity-search", "kind": "sibling"},
+    {"from": "feature:Chembl:frac-classification", "to": "feature:Chembl:substructure-search", "kind": "related"},
+    {"from": "feature:Chembl:chembl-browser", "to": "feature:Chembl:substructure-search", "kind": "related"},
+    {"from": "feature:Chembl:autocomplete-helpers", "to": "feature:Chembl:chembl-browser", "kind": "related"},
+    {"from": "feature:Chembl:hit-triage", "to": "feature:Chembl:compound-bioactivity", "kind": "related"},
+    {"from": "feature:Chembl:target-protein-classification", "to": "feature:Chembl:compound-bioactivity", "kind": "related"},
+    {"from": "feature:Chembl:db-explorer", "to": "feature:Chembl:compound-info-panels", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "query:Chembl:unichemUnitTestQuery",
+    "doc:/packages/Chembl/credits.md",
+    "doc:/packages/Chembl/claude.md",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges"
+  ]
+}

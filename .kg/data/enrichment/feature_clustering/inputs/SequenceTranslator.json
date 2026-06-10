@@ -1,0 +1,1085 @@
+{
+  "package": {
+    "id": "pkg:SequenceTranslator",
+    "name": "SequenceTranslator",
+    "friendly_name": "Sequence Translator",
+    "version": "1.10.17",
+    "category": "Bioinformatics",
+    "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
+    "extras": {
+      "npm_name": "@datagrok/sequence-translator",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "MonomersPath",
+      "type": "string",
+      "choices": [],
+      "default": "System:AppData/SequenceTranslator/monomers"
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:SequenceTranslator:Oligo Toolkit",
+      "name": "Oligo Toolkit",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides | Oligo Toolkit"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Oligo Translator",
+      "name": "Oligo Translator",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides | Oligo Toolkit"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Oligo Pattern",
+      "name": "Oligo Pattern",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides | Oligo Toolkit"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Oligo Structure",
+      "name": "Oligo Structure",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides | Oligo Toolkit"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:getTranslationHelper",
+      "name": "getTranslationHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:getCodeToWeightsMap",
+      "name": "getCodeToWeightsMap",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:validateSequence",
+      "name": "validateSequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:linkStrands",
+      "name": "linkStrands",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:demoOligoTranslator",
+      "name": "demoOligoTranslator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Translate oligonucleotide sequences across various formats accepted by different synthesizers",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:demoOligoPattern",
+      "name": "demoOligoPattern",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Design a modification pattern for an oligonucleotide sequence",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:demoOligoStructure",
+      "name": "demoOligoStructure",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Visualize duplex and save SDF",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:translateOligonucleotideSequence",
+      "name": "translateOligonucleotideSequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:polyToolConvert",
+      "name": "polyToolConvert",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "editor for Performing conversion of sequences in custom notation to molfiles",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:getPolyToolConvertEditor",
+      "name": "getPolyToolConvertEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:polyToolConvert2",
+      "name": "polyToolConvert2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "bool",
+        "bool",
+        "object"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:polyToolEnumerateHelm",
+      "name": "polyToolEnumerateHelm",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Dialog for configuring enumeration of a HELM sequence",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:polyToolEnumerateChem",
+      "name": "polyToolEnumerateChem",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Perform enumeration of a molecule using different fragments at specified positions",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:chemEnumerateReactions",
+      "name": "chemEnumerateReactions",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:polyToolColumnChoice",
+      "name": "polyToolColumnChoice",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:createMonomerLibraryForPolyTool",
+      "name": "createMonomerLibraryForPolyTool",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:HELM Enumerator",
+      "name": "HELM Enumerator",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "browsePath": "Peptides | PolyTool",
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Chem Enumerator",
+      "name": "Chem Enumerator",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "browsePath": "Chem | PolyTool",
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Polytool Helm Enumerator dialog",
+      "name": "Polytool Helm Enumerator dialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Polytool Chem Enumerator dialog",
+      "name": "Polytool Chem Enumerator dialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Polytool Oligo Enumerator dialog",
+      "name": "Polytool Oligo Enumerator dialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Enumerate Single HELM Sequence",
+      "name": "Enumerate Single HELM Sequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Enumerate provided HELM sequence on provided positions with provided monomers and generates new table",
+      "input_types": [
+        "string",
+        null,
+        "dynamic",
+        "bool"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Enumerate Single HELM Sequence with natural amino acids",
+      "name": "Enumerate Single HELM Sequence with natural amino acids",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called \"Enumerated\", and molecule column called \"Molfile(Enumerated) if…",
+      "input_types": [
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Combine Sequences",
+      "name": "Combine Sequences",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:oligoNucleotideCellRenderer",
+      "name": "oligoNucleotideCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": "Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells",
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Oligo-Nucleotide",
+      "name": "Oligo-Nucleotide",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [
+        "panel",
+        "widgets"
+      ],
+      "description": "Modifications, lengths, conjugates and color legend for an OligoNucleotide cell",
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:Oligo Structures",
+      "name": "Oligo Structures",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [
+        "panel",
+        "widgets"
+      ],
+      "description": "Sense and antisense full molecular structures rendered separately",
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:convertHelmToOligoNucleotide",
+      "name": "convertHelmToOligoNucleotide",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view",
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:combineSenseAntisenseToOligoNucleotide",
+      "name": "combineSenseAntisenseToOligoNucleotide",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Combine separate sense + antisense HELM columns into one OligoNucleotide column",
+      "input_types": [
+        "dataframe",
+        "column",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:applyNotationProviderForHarmonizedSequence",
+      "name": "applyNotationProviderForHarmonizedSequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:harmonizedSequenceNotationProviderConstructor",
+      "name": "harmonizedSequenceNotationProviderConstructor",
+      "friendly_name": null,
+      "role": "notationProviderConstructor",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "notationProviderConstructor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:getSpecifiedAppView",
+      "name": "getSpecifiedAppView",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SequenceTranslator:autostart",
+      "name": "autostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [
+        "autostart"
+      ],
+      "description": "SequenceTranslator bootstrap",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:SequenceTranslator:refineNotationProviderForHarmonizedSequence",
+      "name": "refineNotationProviderForHarmonizedSequence",
+      "friendly_name": null,
+      "role": "notationRefiner",
+      "tags": [
+        "notationRefiner"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "object",
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {
+        "role": "notationRefiner"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/SequenceTranslator/readme.md",
+      "title": "Sequence Translator",
+      "url": "/packages/SequenceTranslator/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/SequenceTranslator/claude.md",
+      "title": "SequenceTranslator Package - CLAUDE.md",
+      "url": "/packages/SequenceTranslator/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/SequenceTranslator/credits.md",
+      "title": "SequenceTranslator — Third-Party Libraries",
+      "url": "/packages/SequenceTranslator/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "title": "Natural language processing",
+      "url": "/help/datagrok/solutions/domains/nlp/nlp",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/deploy/k8s/install-helm-chart",
+      "title": "Install Datagrok with Helm",
+      "url": "/help/deploy/k8s/install-helm-chart",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/develop/help-pages/_stash/single-source-of-truth",
+      "title": "Single source of truth",
+      "url": "/help/develop/help-pages/_stash/single-source-of-truth",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/sequence-variability-map",
+      "title": "Sequence Variability Map viewer",
+      "url": "/help/visualize/viewers/sequence-variability-map",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Chem/claude.md",
+      "title": "Chem Package",
+      "url": "/packages/Chem/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/contrib.md",
+      "title": "Contributor's guide for Chem package",
+      "url": "/packages/Chem/contrib.md",
+      "kind": "contrib",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/credits.md",
+      "title": "Chem — Third-Party Libraries",
+      "url": "/packages/Chem/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Helm/credits.md",
+      "title": "Helm — Third-Party Libraries",
+      "url": "/packages/Helm/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Helm/readme.md",
+      "title": "HELM",
+      "url": "/packages/Helm/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:SequenceTranslator:1.10.14:0",
+      "version": "1.10.14",
+      "released_at": "2026-04-21",
+      "ticket": null,
+      "text": "Chem Enumeration"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.14:1",
+      "version": "1.10.14",
+      "released_at": "2026-04-21",
+      "ticket": null,
+      "text": "Helm enumeration improvements, paralel mode"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.14:2",
+      "version": "1.10.14",
+      "released_at": "2026-04-21",
+      "ticket": null,
+      "text": "Polytool: support for custom notation back-conversion, fix for reversed rule order"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.5:0",
+      "version": "1.10.5",
+      "released_at": "2025-12-11",
+      "ticket": null,
+      "text": "PT-Synthetic: Fix missing molfile handler errors"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.3:0",
+      "version": "1.10.3",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Fix synthetic rule application for multiple instances when r group numbering is reversed"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.2:0",
+      "version": "1.10.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Update Bio Lib API"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.2:1",
+      "version": "1.10.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Fix synthetic rule errors for missing monomers"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.10.2:2",
+      "version": "1.10.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Fix incosistent R group conneections for reversed rule orders"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.9.5:0",
+      "version": "1.9.5",
+      "released_at": "2025-05-02",
+      "ticket": null,
+      "text": "Fix changing bond numbers when fixing molblocks"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.9.4:0",
+      "version": "1.9.4",
+      "released_at": "2025-04-08",
+      "ticket": null,
+      "text": "Linearization fix for polytool convert."
+    },
+    {
+      "id": "clog:SequenceTranslator:1.9.1:0",
+      "version": "1.9.1",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Combination of sequence sets dialog."
+    },
+    {
+      "id": "clog:SequenceTranslator:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "Support for enumeration in all notations"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.8.0:1",
+      "version": "1.8.0",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "fallback for polytool convert"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.8.0:2",
+      "version": "1.8.0",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "Corrected highlighting"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.5:0",
+      "version": "1.6.5",
+      "released_at": "2024-12-01",
+      "ticket": null,
+      "text": "PolyTool: highlight in mol based on given notation"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.5:1",
+      "version": "1.6.5",
+      "released_at": "2024-12-01",
+      "ticket": null,
+      "text": "PolyTool: Rule manager enhancements"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.5:2",
+      "version": "1.6.5",
+      "released_at": "2024-12-01",
+      "ticket": null,
+      "text": "PolyTool fix R3, R4 and elder groups capping"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.4:0",
+      "version": "1.6.4",
+      "released_at": "2024-11-27",
+      "ticket": null,
+      "text": "PolyTool: linearization of single sequence molecules"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.4:1",
+      "version": "1.6.4",
+      "released_at": "2024-11-27",
+      "ticket": null,
+      "text": "Enumerator: Added whole library enumeration"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.3:0",
+      "version": "1.6.3",
+      "released_at": "2024-11-22",
+      "ticket": null,
+      "text": "Moved Context menu items to detector"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.2:0",
+      "version": "1.6.2",
+      "released_at": "2024-11-17",
+      "ticket": null,
+      "text": "PolyTool rule manager enhancement"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.2:1",
+      "version": "1.6.2",
+      "released_at": "2024-11-17",
+      "ticket": null,
+      "text": "Sequence renderer font resizing"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.1:0",
+      "version": "1.6.1",
+      "released_at": "2024-11-15",
+      "ticket": null,
+      "text": "PolyTool fix default options"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.1:1",
+      "version": "1.6.1",
+      "released_at": "2024-11-15",
+      "ticket": null,
+      "text": "PolyTool fix explicit carbon cut"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.6.0:0",
+      "version": "1.6.0",
+      "released_at": "2024-11-14",
+      "ticket": null,
+      "text": "Add PolyTool work with sinthetic monomers"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.5.3:0",
+      "version": "1.5.3",
+      "released_at": "2024-11-06",
+      "ticket": null,
+      "text": "PolyTool fix rules empty specification (all monomers undergo)"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.5.2:0",
+      "version": "1.5.2",
+      "released_at": "2024-11-06",
+      "ticket": null,
+      "text": "PolyTool rules several instances bug fix"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.5.1:0",
+      "version": "1.5.1",
+      "released_at": "2024-11-06",
+      "ticket": null,
+      "text": "PolyTool rules fixes rule management"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.5.1:1",
+      "version": "1.5.1",
+      "released_at": "2024-11-06",
+      "ticket": null,
+      "text": "PolyTool rules fixes crash if monomer is absent"
+    },
+    {
+      "id": "clog:SequenceTranslator:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2024-11-04",
+      "ticket": null,
+      "text": "Add PolyTool interface for rule management"
+    }
+  ],
+  "stats": {
+    "functions": 39,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 123
+  }
+}

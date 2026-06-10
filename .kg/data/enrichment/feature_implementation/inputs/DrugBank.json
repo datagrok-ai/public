@@ -1,0 +1,160 @@
+{
+  "package": {
+    "id": "pkg:DrugBank",
+    "name": "DrugBank",
+    "friendly_name": "DrugBank",
+    "category": "Cheminformatics",
+    "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset."
+  },
+  "files": {
+    "src": [
+      "packages/DrugBank/src/package.ts",
+      "packages/DrugBank/src/searches.ts",
+      "packages/DrugBank/src/widgets.ts"
+    ],
+    "tests": [
+      "packages/DrugBank/src/package-test.ts",
+      "packages/DrugBank/src/tests/const.ts",
+      "packages/DrugBank/src/tests/drugbank-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/DrugBank/CHANGELOG.md",
+      "packages/DrugBank/CLAUDE.md",
+      "packages/DrugBank/CREDITS.md",
+      "packages/DrugBank/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:DrugBank:substructure-search",
+      "name": "Substructure Search",
+      "description": "Panel-based substructure search against the DrugBank Open Structures dataset, returning matching drug compounds for a drawn or pasted molecule.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:DrugBank:Databases | DrugBank | Substructure Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | DrugBank | Substructure Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/DrugBank/readme.md",
+          "kind": "DocPage",
+          "title": "DrugBank",
+          "url": "/packages/DrugBank/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DrugBank/src/package.ts",
+          "packages/DrugBank/src/searches.ts",
+          "packages/DrugBank/src/widgets.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DrugBank:similarity-search",
+      "name": "Similarity Search",
+      "description": "Panel-based molecular similarity search against the DrugBank Open Structures dataset, displaying similarity scores alongside each matching compound.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:DrugBank:Databases | DrugBank | Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | DrugBank | Similarity Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:DrugBank:1.0.16:1",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+          "kind": "DocPage",
+          "title": "Similarity maps using fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DrugBank/src/package.ts",
+          "packages/DrugBank/src/searches.ts",
+          "packages/DrugBank/src/widgets.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DrugBank:drug-name-lookup",
+      "name": "Drug Name to Molecule Lookup",
+      "description": "Converter that resolves a drug name string to its corresponding molecular structure using the DrugBank dataset.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:DrugBank:Drug Name Molecule",
+          "kind": "RegisteredFunction",
+          "name": "Drug Name Molecule",
+          "friendly_name": null,
+          "role": "converter",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DrugBank/src/package.ts",
+          "packages/DrugBank/src/searches.ts",
+          "packages/DrugBank/src/widgets.ts"
+        ],
+        "tests": [
+          "packages/DrugBank/src/tests/drugbank-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:DrugBank:package-init",
+      "name": "Package Initialization",
+      "description": "Internal bootstrapping routine that initializes the DrugBank plugin on load.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DrugBank:initDrugBank",
+          "kind": "RegisteredFunction",
+          "name": "initDrugBank",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/DrugBank/claude.md",
+          "kind": "DocPage",
+          "title": "DrugBank",
+          "url": "/packages/DrugBank/claude.md"
+        },
+        {
+          "id": "doc:/packages/DrugBank/credits.md",
+          "kind": "DocPage",
+          "title": "DrugBank — Third-Party Libraries",
+          "url": "/packages/DrugBank/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DrugBank/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "package_id": "pkg:Docking",
+  "features": [
+    {
+      "id": "feature:Docking:autodock-vina-batch",
+      "implements": [
+        {
+          "path": "packages/Docking/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/apps/auto-dock-app.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/utils/auto-dock-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Docking/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Docking/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Docking/src/tests/autodock-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Core batch docking pipeline: PackageFunctions.runAutodock/getAutodockResults orchestrate AutoDockApp.init and AutoDockService.dockLigand against the docker container; utils.ts post-processes results."
+    },
+    {
+      "id": "feature:Docking:docking-app",
+      "implements": [
+        {
+          "path": "packages/Docking/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/demo/docking-app.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/apps/auto-dock-app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Docking/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Docking/src/utils/auto-dock-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Docking/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Docking/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Docking/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "PackageFunctions.dockingView wires the app entry to DockingViewApp; demo.ts provides the 'Demo Docking' showcase opened from Bioinformatics demo path."
+    },
+    {
+      "id": "feature:Docking:molecule-docking-panel",
+      "implements": [
+        {
+          "path": "packages/Docking/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Docking/src/utils/utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Docking/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Docking/src/utils/auto-dock-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Docking/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Docking/src/tests/utils-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "getAutodockSingle/autodockPanel/autodockWidget in package.ts render the per-molecule pose view; utils.ts supplies getRemarksFromPdb(s), getReceptorData, prop, buildComparisonTable used by the panel."
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "package_id": "pkg:Excalidraw",
+  "features": [
+    {
+      "id": "feature:Excalidraw:excalidraw-app",
+      "name": "Excalidraw Sketcher App",
+      "description": "An interactive whiteboard application powered by Excalidraw embedded as a Datagrok view, accessible from the Misc browser path. Allows users to create and edit hand-drawn-style diagrams directly inside the platform.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Excalidraw:Excalidraw", "weight": 1.0,  "role": "core"},
+        {"id": "doc:/packages/Excalidraw/readme.md", "weight": 0.8, "role": "doc"},
+        {"id": "clog:Excalidraw:1.0.0:0",    "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "The 'Excalidraw' app-role function and the changelog entry 'Excalidraw sketcher integration' share the same name root and directly describe the embedded sketching application."
+    },
+    {
+      "id": "feature:Excalidraw:file-viewer",
+      "name": "Excalidraw File Viewer",
+      "description": "A Datagrok file-viewer extension that renders .excalidraw files in-platform when opened from the file browser, without requiring a separate app launch.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Excalidraw:excalfileViewer", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The fileViewer-role function declares ext='excalidraw' and description='Excalidraw viewer', clearly scoping it to file-based rendering as a distinct capability from the interactive app."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Excalidraw:file-viewer", "to": "feature:Excalidraw:excalidraw-app", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "func:Excalidraw:info",
+    "doc:/packages/Excalidraw/credits.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel"
+  ]
+}

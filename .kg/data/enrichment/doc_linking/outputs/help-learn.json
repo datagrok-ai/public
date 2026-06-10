@@ -1,0 +1,95 @@
+{
+  "slice_id": "help-learn",
+  "links": [
+    {
+      "doc_id": "doc:/help/learn/custom-machine-learning-models",
+      "target_id": "feature:Chem:chemprop-ml",
+      "confidence": 0.92,
+      "evidence": "doc explicitly names Chemprop as one of Datagrok's two built-in ML engines; feature describes D-MPNN model training on molecular property data using ChemProp"
+    },
+    {
+      "doc_id": "doc:/help/learn/custom-machine-learning-models",
+      "target_id": "pkg:EDA",
+      "confidence": 0.85,
+      "evidence": "doc describes building custom ML models with Caret and other ML libraries; EDA provides the platform ML model adapters (linear regression, XGBoost, SVM, PLS) used in that toolkit"
+    },
+    {
+      "doc_id": "doc:/help/learn/custom-machine-learning-models",
+      "target_id": "pkg:TensorFlow.js",
+      "confidence": 0.80,
+      "evidence": "doc describes extending Datagrok with custom ML models in supported languages; TensorFlow.js is a supported browser-side ML engine for training and applying predictive models"
+    },
+    {
+      "doc_id": "doc:/help/learn/custom-machine-learning-models",
+      "target_id": "feature:Python:sklearn-predictive-modeling",
+      "confidence": 0.78,
+      "evidence": "doc describes building custom ML models via ML libraries in supported languages; feature provides scikit-learn linear regression integration with Datagrok's predictive modeling toolkit"
+    },
+    {
+      "doc_id": "doc:/help/learn/interactive-modeling",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "doc describes the interactive visualization UI for classical ML model parameters; EDA supplies the ML model adapters (linear regression, XGBoost, SVM, softmax) that the toolkit trains interactively"
+    },
+    {
+      "doc_id": "doc:/help/learn/interactive-modeling",
+      "target_id": "feature:TensorFlow.js:neural-network-model",
+      "confidence": 0.75,
+      "evidence": "doc describes interactive model training with configurable parameters; feature provides browser-side neural network training with configurable architecture and hyperparameters"
+    },
+    {
+      "doc_id": "doc:/help/learn/interactive-modeling",
+      "target_id": "feature:Compute2:rich-function-view",
+      "confidence": 0.72,
+      "evidence": "doc states Datagrok creates a UI displaying all model parameters; rich function view provides the tabbed, configurable parameter-form UI for any Datagrok function call"
+    },
+    {
+      "doc_id": "doc:/help/learn/learn",
+      "target_id": "pkg:EDA",
+      "confidence": 0.90,
+      "evidence": "page is the top-level overview of Datagrok's predictive modeling toolkit; EDA is the primary package implementing this toolkit with multiple classical ML methods"
+    },
+    {
+      "doc_id": "doc:/help/learn/learn",
+      "target_id": "pkg:MLFlow",
+      "confidence": 0.80,
+      "evidence": "predictive modeling overview covers model management including MLflow-backed models; MLFlow is one of the supported model-serving backends described in the toolkit"
+    },
+    {
+      "doc_id": "doc:/help/learn/learn",
+      "target_id": "pkg:TensorFlow.js",
+      "confidence": 0.80,
+      "evidence": "predictive modeling toolkit snippet references a wide range of ML approaches including neural networks; TensorFlow.js provides in-browser neural network training and inference"
+    },
+    {
+      "doc_id": "doc:/help/learn/learn",
+      "target_id": "feature:Python:sklearn-predictive-modeling",
+      "confidence": 0.78,
+      "evidence": "toolkit overview covers multiple language-backed ML models; feature bridges sklearn with Datagrok's predictive modeling pipeline as a concrete example"
+    },
+    {
+      "doc_id": "doc:/help/learn/mlflow",
+      "target_id": "feature:MLFlow:mlflow-model-tracking",
+      "confidence": 0.97,
+      "evidence": "doc is specifically about tracking MLflow experiments, the model registry, and containerized serving; feature exactly implements these capabilities in Datagrok"
+    },
+    {
+      "doc_id": "doc:/help/learn/mlflow",
+      "target_id": "pkg:MLFlow",
+      "confidence": 0.95,
+      "evidence": "doc title and URL slug exactly match the MLflow integration package; entire page describes the MLflow package's functionality"
+    },
+    {
+      "doc_id": "doc:/help/learn/mlflow",
+      "target_id": "feature:MLFlow:mlflow-info-panel",
+      "confidence": 0.85,
+      "evidence": "doc describes surfacing MLflow model metadata alongside data; feature provides the Datagrok context panel that displays MLflow runs, metrics, and parameters"
+    },
+    {
+      "doc_id": "doc:/help/learn/self-learning-platform",
+      "target_id": "pkg:EDA",
+      "confidence": 0.62,
+      "evidence": "page describes platform-level ML-driven learning from user behavior; EDA (Machine Learning category) provides the statistical and ML analytics capabilities closest to this concept"
+    }
+  ]
+}

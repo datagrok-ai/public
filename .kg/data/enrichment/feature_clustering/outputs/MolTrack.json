@@ -1,0 +1,112 @@
+{
+  "package_id": "pkg:MolTrack",
+  "features": [
+    {
+      "id": "feature:MolTrack:application-shell",
+      "name": "MolTrack Application Shell",
+      "description": "The top-level Datagrok app view for MolTrack, providing tree-based navigation, an info-panel widget that surfaces registry data for selected chemical structures, and the Chem browse-path entry point.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:MolTrack:MolTrack",                "weight": 1.0, "role": "core"},
+        {"id": "func:MolTrack:molTrackAppTreeBrowser",  "weight": 0.9, "role": "core"},
+        {"id": "func:MolTrack:Databases | MolTrack",    "weight": 0.85, "role": "core"},
+        {"id": "doc:/packages/MolTrack/readme.md",      "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "All three functions share the MolTrack app role (app / appTreeBrowser / panel) and directly compose the user-facing application shell."
+    },
+    {
+      "id": "feature:MolTrack:compound-registration",
+      "name": "Compound & Batch Registration",
+      "description": "Registers new small-molecule compounds, batches, and assays into the registry, including bulk import from file and programmatic property registration.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:MolTrack:registerMolTrackProperties", "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:registerAssays",             "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:registerBulk",               "weight": 1.0,  "role": "core"},
+        {"id": "query:MolTrack:insertProperties",          "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "The 'register*' function names and the insertProperties query all operate on the write/ingestion path of the compound registry."
+    },
+    {
+      "id": "feature:MolTrack:compound-search",
+      "name": "Compound & Batch Search",
+      "description": "Search and retrieve compounds or batches by corporate ID, free-text query, or a structured filter tree with user-specified output fields.",
+      "category": "chem-search",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:MolTrack:search",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:advancedSearch",           "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:getCompoundByCorporateId", "weight": 0.95, "role": "core"},
+        {"id": "func:MolTrack:getBatchByCorporateId",    "weight": 0.95, "role": "core"},
+        {"id": "func:MolTrack:retrieveEntity",           "weight": 0.85, "role": "core"},
+        {"id": "query:MolTrack:getCompounds",            "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "All six members share the read/lookup path — text search, structured query, or direct corporate-ID lookup — and return dataframes or objects from the compound registry."
+    },
+    {
+      "id": "feature:MolTrack:schema-management",
+      "name": "Schema & Property Management",
+      "description": "Expose and introspect the dynamic (user-defined) and static field schemas for compound and batch entities, powering both the registration UI and search filter construction.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:MolTrack:fetchCompoundProperties", "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:fetchBatchProperties",    "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:fetchSchema",             "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:fetchDirectSchema",       "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "All four functions are 'fetch*' / schema accessors returning string payloads; descriptions explicitly distinguish dynamic vs. static fields and compound vs. batch scopes."
+    },
+    {
+      "id": "feature:MolTrack:database-initialization",
+      "name": "Database Initialization",
+      "description": "Bootstraps the MolTrack database on first run: creates the admin user, seeds semantic-type synonyms, default properties, settings, and standardisation rules, and checks whether the DB is already initialised.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:MolTrack:init",                            "weight": 1.0,  "role": "core"},
+        {"id": "func:MolTrack:initDB",                          "weight": 1.0,  "role": "core"},
+        {"id": "query:MolTrack:insertAdminUser",                "weight": 0.85, "role": "core"},
+        {"id": "query:MolTrack:insertSemanticTypeSynonym",      "weight": 0.8,  "role": "core"},
+        {"id": "query:MolTrack:insertSettings",                 "weight": 0.8,  "role": "core"},
+        {"id": "query:MolTrack:insertStandartization",          "weight": 0.8,  "role": "core"},
+        {"id": "query:MolTrack:checkDBInitialized",             "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "init / initDB functions pair directly with the six seed-and-check queries that populate a fresh MolTrack database schema."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:MolTrack:compound-registration", "to": "feature:MolTrack:compound-search",    "kind": "sibling"},
+    {"from": "feature:MolTrack:schema-management",     "to": "feature:MolTrack:compound-registration", "kind": "related"},
+    {"from": "feature:MolTrack:schema-management",     "to": "feature:MolTrack:compound-search",       "kind": "related"},
+    {"from": "feature:MolTrack:database-initialization","to": "feature:MolTrack:application-shell",    "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/MolTrack/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/reactions"
+  ]
+}

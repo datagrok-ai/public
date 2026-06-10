@@ -1,0 +1,506 @@
+{
+  "package_id": "pkg:Chem",
+  "features": [
+    {
+      "id": "feature:Chem:substructure-search",
+      "name": "Substructure Search",
+      "description": "Enables users to search a molecular column for rows matching a drawn or typed substructure query, with matched-fragment highlighting and an integrated filter panel.",
+      "category": "chem-search",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:searchSubstructure",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:SearchSubstructureEditor",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Substructure Search",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Substructure Filter",       "weight": 0.95,"role": "core"},
+        {"id": "func:Chem:Use as filter",             "weight": 0.85,"role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/chem", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "All functions share the 'substructure' name root and implement the editor–filter–search trio that is the standard Datagrok search pattern."
+    },
+    {
+      "id": "feature:Chem:similarity-search",
+      "name": "Similarity Search",
+      "description": "Finds molecules similar to a query structure by fingerprint-based Tanimoto scoring, returning a ranked table or scatter view and supporting sort-by-similarity.",
+      "category": "chem-search",
+      "confidence": 0.96,
+      "members": [
+        {"id": "func:Chem:getSimilarities",          "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:findSimilar",              "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chem Similarity Search",   "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Similarity Search",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Sort by similarity",       "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:chemSimilaritySearch",     "weight": 0.95,"role": "core"},
+        {"id": "func:Chem:Similarity Matrix",        "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Chem Similarities Matrix", "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Demo Similarity Search",   "weight": 0.7, "role": "sample"},
+        {"id": "script:Chem:Similarity Maps Using Fingerprints", "weight": 0.75, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps", "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "All functions share 'Similarity'/'Similar' naming or compute pairwise molecular similarity; the sim-maps script and its doc page are linked via the Demo Similarity Search function."
+    },
+    {
+      "id": "feature:Chem:diversity-search",
+      "name": "Diversity Search",
+      "description": "Selects a maximally diverse subset of molecules using fingerprint-based distance metrics, useful for compound library design and representative-set selection.",
+      "category": "chem-search",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Chem:getDiversities",                    "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chem Diversity Search",             "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Diversity Search",                  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:chemDiversitySearch",               "weight": 0.95,"role": "core"},
+        {"id": "func:Chem:Chemistry | Most Diverse Structures","weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "Functions share 'Diversity'/'Diverse' naming and implement the same underlying goal of selecting a dissimilar molecular subset."
+    },
+    {
+      "id": "feature:Chem:fingerprints",
+      "name": "Molecular Fingerprints",
+      "description": "Computes and caches Morgan (circular) fingerprints for molecular columns, providing the common numeric representation for similarity, diversity, and chemical-space analyses.",
+      "category": "chem-search",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Chem:getMorganFingerprints", "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getMorganFingerprint",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Fingerprints",          "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:AddMorganFPCache",    "weight": 0.8, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/fingerprints", "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "All members share 'Fingerprint(s)' naming or are registered as dim-red-preprocessing-function; a dedicated fingerprints doc page confirms this is a distinct concept."
+    },
+    {
+      "id": "feature:Chem:chemical-space",
+      "name": "Chemical Space",
+      "description": "Projects a molecular dataset into a 2D scatter plot via dimensionality reduction (UMAP, t-SNE) on fingerprints, revealing structural neighborhoods and clusters.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:Chem Space",             "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:ChemSpaceEditor",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:chemSpaceTransform",     "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Chem Space Embeddings",  "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:Demo Chemical Space",    "weight": 0.7, "role": "sample"},
+        {"id": "script:Chem:Chemical Space Using tSNE",  "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:Chemical Space Using UMAP",  "weight": 0.85,"role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/tsne", "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/umap", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "All members share 'Chemical Space'/'Chem Space' naming; two scripts and their doc pages describe tSNE/UMAP projections and browsePath 'Chem | ChemSpace' confirms grouping."
+    },
+    {
+      "id": "feature:Chem:molecular-clustering",
+      "name": "Molecular Clustering",
+      "description": "Clusters molecules into groups using fingerprint-based algorithms (BitBIRCH, Butina) and annotates each cluster with its maximum common substructure.",
+      "category": "chem-search",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Chem:BitBIRCH Clustering",            "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Cluster MCS",                    "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:clusterMCS",                     "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Butina Molecules Clustering",  "weight": 0.9, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "BitBIRCH, Butina script, and MCS annotation are complementary molecular clustering approaches sharing the same user goal; the Butina doc page explicitly covers the clustering algorithm."
+    },
+    {
+      "id": "feature:Chem:scaffold-tree",
+      "name": "Scaffold Tree",
+      "description": "Generates a hierarchical Murcko-scaffold tree from a molecular dataset, enabling navigation and filtering of compounds by structural core.",
+      "category": "chem-search",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:Scaffold Tree",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:addScaffoldTree",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Scaffold Tree Filter",   "weight": 0.95,"role": "core"},
+        {"id": "func:Chem:getScaffoldTree",        "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Demo Scaffold Tree",     "weight": 0.7, "role": "sample"},
+        {"id": "script:Chem:GenerateScaffoldTree", "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:Murcko Scaffolds",     "weight": 0.75,"role": "related"},
+        {"id": "doc:/help/visualize/viewers/scaffold-tree", "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree", "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "All functions share 'Scaffold Tree' naming; the viewer, filter, and generation scripts form a tightly integrated trio with a dedicated user-facing doc page."
+    },
+    {
+      "id": "feature:Chem:r-groups-analysis",
+      "name": "R-Groups Analysis",
+      "description": "Decomposes a set of molecules around a common core scaffold into R-group substituent columns, enabling SAR analysis across the substituent space.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:R-Groups Analysis",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:rGroupDecomposition",     "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Demo R Group Analysis",   "weight": 0.7, "role": "sample"},
+        {"id": "script:Chem:FindRGroups",           "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:FindRGroupsWithCore",   "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:FindMCS",               "weight": 0.7, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "R-Groups Analysis, rGroupDecomposition, and FindRGroups Python scripts all implement the R-group decomposition workflow; FindMCS identifies the shared core scaffold."
+    },
+    {
+      "id": "feature:Chem:activity-cliffs",
+      "name": "Activity Cliffs",
+      "description": "Identifies pairs of structurally similar molecules with large differences in a biological activity value and visualises them in a chemical-space scatter plot with cliff edges.",
+      "category": "chem-search",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:Activity Cliffs",              "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:ActivityCliffsEditor",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:activityCliffsInitFunction",   "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:activityCliffsTransform",      "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Demo Activity Cliffs",         "weight": 0.7, "role": "sample"}
+      ],
+      "evidence_summary": "All functions share 'activityCliffs'/'Activity Cliffs' naming and form the standard Datagrok editor–init–transform–viewer lifecycle."
+    },
+    {
+      "id": "feature:Chem:matched-molecular-pairs",
+      "name": "Matched Molecular Pairs",
+      "description": "Detects matched molecular pairs (MMP) — molecules differing by a single structural transformation — and quantifies the effect of each transformation on measured properties.",
+      "category": "chem-search",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:Matched Molecular Pairs Analysis", "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:MMPEditor",                        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Matched Molecular Pairs",          "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Demo Matched Molecular Pairs",     "weight": 0.7, "role": "sample"}
+      ],
+      "evidence_summary": "All functions share 'Matched Molecular Pairs'/'MMP' naming and implement the complete MMP analysis + editor lifecycle."
+    },
+    {
+      "id": "feature:Chem:mpo",
+      "name": "Multi-Parameter Optimization (MPO)",
+      "description": "Calculates a composite desirability score for molecules using user-defined profiles that weight and combine multiple physicochemical properties, with a dedicated profile-management app.",
+      "category": "chem-mpo",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:mpo",                      "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:mpoCalculate",             "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:mpoTransformFunction",     "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:mpoProfileEditor",         "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:checkJsonMpoProfile",      "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:MPO profiles",             "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chemistry | MPO",          "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:mpoProfilesAppTreeBrowser","weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "All functions share 'mpo'/'MPO' naming; the profiles app, panel, calculate, transform, and profile editor form a fully integrated MPO workflow."
+    },
+    {
+      "id": "feature:Chem:chemical-descriptors",
+      "name": "Chemical Descriptors",
+      "description": "Computes a broad library of RDKit molecular descriptors (topological, geometric, electronic) and appends them as new columns, with an interactive descriptor-picker panel.",
+      "category": "chem-infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:descriptorsDocker",               "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:calculateDescriptorsTransform",   "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getDescriptors",                  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:chemDescriptorsTree",             "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:chemDescriptors",                 "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Chemistry | Descriptors",         "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Desc",                          "weight": 0.75,"role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/descriptors",      "weight": 0.95,"role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Functions share 'Descriptor(s)'/'chemDesc' naming; the descriptors tree, Docker panel, transform, and dedicated descriptor doc page are tightly coupled."
+    },
+    {
+      "id": "feature:Chem:chemical-properties",
+      "name": "Chemical Properties",
+      "description": "Calculates key physicochemical properties (MW, logP, logS, HBA, HBD, PSA, pKa, pI, logD, rotatable bonds) and elemental composition as new columns.",
+      "category": "chem-infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Chem:Chemical Properties",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getProperties",               "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chemistry | Properties",      "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:getCLogP",                    "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:getChemPropertyFunction",     "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Elemental Analysis",          "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:runElementalAnalysis",        "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:getMolecularFormula",         "weight": 0.75,"role": "core"},
+        {"id": "func:Chem:Biochemical Properties",      "weight": 0.7, "role": "related"},
+        {"id": "script:Chem:Calculate logD",            "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Calculate logP",            "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Calculate logS",            "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Calculate pI",              "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Calculate pKa",             "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Chemistry | Gasteiger Partial Charges", "weight": 0.7, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels", "weight": 0.75, "role": "doc"}
+      ],
+      "evidence_summary": "Functions share 'Properties'/'property' naming; Calculate logP/logS/pKa/pI/logD scripts and the Chemical Properties transform are all physicochemical property calculators."
+    },
+    {
+      "id": "feature:Chem:structural-alerts",
+      "name": "Structural Alerts & Catalog Filters",
+      "description": "Screens molecules against PAINS, toxicophore, and other structural-alert catalogs, flagging problematic fragments that may cause assay interference.",
+      "category": "chem-mpo",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:Structural Alerts",           "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:runStructuralAlerts",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getStructuralAlerts",         "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Biology | Structural Alerts", "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Filter by Catalogs",        "weight": 0.85,"role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",  "weight": 0.95,"role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",        "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Functions share 'StructuralAlert' naming; Filter by Catalogs extends the same concept to RDKit catalog sets; both have dedicated doc pages."
+    },
+    {
+      "id": "feature:Chem:drug-likeness-admet",
+      "name": "Drug Likeness & Toxicity",
+      "description": "Evaluates drug-likeness via fragment-contribution scoring (OCL) and predicts toxicity risks (mutagenicity, carcinogenicity, etc.) for candidate molecules.",
+      "category": "chem-mpo",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Chem:Biology | Drug Likeness",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Biology | Toxicity",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Toxicity Risks",           "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getToxicityRisks",         "weight": 0.9, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",  "weight": 0.95,"role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks", "weight": 0.95,"role": "doc"}
+      ],
+      "evidence_summary": "All panel functions are in the 'Biology' info-panel namespace and share the OCL calculation engine; drug likeness and toxicity risks have paired, explicitly linked doc pages."
+    },
+    {
+      "id": "feature:Chem:pharmacophore-features",
+      "name": "Pharmacophore Features",
+      "description": "Detects and highlights hydrogen-bond donors, acceptors, hydrophobic regions, and other pharmacophoric features on 2D molecular structures.",
+      "category": "chem-mpo",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Chem:Pharmacophore Features",          "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:runPharmacophoreFeatures",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Biology | Pharmacophore Features","weight": 0.9, "role": "core"},
+        {"id": "script:Chem:USRCAT",                        "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "Functions share 'PharmacophoreFeatures' naming and the hitTriageFunction role; USRCAT adds 3D pharmacophoric shape matching as a related capability."
+    },
+    {
+      "id": "feature:Chem:molecular-rendering",
+      "name": "Molecular Rendering",
+      "description": "Renders 2D molecular structures in grid cells and widgets using RDKit or OpenChemLib, with optional substructure highlighting and coordinate recalculation.",
+      "category": "chem-rendering",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:rdKitCellRenderer",      "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:chemCellRenderer",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:oclCellRenderer",         "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:canvasMol",               "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:drawMolecule",            "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Chemistry | Rendering",   "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:Chemistry | Highlight",   "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:Recalculate Coordinates", "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:beautifyMols",            "weight": 0.75,"role": "core"},
+        {"id": "func:Chem:Structure | 2D Structure","weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Copy as IMAGE",           "weight": 0.65,"role": "related"},
+        {"id": "doc:/help/develop/domains/chem/cheminformatics", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "Cell renderers, draw functions, Chemistry|Rendering panel, and coordinate recalculation all serve the goal of displaying 2D molecule images in the Datagrok grid."
+    },
+    {
+      "id": "feature:Chem:3d-structure",
+      "name": "3D Structure",
+      "description": "Generates 3D conformers from SMILES/Molfile and displays interactive 3D molecular structures in an info panel.",
+      "category": "chem-rendering",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Chem:Structure | 3D Structure",   "weight": 1.0, "role": "core"},
+        {"id": "script:Chem:SmilesTo3DCoordinates",    "weight": 0.9, "role": "core"},
+        {"id": "script:Chem:Generate Conformers",      "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Structure|3D Structure panel, SmilesTo3DCoordinates, and Generate Conformers all produce or display 3D molecular representations."
+    },
+    {
+      "id": "feature:Chem:notation-conversion",
+      "name": "Notation Conversion",
+      "description": "Converts molecular structures between SMILES, SMARTS, InChI, Molfile V2000/V3000, and canonical SMILES formats, including clipboard copy in any format.",
+      "category": "chem-infra",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Chem:convertMoleculeNotation",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:convertMolNotation",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Convert Notation",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Convert Notation...",      "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:canonicalize",             "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:isSmiles",                 "weight": 0.75,"role": "core"},
+        {"id": "func:Chem:isSmarts",                 "weight": 0.75,"role": "core"},
+        {"id": "func:Chem:Copy as...",               "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Copy as SMILES",           "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Copy as MOLFILE V2000",    "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Copy as MOLFILE V3000",    "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:Copy as SMARTS",           "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:convertToV3KViaOCL",      "weight": 0.75,"role": "core"},
+        {"id": "doc:/help/develop/domains/chem/intro", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "All functions convert, validate, or copy molecular notations; 'Convert Notation' is the explicit menu name and unitConverter role confirms the pattern."
+    },
+    {
+      "id": "feature:Chem:sdf-mol-import",
+      "name": "SDF/MOL File Import & Export",
+      "description": "Registers file handlers for SDF, MOL, MOL2, and SMILES formats enabling transparent open-in-Datagrok, plus SDF export of the current table.",
+      "category": "data-import",
+      "confidence": 0.96,
+      "members": [
+        {"id": "func:Chem:importSdf",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:importSmi",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:importMol2",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:importMol",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:saveAsSdf",         "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:getMolFileHandler", "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/Chem/readme.md","weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "All functions carry role 'fileHandler'/'fileExporter' for mol/sdf/smi/mol2 extensions, forming a complete file-format I/O cluster."
+    },
+    {
+      "id": "feature:Chem:sketcher",
+      "name": "Molecule Sketcher",
+      "description": "Provides in-grid molecule editing via an embedded molecular sketcher (OpenChemLib, Ketcher, Marvin, or ChemDraw), used for cell editing and as the input widget for search functions.",
+      "category": "chem-rendering",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Chem:OpenChemLib",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:editMoleculeCell",  "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "OpenChemLib is registered as moleculeSketcher and editMoleculeCell as cellEditor for the Molecule semantic type — both serve the sketcher/editor UX."
+    },
+    {
+      "id": "feature:Chem:reaction-enumeration",
+      "name": "Reaction Enumeration",
+      "description": "Applies SMARTS reaction templates to building blocks to enumerate product libraries, supporting single-component transformations and two-component reactions.",
+      "category": "chem-infra",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Chem:Reaction Enumerator",      "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:transformationReactions",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:twoComponentReaction",     "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Transformation Reactions", "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Two-Component Reactions",  "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:detectReactions",          "weight": 0.6, "role": "related"},
+        {"id": "script:Chem:Amide reaction",         "weight": 0.75,"role": "core"},
+        {"id": "script:Chem:Two Component Reaction", "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:Mutate",                 "weight": 0.7, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/reactions", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Reaction Enumerator, Transformation Reactions, Two-Component Reactions apps and their Python scripts all implement library enumeration via SMARTS templates; browsePath 'Chem | Reactions' groups them."
+    },
+    {
+      "id": "feature:Chem:mixture-support",
+      "name": "Mixture Support",
+      "description": "Handles mixture-encoded SMILES (multi-component notation) with a dedicated cell renderer, tree-visualization panel, and conversion to flat SMILES.",
+      "category": "chem-rendering",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Chem:chemMixtureRenderer",          "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chemistry | Mixture",           "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Chemistry | MixtureTree",       "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Convert Mixture To Smiles...",  "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "All members share 'Mixture' naming; the renderer, two info-panel views, and the conversion function form the complete mixture-handling cluster."
+    },
+    {
+      "id": "feature:Chem:chemprop-ml",
+      "name": "ChemProp Machine Learning",
+      "description": "Trains message-passing neural network (D-MPNN) models on molecular property data using ChemProp and applies them to predict properties for new molecules.",
+      "category": "ml",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:trainChemprop",    "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:applyChemprop",    "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:isApplicableNN",   "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:isInteractiveNN",  "weight": 0.85,"role": "core"}
+      ],
+      "evidence_summary": "trainChemprop and applyChemprop explicitly implement the ChemProp D-MPNN framework; isApplicableNN/isInteractiveNN check model applicability to the current dataset."
+    },
+    {
+      "id": "feature:Chem:synthon-search",
+      "name": "Synthon Search",
+      "description": "Searches virtual combinatorial libraries (synthon spaces) by substructure or fingerprint similarity using RDKit SynthonSpaceSearch, returning enumerated products.",
+      "category": "chem-search",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Chem:Databases | Synthon Search | Substructure Search", "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Databases | Synthon Search | Similarity Search",   "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Search Synthons",   "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Get Synthon Spaces","weight": 0.85,"role": "core"},
+        {"id": "script:Chem:SynthonSearch",   "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "All members share 'Synthon'/'synthon' naming; the panel functions are grouped under 'Databases | Synthon Search' and the Python script backs the same RDKit SynthonSpaceSearch engine."
+    },
+    {
+      "id": "feature:Chem:identifier-mapping",
+      "name": "Identifier Mapping",
+      "description": "Maps between molecular identifier formats (SMILES, InChI, InChIKey, chemical names) via lookup or computation, including name-to-SMILES resolution.",
+      "category": "chem-infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Chem:Map Identifiers",        "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:mapIdentifiersTransform", "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:Structure | Identifiers", "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:Names To Smiles",         "weight": 0.8, "role": "core"},
+        {"id": "func:Chem:freeTextToSmiles",        "weight": 0.75,"role": "core"},
+        {"id": "func:Chem:getInchis",               "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:To InchI",                "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:To InchI Keys",           "weight": 0.85,"role": "core"},
+        {"id": "func:Chem:getInchiKeys",            "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:inchiToMol",            "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "Map Identifiers, InChI/InChIKey transforms, and name-to-SMILES functions all convert between molecular identifier systems; the Identifiers info panel surfaces them on single values."
+    },
+    {
+      "id": "feature:Chem:validation-curation",
+      "name": "Molecule Validation & Curation",
+      "description": "Validates, standardizes, and curates molecular structures by detecting invalid entries, removing salts and waters, deprotecting groups, and deduplicating a dataset.",
+      "category": "chem-infra",
+      "confidence": 0.87,
+      "members": [
+        {"id": "func:Chem:validateMolecule",      "weight": 1.0, "role": "core"},
+        {"id": "func:Chem:removeWaterAndSalts",   "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:filterMoleculeDuplicates","weight": 0.8,"role": "core"},
+        {"id": "func:Chem:Deprotect",             "weight": 0.9, "role": "core"},
+        {"id": "func:Chem:Deprotect Editor",      "weight": 0.85,"role": "core"},
+        {"id": "script:Chem:Curate",              "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "validateMolecule, removeWaterAndSalts, Deprotect, and the Curate script all serve the data-curation goal of ensuring molecular data quality before analysis."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Chem:similarity-search",       "to": "feature:Chem:fingerprints",        "kind": "related"},
+    {"from": "feature:Chem:diversity-search",        "to": "feature:Chem:fingerprints",        "kind": "related"},
+    {"from": "feature:Chem:chemical-space",          "to": "feature:Chem:fingerprints",        "kind": "related"},
+    {"from": "feature:Chem:molecular-clustering",   "to": "feature:Chem:fingerprints",        "kind": "related"},
+    {"from": "feature:Chem:activity-cliffs",         "to": "feature:Chem:similarity-search",   "kind": "related"},
+    {"from": "feature:Chem:activity-cliffs",         "to": "feature:Chem:chemical-space",      "kind": "related"},
+    {"from": "feature:Chem:mpo",                     "to": "feature:Chem:chemical-properties", "kind": "related"},
+    {"from": "feature:Chem:mpo",                     "to": "feature:Chem:chemical-descriptors","kind": "related"},
+    {"from": "feature:Chem:drug-likeness-admet",     "to": "feature:Chem:chemical-properties", "kind": "related"},
+    {"from": "feature:Chem:structural-alerts",       "to": "feature:Chem:substructure-search", "kind": "related"},
+    {"from": "feature:Chem:matched-molecular-pairs", "to": "feature:Chem:r-groups-analysis",   "kind": "sibling"},
+    {"from": "feature:Chem:scaffold-tree",           "to": "feature:Chem:substructure-search", "kind": "related"},
+    {"from": "feature:Chem:substructure-search",     "to": "feature:Chem:sketcher",            "kind": "related"},
+    {"from": "feature:Chem:reaction-enumeration",    "to": "feature:Chem:sketcher",            "kind": "related"},
+    {"from": "feature:Chem:synthon-search",          "to": "feature:Chem:substructure-search", "kind": "sibling"},
+    {"from": "feature:Chem:synthon-search",          "to": "feature:Chem:similarity-search",   "kind": "sibling"},
+    {"from": "feature:Chem:identifier-mapping",      "to": "feature:Chem:notation-conversion", "kind": "sibling"},
+    {"from": "feature:Chem:chemprop-ml",             "to": "feature:Chem:chemical-properties", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Chem:getRdKitModule",
+    "func:Chem:init",
+    "func:Chem:initChemAutostart",
+    "func:Chem:detectSmiles",
+    "func:Chem:detectMolecules",
+    "func:Chem:<anonymous>",
+    "func:Chem:Demo Chem Overview",
+    "script:Chem:chemBenchmark",
+    "script:Chem:resetCacheTest",
+    "script:Chem:chemTestFilter",
+    "script:Chem:TestPythonRunning",
+    "doc:/packages/Chem/claude.md",
+    "doc:/packages/Chem/contrib.md",
+    "doc:/packages/Chem/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+    "doc:/help/develop/onboarding/tracks/cheminformatics"
+  ]
+}

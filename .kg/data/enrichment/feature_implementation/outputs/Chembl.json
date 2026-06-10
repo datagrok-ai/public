@@ -1,0 +1,161 @@
+{
+  "package_id": "pkg:Chembl",
+  "features": [
+    {
+      "id": "feature:Chembl:substructure-search",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chembl/src/tests/cartridge.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts defines chemblSubstructureSearchPanel, chemblSubstructureSearch, and the shared chemblSearchWidgetLocalDb. cartridge.ts smoke-tests patternSubstructureSearch."
+    },
+    {
+      "id": "feature:Chembl:similarity-search",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chembl/src/tests/cartridge.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts defines chemblSimilaritySearchPanel, chemblSimilaritySearch (canonicalises via Chem:getRdKitModule then calls patternSimilaritySearch). cartridge.ts covers both similarity queries."
+    },
+    {
+      "id": "feature:Chembl:id-conversion",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chembl/src/tests/converters.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Only the chemblIdToSmilesTs converter wrapper lives in TS (package.ts); the rest is SQL in queries/converters.sql. converters.ts holds golden values for every converter query."
+    },
+    {
+      "id": "feature:Chembl:compound-bioactivity",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Bioactivity logic lives entirely in SQL (activityDetailsForTarget.sql, bioactivityForBacterialTargets.sql, queries.sql). The only TS surface is getChemblCompoundsByOrganism in package.ts which calls StructuresByOrganism."
+    },
+    {
+      "id": "feature:Chembl:compound-info-panels",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "chemblSearchWidgetLocalDb plus the two info-panel wrappers are defined in package.ts. The MolregnoInfo / ChemblInfo / ByChemblIds / _cbFindByMolregno panels are SQL-registered via --tags: panel,widget."
+    },
+    {
+      "id": "feature:Chembl:chembl-browser",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chembl/src/demo.ts",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers the Database Queries demo function; demo.ts builds the two-tab demo view that re-runs FracClassificationWithSubstructure on input change."
+    },
+    {
+      "id": "feature:Chembl:hit-triage",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "All three hitTriage* functions (getChemblCompoundsByOrganism, getChemblCompounds, chemblMolregno) are decorated in package.ts; they delegate to SQL queries StructuresByOrganism / ChemblNumberOfStructures / ChemblMolregNoBySmiles."
+    },
+    {
+      "id": "feature:Chembl:frac-classification",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Pure SQL feature (FracClassification, FracClassificationWithSubstructure in queries). demo.ts is the only TS file that exercises it as the seed query for the Database Queries demo."
+    },
+    {
+      "id": "feature:Chembl:pharmacokinetic-data",
+      "implements": [],
+      "tests": [],
+      "notes": "Pure SQL feature implemented in queries/pkData.sql + pkData.layout; no TS surface."
+    },
+    {
+      "id": "feature:Chembl:target-protein-classification",
+      "implements": [],
+      "tests": [],
+      "notes": "Pure SQL feature in queries/queries.sql (_protein classification); no TS surface."
+    },
+    {
+      "id": "feature:Chembl:db-explorer",
+      "implements": [
+        {
+          "path": "packages/Chembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chembl/src/handlers.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chembl/src/explorer-config.ts",
+          "role": "config",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts.init calls registerChemblIdHandler (handlers.ts) which boots a DBExplorer from explorer-config.ts and attaches a SMILES molecule renderer."
+    },
+    {
+      "id": "feature:Chembl:autocomplete-helpers",
+      "implements": [],
+      "tests": [],
+      "notes": "Pure SQL feature (queries/suggestions.sql); no TS surface."
+    }
+  ]
+}

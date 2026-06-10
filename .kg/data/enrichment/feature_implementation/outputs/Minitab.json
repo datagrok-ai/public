@@ -1,0 +1,84 @@
+{
+  "package_id": "pkg:Minitab",
+  "features": [
+    {
+      "id": "feature:Minitab:mwx-worksheet-support",
+      "implements": [
+        {
+          "path": "packages/Minitab/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Minitab/src/formats/mwx/mwx-parser.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Minitab/src/formats/mwx/mwx-to-dataframe.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Minitab/src/formats/mwx/mwx-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Minitab/src/formats/mwx/mwx-types.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Minitab/src/formats/shared/sheet-parser.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts wires importMwx/previewMwx to parseMwx, mwxWorksheetToDataFrame, and createMwxTableView; sheet-parser is shared XML/sheet helper used by mwx parser."
+    },
+    {
+      "id": "feature:Minitab:mpx-project-support",
+      "implements": [
+        {
+          "path": "packages/Minitab/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Minitab/src/formats/mpx/mpx-parser.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Minitab/src/formats/mpx/mpx-to-dataframe.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Minitab/src/formats/mpx/mpx-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Minitab/src/formats/mpx/mpx-types.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Minitab/src/formats/mwx/mwx-to-dataframe.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Minitab/src/formats/shared/sheet-parser.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "MPX projects embed worksheets, so mpx-to-dataframe reuses mwxWorksheetToDataFrame; sheet-parser is the shared XML/sheet helper."
+    }
+  ]
+}

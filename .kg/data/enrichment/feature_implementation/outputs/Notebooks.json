@@ -1,0 +1,39 @@
+{
+  "package_id": "pkg:Notebooks",
+  "features": [
+    {
+      "id": "feature:Notebooks:jupyter-notebook-view",
+      "implements": [
+        {
+          "path": "packages/Notebooks/src/package.js",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Notebooks/src/commands.js",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Notebooks/src/utils.js",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "package.js declares NotebookView, notebookView (Notebook view function) and initContainer; commands.js wires JupyterLab keyboard shortcuts via SetupCommands; utils.js provides editNotebook/setupEnvironment/getAuthToken used by edit mode."
+    },
+    {
+      "id": "feature:Notebooks:notebook-export",
+      "implements": [
+        {
+          "path": "packages/Notebooks/src/package.js",
+          "role": "core",
+          "confidence": 0.97
+        }
+      ],
+      "tests": [],
+      "notes": "convertNotebook function (notebook -> HTML/script via Docker fetchProxy) and the helper toHtml live in package.js."
+    }
+  ]
+}

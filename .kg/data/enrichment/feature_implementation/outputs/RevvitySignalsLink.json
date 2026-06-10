@@ -1,0 +1,162 @@
+{
+  "package_id": "pkg:RevvitySignalsLink",
+  "features": [
+    {
+      "id": "feature:RevvitySignalsLink:revvity-signals-app",
+      "implements": [
+        {
+          "path": "packages/RevvitySignalsLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/view-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/libraries.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/search-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/users.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/detectors.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/layout.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/RevvitySignalsLink/src/tests/revvity-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts defines init/app/tree browser; view-utils handles browse-tree navigation; libraries.ts builds initial stats; detectors.ts is invoked by init to register the revvity-id format."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:entity-search",
+      "implements": [
+        {
+          "path": "packages/RevvitySignalsLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/revvity-api.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/compounds.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/signals-search-query.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/search-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/users.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/RevvitySignalsLink/src/tests/revvity-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "searchEntities/searchEntitiesWithStructures/getStructureById live in package.ts; revvity-api.ts holds the REST search() and queryStructureById; compounds.ts adds molecule structures; utils.ts transforms Revvity JSON to DataFrame."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:metadata-vocabulary",
+      "implements": [
+        {
+          "path": "packages/RevvitySignalsLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/revvity-api.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/users.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/libraries.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/compounds.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/signals-search-query.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/RevvitySignalsLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/RevvitySignalsLink/src/tests/revvity-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "getUsers/getLibraries/getTags/searchTerms/getTermsForField defined in package.ts call queryUsers/queryLibraries/queryTags/queryTerms in revvity-api.ts; users.ts and libraries.ts hold the cached lookup tables; getTermsForField uses getConditionForLibAndType from compounds.ts."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:etl-pipeline",
+      "implements": [],
+      "tests": [],
+      "notes": "Implemented entirely by the server-side Python script scripts/revvity_etl.py (under files.scripts, not files.src) — no TypeScript wrapper or test file."
+    }
+  ]
+}

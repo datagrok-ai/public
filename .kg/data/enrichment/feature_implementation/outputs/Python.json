@@ -1,0 +1,89 @@
+{
+  "package_id": "pkg:Python",
+  "features": [
+    {
+      "id": "feature:Python:python-script-runtime",
+      "implements": [
+        {
+          "path": "packages/Python/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Python/scripts/sample_a_plus_b.py",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Python/scripts/sample_pandas_input.py",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Python/scripts/sample_pandas_output.py",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Package entry registers the `info` function; sample Python scripts demonstrate the pandas-backed Python runtime."
+    },
+    {
+      "id": "feature:Python:rdkit-cheminformatics",
+      "implements": [
+        {
+          "path": "packages/Python/scripts/sample_rdkit_gasteiger.py",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Single RDKit Gasteiger sample script is the only artifact of this feature in the Python package."
+    },
+    {
+      "id": "feature:Python:sklearn-predictive-modeling",
+      "implements": [
+        {
+          "path": "packages/Python/scripts/sample_sklearn_model.py",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Single sklearn linear-regression sample script implements this feature."
+    },
+    {
+      "id": "feature:Python:scripting-framework",
+      "implements": [
+        {
+          "path": "packages/Python/src/package.ts",
+          "role": "support",
+          "confidence": 0.4
+        },
+        {
+          "path": "packages/Python/scripts/sample_a_plus_b.py",
+          "role": "demo",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Python/scripts/sample_pandas_input.py",
+          "role": "demo",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Python/scripts/sample_pandas_output.py",
+          "role": "demo",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Platform-wide scripting framework is not implemented in the Python package; sample scripts only demonstrate Python-language usage."
+    },
+    {
+      "id": "feature:Python:info-panels",
+      "implements": [],
+      "tests": [],
+      "notes": "Info panels are a platform-wide developer concept; the Python package contains no info-panel implementations."
+    }
+  ]
+}

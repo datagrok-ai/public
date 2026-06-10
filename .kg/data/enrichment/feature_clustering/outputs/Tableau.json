@@ -1,0 +1,20 @@
+{
+  "package_id": "pkg:Tableau",
+  "features": [
+    {
+      "id": "feature:Tableau:twb-file-integration",
+      "name": "Tableau Workbook (.twb) File Integration",
+      "description": "Enables Datagrok to open and preview Tableau .twb workbook files by registering a file-import handler and an in-browser file viewer for the format.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Tableau:importTwb",        "weight": 1.0, "role": "core"},
+        {"id": "func:Tableau:previewTwb",       "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Tableau/readme.md","weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'twb' extension target and together cover the full fileHandler + fileViewer lifecycle for Tableau workbooks; the readme documents this combined capability."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": ["doc:/packages/Tableau/credits.md"]
+}

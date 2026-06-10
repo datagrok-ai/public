@@ -1,0 +1,372 @@
+{
+  "package": {
+    "id": "pkg:Arrow",
+    "name": "Arrow",
+    "friendly_name": "Arrow",
+    "version": "1.5.0",
+    "category": "Data Access",
+    "description": "Provides support for the Parquet and Feather file formats.",
+    "extras": {
+      "npm_name": "@datagrok/arrow",
+      "fullName": null,
+      "browserFeatures": [
+        "wasm"
+      ]
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Arrow:parquetInit",
+      "name": "parquetInit",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:initPackage",
+      "name": "initPackage",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:toFeather",
+      "name": "toFeather",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts DG.DataFrame to arrow",
+      "input_types": [
+        "dataframe",
+        "bool"
+      ],
+      "output_types": [
+        "blob"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:fromFeather",
+      "name": "fromFeather",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts arrow ipc stream to DG.DataFrame",
+      "input_types": [
+        "blob"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:toParquet",
+      "name": "toParquet",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts DG.DataFrame to parquet",
+      "input_types": [
+        "dataframe",
+        "int"
+      ],
+      "output_types": [
+        "blob"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:fromParquet",
+      "name": "fromParquet",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts binary data in parquet format to DG.DataFrame",
+      "input_types": [
+        "blob"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:parquetFileHandler",
+      "name": "parquetFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "parquet"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:featherFileHandler",
+      "name": "featherFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "feather"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:saveAsParquet",
+      "name": "saveAsParquet",
+      "friendly_name": null,
+      "role": "fileExporter",
+      "tags": [],
+      "description": "Save as Parquet",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "fileExporter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:saveAsFeather",
+      "name": "saveAsFeather",
+      "friendly_name": null,
+      "role": "fileExporter",
+      "tags": [],
+      "description": "Save as Feather",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "fileExporter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Arrow:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Arrow/credits.md",
+      "title": "Arrow — Third-Party Libraries",
+      "url": "/packages/Arrow/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Arrow/readme.md",
+      "title": "Arrow",
+      "url": "/packages/Arrow/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Arrow:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "[#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles"
+    },
+    {
+      "id": "clog:Arrow:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-09-23",
+      "ticket": null,
+      "text": "Fixes conversion of 'bigint' columns"
+    },
+    {
+      "id": "clog:Arrow:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2025-08-27",
+      "ticket": null,
+      "text": "Convert a 'string' column to a UTF-8 column instead of a categorical column."
+    },
+    {
+      "id": "clog:Arrow:1.4.1:1",
+      "version": "1.4.1",
+      "released_at": "2025-08-27",
+      "ticket": null,
+      "text": "Fix the creation of a 'datetime' column from a vector, which in some cases produced a column with an incorrect number of rows"
+    },
+    {
+      "id": "clog:Arrow:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "Bump datagrok-api dependency >= 1.26.0"
+    },
+    {
+      "id": "clog:Arrow:1.1.2:0",
+      "version": "1.1.2",
+      "released_at": "2024-09-23",
+      "ticket": null,
+      "text": "Bump datagrok-api dependency"
+    },
+    {
+      "id": "clog:Arrow:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2024-09-11",
+      "ticket": null,
+      "text": "Fixes converting of null DG constants"
+    },
+    {
+      "id": "clog:Arrow:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-09-09",
+      "ticket": null,
+      "text": "Minor version bump"
+    },
+    {
+      "id": "clog:Arrow:1.0.7:0",
+      "version": "1.0.7",
+      "released_at": "2024-04-09",
+      "ticket": null,
+      "text": "Create int column instead of bigint when possible"
+    },
+    {
+      "id": "clog:Arrow:1.0.6:0",
+      "version": "1.0.6",
+      "released_at": "2024-03-19",
+      "ticket": null,
+      "text": "Updated tests to be compatible with changes in 1.0.5"
+    },
+    {
+      "id": "clog:Arrow:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2024-03-15",
+      "ticket": null,
+      "text": "Updated versions of parquet-wasm and arrow libraries"
+    },
+    {
+      "id": "clog:Arrow:1.0.5:1",
+      "version": "1.0.5",
+      "released_at": "2024-03-15",
+      "ticket": null,
+      "text": "Significantly improved performance and correctness of handling of feather/parquet format"
+    },
+    {
+      "id": "clog:Arrow:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2023-09-13",
+      "ticket": "GROK-13909",
+      "text": "GROK-13909: An error occurs when opening files"
+    },
+    {
+      "id": "clog:Arrow:1.0.2:0",
+      "version": "1.0.2",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "This is the initial package release."
+    },
+    {
+      "id": "clog:Arrow:1.0.2:1",
+      "version": "1.0.2",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Dependency: datagrok-api >= 1.11.1*"
+    },
+    {
+      "id": "clog:Arrow:1.0.2:2",
+      "version": "1.0.2",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Reading and processing Parquet and Feather file formats."
+    }
+  ],
+  "stats": {
+    "functions": 11,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 16
+  }
+}

@@ -1,0 +1,1420 @@
+{
+  "package": {
+    "id": "pkg:UsageAnalysis",
+    "name": "UsageAnalysis",
+    "friendly_name": "Usage Analysis",
+    "version": "2.5.0",
+    "category": "General",
+    "description": "Platform usage analysis system",
+    "extras": {
+      "npm_name": "@datagrok/usage-analysis",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "Platform version",
+      "type": "string",
+      "choices": [],
+      "default": "1.24.0"
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:UsageAnalysis:_initUA",
+      "name": "_initUA",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:TestsList",
+      "name": "TestsList",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:TestsListJoined",
+      "name": "TestsListJoined",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:TestAnalysisReportForCurrentDay",
+      "name": "TestAnalysisReportForCurrentDay",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "datetime"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Usage Analysis",
+      "name": "Usage Analysis",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Admin"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:getTicketsVerdict",
+      "name": "getTicketsVerdict",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        null,
+        null
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Test Track",
+      "name": "Test Track",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app",
+        "browsePath": "Admin"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Reports",
+      "name": "Reports",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Admin"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Service Logs",
+      "name": "Service Logs",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "map",
+        "int"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Admin"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:serviceLogsAppTreeBrowser",
+      "name": "serviceLogsAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:reportsAppTreeBrowser",
+      "name": "reportsAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Usage",
+      "name": "Usage",
+      "friendly_name": null,
+      "role": "dashboard",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "dashboard"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:packageUsageWidget",
+      "name": "packageUsageWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:testDashboardsViewer",
+      "name": "testDashboardsViewer",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Click Events",
+      "name": "Click Events",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:describeCurrentObj",
+      "name": "describeCurrentObj",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:Create JIRA ticket",
+      "name": "Create JIRA ticket",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Creates JIRA ticket using current error log",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UsageAnalysis:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:UsageAnalysis:GetAggregatedClicks",
+      "name": "GetAggregatedClicks",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:All Test Runs",
+      "name": "All Test Runs",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsersCount",
+      "name": "UniqueUsersCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:NewUsersCount",
+      "name": "NewUsersCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:SessionsCount",
+      "name": "SessionsCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ViewsCount",
+      "name": "ViewsCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ConnectionsCount",
+      "name": "ConnectionsCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:QueriesCount",
+      "name": "QueriesCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TestsCount",
+      "name": "TestsCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopQueriesUsingDataSource",
+      "name": "TopQueriesUsingDataSource",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsersOfQuery",
+      "name": "TopUsersOfQuery",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsersOfConnection",
+      "name": "TopUsersOfConnection",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Queries1",
+      "name": "Queries1",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopQueries",
+      "name": "TopQueries",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopConnections",
+      "name": "TopConnections",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopDataSources",
+      "name": "TopDataSources",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:entity links",
+      "name": "entity links",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": [
+        "log"
+      ]
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionInfoByFriendlyName",
+      "name": "FunctionInfoByFriendlyName",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionInfoBySource",
+      "name": "FunctionInfoBySource",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopDisabledErrors",
+      "name": "TopDisabledErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopPackageErrors",
+      "name": "TopPackageErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopErrorSources",
+      "name": "TopErrorSources",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:EventErrors",
+      "name": "EventErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ReportsCount",
+      "name": "ReportsCount",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:SameErrors",
+      "name": "SameErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopErrors",
+      "name": "TopErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:EventsSources",
+      "name": "EventsSources",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:EventsUsersSources",
+      "name": "EventsUsersSources",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackageInfo",
+      "name": "PackageInfo",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionInfoByName",
+      "name": "FunctionInfoByName",
+      "connection": null,
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsersOfPackage",
+      "name": "TopUsersOfPackage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopFunctionsOfPackage",
+      "name": "TopFunctionsOfPackage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopErrorsOfPackage",
+      "name": "TopErrorsOfPackage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsersOfFunction",
+      "name": "TopUsersOfFunction",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopFunctionsOfSource",
+      "name": "TopFunctionsOfSource",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsersOfSource",
+      "name": "TopUsersOfSource",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopFunctions",
+      "name": "TopFunctions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopPackageFunctions",
+      "name": "TopPackageFunctions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Events1",
+      "name": "Events1",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopPackages",
+      "name": "TopPackages",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopSources",
+      "name": "TopSources",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:GetUsersInGroups",
+      "name": "GetUsersInGroups",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:EventByErrorMessageAndFriendlyName",
+      "name": "EventByErrorMessageAndFriendlyName",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UpdateEventsIsErrorComment",
+      "name": "UpdateEventsIsErrorComment",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionErrors",
+      "name": "FunctionErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopFunctionErrors",
+      "name": "TopFunctionErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopFunctionDisabledErrors",
+      "name": "TopFunctionDisabledErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopPackagesByError",
+      "name": "TopPackagesByError",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionsUsage",
+      "name": "FunctionsUsage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionsContextPane",
+      "name": "FunctionsContextPane",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:FunctionsExecTime",
+      "name": "FunctionsExecTime",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:EntitiesTags",
+      "name": "EntitiesTags",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Groups",
+      "name": "Groups",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:userById",
+      "name": "userById",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": [
+        "panel"
+      ]
+    },
+    {
+      "id": "query:UsageAnalysis:userInfoByEmailPanel",
+      "name": "userInfoByEmailPanel",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": [
+        "panel"
+      ]
+    },
+    {
+      "id": "query:UsageAnalysis:LogTail",
+      "name": "LogTail",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Actions",
+      "name": "Log Actions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Actions Summary",
+      "name": "Log Actions Summary",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Actions Summary by Hours",
+      "name": "Log Actions Summary by Hours",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Error Summary",
+      "name": "Log Error Summary",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Parameter Values",
+      "name": "Log Parameter Values",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Log Sessions",
+      "name": "Log Sessions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsersOverview",
+      "name": "UniqueUsersOverview",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesUsageOverview",
+      "name": "PackagesUsageOverview",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsersList",
+      "name": "UniqueUsersList",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TotalUsersAndGroups",
+      "name": "TotalUsersAndGroups",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesUsage",
+      "name": "PackagesUsage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesContextPaneFunctions",
+      "name": "PackagesContextPaneFunctions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesContextPaneLogs",
+      "name": "PackagesContextPaneLogs",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesContextPaneAudit",
+      "name": "PackagesContextPaneAudit",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesInstallationTime",
+      "name": "PackagesInstallationTime",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PackagesCategories",
+      "name": "PackagesCategories",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:PgStatStatements",
+      "name": "PgStatStatements",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsersPerProject",
+      "name": "UniqueUsersPerProject",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:DailyProjectAccess",
+      "name": "DailyProjectAccess",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:AccessCountPerPeriodPerProject",
+      "name": "AccessCountPerPeriodPerProject",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ProjectsList",
+      "name": "ProjectsList",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UserReports",
+      "name": "UserReports",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ReportSameErrors",
+      "name": "ReportSameErrors",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ReportsTop20",
+      "name": "ReportsTop20",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UserReportsSingle",
+      "name": "UserReportsSingle",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Reports migration",
+      "name": "Reports migration",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ReportDataMigration",
+      "name": "ReportDataMigration",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:GetSystemTableSizes",
+      "name": "GetSystemTableSizes",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TestTrack",
+      "name": "TestTrack",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:LastStatuses",
+      "name": "LastStatuses",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TestingNames",
+      "name": "TestingNames",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TestingName",
+      "name": "TestingName",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Builds",
+      "name": "Builds",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:getTestStatusesAcordingDF",
+      "name": "getTestStatusesAcordingDF",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:ManualTestingTestStatuses",
+      "name": "ManualTestingTestStatuses",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Benchmarks",
+      "name": "Benchmarks",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Stress tests",
+      "name": "Stress tests",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:LastBuildsBenchmarksCompare",
+      "name": "LastBuildsBenchmarksCompare",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:LastBuildsCompare",
+      "name": "LastBuildsCompare",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:LastVersionsCompare",
+      "name": "LastVersionsCompare",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopEventsOfUser",
+      "name": "TopEventsOfUser",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsers",
+      "name": "UniqueUsers",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueSessions",
+      "name": "UniqueSessions",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Usage",
+      "name": "Usage",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopPackagesByUsers",
+      "name": "TopPackagesByUsers",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:TopUsers",
+      "name": "TopUsers",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:Schema columns",
+      "name": "Schema columns",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UniqueUsersSummary",
+      "name": "UniqueUsersSummary",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UsersEventsSummary",
+      "name": "UsersEventsSummary",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:UsageAnalysis:UsersErrorsSummary",
+      "name": "UsersErrorsSummary",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/UsageAnalysis/readme.md",
+      "title": "Usage analysis",
+      "url": "/packages/UsageAnalysis/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/UsageAnalysis/credits.md",
+      "title": "UsageAnalysis — Third-Party Libraries",
+      "url": "/packages/UsageAnalysis/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/govern/audit/usage-analysis",
+      "title": "Usage Analysis",
+      "url": "/help/govern/audit/usage-analysis",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/access/databases/create-custom-connectors",
+      "title": "Create custom connectors",
+      "url": "/help/access/databases/create-custom-connectors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/create-project",
+      "title": "Create project",
+      "url": "/help/datagrok/_deprecated/create-project",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/teams/it/log-export-cloud-watch",
+      "title": "Export logs to Amazon CloudWatch",
+      "url": "/help/datagrok/solutions/teams/it/log-export-cloud-watch",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/workflows/eda",
+      "title": "Exploratory data analysis",
+      "url": "/help/datagrok/solutions/workflows/eda",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+      "title": "Create custom file viewers",
+      "url": "/help/develop/how-to/files/create-custom-file-viewers",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/file-exporters",
+      "title": "Create file exporters",
+      "url": "/help/develop/how-to/files/file-exporters",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/views/custom-views",
+      "title": "Create a custom view",
+      "url": "/help/develop/how-to/views/custom-views",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/explore/anova",
+      "title": "Analysis of variances",
+      "url": "/help/explore/anova",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/multivariate-analysis",
+      "title": "Multivariate analysis",
+      "url": "/help/explore/multivariate-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "title": "Tests: multivariate analysis",
+      "url": "/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/group-analysis",
+      "title": "Group analysis viewer",
+      "url": "/help/visualize/viewers/group-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/JiraConnect/readme.md",
+      "title": "Jira Connect",
+      "url": "/packages/JiraConnect/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/MolTrack/credits.md",
+      "title": "Mol Track — Third-Party Libraries",
+      "url": "/packages/MolTrack/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:UsageAnalysis:2.5.0:0",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-18787",
+      "text": "GROK-18787: Click Tracking:"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:1",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Added Clicks tab"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:2",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Added tab control for Click Analysis and Specific Clicks"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:3",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Added elements inspect"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:4",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "[#3213](https://github.com/datagrok-ai/public/issues/3213): Introduced Projects tab"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:5",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Improved query performance, load time, and projects tab"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:6",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Reports: Added descending ordering by creation date in widget"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:7",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Reports: Truncated long text in widget"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:8",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Improved ticket loading with bulk method and background processing"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:9",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Decreased bundle size by removing unnecessary test library usages"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:10",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "[#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:11",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-19855",
+      "text": "GROK-19855: Reporting app now loads reports when opened by URL with report number"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:12",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-19523",
+      "text": "GROK-19523: AppTreeBrowser decorator now finds the app properly"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.5.0:13",
+      "version": "2.5.0",
+      "released_at": "2026-03-20",
+      "ticket": "GROK-19504",
+      "text": "GROK-19504: Invalid datagrok-api imports corrected"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:0",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Test Track: Added advanced test case for visual query"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:1",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Reports: Fixed not visible add rule button"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:2",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "TestTrack: Removed manual test that have autotest"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:3",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": "GROK-18772",
+      "text": "GROK-18772: ManualTests Dashboard: Unable to parse string \"Test Track:test\" when trying to \"Run\" test"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:4",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Test Track: updated and refined test cases for Projects (added Spaces)"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:5",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Tests: Added warning about missing packages tests"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:6",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Update Autocomplete.md"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:7",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Update Formula Refreshing.md"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:8",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": "GROK-17332",
+      "text": "GROK-17332: Removed unused queries"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:9",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Table name change"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:10",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "Test Track: Line chart: Added context menu for test cases"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:11",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": "GROK-18366",
+      "text": "GROK-18366 Usage analysis: Log: an error occurs when opening the tab"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.4.2:12",
+      "version": "2.4.2",
+      "released_at": "2025-09-26",
+      "ticket": null,
+      "text": "UsageAnalysis: Api: naming fixes"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.3.2:0",
+      "version": "2.3.2",
+      "released_at": "2025-03-24",
+      "ticket": null,
+      "text": "Tests Dashboards: improvements for gathering of benchmarks"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.3.1:0",
+      "version": "2.3.1",
+      "released_at": "2025-03-13",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.24.0*"
+    },
+    {
+      "id": "clog:UsageAnalysis:2.3.1:1",
+      "version": "2.3.1",
+      "released_at": "2025-03-13",
+      "ticket": null,
+      "text": "Tests Dashboards: improvements and bug fixes"
+    }
+  ],
+  "stats": {
+    "functions": 18,
+    "scripts": 0,
+    "queries": 106,
+    "tutorials": 0,
+    "docs": 16,
+    "changelog": 93
+  }
+}

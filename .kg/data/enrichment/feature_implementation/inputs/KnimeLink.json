@@ -1,0 +1,177 @@
+{
+  "package": {
+    "id": "pkg:KnimeLink",
+    "name": "KnimeLink",
+    "friendly_name": "KnimeLink",
+    "category": "Compute",
+    "description": "Enables seamless interaction with the KNIME analytics platform"
+  },
+  "files": {
+    "src": [
+      "packages/KnimeLink/src/constants.ts",
+      "packages/KnimeLink/src/credentials.ts",
+      "packages/KnimeLink/src/data-conversion.ts",
+      "packages/KnimeLink/src/function-cache.ts",
+      "packages/KnimeLink/src/function-registry.ts",
+      "packages/KnimeLink/src/knime-client-factory.ts",
+      "packages/KnimeLink/src/knime-client.ts",
+      "packages/KnimeLink/src/knime-hub-client.ts",
+      "packages/KnimeLink/src/package.ts",
+      "packages/KnimeLink/src/types.ts",
+      "packages/KnimeLink/src/utils.ts"
+    ],
+    "tests": [
+      "packages/KnimeLink/src/package-test.ts",
+      "packages/KnimeLink/src/tests/integration-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/KnimeLink/CLAUDE.md",
+      "packages/KnimeLink/CREDITS.md",
+      "packages/KnimeLink/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:KnimeLink:knime-application",
+      "name": "KNIME Application",
+      "description": "Provides an integrated KNIME analytics platform view within Datagrok, accessible from the Compute browse path, with a tree browser for navigating KNIME resources.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:KnimeLink:KNIME",
+          "kind": "RegisteredFunction",
+          "name": "KNIME",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:KnimeLink:knimeLinkAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "knimeLinkAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/KnimeLink/readme.md",
+          "kind": "DocPage",
+          "title": "KnimeLink",
+          "url": "/packages/KnimeLink/readme.md"
+        },
+        {
+          "id": "doc:/packages/KnimeLink/claude.md",
+          "kind": "DocPage",
+          "title": "KnimeLink",
+          "url": "/packages/KnimeLink/claude.md"
+        },
+        {
+          "id": "doc:/packages/KnimeLink/credits.md",
+          "kind": "DocPage",
+          "title": "KnimeLink — Third-Party Libraries",
+          "url": "/packages/KnimeLink/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/KnimeLink/src/constants.ts",
+          "packages/KnimeLink/src/data-conversion.ts",
+          "packages/KnimeLink/src/function-cache.ts",
+          "packages/KnimeLink/src/function-registry.ts",
+          "packages/KnimeLink/src/knime-client-factory.ts",
+          "packages/KnimeLink/src/knime-client.ts",
+          "packages/KnimeLink/src/knime-hub-client.ts",
+          "packages/KnimeLink/src/package.ts",
+          "packages/KnimeLink/src/types.ts",
+          "packages/KnimeLink/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:KnimeLink:workflow-execution",
+      "name": "KNIME Workflow Execution",
+      "description": "Discovers KNIME deployments, registers them as callable Datagrok functions, and retrieves workflow preview images, enabling users to run KNIME workflows from within Datagrok.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:KnimeLink:knimeListDeployments",
+          "kind": "RegisteredFunction",
+          "name": "knimeListDeployments",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:KnimeLink:knimeGetOrRegisterFunc",
+          "kind": "RegisteredFunction",
+          "name": "knimeGetOrRegisterFunc",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:KnimeLink:knimeGetWorkflowImageUrl",
+          "kind": "RegisteredFunction",
+          "name": "knimeGetWorkflowImageUrl",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/KnimeLink/src/constants.ts",
+          "packages/KnimeLink/src/data-conversion.ts",
+          "packages/KnimeLink/src/function-registry.ts",
+          "packages/KnimeLink/src/knime-client-factory.ts",
+          "packages/KnimeLink/src/knime-client.ts",
+          "packages/KnimeLink/src/knime-hub-client.ts",
+          "packages/KnimeLink/src/package.ts",
+          "packages/KnimeLink/src/types.ts",
+          "packages/KnimeLink/src/utils.ts"
+        ],
+        "tests": [
+          "packages/KnimeLink/src/tests/integration-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:KnimeLink:plugin-init",
+      "name": "Plugin Initialization",
+      "description": "Autostart hook that registers KnimeLink functions on Datagrok startup, wiring up the KNIME integration before any user interaction.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:KnimeLink:knimeLinkAutostart",
+          "kind": "RegisteredFunction",
+          "name": "knimeLinkAutostart",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": "KnimeLink function registration",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/KnimeLink/src/function-cache.ts",
+          "packages/KnimeLink/src/function-registry.ts",
+          "packages/KnimeLink/src/knime-client-factory.ts",
+          "packages/KnimeLink/src/knime-client.ts",
+          "packages/KnimeLink/src/knime-hub-client.ts",
+          "packages/KnimeLink/src/package.ts",
+          "packages/KnimeLink/src/types.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

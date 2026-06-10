@@ -1,0 +1,367 @@
+{
+  "package": {
+    "id": "pkg:LibTests",
+    "name": "LibTests",
+    "friendly_name": "LibTests",
+    "category": "Development",
+    "description": "Automated tests for libraries"
+  },
+  "files": {
+    "src": [
+      "packages/LibTests/src/package.ts",
+      "packages/LibTests/src/test-utils.ts"
+    ],
+    "tests": [
+      "packages/LibTests/src/package-test.ts",
+      "packages/LibTests/src/tests/arrow/roundtrip.ts",
+      "packages/LibTests/src/tests/arrow/titanic.ts",
+      "packages/LibTests/src/tests/compute-api/rich-function-view-tests.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/can-handle.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/cost-functions.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/cross-executor-parity.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/end-to-end.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/executors.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/finalized.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/formula-resolver.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/imports.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/nm-pure-math.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/parity-assertions.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/pool-multi-session.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/script-fixtures.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/utils.ts",
+      "packages/LibTests/src/tests/compute-utils/fitting/worker-dg-shim.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/advanced-coverage.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/config-processing.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/error-handling.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/funcall-wrappers.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-additional.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-bridge.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-init.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-mutations.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-persistence.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-readonly.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-additional-states-propagation.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-batching.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-matching.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-reactivity-actions.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-reactivity-data.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-reactivity-meta.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-reactivity-validators.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-retention.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/links-workflow.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/obsolete-meta.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/oninit-hook.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/sequence-run.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/step-deps-tracking.ts",
+      "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/structurecheck-hook.ts",
+      "packages/LibTests/src/tests/compute-utils/rich-function-view-tests.ts",
+      "packages/LibTests/src/tests/snapshots/fc1.json",
+      "packages/LibTests/src/tests/utils.ts",
+      "packages/LibTests/src/tests/utils/expect-tests.ts",
+      "packages/LibTests/src/tests/utils/json-serialization-tests.ts"
+    ],
+    "scripts": [
+      "packages/LibTests/scripts/complexInputs.js",
+      "packages/LibTests/scripts/demo-global-validation.js",
+      "packages/LibTests/scripts/demo-validation.js",
+      "packages/LibTests/scripts/simpleInputs.js",
+      "packages/LibTests/scripts/simpleInputsDefaultValues.js"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/LibTests/CHANGELOG.md",
+      "packages/LibTests/CREDITS.md",
+      "packages/LibTests/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:LibTests:richfunctionview-tests",
+      "name": "RichFunctionView Tests",
+      "description": "Tests for the compute-utils RichFunctionView library, covering simple and complex input forms, dataframe handling, arithmetic helpers, error propagation, and multi-argument function calls.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:LibTests:CustomInputMock",
+          "kind": "RegisteredFunction",
+          "name": "CustomInputMock",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestAdd2",
+          "kind": "RegisteredFunction",
+          "name": "TestAdd2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestSub2",
+          "kind": "RegisteredFunction",
+          "name": "TestSub2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestMul2",
+          "kind": "RegisteredFunction",
+          "name": "TestMul2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestDiv2",
+          "kind": "RegisteredFunction",
+          "name": "TestDiv2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestDF1",
+          "kind": "RegisteredFunction",
+          "name": "TestDF1",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestAdd2Error",
+          "kind": "RegisteredFunction",
+          "name": "TestAdd2Error",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:TestMultiarg5",
+          "kind": "RegisteredFunction",
+          "name": "TestMultiarg5",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:LibTests:simpleInputs",
+          "kind": "Script",
+          "name": "simpleInputs",
+          "language": "javascript",
+          "description": "RichFunctionView simple inputs test"
+        },
+        {
+          "id": "script:LibTests:simpleInputsDefaultValues",
+          "kind": "Script",
+          "name": "simpleInputsDefaultValues",
+          "language": "javascript",
+          "description": "RichFunctionView simple inputs"
+        },
+        {
+          "id": "script:LibTests:complexInputs",
+          "kind": "Script",
+          "name": "complexInputs",
+          "language": "javascript",
+          "description": "RichFunctionView custom input and df input"
+        },
+        {
+          "id": "doc:/packages/LibTests/readme.md",
+          "kind": "DocPage",
+          "title": "Lib Tests",
+          "url": "/packages/LibTests/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/LibTests/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:LibTests:validation-tests",
+      "name": "Validation Library Tests",
+      "description": "Tests for the compute-utils input-validation library, covering range validators, async validators, global validators, and validator action callbacks.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:LibTests:RangeValidatorFactory",
+          "kind": "RegisteredFunction",
+          "name": "RangeValidatorFactory",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:AsyncValidatorDemoFactory",
+          "kind": "RegisteredFunction",
+          "name": "AsyncValidatorDemoFactory",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:GlobalValidatorDemoFactory",
+          "kind": "RegisteredFunction",
+          "name": "GlobalValidatorDemoFactory",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:ValidatorActionsDemoFactory",
+          "kind": "RegisteredFunction",
+          "name": "ValidatorActionsDemoFactory",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:LibTests:validationTest",
+          "kind": "Script",
+          "name": "validationTest",
+          "language": "javascript",
+          "description": "Custom validators test"
+        },
+        {
+          "id": "script:LibTests:globalValidationTest",
+          "kind": "Script",
+          "name": "globalValidationTest",
+          "language": "javascript",
+          "description": "Global validators test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/LibTests/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:LibTests:compute-api-composition-tests",
+      "name": "ComputeAPI / CompositionPipeline Tests",
+      "description": "Tests for the compute-utils ComputeAPI and CompositionPipeline libraries, using numbered mock-wrapper functions as registered function stubs that the pipeline harness can compose and call.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:LibTests:MockWrapper1",
+          "kind": "RegisteredFunction",
+          "name": "MockWrapper1",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:MockWrapper2",
+          "kind": "RegisteredFunction",
+          "name": "MockWrapper2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:MockWrapper3",
+          "kind": "RegisteredFunction",
+          "name": "MockWrapper3",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:MockWrapper4",
+          "kind": "RegisteredFunction",
+          "name": "MockWrapper4",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:LibTests:MockWrapper5",
+          "kind": "RegisteredFunction",
+          "name": "MockWrapper5",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:LibTests:ui-component-tests",
+      "name": "UI Component Library Tests",
+      "description": "Tests for the Datagrok UI component library, covering viewer components, form components, and general UI elements.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:LibTests:TestViewerComponent",
+          "kind": "RegisteredFunction",
+          "name": "TestViewerComponent",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": [
+            "test"
+          ]
+        },
+        {
+          "id": "func:LibTests:TestFromComponent",
+          "kind": "RegisteredFunction",
+          "name": "TestFromComponent",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": [
+            "test"
+          ]
+        },
+        {
+          "id": "func:LibTests:TestElements",
+          "kind": "RegisteredFunction",
+          "name": "TestElements",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": [
+            "test"
+          ]
+        },
+        {
+          "id": "doc:/help/develop/how-to/viewers/develop-custom-viewer",
+          "kind": "DocPage",
+          "title": "Develop custom viewers",
+          "url": "/help/develop/how-to/viewers/develop-custom-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

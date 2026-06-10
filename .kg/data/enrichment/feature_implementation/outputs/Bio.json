@@ -1,0 +1,983 @@
+{
+  "package_id": "pkg:Bio",
+  "features": [
+    {
+      "id": "feature:Bio:bio-sequence-detection",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/biln.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/detect-macromolecule-probe.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/detectors-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/detectors-weak-and-likely-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/tests/detectors-benchmark-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/tests/biln-tests.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/tests/utils/detectors-utils.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/tests/utils/sequences-generators.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Macromolecule semType detection lives in detectors.js (not in TS src), but the tunable detector probe and BILN refiner are TS implementations registered via package.ts."
+    },
+    {
+      "id": "feature:Bio:sequence-cell-rendering",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-cell-renderer-base.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/macromolecule-column-widget.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/widgets/representations.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/widgets/sequence-scrolling-widget.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/biln.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/viewers/web-logo-viewer.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/renderers-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/renderers-monomer-placer-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Cell renderers (FASTA/HELM/BILN/separator/custom/monomer) plus column property panel, MSA scrolling header, and tooltip wiring."
+    },
+    {
+      "id": "feature:Bio:sequence-difference-rendering",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/compare-sequences.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/seq_align.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-cell-renderer-base.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "MacromoleculeDifferenceCellRenderer + Compare Sequences dialog + pairwise NW/SW alignment in seq_align.ts."
+    },
+    {
+      "id": "feature:Bio:notation-conversion",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/convert.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-handler.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-helper.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/biln.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/converters-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/seq-handler-get-helm-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/tests/seq-handler-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Conversion dialog wires through SeqHandler (FASTA/SEPARATOR/HELM/BILN)."
+    },
+    {
+      "id": "feature:Bio:molecule-to-helm",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/converter.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/index.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-helper.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-manager/match-molecules.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "moleculesToHelmTopMenu/moleculeToHelmSingle delegate to mol-to-helm.py script with current monomer library; getMolFromHelm uses the HELM->mol converter pipeline; sdfToJsonLib (createJsonMonomerLibFromSdf) is inline in package.ts."
+    },
+    {
+      "id": "feature:Bio:atomic-level-structure",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/sequence-to-mol.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/widgets/to-atomic-level-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-helper.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/converter.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/index.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/helm.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/polymer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/monomer-wrapper.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Bio/src/utils/helm-to-molfile/converter/mol-wrapper-factory.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Bio/src/demo/bio03-atomic-level.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/demo/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/to-atomic-level-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/to-atomic-level-ui-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Sequence -> molfile (linear via SeqHelper, nonlinear via the helm-to-molfile/converter/ pipeline). 2D and 3D widgets in to-atomic-level-widget.ts."
+    },
+    {
+      "id": "feature:Bio:file-import-export",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/save-as-fasta.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/fasta-handler-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/fasta-export-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "importFasta/importBam/saveAsFasta wrappers in package.ts; FASTA file parsing comes from @datagrok-libraries/bio."
+    },
+    {
+      "id": "feature:Bio:monomer-library-management",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/lib-manager.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-lib.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-lib-base.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-colors.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/library-file-manager/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/library-file-manager/monomers-lib-provider.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/library-file-manager/file-validator.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-manager/monomer-manager.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-manager/duplicate-monomer-manager.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-manager/match-molecules.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-collection-handler.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/monomer-collections-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/smiles2Monomer.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/monomer-lib/web-editor-monomer-of-library.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/widgets/monomer-info-widget.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/monomer-libraries-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/lib-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Spans the full monomer-lib subtree: manager singleton, library file CRUD UI, monomer CRUD editor, duplicate resolution, monomer collections app, monomer info panel, and molecule->monomer matching."
+    },
+    {
+      "id": "feature:Bio:split-to-monomers",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/split-to-monomers.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/function-edtiors/split-to-monomers-editor.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-handler.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/splitters-test.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/tests/seq-handler-splitted-tests.ts",
+          "confidence": 0.85
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:get-region",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/get-region.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/get-region-func-editor.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/sequence-column-input.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/apps/get-region-app.ts",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/seq-helper/seq-handler.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/seq-handler-get-region-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:weblogo-composition-analysis",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/viewers/web-logo-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/widgets/composition-analysis-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/agg.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/viewers/utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/apps/web-logo-app.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/WebLogo-positions-test.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/tests/WebLogo-project-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/tests/WebLogo-layout-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/tests/Palettes-test.ts",
+          "confidence": 0.6
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:multiple-sequence-alignment",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/multiple-sequence-alignment.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/multiple-sequence-alignment-ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/pepsea.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Bio/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Bio/src/demo/bio05-helm-msa-sequence-space.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/msa-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/pepsea-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:sequence-space",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-space.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/demo/bio01a-hierarchical-clustering-and-sequence-space.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/demo/bio05-helm-msa-sequence-space.ts",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/demo/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/sequence-space-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/sequence-space-utils.ts",
+          "confidence": 0.85
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:sequence-activity-cliffs",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-activity-cliffs.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/check-input-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/demo/bio01b-hierarchical-clustering-and-activity-cliffs.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/demo/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/activity-cliffs-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/tests/activity-cliffs-utils.ts",
+          "confidence": 0.85
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:sequence-similarity-diversity",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-similarity-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-diversity-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-search-base-viewer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/demo/bio01-similarity-diversity.ts",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/similarity-diversity-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:subsequence-search",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/substructure-search/substructure-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/widgets/bio-substructure-filter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/widgets/bio-substructure-filter-helm.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/calculations/monomerLevelMols.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/substructure-filters-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:sequence-identity-scoring",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/calculate-scores.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/calculations/monomerLevelMols.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/substructure-search/substructure-search.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/scoring.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Identity / similarity scoring + Helm Fingerprints preprocessing (uses monomerLevelMols + invalidateMols from substructure-search)."
+    },
+    {
+      "id": "feature:Bio:antibody-numbering",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/numbering-ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/antibody-numbering/number-antibody.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/antibody-numbering/immunum-client.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/antibody-numbering/immunum.worker.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Bio/src/utils/antibody-numbering/immunum-glue.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/utils/antibody-numbering/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/annotation-manager.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/annotation-manager-ui.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/annotation-actions.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/antibody-numbering-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Bio:liability-scanning",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/liability-scanner.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/liability-scanner-ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/utils/annotations/annotation-manager.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": []
+    },
+    {
+      "id": "feature:Bio:vd-regions",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/viewers/vd-regions-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Bio/src/viewers/web-logo-viewer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Bio/src/viewers/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": []
+    },
+    {
+      "id": "feature:Bio:sequence-encoding",
+      "implements": [
+        {
+          "path": "packages/Bio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Bio/src/analysis/sequence-space.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Bio/src/tests/sequence-space-utils.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "macromoleculePreprocessingFunction ('Encode Sequences') in package.ts delegates to getEncodedSeqSpaceCol in sequence-space.ts."
+    }
+  ]
+}

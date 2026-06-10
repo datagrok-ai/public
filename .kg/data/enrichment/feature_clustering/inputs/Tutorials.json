@@ -1,0 +1,1041 @@
+{
+  "package": {
+    "id": "pkg:Tutorials",
+    "name": "Tutorials",
+    "friendly_name": "Tutorials",
+    "version": "1.11.2",
+    "category": "General",
+    "description": "Learn and explore Datagrok through interactive tutorials and a demo app",
+    "extras": {
+      "npm_name": "@datagrok/tutorials",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "dataAnalysisTrack",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "machineLearningTrack",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "cheminformaticsTrack",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "bioinformaticsTrack",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "dataAccessTrack",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "dataTransformation",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "scientificComputing",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:Tutorials:Tutorials",
+      "name": "Tutorials",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:tutorialWidget",
+      "name": "tutorialWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:tutorialsAutostart",
+      "name": "tutorialsAutostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:tutorialsInit",
+      "name": "tutorialsInit",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:Demo",
+      "name": "Demo",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": "Interactive demo of major Datagrok capabilities",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:demoAppTreeBrowser",
+      "name": "demoAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:demoAppWidget",
+      "name": "demoAppWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:getDemoAppHierarchy",
+      "name": "getDemoAppHierarchy",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:filesDemo",
+      "name": "filesDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "The File Manager is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:databasesDemo",
+      "name": "databasesDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Database Manager provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:scatterPlotDemo",
+      "name": "scatterPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:histogramDemo",
+      "name": "histogramDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A histogram is a graphical representation of the distribution of numerical data.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:lineChartDemo",
+      "name": "lineChartDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:barChartDemo",
+      "name": "barChartDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:pieChartDemo",
+      "name": "pieChartDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:trellisPlotDemo",
+      "name": "trellisPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:matrixPlotDemo",
+      "name": "matrixPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Use a Matrix Plot to assess the relationship among many pairs of columns at the same time.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:scatterPlot3DDemo",
+      "name": "scatterPlot3DDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Use a 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:densityPlotDemo",
+      "name": "densityPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Unlike a scatter plot that visualizes each individual data point, the density plot splits 2D area by bins and color-codes it depending on the number of points that fall within this bin. The darker the color, the more…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:pcPlotDemo",
+      "name": "pcPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Parallel coordinates are a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines,…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:networkDiagramDemo",
+      "name": "networkDiagramDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:boxPlotDemo",
+      "name": "boxPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five-number summary: minimum, first quartile, median, third quartile, and maximum.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:treeMapDemo",
+      "name": "treeMapDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Treemap displays hierarchical (tree-structured) data as nested rectangles. The branches are rectangles, then tiled with smaller rectangles representing sub-branches. Rectangles have areas proportional to a specified…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:statisticsDemo",
+      "name": "statisticsDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Provides specified descriptive statistics for the chosen columns.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:correlationPlotDemo",
+      "name": "correlationPlotDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman's rank correlation coefficient. Histograms along the diagonal show the…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:calendarDemo",
+      "name": "calendarDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:gridDemo",
+      "name": "gridDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can handle large numbers of items and columns.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:markupDemo",
+      "name": "markupDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most cases, the viewer will auto-detect content type. Use the 'mode' property to explicitly specify it.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:tileViewerDemo",
+      "name": "tileViewerDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Visualizes rows as a collection of forms that are positioned as tiles.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:formDemo",
+      "name": "formDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer or as a row…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:pivotTableDemo",
+      "name": "pivotTableDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "A pivot table is a table of grouped values that aggregates the individual items of a more extensive table within one or more discrete categories. This summary might include sums, averages, or other statistics, which the…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:filtersDemo",
+      "name": "filtersDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Filter is a set of controls for quick filtering, selection, and visual assessment of column values.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Tutorials:tableLinkingDemo",
+      "name": "tableLinkingDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Table linking is based on the key columns. The link type determines which records should be synchronized between the datasets (current record, filter, selection, and mouse-over record).",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [
+    {
+      "id": "tutorial:Tutorials:CalculatedColumnsTutorial",
+      "name": "CalculatedColumnsTutorial",
+      "class_name": "CalculatedColumnsTutorial",
+      "description": null,
+      "step_count": null,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:AggregationTutorial",
+      "name": "AggregationTutorial",
+      "class_name": "AggregationTutorial",
+      "description": null,
+      "step_count": null,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:MultivariateAnalysisTutorial",
+      "name": "Multivariate Analysis",
+      "class_name": "MultivariateAnalysisTutorial",
+      "description": "",
+      "step_count": 7,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:PredictiveModelingTutorial",
+      "name": "Predictive Modeling",
+      "class_name": "PredictiveModelingTutorial",
+      "description": "Predictive modeling is a statistical technique used to predict outcomes based on historical data.",
+      "step_count": 26,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:ScriptingTutorial",
+      "name": "Scripting",
+      "class_name": "ScriptingTutorial",
+      "description": "Scripting is an integration mechanism with languages for statistical computing",
+      "step_count": 11,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:DashboardTutorial",
+      "name": "DashboardTutorial",
+      "class_name": "DashboardTutorial",
+      "description": null,
+      "step_count": null,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:EmbeddedViewersTutorial",
+      "name": "EmbeddedViewersTutorial",
+      "class_name": "EmbeddedViewersTutorial",
+      "description": null,
+      "step_count": null,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:FiltersTutorial",
+      "name": "Filters",
+      "class_name": "FiltersTutorial",
+      "description": "A set of controls for quick filtering, selection,  and visual assessment of column values",
+      "step_count": 18,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:GridTutorial",
+      "name": "GridTutorial",
+      "class_name": "GridTutorial",
+      "description": null,
+      "step_count": null,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:ScatterPlotTutorial",
+      "name": "Scatter Plot",
+      "class_name": "ScatterPlotTutorial",
+      "description": "A graph in which the values of two variables are plotted along two axes",
+      "step_count": 11,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:ViewersTutorial",
+      "name": "Viewers",
+      "class_name": "ViewersTutorial",
+      "description": "Learn how to use different viewers together",
+      "step_count": 14,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:DataConnectorsTutorial",
+      "name": "Data Connectors",
+      "class_name": "DataConnectorsTutorial",
+      "description": "Direct connection to data sources and databases using the connector server",
+      "step_count": 12,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:StickyMetaTutorial",
+      "name": "Sticky Meta",
+      "class_name": "StickyMetaTutorial",
+      "description": null,
+      "step_count": 19,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:DifferentialEquationsTutorial",
+      "name": "Differential equations",
+      "class_name": "DifferentialEquationsTutorial",
+      "description": "Learn how to model processes defined by ordinary differential equations with Diff Studio",
+      "step_count": 13,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:FittingTutorial",
+      "name": "Parameter optimization",
+      "class_name": "FittingTutorial",
+      "description": "Find the initial conditions that produce a desired model output",
+      "step_count": 15,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:SensitivityAnalysisTutorial",
+      "name": "Sensitivity analysis",
+      "class_name": "SensitivityAnalysisTutorial",
+      "description": "Analyze the relationship between inputs and outputs of the model",
+      "step_count": 16,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:ActivityCliffsTutorial",
+      "name": "Activity Cliffs",
+      "class_name": "ActivityCliffsTutorial",
+      "description": "The Activity Cliffs tool detects and visualizes pairs of molecules  with highly similar structures but significantly different activity levels.  It uses distance-based dimensionality reduction algorithms  to convert cross-similarities into a 2D…",
+      "step_count": 12,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:RGroupsAnalysisTutorial",
+      "name": "R-Groups Analysis",
+      "class_name": "RGroupsAnalysisTutorial",
+      "description": "R-Groups Analysis lets you identify all R-group  variations around a scaffold, analyze substitution patterns, evaluate their  impact on crucial compound properties, and find gaps.",
+      "step_count": 14,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:SimilarityDiversitySearchTutorial",
+      "name": "Similarity and Diversity Search",
+      "class_name": "SimilarityDiversitySearchTutorial",
+      "description": "You can analyze a collection of molecules based on molecular similarity.  Similarity Search finds structures similar to the reference molecule,  while Diversity Search shows N molecules of different chemical classes in the dataset.",
+      "step_count": 12,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:SubstructureSearchFilteringTutorial",
+      "name": "Substructure Search and Filtering",
+      "class_name": "SubstructureSearchFilteringTutorial",
+      "description": "You can interactively explore datasets using filters.  Specifically for molecules, Datagrok uses integrated sketchers to filter by substructure.",
+      "step_count": 10,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:VirtualScreeningTutorial",
+      "name": "Virtual Screening",
+      "class_name": "VirtualScreeningTutorial",
+      "description": "In this tutorial, you are playing the role of an in silico researcher.  The department of chemical synthesis has provided a number of new compounds, and biological  laboratories measured their in vitro activities against one of the molecular…",
+      "step_count": 35,
+      "help_url": null
+    },
+    {
+      "id": "tutorial:Tutorials:PeptidesSarTutorial",
+      "name": "Peptides SAR",
+      "class_name": "PeptidesSarTutorial",
+      "description": "",
+      "step_count": 18,
+      "help_url": null
+    }
+  ],
+  "docs": [
+    {
+      "id": "doc:/packages/Tutorials/credits.md",
+      "title": "Tutorials — Third-Party Libraries",
+      "url": "/packages/Tutorials/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Tutorials/readme.md",
+      "title": "Tutorials",
+      "url": "/packages/Tutorials/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/scripting",
+      "title": "Tutorials: Scripting",
+      "url": "/help/_internal/tutorials/scripting",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/tutorials",
+      "title": "Tutorials",
+      "url": "/help/_internal/tutorials/tutorials",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/develop/how-to/misc/write-tutorials",
+      "title": "Write tutorials",
+      "url": "/help/develop/how-to/misc/write-tutorials",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/access-management",
+      "title": "Use Cases: Access management",
+      "url": "/help/_internal/tutorials/access-management",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/accessing-databases",
+      "title": "Use Cases: Accessing databases",
+      "url": "/help/_internal/tutorials/accessing-databases",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/chika-mexicana-demo",
+      "title": "Demo: Chika Mexicana",
+      "url": "/help/_internal/tutorials/chika-mexicana-demo",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/creating-dashboards",
+      "title": "Use Cases: Creating dashboards",
+      "url": "/help/_internal/tutorials/creating-dashboards",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/data-manipulation",
+      "title": "Use Cases: Data manipulation",
+      "url": "/help/_internal/tutorials/data-manipulation",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/data-tools",
+      "title": "Use Cases: Data tools",
+      "url": "/help/_internal/tutorials/data-tools",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/functions",
+      "title": "Use Cases: Functions",
+      "url": "/help/_internal/tutorials/functions",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/importing-data",
+      "title": "Use Cases: Importing data",
+      "url": "/help/_internal/tutorials/importing-data",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/miscellaneous",
+      "title": "Use Cases: Miscellaneous",
+      "url": "/help/_internal/tutorials/miscellaneous",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/platform-navigation",
+      "title": "Use Cases: Navigating the platform",
+      "url": "/help/_internal/tutorials/platform-navigation",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/predictive-modeling",
+      "title": "Use Cases: Predictive modeling",
+      "url": "/help/_internal/tutorials/predictive-modeling",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/projects",
+      "title": "Use Cases: Projects",
+      "url": "/help/_internal/tutorials/projects",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/selecting-franchise-locations",
+      "title": "Use Cases: Selecting franchise locations",
+      "url": "/help/_internal/tutorials/selecting-franchise-locations",
+      "kind": "guide",
+      "audience": "internal"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Tutorials:1.11.2:0",
+      "version": "1.11.2",
+      "released_at": "2026-04-10",
+      "ticket": null,
+      "text": "Added demo image for Retrosynthesis"
+    },
+    {
+      "id": "clog:Tutorials:1.11.1:0",
+      "version": "1.11.1",
+      "released_at": "2026-03-23",
+      "ticket": "GROK-17970",
+      "text": "GROK-17970: Demo app no longer closes user-opened content when running demos"
+    },
+    {
+      "id": "clog:Tutorials:1.11.1:1",
+      "version": "1.11.1",
+      "released_at": "2026-03-23",
+      "ticket": "GROK-19746",
+      "text": "GROK-19746: Demo app browse-toolbox no longer flickers when switching between demos"
+    },
+    {
+      "id": "clog:Tutorials:1.10.6:0",
+      "version": "1.10.6",
+      "released_at": "2025-12-15",
+      "ticket": null,
+      "text": "Tutorial: Updated the scientific computing tutorials"
+    },
+    {
+      "id": "clog:Tutorials:1.10.5:0",
+      "version": "1.10.5",
+      "released_at": "2025-10-31",
+      "ticket": null,
+      "text": "Tutorial: Updated the parameter optimization tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.10.4:0",
+      "version": "1.10.4",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Fitting: New layout related update"
+    },
+    {
+      "id": "clog:Tutorials:1.10.3:0",
+      "version": "1.10.3",
+      "released_at": "2025-10-08",
+      "ticket": "GROK-18139",
+      "text": "GROK-18139: Activity dashboard: Retired Learn widget and added it to the activity dashboard instead"
+    },
+    {
+      "id": "clog:Tutorials:1.10.2:0",
+      "version": "1.10.2",
+      "released_at": "2025-10-07",
+      "ticket": null,
+      "text": "Demo app: Fixed the issue that names with `-` in name sometimes can't open"
+    },
+    {
+      "id": "clog:Tutorials:1.10.1:0",
+      "version": "1.10.1",
+      "released_at": "2025-10-07",
+      "ticket": "GROK-18767",
+      "text": "GROK-18767: Fixed opening Demo in learn widget opens empty toolbox"
+    },
+    {
+      "id": "clog:Tutorials:1.10.1:1",
+      "version": "1.10.1",
+      "released_at": "2025-10-07",
+      "ticket": null,
+      "text": "Fixed Demo > Cheminformatics is opened even for old users"
+    },
+    {
+      "id": "clog:Tutorials:1.10.0:0",
+      "version": "1.10.0",
+      "released_at": "2025-09-30",
+      "ticket": "GROK-18139",
+      "text": "GROK-18139: Added demo app hierarchy as function in Tutorials"
+    },
+    {
+      "id": "clog:Tutorials:1.10.0:1",
+      "version": "1.10.0",
+      "released_at": "2025-09-30",
+      "ticket": "GROK-18718",
+      "text": "GROK-18718: Expanded Demo > Cheminformatics by default for new users"
+    },
+    {
+      "id": "clog:Tutorials:1.9.5:0",
+      "version": "1.9.5",
+      "released_at": "2025-09-19",
+      "ticket": "GROK-18879",
+      "text": "GROK-18879: Fixed Data aggregation tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.9.5:1",
+      "version": "1.9.5",
+      "released_at": "2025-09-19",
+      "ticket": "GROK-17845",
+      "text": "GROK-17845: Fixed each click opens additional app menu in Tutorials widget"
+    },
+    {
+      "id": "clog:Tutorials:1.9.5:2",
+      "version": "1.9.5",
+      "released_at": "2025-09-19",
+      "ticket": "GROK-18791",
+      "text": "GROK-18791: Fixed toolbox isn't shown in Scatterplot tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.9.5:3",
+      "version": "1.9.5",
+      "released_at": "2025-09-19",
+      "ticket": null,
+      "text": "Added Peptides tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.9.3:0",
+      "version": "1.9.3",
+      "released_at": "2025-09-17",
+      "ticket": null,
+      "text": "Dashboards tutorial: Fixed UI inconsistency in names"
+    },
+    {
+      "id": "clog:Tutorials:1.9.3:1",
+      "version": "1.9.3",
+      "released_at": "2025-09-17",
+      "ticket": "GROK-17832",
+      "text": "GROK-17832: Fixes in sync with new Browse UX"
+    },
+    {
+      "id": "clog:Tutorials:1.9.2:0",
+      "version": "1.9.2",
+      "released_at": "2025-09-15",
+      "ticket": null,
+      "text": "Fixed the Parameters Optimization tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.8.5:0",
+      "version": "1.8.5",
+      "released_at": "2025-04-25",
+      "ticket": null,
+      "text": "Updated UI in the Multivariate Analysis tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.8.4:0",
+      "version": "1.8.4",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Fixed the behavior of hints in the Parameters Optimization tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.8.3:0",
+      "version": "1.8.3",
+      "released_at": "2025-04-11",
+      "ticket": null,
+      "text": "Updated the Parameters Optimization tutorial"
+    },
+    {
+      "id": "clog:Tutorials:1.8.2:0",
+      "version": "1.8.2",
+      "released_at": "2025-04-04",
+      "ticket": null,
+      "text": "Updated Demos"
+    },
+    {
+      "id": "clog:Tutorials:1.8.1:0",
+      "version": "1.8.1",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Updated the Scientific Computing tutorials with respect to new Model Hub UI"
+    },
+    {
+      "id": "clog:Tutorials:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Updated demo features and the Scientific Computing tutorials with respect to new Browse UX"
+    },
+    {
+      "id": "clog:Tutorials:1.7.3:0",
+      "version": "1.7.3",
+      "released_at": "2025-01-10",
+      "ticket": null,
+      "text": "Added scientific computing tutorials:"
+    },
+    {
+      "id": "clog:Tutorials:1.7.3:1",
+      "version": "1.7.3",
+      "released_at": "2025-01-10",
+      "ticket": null,
+      "text": "Differential equations"
+    },
+    {
+      "id": "clog:Tutorials:1.7.3:2",
+      "version": "1.7.3",
+      "released_at": "2025-01-10",
+      "ticket": null,
+      "text": "Sensitivity analysis"
+    },
+    {
+      "id": "clog:Tutorials:1.7.3:3",
+      "version": "1.7.3",
+      "released_at": "2025-01-10",
+      "ticket": null,
+      "text": "Parameters optimization"
+    },
+    {
+      "id": "clog:Tutorials:1.3.27:0",
+      "version": "1.3.27",
+      "released_at": "2024-07-19",
+      "ticket": null,
+      "text": "Fixed Cheminformatics tutorials"
+    }
+  ],
+  "stats": {
+    "functions": 33,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 22,
+    "docs": 18,
+    "changelog": 71
+  }
+}

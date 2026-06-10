@@ -1,0 +1,104 @@
+{
+  "package": {
+    "id": "pkg:TensorFlow.js",
+    "name": "TensorFlow.js",
+    "friendly_name": "TensorFlow.js",
+    "category": "Machine Learning",
+    "description": "TensorFlow.js provides support for training and applying TensorFlow.js-based predictive models."
+  },
+  "files": {
+    "src": [
+      "packages/TensorFlow.js/src/nn.js",
+      "packages/TensorFlow.js/src/nn.ts",
+      "packages/TensorFlow.js/src/no-validation/package.js",
+      "packages/TensorFlow.js/src/no-validation/package.ts",
+      "packages/TensorFlow.js/src/package.js",
+      "packages/TensorFlow.js/src/train.worker.js",
+      "packages/TensorFlow.js/src/train.worker.ts",
+      "packages/TensorFlow.js/src/utils.js",
+      "packages/TensorFlow.js/src/utils.ts"
+    ],
+    "tests": [],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/TensorFlow.js/CREDITS.md",
+      "packages/TensorFlow.js/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:TensorFlow.js:neural-network-model",
+      "name": "Neural Network Model Training and Inference",
+      "description": "Lets users train browser-side neural networks via TensorFlow.js on a dataframe column with configurable architecture and hyperparameters, then apply the trained model to new data for in-browser prediction.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:TensorFlow.js:trainNN",
+          "kind": "RegisteredFunction",
+          "name": "trainNN",
+          "friendly_name": null,
+          "role": null,
+          "description": "Train a neural network using TensorFlow.js",
+          "tags": []
+        },
+        {
+          "id": "func:TensorFlow.js:applyNN",
+          "kind": "RegisteredFunction",
+          "name": "applyNN",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:TensorFlow.js:isApplicableNN",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableNN",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/TensorFlow.js/readme.md",
+          "kind": "DocPage",
+          "title": "TensorFlow.js [WIP]",
+          "url": "/packages/TensorFlow.js/readme.md"
+        },
+        {
+          "id": "doc:/help/learn/interactive-modeling",
+          "kind": "DocPage",
+          "title": "Interactive modeling",
+          "url": "/help/learn/interactive-modeling"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:TensorFlow.js:neural-network-visualization",
+      "name": "Neural Network Visualization",
+      "description": "Renders an interactive visual representation of a trained TensorFlow.js neural network for a selected input/output column pair, giving users insight into model structure and activations.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:TensorFlow.js:visualizeNN",
+          "kind": "RegisteredFunction",
+          "name": "visualizeNN",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

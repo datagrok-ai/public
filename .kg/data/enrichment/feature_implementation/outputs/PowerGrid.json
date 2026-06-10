@@ -1,0 +1,207 @@
+{
+  "package_id": "pkg:PowerGrid",
+  "features": [
+    {
+      "id": "feature:PowerGrid:sparklines",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/sparklines-lines.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/bar-chart.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/piechart.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/radar-chart.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/scatter-plot.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/shared.ts",
+          "role": "support",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerGrid/src/utils/vlaaivis-manager.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerGrid/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/PowerGrid/src/canvas-extensions.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Each sparkline type lives in its own file under sparklines/; package.ts wires renderers + summarizeColumns dialog; shared.ts and vlaaivis utils provide settings/types."
+    },
+    {
+      "id": "feature:PowerGrid:image-renderers",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/binary-image-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/image-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/svg-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/png-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts hosts the imgContent panel widget; the four cell-types/ + png-renderer.ts files implement binary/URL/SVG/PNG cell renderers."
+    },
+    {
+      "id": "feature:PowerGrid:forms-viewer",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerGrid/src/forms/forms.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/forms/scene.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerGrid/src/sparklines/shared.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "FormCellRenderer (Smart Form) and addFormColumn live in forms/ and package.ts; the standalone Forms viewer is delegated to @datagrok-libraries/utils."
+    },
+    {
+      "id": "feature:PowerGrid:data-display-cell-renderers",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/color-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/stars-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/multi-choice-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/tags-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/confidence-interval-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/bar-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PowerGrid/src/cell-types/hyperlink-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "Each renderer lives in its own file under cell-types/; package.ts registers them via decorators."
+    },
+    {
+      "id": "feature:PowerGrid:pinned-columns",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerGrid/src/tests/pinned-column-tests.js",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "addPinnedColumn is defined directly in package.ts; the actual pinning implementation comes from @datagrok-libraries/gridext (out-of-package) and was deprecated in 1.8.0 when freezing became native."
+    },
+    {
+      "id": "feature:PowerGrid:webgpu-rendering",
+      "implements": [
+        {
+          "path": "packages/PowerGrid/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerGrid/src/webgpu/scatterplot.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerGrid/src/tests/webgpu-tests.ts",
+          "confidence": 0.98
+        }
+      ],
+      "notes": "scWebGPURender / scWebGPUPointHitTest live in webgpu/scatterplot.ts; package.ts wraps them in platform functions and exposes isWebGPUAvailable / isWebGPURenderValid."
+    }
+  ]
+}

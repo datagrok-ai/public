@@ -1,0 +1,592 @@
+{
+  "package": {
+    "id": "pkg:Chembl",
+    "name": "Chembl",
+    "friendly_name": "ChEMBL",
+    "category": "Cheminformatics",
+    "description": "ChEMBL integration, commonly used queries and browser"
+  },
+  "files": {
+    "src": [
+      "packages/Chembl/src/demo.ts",
+      "packages/Chembl/src/explorer-config.ts",
+      "packages/Chembl/src/handlers.ts",
+      "packages/Chembl/src/package.ts"
+    ],
+    "tests": [
+      "packages/Chembl/src/package-test.ts",
+      "packages/Chembl/src/tests/cartridge.ts",
+      "packages/Chembl/src/tests/converters.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/Chembl/queries/activityDetailsForTarget.layout",
+      "packages/Chembl/queries/activityDetailsForTarget.sql",
+      "packages/Chembl/queries/bioactivityForBacterialTargets.layout",
+      "packages/Chembl/queries/bioactivityForBacterialTargets.sql",
+      "packages/Chembl/queries/browser.sql",
+      "packages/Chembl/queries/cartridge.sql",
+      "packages/Chembl/queries/converters.sql",
+      "packages/Chembl/queries/pkData.layout",
+      "packages/Chembl/queries/pkData.sql",
+      "packages/Chembl/queries/queries.sql",
+      "packages/Chembl/queries/suggestions.sql"
+    ],
+    "docs": [
+      "packages/Chembl/CHANGELOG.md",
+      "packages/Chembl/CLAUDE.md",
+      "packages/Chembl/CREDITS.md",
+      "packages/Chembl/README.md"
+    ],
+    "config": [
+      "packages/Chembl/connections/chembl.json",
+      "packages/Chembl/connections/chemblsql.json",
+      "packages/Chembl/connections/unichem.json"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:Chembl:substructure-search",
+      "name": "Substructure Search",
+      "description": "Lets users draw or paste a query molecule and search the ChEMBL database for all compounds containing that substructure, optionally combined with drug-mechanism and company filters.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chembl:Databases | ChEMBL | Substructure Search (Internal)",
+          "kind": "RegisteredFunction",
+          "name": "Databases | ChEMBL | Substructure Search (Internal)",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:Chembl:patternSubstructureSearch",
+          "kind": "DataQuery",
+          "name": "patternSubstructureSearch",
+          "description": "Search for a given substructure in the ChEMBL database."
+        },
+        {
+          "id": "query:Chembl:QueryBySubstructure",
+          "kind": "DataQuery",
+          "name": "QueryBySubstructure",
+          "description": "Complex search combining molecular similarity, drug mechanism action type, and company research location."
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:similarity-search",
+      "name": "Similarity Search",
+      "description": "Searches ChEMBL for compounds with molecular fingerprint similarity to a given structure, with optional Tanimoto threshold control.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chembl:Databases | ChEMBL | Similarity Search (Internal)",
+          "kind": "RegisteredFunction",
+          "name": "Databases | ChEMBL | Similarity Search (Internal)",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:Chembl:patternSimilaritySearch",
+          "kind": "DataQuery",
+          "name": "patternSimilaritySearch",
+          "description": "Searches ChEMBL compounds by molecular fingerprint similarity to a given pattern using Tanimoto coefficient."
+        },
+        {
+          "id": "query:Chembl:patternSimilaritySearchWithThreshold",
+          "kind": "DataQuery",
+          "name": "patternSimilaritySearchWithThreshold",
+          "description": "Search for a given pattern in the ChEMBL database with a specified threshold of similarity."
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+          "kind": "DocPage",
+          "title": "Similarity maps using fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+          "kind": "DocPage",
+          "title": "Supported fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/fingerprints"
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:id-conversion",
+      "name": "ID and Structure Conversion",
+      "description": "Converts between ChEMBL identifiers, molregno numbers, compound names, InChI Keys, InChI strings, and SMILES — supporting both single-value and batch dataframe inputs.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Chembl:chemblIdToSmilesTs",
+          "kind": "RegisteredFunction",
+          "name": "chemblIdToSmilesTs",
+          "friendly_name": null,
+          "role": "converter",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:Chembl:chemblIdToSmiles",
+          "kind": "DataQuery",
+          "name": "chemblIdToSmiles",
+          "description": "Converts a ChEMBL ID to SMILES. CHEMBL IDs are unique identifiers for compounds in the ChEMBL database, for example CHEMBL1234. Not to be confused with…"
+        },
+        {
+          "id": "query:Chembl:molregnoToSmiles",
+          "kind": "DataQuery",
+          "name": "molregnoToSmiles",
+          "description": "Converts a CHEMBL molregno to SMILES. Molregno is a unique registration number for compounds in the ChEMBL database, for example 1234. Not to be confused with…"
+        },
+        {
+          "id": "query:Chembl:nameToSmiles",
+          "kind": "DataQuery",
+          "name": "nameToSmiles",
+          "description": "Converts a compound name in chembl database to SMILES. For example aspirin or ibuprofen."
+        },
+        {
+          "id": "query:Chembl:namesToSmiles",
+          "kind": "DataQuery",
+          "name": "namesToSmiles",
+          "description": "Converts a list of compound names in chembl database to SMILES."
+        },
+        {
+          "id": "query:Chembl:inchiKeyToChembl",
+          "kind": "DataQuery",
+          "name": "inchiKeyToChembl",
+          "description": "Converts InChI Keys to ChEMBL identifiers using a dataframe input."
+        },
+        {
+          "id": "query:Chembl:inchiKeyToSmiles",
+          "kind": "DataQuery",
+          "name": "inchiKeyToSmiles",
+          "description": "Converts InChI Keys to canonical SMILES using a dataframe input."
+        },
+        {
+          "id": "query:Chembl:inchiKeyToInchi",
+          "kind": "DataQuery",
+          "name": "inchiKeyToInchi",
+          "description": "Converts InChI Keys to standard InChI strings using a dataframe input."
+        },
+        {
+          "id": "query:Chembl:chemblToSmiles",
+          "kind": "DataQuery",
+          "name": "chemblToSmiles",
+          "description": "Converts a dataframe with ChEMBL IDs to SMILES."
+        },
+        {
+          "id": "query:Chembl:chemblToInchi",
+          "kind": "DataQuery",
+          "name": "chemblToInchi",
+          "description": "Converts a dataframe with ChEMBL IDs to Inchi."
+        },
+        {
+          "id": "query:Chembl:chemblToInchiKey",
+          "kind": "DataQuery",
+          "name": "chemblToInchiKey",
+          "description": "Converts a dataframe with ChEMBL IDs to Inchi Keys."
+        },
+        {
+          "id": "query:Chembl:ChemblMolregNoBySmiles",
+          "kind": "DataQuery",
+          "name": "ChemblMolregNoBySmiles",
+          "description": "Retrieves the molregno identifier for a compound by its canonical SMILES structure."
+        },
+        {
+          "id": "doc:/packages/ChemblAPI/readme.md",
+          "kind": "DocPage",
+          "title": "ChEMBL API",
+          "url": "/packages/ChemblAPI/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:compound-bioactivity",
+      "name": "Compound Bioactivity",
+      "description": "Retrieves bioactivity measurements (IC50, Ki, etc.) for compounds against specific ChEMBL targets or proteins, and identifies selectively active compounds across target pairs.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "query:Chembl:compound activity details for @target",
+          "kind": "DataQuery",
+          "name": "compound activity details for @target",
+          "description": "Retrieves compound activity details including assay descriptions, standard measurements, and publication references for a specified ChEMBL target."
+        },
+        {
+          "id": "query:Chembl:_bioactivity data for bacterial targets for @organism",
+          "kind": "DataQuery",
+          "name": "_bioactivity data for bacterial targets for @organism",
+          "description": "Retrieves bioactivity data for compounds tested against bacterial targets of a specified organism."
+        },
+        {
+          "id": "query:Chembl:StructuresByOrganism",
+          "kind": "DataQuery",
+          "name": "StructuresByOrganism",
+          "description": "Retrieves compound structures and bioactivity data for bacterial targets of a specified organism."
+        },
+        {
+          "id": "query:Chembl:compound activity details for all targets containing @protein",
+          "kind": "DataQuery",
+          "name": "compound activity details for all targets containing @protein",
+          "description": "Retrieves compound bioactivity data for all targets containing a specified protein accession identifier."
+        },
+        {
+          "id": "query:Chembl:_compounds which are selective to one target over a second target",
+          "kind": "DataQuery",
+          "name": "_compounds which are selective to one target over a second target",
+          "description": "Identifies compounds with selective activity, showing high potency for one target and low potency for another target."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:compound-info-panels",
+      "name": "Compound Info Panels",
+      "description": "Context panels and widgets displaying detailed compound data — SMILES, names, properties, synonyms — when a ChEMBL ID or molregno is selected in a data grid.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:Chembl:MolregnoInfo",
+          "kind": "DataQuery",
+          "name": "MolregnoInfo",
+          "description": "Retrieves compound SMILES and research company country information for a given molregno identifier."
+        },
+        {
+          "id": "query:Chembl:ChemblInfo",
+          "kind": "DataQuery",
+          "name": "ChemblInfo",
+          "description": "Retrieves compound SMILES and research company country information for a given ChEMBL identifier."
+        },
+        {
+          "id": "query:Chembl:_cbFindByMolregno",
+          "kind": "DataQuery",
+          "name": "_cbFindByMolregno",
+          "description": "Retrieves detailed compound information by molregno including structure, names, properties, and synonyms."
+        },
+        {
+          "id": "query:Chembl:ByChemblIds",
+          "kind": "DataQuery",
+          "name": "ByChemblIds",
+          "description": "Retrieves molecule dictionary information for a list of ChEMBL identifiers."
+        },
+        {
+          "id": "func:Chembl:chemblSearchWidgetLocalDb",
+          "kind": "RegisteredFunction",
+          "name": "chemblSearchWidgetLocalDb",
+          "friendly_name": null,
+          "role": "widgets",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+          "kind": "DocPage",
+          "title": "SureChEMBL integration",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:chembl-browser",
+      "name": "ChEMBL Browser",
+      "description": "An interactive browser and demo view for exploring ChEMBL compounds with multi-filter search covering substructure, molecule type, name, max phase, and Lipinski violations.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Chembl:_cbChemblBrowserQuery",
+          "kind": "DataQuery",
+          "name": "_cbChemblBrowserQuery",
+          "description": "Searches ChEMBL compounds by multiple filters including substructure, molecule type, name, max phase, and Lipinski violations."
+        },
+        {
+          "id": "query:Chembl:_cbAllChemblStructures",
+          "kind": "DataQuery",
+          "name": "_cbAllChemblStructures",
+          "description": "Returns a limited set of all ChEMBL compound structures with canonical SMILES and molregno identifiers."
+        },
+        {
+          "id": "query:Chembl:ChemblNumberOfStructures",
+          "kind": "DataQuery",
+          "name": "ChemblNumberOfStructures",
+          "description": "Returns a specified number of ChEMBL compound structures with canonical SMILES and molregno identifiers."
+        },
+        {
+          "id": "func:Chembl:Database Queries",
+          "kind": "RegisteredFunction",
+          "name": "Database Queries",
+          "friendly_name": null,
+          "role": null,
+          "description": "Running various queries to chemical databases using convenient input forms",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Chembl/readme.md",
+          "kind": "DocPage",
+          "title": "ChEMBL",
+          "url": "/packages/Chembl/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/demo.ts",
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:hit-triage",
+      "name": "Hit Triage Integration",
+      "description": "Provides ChEMBL compound sets and target lists as data sources and enrichment functions for the Datagrok Hit Triage workflow.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Chembl:Chembl targets by organism",
+          "kind": "RegisteredFunction",
+          "name": "Chembl targets by organism",
+          "friendly_name": null,
+          "role": "hitTriageDataSource",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chembl:Chembl Compounds",
+          "kind": "RegisteredFunction",
+          "name": "Chembl Compounds",
+          "friendly_name": null,
+          "role": "hitTriageDataSource",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chembl:Chembl molregno",
+          "kind": "RegisteredFunction",
+          "name": "Chembl molregno",
+          "friendly_name": null,
+          "role": "hitTriageFunction",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:frac-classification",
+      "name": "FRAC Classification Search",
+      "description": "Searches ChEMBL compounds by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels, optionally combined with molecular substructure matching.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "query:Chembl:FracClassification",
+          "kind": "DataQuery",
+          "name": "FracClassification",
+          "description": "Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels."
+        },
+        {
+          "id": "query:Chembl:FracClassificationWithSubstructure",
+          "kind": "DataQuery",
+          "name": "FracClassificationWithSubstructure",
+          "description": "Combines FRAC classification hierarchy search with molecular substructure matching."
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+          "kind": "DocPage",
+          "title": "Filter by catalogs",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:pharmacokinetic-data",
+      "name": "Pharmacokinetic Data",
+      "description": "Retrieves curated pharmacokinetic parameters — dosage, route, regimen, and measured values — for a specified drug from ChEMBL's curated PK dataset.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "query:Chembl:_PK data from 'Curated Drug Pharmacokinetic Data' source for @drug",
+          "kind": "DataQuery",
+          "name": "_PK data from 'Curated Drug Pharmacokinetic Data' source for @drug",
+          "description": "Retrieves pharmacokinetic data including dosage, route, regimen, and measured parameters for a specified drug from curated sources."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:target-protein-classification",
+      "name": "Target and Protein Classification",
+      "description": "Exposes the ChEMBL protein classification hierarchy (preferred names, definitions) for browsing and filtering compound targets by protein family.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Chembl:_protein classification",
+          "kind": "DataQuery",
+          "name": "_protein classification",
+          "description": "Returns the complete protein classification hierarchy with preferred names and definitions."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:db-explorer",
+      "name": "DB Explorer Integration",
+      "description": "Registers ChEMBL as a lazily-loaded DB Explorer data source with semantic type detection for ChEMBL ID columns, enabling chemically-aware browsing of any table containing ChEMBL identifiers.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Chembl:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semValueExtractor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chembl:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chembl/src/explorer-config.ts",
+          "packages/Chembl/src/handlers.ts",
+          "packages/Chembl/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chembl:autocomplete-helpers",
+      "name": "Autocomplete Lookup Helpers",
+      "description": "A set of internal autocomplete queries that populate dropdown inputs throughout the ChEMBL UI — compound names, organisms, protein types, target types, assay types, and relationship types.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:Chembl:_compoundNames",
+          "kind": "DataQuery",
+          "name": "_compoundNames",
+          "description": "Provides autocomplete suggestions for compound names matching a substring pattern."
+        },
+        {
+          "id": "query:Chembl:_organisms",
+          "kind": "DataQuery",
+          "name": "_organisms",
+          "description": "Provides autocomplete suggestions for organism names matching a substring pattern."
+        },
+        {
+          "id": "query:Chembl:_proteinTypes",
+          "kind": "DataQuery",
+          "name": "_proteinTypes",
+          "description": "Provides autocomplete suggestions for protein classification short names matching a substring pattern."
+        },
+        {
+          "id": "query:Chembl:_targetTypes",
+          "kind": "DataQuery",
+          "name": "_targetTypes",
+          "description": "Provides autocomplete suggestions for target types matching a substring pattern."
+        },
+        {
+          "id": "query:Chembl:_assayTypes",
+          "kind": "DataQuery",
+          "name": "_assayTypes",
+          "description": "Provides autocomplete suggestions for assay types matching a substring pattern."
+        },
+        {
+          "id": "query:Chembl:_relationshipTypes",
+          "kind": "DataQuery",
+          "name": "_relationshipTypes",
+          "description": "Provides autocomplete suggestions for relationship types matching a substring pattern."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

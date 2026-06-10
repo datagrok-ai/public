@@ -1,0 +1,81 @@
+{
+  "package": {
+    "id": "pkg:EpsViewer",
+    "name": "EpsViewer",
+    "friendly_name": "EPS Viewer",
+    "version": "1.0.1",
+    "category": "Data Access",
+    "description": "File viewer for Encapsulated PostScript (EPS) files",
+    "extras": {
+      "npm_name": "@datagrok/eps-viewer",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:EpsViewer:previewEps",
+      "name": "previewEps",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "eps"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/EpsViewer/credits.md",
+      "title": "EpsViewer — Third-Party Libraries",
+      "url": "/packages/EpsViewer/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/EpsViewer/readme.md",
+      "title": "EpsViewer",
+      "url": "/packages/EpsViewer/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:EpsViewer:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": null,
+      "ticket": null,
+      "text": "Initial release: EPS file preview using UDOC.js"
+    },
+    {
+      "id": "clog:EpsViewer:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Added package icon"
+    }
+  ],
+  "stats": {
+    "functions": 1,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 2
+  }
+}

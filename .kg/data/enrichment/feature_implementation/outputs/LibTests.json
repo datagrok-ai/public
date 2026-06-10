@@ -1,0 +1,113 @@
+{
+  "package_id": "pkg:LibTests",
+  "features": [
+    {
+      "id": "feature:LibTests:richfunctionview-tests",
+      "implements": [
+        {
+          "path": "packages/LibTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/LibTests/scripts/simpleInputs.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/scripts/simpleInputsDefaultValues.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/scripts/complexInputs.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/LibTests/src/tests/compute-utils/rich-function-view-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/LibTests/src/tests/compute-api/rich-function-view-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/LibTests/src/tests/utils.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "package.ts registers CustomInputMock + TestAdd2/Sub2/Mul2/Div2/DF1/Add2Error/Multiarg5; the scripts use Compute:RichFunctionViewEditor and are loaded by both rich-function-view-tests (compute-utils + compute-api)."
+    },
+    {
+      "id": "feature:LibTests:validation-tests",
+      "implements": [
+        {
+          "path": "packages/LibTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/LibTests/scripts/demo-validation.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/scripts/demo-global-validation.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "Validators (Range/Async/Global/ValidatorActions) are registered in package.ts and exercised by the validationTest/globalValidationTest scripts via validatorFunc. No automated tests under src/tests/ — these are manual/demo validators."
+    },
+    {
+      "id": "feature:LibTests:compute-api-composition-tests",
+      "implements": [
+        {
+          "path": "packages/LibTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/LibTests/src/test-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-init.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-additional.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-mutations.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/LibTests/src/tests/compute-utils/reactive-tree-driver/instance-persistence.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "MockWrapper1-5 are PipelineConfiguration factories defined in package.ts; test-utils.ts provides snapshotCompare/getTreeStates helpers used by the reactive-tree-driver tests that resolve these mock pipelines."
+    },
+    {
+      "id": "feature:LibTests:ui-component-tests",
+      "implements": [
+        {
+          "path": "packages/LibTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "TestViewerComponent / TestFromComponent / TestElements are #test-tagged manual demo functions in package.ts that mount dg-viewer / dg-input-form / dg-button web components. No automated tests."
+    }
+  ]
+}

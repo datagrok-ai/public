@@ -1,0 +1,106 @@
+{
+  "package": {
+    "id": "pkg:NodeJSDemo",
+    "name": "NodeJSDemo",
+    "friendly_name": "NodeTodo",
+    "version": "0.0.1",
+    "category": null,
+    "description": "NodeJS Datagrok API demo",
+    "extras": {
+      "npm_name": "nodetodo",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:NodeJSDemo:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NodeJSDemo:todoApplication",
+      "name": "todoApplication",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/NodeJSDemo/credits.md",
+      "title": "NodeJSDemo — Third-Party Libraries",
+      "url": "/packages/NodeJSDemo/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/NodeJSDemo/readme.md",
+      "title": "Datagrok Todo App Plugin",
+      "url": "/packages/NodeJSDemo/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 2,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 0
+  }
+}

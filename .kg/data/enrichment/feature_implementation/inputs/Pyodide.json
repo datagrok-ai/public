@@ -1,0 +1,425 @@
+{
+  "package": {
+    "id": "pkg:Pyodide",
+    "name": "Pyodide",
+    "friendly_name": "Pyodide",
+    "category": "Compute",
+    "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)"
+  },
+  "files": {
+    "src": [
+      "packages/Pyodide/src/package.ts",
+      "packages/Pyodide/src/worker.js"
+    ],
+    "tests": [
+      "packages/Pyodide/src/package-test.ts",
+      "packages/Pyodide/src/tests/funccall.ts"
+    ],
+    "scripts": [
+      "packages/Pyodide/scripts/blob_input_output.py",
+      "packages/Pyodide/scripts/bool_input_output.py",
+      "packages/Pyodide/scripts/calc_column_call.js",
+      "packages/Pyodide/scripts/calculated_column.py",
+      "packages/Pyodide/scripts/columns_test.py",
+      "packages/Pyodide/scripts/dataframe_input_call_js.py",
+      "packages/Pyodide/scripts/dataframe_input_call_py.py",
+      "packages/Pyodide/scripts/date.py",
+      "packages/Pyodide/scripts/datetime_input_call_js.py",
+      "packages/Pyodide/scripts/datetime_input_call_py.py",
+      "packages/Pyodide/scripts/datetime_test.js",
+      "packages/Pyodide/scripts/datetime_test.py",
+      "packages/Pyodide/scripts/deps_test.py",
+      "packages/Pyodide/scripts/double_input_output.py",
+      "packages/Pyodide/scripts/edit_df.js",
+      "packages/Pyodide/scripts/edit_df.py",
+      "packages/Pyodide/scripts/empty_df.py",
+      "packages/Pyodide/scripts/graphics_test.py",
+      "packages/Pyodide/scripts/int_input_output.py",
+      "packages/Pyodide/scripts/map_type_test.py",
+      "packages/Pyodide/scripts/simple_inputs.js",
+      "packages/Pyodide/scripts/simple_inputs.py",
+      "packages/Pyodide/scripts/simple_inputs_call_js.py",
+      "packages/Pyodide/scripts/simple_inputs_call_py.py",
+      "packages/Pyodide/scripts/single_df_test.py",
+      "packages/Pyodide/scripts/string_input_output.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Pyodide/CHANGELOG.md",
+      "packages/Pyodide/CREDITS.md",
+      "packages/Pyodide/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Pyodide:in-browser-python-scripting",
+      "name": "In-Browser Python Scripting",
+      "description": "Runs Python scripts directly in the browser via WebAssembly using the Pyodide engine, eliminating server round-trips and registering 'pyodide' as a first-class Datagrok script language.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Pyodide:initPyodide",
+          "kind": "RegisteredFunction",
+          "name": "initPyodide",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Pyodide:pyodideLanguageHandler",
+          "kind": "RegisteredFunction",
+          "name": "pyodideLanguageHandler",
+          "friendly_name": null,
+          "role": "scriptHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Pyodide/readme.md",
+          "kind": "DocPage",
+          "title": "Pyodide",
+          "url": "/packages/Pyodide/readme.md"
+        },
+        {
+          "id": "doc:/help/compute/compute",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/help/compute/compute"
+        },
+        {
+          "id": "doc:/help/compute/scripting/getting-started",
+          "kind": "DocPage",
+          "title": "Getting started with scripting",
+          "url": "/help/compute/scripting/getting-started"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+          "kind": "DocPage",
+          "title": "Scripting features",
+          "url": "/help/compute/scripting/scripting-features/scripting-features"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+          "kind": "DocPage",
+          "title": "Work with the Datagrok script editor",
+          "url": "/help/compute/scripting/scripting-features/datagrok-script-editor"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+          "kind": "DocPage",
+          "title": "Enhance input UI",
+          "url": "/help/compute/scripting/scripting-features/enhance-input-ui"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+          "kind": "DocPage",
+          "title": "Automate inputs",
+          "url": "/help/compute/scripting/advanced-scripting/automate-inputs"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+          "kind": "DocPage",
+          "title": "Call via REST",
+          "url": "/help/compute/scripting/advanced-scripting/call-via-rest"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+          "kind": "DocPage",
+          "title": "Rich Function View",
+          "url": "/help/compute/scripting/advanced-scripting/rich-function-view"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Pyodide/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:script-vectorization",
+      "name": "Script Vectorization",
+      "description": "Automatically generates vectorized (columnar) code from element-wise Python scripts, enabling efficient batch processing of DataFrame columns without manual looping.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Pyodide:makeVectorCode",
+          "kind": "RegisteredFunction",
+          "name": "makeVectorCode",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Pyodide:Pyodide Calc Column",
+          "kind": "Script",
+          "name": "Pyodide Calc Column",
+          "language": "pyodide",
+          "description": "calc column"
+        },
+        {
+          "id": "script:Pyodide:Pyodide Calc Column Call",
+          "kind": "Script",
+          "name": "Pyodide Calc Column Call",
+          "language": "javascript",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Pyodide/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:type-marshaling",
+      "name": "Primitive Type Marshaling",
+      "description": "Converts Python primitive values (bool, int, float, string, datetime, map, blob, column list) to and from JavaScript types, enabling seamless data exchange between Pyodide scripts and the Datagrok runtime.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Pyodide:Pyodide Bool",
+          "kind": "Script",
+          "name": "Pyodide Bool",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide Int",
+          "kind": "Script",
+          "name": "Pyodide Int",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide Double",
+          "kind": "Script",
+          "name": "Pyodide Double",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide String",
+          "kind": "Script",
+          "name": "Pyodide String",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide Date",
+          "kind": "Script",
+          "name": "Pyodide Date",
+          "language": "pyodide",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:Pyodide:Pyodide Map",
+          "kind": "Script",
+          "name": "Pyodide Map",
+          "language": "pyodide",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:Pyodide:Pyodide Column List",
+          "kind": "Script",
+          "name": "Pyodide Column List",
+          "language": "pyodide",
+          "description": "column list input"
+        },
+        {
+          "id": "script:Pyodide:Pyodide Blob Input Output",
+          "kind": "Script",
+          "name": "Pyodide Blob Input Output",
+          "language": "pyodide",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:Pyodide:SimpleInputsPy",
+          "kind": "Script",
+          "name": "SimpleInputsPy",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:SimpleInputsJS",
+          "kind": "Script",
+          "name": "SimpleInputsJS",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:DatetimeTestPy",
+          "kind": "Script",
+          "name": "DatetimeTestPy",
+          "language": "pyodide",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:Pyodide:DatetimeTestJS",
+          "kind": "Script",
+          "name": "DatetimeTestJS",
+          "language": "javascript",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+          "kind": "DocPage",
+          "title": "Complex data types",
+          "url": "/help/compute/scripting/scripting-features/complex-input-output"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:dataframe-io",
+      "name": "DataFrame Input/Output",
+      "description": "Passes Datagrok DataFrames into and out of Pyodide scripts, allowing Python code to read, transform, and return tabular data without serialization overhead.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Pyodide:EditDFPy",
+          "kind": "Script",
+          "name": "EditDFPy",
+          "language": "pyodide",
+          "description": "dataframe input/output"
+        },
+        {
+          "id": "script:Pyodide:EditDFJS",
+          "kind": "Script",
+          "name": "EditDFJS",
+          "language": "javascript",
+          "description": "dataframe input/output"
+        },
+        {
+          "id": "script:Pyodide:DataFrameInputCallJS",
+          "kind": "Script",
+          "name": "DataFrameInputCallJS",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:DataFrameInputCallPy",
+          "kind": "Script",
+          "name": "DataFrameInputCallPy",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide Empty Dataframe",
+          "kind": "Script",
+          "name": "Pyodide Empty Dataframe",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:Pyodide Single Df",
+          "kind": "Script",
+          "name": "Pyodide Single Df",
+          "language": "pyodide",
+          "description": "df performance"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+          "kind": "DocPage",
+          "title": "Complex data types",
+          "url": "/help/compute/scripting/scripting-features/complex-input-output"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:funccall-interop",
+      "name": "FuncCall Interop",
+      "description": "Allows Pyodide scripts to invoke other Datagrok FuncCalls synchronously (via run_sync / execFuncCall), enabling Python-scripted orchestration of server-side or JS functions.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Pyodide:SimpleInputsCallJS",
+          "kind": "Script",
+          "name": "SimpleInputsCallJS",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:SimpleInputsCallPy",
+          "kind": "Script",
+          "name": "SimpleInputsCallPy",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:DatetimeInputCallJS",
+          "kind": "Script",
+          "name": "DatetimeInputCallJS",
+          "language": "pyodide",
+          "description": null
+        },
+        {
+          "id": "script:Pyodide:DatetimeInputCallPy",
+          "kind": "Script",
+          "name": "DatetimeInputCallPy",
+          "language": "pyodide",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:script-dependencies",
+      "name": "Script Package Dependencies",
+      "description": "Supports declaring Python package dependencies for Pyodide scripts via the meta.dependencies annotation, automatically loading the required packages before script execution.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Pyodide:Pyodide Deps Test",
+          "kind": "Script",
+          "name": "Pyodide Deps Test",
+          "language": "pyodide",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Pyodide:graphics-output",
+      "name": "Graphics Output",
+      "description": "Renders visual output (charts, plots) produced by Pyodide scripts directly in the Datagrok UI, returning a graphics output column as the result.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:Pyodide:Pyodide Graphics",
+          "kind": "Script",
+          "name": "Pyodide Graphics",
+          "language": "pyodide",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+          "kind": "DocPage",
+          "title": "Visualize output data",
+          "url": "/help/compute/scripting/scripting-features/visualize-output-data"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

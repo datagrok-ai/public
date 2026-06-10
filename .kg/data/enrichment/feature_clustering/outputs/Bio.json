@@ -1,0 +1,360 @@
+{
+  "package_id": "pkg:Bio",
+  "features": [
+    {
+      "id": "feature:Bio:bio-sequence-detection",
+      "name": "Macromolecule Detection & Notation Refinement",
+      "description": "Automatically detects macromolecule semantic types (DNA, RNA, peptides) in columns and refines their notation (HELM, FASTA, BILN, separator) using configurable detectors.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Bio:<anonymous>",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:refineNotationProviderForBiln",  "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:detectMacromoleculeProbe",       "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:detectMacromoleculeEnableStore", "weight": 0.8,  "role": "core"},
+        {"id": "func:Bio:testDetectMacromolecule",        "weight": 0.65, "role": "test"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/bio", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "All share the macromolecule semTypeDetector / notationRefiner role tags and the detect/refine naming pattern; the Bio guide doc covers detection as a foundational capability."
+    },
+    {
+      "id": "feature:Bio:sequence-cell-rendering",
+      "name": "Sequence Cell Rendering",
+      "description": "Renders macromolecule sequence columns in the Datagrok grid with notation-specific cell renderers (FASTA, HELM, BILN, separator, custom) and per-column tooltips and header panels.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:customSequenceCellRenderer",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:fastaSequenceCellRenderer",          "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:separatorSequenceCellRenderer",      "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:bilnSequenceCellRenderer",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:monomerCellRenderer",                "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Bioinformatics | Sequence Renderer", "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:sequenceTooltip",                   "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:longSeqTableSeparator",             "weight": 0.55, "role": "sample"},
+        {"id": "func:Bio:longSeqTableFasta",                 "weight": 0.55, "role": "sample"},
+        {"id": "func:Bio:longSeqTableHelm",                  "weight": 0.55, "role": "sample"}
+      ],
+      "evidence_summary": "All carry the cellRenderer role tag and are named after the notation they render; longSeqTable* functions are dev test beds for long-sequence rendering in each notation."
+    },
+    {
+      "id": "feature:Bio:sequence-difference-rendering",
+      "name": "Sequence Difference Rendering",
+      "description": "Compares two macromolecule sequence columns to build a per-position difference representation and renders it via a dedicated difference cell renderer.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Bio:MacromoleculeDifferenceCellRenderer", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Compare Sequences",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:sequenceAlignment",                   "weight": 0.75, "role": "core"}
+      ],
+      "evidence_summary": "MacromoleculeDifferenceCellRenderer and Compare Sequences share explicit naming and description around per-position sequence comparison; sequenceAlignment provides the underlying pairwise alignment."
+    },
+    {
+      "id": "feature:Bio:notation-conversion",
+      "name": "Notation Conversion",
+      "description": "Converts macromolecule columns between supported sequence notations (FASTA, HELM, BILN, separator, custom) via an interactive conversion dialog.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Bio:Convert Notation...", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:convertDialog",       "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/polytool", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "Convert Notation and convertDialog share the same name root and dialog entry point; the Polytool doc covers multi-notation polymer workflows that this feature enables."
+    },
+    {
+      "id": "feature:Bio:molecule-to-helm",
+      "name": "Molecule to HELM Conversion",
+      "description": "Converts small-molecule structures (molfiles / SDF) to HELM notation by matching atoms against a monomer library, enabling peptide enumeration workflows.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Bio:Molecules to HELM",      "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Molecule to HELM Single", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:getMolFromHelm",          "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:SDF to JSON Library",     "weight": 0.75, "role": "core"},
+        {"id": "script:Bio:molToHelmConverterPy",  "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "Molecules to HELM, Molecule to HELM Single, getMolFromHelm, and molToHelmConverterPy all implement the molecule-to-HELM pipeline; SDF to JSON Library converts SDF monomer inputs for this workflow."
+    },
+    {
+      "id": "feature:Bio:atomic-level-structure",
+      "name": "Atomic Level Structure",
+      "description": "Expands macromolecule sequences (HELM / FASTA / BILN) into full atomic-level molblocks and displays 2D / 3D molecular structures in the property panel.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Bio:To Atomic Level",              "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:To Atomic Level...",            "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:To Atomic Level Single sequence","weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:seq2atomic",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Molecular Structure",           "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Molecular 3D Structure",        "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:demoBioAtomicLevel",            "weight": 0.6,  "role": "sample"}
+      ],
+      "evidence_summary": "All share the 'To Atomic Level' / seq2atomic name root and the same pipeline of converting macromolecule sequences to molblocks for 2D / 3D visualization; demoBioAtomicLevel is the demo entry point."
+    },
+    {
+      "id": "feature:Bio:file-import-export",
+      "name": "File Import / Export (FASTA, BAM)",
+      "description": "Imports FASTA / nucleotide files and BAM alignment files directly into Datagrok tables and exports sequence columns back to FASTA format.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:importFasta",  "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:importBam",    "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:saveAsFasta",  "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",                     "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",     "weight": 0.55, "role": "doc"}
+      ],
+      "evidence_summary": "importFasta, importBam, and saveAsFasta carry fileHandler / fileExporter roles; oligo-toolkit and oligonucleotide-design docs cover the nucleotide-file import use case."
+    },
+    {
+      "id": "feature:Bio:monomer-library-management",
+      "name": "Monomer Library Management",
+      "description": "Provides a full CRUD UI to manage HELM monomer libraries and collections, including browsing, editing monomers, matching molecules to monomers, and standardising library JSON.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:Manage Monomer Libraries",              "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Manage Monomer Libraries View",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:manageMonomersView",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Monomer Manager Tree Browser",          "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Monomer Collections",                   "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Bioinformatics | Manage Monomer Libraries", "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:getMonomerLibHelper",                   "weight": 0.8,  "role": "core"},
+        {"id": "func:Bio:standardiseMonomerLibrary",             "weight": 0.8,  "role": "core"},
+        {"id": "func:Bio:matchWithMonomerLibrary",               "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:Monomer",                               "weight": 0.7,  "role": "core"},
+        {"id": "doc:/help/_internal/tests/collections-test",    "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/faq_bio", "weight": 0.55, "role": "doc"}
+      ],
+      "evidence_summary": "All share 'Monomer' / 'Library' name roots or the Manage Monomer Libraries menu path, covering the full lifecycle of HELM monomer library management from browse to edit to standardise."
+    },
+    {
+      "id": "feature:Bio:split-to-monomers",
+      "name": "Split to Monomers",
+      "description": "Splits a macromolecule sequence column into individual per-position monomer columns, enabling position-level analysis of peptide libraries.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Bio:Split to Monomers",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:SplitToMonomersEditor", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Bio: getHelmMonomers",  "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "Split to Monomers and SplitToMonomersEditor share the same name and editor role; getHelmMonomers provides per-column monomer extraction used by the split operation."
+    },
+    {
+      "id": "feature:Bio:get-region",
+      "name": "Get Region",
+      "description": "Extracts a named subsequence region (e.g. CDR loop, variable domain) from a macromolecule column into a new column, via an interactive panel, top-menu action, or region input widget.",
+      "category": "data-import",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Bio:Bioinformatics | Get Region", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:GetRegionEditor",             "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:getRegion",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Get Region Top Menu",         "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Sequence Column Input",       "weight": 0.8,  "role": "core"},
+        {"id": "func:Bio:getRegionApp",                "weight": 0.6,  "role": "sample"},
+        {"id": "func:Bio:getRegionHelmApp",            "weight": 0.6,  "role": "sample"}
+      ],
+      "evidence_summary": "All share the 'Get Region' name root or describe sub-region extraction; Sequence Column Input exposes region selection as a reusable input widget; *App functions are dev test entry points."
+    },
+    {
+      "id": "feature:Bio:weblogo-composition-analysis",
+      "name": "WebLogo & Composition Analysis",
+      "description": "Visualizes the positional monomer composition of a sequence set as a WebLogo plot, with aggregate and per-row composition panels.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:WebLogo",            "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Composition Analysis","weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Composition analysis","weight": 0.95, "role": "core"},
+        {"id": "func:Bio:webLogoLargeApp",    "weight": 0.55, "role": "sample"},
+        {"id": "func:Bio:webLogoAggApp",      "weight": 0.55, "role": "sample"},
+        {"id": "doc:/help/visualize/viewers/web-logo", "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "WebLogo, both Composition Analysis variants, and the two demo apps all share the WebLogo / composition naming; the help doc directly documents this viewer."
+    },
+    {
+      "id": "feature:Bio:multiple-sequence-alignment",
+      "name": "Multiple Sequence Alignment",
+      "description": "Aligns a set of macromolecule sequences using built-in engine or PepSeA (MAFFT-based) alignment algorithms, including support for non-canonical peptides and HELM.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:MSA",                      "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Multiple Sequence Alignment","weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:PepSeA",                   "weight": 0.9,  "role": "core"},
+        {"id": "script:Bio:read-tree-pkl",           "weight": 0.65, "role": "core"},
+        {"id": "script:Bio:Sequence generator",      "weight": 0.55, "role": "sample"}
+      ],
+      "evidence_summary": "MSA, Multiple Sequence Alignment, and PepSeA all carry sequenceMSA roles; read-tree-pkl reads phylogenetic clustering trees produced alongside MSA; Sequence generator creates synthetic test data."
+    },
+    {
+      "id": "feature:Bio:sequence-space",
+      "name": "Sequence Space",
+      "description": "Projects macromolecule sequences into a 2D scatter plot via dimensionality reduction of pairwise distances, enabling visual exploration of chemical diversity.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Bio:Sequence Space",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:sequenceSpaceTransform", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:SequenceSpaceEditor",    "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Encode Sequences",       "weight": 0.85, "role": "core"},
+        {"id": "func:Bio:demoBioSequenceSpace",   "weight": 0.65, "role": "sample"},
+        {"id": "script:Bio:Embed",                "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "Sequence Space, sequenceSpaceTransform, and SequenceSpaceEditor implement the dim-reduction pipeline; Encode Sequences carries the 'dim-red-preprocessing-function' role; Embed script does the numeric embedding; demoBioSequenceSpace is the demo."
+    },
+    {
+      "id": "feature:Bio:sequence-activity-cliffs",
+      "name": "Sequence Activity Cliffs",
+      "description": "Detects pairs of macromolecule sequences that are structurally similar but have a large difference in a measured biological activity, highlighting SAR discontinuities.",
+      "category": "ml",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Bio:Sequence Activity Cliffs",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:seqActivityCliffsInitFunction",  "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:seqActivityCliffsTransform",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:SeqActivityCliffsEditor",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:demoBioActivityCliffs",          "weight": 0.65, "role": "sample"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All five function IDs share the 'seqActivityCliffs' / 'Sequence Activity Cliffs' name; Peptides SAR doc covers the SAR / activity cliff analysis workflow for macromolecules."
+    },
+    {
+      "id": "feature:Bio:sequence-similarity-diversity",
+      "name": "Sequence Similarity & Diversity Search",
+      "description": "Interactive viewers to find the most similar sequences to a query and to pick the most diverse subset from a macromolecule dataset.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Bio:Sequence Similarity Search", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:similaritySearch",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Sequence Diversity Search",  "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:diversitySearch",            "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:demoBioSimilarityDiversity", "weight": 0.65, "role": "sample"}
+      ],
+      "evidence_summary": "The four viewer functions pair by name (Similarity Search / similaritySearch, Diversity Search / diversitySearch); the demo unifies both into one entry point."
+    },
+    {
+      "id": "feature:Bio:subsequence-search",
+      "name": "Subsequence Search & Substructure Filter",
+      "description": "Searches for a motif or subsequence within macromolecule columns and provides a grid filter widget to interactively narrow rows by substructure match.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Bio:Subsequence Search",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:SearchSubsequenceEditor",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Bio Substructure Filter",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Bio Substructure Filter Test","weight": 0.6, "role": "test"},
+        {"id": "doc:/help/_internal/tests/substructure-filter", "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "Subsequence Search / SearchSubsequenceEditor implement motif search; Bio Substructure Filter provides the interactive filter widget using the same underlying matcher."
+    },
+    {
+      "id": "feature:Bio:sequence-identity-scoring",
+      "name": "Sequence Identity & Similarity Scoring",
+      "description": "Computes per-row identity or monomer-fingerprint similarity scores relative to a reference sequence, adding scored result columns to the table.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Bio:Identity",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Similarity",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:seqIdentity",      "weight": 0.9,  "role": "core"},
+        {"id": "func:Bio:Helm Fingerprints","weight": 0.7,  "role": "core"}
+      ],
+      "evidence_summary": "Identity, Similarity, and seqIdentity all compute pairwise sequence scores against a reference; Helm Fingerprints generates the monomer-fingerprint vectors consumed by the Similarity scorer."
+    },
+    {
+      "id": "feature:Bio:antibody-numbering",
+      "name": "Antibody Numbering & Annotations",
+      "description": "Assigns standard antibody numbering schemes (IMGT, Kabat, Chothia, AHo) to sequence columns and lets users view and manage CDR / framework region annotations.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Bio:Apply Numbering Scheme", "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Immunum",                "weight": 1.0,  "role": "core"},
+        {"id": "func:Bio:Manage Annotations",     "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "Apply Numbering Scheme and Immunum both assign antibody numbering (IMGT/Kabat/Chothia/AHo) and share the antibodyNumbering role; Manage Annotations exposes the resulting region annotations for review."
+    },
+    {
+      "id": "feature:Bio:liability-scanning",
+      "name": "Liability Scanning",
+      "description": "Scans macromolecule sequences for chemical liabilities such as deamidation and oxidation sites that affect biologic drug stability.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Bio:Scan Liabilities", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Scan Liabilities is the sole explicit liability-scanning entry point, matching changelog entries about deamidation / oxidation detection and separator support."
+    },
+    {
+      "id": "feature:Bio:vd-regions",
+      "name": "VD Regions Viewer",
+      "description": "Visualizes V-Domain antibody regions and CDR loops in a dedicated grid viewer, showing aligned region positions across a sequence library.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Bio:VdRegions", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "VdRegions is the sole V-Domain regions viewer with role viewer,panel, described as 'V-Domain regions viewer' and referenced in the antibody support changelog entry."
+    },
+    {
+      "id": "feature:Bio:sequence-encoding",
+      "name": "Sequence Encoding for ML",
+      "description": "Encodes macromolecule sequences as numeric feature vectors to feed into dimensionality reduction and other machine-learning pipelines.",
+      "category": "ml",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Bio:Encode Sequences", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Encode Sequences carries the 'dim-red-preprocessing-function' role tag, explicitly marking it as the ML preprocessing step for sequence space and similar dim-red analyses."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Bio:sequence-space",             "to": "feature:Bio:sequence-encoding",           "kind": "related"},
+    {"from": "feature:Bio:sequence-space",             "to": "feature:Bio:sequence-activity-cliffs",    "kind": "sibling"},
+    {"from": "feature:Bio:sequence-activity-cliffs",   "to": "feature:Bio:sequence-similarity-diversity","kind": "related"},
+    {"from": "feature:Bio:sequence-identity-scoring",  "to": "feature:Bio:sequence-similarity-diversity","kind": "sibling"},
+    {"from": "feature:Bio:subsequence-search",         "to": "feature:Bio:sequence-similarity-diversity","kind": "sibling"},
+    {"from": "feature:Bio:antibody-numbering",         "to": "feature:Bio:vd-regions",                  "kind": "sibling"},
+    {"from": "feature:Bio:antibody-numbering",         "to": "feature:Bio:liability-scanning",          "kind": "sibling"},
+    {"from": "feature:Bio:antibody-numbering",         "to": "feature:Bio:get-region",                  "kind": "related"},
+    {"from": "feature:Bio:multiple-sequence-alignment","to": "feature:Bio:weblogo-composition-analysis", "kind": "related"},
+    {"from": "feature:Bio:molecule-to-helm",           "to": "feature:Bio:monomer-library-management",  "kind": "related"},
+    {"from": "feature:Bio:atomic-level-structure",     "to": "feature:Bio:molecule-to-helm",            "kind": "sibling"},
+    {"from": "feature:Bio:notation-conversion",        "to": "feature:Bio:sequence-cell-rendering",     "kind": "related"},
+    {"from": "feature:Bio:split-to-monomers",          "to": "feature:Bio:monomer-library-management",  "kind": "related"},
+    {"from": "feature:Bio:sequence-difference-rendering","to": "feature:Bio:multiple-sequence-alignment","kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Bio:initBio",
+    "func:Bio:getBioLib",
+    "func:Bio:getSeqHandler",
+    "func:Bio:getSeqHelper",
+    "func:Bio:autostart",
+    "func:Bio:addCopyMenu",
+    "func:Bio:test1",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/BioNeMo/credits.md",
+    "doc:/packages/BioNeMo/readme.md",
+    "doc:/packages/Biologics/credits.md",
+    "doc:/packages/Biologics/claude.md",
+    "doc:/packages/Biologics/readme.md",
+    "doc:/packages/BiostructureViewer/credits.md",
+    "doc:/packages/BiostructureViewer/readme.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/packages/Helm/credits.md",
+    "doc:/help/visualize/viewers/biostructure",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+  ]
+}

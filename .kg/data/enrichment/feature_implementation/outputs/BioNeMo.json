@@ -1,0 +1,46 @@
+{
+  "package_id": "pkg:BioNeMo",
+  "features": [
+    {
+      "id": "feature:BioNeMo:esm-fold",
+      "implements": [
+        {
+          "path": "packages/BioNeMo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "EsmFold and Bio | EsmFold panel are both defined inline in PackageFunctions in src/package.ts; esmfoldPython is a server script under scripts/ (not in files.src)."
+    },
+    {
+      "id": "feature:BioNeMo:diff-dock",
+      "implements": [
+        {
+          "path": "packages/BioNeMo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BioNeMo/src/diffdock/diffdock-model.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers DiffDock, Biology | DiffDock panel, diffDockModelScript and getTargetFiles; diffdock-model.ts provides DiffDockModel class with poses calculation and viewer composition."
+    },
+    {
+      "id": "feature:BioNeMo:mol-mim",
+      "implements": [
+        {
+          "path": "packages/BioNeMo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "MolMIMModel wrapper is defined inline in PackageFunctions in src/package.ts; MolMIMGenerate is a server script under scripts/ (not in files.src)."
+    }
+  ]
+}

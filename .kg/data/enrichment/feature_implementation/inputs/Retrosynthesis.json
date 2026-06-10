@@ -1,0 +1,148 @@
+{
+  "package": {
+    "id": "pkg:Retrosynthesis",
+    "name": "Retrosynthesis",
+    "friendly_name": null,
+    "category": "Cheminformatics",
+    "description": "Creates retrosynthesis paths for the selected molecule"
+  },
+  "files": {
+    "src": [
+      "packages/Retrosynthesis/src/aizynth-api.ts",
+      "packages/Retrosynthesis/src/config-utils.ts",
+      "packages/Retrosynthesis/src/const.ts",
+      "packages/Retrosynthesis/src/mock-data.ts",
+      "packages/Retrosynthesis/src/package.ts",
+      "packages/Retrosynthesis/src/tree-creation-utils.ts",
+      "packages/Retrosynthesis/src/utils.ts"
+    ],
+    "tests": [
+      "packages/Retrosynthesis/src/package-test.ts",
+      "packages/Retrosynthesis/src/tests/retrosynthesis-panel-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Retrosynthesis/CHANGELOG.md",
+      "packages/Retrosynthesis/CLAUDE.md",
+      "packages/Retrosynthesis/CREDITS.md",
+      "packages/Retrosynthesis/README.md",
+      "packages/Retrosynthesis/files/configs/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-path-analysis",
+      "name": "Retrosynthesis Path Analysis",
+      "description": "Runs AiZynthFinder (via Celery) on a selected molecule and renders the resulting synthetic routes as an interactive Chemistry info panel. Supports user-specific configuration, request cancellation, and saving results to…",
+      "category": "chem-synthesis",
+      "members": [
+        {
+          "id": "func:Retrosynthesis:Chemistry | Retrosynthesis",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Retrosynthesis",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Retrosynthesis/readme.md",
+          "kind": "DocPage",
+          "title": "Retrosynthesis",
+          "url": "/packages/Retrosynthesis/readme.md"
+        },
+        {
+          "id": "doc:/packages/Retrosynthesis/claude.md",
+          "kind": "DocPage",
+          "title": "Retrosynthesis",
+          "url": "/packages/Retrosynthesis/claude.md"
+        },
+        {
+          "id": "doc:/packages/Retrosynthesis/credits.md",
+          "kind": "DocPage",
+          "title": "Retrosynthesis — Third-Party Libraries",
+          "url": "/packages/Retrosynthesis/credits.md"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.4:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.5:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.6:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.6:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.6:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.6:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Retrosynthesis:1.0.6:4",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-demo",
+      "name": "Retrosynthesis Demo",
+      "description": "A standalone demo application that lets users generate retrosynthesis paths directly, making the feature discoverable without navigating to a molecule's Chemistry panel.",
+      "category": "chem-synthesis",
+      "members": [
+        {
+          "id": "func:Retrosynthesis:Retrosynthesis Demo",
+          "kind": "RegisteredFunction",
+          "name": "Retrosynthesis Demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Generate retrosynthesis paths",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "package_id": "pkg:Reinvent4",
+  "features": [
+    {
+      "id": "feature:Reinvent4:de-novo-molecule-generation",
+      "name": "De Novo Molecule Generation",
+      "description": "Generates novel small molecules from a seed ligand using the REINVENT4 deep-learning framework, exposed through a dedicated editor UI and the top-level menu; results are returned as a dataframe for downstream analysis.",
+      "category": "chem-gen",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Reinvent4:Reinvent",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Reinvent4:runReinvent",         "weight": 0.95, "role": "core"},
+        {"id": "func:Reinvent4:ReinventEditor",      "weight": 0.9,  "role": "core"},
+        {"id": "func:Reinvent4:reinventTopMenu",     "weight": 0.85, "role": "core"},
+        {"id": "func:Reinvent4:getFolders",          "weight": 0.7,  "role": "related"},
+        {"id": "doc:/packages/Reinvent4/readme.md",  "weight": 0.9,  "role": "doc"},
+        {"id": "clog:Reinvent4:1.0.0:0",            "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "All named functions share the 'Reinvent' root or carry the hitDesignerFunction role (molecule generation from seed ligand), and the sole changelog entry confirms this is the plugin's entire purpose."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": [
+    "func:Reinvent4:info",
+    "doc:/packages/Reinvent4/credits.md",
+    "doc:/help/datagrok/solutions/domains/bio/bio",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/help/datagrok/solutions/domains/bio/polytool",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel"
+  ]
+}

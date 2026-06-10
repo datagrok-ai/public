@@ -1,0 +1,1649 @@
+{
+  "package": {
+    "id": "pkg:UsageAnalysis",
+    "name": "UsageAnalysis",
+    "friendly_name": "Usage Analysis",
+    "category": "General",
+    "description": "Platform usage analysis system"
+  },
+  "files": {
+    "src": [
+      "packages/UsageAnalysis/src/drilldown_viewers/data/top-connection-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/data/top-queries-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/errors/top-error-sources-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/errors/top-errors-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/events/top-functions-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/events/top-package-functions-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/events/top-packages-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/events/top-sources-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/function_errors/top-function-errors-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/panels/error_marking_panel.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/top-data-sources-viewer.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/top-queries-using-data-source.ts",
+      "packages/UsageAnalysis/src/drilldown_viewers/users/top-users-viewer.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-base.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-groups.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-packages-categories.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-packages.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-projects.ts",
+      "packages/UsageAnalysis/src/elements/choice-input-tags.ts",
+      "packages/UsageAnalysis/src/filter.ts",
+      "packages/UsageAnalysis/src/handlers/test-grid-cell-handler.ts",
+      "packages/UsageAnalysis/src/package.ts",
+      "packages/UsageAnalysis/src/property-panel.ts",
+      "packages/UsageAnalysis/src/reporting/reporting_app.ts",
+      "packages/UsageAnalysis/src/service_logs/service_logs.ts",
+      "packages/UsageAnalysis/src/tabs/clicks.ts",
+      "packages/UsageAnalysis/src/tabs/data.ts",
+      "packages/UsageAnalysis/src/tabs/errors.ts",
+      "packages/UsageAnalysis/src/tabs/events.ts",
+      "packages/UsageAnalysis/src/tabs/function-errors.ts",
+      "packages/UsageAnalysis/src/tabs/functions.ts",
+      "packages/UsageAnalysis/src/tabs/log.ts",
+      "packages/UsageAnalysis/src/tabs/overview.ts",
+      "packages/UsageAnalysis/src/tabs/packages.ts",
+      "packages/UsageAnalysis/src/tabs/projects.ts",
+      "packages/UsageAnalysis/src/tabs/ua.ts",
+      "packages/UsageAnalysis/src/tabs/users.ts",
+      "packages/UsageAnalysis/src/test-analysis/sticky-meta-initialization.ts",
+      "packages/UsageAnalysis/src/test-analysis/test-analysis-manager.ts",
+      "packages/UsageAnalysis/src/test-track/app.ts",
+      "packages/UsageAnalysis/src/test-track/utils.ts",
+      "packages/UsageAnalysis/src/ua-toolbox.ts",
+      "packages/UsageAnalysis/src/utils.ts",
+      "packages/UsageAnalysis/src/view-handler.ts",
+      "packages/UsageAnalysis/src/viewers/abstract/ua-query-viewer.ts",
+      "packages/UsageAnalysis/src/viewers/abstract/ua-viewer.ts",
+      "packages/UsageAnalysis/src/viewers/ua-data-frame-viewer.ts",
+      "packages/UsageAnalysis/src/viewers/ua-filterable-query-viewer.ts",
+      "packages/UsageAnalysis/src/viewers/ua-test-dashboard-viewer.ts",
+      "packages/UsageAnalysis/src/widgets/click-events-widget.ts",
+      "packages/UsageAnalysis/src/widgets/package-usage-widget.ts",
+      "packages/UsageAnalysis/src/widgets/reports-widget.ts",
+      "packages/UsageAnalysis/src/widgets/usage-widget.ts"
+    ],
+    "tests": [
+      "packages/UsageAnalysis/src/package-test.ts",
+      "packages/UsageAnalysis/src/tests/app.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/UsageAnalysis/queries/aggregated_clicks.sql",
+      "packages/UsageAnalysis/queries/all_test_runs.sql",
+      "packages/UsageAnalysis/queries/cards.sql",
+      "packages/UsageAnalysis/queries/data_drilldown_queries.sql",
+      "packages/UsageAnalysis/queries/data_queries.sql",
+      "packages/UsageAnalysis/queries/entity_connections.sql",
+      "packages/UsageAnalysis/queries/errors_drilldown_queries.sql",
+      "packages/UsageAnalysis/queries/errors_query.sql",
+      "packages/UsageAnalysis/queries/events.sql",
+      "packages/UsageAnalysis/queries/events_drilldown_queries.sql",
+      "packages/UsageAnalysis/queries/events_query.sql",
+      "packages/UsageAnalysis/queries/extra_queries.sql",
+      "packages/UsageAnalysis/queries/function_errors_drilldown_queries.sql",
+      "packages/UsageAnalysis/queries/function_errors_queries.sql",
+      "packages/UsageAnalysis/queries/functions.sql",
+      "packages/UsageAnalysis/queries/groups.sql",
+      "packages/UsageAnalysis/queries/info-panels.sql",
+      "packages/UsageAnalysis/queries/log.sql",
+      "packages/UsageAnalysis/queries/log_actions.sql",
+      "packages/UsageAnalysis/queries/log_error_summary.sql",
+      "packages/UsageAnalysis/queries/log_param_values.sql",
+      "packages/UsageAnalysis/queries/log_sessions.sql",
+      "packages/UsageAnalysis/queries/new-users-when.sql",
+      "packages/UsageAnalysis/queries/overview.sql",
+      "packages/UsageAnalysis/queries/overview_query.sql",
+      "packages/UsageAnalysis/queries/packages.sql",
+      "packages/UsageAnalysis/queries/pg_stat_statements.sql",
+      "packages/UsageAnalysis/queries/projects.sql",
+      "packages/UsageAnalysis/queries/reports.sql",
+      "packages/UsageAnalysis/queries/system.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/benchmarks/benchmark_analysis.js",
+      "packages/UsageAnalysis/queries/test_dashboards/benchmarks/benchmark_analysis.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/benchmarks/benchmark_dashboard.js",
+      "packages/UsageAnalysis/queries/test_dashboards/benchmarks/benchmark_dashboard.layout",
+      "packages/UsageAnalysis/queries/test_dashboards/benchmarks/benchmark_dashboard.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/correctness_tests/tests_dashboard.js",
+      "packages/UsageAnalysis/queries/test_dashboards/correctness_tests/tests_dashboard.layout",
+      "packages/UsageAnalysis/queries/test_dashboards/correctness_tests/tests_dashboard.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/manual_tests/test_track_dashboard.js",
+      "packages/UsageAnalysis/queries/test_dashboards/manual_tests/test_track_dashboard.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/stress_tests/stress_test_dashboard.layout",
+      "packages/UsageAnalysis/queries/test_dashboards/stress_tests/stress_test_dashboard.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/tickets/manual_ticket_creation.sql",
+      "packages/UsageAnalysis/queries/test_dashboards/tickets/manual_ticket_fetch.sql",
+      "packages/UsageAnalysis/queries/tests.sql",
+      "packages/UsageAnalysis/queries/tests_dashboards.sql",
+      "packages/UsageAnalysis/queries/users_drilldown_queries.sql",
+      "packages/UsageAnalysis/queries/users_query.sql",
+      "packages/UsageAnalysis/queries/users_summary.sql",
+      "packages/UsageAnalysis/queries/widget.sql"
+    ],
+    "docs": [
+      "packages/UsageAnalysis/CHANGELOG.md",
+      "packages/UsageAnalysis/CREDITS.md",
+      "packages/UsageAnalysis/README.md",
+      "packages/UsageAnalysis/files/TestTrack/Apps/apps.md",
+      "packages/UsageAnalysis/files/TestTrack/Apps/tutorials.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/analyze-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/analyze.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/composition-analysis-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/composition-analysis.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/convert-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/convert.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/manage-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/manage.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/msa-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/msa.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/pepsea-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/pepsea.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/search-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/search.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/sequence-activity-cliffs-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/sequence-activity-cliffs.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/sequence-space-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Bio/sequence-space.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/browse-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/browse-tree-states-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/browse-tree-states.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/browse.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/local-deploy-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/package-manager.md",
+      "packages/UsageAnalysis/files/TestTrack/Browse/spaces-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/radar-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/radar.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/sunburst-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/sunburst.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/tree-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Charts/tree.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/similarity-search-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/similarity-search.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/calculate-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/calculate.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/chemical-space-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/chemical-space.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/chemprop-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/chemprop.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/filter-panel-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/info-panels-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/mmp-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/mmp.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/sketcher-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/adding-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/adding.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/browser-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/browser.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/catalogs-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/catalogs-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/catalogs.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/delete-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/delete.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/edit-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/edit.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/external-provider-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/external-provider.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/identifiers-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/identifiers-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/identifiers.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/import-swagger-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/import-swagger-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/import-swagger.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/schema-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/schema.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/sparql-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/sparql-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Connections/sparql.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/catalog-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/catalog.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/cyclic-models-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/cyclic-models.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/files-and-sharing-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/files-and-sharing.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/fitting-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/fitting.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/open-model-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/open-model.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/scripting-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/scripting.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/sensitivity-analysis-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/sensitivity-analysis.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/stages-run.md",
+      "packages/UsageAnalysis/files/TestTrack/DiffStudio/stages.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/linear-regression-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/linear-regression.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/pls-regression-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/pls-regression.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/xgboost1-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/xgboost1.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/xgboost2-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/xgboost2.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/anova-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/anova.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/multivariate-analysis-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/multivariate-analysis.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pca-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pca.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pls-run.md",
+      "packages/UsageAnalysis/files/TestTrack/EDA/pls.md",
+      "packages/UsageAnalysis/files/TestTrack/General/files-cache.md",
+      "packages/UsageAnalysis/files/TestTrack/General/first-login.md",
+      "packages/UsageAnalysis/files/TestTrack/General/inactivity-response.md",
+      "packages/UsageAnalysis/files/TestTrack/General/login.md",
+      "packages/UsageAnalysis/files/TestTrack/General/molecule-in-exported-csv.md",
+      "packages/UsageAnalysis/files/TestTrack/General/network.md",
+      "packages/UsageAnalysis/files/TestTrack/General/profile-settings.md",
+      "packages/UsageAnalysis/files/TestTrack/General/startup-time.md",
+      "packages/UsageAnalysis/files/TestTrack/General/table-manager.md",
+      "packages/UsageAnalysis/files/TestTrack/General/tabs-reordering.md",
+      "packages/UsageAnalysis/files/TestTrack/LocalCashing/local-cashing-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/apply-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/apply.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/browser-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/browser.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/chemprop-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/chemprop.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/delete-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/delete.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/predictive-models-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/predictive-models.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/train-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Models/train.md",
+      "packages/UsageAnalysis/files/TestTrack/Notebooks/browser.md",
+      "packages/UsageAnalysis/files/TestTrack/Notebooks/create.md",
+      "packages/UsageAnalysis/files/TestTrack/Notebooks/delete.md",
+      "packages/UsageAnalysis/files/TestTrack/Notebooks/edit.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/info-panels-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/info-panels.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/peptide-space-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/peptide-space.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/peptides-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/peptides.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/sar-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Peptides/sar.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/add-new-column-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/add-new-column.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/autocomplete-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/autocomplete.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/formula-refreshing-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/formula-refreshing.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/functions-sorting-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/functions-sorting.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/highlight-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/highlight.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/hints-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/hints.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/input-functions-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/input-functions.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/add-new-column-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/add-new-column.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/data-enrichment-run.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/data-enrichment.md",
+      "packages/UsageAnalysis/files/TestTrack/PowerPack/formula-lines-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/browser-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/complex-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/complex.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/custom-creation-scripts-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/custom-creation-scripts.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/deleting-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/deleting.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/lifecycle-api.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/opening-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/opening.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/project-url-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/project-url.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/share-project.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/upload-project-migration-report.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/upload-project.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/uploading-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Projects/uploading.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/adding-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/adding.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/browse-and-save-project-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/browse-and-save-project.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/browser-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/browser.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/columns-inspect-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/columns-inspect.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/deleting-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/deleting.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/edit-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/edit.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/get-all-get-top-100-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/get-all-get-top-100.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/ms-sql-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/ms-sql.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/new-sql-query-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/new-sql-query.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/new-visual-query-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/new-visual-query-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/new-visual-query.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-layout-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-layout-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-layout.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-postprocessing-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-postprocessing-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/query-postprocessing.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/transformations-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/transformations.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/visual-query-advanced-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/visual-query-advanced-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Queries/visual-query-advanced.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/browser-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/browser.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/create-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/create.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/delete-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/delete.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/edit-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/edit.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/layout-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/layout.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/run-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Scripts/run.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/add-and-edit-run.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/add-and-edit.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/copy-clone-delete-run.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/copy-clone-delete.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/create-schema-and-type-run.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/create-schema-and-type.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/database-meta-run.md",
+      "packages/UsageAnalysis/files/TestTrack/StickyMeta/database-meta.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/actions-in-the-context-menu.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/default-tooltip-visibility.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/default-tooltip.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/edit-tooltip.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/line-chart-aggregated-tooltip.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/tooltip-properties.md",
+      "packages/UsageAnalysis/files/TestTrack/Tooltips/uniform-default-tooltip.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/3d-scatter-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/3d-scatter-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/3d-scatter-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/basic-operations-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/basic-operations.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/chem-and-bio-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/chem-and-bio.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/cloned-views-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/cloned-views.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/collaborative-filtering-for-linked-tables-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/collaborative-filtering-for-linked-tables.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/combined-boolean-filter-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/combined-boolean-filter.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/expression-filter-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/expression-filter.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/hierarchical-filter-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/hierarchical-filter.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/text-filter-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/text-filter.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/viewers-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/FilterPanel/viewers.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/color-consistency-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/color-consistency.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/filtering-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/filtering.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/line-chart-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/line-chart.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/scatterplot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/scatterplot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/structure-rendering-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/structure-rendering.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/visibility-and-positioning-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/Legend/visibility-and-positioning.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/calc-columns-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/filtering-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/formula-lines-and-legend-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/legend-backward-compatibility-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/linking-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/NX/viewers-for-linked-tables-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/annotation-regions-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/annotation-regions-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/annotation-regions.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/bar-chart-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/bar-chart-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/bar-chart.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/box-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/box-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/box-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/calendar-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/calendar.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/color-coding-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/color-coding-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/color-coding.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/correlation-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/correlation-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/correlation-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/density-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/density-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/form-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/form-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/form.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/forms-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/forms.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/grid-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/grid-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/grid.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/heatmap-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/heatmap-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/heatmap.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/histogram-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/histogram-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/histogram.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/line-chart-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/line-chart-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/line-chart.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/map-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/map.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/matrix-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/matrix-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/matrix-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/network-diagram-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/network-diagram.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pc-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pc-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pc-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pie-chart-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pie-chart-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pie-chart.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pivot-table-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pivot-table-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/pivot-table.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/rendering-structures-on-the-axes-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/row-source-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/row-source.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot-tests.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/statistics-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/statistics-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/statistics.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tile-viewer-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tile-viewer-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tile-viewer.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tree-map-viewer-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tree-map-viewer-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/tree-map-viewer.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/trellis-plot-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/trellis-plot-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/trellis-plot.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/viewers-docking-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/word-cloud-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/word-cloud-tests-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/word-cloud-tests.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/word-cloud.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/working-with-nan-infinity-run.md",
+      "packages/UsageAnalysis/files/TestTrack/Viewers/working-with-nan-infinity.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Chem/activity-cliffs-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Chem/info-panels-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Chem/r-group-analysis-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Connections/adding-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Connections/browser-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Connections/delete-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Connections/edit-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Notebooks/browser-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Notebooks/create-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Notebooks/delete-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Notebooks/edit-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Scripts/browser-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Scripts/create-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Scripts/delete-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Scripts/edit-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Scripts/run-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/TestPublic/first-login-case-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Viewers/general-smoke-test-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/apps-and-browse-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/databases-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/filter-panel-run-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/filter-panel-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/layouts-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/WideSmokeTest/uploading-ui.md",
+      "packages/UsageAnalysis/files/TestTrack/scatter-plot/axes-and-encoding.md",
+      "packages/UsageAnalysis/files/TestTrack/scatter-plot/regression-line-per-category.md",
+      "packages/UsageAnalysis/files/TestTrack/total-run.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:UsageAnalysis:usage-analysis-app",
+      "name": "Usage Analysis App",
+      "description": "The main admin application that provides a unified dashboard for platform telemetry, covering events, users, packages, functions, and errors across configurable time ranges.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:Usage Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Usage Analysis",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:_initUA",
+          "kind": "RegisteredFunction",
+          "name": "_initUA",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:Usage",
+          "kind": "RegisteredFunction",
+          "name": "Usage",
+          "friendly_name": null,
+          "role": "dashboard",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:describeCurrentObj",
+          "kind": "RegisteredFunction",
+          "name": "describeCurrentObj",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:Usage",
+          "kind": "DataQuery",
+          "name": "Usage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Events1",
+          "kind": "DataQuery",
+          "name": "Events1",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:EventsSources",
+          "kind": "DataQuery",
+          "name": "EventsSources",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:EventsUsersSources",
+          "kind": "DataQuery",
+          "name": "EventsUsersSources",
+          "description": null
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        },
+        {
+          "id": "doc:/packages/UsageAnalysis/readme.md",
+          "kind": "DocPage",
+          "title": "Usage analysis",
+          "url": "/packages/UsageAnalysis/readme.md"
+        },
+        {
+          "id": "doc:/help/govern/audit/audit",
+          "kind": "DocPage",
+          "title": "Audit",
+          "url": "/help/govern/audit/audit"
+        },
+        {
+          "id": "doc:/help/govern/audit/audit-test",
+          "kind": "DocPage",
+          "title": "Tests: Audit",
+          "url": "/help/govern/audit/audit-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts",
+          "packages/UsageAnalysis/src/test-analysis/sticky-meta-initialization.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:user-session-analytics",
+      "name": "User & Session Analytics",
+      "description": "Tracks unique users, new users, sessions, and per-user event breakdowns, providing aggregate counts, ranked lists, and group-level overviews of platform actors.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:UsageAnalysis:UniqueUsersCount",
+          "kind": "DataQuery",
+          "name": "UniqueUsersCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:NewUsersCount",
+          "kind": "DataQuery",
+          "name": "NewUsersCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:SessionsCount",
+          "kind": "DataQuery",
+          "name": "SessionsCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ViewsCount",
+          "kind": "DataQuery",
+          "name": "ViewsCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UniqueUsersOverview",
+          "kind": "DataQuery",
+          "name": "UniqueUsersOverview",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UniqueUsersList",
+          "kind": "DataQuery",
+          "name": "UniqueUsersList",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UniqueUsersSummary",
+          "kind": "DataQuery",
+          "name": "UniqueUsersSummary",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UniqueUsers",
+          "kind": "DataQuery",
+          "name": "UniqueUsers",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UniqueSessions",
+          "kind": "DataQuery",
+          "name": "UniqueSessions",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TotalUsersAndGroups",
+          "kind": "DataQuery",
+          "name": "TotalUsersAndGroups",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:GetUsersInGroups",
+          "kind": "DataQuery",
+          "name": "GetUsersInGroups",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Groups",
+          "kind": "DataQuery",
+          "name": "Groups",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:userById",
+          "kind": "DataQuery",
+          "name": "userById",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:userInfoByEmailPanel",
+          "kind": "DataQuery",
+          "name": "userInfoByEmailPanel",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsers",
+          "kind": "DataQuery",
+          "name": "TopUsers",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopEventsOfUser",
+          "kind": "DataQuery",
+          "name": "TopEventsOfUser",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UsersEventsSummary",
+          "kind": "DataQuery",
+          "name": "UsersEventsSummary",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UsersErrorsSummary",
+          "kind": "DataQuery",
+          "name": "UsersErrorsSummary",
+          "description": null
+        },
+        {
+          "id": "doc:/help/govern/audit/audit",
+          "kind": "DocPage",
+          "title": "Audit",
+          "url": "/help/govern/audit/audit"
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        },
+        {
+          "id": "doc:/help/govern/catalog/self-learning-platform",
+          "kind": "DocPage",
+          "title": "Self-learning platform",
+          "url": "/help/govern/catalog/self-learning-platform"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:error-tracking-reports",
+      "name": "Error Tracking & User Reports",
+      "description": "Surfaces and ranks platform errors by frequency, source, and package, and powers the Reports app where users can file, browse, and manage error reports with optional Jira ticket creation.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:Reports",
+          "kind": "RegisteredFunction",
+          "name": "Reports",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:reportsAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "reportsAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:Create JIRA ticket",
+          "kind": "RegisteredFunction",
+          "name": "Create JIRA ticket",
+          "friendly_name": null,
+          "role": null,
+          "description": "Creates JIRA ticket using current error log",
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:TopErrors",
+          "kind": "DataQuery",
+          "name": "TopErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopDisabledErrors",
+          "kind": "DataQuery",
+          "name": "TopDisabledErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopPackageErrors",
+          "kind": "DataQuery",
+          "name": "TopPackageErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopErrorSources",
+          "kind": "DataQuery",
+          "name": "TopErrorSources",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:EventErrors",
+          "kind": "DataQuery",
+          "name": "EventErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:SameErrors",
+          "kind": "DataQuery",
+          "name": "SameErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:EventByErrorMessageAndFriendlyName",
+          "kind": "DataQuery",
+          "name": "EventByErrorMessageAndFriendlyName",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UpdateEventsIsErrorComment",
+          "kind": "DataQuery",
+          "name": "UpdateEventsIsErrorComment",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ReportsCount",
+          "kind": "DataQuery",
+          "name": "ReportsCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UserReports",
+          "kind": "DataQuery",
+          "name": "UserReports",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ReportsTop20",
+          "kind": "DataQuery",
+          "name": "ReportsTop20",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:UserReportsSingle",
+          "kind": "DataQuery",
+          "name": "UserReportsSingle",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ReportSameErrors",
+          "kind": "DataQuery",
+          "name": "ReportSameErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Reports migration",
+          "kind": "DataQuery",
+          "name": "Reports migration",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ReportDataMigration",
+          "kind": "DataQuery",
+          "name": "ReportDataMigration",
+          "description": null
+        },
+        {
+          "id": "doc:/packages/JiraConnect/readme.md",
+          "kind": "DocPage",
+          "title": "Jira Connect",
+          "url": "/packages/JiraConnect/readme.md"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:6",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:7",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:11",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:1",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        },
+        {
+          "id": "doc:/help/govern/bug-reports",
+          "kind": "DocPage",
+          "title": "Feedback",
+          "url": "/help/govern/bug-reports"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:function-call-analytics",
+      "name": "Function Call Analytics",
+      "description": "Measures how often each registered function is called, by whom, from which source, and how long it takes to execute, powering the Functions tab of the main analytics view.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:UsageAnalysis:FunctionInfoByFriendlyName",
+          "kind": "DataQuery",
+          "name": "FunctionInfoByFriendlyName",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionInfoBySource",
+          "kind": "DataQuery",
+          "name": "FunctionInfoBySource",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionInfoByName",
+          "kind": "DataQuery",
+          "name": "FunctionInfoByName",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionsUsage",
+          "kind": "DataQuery",
+          "name": "FunctionsUsage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionsContextPane",
+          "kind": "DataQuery",
+          "name": "FunctionsContextPane",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionsExecTime",
+          "kind": "DataQuery",
+          "name": "FunctionsExecTime",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopFunctions",
+          "kind": "DataQuery",
+          "name": "TopFunctions",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopPackageFunctions",
+          "kind": "DataQuery",
+          "name": "TopPackageFunctions",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsersOfFunction",
+          "kind": "DataQuery",
+          "name": "TopUsersOfFunction",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:FunctionErrors",
+          "kind": "DataQuery",
+          "name": "FunctionErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopFunctionErrors",
+          "kind": "DataQuery",
+          "name": "TopFunctionErrors",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopFunctionDisabledErrors",
+          "kind": "DataQuery",
+          "name": "TopFunctionDisabledErrors",
+          "description": null
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:package-analytics",
+      "name": "Package Analytics",
+      "description": "Shows which packages are most used and by whom, when they were installed, and provides a context-pane drilldown with function, log, and audit sub-views per package.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:packageUsageWidget",
+          "kind": "RegisteredFunction",
+          "name": "packageUsageWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:PackageInfo",
+          "kind": "DataQuery",
+          "name": "PackageInfo",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesUsage",
+          "kind": "DataQuery",
+          "name": "PackagesUsage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesUsageOverview",
+          "kind": "DataQuery",
+          "name": "PackagesUsageOverview",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesContextPaneFunctions",
+          "kind": "DataQuery",
+          "name": "PackagesContextPaneFunctions",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesContextPaneLogs",
+          "kind": "DataQuery",
+          "name": "PackagesContextPaneLogs",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesContextPaneAudit",
+          "kind": "DataQuery",
+          "name": "PackagesContextPaneAudit",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesInstallationTime",
+          "kind": "DataQuery",
+          "name": "PackagesInstallationTime",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:PackagesCategories",
+          "kind": "DataQuery",
+          "name": "PackagesCategories",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopPackages",
+          "kind": "DataQuery",
+          "name": "TopPackages",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopPackagesByUsers",
+          "kind": "DataQuery",
+          "name": "TopPackagesByUsers",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsersOfPackage",
+          "kind": "DataQuery",
+          "name": "TopUsersOfPackage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopFunctionsOfPackage",
+          "kind": "DataQuery",
+          "name": "TopFunctionsOfPackage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopErrorsOfPackage",
+          "kind": "DataQuery",
+          "name": "TopErrorsOfPackage",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopPackagesByError",
+          "kind": "DataQuery",
+          "name": "TopPackagesByError",
+          "description": null
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts",
+          "packages/UsageAnalysis/src/tabs/packages.ts",
+          "packages/UsageAnalysis/src/widgets/package-usage-widget.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:data-source-query-analytics",
+      "name": "Data Source & Query Analytics",
+      "description": "Ranks connections, data sources, and SQL queries by usage frequency and identifies which users and functions rely on each data source.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:UsageAnalysis:TopQueries",
+          "kind": "DataQuery",
+          "name": "TopQueries",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopConnections",
+          "kind": "DataQuery",
+          "name": "TopConnections",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopDataSources",
+          "kind": "DataQuery",
+          "name": "TopDataSources",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopQueriesUsingDataSource",
+          "kind": "DataQuery",
+          "name": "TopQueriesUsingDataSource",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsersOfQuery",
+          "kind": "DataQuery",
+          "name": "TopUsersOfQuery",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsersOfConnection",
+          "kind": "DataQuery",
+          "name": "TopUsersOfConnection",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Queries1",
+          "kind": "DataQuery",
+          "name": "Queries1",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:QueriesCount",
+          "kind": "DataQuery",
+          "name": "QueriesCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ConnectionsCount",
+          "kind": "DataQuery",
+          "name": "ConnectionsCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopSources",
+          "kind": "DataQuery",
+          "name": "TopSources",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopFunctionsOfSource",
+          "kind": "DataQuery",
+          "name": "TopFunctionsOfSource",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TopUsersOfSource",
+          "kind": "DataQuery",
+          "name": "TopUsersOfSource",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:entity links",
+          "kind": "DataQuery",
+          "name": "entity links",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:EntitiesTags",
+          "kind": "DataQuery",
+          "name": "EntitiesTags",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/create-custom-connectors",
+          "kind": "DocPage",
+          "title": "Create custom connectors",
+          "url": "/help/access/databases/create-custom-connectors"
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:test-track-quality-dashboards",
+      "name": "Test Track & Quality Dashboards",
+      "description": "Tracks automated and manual test results across builds, compares benchmark performance between versions, and provides the Test Track admin app to browse and manage test cases.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:Test Track",
+          "kind": "RegisteredFunction",
+          "name": "Test Track",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:TestsList",
+          "kind": "RegisteredFunction",
+          "name": "TestsList",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:TestsListJoined",
+          "kind": "RegisteredFunction",
+          "name": "TestsListJoined",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:TestAnalysisReportForCurrentDay",
+          "kind": "RegisteredFunction",
+          "name": "TestAnalysisReportForCurrentDay",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:getTicketsVerdict",
+          "kind": "RegisteredFunction",
+          "name": "getTicketsVerdict",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:testDashboardsViewer",
+          "kind": "RegisteredFunction",
+          "name": "testDashboardsViewer",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:All Test Runs",
+          "kind": "DataQuery",
+          "name": "All Test Runs",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TestsCount",
+          "kind": "DataQuery",
+          "name": "TestsCount",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TestTrack",
+          "kind": "DataQuery",
+          "name": "TestTrack",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:LastStatuses",
+          "kind": "DataQuery",
+          "name": "LastStatuses",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TestingNames",
+          "kind": "DataQuery",
+          "name": "TestingNames",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:TestingName",
+          "kind": "DataQuery",
+          "name": "TestingName",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Builds",
+          "kind": "DataQuery",
+          "name": "Builds",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:getTestStatusesAcordingDF",
+          "kind": "DataQuery",
+          "name": "getTestStatusesAcordingDF",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ManualTestingTestStatuses",
+          "kind": "DataQuery",
+          "name": "ManualTestingTestStatuses",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Benchmarks",
+          "kind": "DataQuery",
+          "name": "Benchmarks",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Stress tests",
+          "kind": "DataQuery",
+          "name": "Stress tests",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:LastBuildsBenchmarksCompare",
+          "kind": "DataQuery",
+          "name": "LastBuildsBenchmarksCompare",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:LastBuildsCompare",
+          "kind": "DataQuery",
+          "name": "LastBuildsCompare",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:LastVersionsCompare",
+          "kind": "DataQuery",
+          "name": "LastVersionsCompare",
+          "description": null
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:10",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.3.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.3.1:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts",
+          "packages/UsageAnalysis/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:service-log-viewer",
+      "name": "Service Log Viewer",
+      "description": "Streams and summarises server-side service logs — actions, errors, sessions, and parameter values — through the Service Logs admin app with real-time tail support.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:Service Logs",
+          "kind": "RegisteredFunction",
+          "name": "Service Logs",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:UsageAnalysis:serviceLogsAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "serviceLogsAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:LogTail",
+          "kind": "DataQuery",
+          "name": "LogTail",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Actions",
+          "kind": "DataQuery",
+          "name": "Log Actions",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Actions Summary",
+          "kind": "DataQuery",
+          "name": "Log Actions Summary",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Actions Summary by Hours",
+          "kind": "DataQuery",
+          "name": "Log Actions Summary by Hours",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Error Summary",
+          "kind": "DataQuery",
+          "name": "Log Error Summary",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Parameter Values",
+          "kind": "DataQuery",
+          "name": "Log Parameter Values",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Log Sessions",
+          "kind": "DataQuery",
+          "name": "Log Sessions",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/teams/it/log-export-cloud-watch",
+          "kind": "DocPage",
+          "title": "Export logs to Amazon CloudWatch",
+          "url": "/help/datagrok/solutions/teams/it/log-export-cloud-watch"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.4.2:11",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts",
+          "packages/UsageAnalysis/src/service_logs/service_logs.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:click-tracking",
+      "name": "Click Tracking",
+      "description": "Records and visualises UI element click events across the platform, enabling admins to inspect which interface elements receive the most interaction.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:UsageAnalysis:Click Events",
+          "kind": "RegisteredFunction",
+          "name": "Click Events",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:UsageAnalysis:GetAggregatedClicks",
+          "kind": "DataQuery",
+          "name": "GetAggregatedClicks",
+          "description": null
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/govern/audit/usage-analysis",
+          "kind": "DocPage",
+          "title": "Usage Analysis",
+          "url": "/help/govern/audit/usage-analysis"
+        },
+        {
+          "id": "doc:/help/govern/catalog/self-learning-platform",
+          "kind": "DocPage",
+          "title": "Self-learning platform",
+          "url": "/help/govern/catalog/self-learning-platform"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UsageAnalysis/src/package.ts",
+          "packages/UsageAnalysis/src/widgets/click-events-widget.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:project-analytics",
+      "name": "Project Analytics",
+      "description": "Tracks how often projects are accessed and by how many unique users, broken down by day and period, powering the Projects tab introduced in v2.5.0.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:UsageAnalysis:UniqueUsersPerProject",
+          "kind": "DataQuery",
+          "name": "UniqueUsersPerProject",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:DailyProjectAccess",
+          "kind": "DataQuery",
+          "name": "DailyProjectAccess",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:AccessCountPerPeriodPerProject",
+          "kind": "DataQuery",
+          "name": "AccessCountPerPeriodPerProject",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:ProjectsList",
+          "kind": "DataQuery",
+          "name": "ProjectsList",
+          "description": null
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:4",
+          "kind": "other"
+        },
+        {
+          "id": "clog:UsageAnalysis:2.5.0:5",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/_deprecated/create-project",
+          "kind": "DocPage",
+          "title": "Create project",
+          "url": "/help/datagrok/_deprecated/create-project"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UsageAnalysis:db-infrastructure-diagnostics",
+      "name": "DB Infrastructure Diagnostics",
+      "description": "Exposes internal PostgreSQL statistics (pg_stat_statements, table sizes, schema columns) for database-level performance monitoring by platform administrators.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:UsageAnalysis:PgStatStatements",
+          "kind": "DataQuery",
+          "name": "PgStatStatements",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:GetSystemTableSizes",
+          "kind": "DataQuery",
+          "name": "GetSystemTableSizes",
+          "description": null
+        },
+        {
+          "id": "query:UsageAnalysis:Schema columns",
+          "kind": "DataQuery",
+          "name": "Schema columns",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

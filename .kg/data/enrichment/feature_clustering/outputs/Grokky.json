@@ -1,0 +1,89 @@
+{
+  "package_id": "pkg:Grokky",
+  "features": [
+    {
+      "id": "feature:Grokky:ai-doc-help",
+      "name": "AI Documentation Help",
+      "description": "Answers user questions about Datagrok by searching and synthesizing answers from platform documentation and public code via an LLM, surfaced through the platform's Powersearch panel.",
+      "category": "ai-assistant",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Grokky:Help",                   "weight": 1.0, "role": "core"},
+        {"id": "func:Grokky:combinedLLMSearchProvider","weight": 0.85,"role": "core"},
+        {"id": "doc:/packages/Grokky/readme.md",      "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/help-test",  "weight": 0.65,"role": "doc"},
+        {"id": "clog:Grokky:1.0.0:2",                 "weight": 0.75,"role": "related"}
+      ],
+      "evidence_summary": "Help is an aiSearchProvider described as 'Get answers from AI assistant based on Datagrok documentation'; combinedLLMSearchProvider wires it into the platform search infrastructure; changelog entry 'AI: Powersearch Search AI features' confirms the integration."
+    },
+    {
+      "id": "feature:Grokky:ai-function-execution",
+      "name": "AI Function Execution",
+      "description": "Plans and executes chains of Datagrok functions to achieve a goal described in natural language, enabling agentic task completion within the platform.",
+      "category": "ai-assistant",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Grokky:Execute",    "weight": 1.0, "role": "core"},
+        {"id": "clog:Grokky:1.0.0:0",   "weight": 0.85,"role": "related"}
+      ],
+      "evidence_summary": "Execute is an aiSearchProvider described as 'Plans and executes function steps to achieve needed results'; the 1.0.0 changelog entry 'Invoking function and chains of functions' directly names this feature."
+    },
+    {
+      "id": "feature:Grokky:ai-query-matching",
+      "name": "AI Query Matching",
+      "description": "Matches a natural-language prompt to an existing Datagrok SQL query using fuzzy/pattern search and executes it, backed by tools that index database schemas and persist query metadata.",
+      "category": "ai-assistant",
+      "confidence": 0.91,
+      "members": [
+        {"id": "func:Grokky:Query",                    "weight": 1.0, "role": "core"},
+        {"id": "func:Grokky:findMatchingPatternQuery",  "weight": 1.0, "role": "core"},
+        {"id": "func:Grokky:setupAIQueryEditor",        "weight": 0.8, "role": "core"},
+        {"id": "func:Grokky:indexDatabaseSchema",       "weight": 0.75,"role": "core"},
+        {"id": "func:Grokky:moveMetaToDB",              "weight": 0.7, "role": "core"},
+        {"id": "clog:Grokky:1.0.0:1",                  "weight": 0.8, "role": "related"},
+        {"id": "clog:Grokky:1.0.0:4",                  "weight": 0.9, "role": "related"},
+        {"id": "doc:/help/_access/_05-transform-query-results",                      "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/transform/query-transformations",                           "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/develop/advanced/query-debugging",                          "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/_internal/tests/release-cheklist-cases/adding-query",       "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/_internal/tests/release-cheklist-cases/delete-query",       "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/_internal/tests/release-cheklist-cases/query-browser",      "weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/_internal/tests/release-cheklist-cases/query-transformations","weight": 0.45,"role": "doc"},
+        {"id": "doc:/help/access/_stashed/_edit-socrata-query",                       "weight": 0.35,"role": "doc"}
+      ],
+      "evidence_summary": "Query, findMatchingPatternQuery, setupAIQueryEditor, indexDatabaseSchema, and moveMetaToDB share a naming and purpose cluster around AI-driven SQL discovery; changelog entries 'Fuzzy matching' and 'AI sql' trace the feature's origin."
+    },
+    {
+      "id": "feature:Grokky:plugin-lifecycle",
+      "name": "Plugin Lifecycle and LLM Client Infrastructure",
+      "description": "Handles package initialization, autostart registration, and the underlying LLM client setup (Azure, Gemini/Vercel AI, proxy) that all Grokky AI providers depend on.",
+      "category": "infra",
+      "confidence": 0.83,
+      "members": [
+        {"id": "func:Grokky:init",       "weight": 1.0, "role": "core"},
+        {"id": "func:Grokky:autostart",  "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Grokky/claude.md", "weight": 0.8, "role": "doc"},
+        {"id": "clog:Grokky:1.0.4:0",   "weight": 0.75,"role": "related"},
+        {"id": "clog:Grokky:1.0.4:1",   "weight": 0.7, "role": "related"},
+        {"id": "clog:Grokky:1.0.4:2",   "weight": 0.6, "role": "related"},
+        {"id": "clog:Grokky:1.0.4:3",   "weight": 0.75,"role": "related"},
+        {"id": "clog:Grokky:1.0.1:0",   "weight": 0.65,"role": "related"},
+        {"id": "clog:Grokky:1.0.0:3",   "weight": 0.65,"role": "related"},
+        {"id": "clog:Grokky:1.0.0:5",   "weight": 0.55,"role": "related"}
+      ],
+      "evidence_summary": "init and autostart are standard Datagrok plugin lifecycle hooks; changelog entries for Azure client, Vercel AI refactor, proxy move, and structured-output session reuse are all LLM-client infrastructure changes not tied to a specific user-facing capability."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Grokky:ai-doc-help",         "to": "feature:Grokky:ai-function-execution", "kind": "sibling"},
+    {"from": "feature:Grokky:ai-doc-help",         "to": "feature:Grokky:ai-query-matching",     "kind": "sibling"},
+    {"from": "feature:Grokky:ai-function-execution","to": "feature:Grokky:ai-query-matching",     "kind": "sibling"},
+    {"from": "feature:Grokky:plugin-lifecycle",    "to": "feature:Grokky:ai-doc-help",            "kind": "related"},
+    {"from": "feature:Grokky:plugin-lifecycle",    "to": "feature:Grokky:ai-function-execution",  "kind": "related"},
+    {"from": "feature:Grokky:plugin-lifecycle",    "to": "feature:Grokky:ai-query-matching",      "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Grokky/credits.md",
+    "doc:/help/develop/help-pages/_stash/_contrib"
+  ]
+}

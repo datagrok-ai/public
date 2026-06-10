@@ -1,0 +1,71 @@
+{
+  "package_id": "pkg:SureChembl",
+  "features": [
+    {
+      "id": "feature:SureChembl:patent-substructure-search",
+      "name": "Patent Substructure Search",
+      "description": "Search a locally deployed SureChEMBL database for patents whose compounds match a given substructure query. Exposed both as a callable function and a context-panel widget surfaced when a molecule is selected.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:SureChembl:sureChemblSubstructureSearch",                  "weight": 1.0, "role": "core"},
+        {"id": "func:SureChembl:Databases | SureChEMBL | Substructure Search",  "weight": 1.0, "role": "core"},
+        {"id": "query:SureChembl:searchPatentBySubstructure",                   "weight": 1.0, "role": "core"},
+        {"id": "clog:SureChembl:1.0.0:1",                                       "weight": 0.85, "role": "related"},
+        {"id": "clog:SureChembl:1.1.3:0",                                       "weight": 0.6,  "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Function, panel widget, and backing SQL query all carry the 'substructure' name root; the SureChEMBL info-panel doc covers both search types and is the sole user-facing help page for this plugin."
+    },
+    {
+      "id": "feature:SureChembl:patent-similarity-search",
+      "name": "Patent Similarity Search",
+      "description": "Search a locally deployed SureChEMBL database for patents containing compounds similar to a query molecule, with a configurable similarity threshold. Exposed as a standalone function and a context-panel widget.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:SureChembl:sureChemblSimilaritySearch",                    "weight": 1.0, "role": "core"},
+        {"id": "func:SureChembl:Databases | SureChEMBL | Similarity Search",    "weight": 1.0, "role": "core"},
+        {"id": "query:SureChembl:searchPatentBySimilarity",                     "weight": 1.0, "role": "core"},
+        {"id": "clog:SureChembl:1.0.0:0",                                       "weight": 0.85, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "Function, panel widget, and backing SQL query all carry the 'similarity' name root and a numeric threshold input that distinguishes them from the substructure variant."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:SureChembl:patent-substructure-search",
+      "to":   "feature:SureChembl:patent-similarity-search",
+      "kind": "sibling"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/SureChembl/claude.md",
+    "doc:/packages/SureChembl/credits.md",
+    "doc:/packages/SureChembl/readme.md",
+    "clog:SureChembl:1.1.2:0",
+    "clog:SureChembl:1.1.1:0",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds"
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "package": {
+    "id": "pkg:Curves",
+    "name": "Curves",
+    "friendly_name": "Curves",
+    "category": "Visualizations",
+    "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting."
+  },
+  "files": {
+    "src": [
+      "packages/Curves/src/fit/converters/compact-dr-converter.ts",
+      "packages/Curves/src/fit/converters/pzfx-converter.ts",
+      "packages/Curves/src/fit/converters/xml-converter.ts",
+      "packages/Curves/src/fit/curve-converter.ts",
+      "packages/Curves/src/fit/data-to-curves.ts",
+      "packages/Curves/src/fit/fit-demo.ts",
+      "packages/Curves/src/fit/fit-grid-cell-handler.ts",
+      "packages/Curves/src/fit/fit-inspection.ts",
+      "packages/Curves/src/fit/fit-parser.ts",
+      "packages/Curves/src/fit/fit-renderer.ts",
+      "packages/Curves/src/fit/multi-curve-viewer.ts",
+      "packages/Curves/src/fit/render-utils.ts",
+      "packages/Curves/src/formats/pzfx/pzfx-parser.ts",
+      "packages/Curves/src/package.ts"
+    ],
+    "tests": [
+      "packages/Curves/src/package-test.ts",
+      "packages/Curves/src/tests/converter-tests.ts",
+      "packages/Curves/src/tests/curves-cell-renderer-tests.ts",
+      "packages/Curves/src/tests/detector-tests.ts",
+      "packages/Curves/src/tests/fit-tests.ts",
+      "packages/Curves/src/tests/pzfx-tests.ts",
+      "packages/Curves/src/tests/transform-tests.ts"
+    ],
+    "scripts": [
+      "packages/Curves/scripts/calculateMSR.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Curves/CHANGELOG.md",
+      "packages/Curves/CLAUDE.md",
+      "packages/Curves/CREDITS.md",
+      "packages/Curves/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Curves:curve-fitting",
+      "name": "In-Cell Curve Fitting",
+      "description": "Automatically fits mathematical models (e.g. 4PL dose-response) to series of data points and renders interactive fitted curves directly inside grid cells.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Curves:Fit",
+          "kind": "RegisteredFunction",
+          "name": "Fit",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Curves:Curve fitting",
+          "kind": "RegisteredFunction",
+          "name": "Curve fitting",
+          "friendly_name": null,
+          "role": null,
+          "description": "Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points",
+          "tags": []
+        },
+        {
+          "id": "func:Curves:_initCurves",
+          "kind": "RegisteredFunction",
+          "name": "_initCurves",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Curves:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semTypeDetector",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Curves/readme.md",
+          "kind": "DocPage",
+          "title": "Curves",
+          "url": "/packages/Curves/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/workflows/_dose-response curves",
+          "kind": "DocPage",
+          "title": "_dose-response curves",
+          "url": "/help/datagrok/solutions/workflows/_dose-response curves"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Curves/src/fit/converters/compact-dr-converter.ts",
+          "packages/Curves/src/fit/converters/pzfx-converter.ts",
+          "packages/Curves/src/fit/converters/xml-converter.ts",
+          "packages/Curves/src/fit/curve-converter.ts",
+          "packages/Curves/src/fit/fit-demo.ts",
+          "packages/Curves/src/fit/fit-grid-cell-handler.ts",
+          "packages/Curves/src/fit/fit-parser.ts",
+          "packages/Curves/src/fit/render-utils.ts",
+          "packages/Curves/src/formats/pzfx/pzfx-parser.ts",
+          "packages/Curves/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:data-to-curves",
+      "name": "Data-to-Curves Transformation",
+      "description": "Converts raw tabular data (concentration, readout, and metadata columns) into a curve-encoded dataframe with per-compound fitted curves, accessible from the Data top menu.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Curves:dataToCurves",
+          "kind": "RegisteredFunction",
+          "name": "dataToCurves",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Curves:dataToCurvesTopMenu",
+          "kind": "RegisteredFunction",
+          "name": "dataToCurvesTopMenu",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Curves/src/fit/data-to-curves.ts",
+          "packages/Curves/src/package-api.ts",
+          "packages/Curves/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:multi-curve-viewer",
+      "name": "Multi-Curve Viewer",
+      "description": "A standalone Datagrok viewer that superimposes multiple in-cell curves on one chart, with configurable axes, legend, and outlier display.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Curves:MultiCurveViewer",
+          "kind": "RegisteredFunction",
+          "name": "MultiCurveViewer",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "A viewer that superimposes multiple in-cell curves on one chart",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+          "kind": "DocPage",
+          "title": "Multi curve viewer",
+          "url": "/help/visualize/viewers/multi-curve-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:curve-format-import",
+      "name": "Curve Format Import",
+      "description": "Imports fitted curves from external file formats — GraphPad Prism PZFX, XML 3DX, and compact dose-response JSON — via a pluggable converter registry, with full file preview and handler support for PZFX.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Curves:convertXmlCurveToJsonFunc",
+          "kind": "RegisteredFunction",
+          "name": "convertXmlCurveToJsonFunc",
+          "friendly_name": null,
+          "role": "curveConverter",
+          "description": "Returns XML 3DX curve converter function",
+          "tags": []
+        },
+        {
+          "id": "func:Curves:convertCompactDrToJsonFunc",
+          "kind": "RegisteredFunction",
+          "name": "convertCompactDrToJsonFunc",
+          "friendly_name": null,
+          "role": "curveConverter",
+          "description": "Returns compact dose-response JSON converter function",
+          "tags": []
+        },
+        {
+          "id": "func:Curves:convertPzfxToJsonFunc",
+          "kind": "RegisteredFunction",
+          "name": "convertPzfxToJsonFunc",
+          "friendly_name": null,
+          "role": "curveConverter",
+          "description": "Returns PZFX curve converter function",
+          "tags": []
+        },
+        {
+          "id": "func:Curves:previewPzfx",
+          "kind": "RegisteredFunction",
+          "name": "previewPzfx",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Curves:pzfxFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "pzfxFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Curves/src/fit/converters/compact-dr-converter.ts",
+          "packages/Curves/src/fit/converters/pzfx-converter.ts",
+          "packages/Curves/src/fit/converters/xml-converter.ts",
+          "packages/Curves/src/fit/fit-parser.ts",
+          "packages/Curves/src/formats/pzfx/pzfx-parser.ts",
+          "packages/Curves/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:curve-statistics",
+      "name": "Curve Statistics Columns",
+      "description": "Extracts statistical parameters (e.g. IC50, Hill slope) from fitted curves and appends them as new dataframe columns, with both per-row and aggregated variants.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Curves:addStatisticsColumn",
+          "kind": "RegisteredFunction",
+          "name": "addStatisticsColumn",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Curves:addAggrStatisticsColumn",
+          "kind": "RegisteredFunction",
+          "name": "addAggrStatisticsColumn",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Curves/src/fit/curve-converter.ts",
+          "packages/Curves/src/fit/fit-grid-cell-handler.ts",
+          "packages/Curves/src/fit/fit-renderer.ts",
+          "packages/Curves/src/fit/render-utils.ts",
+          "packages/Curves/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:msr-calculation",
+      "name": "Minimum Significant Ratio (MSR)",
+      "description": "Server-side Python analysis that computes the Minimum Significant Ratio for compounds from IC50 values, run dates, and assay metadata to assess inter-run assay reproducibility.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Curves:Calculate MSR",
+          "kind": "Script",
+          "name": "Calculate MSR",
+          "language": "python",
+          "description": "Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Curves:assay-plates",
+      "name": "Assay Plates",
+      "description": "Visualizes and manages assay plate data including well-level concentration, layout, and readout information for drug-screening workflows.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Curves:'Assay Plates',",
+          "kind": "RegisteredFunction",
+          "name": "'Assay Plates',",
+          "friendly_name": null,
+          "role": null,
+          "description": "'Assasy plates with concentration, layout and readout data',",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Plates/readme.md",
+          "kind": "DocPage",
+          "title": "Plates",
+          "url": "/packages/Plates/readme.md"
+        },
+        {
+          "id": "doc:/packages/Plates/credits.md",
+          "kind": "DocPage",
+          "title": "Plates — Third-Party Libraries",
+          "url": "/packages/Plates/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

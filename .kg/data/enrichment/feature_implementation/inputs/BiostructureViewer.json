@@ -1,0 +1,823 @@
+{
+  "package": {
+    "id": "pkg:BiostructureViewer",
+    "name": "BiostructureViewer",
+    "friendly_name": "Biostructure Viewer",
+    "category": "Bioinformatics",
+    "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer."
+  },
+  "files": {
+    "src": [
+      "packages/BiostructureViewer/src/apps/biostructure-and-track-viewer-app.ts",
+      "packages/BiostructureViewer/src/apps/biostructure-app.ts",
+      "packages/BiostructureViewer/src/apps/biostructure-data-provider-app.ts",
+      "packages/BiostructureViewer/src/apps/biostructure-viewer-app.ts",
+      "packages/BiostructureViewer/src/apps/biotrack-viewer-app.ts",
+      "packages/BiostructureViewer/src/apps/ligands-with-base-app.ts",
+      "packages/BiostructureViewer/src/apps/molstar-viewer-app.ts",
+      "packages/BiostructureViewer/src/apps/ngl-for-grid-test-app.ts",
+      "packages/BiostructureViewer/src/apps/ngl-viewer-app.ts",
+      "packages/BiostructureViewer/src/apps/pdb-app.ts",
+      "packages/BiostructureViewer/src/biostructure-viewer.ts",
+      "packages/BiostructureViewer/src/consts-import.ts",
+      "packages/BiostructureViewer/src/conversion/wasm/converterWasm.d.ts",
+      "packages/BiostructureViewer/src/conversion/wasm/converterWasm.js",
+      "packages/BiostructureViewer/src/conversion/wasm/cpp/LICENSE",
+      "packages/BiostructureViewer/src/conversion/wasm/cpp/command.txt",
+      "packages/BiostructureViewer/src/conversion/wasm/cpp/convert.cpp",
+      "packages/BiostructureViewer/src/conversion/wasm/wasmConvert.js",
+      "packages/BiostructureViewer/src/demo/bio06-docking-ngl-old.ts",
+      "packages/BiostructureViewer/src/demo/bio06-docking-ngl.ts",
+      "packages/BiostructureViewer/src/demo/bio07-molecule3d-in-grid.ts",
+      "packages/BiostructureViewer/src/demo/biostructure-in-grid.ts",
+      "packages/BiostructureViewer/src/demo/docking.ts",
+      "packages/BiostructureViewer/src/demo/utils.ts",
+      "packages/BiostructureViewer/src/examples/dock.csv",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/README.md",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFv3D/RcsbFv3DAbstract.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFv3D/RcsbFv3DAssembly.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFv3D/RcsbFv3DComponent.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFv3D/RcsbFv3DCustom.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvConstants/RcsbFvConstants.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvContextManager/RcsbFvContextManager.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSelection/RcsbFvSelectorManager.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/RcsbFvSequence.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/SequenceViews/AbstractView.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/SequenceViews/AssemblyView/AssemblyView.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/SequenceViews/AssemblyView/ChainDisplay.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/SequenceViews/CustomView.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvSequence/SequenceViews/SequenceViewInterface.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvStructure/RcsbFvStructure.tsx",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvStructure/StructurePlugins/AbstractPlugin.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvStructure/StructurePlugins/MolstarPlugin.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvStructure/StructurePlugins/SaguaroPluginInterface.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/RcsbFvStructure/StructurePlugins/StructureRepresentation.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/custom.d.ts",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/styles/RcsbFvMolstarStyle.module.scss",
+      "packages/BiostructureViewer/src/libs/rcsb-saguaro-3d/styles/RcsbFvStyle.module.scss",
+      "packages/BiostructureViewer/src/package-ngl.ts",
+      "packages/BiostructureViewer/src/package-utils.ts",
+      "packages/BiostructureViewer/src/package.ts",
+      "packages/BiostructureViewer/src/panels/mol3d-atom-picker-link-panel.ts",
+      "packages/BiostructureViewer/src/pdb-entry.ts",
+      "packages/BiostructureViewer/src/utils/context-menu.ts",
+      "packages/BiostructureViewer/src/utils/err-info.ts",
+      "packages/BiostructureViewer/src/utils/import-pdbqt.ts",
+      "packages/BiostructureViewer/src/utils/mol3d-link.ts",
+      "packages/BiostructureViewer/src/utils/ngl-gl-doc-service.ts",
+      "packages/BiostructureViewer/src/utils/ngl-viewer-gen.ts",
+      "packages/BiostructureViewer/src/utils/pdb-file-info.ts",
+      "packages/BiostructureViewer/src/utils/pdb-grid-cell-renderer.ts",
+      "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+      "packages/BiostructureViewer/src/utils/pdb-info.ts",
+      "packages/BiostructureViewer/src/utils/pdbqt-parser.ts",
+      "packages/BiostructureViewer/src/utils/rcsb-gql-adapter.ts",
+      "packages/BiostructureViewer/src/utils/sequence-handler.ts",
+      "packages/BiostructureViewer/src/utils/test.ts",
+      "packages/BiostructureViewer/src/utils/types.ts",
+      "packages/BiostructureViewer/src/viewers/misc.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/binding-site.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/consts.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/index.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-highlight-controller.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-highlight-utils.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer-open.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts",
+      "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+      "packages/BiostructureViewer/src/viewers/ngl-aspect.ts",
+      "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+      "packages/BiostructureViewer/src/viewers/ngl-viewer-utils.ts",
+      "packages/BiostructureViewer/src/viewers/ngl-viewer.ts",
+      "packages/BiostructureViewer/src/viewers/pviz-aspect.ts",
+      "packages/BiostructureViewer/src/viewers/pviz-bundle.min.js",
+      "packages/BiostructureViewer/src/viewers/saguaro-viewer.ts",
+      "packages/BiostructureViewer/src/viewers/twin-p-cells.ts",
+      "packages/BiostructureViewer/src/viewers/twin-p-viewer.ts",
+      "packages/BiostructureViewer/src/viewers/twins/molstar-twin-viewer-base.tsx",
+      "packages/BiostructureViewer/src/viewers/twins/molstar-twin-viewer.tsx",
+      "packages/BiostructureViewer/src/viewers/view-preview.ts"
+    ],
+    "tests": [
+      "packages/BiostructureViewer/src/package-test.ts",
+      "packages/BiostructureViewer/src/tests/atom-highlight-tests.ts",
+      "packages/BiostructureViewer/src/tests/binding-site-tests.ts",
+      "packages/BiostructureViewer/src/tests/context-menu-tests.ts",
+      "packages/BiostructureViewer/src/tests/data-provider-tests.ts",
+      "packages/BiostructureViewer/src/tests/mol3d-atom-picker-link-widget-tests.ts",
+      "packages/BiostructureViewer/src/tests/mol3d-link-tests.ts",
+      "packages/BiostructureViewer/src/tests/molstar-preview-tests.ts",
+      "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts",
+      "packages/BiostructureViewer/src/tests/ngl-gl-service-tests.ts",
+      "packages/BiostructureViewer/src/tests/ngl-viewer-tests.ts",
+      "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdb-grid-cell-renderer-escape-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdb-grid-cell-renderer-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdb-helper-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdb-info-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdb-tests.ts",
+      "packages/BiostructureViewer/src/tests/pdbqt-tests.ts",
+      "packages/BiostructureViewer/src/tests/utils.ts",
+      "packages/BiostructureViewer/src/tests/viewers.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/BiostructureViewer/CHANGELOG.md",
+      "packages/BiostructureViewer/CREDITS.md",
+      "packages/BiostructureViewer/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:BiostructureViewer:molstar-viewer",
+      "name": "Mol* (Molstar) 3D Structure Viewer",
+      "description": "Standalone 3D viewer backed by the Mol*/RCSB Molstar engine for large biological molecules with support for cartoon, ball-and-stick, and other molecular representations.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:Biostructure",
+          "kind": "RegisteredFunction",
+          "name": "Biostructure",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:viewBiostructure",
+          "kind": "RegisteredFunction",
+          "name": "viewBiostructure",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:viewPdbById",
+          "kind": "RegisteredFunction",
+          "name": "viewPdbById",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:viewPdbByData",
+          "kind": "RegisteredFunction",
+          "name": "viewPdbByData",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Show Biostructure Viewer menu item",
+          "kind": "RegisteredFunction",
+          "name": "Show Biostructure Viewer menu item",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:biostructureViewerApp",
+          "kind": "RegisteredFunction",
+          "name": "biostructureViewerApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test app for BiostructureViewer (molstar)",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/biostructure",
+          "kind": "DocPage",
+          "title": "Biostructure viewer",
+          "url": "/help/visualize/viewers/biostructure"
+        },
+        {
+          "id": "doc:/packages/BiostructureViewer/readme.md",
+          "kind": "DocPage",
+          "title": "Biostructure Viewer",
+          "url": "/packages/BiostructureViewer/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/biostructure-viewer-app.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "packages/BiostructureViewer/src/utils/err-info.ts",
+          "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/consts.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/index.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer-open.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/binding-site-tests.ts",
+          "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts",
+          "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:ngl-viewer",
+      "name": "NGL 3D Structure Viewer",
+      "description": "Standalone 3D viewer backed by the NGL library for large biological molecules, supporting formats such as mmtf, cns, gro, prmtop, and others.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:NGL",
+          "kind": "RegisteredFunction",
+          "name": "NGL",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "3D structure viewer for large biological molecules (proteins, DNA, and RNA)",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:getNglGlService",
+          "kind": "RegisteredFunction",
+          "name": "getNglGlService",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Show NGL Viewer menu item",
+          "kind": "RegisteredFunction",
+          "name": "Show NGL Viewer menu item",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:nglViewerApp",
+          "kind": "RegisteredFunction",
+          "name": "nglViewerApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test app for NglViewer",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/ngl",
+          "kind": "DocPage",
+          "title": "NGL viewer",
+          "url": "/help/visualize/viewers/ngl"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/ngl-viewer-app.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "packages/BiostructureViewer/src/utils/err-info.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-viewer-utils.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-viewer.ts",
+          "packages/BiostructureViewer/src/viewers/twin-p-viewer.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+          "packages/BiostructureViewer/src/tests/pdbqt-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:biotrack-viewer",
+      "name": "Biotrack Sequence Track Viewer",
+      "description": "Viewer displaying polymer annotation tracks (secondary structure, sequence features, etc.) for biological sequences using the Saguaro engine.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:Biotrack",
+          "kind": "RegisteredFunction",
+          "name": "Biotrack",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "structure polymer annotation tracks",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:biotrackViewerApp",
+          "kind": "RegisteredFunction",
+          "name": "biotrackViewerApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test app for BiotrackViewer (saguaro)",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:biostructureAndTrackViewerApp",
+          "kind": "RegisteredFunction",
+          "name": "biostructureAndTrackViewerApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/biostructure-and-track-viewer-app.ts",
+          "packages/BiostructureViewer/src/apps/biotrack-viewer-app.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "packages/BiostructureViewer/src/viewers/saguaro-viewer.ts",
+          "packages/BiostructureViewer/src/viewers/twins/molstar-twin-viewer.tsx"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:in-grid-rendering",
+      "name": "In-Grid Structure Cell Renderer",
+      "description": "Renders 3D protein and small-molecule structure thumbnails directly inside Datagrok grid cells for PDB-ID and chemical structure columns, using both Molstar and NGL backends.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:pdbCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "pdbCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:chemCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "chemCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:nglForGridTestApp",
+          "kind": "RegisteredFunction",
+          "name": "nglForGridTestApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Example app for NGL drawing in grid cells",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:ligandsWithNglApp",
+          "kind": "RegisteredFunction",
+          "name": "ligandsWithNglApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:ligandsWithBiostructureApp",
+          "kind": "RegisteredFunction",
+          "name": "ligandsWithBiostructureApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:inGridDemo",
+          "kind": "RegisteredFunction",
+          "name": "inGridDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:demoBioProteins",
+          "kind": "RegisteredFunction",
+          "name": "demoBioProteins",
+          "friendly_name": null,
+          "role": null,
+          "description": "View structures PDB in grids",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/ligands-with-base-app.ts",
+          "packages/BiostructureViewer/src/demo/bio07-molecule3d-in-grid.ts",
+          "packages/BiostructureViewer/src/demo/biostructure-in-grid.ts",
+          "packages/BiostructureViewer/src/demo/utils.ts",
+          "packages/BiostructureViewer/src/package-utils.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/mol3d-link.ts",
+          "packages/BiostructureViewer/src/utils/pdb-grid-cell-renderer.ts",
+          "packages/BiostructureViewer/src/utils/types.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/index.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-import",
+      "name": "Structure File Import",
+      "description": "File-handler registrations that allow Datagrok to open a wide variety of 3D structure formats (PDB, mmCIF, GRO, XYZ, mmtf, ply, obj, ccp4, and more) directly from the file browser.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:importPdb",
+          "kind": "RegisteredFunction",
+          "name": "importPdb",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens PDB file",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:importXYZ",
+          "kind": "RegisteredFunction",
+          "name": "importXYZ",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens XYZ file",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:importWithNgl",
+          "kind": "RegisteredFunction",
+          "name": "importWithNgl",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens biostructure files supported with NGL",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:readAsText",
+          "kind": "RegisteredFunction",
+          "name": "readAsText",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:readAsTextDapi",
+          "kind": "RegisteredFunction",
+          "name": "readAsTextDapi",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "packages/BiostructureViewer/src/viewers/view-preview.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/binding-site-tests.ts",
+          "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts",
+          "packages/BiostructureViewer/src/tests/ngl-gl-service-tests.ts",
+          "packages/BiostructureViewer/src/tests/pdb-helper-tests.ts",
+          "packages/BiostructureViewer/src/tests/pdb-info-tests.ts",
+          "packages/BiostructureViewer/src/tests/pdbqt-tests.ts",
+          "packages/BiostructureViewer/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-preview",
+      "name": "Structure File Preview",
+      "description": "File-browser preview panels that render structure, surface, density, and topology biostructure files inline when a user inspects a file in Datagrok.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:previewNglStructure",
+          "kind": "RegisteredFunction",
+          "name": "previewNglStructure",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:previewNglSurface",
+          "kind": "RegisteredFunction",
+          "name": "previewNglSurface",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:previewNglDensity",
+          "kind": "RegisteredFunction",
+          "name": "previewNglDensity",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:previewBiostructureStructure",
+          "kind": "RegisteredFunction",
+          "name": "previewBiostructureStructure",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:previewBiostructureTopology",
+          "kind": "RegisteredFunction",
+          "name": "previewBiostructureTopology",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:previewBiostructureDensity",
+          "kind": "RegisteredFunction",
+          "name": "previewBiostructureDensity",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "packages/BiostructureViewer/src/viewers/view-preview.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:rcsb-structure-fetch",
+      "name": "RCSB PDB Structure Fetch",
+      "description": "Fetches protein structures from the RCSB Protein Data Bank by PDB ID in PDB, mmCIF, or BinaryCIF format, and can bulk-retrieve amino-acid sequences for a whole table column.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:RCSB PDB",
+          "kind": "RegisteredFunction",
+          "name": "RCSB PDB",
+          "friendly_name": null,
+          "role": null,
+          "description": "Get biostructure by id as PDB",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:RCSB mmCIF",
+          "kind": "RegisteredFunction",
+          "name": "RCSB mmCIF",
+          "friendly_name": null,
+          "role": null,
+          "description": "Get biostructure by id as mmCIF",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:RCSB bCIF",
+          "kind": "RegisteredFunction",
+          "name": "RCSB bCIF",
+          "friendly_name": null,
+          "role": null,
+          "description": "Get biostructure by id as BinaryCIF",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Fetch PDB Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Fetch PDB Sequences",
+          "friendly_name": null,
+          "role": null,
+          "description": "For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:getPdbHelper",
+          "kind": "RegisteredFunction",
+          "name": "getPdbHelper",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/package.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:pdb-context-panel",
+      "name": "PDB Context Panel & 3D Structure Widget",
+      "description": "Context-panel widgets that automatically display a 3D structure preview and PDB metadata when the user selects a row with a PDB-ID or biostructure semantic type, and a panel for opening the residues table.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:PDB id viewer",
+          "kind": "RegisteredFunction",
+          "name": "PDB id viewer",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:PDB Information",
+          "kind": "RegisteredFunction",
+          "name": "PDB Information",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:3D Structure",
+          "kind": "RegisteredFunction",
+          "name": "3D Structure",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:mol3dAtomPickerLinkWidget",
+          "kind": "RegisteredFunction",
+          "name": "mol3dAtomPickerLinkWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:openPdbResidues",
+          "kind": "RegisteredFunction",
+          "name": "openPdbResidues",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Open PDB residues table menu item",
+          "kind": "RegisteredFunction",
+          "name": "Open PDB residues table menu item",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/protein-viewer",
+          "kind": "DocPage",
+          "title": "Protein viewer",
+          "url": "/help/visualize/viewers/protein-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/consts-import.ts",
+          "packages/BiostructureViewer/src/package-utils.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/panels/mol3d-atom-picker-link-panel.ts",
+          "packages/BiostructureViewer/src/utils/err-info.ts",
+          "packages/BiostructureViewer/src/utils/mol3d-link.ts",
+          "packages/BiostructureViewer/src/utils/pdb-file-info.ts",
+          "packages/BiostructureViewer/src/utils/pdb-grid-cell-renderer.ts",
+          "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "packages/BiostructureViewer/src/utils/pdb-info.ts",
+          "packages/BiostructureViewer/src/utils/pdbqt-parser.ts",
+          "packages/BiostructureViewer/src/utils/rcsb-gql-adapter.ts",
+          "packages/BiostructureViewer/src/utils/types.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-viewer-utils.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/mol3d-atom-picker-link-widget-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:docking-conformations",
+      "name": "Docking Conformations Viewer",
+      "description": "Imports PDBQT docking-result files containing multiple ligand poses and displays them alongside the target protein structure, enabling visual inspection of docking results.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:importPdbqt",
+          "kind": "RegisteredFunction",
+          "name": "importPdbqt",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens .pdbqt file with docking result ligand poses",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:demoBioDockingConformations",
+          "kind": "RegisteredFunction",
+          "name": "demoBioDockingConformations",
+          "friendly_name": null,
+          "role": null,
+          "description": "Display ligand poses along the structure",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:dockingDemo",
+          "kind": "RegisteredFunction",
+          "name": "dockingDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/ngl-viewer-app.ts",
+          "packages/BiostructureViewer/src/consts-import.ts",
+          "packages/BiostructureViewer/src/demo/bio06-docking-ngl.ts",
+          "packages/BiostructureViewer/src/demo/docking.ts",
+          "packages/BiostructureViewer/src/demo/utils.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/import-pdbqt.ts",
+          "packages/BiostructureViewer/src/utils/pdbqt-parser.ts",
+          "packages/BiostructureViewer/src/viewers/ngl-viewer.ts"
+        ],
+        "tests": [
+          "packages/BiostructureViewer/src/tests/binding-site-tests.ts",
+          "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:BiostructureViewer:biostructure-data-api",
+      "name": "BiostructureData Serialization API",
+      "description": "Programmatic API for packing and unpacking BiostructureData values as JSON, with context-menu actions to copy or download the raw structure value from any viewer.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:BiostructureViewer:biostructureDataToJson",
+          "kind": "RegisteredFunction",
+          "name": "biostructureDataToJson",
+          "friendly_name": null,
+          "role": null,
+          "description": "Packs BiostructureData value into JSON string",
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Copy Biostructure raw value",
+          "kind": "RegisteredFunction",
+          "name": "Copy Biostructure raw value",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:Download Biostructure raw value",
+          "kind": "RegisteredFunction",
+          "name": "Download Biostructure raw value",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BiostructureViewer:biostructureDataProviderApp",
+          "kind": "RegisteredFunction",
+          "name": "biostructureDataProviderApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BiostructureViewer/src/apps/biostructure-data-provider-app.ts",
+          "packages/BiostructureViewer/src/package.ts",
+          "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "packages/BiostructureViewer/src/utils/err-info.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

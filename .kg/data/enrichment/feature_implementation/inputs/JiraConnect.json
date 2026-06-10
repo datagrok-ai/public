@@ -1,0 +1,224 @@
+{
+  "package": {
+    "id": "pkg:JiraConnect",
+    "name": "JiraConnect",
+    "friendly_name": "Jira Connect",
+    "category": null,
+    "description": "Pakcages for Jira integration into Datagrok"
+  },
+  "files": {
+    "src": [
+      "packages/JiraConnect/src/api/data.ts",
+      "packages/JiraConnect/src/api/objects.ts",
+      "packages/JiraConnect/src/app/constants.ts",
+      "packages/JiraConnect/src/app/credentials.ts",
+      "packages/JiraConnect/src/detectors.ts",
+      "packages/JiraConnect/src/import-png.d.ts",
+      "packages/JiraConnect/src/jira-grid-cell-handler.ts",
+      "packages/JiraConnect/src/package.ts"
+    ],
+    "tests": [
+      "packages/JiraConnect/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/JiraConnect/CHANGELOG.md",
+      "packages/JiraConnect/CREDITS.md",
+      "packages/JiraConnect/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:JiraConnect:connection-setup",
+      "name": "Jira Connection Setup",
+      "description": "Handles plugin initialization and credential management for connecting Datagrok to a Jira instance via web service authentication.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:JiraConnect:_init",
+          "kind": "RegisteredFunction",
+          "name": "_init",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:JiraConnect:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/JiraConnect/readme.md",
+          "kind": "DocPage",
+          "title": "Jira Connect",
+          "url": "/packages/JiraConnect/readme.md"
+        },
+        {
+          "id": "doc:/help/_access/_06-connect-to-web-services",
+          "kind": "DocPage",
+          "title": "Connect to web services",
+          "url": "/help/_access/_06-connect-to-web-services"
+        },
+        {
+          "id": "clog:JiraConnect:1.0.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:JiraConnect:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/JiraConnect/src/api/data.ts",
+          "packages/JiraConnect/src/api/objects.ts",
+          "packages/JiraConnect/src/app/credentials.ts",
+          "packages/JiraConnect/src/detectors.ts",
+          "packages/JiraConnect/src/images/bug.png",
+          "packages/JiraConnect/src/images/epic.png",
+          "packages/JiraConnect/src/images/feature.png",
+          "packages/JiraConnect/src/images/improvement.png",
+          "packages/JiraConnect/src/images/task.png",
+          "packages/JiraConnect/src/jira-grid-cell-handler.ts",
+          "packages/JiraConnect/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:JiraConnect:project-browser",
+      "name": "Jira Project Browser",
+      "description": "Allows users to list all Jira projects and retrieve structured data for a specific project.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:JiraConnect:projectsList",
+          "kind": "RegisteredFunction",
+          "name": "projectsList",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:JiraConnect:projectData",
+          "kind": "RegisteredFunction",
+          "name": "projectData",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:JiraConnect:ticket-retrieval",
+      "name": "Jira Ticket Retrieval",
+      "description": "Fetches Jira issue data by key, by JQL filter, or in bulk, enabling users to query and import Jira tickets as structured data into Datagrok.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:JiraConnect:issueData",
+          "kind": "RegisteredFunction",
+          "name": "issueData",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:JiraConnect:getJiraTicketsByFilter",
+          "kind": "RegisteredFunction",
+          "name": "getJiraTicketsByFilter",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:JiraConnect:getJiraTicketsBulk",
+          "kind": "RegisteredFunction",
+          "name": "getJiraTicketsBulk",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:JiraConnect:1.1.3:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:JiraConnect:jira-field-info-panel",
+      "name": "Jira Field Info Panel",
+      "description": "Renders Jira fields as a Datagrok info panel column, detecting one or multiple ticket IDs embedded in a cell and displaying linked ticket metadata inline.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:JiraConnect:getJiraField",
+          "kind": "RegisteredFunction",
+          "name": "getJiraField",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "clog:JiraConnect:1.2.3:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/JiraConnect/src/api/data.ts",
+          "packages/JiraConnect/src/api/objects.ts",
+          "packages/JiraConnect/src/app/constants.ts",
+          "packages/JiraConnect/src/app/credentials.ts",
+          "packages/JiraConnect/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

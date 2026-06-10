@@ -1,0 +1,95 @@
+{
+  "package": {
+    "id": "pkg:SignalsLink",
+    "name": "SignalsLink",
+    "friendly_name": "Signals Link",
+    "version": "0.0.2",
+    "category": null,
+    "description": "Integration with the Revvity Signals ELN",
+    "extras": {
+      "npm_name": "@datagrok/signals-link",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:SignalsLink:Signals",
+      "name": "Signals",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:SignalsLink:signalsAppTreeBrowser",
+      "name": "signalsAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/SignalsLink/readme.md",
+      "title": "Signals Link",
+      "url": "/packages/SignalsLink/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/SignalsLink/credits.md",
+      "title": "SignalsLink — Third-Party Libraries",
+      "url": "/packages/SignalsLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/transform/link-tables",
+      "title": "Link tables",
+      "url": "/help/transform/link-tables",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/CddVaultLink/readme.md",
+      "title": "CDD Vault Link",
+      "url": "/packages/CddVaultLink/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 2,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 4,
+    "changelog": 0
+  }
+}

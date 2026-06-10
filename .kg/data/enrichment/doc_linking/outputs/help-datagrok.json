@@ -1,0 +1,749 @@
+{
+  "slice_id": "help-datagrok",
+  "links": [
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "pkg:Bio",
+      "confidence": 0.98,
+      "evidence": "Title and URL are the bioinformatics overview page; snippet lists Bio package requirements and core capabilities"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "feature:Bio:bio-sequence-detection",
+      "confidence": 0.85,
+      "evidence": "Overview describes macromolecule detection across HELM, FASTA, BILN, separator notations"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "feature:Bio:sequence-cell-rendering",
+      "confidence": 0.85,
+      "evidence": "Bioinformatics page covers sequence visualization in the Datagrok grid"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "feature:Bio:multiple-sequence-alignment",
+      "confidence": 0.83,
+      "evidence": "Multiple sequence alignment is a core bioinformatics feature described on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "feature:Bio:sequence-space",
+      "confidence": 0.82,
+      "evidence": "Sequence space / dimensionality reduction is listed as a key analysis feature on the bio overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "feature:Bio:sequence-activity-cliffs",
+      "confidence": 0.80,
+      "evidence": "Activity cliffs analysis is mentioned as a bioinformatics capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.85,
+      "evidence": "Snippet lists Peptides as a required package for bioinformatics functionality"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "pkg:SequenceTranslator",
+      "confidence": 0.80,
+      "evidence": "SequenceTranslator is listed among required packages for the bioinformatics domain"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "pkg:BiostructureViewer",
+      "confidence": 0.78,
+      "evidence": "3D structure visualization for biologics is covered on the bioinformatics overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "target_id": "pkg:BioNeMo",
+      "confidence": 0.72,
+      "evidence": "AI-based protein structure prediction via BioNeMo is part of the bioinformatics domain"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "target_id": "pkg:Bio",
+      "confidence": 0.92,
+      "evidence": "FAQ describes loading sequences in BILN, FASTA, HELM, separator notations — core Bio package functionality"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.88,
+      "evidence": "Page is titled 'FAQ: Peptides' and addresses peptide sequence formats and analysis"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "target_id": "feature:Bio:file-import-export",
+      "confidence": 0.83,
+      "evidence": "FAQ covers loading sequences from CSV, XLSX, PDB, FASTA files — file import is the entry point"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "target_id": "feature:Bio:notation-conversion",
+      "confidence": 0.82,
+      "evidence": "FAQ explicitly lists BILN, FASTA, HELM, separator, connection-rules notations and their conversion"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "target_id": "feature:OligoBatchCalculator:oligo-batch-calculator-app",
+      "confidence": 0.93,
+      "evidence": "Page describes the Oligo Toolkit application for working with oligonucleotide sequences and synthesis"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "target_id": "pkg:OligoBatchCalculator",
+      "confidence": 0.90,
+      "evidence": "Page is the help doc for the OligoBatchCalculator package's Oligo Toolkit app"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "target_id": "pkg:SequenceTranslator",
+      "confidence": 0.82,
+      "evidence": "Oligo Toolkit describes oligonucleotide translation and modification pattern capabilities"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "target_id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "confidence": 0.80,
+      "evidence": "Oligo sequence translation is a key function described in the Oligo Toolkit page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.98,
+      "evidence": "Page explicitly states 'Datagrok's Peptides package provides tools for analyzing peptide SAR'"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "target_id": "feature:Peptides:peptide-sar-analysis",
+      "confidence": 0.97,
+      "evidence": "Title is 'Peptides SAR' and content describes structure-activity relationship analysis for peptides"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "target_id": "feature:Peptides:sequence-variability-map",
+      "confidence": 0.85,
+      "evidence": "Sequence variability map is a component of Peptides SAR analysis described on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "target_id": "feature:Peptides:mutation-cliffs",
+      "confidence": 0.85,
+      "evidence": "Mutation cliffs / SAR discontinuities for peptides are analyzed in this feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "target_id": "pkg:Bio",
+      "confidence": 0.80,
+      "evidence": "Snippet mentions Bio detects sequences in HELM, Fasta, Separator formats used by Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "target_id": "pkg:SequenceTranslator",
+      "confidence": 0.97,
+      "evidence": "Snippet explicitly states 'This functionality is provided through the Sequence Translator plugin'"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "target_id": "feature:SequenceTranslator:polytool-notation-to-molfile",
+      "confidence": 0.92,
+      "evidence": "PolyTool is described as working with custom rules-based sequence notations and enabling molfile conversion"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "target_id": "feature:SequenceTranslator:helm-sequence-enumeration",
+      "confidence": 0.85,
+      "evidence": "Polytool includes sequence enumeration utilities described on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "target_id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "confidence": 0.80,
+      "evidence": "Polytool extends oligonucleotide translation capabilities of SequenceTranslator"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "target_id": "pkg:SequenceTranslator",
+      "confidence": 0.97,
+      "evidence": "Page explicitly describes the Sequence Translator application for oligonucleotide design and synthesis"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "target_id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "confidence": 0.95,
+      "evidence": "Title 'Oligonucleotide Sequence Design' and content match the oligo translation feature exactly"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "target_id": "feature:SequenceTranslator:oligo-modification-pattern",
+      "confidence": 0.87,
+      "evidence": "Translation across FASTA and HELM notations and synthesis formats is the modification pattern feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "target_id": "pkg:Bio",
+      "confidence": 0.78,
+      "evidence": "HELM notation handling referenced in the page is provided by the Bio package"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "pkg:Chem",
+      "confidence": 0.98,
+      "evidence": "Title is 'Cheminformatics' and URL slug is /chem — this is the primary overview page for the Chem package"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:substructure-search",
+      "confidence": 0.87,
+      "evidence": "Substructure search is described as a core capability in the cheminformatics overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:similarity-search",
+      "confidence": 0.87,
+      "evidence": "Similarity search is described as a core capability in the cheminformatics overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:molecular-rendering",
+      "confidence": 0.85,
+      "evidence": "Molecule visualization and rendering are prominently described in the chem overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:sketcher",
+      "confidence": 0.83,
+      "evidence": "Molecule sketching is listed as a core cheminformatics capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:chemical-descriptors",
+      "confidence": 0.83,
+      "evidence": "Descriptor calculation is listed as a key cheminformatics feature on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:scaffold-tree",
+      "confidence": 0.80,
+      "evidence": "Scaffold tree analysis is mentioned as part of the cheminformatics toolkit"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:activity-cliffs",
+      "confidence": 0.80,
+      "evidence": "Activity cliffs is described as a key SAR analysis feature in cheminformatics"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "target_id": "feature:Chem:mpo",
+      "confidence": 0.80,
+      "evidence": "Multi-parameter optimization is listed as a drug discovery workflow feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "target_id": "feature:Chem:molecular-rendering",
+      "confidence": 0.97,
+      "evidence": "Title and content describe chemically-aware viewers that recognize and render chemical structures"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "target_id": "pkg:Chem",
+      "confidence": 0.88,
+      "evidence": "Chemically-aware rendering is a core Chem package feature applied across viewers"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "target_id": "feature:Chem:chemprop-ml",
+      "confidence": 0.98,
+      "evidence": "Title is 'Chemprop' and content describes the ChemProp PyTorch framework integration"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "target_id": "pkg:Chem",
+      "confidence": 0.85,
+      "evidence": "ChemProp is integrated into the Chem package for property prediction"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "target_id": "feature:Chem:chemical-descriptors",
+      "confidence": 0.98,
+      "evidence": "Title 'Supported descriptors' and content list molecular descriptors calculated by Datagrok's Chem package"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "target_id": "pkg:Chem",
+      "confidence": 0.85,
+      "evidence": "Descriptor calculation is a core Chem package function"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "target_id": "feature:Chem:chemical-descriptors",
+      "confidence": 0.95,
+      "evidence": "Title 'Tests: Chem descriptors' and content walk through the molecular descriptor calculation feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Test page for the Chem package's descriptor calculation functionality"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "target_id": "feature:Chem:fingerprints",
+      "confidence": 0.98,
+      "evidence": "Title 'Supported fingerprints' exactly matches the Molecular Fingerprints feature; content lists RDKit, MACCS, AtomPair fingerprints"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "target_id": "pkg:Chem",
+      "confidence": 0.85,
+      "evidence": "Fingerprint calculation is a core Chem package capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "target_id": "feature:Chem:drug-likeness-admet",
+      "confidence": 0.97,
+      "evidence": "Title 'Drug likeness' and content describe druglikeness assessment — matches Drug Likeness & Toxicity feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Drug likeness info panel is part of the Chem package's context panel suite"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "target_id": "pkg:Chem",
+      "confidence": 0.92,
+      "evidence": "Page explicitly titled 'Info panes for chemical data' — overview of Chem package's context panel panels"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "target_id": "feature:Chem:drug-likeness-admet",
+      "confidence": 0.83,
+      "evidence": "Drug likeness / toxicity panels are listed in the chemical info panes reference"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "target_id": "feature:Chem:structural-alerts",
+      "confidence": 0.83,
+      "evidence": "Structural alerts and catalog filters appear in the chemical info panes overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "target_id": "feature:Chem:pharmacophore-features",
+      "confidence": 0.80,
+      "evidence": "Pharmacophore features info pane is part of the chemical info panes catalogue"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "target_id": "feature:Chem:structural-alerts",
+      "confidence": 0.98,
+      "evidence": "Title 'Structural alerts' and content describe PAINS/BMS/Dundee rule sets — exactly the Structural Alerts & Catalog Filters feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Structural alerts is a Chem package info panel feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "target_id": "pkg:SureChembl",
+      "confidence": 0.98,
+      "evidence": "Page explicitly states 'The SureChEMBL plugin provides local access to the SureChEMBL database'"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "target_id": "feature:SureChembl:patent-substructure-search",
+      "confidence": 0.88,
+      "evidence": "Page describes substructure search in the SureChEMBL database"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "target_id": "feature:SureChembl:patent-similarity-search",
+      "confidence": 0.85,
+      "evidence": "Page describes similarity search against SureChEMBL patents"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "target_id": "feature:Chem:drug-likeness-admet",
+      "confidence": 0.93,
+      "evidence": "Title 'Toxicity risks' and content describe toxicity risk assessment substructure matching — part of Drug Likeness & Toxicity feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "Toxicity risk panel is a Chem package context panel"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "target_id": "feature:Chem:mpo",
+      "confidence": 0.98,
+      "evidence": "Title 'Multiparameter optimization' exactly matches Multi-Parameter Optimization (MPO) feature; content describes scoring and desirability functions"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "target_id": "pkg:Chem",
+      "confidence": 0.83,
+      "evidence": "MPO is a Chem package feature for medicinal chemistry compound prioritization"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "target_id": "feature:Chem:molecular-clustering",
+      "confidence": 0.92,
+      "evidence": "Content describes Butina clustering for pharmaceutical compound sets — matches Molecular Clustering feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Butina clustering is a Chem package script for molecular analysis"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "target_id": "pkg:Chem",
+      "confidence": 0.90,
+      "evidence": "Title 'Chemical scripts' and content list Chem package functions: SubstructureSearch, FindMCS, Descriptors"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "target_id": "feature:Chem:substructure-search",
+      "confidence": 0.85,
+      "evidence": "ChemSubstructureSearch is explicitly listed as a chemical function on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "target_id": "feature:Chem:chemical-descriptors",
+      "confidence": 0.83,
+      "evidence": "Descriptors calculation is explicitly listed as a chemical script function"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "target_id": "feature:Chem:structural-alerts",
+      "confidence": 0.93,
+      "evidence": "Title 'Filter by catalogs' and PAINS/BRENK/NIH filter sets match the Structural Alerts & Catalog Filters feature exactly"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Catalog filtering is a Chem package script capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "target_id": "feature:Chem:chemical-properties",
+      "confidence": 0.92,
+      "evidence": "Title 'Gasteiger Partial Charges' — atomic charge visualization is a chemical property calculation"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "Gasteiger charges script is part of the Chem package's property calculation suite"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "target_id": "feature:Chem:scaffold-tree",
+      "confidence": 0.90,
+      "evidence": "Murcko scaffolds are the basis of scaffold tree analysis — content describes scaffold extraction for medicinal chemistry"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Murcko scaffold calculation is a Chem package script"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "target_id": "feature:Chem:reaction-enumeration",
+      "confidence": 0.80,
+      "evidence": "Molecule mutation (adding/removing atoms and bonds) is closely related to reaction and chemical enumeration workflows"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "Molecule mutation is a Chem package script"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/reactions",
+      "target_id": "feature:Chem:reaction-enumeration",
+      "confidence": 0.97,
+      "evidence": "Title 'Reactions' and content describe reaction template enumeration with SMARTS — exact match to Reaction Enumeration feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/reactions",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Reaction enumeration is a Chem package script capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+      "target_id": "pkg:Chem",
+      "confidence": 0.90,
+      "evidence": "Title 'Chemical scripts' lists Chem package functions: SubstructureSearch, FindMCS, Descriptors (same reference page as chem-functions)"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+      "target_id": "feature:Chem:substructure-search",
+      "confidence": 0.83,
+      "evidence": "ChemSubstructureSearch is explicitly listed as a script on this reference page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+      "target_id": "feature:Chem:chemical-descriptors",
+      "confidence": 0.83,
+      "evidence": "Descriptor calculation is explicitly listed as a chemical script function"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "target_id": "feature:Chem:fingerprints",
+      "confidence": 0.90,
+      "evidence": "Title 'Similarity maps using fingerprints' — fingerprint-based molecular similarity visualization"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "target_id": "feature:Chem:similarity-search",
+      "confidence": 0.87,
+      "evidence": "Similarity maps show atomic contributions to molecular similarity — directly related to similarity search"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "Similarity maps is a Chem package script using RDKit"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/solubility-prediction",
+      "target_id": "feature:Chem:chemical-properties",
+      "confidence": 0.83,
+      "evidence": "Solubility prediction by molecular descriptors is a chemical property calculation"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/solubility-prediction",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "Solubility prediction model is a Chem package ML capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/tsne",
+      "target_id": "feature:Chem:chemical-space",
+      "confidence": 0.95,
+      "evidence": "Title 'Chemical space using tSNE' exactly matches the Chemical Space feature; content describes tSNE dimensionality reduction for molecules"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/tsne",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "tSNE chemical space is a Chem package script"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/umap",
+      "target_id": "feature:Chem:chemical-space",
+      "confidence": 0.97,
+      "evidence": "Title 'Chemical Space Using UMAP' exactly matches the Chemical Space feature; content describes UMAP for chemical space visualization"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/umap",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "UMAP chemical space is a Chem package script"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/usrcat",
+      "target_id": "feature:Chem:similarity-search",
+      "confidence": 0.87,
+      "evidence": "USRCAT describes ligand-based virtual screening by molecular shape — a form of 3D similarity search"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/scripts/usrcat",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "USRCAT shape-based screening is a Chem package script"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "target_id": "feature:Chem:scaffold-tree",
+      "confidence": 0.98,
+      "evidence": "Title 'Scaffold tree' and content describe scaffold-hierarchy filtering — exact match to Scaffold Tree feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "target_id": "pkg:Chem",
+      "confidence": 0.85,
+      "evidence": "Scaffold tree is accessed via the Chem menu and is a core Chem package feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "target_id": "pkg:NLP",
+      "confidence": 0.98,
+      "evidence": "Title 'Natural language processing' and content describe the NLP plugin — exact package overview page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "target_id": "feature:NLP:sentence-similarity-search",
+      "confidence": 0.83,
+      "evidence": "Similarity search on text content is a prominent NLP feature described on the page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "target_id": "feature:NLP:text-embeddings",
+      "confidence": 0.82,
+      "evidence": "Text embeddings underpin the NLP analysis described on this page"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "target_id": "feature:NLP:sentiment-analysis",
+      "confidence": 0.80,
+      "evidence": "Sentiment analysis is a core NLP capability likely covered in the plugin overview"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/domains",
+      "target_id": "pkg:Bio",
+      "confidence": 0.72,
+      "evidence": "Domains overview page covers bioinformatics as one of the supported scientific domains"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/domains",
+      "target_id": "pkg:Chem",
+      "confidence": 0.72,
+      "evidence": "Domains overview page covers cheminformatics as one of the supported scientific domains"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/domains",
+      "target_id": "pkg:NLP",
+      "confidence": 0.65,
+      "evidence": "NLP is listed as one of Datagrok's domain-specific capability areas"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/domains/data-science",
+      "target_id": "pkg:EDA",
+      "confidence": 0.72,
+      "evidence": "Data science page covers exploratory data analysis, ML tools, and statistical methods — EDA package scope"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/workflows/eda",
+      "target_id": "pkg:EDA",
+      "confidence": 0.75,
+      "evidence": "Title 'Exploratory data analysis' overlaps with the EDA package's dimensionality reduction, clustering, and statistical tools"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/workflows/life-sciences",
+      "target_id": "pkg:Bio",
+      "confidence": 0.82,
+      "evidence": "Life sciences page highlights biological sequence analysis and molecular similarity as Datagrok strengths"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/workflows/life-sciences",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "Life sciences page highlights cheminformatics and molecular diversity as Datagrok strengths"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/competition/dg-vs-scrodinger",
+      "target_id": "pkg:Chem",
+      "confidence": 0.92,
+      "evidence": "Comparison with Schrödinger (computational chemistry leader) positions Datagrok's cheminformatics capabilities"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/competition/dg-vs-scrodinger",
+      "target_id": "pkg:Docking",
+      "confidence": 0.83,
+      "evidence": "Schrödinger comparison context covers molecular docking and structure-based drug design — Docking package scope"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/competition/dg-vs-scrodinger",
+      "target_id": "pkg:BiostructureViewer",
+      "confidence": 0.75,
+      "evidence": "Schrödinger comparison covers 3D structure visualization relevant to BiostructureViewer"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/competition/dg-vs-spotfire",
+      "target_id": "pkg:Bio",
+      "confidence": 0.75,
+      "evidence": "Spotfire vs Datagrok comparison is framed around life science R&D and biotech use cases"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/competition/dg-vs-spotfire",
+      "target_id": "pkg:Chem",
+      "confidence": 0.75,
+      "evidence": "Life science R&D comparison context covers cheminformatics as a differentiating capability"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/video-contents",
+      "target_id": "pkg:Chem",
+      "confidence": 0.83,
+      "evidence": "Snippet explicitly lists 'Cheminformatics overview' and 'Molecular similarity and diversity' video topics"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/resources/video-contents",
+      "target_id": "feature:Chem:similarity-search",
+      "confidence": 0.72,
+      "evidence": "'Molecular similarity and diversity' video topic directly describes the similarity search feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/plugins",
+      "target_id": "pkg:Chem",
+      "confidence": 0.65,
+      "evidence": "Plugin directory page lists Chem as a prominent domain plugin"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/plugins",
+      "target_id": "pkg:Bio",
+      "confidence": 0.65,
+      "evidence": "Plugin directory page lists Bio as a prominent bioinformatics plugin"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/plugins",
+      "target_id": "pkg:PowerPack",
+      "confidence": 0.65,
+      "evidence": "Plugin directory page highlights Power Pack as a recommended platform enhancement"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "target_id": "pkg:Chem",
+      "confidence": 0.68,
+      "evidence": "Info pane reference mentions chemical-structure-aware panels that come from domain plugins including Chem"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "target_id": "pkg:Bio",
+      "confidence": 0.65,
+      "evidence": "Info pane reference includes biological sequence context panels provided by the Bio package"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "target_id": "pkg:Chem",
+      "confidence": 0.65,
+      "evidence": "Info panes for molecules are a primary use case described in the snippet ('molecules' explicitly mentioned)"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/navigation/basic-tasks/_smart-bar",
+      "target_id": "feature:PowerPack:spotlight",
+      "confidence": 0.70,
+      "evidence": "Smart bar / command search is the core capability of PowerPack's Spotlight feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/concepts/project/dashboard",
+      "target_id": "feature:PowerPack:dashboard-widgets",
+      "confidence": 0.65,
+      "evidence": "Dashboard page describes layout and widget composition matching PowerPack's dashboard widget feature"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/solutions",
+      "target_id": "pkg:Bio",
+      "confidence": 0.65,
+      "evidence": "Solutions overview page uses bioinformatics as a primary example of domain-specific customization"
+    },
+    {
+      "doc_id": "doc:/help/datagrok/solutions/solutions",
+      "target_id": "pkg:Chem",
+      "confidence": 0.65,
+      "evidence": "Solutions overview page uses cheminformatics molecule recognition as a primary example"
+    }
+  ]
+}

@@ -1,0 +1,522 @@
+{
+  "package": {
+    "id": "pkg:Plates",
+    "name": "Plates",
+    "friendly_name": "Plates",
+    "version": "0.0.1",
+    "category": "Visualizations",
+    "description": "Assay plates: ingestion, storage, and analysis",
+    "extras": {
+      "npm_name": "@datagrok/plates",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Plates:Assay Plates",
+      "name": "Assay Plates",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Assasy plates with concentration, layout and readout data",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:_initPlates",
+      "name": "_initPlates",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:platesFolderPreview",
+      "name": "platesFolderPreview",
+      "friendly_name": null,
+      "role": "folderViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file",
+        null
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "folderViewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:previewPlate",
+      "name": "previewPlate",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "txt"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:importPlate",
+      "name": "importPlate",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "txt"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:checkExcelIsPlate",
+      "name": "checkExcelIsPlate",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Checks if an Excel file contains plate data.",
+      "input_types": [
+        "blob"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:importPlateXlsx",
+      "name": "importPlateXlsx",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "blob"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "xlsx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:viewPlateXlsx",
+      "name": "viewPlateXlsx",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "xlsx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:checkCsvIsPlate",
+      "name": "checkCsvIsPlate",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Checks if a CSV file can be parsed as a plate.",
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:checkFileIsPlate",
+      "name": "checkFileIsPlate",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:Plates",
+      "name": "Plates",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:platesAppTreeBrowser",
+      "name": "platesAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:getPlateByBarcode",
+      "name": "getPlateByBarcode",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:createDummyPlateData",
+      "name": "createDummyPlateData",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Plates:PlateGridCellRenderer",
+      "name": "PlateGridCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:Plates:getPlates",
+      "name": "getPlates",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getWellLevelProperties",
+      "name": "getWellLevelProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPlateLevelProperties",
+      "name": "getPlateLevelProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPropertyNames",
+      "name": "getPropertyNames",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPlateTypes",
+      "name": "getPlateTypes",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPlateTemplates",
+      "name": "getPlateTemplates",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getProperties",
+      "name": "getProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getWellRoles",
+      "name": "getWellRoles",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getWellValuesByBarcode",
+      "name": "getWellValuesByBarcode",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getWellValuesById",
+      "name": "getWellValuesById",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getAllowedValues",
+      "name": "getAllowedValues",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getUniquePlatePropertyValues",
+      "name": "getUniquePlatePropertyValues",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getUniqueWellPropertyValues",
+      "name": "getUniqueWellPropertyValues",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:createProperty",
+      "name": "createProperty",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:createTemplate",
+      "name": "createTemplate",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getTemplateProperties",
+      "name": "getTemplateProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPlateByBarcode",
+      "name": "getPlateByBarcode",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:createAnalysisRun",
+      "name": "createAnalysisRun",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:saveAnalysisRunParameter",
+      "name": "saveAnalysisRunParameter",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:saveAnalysisResult",
+      "name": "saveAnalysisResult",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getAnalysisRunGroups",
+      "name": "getAnalysisRunGroups",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:queryAnalyses",
+      "name": "queryAnalyses",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:queryAnalysesTemplate",
+      "name": "queryAnalysesTemplate",
+      "connection": null,
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:addTemplatePlateProperty",
+      "name": "addTemplatePlateProperty",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:addTemplateWellProperty",
+      "name": "addTemplateWellProperty",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getTemplatePlateProperties",
+      "name": "getTemplatePlateProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getTemplateWellProperties",
+      "name": "getTemplateWellProperties",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:removeTemplatePlateProperty",
+      "name": "removeTemplatePlateProperty",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:removeTemplateWellProperty",
+      "name": "removeTemplateWellProperty",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Plates:getPlatesCount",
+      "name": "getPlatesCount",
+      "connection": "Plates:plts",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Plates/credits.md",
+      "title": "Plates — Third-Party Libraries",
+      "url": "/packages/Plates/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Plates/readme.md",
+      "title": "Plates",
+      "url": "/packages/Plates/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Plates/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Plates/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 15,
+    "scripts": 0,
+    "queries": 30,
+    "tutorials": 0,
+    "docs": 3,
+    "changelog": 0
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "package": {
+    "id": "pkg:Flow",
+    "name": "Flow",
+    "friendly_name": "Flow",
+    "version": "0.0.1",
+    "category": null,
+    "description": "Flow package",
+    "extras": {
+      "npm_name": "@datagrok/flow",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Flow:Flow",
+      "name": "Flow",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": "Interactive function chain designer",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Flow:viewFuncFlow",
+      "name": "viewFuncFlow",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "ffjson"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Flow:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Flow/claude.md",
+      "title": "CLAUDE.md - Flow Package",
+      "url": "/packages/Flow/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Flow/credits.md",
+      "title": "Flow — Third-Party Libraries",
+      "url": "/packages/Flow/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Flow/readme.md",
+      "title": "Flow",
+      "url": "/packages/Flow/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Flow:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "FuncFlow view: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`"
+    }
+  ],
+  "stats": {
+    "functions": 3,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 1
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "package": {
+    "id": "pkg:Media",
+    "name": "Media",
+    "friendly_name": "Media",
+    "category": "Data Access",
+    "description": "File viewers for browser-supported audio and video formats"
+  },
+  "files": {
+    "src": [
+      "packages/Media/src/package.ts"
+    ],
+    "tests": [
+      "packages/Media/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Media/CHANGELOG.md",
+      "packages/Media/CREDITS.md",
+      "packages/Media/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Media:audio-viewer",
+      "name": "Audio File Viewer",
+      "description": "Previews browser-supported audio files (mp3, wav, flac, ogg, opus, m4a, aac, weba) inline using the native browser audio player. Registered as a file viewer so Datagrok opens audio files automatically in the appropriate…",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Media:audioViewer",
+          "kind": "RegisteredFunction",
+          "name": "audioViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": "Previews audio files using the native browser player",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Media/readme.md",
+          "kind": "DocPage",
+          "title": "Media",
+          "url": "/packages/Media/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Media/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Media:video-viewer",
+      "name": "Video File Viewer",
+      "description": "Previews browser-supported video files (mp4, m4v, webm, ogv, mov) inline using the native browser video player. Registered as a file viewer so Datagrok opens video files automatically in the appropriate panel.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Media:videoViewer",
+          "kind": "RegisteredFunction",
+          "name": "videoViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": "Previews video files using the native browser player",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Media/credits.md",
+          "kind": "DocPage",
+          "title": "Media — Third-Party Libraries",
+          "url": "/packages/Media/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Media/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

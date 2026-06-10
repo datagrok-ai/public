@@ -1,0 +1,328 @@
+{
+  "package_id": "pkg:DBTests",
+  "features": [
+    {
+      "id": "feature:DBTests:clickhouse-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL queries; TS layer only registers the test runner and the per-provider connection precondition (categories.ts ClickHouse entry)."
+    },
+    {
+      "id": "feature:DBTests:mariadb-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL queries; TS layer only registers the test runner and the per-provider connection precondition (categories.ts MariaDb entry)."
+    },
+    {
+      "id": "feature:DBTests:mssql-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL queries; TS layer only registers the test runner and the per-provider connection precondition (categories.ts MSSQL entry)."
+    },
+    {
+      "id": "feature:DBTests:mysql-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL queries; TS layer only registers the test runner and the per-provider connection precondition (categories.ts MySql entry)."
+    },
+    {
+      "id": "feature:DBTests:oracle-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL queries; TS layer only registers the test runner and the per-provider connection precondition (categories.ts Oracle entry)."
+    },
+    {
+      "id": "feature:DBTests:postgresql-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DBTests/src/connections/queries-test.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/connections/table-query-test.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "queries-test.ts directly executes PostgresqlPatternsAll/PostgresqlPatternsAllParams; table-query-test.ts exercises Postgres via DbTests:PostgresTest connection."
+    },
+    {
+      "id": "feature:DBTests:snowflake-connector-tests",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "Snowflake is not in tests/categories.ts; coverage comes from initPackageTests in package.ts which iterates all connections (incl. SnowflakeDBTests)."
+    },
+    {
+      "id": "feature:DBTests:parameterized-query-by-input-type",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DBTests/src/connections/queries-test.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Members are SQL fixture queries (Orders/Products + ByInt/ByDouble/ByDatetime/...); queries-test.ts covers the analogous PostgresqlPatternsAllParams pattern flow."
+    },
+    {
+      "id": "feature:DBTests:query-result-caching",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/cache/cache-test.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DBTests/src/benchmarks/benchmark.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "cache-test.ts directly drives PostgresqlScalarCacheTest, PostgresqlTestCacheTableNormal, PostgresqlCachedConnTest, *Invalidation* and *Client variants; benchmark.ts uses PostgresqlTableWideCachedClient/Server."
+    },
+    {
+      "id": "feature:DBTests:result-set-shape-validation",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/connections/queries-test.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DBTests/src/sync/data-sync-test.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DBTests/src/benchmarks/benchmark.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "queries-test.ts asserts column schema for TestForColumnsOnEmptyResult; data-sync-test.ts streams PostgresqlTableWide; benchmark.ts exercises Normal/Wide/Long shapes."
+    },
+    {
+      "id": "feature:DBTests:query-performance",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/benchmarks/benchmark.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "benchmark.ts defines getDataQueryTime and the Benchmarks category; PostgresPerf is a fixture for sustained-throughput baselines."
+    },
+    {
+      "id": "feature:DBTests:geo-spatial-type-support",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/tests/categories.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Cross-DB geo queries are SQL-only; per-connector preconditions in categories.ts cover the underlying DB connections."
+    },
+    {
+      "id": "feature:DBTests:package-smoke-test",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "PackageTest is a one-line SQL smoke query against System:Datagrok; no dedicated TS file."
+    },
+    {
+      "id": "feature:DBTests:test-infrastructure-utilities",
+      "implements": [
+        {
+          "path": "packages/DBTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DBTests/src/package-test.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "PackageFunctions.expectTable and PackageFunctions.info are defined in package.ts; package-test.ts wires the runTests entry consumed by all suites."
+    },
+    {
+      "id": "feature:DBTests:package-documentation",
+      "implements": [],
+      "tests": [],
+      "notes": "Members are README.md and CREDITS.md (in files.docs, not files.src) — no TypeScript surface."
+    },
+    {
+      "id": "feature:DBTests:internal-platform-test-guides",
+      "implements": [],
+      "tests": [],
+      "notes": "All members are external help/_internal/tests doc pages; no source files in this package implement them."
+    }
+  ]
+}

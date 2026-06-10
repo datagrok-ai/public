@@ -1,0 +1,83 @@
+{
+  "package_id": "pkg:Prism",
+  "features": [
+    {
+      "id": "feature:Prism:file-import",
+      "implements": [
+        {
+          "path": "packages/Prism/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-parser.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-to-dataframe.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-curves.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-types.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Prism/src/tests/prism-import-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Prism/src/tests/prism-parser-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "importPrism in package.ts wires parser + sheet/analysis converters + XY fit DataFrame; types module is the shared model."
+    },
+    {
+      "id": "feature:Prism:file-preview",
+      "implements": [
+        {
+          "path": "packages/Prism/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-viewer.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-graph-viewer.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-parser.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-to-dataframe.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Prism/src/prism/prism-types.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "previewPrism builds a tree+grid+chart UI via buildPrismView -> createGraphViewer; no dedicated UI test exists. prism-curves is not on the preview path so it is omitted."
+    }
+  ]
+}

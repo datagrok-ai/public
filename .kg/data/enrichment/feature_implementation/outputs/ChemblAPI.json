@@ -1,0 +1,66 @@
+{
+  "package_id": "pkg:ChemblAPI",
+  "features": [
+    {
+      "id": "feature:ChemblAPI:substructure-search",
+      "implements": [
+        {
+          "path": "packages/ChemblAPI/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ChemblAPI/src/utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ChemblAPI/src/tests/searches.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts declares chemblSubstructureSearchPanel; utils.ts holds getData/chemblSubstructureSearch/chemblSearchWidget. searches.ts exercises getData(SUBSTRUCTURE)."
+    },
+    {
+      "id": "feature:ChemblAPI:similarity-search",
+      "implements": [
+        {
+          "path": "packages/ChemblAPI/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ChemblAPI/src/utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ChemblAPI/src/tests/searches.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts declares chemblSimilaritySearchPanel; utils.ts holds getData/chemblSimilaritySearch/chemblSearchWidget. searches.ts exercises getData(SIMILARITY)."
+    },
+    {
+      "id": "feature:ChemblAPI:compound-lookup",
+      "implements": [
+        {
+          "path": "packages/ChemblAPI/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ChemblAPI/src/tests/chem-panels.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "GetCompoundsIds (UniChem inchikey lookup) and Chembl Get by Id are implemented entirely in package.ts; chem-panels.ts tests getCompoundsIds."
+    }
+  ]
+}

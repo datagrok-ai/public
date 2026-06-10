@@ -1,0 +1,950 @@
+{
+  "package": {
+    "id": "pkg:CVMTests",
+    "name": "CVMTests",
+    "friendly_name": "CVM Tests",
+    "category": "Development",
+    "description": "Automated CVM tests"
+  },
+  "files": {
+    "src": [
+      "packages/CVMTests/src/docker/docker.ts",
+      "packages/CVMTests/src/files/files.ts",
+      "packages/CVMTests/src/gui/dialogs.ts",
+      "packages/CVMTests/src/gui/gui-utils.ts",
+      "packages/CVMTests/src/package.ts",
+      "packages/CVMTests/src/scripts/scripts_tests.ts",
+      "packages/CVMTests/src/shell/ml.ts"
+    ],
+    "tests": [
+      "packages/CVMTests/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/CVMTests/scripts/dummy-python.py",
+      "packages/CVMTests/scripts/grok-test.grok",
+      "packages/CVMTests/scripts/grok/calculated_column_script.grok",
+      "packages/CVMTests/scripts/grok/column_list.grok",
+      "packages/CVMTests/scripts/grok/dataframe_test.grok",
+      "packages/CVMTests/scripts/grok/datetime_test.grok",
+      "packages/CVMTests/scripts/grok/echo.grok",
+      "packages/CVMTests/scripts/grok/file_test.grok",
+      "packages/CVMTests/scripts/grok/input_output_test.grok",
+      "packages/CVMTests/scripts/grok/map_type_test.grok",
+      "packages/CVMTests/scripts/grok/single_df_test.grok",
+      "packages/CVMTests/scripts/js-test.js",
+      "packages/CVMTests/scripts/js/calculated_column_script.js",
+      "packages/CVMTests/scripts/js/columns_list.js",
+      "packages/CVMTests/scripts/js/dataframe_test.js",
+      "packages/CVMTests/scripts/js/datetime_test.js",
+      "packages/CVMTests/scripts/js/echo.js",
+      "packages/CVMTests/scripts/js/file_test.js",
+      "packages/CVMTests/scripts/js/graphics_test.js",
+      "packages/CVMTests/scripts/js/input_output_test.js",
+      "packages/CVMTests/scripts/js/list_string_test.js",
+      "packages/CVMTests/scripts/js/map_type_test.js",
+      "packages/CVMTests/scripts/js/single_df_test.js",
+      "packages/CVMTests/scripts/julia-test.jl",
+      "packages/CVMTests/scripts/julia/blob_file_input_output.jl",
+      "packages/CVMTests/scripts/julia/calculated_column_script.jl",
+      "packages/CVMTests/scripts/julia/column_list.jl",
+      "packages/CVMTests/scripts/julia/dataframe_int_column_type.jl",
+      "packages/CVMTests/scripts/julia/dataframe_test.jl",
+      "packages/CVMTests/scripts/julia/datetime_test.jl",
+      "packages/CVMTests/scripts/julia/echo.jl",
+      "packages/CVMTests/scripts/julia/empty_df.jl",
+      "packages/CVMTests/scripts/julia/file_test.jl",
+      "packages/CVMTests/scripts/julia/graphics_test.jl",
+      "packages/CVMTests/scripts/julia/input_output_test.jl",
+      "packages/CVMTests/scripts/julia/list_string_test.jl",
+      "packages/CVMTests/scripts/julia/map_type_test.jl",
+      "packages/CVMTests/scripts/julia/single_df_test.jl",
+      "packages/CVMTests/scripts/node/blob_file_input_output.js",
+      "packages/CVMTests/scripts/node/calculated_column_script.js",
+      "packages/CVMTests/scripts/node/columns_list.js",
+      "packages/CVMTests/scripts/node/dataframe_test.js",
+      "packages/CVMTests/scripts/node/datetime_test.js",
+      "packages/CVMTests/scripts/node/echo.js",
+      "packages/CVMTests/scripts/node/file_test.js",
+      "packages/CVMTests/scripts/node/graphics_test.js",
+      "packages/CVMTests/scripts/node/input_output_test.js",
+      "packages/CVMTests/scripts/node/list_string_test.js",
+      "packages/CVMTests/scripts/node/map_type_test.js",
+      "packages/CVMTests/scripts/node/single_df_test.js",
+      "packages/CVMTests/scripts/nodejs-test.js",
+      "packages/CVMTests/scripts/octave-test.octave.m",
+      "packages/CVMTests/scripts/octave/blob_file_input_output.m",
+      "packages/CVMTests/scripts/octave/calculated_column_script.m",
+      "packages/CVMTests/scripts/octave/column_list.m",
+      "packages/CVMTests/scripts/octave/dataframe_test.m",
+      "packages/CVMTests/scripts/octave/datetime_test.m",
+      "packages/CVMTests/scripts/octave/echo.m",
+      "packages/CVMTests/scripts/octave/exponential_operator_test.m",
+      "packages/CVMTests/scripts/octave/file_test.m",
+      "packages/CVMTests/scripts/octave/graphics_test.m",
+      "packages/CVMTests/scripts/octave/input_output_test.m",
+      "packages/CVMTests/scripts/octave/list_string_test.m",
+      "packages/CVMTests/scripts/octave/map_type_test.m",
+      "packages/CVMTests/scripts/octave/single_df_test.m",
+      "packages/CVMTests/scripts/octave/stdout_output.m",
+      "packages/CVMTests/scripts/python-test.py",
+      "packages/CVMTests/scripts/python/blob_file_input_output.py",
+      "packages/CVMTests/scripts/python/calculated_column_script.py",
+      "packages/CVMTests/scripts/python/columns_test.py",
+      "packages/CVMTests/scripts/python/dataframe_graphics_cache.py",
+      "packages/CVMTests/scripts/python/dataframe_int_column_type.py",
+      "packages/CVMTests/scripts/python/dataframe_test.py",
+      "packages/CVMTests/scripts/python/datetime_test.py",
+      "packages/CVMTests/scripts/python/echo.py",
+      "packages/CVMTests/scripts/python/empty_df.py",
+      "packages/CVMTests/scripts/python/env_conda_extras.py",
+      "packages/CVMTests/scripts/python/env_mixed_deps.py",
+      "packages/CVMTests/scripts/python/env_numpy_compat.py",
+      "packages/CVMTests/scripts/python/env_pip_only.py",
+      "packages/CVMTests/scripts/python/env_py312.py",
+      "packages/CVMTests/scripts/python/env_reuse.py",
+      "packages/CVMTests/scripts/python/env_test.py",
+      "packages/CVMTests/scripts/python/exception_cached.py",
+      "packages/CVMTests/scripts/python/file_test.py",
+      "packages/CVMTests/scripts/python/graphics_test.py",
+      "packages/CVMTests/scripts/python/input_output_test.py",
+      "packages/CVMTests/scripts/python/input_output_test_cache.py",
+      "packages/CVMTests/scripts/python/list_string_test.py",
+      "packages/CVMTests/scripts/python/map_type_test.py",
+      "packages/CVMTests/scripts/python/simple_file_input.py",
+      "packages/CVMTests/scripts/python/single_df_cached_test.py",
+      "packages/CVMTests/scripts/python/single_df_test.py",
+      "packages/CVMTests/scripts/python/string_choices_test.py",
+      "packages/CVMTests/scripts/r-test.R",
+      "packages/CVMTests/scripts/r/blob_file_input_output.R",
+      "packages/CVMTests/scripts/r/calculated_column_script.R",
+      "packages/CVMTests/scripts/r/columns_list.R",
+      "packages/CVMTests/scripts/r/dataframe_int_column_type.R",
+      "packages/CVMTests/scripts/r/dataframe_test.R",
+      "packages/CVMTests/scripts/r/datetime_tets.R",
+      "packages/CVMTests/scripts/r/echo.r",
+      "packages/CVMTests/scripts/r/empty_df.r",
+      "packages/CVMTests/scripts/r/env_test.R",
+      "packages/CVMTests/scripts/r/file_env_test.R",
+      "packages/CVMTests/scripts/r/file_test.R",
+      "packages/CVMTests/scripts/r/graphics_test.R",
+      "packages/CVMTests/scripts/r/input_output_test.R",
+      "packages/CVMTests/scripts/r/list_string_test.R",
+      "packages/CVMTests/scripts/r/map_type_test.R",
+      "packages/CVMTests/scripts/r/single_df_test.R",
+      "packages/CVMTests/scripts/rows-test.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/CVMTests/CHANGELOG.md",
+      "packages/CVMTests/CREDITS.md",
+      "packages/CVMTests/README.md"
+    ],
+    "config": [
+      "packages/CVMTests/environments/env_conda_extras.yaml",
+      "packages/CVMTests/environments/env_mixed_deps.yaml",
+      "packages/CVMTests/environments/env_numpy_compat.yaml",
+      "packages/CVMTests/environments/my_test_env.yaml",
+      "packages/CVMTests/environments/r_test_env.yaml"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:CVMTests:python-scripting",
+      "name": "Python Scripting Tests",
+      "description": "Tests cross-VM execution of Python scripts, covering the full I/O type matrix: primitives, dataframes (including empty and cached), columns, files, blobs, maps, graphics, strings, choices, datetime, and exception…",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:DummyPython",
+          "kind": "Script",
+          "name": "DummyPython",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:CVMTests:Python File Blob Input Output",
+          "kind": "Script",
+          "name": "Python File Blob Input Output",
+          "language": "python",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:CVMTests:Python Calc Column",
+          "kind": "Script",
+          "name": "Python Calc Column",
+          "language": "python",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:Python Column List",
+          "kind": "Script",
+          "name": "Python Column List",
+          "language": "python",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:Python Dataframe Graphics Cached",
+          "kind": "Script",
+          "name": "Python Dataframe Graphics Cached",
+          "language": "python",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Python Int Column",
+          "kind": "Script",
+          "name": "Python Int Column",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:CVMTests:Python Dataframe",
+          "kind": "Script",
+          "name": "Python Dataframe",
+          "language": "python",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Python Date",
+          "kind": "Script",
+          "name": "Python Date",
+          "language": "python",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:Python Echo",
+          "kind": "Script",
+          "name": "Python Echo",
+          "language": "python",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:Python Empty Dataframe",
+          "kind": "Script",
+          "name": "Python Empty Dataframe",
+          "language": "python",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Python Anchors Count",
+          "kind": "Script",
+          "name": "Python Anchors Count",
+          "language": "python",
+          "description": "anchors count in html"
+        },
+        {
+          "id": "script:CVMTests:Python Exception",
+          "kind": "Script",
+          "name": "Python Exception",
+          "language": "python",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Image Pixel Count",
+          "kind": "Script",
+          "name": "Image Pixel Count",
+          "language": "python",
+          "description": "image pixel count"
+        },
+        {
+          "id": "script:CVMTests:Python Graphics",
+          "kind": "Script",
+          "name": "Python Graphics",
+          "language": "python",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:Python Simple",
+          "kind": "Script",
+          "name": "Python Simple",
+          "language": "python",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:Python Simple Cached",
+          "kind": "Script",
+          "name": "Python Simple Cached",
+          "language": "python",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:Python List String Test",
+          "kind": "Script",
+          "name": "Python List String Test",
+          "language": "python",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:Python Map",
+          "kind": "Script",
+          "name": "Python Map",
+          "language": "python",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:Python Lines Count",
+          "kind": "Script",
+          "name": "Python Lines Count",
+          "language": "python",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:Python Single Df Cached",
+          "kind": "Script",
+          "name": "Python Single Df Cached",
+          "language": "python",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:Python Single Df",
+          "kind": "Script",
+          "name": "Python Single Df",
+          "language": "python",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:Python String Choices",
+          "kind": "Script",
+          "name": "Python String Choices",
+          "language": "python",
+          "description": "choices test"
+        },
+        {
+          "id": "script:CVMTests:Python Params Test",
+          "kind": "Script",
+          "name": "Python Params Test",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:CVMTests:RowsTest",
+          "kind": "Script",
+          "name": "RowsTest",
+          "language": "python",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:python-environment-management",
+      "name": "Python Environment Management Tests",
+      "description": "Tests that the CVM correctly creates, isolates, and reuses Python environments, covering conda-only extras, pip-only deps, mixed conda+pip, numpy ABI compatibility, Python 3.12 pinning, and env reuse detection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:PythonEnvCondaExtras",
+          "kind": "Script",
+          "name": "PythonEnvCondaExtras",
+          "language": "python",
+          "description": "Environment with extra conda-only dependencies beyond base"
+        },
+        {
+          "id": "script:CVMTests:PythonEnvMixedDeps",
+          "kind": "Script",
+          "name": "PythonEnvMixedDeps",
+          "language": "python",
+          "description": "Environment with both conda extras and pip packages"
+        },
+        {
+          "id": "script:CVMTests:PythonEnvNumpyCompat",
+          "kind": "Script",
+          "name": "PythonEnvNumpyCompat",
+          "language": "python",
+          "description": "Verifies numpy ABI compatibility when pip packages depend on numpy"
+        },
+        {
+          "id": "script:CVMTests:PythonEnvPipOnly",
+          "kind": "Script",
+          "name": "PythonEnvPipOnly",
+          "language": "python",
+          "description": "Environment with pip-only extra dependencies"
+        },
+        {
+          "id": "script:CVMTests:PythonEnvPy312",
+          "kind": "Script",
+          "name": "PythonEnvPy312",
+          "language": "python",
+          "description": "Environment with Python 3.12 template"
+        },
+        {
+          "id": "script:CVMTests:PythonEnvReuse",
+          "kind": "Script",
+          "name": "PythonEnvReuse",
+          "language": "python",
+          "description": "Tests that existing environment is correctly detected and reused"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:r-scripting",
+      "name": "R Scripting Tests",
+      "description": "Tests cross-VM execution of R scripts covering the full I/O type matrix — primitives, dataframes (including empty), columns, files, blobs, maps, graphics, strings, datetime — plus custom-package environment tests using…",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:R File Blob Input Output",
+          "kind": "Script",
+          "name": "R File Blob Input Output",
+          "language": "r",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:CVMTests:R Calc Column",
+          "kind": "Script",
+          "name": "R Calc Column",
+          "language": "r",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:R Column List",
+          "kind": "Script",
+          "name": "R Column List",
+          "language": "r",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:R Int Column",
+          "kind": "Script",
+          "name": "R Int Column",
+          "language": "r",
+          "description": null
+        },
+        {
+          "id": "script:CVMTests:R Dataframe",
+          "kind": "Script",
+          "name": "R Dataframe",
+          "language": "r",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:R Date",
+          "kind": "Script",
+          "name": "R Date",
+          "language": "r",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:R Echo",
+          "kind": "Script",
+          "name": "R Echo",
+          "language": "r",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:R Empty Dataframe",
+          "kind": "Script",
+          "name": "R Empty Dataframe",
+          "language": "r",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:R Env String Reverse",
+          "kind": "Script",
+          "name": "R Env String Reverse",
+          "language": "r",
+          "description": "reverse a string using stringi from a custom env"
+        },
+        {
+          "id": "script:CVMTests:R Env File String Reverse",
+          "kind": "Script",
+          "name": "R Env File String Reverse",
+          "language": "r",
+          "description": "reverse a string using stringi from a yaml env file"
+        },
+        {
+          "id": "script:CVMTests:R Lines Count",
+          "kind": "Script",
+          "name": "R Lines Count",
+          "language": "r",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:R Graphics",
+          "kind": "Script",
+          "name": "R Graphics",
+          "language": "r",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:R Simple",
+          "kind": "Script",
+          "name": "R Simple",
+          "language": "r",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:R List String Test",
+          "kind": "Script",
+          "name": "R List String Test",
+          "language": "r",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:R Map",
+          "kind": "Script",
+          "name": "R Map",
+          "language": "r",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:R Single Df",
+          "kind": "Script",
+          "name": "R Single Df",
+          "language": "python",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:R Params Test",
+          "kind": "Script",
+          "name": "R Params Test",
+          "language": "r",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:octave-scripting",
+      "name": "Octave Scripting Tests",
+      "description": "Tests cross-VM execution of Octave scripts covering the standard I/O type matrix, with two Octave-specific additions: exponential operator syntax edge case and stdout capture.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:Octave File Blob Input Output",
+          "kind": "Script",
+          "name": "Octave File Blob Input Output",
+          "language": "octave",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:CVMTests:Octave Calc Column",
+          "kind": "Script",
+          "name": "Octave Calc Column",
+          "language": "octave",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:Octave Column List",
+          "kind": "Script",
+          "name": "Octave Column List",
+          "language": "octave",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:Octave Dataframe",
+          "kind": "Script",
+          "name": "Octave Dataframe",
+          "language": "octave",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Octave Date",
+          "kind": "Script",
+          "name": "Octave Date",
+          "language": "octave",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:Octave Echo",
+          "kind": "Script",
+          "name": "Octave Echo",
+          "language": "octave",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:Octave Exponential Operator Test",
+          "kind": "Script",
+          "name": "Octave Exponential Operator Test",
+          "language": "octave",
+          "description": "Exponential Operator Test"
+        },
+        {
+          "id": "script:CVMTests:Octave Lines Count",
+          "kind": "Script",
+          "name": "Octave Lines Count",
+          "language": "octave",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:Octave Graphics",
+          "kind": "Script",
+          "name": "Octave Graphics",
+          "language": "octave",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:Octave Simple",
+          "kind": "Script",
+          "name": "Octave Simple",
+          "language": "octave",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:Octave List String Test",
+          "kind": "Script",
+          "name": "Octave List String Test",
+          "language": "octave",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:Octave Map",
+          "kind": "Script",
+          "name": "Octave Map",
+          "language": "octave",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:Octave Single Df",
+          "kind": "Script",
+          "name": "Octave Single Df",
+          "language": "octave",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:Octave Stdout",
+          "kind": "Script",
+          "name": "Octave Stdout",
+          "language": "octave",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:Octave Params Test",
+          "kind": "Script",
+          "name": "Octave Params Test",
+          "language": "octave",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:julia-scripting",
+      "name": "Julia Scripting Tests",
+      "description": "Tests cross-VM execution of Julia scripts covering the full I/O type matrix — primitives, dataframes (including empty), integer columns, files, blobs, maps, graphics, strings, and datetime.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:Julia File Blob Input Output",
+          "kind": "Script",
+          "name": "Julia File Blob Input Output",
+          "language": "julia",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:CVMTests:Julia Calc Column",
+          "kind": "Script",
+          "name": "Julia Calc Column",
+          "language": "julia",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:Julia Column List",
+          "kind": "Script",
+          "name": "Julia Column List",
+          "language": "julia",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:Julia Int Column",
+          "kind": "Script",
+          "name": "Julia Int Column",
+          "language": "julia",
+          "description": null
+        },
+        {
+          "id": "script:CVMTests:Julia Dataframe",
+          "kind": "Script",
+          "name": "Julia Dataframe",
+          "language": "julia",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Julia Date",
+          "kind": "Script",
+          "name": "Julia Date",
+          "language": "julia",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:Julia Echo",
+          "kind": "Script",
+          "name": "Julia Echo",
+          "language": "julia",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:Julia Empty Dataframe",
+          "kind": "Script",
+          "name": "Julia Empty Dataframe",
+          "language": "julia",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:Julia Lines Count",
+          "kind": "Script",
+          "name": "Julia Lines Count",
+          "language": "julia",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:Julia Graphics",
+          "kind": "Script",
+          "name": "Julia Graphics",
+          "language": "julia",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:Julia Simple",
+          "kind": "Script",
+          "name": "Julia Simple",
+          "language": "julia",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:Julia List String Test",
+          "kind": "Script",
+          "name": "Julia List String Test",
+          "language": "julia",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:Julia Map",
+          "kind": "Script",
+          "name": "Julia Map",
+          "language": "julia",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:Julia Single Df",
+          "kind": "Script",
+          "name": "Julia Single Df",
+          "language": "julia",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:Julia Params Test",
+          "kind": "Script",
+          "name": "Julia Params Test",
+          "language": "julia",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:javascript-scripting",
+      "name": "JavaScript (Browser) Scripting Tests",
+      "description": "Tests cross-VM execution of client-side JavaScript scripts covering the standard I/O type matrix — primitives, dataframes, columns, files, maps, graphics, dates, and strings.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:JavaScript Calc Column",
+          "kind": "Script",
+          "name": "JavaScript Calc Column",
+          "language": "javascript",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Column List",
+          "kind": "Script",
+          "name": "JavaScript Column List",
+          "language": "javascript",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Dataframe",
+          "kind": "Script",
+          "name": "JavaScript Dataframe",
+          "language": "javascript",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Date",
+          "kind": "Script",
+          "name": "JavaScript Date",
+          "language": "javascript",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Echo",
+          "kind": "Script",
+          "name": "JavaScript Echo",
+          "language": "javascript",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Lines Count",
+          "kind": "Script",
+          "name": "JavaScript Lines Count",
+          "language": "javascript",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Graphics",
+          "kind": "Script",
+          "name": "JavaScript Graphics",
+          "language": "javascript",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Simple",
+          "kind": "Script",
+          "name": "JavaScript Simple",
+          "language": "javascript",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:JavaScript List String Test",
+          "kind": "Script",
+          "name": "JavaScript List String Test",
+          "language": "javascript",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Map",
+          "kind": "Script",
+          "name": "JavaScript Map",
+          "language": "javascript",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Single Df",
+          "kind": "Script",
+          "name": "JavaScript Single Df",
+          "language": "javascript",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:JavaScript Params Test",
+          "kind": "Script",
+          "name": "JavaScript Params Test",
+          "language": "javascript",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CVMTests:nodejs-scripting",
+      "name": "NodeJS Scripting Tests",
+      "description": "Tests cross-VM execution of server-side Node.js scripts covering the full I/O type matrix — primitives, dataframes, columns, files, blobs, maps, graphics, dates, and strings.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:CVMTests:NodeJS File Blob Input Output",
+          "kind": "Script",
+          "name": "NodeJS File Blob Input Output",
+          "language": "nodejs",
+          "description": "file and blob"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Calc Column",
+          "kind": "Script",
+          "name": "NodeJS Calc Column",
+          "language": "nodejs",
+          "description": "calc column"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Column List",
+          "kind": "Script",
+          "name": "NodeJS Column List",
+          "language": "nodejs",
+          "description": "column list input"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Dataframe",
+          "kind": "Script",
+          "name": "NodeJS Dataframe",
+          "language": "nodejs",
+          "description": "df input/output"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Date",
+          "kind": "Script",
+          "name": "NodeJS Date",
+          "language": "nodejs",
+          "description": "datetime input/output"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Echo",
+          "kind": "Script",
+          "name": "NodeJS Echo",
+          "language": "nodejs",
+          "description": "Echo string script"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Lines Count",
+          "kind": "Script",
+          "name": "NodeJS Lines Count",
+          "language": "nodejs",
+          "description": "file lines count"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Graphics",
+          "kind": "Script",
+          "name": "NodeJS Graphics",
+          "language": "nodejs",
+          "description": "graphics output column input"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Simple",
+          "kind": "Script",
+          "name": "NodeJS Simple",
+          "language": "nodejs",
+          "description": "primitive inputs and outputs test"
+        },
+        {
+          "id": "script:CVMTests:NodeJS List String Test",
+          "kind": "Script",
+          "name": "NodeJS List String Test",
+          "language": "nodejs",
+          "description": "Returns the last element of a string list"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Map",
+          "kind": "Script",
+          "name": "NodeJS Map",
+          "language": "nodejs",
+          "description": "map input/output"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Single Df",
+          "kind": "Script",
+          "name": "NodeJS Single Df",
+          "language": "nodejs",
+          "description": "df performance"
+        },
+        {
+          "id": "script:CVMTests:NodeJS Params Test",
+          "kind": "Script",
+          "name": "NodeJS Params Test",
+          "language": "nodejs",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

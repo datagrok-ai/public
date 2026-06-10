@@ -1,0 +1,218 @@
+{
+  "package": {
+    "id": "pkg:Admetica",
+    "name": "Admetica",
+    "friendly_name": "Admetica",
+    "category": "Cheminformatics",
+    "description": "Assessment of ADMET Properties"
+  },
+  "files": {
+    "src": [
+      "packages/Admetica/src/css/admetica.css",
+      "packages/Admetica/src/package.ts",
+      "packages/Admetica/src/utils/admetica-app.ts",
+      "packages/Admetica/src/utils/admetica-editor.ts",
+      "packages/Admetica/src/utils/admetica-form.ts",
+      "packages/Admetica/src/utils/admetica-utils.ts",
+      "packages/Admetica/src/utils/constants.ts",
+      "packages/Admetica/src/viewers/cell-render-viewer.ts"
+    ],
+    "tests": [
+      "packages/Admetica/src/package-test.ts",
+      "packages/Admetica/src/tests/admetica-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Admetica/CHANGELOG.md",
+      "packages/Admetica/CLAUDE.md",
+      "packages/Admetica/CREDITS.md",
+      "packages/Admetica/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Admetica:admet-batch-prediction",
+      "name": "ADMET Batch Prediction",
+      "description": "Predicts ADMET properties for an entire molecule column using Chemprop deep-learning models and appends results as new columns with color-coded values. Accessible via the main menu or programmatically.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Admetica:AdmeticaMenu",
+          "kind": "RegisteredFunction",
+          "name": "AdmeticaMenu",
+          "friendly_name": null,
+          "role": null,
+          "description": "Predicts ADMET properties and appends result columns.",
+          "tags": []
+        },
+        {
+          "id": "func:Admetica:getAdmeProperties",
+          "kind": "RegisteredFunction",
+          "name": "getAdmeProperties",
+          "friendly_name": null,
+          "role": null,
+          "description": "Predicts ADMET properties for a molecule column.",
+          "tags": []
+        },
+        {
+          "id": "func:Admetica:AdmeticaEditor",
+          "kind": "RegisteredFunction",
+          "name": "AdmeticaEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Admetica:getModels",
+          "kind": "RegisteredFunction",
+          "name": "getModels",
+          "friendly_name": null,
+          "role": null,
+          "description": "Lists available ADMET properties.",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Admetica/readme.md",
+          "kind": "DocPage",
+          "title": "Admetica",
+          "url": "/packages/Admetica/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+          "kind": "DocPage",
+          "title": "Chemprop",
+          "url": "/help/datagrok/solutions/domains/chem/chemprop"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Admetica/src/package.ts",
+          "packages/Admetica/src/utils/admetica-editor.ts",
+          "packages/Admetica/src/utils/admetica-form.ts",
+          "packages/Admetica/src/utils/admetica-utils.ts",
+          "packages/Admetica/src/utils/constants.ts",
+          "packages/Admetica/src/viewers/cell-render-viewer.ts"
+        ],
+        "tests": [
+          "packages/Admetica/src/tests/admetica-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Admetica:admet-info-panel",
+      "name": "ADMET Info Panel",
+      "description": "Displays ADMET property predictions for the currently selected molecule in a context-pane panel, with a summary pie chart, color-coded values, and sub-categories including toxicity and drug-likeness.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:Admetica:Biology | Admetica",
+          "kind": "RegisteredFunction",
+          "name": "Biology | Admetica",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Panel with ADMET predictions for a molecule.",
+          "tags": []
+        },
+        {
+          "id": "func:Admetica:getAdmePropertiesSingle",
+          "kind": "RegisteredFunction",
+          "name": "getAdmePropertiesSingle",
+          "friendly_name": null,
+          "role": null,
+          "description": "Predicts ADMET properties for a given molecule.",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+          "kind": "DocPage",
+          "title": "Drug likeness",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+          "kind": "DocPage",
+          "title": "Toxicity risks",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+          "kind": "DocPage",
+          "title": "Structural alerts",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Admetica/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Admetica:admetica-app",
+      "name": "Admetica App",
+      "description": "A standalone application view (browseable under Chem) for interactively exploring ADMET predictions, including a demo mode that showcases the plugin's main functionality.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Admetica:Admetica",
+          "kind": "RegisteredFunction",
+          "name": "Admetica",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Admetica:Admetica Demo",
+          "kind": "RegisteredFunction",
+          "name": "Admetica Demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Evaluating ADMET properties",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Admetica/src/package.ts"
+        ],
+        "tests": [
+          "packages/Admetica/src/tests/admetica-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Admetica:hit-triage-integration",
+      "name": "Hit Triage Integration",
+      "description": "Integrates ADMET predictions into the Datagrok Hit Triage workflow as a scored triage function, enabling ADMET-based compound prioritization.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Admetica:AdmeticaHT",
+          "kind": "RegisteredFunction",
+          "name": "AdmeticaHT",
+          "friendly_name": null,
+          "role": "hitTriageFunction",
+          "description": "Runs ADMET predictions for Hit Triage.",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Admetica/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

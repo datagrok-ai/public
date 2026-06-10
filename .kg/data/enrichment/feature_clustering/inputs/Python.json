@@ -1,0 +1,244 @@
+{
+  "package": {
+    "id": "pkg:Python",
+    "name": "Python",
+    "friendly_name": "Python",
+    "version": "0.0.3",
+    "category": "Compute",
+    "description": "Python server for code execution and data processing",
+    "extras": {
+      "npm_name": "python",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Python:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Python:Sample A+B",
+      "name": "Sample A+B",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Python:Sample pandas input",
+      "name": "Sample pandas input",
+      "language": "python",
+      "description": "Calculates number of cells in the table"
+    },
+    {
+      "id": "script:Python:Sample pandas output",
+      "name": "Sample pandas output",
+      "language": "python",
+      "description": "Produces dataframe with an integer sequence"
+    },
+    {
+      "id": "script:Python:Sample Gasteiger charges",
+      "name": "Sample Gasteiger charges",
+      "language": "python",
+      "description": "RDKit-based script."
+    },
+    {
+      "id": "script:Python:Sample Sklearn model",
+      "name": "Sample Sklearn model",
+      "language": "python",
+      "description": "Trains sklearn linear regression model. Compatible with predictive modeling toolkit"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Python/credits.md",
+      "title": "Python — Third-Party Libraries",
+      "url": "/packages/Python/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Python/readme.md",
+      "title": "Python",
+      "url": "/packages/Python/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/packages/python-functions",
+      "title": "Creating Python Docker Apps",
+      "url": "/help/develop/how-to/packages/python-functions",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/python-api",
+      "title": "Python API",
+      "url": "/help/develop/python-api",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 1,
+    "scripts": 5,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 24,
+    "changelog": 0
+  }
+}

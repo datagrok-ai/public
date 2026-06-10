@@ -1,0 +1,533 @@
+{
+  "package": {
+    "id": "pkg:LibTests",
+    "name": "LibTests",
+    "friendly_name": "LibTests",
+    "version": "1.8.1",
+    "category": "Development",
+    "description": "Automated tests for libraries",
+    "extras": {
+      "npm_name": "@datagrok/lib-tests",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:LibTests:CustomInputMock",
+      "name": "CustomInputMock",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:RangeValidatorFactory",
+      "name": "RangeValidatorFactory",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:AsyncValidatorDemoFactory",
+      "name": "AsyncValidatorDemoFactory",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:GlobalValidatorDemoFactory",
+      "name": "GlobalValidatorDemoFactory",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:ValidatorActionsDemoFactory",
+      "name": "ValidatorActionsDemoFactory",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestViewerComponent",
+      "name": "TestViewerComponent",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "test"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestFromComponent",
+      "name": "TestFromComponent",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "test"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestElements",
+      "name": "TestElements",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "test"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestAdd2",
+      "name": "TestAdd2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestSub2",
+      "name": "TestSub2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestMul2",
+      "name": "TestMul2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestDiv2",
+      "name": "TestDiv2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestDF1",
+      "name": "TestDF1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestAdd2Error",
+      "name": "TestAdd2Error",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:TestMultiarg5",
+      "name": "TestMultiarg5",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double",
+        "double",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:MockWrapper1",
+      "name": "MockWrapper1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:MockWrapper2",
+      "name": "MockWrapper2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:MockWrapper3",
+      "name": "MockWrapper3",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:MockWrapper4",
+      "name": "MockWrapper4",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:LibTests:MockWrapper5",
+      "name": "MockWrapper5",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:LibTests:complexInputs",
+      "name": "complexInputs",
+      "language": "javascript",
+      "description": "RichFunctionView custom input and df input"
+    },
+    {
+      "id": "script:LibTests:globalValidationTest",
+      "name": "globalValidationTest",
+      "language": "javascript",
+      "description": "Global validators test"
+    },
+    {
+      "id": "script:LibTests:validationTest",
+      "name": "validationTest",
+      "language": "javascript",
+      "description": "Custom validators test"
+    },
+    {
+      "id": "script:LibTests:simpleInputs",
+      "name": "simpleInputs",
+      "language": "javascript",
+      "description": "RichFunctionView simple inputs test"
+    },
+    {
+      "id": "script:LibTests:simpleInputsDefaultValues",
+      "name": "simpleInputsDefaultValues",
+      "language": "javascript",
+      "description": "RichFunctionView simple inputs"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/LibTests/credits.md",
+      "title": "LibTests — Third-Party Libraries",
+      "url": "/packages/LibTests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/LibTests/readme.md",
+      "title": "Lib Tests",
+      "url": "/packages/LibTests/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/packages/_overview",
+      "title": "JavaScript Development Overview",
+      "url": "/help/develop/packages/_overview",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:LibTests:1.7.8:0",
+      "version": "1.7.8",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "Release for 1.26.0"
+    },
+    {
+      "id": "clog:LibTests:1.7.0:0",
+      "version": "1.7.0",
+      "released_at": "2025-03-30",
+      "ticket": null,
+      "text": "Release for 1.25.0"
+    },
+    {
+      "id": "clog:LibTests:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2025-03-19",
+      "ticket": null,
+      "text": "Release for 1.27.0"
+    },
+    {
+      "id": "clog:LibTests:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2025-02-19",
+      "ticket": null,
+      "text": "Release for 1.24.0"
+    },
+    {
+      "id": "clog:LibTests:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-01-29",
+      "ticket": null,
+      "text": "Deps update"
+    },
+    {
+      "id": "clog:LibTests:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-01-07",
+      "ticket": null,
+      "text": "Updated tests for synchronouy RFV"
+    },
+    {
+      "id": "clog:LibTests:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2024-12-25",
+      "ticket": null,
+      "text": "Release for 1.23.0"
+    },
+    {
+      "id": "clog:LibTests:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2024-09-05",
+      "ticket": null,
+      "text": "Release for 1.21.0"
+    },
+    {
+      "id": "clog:LibTests:1.3.0-rc:0",
+      "version": "1.3.0-rc",
+      "released_at": "2024-09-04",
+      "ticket": null,
+      "text": "Preparing 1.21.0 release"
+    },
+    {
+      "id": "clog:LibTests:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2024-06-12",
+      "ticket": null,
+      "text": "Added tests for ComputeAPI"
+    },
+    {
+      "id": "clog:LibTests:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2024-05-09",
+      "ticket": null,
+      "text": "Deps update (compute-utils v.1.33.5)"
+    },
+    {
+      "id": "clog:LibTests:1.1.2:0",
+      "version": "1.1.2",
+      "released_at": "2024-05-08",
+      "ticket": null,
+      "text": "Added author"
+    },
+    {
+      "id": "clog:LibTests:1.1.2:1",
+      "version": "1.1.2",
+      "released_at": "2024-05-08",
+      "ticket": null,
+      "text": "Deps update"
+    },
+    {
+      "id": "clog:LibTests:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-05-06",
+      "ticket": null,
+      "text": "Added tests for CompoisitionPipeline"
+    },
+    {
+      "id": "clog:LibTests:1.1.0:1",
+      "version": "1.1.0",
+      "released_at": "2024-05-06",
+      "ticket": null,
+      "text": "Fixed old tests"
+    }
+  ],
+  "stats": {
+    "functions": 20,
+    "scripts": 5,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 3,
+    "changelog": 15
+  }
+}

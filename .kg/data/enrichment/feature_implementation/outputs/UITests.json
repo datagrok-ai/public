@@ -1,0 +1,212 @@
+{
+  "package_id": "pkg:UITests",
+  "features": [
+    {
+      "id": "feature:UITests:data-grid-tests",
+      "implements": [
+        {
+          "path": "packages/UITests/src/gui/grid.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/ui/tables.ts",
+          "role": "core",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/UITests/src/gui/gui-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Grid behavior tests (search/delete/filter) live in gui/grid.ts; ui/tables.ts covers table schema/UI. Other doc-page sub-tests (sorting/color-coding/datetime/normalize/collections) have no dedicated source file in this package."
+    },
+    {
+      "id": "feature:UITests:dialog-ui-controls-tests",
+      "implements": [
+        {
+          "path": "packages/UITests/src/gui/dialogs.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UITests/src/ui/inputs.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UITests/src/ui/input-for-property.ts",
+          "role": "core",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UITests/src/ui/inputform.ts",
+          "role": "core",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/UITests/src/ui/tags.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/viewers/test-viewer-for-properties.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UITests/src/package.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/UITests/src/ui/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/UITests/src/gui/gui-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "TestViewerForProperties class registered via package.ts; dialog/input-field/tag GUI tests live in gui/dialogs.ts and ui/inputs.* + ui/tags.ts."
+    },
+    {
+      "id": "feature:UITests:data-connectivity-tests",
+      "implements": [
+        {
+          "path": "packages/UITests/src/gui/files.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/views/files-view.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/UITests/src/gui/gui-utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "File connector creation/share dialogs in gui/files.ts; FilesView UI tests in views/files-view.ts. No dedicated sources for elastic-search, build-query, web-connector, or export tests in this package."
+    },
+    {
+      "id": "feature:UITests:data-transformation-tests",
+      "implements": [
+        {
+          "path": "packages/UITests/src/viewers/test-custom-filter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/UITests/src/viewers/filters.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/package.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "TestCustomFilter class is registered via package.ts and exercised by viewers/filters.ts; no dedicated transformation-editor or substructure-filter test source in this package."
+    },
+    {
+      "id": "feature:UITests:collaboration-user-tests",
+      "implements": [
+        {
+          "path": "packages/UITests/src/ui/users.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UITests/src/ui/groups.ts",
+          "role": "core",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UITests/src/ui/sharing.ts",
+          "role": "core",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/UITests/src/gui/project-upload.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/UITests/src/views/packages.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "User/group/sharing UI tests + project upload test cover collaboration scenarios; no dedicated sources for registration, invitations, recently-open, or help doc-tests."
+    },
+    {
+      "id": "feature:UITests:test-infrastructure",
+      "implements": [
+        {
+          "path": "packages/UITests/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/UITests/src/gui/gui-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/UITests/src/ui/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/UITests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "package.ts wires the package; package-test.ts is the test-runner entry point (registers `test`/`initAutoTests` and imports every test category); shared fixtures live in gui-utils.ts and ui/utils.ts."
+    }
+  ]
+}

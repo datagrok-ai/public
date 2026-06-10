@@ -1,0 +1,578 @@
+{
+  "package": {
+    "id": "pkg:Curves",
+    "name": "Curves",
+    "friendly_name": "Curves",
+    "version": "1.12.0",
+    "category": "Visualizations",
+    "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
+    "extras": {
+      "npm_name": "@datagrok/curves",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Curves:Fit",
+      "name": "Fit",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:MultiCurveViewer",
+      "name": "MultiCurveViewer",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "A viewer that superimposes multiple in-cell curves on one chart",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:Curve fitting",
+      "name": "Curve fitting",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:_initCurves",
+      "name": "_initCurves",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:dataToCurves",
+      "name": "dataToCurves",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "column",
+        "column",
+        "column",
+        "column",
+        "column",
+        "column",
+        "dataframe",
+        null,
+        "string",
+        "string",
+        "string",
+        "string",
+        null,
+        "string",
+        "string",
+        null
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:dataToCurvesTopMenu",
+      "name": "dataToCurvesTopMenu",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:addStatisticsColumn",
+      "name": "addStatisticsColumn",
+      "friendly_name": null,
+      "role": "transform",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "string",
+        "string",
+        "int"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {
+        "role": "transform"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:addAggrStatisticsColumn",
+      "name": "addAggrStatisticsColumn",
+      "friendly_name": null,
+      "role": "transform",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {
+        "role": "transform"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:convertXmlCurveToJsonFunc",
+      "name": "convertXmlCurveToJsonFunc",
+      "friendly_name": null,
+      "role": "curveConverter",
+      "tags": [],
+      "description": "Returns XML 3DX curve converter function",
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "curveConverter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:convertCompactDrToJsonFunc",
+      "name": "convertCompactDrToJsonFunc",
+      "friendly_name": null,
+      "role": "curveConverter",
+      "tags": [],
+      "description": "Returns compact dose-response JSON converter function",
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "curveConverter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:convertPzfxToJsonFunc",
+      "name": "convertPzfxToJsonFunc",
+      "friendly_name": null,
+      "role": "curveConverter",
+      "tags": [],
+      "description": "Returns PZFX curve converter function",
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "curveConverter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:previewPzfx",
+      "name": "previewPzfx",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "pzfx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:pzfxFileHandler",
+      "name": "pzfxFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "pzfx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:'Assay Plates',",
+      "name": "'Assay Plates',",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "'Assasy plates with concentration, layout and readout data',",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Curves:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Curves:Calculate MSR",
+      "name": "Calculate MSR",
+      "language": "python",
+      "description": "Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities."
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Curves/credits.md",
+      "title": "Curves — Third-Party Libraries",
+      "url": "/packages/Curves/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Curves/readme.md",
+      "title": "Curves",
+      "url": "/packages/Curves/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Curves/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Curves/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/workflows/_dose-response curves",
+      "title": "_dose-response curves",
+      "url": "/help/datagrok/solutions/workflows/_dose-response curves",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "title": "Multi curve viewer",
+      "url": "/help/visualize/viewers/multi-curve-viewer",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Plates/credits.md",
+      "title": "Plates — Third-Party Libraries",
+      "url": "/packages/Plates/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Plates/readme.md",
+      "title": "Plates",
+      "url": "/packages/Plates/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Curves:1.12.0:0",
+      "version": "1.12.0",
+      "released_at": "2026-04-02",
+      "ticket": null,
+      "text": "Added PZFX (GraphPad Prism) file viewer and handler"
+    },
+    {
+      "id": "clog:Curves:1.12.0:1",
+      "version": "1.12.0",
+      "released_at": "2026-04-02",
+      "ticket": null,
+      "text": "Added dynamically extendable format support"
+    },
+    {
+      "id": "clog:Curves:1.11.0:0",
+      "version": "1.11.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added editable GridCellWidget support"
+    },
+    {
+      "id": "clog:Curves:1.10.15:0",
+      "version": "1.10.15",
+      "released_at": "2025-12-02",
+      "ticket": null,
+      "text": "Png Renderer: Fix flickering and moved to PowerGrid"
+    },
+    {
+      "id": "clog:Curves:1.10.12:0",
+      "version": "1.10.12",
+      "released_at": "2025-09-16",
+      "ticket": "GROK-18808",
+      "text": "GROK-18808: Provided consistent names for Data top menu"
+    },
+    {
+      "id": "clog:Curves:1.10.12:1",
+      "version": "1.10.12",
+      "released_at": "2025-09-16",
+      "ticket": null,
+      "text": "Plates: Skip rendering too small plates"
+    },
+    {
+      "id": "clog:Curves:1.10.11:0",
+      "version": "1.10.11",
+      "released_at": "2025-09-12",
+      "ticket": null,
+      "text": "Data-To-Curves: Well level additional columns"
+    },
+    {
+      "id": "clog:Curves:1.10.10:0",
+      "version": "1.10.10",
+      "released_at": "2025-09-09",
+      "ticket": null,
+      "text": "Extended PNG detector"
+    },
+    {
+      "id": "clog:Curves:1.10.9:0",
+      "version": "1.10.9",
+      "released_at": "2025-08-27",
+      "ticket": null,
+      "text": "MultiCurveViewer: Added showOutliers parameter"
+    },
+    {
+      "id": "clog:Curves:1.10.8:0",
+      "version": "1.10.8",
+      "released_at": "2025-08-21",
+      "ticket": null,
+      "text": "Data-to-Curves: Correct exclude heuristic"
+    },
+    {
+      "id": "clog:Curves:1.10.7:0",
+      "version": "1.10.7",
+      "released_at": "2025-08-21",
+      "ticket": null,
+      "text": "Rendering: Added showOutliers parameter"
+    },
+    {
+      "id": "clog:Curves:1.10.6:0",
+      "version": "1.10.6",
+      "released_at": "2025-08-20",
+      "ticket": null,
+      "text": "TestData: Wells: Improved concentration/activity, samples, barcodes generation for plates"
+    },
+    {
+      "id": "clog:Curves:1.10.6:1",
+      "version": "1.10.6",
+      "released_at": "2025-08-20",
+      "ticket": null,
+      "text": "TreeBrowser function: Removed unnecessary browsePanel input"
+    },
+    {
+      "id": "clog:Curves:1.10.6:2",
+      "version": "1.10.6",
+      "released_at": "2025-08-20",
+      "ticket": null,
+      "text": "Added MSR script"
+    },
+    {
+      "id": "clog:Curves:1.10.6:3",
+      "version": "1.10.6",
+      "released_at": "2025-08-20",
+      "ticket": null,
+      "text": "Updated MSR env"
+    },
+    {
+      "id": "clog:Curves:1.10.4:0",
+      "version": "1.10.4",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "MultiCurveViewer:"
+    },
+    {
+      "id": "clog:Curves:1.10.4:1",
+      "version": "1.10.4",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "Fixed issues with min/max x/y"
+    },
+    {
+      "id": "clog:Curves:1.10.4:2",
+      "version": "1.10.4",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "Fixed slider is added on min/max x/y fields"
+    },
+    {
+      "id": "clog:Curves:1.10.4:3",
+      "version": "1.10.4",
+      "released_at": "2025-08-14",
+      "ticket": null,
+      "text": "Added legendColumnName property"
+    },
+    {
+      "id": "clog:Curves:1.10.2:0",
+      "version": "1.10.2",
+      "released_at": "2025-07-31",
+      "ticket": null,
+      "text": "Data-to-curves: Added joining options"
+    },
+    {
+      "id": "clog:Curves:1.10.1:0",
+      "version": "1.10.1",
+      "released_at": "2025-07-30",
+      "ticket": null,
+      "text": "Data-to-curves: Fixed mismatched keys"
+    },
+    {
+      "id": "clog:Curves:1.10.0:0",
+      "version": "1.10.0",
+      "released_at": "2025-07-29",
+      "ticket": null,
+      "text": "4plDoseResponse: Added 4PL dose-response curve fitting function"
+    },
+    {
+      "id": "clog:Curves:1.10.0:1",
+      "version": "1.10.0",
+      "released_at": "2025-07-29",
+      "ticket": null,
+      "text": "Data-to-curves: fully covered script with history, datasync and 2 tier support"
+    },
+    {
+      "id": "clog:Curves:1.10.0:2",
+      "version": "1.10.0",
+      "released_at": "2025-07-29",
+      "ticket": null,
+      "text": "Raw PNG renderer"
+    },
+    {
+      "id": "clog:Curves:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": "GROK-17295",
+      "text": "GROK-17295: Fitting caching:"
+    },
+    {
+      "id": "clog:Curves:1.8.0:1",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Performance improvements"
+    },
+    {
+      "id": "clog:Curves:1.8.0:2",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Cached fitting and wrote tests"
+    },
+    {
+      "id": "clog:Curves:1.8.0:3",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Fixed margins"
+    },
+    {
+      "id": "clog:Curves:1.8.0:4",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Fit: Disabled caching for non valid row indexes"
+    },
+    {
+      "id": "clog:Curves:1.8.0:5",
+      "version": "1.8.0",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Outliers: Made outlier toggling not to invalidate the whole grid"
+    }
+  ],
+  "stats": {
+    "functions": 15,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 179
+  }
+}

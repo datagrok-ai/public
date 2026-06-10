@@ -1,0 +1,167 @@
+{
+  "package": {
+    "id": "pkg:BioNeMo",
+    "name": "BioNeMo",
+    "friendly_name": "BioNeMo",
+    "category": "Bioinformatics",
+    "description": "Advanced models for protein structure prediction and molecular docking"
+  },
+  "files": {
+    "src": [
+      "packages/BioNeMo/src/diffdock/diffdock-model.ts",
+      "packages/BioNeMo/src/package.ts"
+    ],
+    "tests": [
+      "packages/BioNeMo/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/BioNeMo/scripts/diffdock.py",
+      "packages/BioNeMo/scripts/esmfold.py",
+      "packages/BioNeMo/scripts/molmim.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/BioNeMo/CHANGELOG.md",
+      "packages/BioNeMo/CREDITS.md",
+      "packages/BioNeMo/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:BioNeMo:esm-fold",
+      "name": "ESMFold Protein Structure Prediction",
+      "description": "Predicts the 3D structure of a protein from its amino acid sequence using the ESMFold model via NVIDIA BioNeMo. Results are surfaced as a dataframe and an interactive panel in the Bio context.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:BioNeMo:EsmFold",
+          "kind": "RegisteredFunction",
+          "name": "EsmFold",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:BioNeMo:esmfoldPython",
+          "kind": "Script",
+          "name": "esmfoldPython",
+          "language": "python",
+          "description": "Predicts the 3D structure of a protein from its amino acid sequence"
+        },
+        {
+          "id": "func:BioNeMo:Bio | EsmFold",
+          "kind": "RegisteredFunction",
+          "name": "Bio | EsmFold",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BioNeMo/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BioNeMo:diff-dock",
+      "name": "DiffDock Molecular Docking",
+      "description": "Predicts the 3D binding pose of a small molecule against a protein target using the DiffDock diffusion model, with a supporting context panel and target-file helper for batch workflows.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:BioNeMo:DiffDock",
+          "kind": "RegisteredFunction",
+          "name": "DiffDock",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:BioNeMo:diffdockPython",
+          "kind": "Script",
+          "name": "diffdockPython",
+          "language": "python",
+          "description": "Predicts the 3D structure of how a molecule interacts with a protein"
+        },
+        {
+          "id": "func:BioNeMo:Biology | DiffDock",
+          "kind": "RegisteredFunction",
+          "name": "Biology | DiffDock",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BioNeMo:diffDockModelScript",
+          "kind": "RegisteredFunction",
+          "name": "diffDockModelScript",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:BioNeMo:getTargetFiles",
+          "kind": "RegisteredFunction",
+          "name": "getTargetFiles",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:BioNeMo:1.3.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:BioNeMo:1.2.0:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BioNeMo/src/diffdock/diffdock-model.ts",
+          "packages/BioNeMo/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:BioNeMo:mol-mim",
+      "name": "MolMIM Controlled Molecule Generation",
+      "description": "Generates novel molecules with desired properties using the MolMIM model, supporting controlled latent-space exploration with configurable generation parameters.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:BioNeMo:MolMIMModel",
+          "kind": "RegisteredFunction",
+          "name": "MolMIMModel",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:BioNeMo:MolMIMGenerate",
+          "kind": "Script",
+          "name": "MolMIMGenerate",
+          "language": "python",
+          "description": "MolMIM performs controlled generation, finding molecules with the right properties"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/BioNeMo/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

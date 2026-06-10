@@ -1,0 +1,131 @@
+{
+  "slice_id": "help-transform",
+  "links": [
+    {
+      "doc_id": "doc:/help/transform/add-new-column",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.97,
+      "evidence": "title and URL slug exactly match the Add New Column feature in PowerPack"
+    },
+    {
+      "doc_id": "doc:/help/transform/add-new-column-test",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.93,
+      "evidence": "test document for the Add New Column feature provided by PowerPack"
+    },
+    {
+      "doc_id": "doc:/help/transform/append-tables",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.75,
+      "evidence": "ApiSamples dataframe-creation-and-io feature explicitly covers appending tables via JS API"
+    },
+    {
+      "doc_id": "doc:/help/transform/compare-tables",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.75,
+      "evidence": "ApiSamples dataframe-creation-and-io feature explicitly covers comparing tables via JS API"
+    },
+    {
+      "doc_id": "doc:/help/transform/compare-tables-test",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.72,
+      "evidence": "test document for compare tables; the underlying JS API operation is covered by dataframe-creation-and-io"
+    },
+    {
+      "doc_id": "doc:/help/transform/formula-syntax",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.88,
+      "evidence": "formula syntax is the expression language for Add New Column computed columns; the Add New Column dialog is the primary UI entry point for authoring formulas"
+    },
+    {
+      "doc_id": "doc:/help/transform/formula-syntax",
+      "target_id": "feature:PowerPack:formula-lines",
+      "confidence": 0.83,
+      "evidence": "Formula Lines uses formula expressions to define reference lines/bands; the unified formula syntax described here is the same syntax Formula Lines validates"
+    },
+    {
+      "doc_id": "doc:/help/transform/formula-syntax",
+      "target_id": "func:PowerPack:Formula",
+      "confidence": 0.82,
+      "evidence": "the Formula panel (PowerPack) directly evaluates formula expressions using the syntax described in this doc"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/aggregation-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.80,
+      "evidence": "aggregation functions are part of the platform formula language used in Add New Column expressions; snippet explicitly names the Aggregate Rows dialog and transformations as contexts"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/math-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.80,
+      "evidence": "math and trigonometric functions are core formula building blocks for Add New Column expressions"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/binning-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "binning functions are part of the formula language available when authoring Add New Column expressions"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/conversion-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "conversion functions (Boolean, DateParse, ToString, …) are part of the formula language available in Add New Column"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/datetime-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "datetime functions are part of the unified formula language usable in Add New Column computed columns"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/stats-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "statistical column-level functions are part of the formula language available when authoring Add New Column expressions"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/text-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "text functions are part of the formula language available in Add New Column expressions"
+    },
+    {
+      "doc_id": "doc:/help/transform/functions/timespan-functions",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.75,
+      "evidence": "TimeSpan functions are part of the formula language usable in Add New Column computed columns"
+    },
+    {
+      "doc_id": "doc:/help/transform/join-tables",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.75,
+      "evidence": "ApiSamples dataframe-creation-and-io feature explicitly covers joining tables via JS API"
+    },
+    {
+      "doc_id": "doc:/help/transform/join-tables-test",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.72,
+      "evidence": "test document for join tables; the underlying JS API join operation is covered by dataframe-creation-and-io"
+    },
+    {
+      "doc_id": "doc:/help/transform/link-tables",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.73,
+      "evidence": "ApiSamples dataframe-creation-and-io explicitly covers linking tables via JS API"
+    },
+    {
+      "doc_id": "doc:/help/transform/transform",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.82,
+      "evidence": "data wrangling overview explicitly lists Add New Column as a key transform routine"
+    },
+    {
+      "doc_id": "doc:/help/transform/transform",
+      "target_id": "pkg:PowerPack",
+      "confidence": 0.80,
+      "evidence": "data wrangling overview covers multiple PowerPack-provided transform features (Add New Column, data enrichment, etc.) alongside core platform tools"
+    }
+  ]
+}

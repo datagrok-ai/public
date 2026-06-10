@@ -1,0 +1,33 @@
+{
+  "package_id": "pkg:Media",
+  "features": [
+    {
+      "id": "feature:Media:audio-viewer",
+      "name": "Audio File Viewer",
+      "description": "Previews browser-supported audio files (mp3, wav, flac, ogg, opus, m4a, aac, weba) inline using the native browser audio player. Registered as a file viewer so Datagrok opens audio files automatically in the appropriate panel.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Media:audioViewer", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Media/readme.md", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "audioViewer is the sole core function for audio; readme documents the package's overall audio/video viewer capabilities."
+    },
+    {
+      "id": "feature:Media:video-viewer",
+      "name": "Video File Viewer",
+      "description": "Previews browser-supported video files (mp4, m4v, webm, ogv, mov) inline using the native browser video player. Registered as a file viewer so Datagrok opens video files automatically in the appropriate panel.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Media:videoViewer", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Media/credits.md", "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "videoViewer is the sole core function for video; credits doc lists third-party libraries used across the Media package."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Media:audio-viewer", "to": "feature:Media:video-viewer", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": []
+}

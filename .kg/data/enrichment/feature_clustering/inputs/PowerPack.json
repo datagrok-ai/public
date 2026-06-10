@@ -1,0 +1,693 @@
+{
+  "package": {
+    "id": "pkg:PowerPack",
+    "name": "PowerPack",
+    "friendly_name": "Power Pack",
+    "version": "1.8.0",
+    "category": "General",
+    "description": "Commonly used platform enhancements",
+    "extras": {
+      "npm_name": "@datagrok/power-pack",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "searchTemplatePaths",
+      "type": "string",
+      "choices": [],
+      "default": "Admin:Home/templates;System:AppData/PowerPack/search-templates"
+    },
+    {
+      "name": "allowEditDFLines",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:PowerPack:compareColumns",
+      "name": "compareColumns",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:welcomeView",
+      "name": "welcomeView",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:Spotlight",
+      "name": "Spotlight",
+      "friendly_name": null,
+      "role": "dashboard",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "dashboard"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:Community",
+      "name": "Community",
+      "friendly_name": null,
+      "role": "dashboard",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "dashboard"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:webWidget",
+      "name": "webWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:htmlWidget",
+      "name": "htmlWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:kpiWidget",
+      "name": "kpiWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:cronInput",
+      "name": "cronInput",
+      "friendly_name": null,
+      "role": "valueEditor",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "semType": "cron",
+        "role": "valueEditor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:isFormulaColumn",
+      "name": "isFormulaColumn",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:Formula",
+      "name": "Formula",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:getFuncTableViewWidget",
+      "name": "getFuncTableViewWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "dynamic"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:powerPackSearchProvider",
+      "name": "powerPackSearchProvider",
+      "friendly_name": null,
+      "role": "searchProvider",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "searchProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:formulaLinesEditor",
+      "name": "formulaLinesEditor",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "int",
+        "bool",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:powerPackInit",
+      "name": "powerPackInit",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:windowsManager",
+      "name": "windowsManager",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": "Windows Manager",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:viewerDialog",
+      "name": "viewerDialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Open 'Viewer Gallery' dialog",
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:viewerGallery",
+      "name": "viewerGallery",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": "ViewerGallery",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:markdownFileViewer",
+      "name": "markdownFileViewer",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "md,mdx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:xlsxFileHandler",
+      "name": "xlsxFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens Excel file",
+      "input_types": [
+        "list",
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "xlsx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:runEnrichment",
+      "name": "runEnrichment",
+      "friendly_name": null,
+      "role": "transform",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "string",
+        "string",
+        "string",
+        "string",
+        "dataframe",
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "transform"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:addNewColumn",
+      "name": "addNewColumn",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PowerPack:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:PowerPack:MostRecentEntities",
+      "name": "MostRecentEntities",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:PowerPack:RecentlySharedWithMe",
+      "name": "RecentlySharedWithMe",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/PowerPack/readme.md",
+      "title": "Power Pack",
+      "url": "/packages/PowerPack/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PowerPack/claude.md",
+      "title": "PowerPack",
+      "url": "/packages/PowerPack/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PowerPack/credits.md",
+      "title": "PowerPack — Third-Party Libraries",
+      "url": "/packages/PowerPack/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/collaborate/forum",
+      "title": "Community forum",
+      "url": "/help/collaborate/forum",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/viewers/show-formula-lines",
+      "title": "Show formula lines",
+      "url": "/help/develop/how-to/viewers/show-formula-lines",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/transform/formula-syntax",
+      "title": "Formula syntax",
+      "url": "/help/transform/formula-syntax",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/PowerGrid/readme.md",
+      "title": "Power Grid",
+      "url": "/packages/PowerGrid/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:PowerPack:1.8.0:0",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Enrichments:"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:1",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added data sync support"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:2",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added catalog support for tables coming from a different connection than the one configured"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:3",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Disabled for datetime and boolean columns"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:4",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "DB Explorer:"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:5",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added progressive loaders"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:6",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Excluded file data sources from the list"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:7",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Cron Input: Introduced new cron schedule input widget"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:8",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Formula Lines: Added formula editor support for viewer filters"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:9",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19533",
+      "text": "GROK-19533: Viewers Gallery: Confusion matrix is now available in the gallery"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:10",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19524",
+      "text": "GROK-19524: Welcome View: Activity Dashboard no longer jumps at startup"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:11",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Power Search: Integrated AI query support"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:12",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added entity similarity search"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:13",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Reduced bundle size by ~60% by making CodeMirror imports dynamic"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:14",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19754",
+      "text": "GROK-19754: New enrichment no longer throws an error when opened in a different table"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:15",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19739",
+      "text": "GROK-19739: Formula lines dialog no longer errors on opening"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:16",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19657",
+      "text": "GROK-19657: Incorrect autocomplete when referencing an entire column in the Add New Column dialog"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:17",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": "GROK-19005",
+      "text": "GROK-19005: Specialty viewers (Chem, Sequence Similarity/Diversity Search) no longer available for incompatible datasets in the Add Viewer dialog"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:18",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "[#3204](https://github.com/datagrok-ai/public/issues/3204): Formula lines validation messages added for cases where formula lines cannot be edited"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:19",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Formula Lines: Formula editor in the context menu now works correctly"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:20",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Formula Lines: Validation for formula lines and bands"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:21",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Add New Column: String trimming in plain text mode now works correctly"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:22",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Enrichments: Fixed errors when column name differs from the key column"
+    },
+    {
+      "id": "clog:PowerPack:1.8.0:23",
+      "version": "1.8.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Molecule columns: Renderer now applied correctly to all columns created from plain text, not only the first one"
+    },
+    {
+      "id": "clog:PowerPack:1.7.19:0",
+      "version": "1.7.19",
+      "released_at": "2025-12-19",
+      "ticket": null,
+      "text": "DBExplorer: Handle semtypes"
+    },
+    {
+      "id": "clog:PowerPack:1.7.15:0",
+      "version": "1.7.15",
+      "released_at": "2025-10-27",
+      "ticket": null,
+      "text": "Removed recent projects widget"
+    },
+    {
+      "id": "clog:PowerPack:1.7.14:0",
+      "version": "1.7.14",
+      "released_at": "2025-10-20",
+      "ticket": "GROK-19080",
+      "text": "GROK-19080 Add new column: type change is broken"
+    },
+    {
+      "id": "clog:PowerPack:1.7.12:0",
+      "version": "1.7.12",
+      "released_at": "2025-10-15",
+      "ticket": null,
+      "text": "Add new column dialog: Some validation fixes"
+    },
+    {
+      "id": "clog:PowerPack:1.7.11:0",
+      "version": "1.7.11",
+      "released_at": "2025-10-15",
+      "ticket": null,
+      "text": "Add new column dialog: Case insensitive packages search for hints"
+    },
+    {
+      "id": "clog:PowerPack:1.7.10:0",
+      "version": "1.7.10",
+      "released_at": "2025-10-09",
+      "ticket": null,
+      "text": "Add new column dialog: Fixed validation error when passing empty array to vector functions"
+    }
+  ],
+  "stats": {
+    "functions": 22,
+    "scripts": 0,
+    "queries": 2,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 194
+  }
+}

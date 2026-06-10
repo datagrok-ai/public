@@ -1,0 +1,89 @@
+{
+  "package_id": "pkg:Widgets",
+  "features": [
+    {
+      "id": "feature:Widgets:category-filters",
+      "implements": [
+        {
+          "path": "packages/Widgets/src/filters/radio-button-filter.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Widgets/src/filters/multi-value-filter.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Widgets/src/package.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Widgets/src/styles/widgets.css",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "RadioButtonFilter implements 'Single Choice'; MultiValueFilter implements 'Multi Choice'; package.ts wires both via @grok.decorators.func."
+    },
+    {
+      "id": "feature:Widgets:table-summary-viewer",
+      "implements": [
+        {
+          "path": "packages/Widgets/src/widgets.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Widgets/src/package.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "TableSummaryViewer class lives in widgets.ts; package.ts registers the 'TableSummary' viewer function."
+    },
+    {
+      "id": "feature:Widgets:time-widget",
+      "implements": [
+        {
+          "path": "packages/Widgets/src/widgets.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Widgets/src/package.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Widgets/src/styles/widgets.css",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "TimeWidget class is defined in widgets.ts (which imports widgets.css for the .welcome-time-widget rule); package.ts registers the 'TimeWidget' function."
+    },
+    {
+      "id": "feature:Widgets:multi-curve-viewer",
+      "implements": [],
+      "tests": [],
+      "notes": "Documentation-only feature; no implementation in this package's src/."
+    },
+    {
+      "id": "feature:Widgets:custom-value-editors",
+      "implements": [
+        {
+          "path": "packages/Widgets/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "FooInput class plus fooInput and inputDemo registrations all reside in package.ts."
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "package_id": "pkg:GenomeBrowser",
+  "features": [
+    {
+      "id": "feature:GenomeBrowser:genomic-data-viewer",
+      "implements": [
+        {
+          "path": "packages/GenomeBrowser/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GenomeBrowser/src/genome-file-browse-viewer-wrapper.tsx",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers info + previewGenomeBrowse (fileViewer for json) and constructs the view; genome-file-browse-viewer-wrapper.tsx renders the JBrowse linear genome view via React. No feature-specific tests in package-test.ts (only generic test harness)."
+    },
+    {
+      "id": "feature:GenomeBrowser:genome-config-validation",
+      "implements": [
+        {
+          "path": "packages/GenomeBrowser/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "autostartChecker and checkGenomeConfig live in detectors.js (not in files.src), so only package.ts is emitted because it wires the fileViewerCheck reference (meta.fileViewerCheck: GenomeBrowser:checkGenomeConfig)."
+    }
+  ]
+}

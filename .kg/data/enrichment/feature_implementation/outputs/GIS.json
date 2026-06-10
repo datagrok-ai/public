@@ -1,0 +1,134 @@
+{
+  "package_id": "pkg:GIS",
+  "features": [
+    {
+      "id": "feature:GIS:map-viewer",
+      "implements": [
+        {
+          "path": "packages/GIS/src/gis-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/GIS/src/gis-openlayer.ts",
+          "role": "support",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/gis-mapcontrols.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/GIS/src/gis-semtypes.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/GIS/src/gis-demo.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/GIS/src/tests/gis-viewer-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/tests/gui-utils.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "GisViewer + OpenLayers wrapper + layers panel control; package.ts wires the Map viewer, the mapDemo demo, and registers semantic-type handlers."
+    },
+    {
+      "id": "feature:GIS:geocoding",
+      "implements": [
+        {
+          "path": "packages/GIS/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "All three geocoding functions (GISGeocoding, gisReverseGeocoding, gisBatchGeocoding) are implemented inline in PackageFunctions via grok.dapi.fetchProxy calls to the US Census geocoder."
+    },
+    {
+      "id": "feature:GIS:kml-kmz-file-support",
+      "implements": [
+        {
+          "path": "packages/GIS/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/gis-openlayer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/GIS/src/gis-viewer.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/GIS/src/gis-semtypes.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "KML/KMZ file viewer + handlers in package.ts call OpenLayers.addKMLLayerFromStream and getKMZData; results are rendered via GisViewer."
+    },
+    {
+      "id": "feature:GIS:geojson-topojson-file-support",
+      "implements": [
+        {
+          "path": "packages/GIS/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/gis-openlayer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/GIS/src/gis-viewer.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/GIS/src/gis-semtypes.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "GeoJSON/TopoJSON file viewer + handler in package.ts use addGeoJSONLayerFromStream / addTopoJSONLayerFromStream from gis-openlayer and render via GisViewer."
+    },
+    {
+      "id": "feature:GIS:area-census-info-panel",
+      "implements": [
+        {
+          "path": "packages/GIS/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/GIS/src/gis-semtypes.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "gisAreaWidget panel and the getCensusInfo / getCensusInfoTest UI dialogs live in package.ts; the gis-area semType and GisArea class come from gis-semtypes.ts."
+    }
+  ]
+}

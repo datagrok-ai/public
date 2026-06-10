@@ -1,0 +1,143 @@
+{
+  "package_id": "pkg:Admetica",
+  "features": [
+    {
+      "id": "feature:Admetica:admet-batch-prediction",
+      "implements": [
+        {
+          "path": "packages/Admetica/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-utils.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-form.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Admetica/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Admetica/src/viewers/cell-render-viewer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Admetica/src/css/admetica.css",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Admetica/src/tests/admetica-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AdmeticaMenu/getAdmeProperties/AdmeticaEditor/getModels wired in package.ts; orchestration + color coding + piechart cell renderer + form layout in utils and viewers."
+    },
+    {
+      "id": "feature:Admetica:admet-info-panel",
+      "implements": [
+        {
+          "path": "packages/Admetica/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Admetica/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Admetica/src/css/admetica.css",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Admetica/src/tests/admetica-tests.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "admeticaWidget panel + getAdmePropertiesSingle in package.ts delegate to getModelsSingle in admetica-utils.ts; 'Calculate. For single cell' test exercises the Biology|Admetica panel."
+    },
+    {
+      "id": "feature:Admetica:admetica-app",
+      "implements": [
+        {
+          "path": "packages/Admetica/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Admetica/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Admetica/src/css/admetica.css",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Admetica/src/tests/admetica-tests.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "AdmeticaViewApp (extends BaseViewApp) implements both the Admetica app and the demo; package.ts registers both entry points."
+    },
+    {
+      "id": "feature:Admetica:hit-triage-integration",
+      "implements": [
+        {
+          "path": "packages/Admetica/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Admetica/src/utils/admetica-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Admetica/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "AdmeticaHT decorator in package.ts (meta.role: hitTriageFunction) calls performChemicalPropertyPredictions from admetica-utils.ts."
+    }
+  ]
+}

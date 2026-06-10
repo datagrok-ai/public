@@ -1,0 +1,129 @@
+{
+  "package_id": "pkg:Biologics",
+  "features": [
+    {
+      "id": "feature:Biologics:demo-database-setup",
+      "implements": [
+        {
+          "path": "packages/Biologics/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Biologics/src/config.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Biologics/src/helms.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Biologics/src/randsmiles.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Biologics/src/glyphs/glyphs.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts hosts info, createDemoBiologicsData, and autostartBiologics; helms/randsmiles/glyphs supply seed data; config.ts wires the DB Explorer used by autostart."
+    },
+    {
+      "id": "feature:Biologics:adc-glyph-rendering",
+      "implements": [
+        {
+          "path": "packages/Biologics/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Biologics/src/glyphs/glyphs.ts",
+          "role": "support",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Biologics/src/config.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "populateAdcGlyphs lives in package.ts and pulls PNG strings from glyphs/glyphs.ts; autostart's rawImageRenderer (configured via config.ts) renders them in DB Explorer cells."
+    },
+    {
+      "id": "feature:Biologics:antibody-profile-query",
+      "implements": [
+        {
+          "path": "packages/Biologics/queries/antibody_profile.sql",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Biologics/queries/demo.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Biologics/queries/antibody_profile.layout",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "antibodyProfileByOrganismAndTarget is in antibody_profile.sql with paired layout; assaysByOrganism is the first query in demo.sql."
+    },
+    {
+      "id": "feature:Biologics:adc-activity-filtering",
+      "implements": [
+        {
+          "path": "packages/Biologics/queries/demo.sql",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "Both ADCsWithCapsazeActivityHigherThan and ADCsWithIC50HLThan are defined in demo.sql."
+    },
+    {
+      "id": "feature:Biologics:adc-drug-linkage",
+      "implements": [
+        {
+          "path": "packages/Biologics/queries/demo.sql",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "adcsLinkedToDrug query is defined in demo.sql."
+    },
+    {
+      "id": "feature:Biologics:dose-response-curve-retrieval",
+      "implements": [
+        {
+          "path": "packages/Biologics/queries/demo.sql",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "getBiologicsCurveByAssayResultIdentifier query is defined in demo.sql."
+    },
+    {
+      "id": "feature:Biologics:peptide-helm-sequence-retrieval",
+      "implements": [
+        {
+          "path": "packages/Biologics/queries/demo.sql",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "getBiologicsPeptideHelmByIdentifier query is defined in demo.sql."
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "package": {
+    "id": "pkg:GIS",
+    "name": "GIS",
+    "friendly_name": "GIS",
+    "category": "Visualizations",
+    "description": "GIS (geographic information system) functionality, such as maps and geocoding."
+  },
+  "files": {
+    "src": [
+      "packages/GIS/src/gis-demo.ts",
+      "packages/GIS/src/gis-mapcontrols.ts",
+      "packages/GIS/src/gis-openlayer.ts",
+      "packages/GIS/src/gis-semtypes.ts",
+      "packages/GIS/src/gis-viewer.ts",
+      "packages/GIS/src/package.ts"
+    ],
+    "tests": [
+      "packages/GIS/src/package-test.ts",
+      "packages/GIS/src/tests/gis-viewer-tests.ts",
+      "packages/GIS/src/tests/gui-utils.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/GIS/CHANGELOG.md",
+      "packages/GIS/CREDITS.md",
+      "packages/GIS/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:GIS:map-viewer",
+      "name": "Map Viewer",
+      "description": "Interactive map viewer that renders tabular geospatial data as markers or a heat map, with a layers panel for toggling visibility. Auto-detects latitude/longitude columns via a semantic type detector.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:GIS:Map",
+          "kind": "RegisteredFunction",
+          "name": "Map",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "GIS map viewer",
+          "tags": []
+        },
+        {
+          "id": "func:GIS:mapDemo",
+          "kind": "RegisteredFunction",
+          "name": "mapDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Map viewer shows geospatial data on a map as either markers, or a heat map.",
+          "tags": []
+        },
+        {
+          "id": "func:GIS:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semTypeDetector",
+          "description": "detect longitude/latitude coordinates",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/GIS/readme.md",
+          "kind": "DocPage",
+          "title": "GIS",
+          "url": "/packages/GIS/readme.md"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/map",
+          "kind": "DocPage",
+          "title": "Map viewer",
+          "url": "/help/visualize/viewers/map"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": [
+          "packages/GIS/src/tests/gis-viewer-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:GIS:geocoding",
+      "name": "Geocoding",
+      "description": "Forward, reverse, and batch geocoding functions that convert between street addresses and geographic coordinates.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:GIS:GISGeocoding",
+          "kind": "RegisteredFunction",
+          "name": "GISGeocoding",
+          "friendly_name": null,
+          "role": null,
+          "description": "GIS geocoding - receive coordinates for address",
+          "tags": []
+        },
+        {
+          "id": "func:GIS:gisReverseGeocoding",
+          "kind": "RegisteredFunction",
+          "name": "gisReverseGeocoding",
+          "friendly_name": null,
+          "role": null,
+          "description": "GIS geocoding - receive address for coordinates",
+          "tags": []
+        },
+        {
+          "id": "func:GIS:gisBatchGeocoding",
+          "kind": "RegisteredFunction",
+          "name": "gisBatchGeocoding",
+          "friendly_name": null,
+          "role": null,
+          "description": "GIS geocoding - receive coordinates from address",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/GIS/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:GIS:kml-kmz-file-support",
+      "name": "KML/KMZ File Support",
+      "description": "Built-in file viewer and handler for KML and KMZ geographic markup files, letting users open and inspect these formats directly in Datagrok.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:GIS:gisKMZAndKMLFileViewer",
+          "kind": "RegisteredFunction",
+          "name": "gisKMZAndKMLFileViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GIS:gisKMLFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "gisKMLFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GIS:gisKMZFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "gisKMZFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/GIS/src/gis-mapcontrols.ts",
+          "packages/GIS/src/gis-openlayer.ts",
+          "packages/GIS/src/gis-semtypes.ts",
+          "packages/GIS/src/gis-viewer.ts",
+          "packages/GIS/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:GIS:geojson-topojson-file-support",
+      "name": "GeoJSON/TopoJSON File Support",
+      "description": "Built-in file viewer and handler for GeoJSON and TopoJSON formats, enabling direct opening of standard web-mapping data files.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:GIS:gisGeoJSONFileViewer",
+          "kind": "RegisteredFunction",
+          "name": "gisGeoJSONFileViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GIS:gisGeoJSONFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "gisGeoJSONFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/GIS/src/gis-mapcontrols.ts",
+          "packages/GIS/src/gis-openlayer.ts",
+          "packages/GIS/src/gis-semtypes.ts",
+          "packages/GIS/src/gis-viewer.ts",
+          "packages/GIS/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:GIS:area-census-info-panel",
+      "name": "Area / Census Info Panel",
+      "description": "A context panel that shows census and geographic area information for the currently selected data row, surfacing demographic details derived from coordinates.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:GIS:gisAreaWidget",
+          "kind": "RegisteredFunction",
+          "name": "gisAreaWidget",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GIS:getCensusInfo",
+          "kind": "RegisteredFunction",
+          "name": "getCensusInfo",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GIS:getCensusInfoTest UI",
+          "kind": "RegisteredFunction",
+          "name": "getCensusInfoTest UI",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/GIS/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

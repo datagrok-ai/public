@@ -1,0 +1,90 @@
+{
+  "package_id": "pkg:RevvitySignalsLink",
+  "features": [
+    {
+      "id": "feature:RevvitySignalsLink:revvity-signals-app",
+      "name": "Revvity Signals Integration App",
+      "description": "A Datagrok application (browsed from the Chem menu) that connects to the Revvity Signals registration platform, providing an interactive tree browser and a unified entry point to Revvity data.",
+      "category": "integration",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:RevvitySignalsLink:Revvity Signals",               "weight": 1.0,  "role": "core"},
+        {"id": "func:RevvitySignalsLink:revvitySignalsLinkAppTreeBrowser", "weight": 0.9, "role": "core"},
+        {"id": "func:RevvitySignalsLink:init",                          "weight": 0.7,  "role": "core"},
+        {"id": "doc:/packages/RevvitySignalsLink/readme.md",            "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/packages/RevvitySignalsLink/claude.md",            "weight": 0.8,  "role": "doc"},
+        {"id": "clog:RevvitySignalsLink:1.0.0:0",                       "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "The 'Revvity Signals' function (role=app, browsePath=Chem), its tree-browser companion, and the init function share the package name root and together form the application entry point."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:entity-search",
+      "name": "Entity Search",
+      "description": "Searches the Revvity Signals registry for chemical entities by text and filter criteria, optionally including chemical structures, and retrieves individual structures by ID.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:RevvitySignalsLink:Search Entities",                "weight": 1.0,  "role": "core"},
+        {"id": "func:RevvitySignalsLink:Search Entities With Structures","weight": 1.0,  "role": "core"},
+        {"id": "func:RevvitySignalsLink:Get Structure By Id",            "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/datagrok/_deprecated/data-search",            "weight": 0.5,  "role": "doc"},
+        {"id": "doc:/help/datagrok/_deprecated/data-search-patterns",   "weight": 0.5,  "role": "doc"},
+        {"id": "doc:/help/datagrok/_deprecated/smart-search",           "weight": 0.45, "role": "doc"},
+        {"id": "doc:/help/datagrok/concepts/objects",                   "weight": 0.5,  "role": "doc"},
+        {"id": "doc:/help/explore/search-filter-select/data-search-test","weight": 0.5, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/elastic-search-test",         "weight": 0.45, "role": "doc"}
+      ],
+      "evidence_summary": "The three functions share an explicit 'Search Entities' / 'Get Structure' naming root and all retrieve chemical entity data from Revvity Signals into a dataframe."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:metadata-vocabulary",
+      "name": "Metadata and Vocabulary Lookup",
+      "description": "Provides enumeration and autocomplete helpers for Revvity Signals metadata — users, libraries, tags, and field-level terms — used to populate search filters and UI dropdowns.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:RevvitySignalsLink:Get Users",                     "weight": 0.85, "role": "core"},
+        {"id": "func:RevvitySignalsLink:Get Libraries",                 "weight": 0.85, "role": "core"},
+        {"id": "func:RevvitySignalsLink:Get Tags",                      "weight": 0.85, "role": "core"},
+        {"id": "func:RevvitySignalsLink:Search Terms",                  "weight": 0.9,  "role": "core"},
+        {"id": "func:RevvitySignalsLink:Get Terms For Field",           "weight": 0.9,  "role": "core"},
+        {"id": "doc:/help/govern/access-control/users-and-groups",      "weight": 0.5,  "role": "doc"},
+        {"id": "doc:/help/govern/catalog/tags",                         "weight": 0.55, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/tags-favorites-test",         "weight": 0.45, "role": "doc"}
+      ],
+      "evidence_summary": "Get Users, Get Libraries, Get Tags, Search Terms, and Get Terms For Field all return metadata lists from Revvity Signals and share the 'Get/Search' prefix pattern as lookup helpers for filters."
+    },
+    {
+      "id": "feature:RevvitySignalsLink:etl-pipeline",
+      "name": "ETL Pipeline to MolTrack",
+      "description": "A Python ETL script that exports Revvity Signals libraries, processes CSV files, and prepares chemical compound data for ingestion into MolTrack.",
+      "category": "data-import",
+      "confidence": 0.85,
+      "members": [
+        {"id": "script:RevvitySignalsLink:Revvity ETL", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The Revvity ETL script is explicitly described as a batch pipeline to MolTrack, forming a distinct data-movement capability separate from the interactive search functions."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:RevvitySignalsLink:entity-search",        "to": "feature:RevvitySignalsLink:revvity-signals-app",  "kind": "subfeature"},
+    {"from": "feature:RevvitySignalsLink:metadata-vocabulary",  "to": "feature:RevvitySignalsLink:entity-search",        "kind": "related"},
+    {"from": "feature:RevvitySignalsLink:etl-pipeline",         "to": "feature:RevvitySignalsLink:revvity-signals-app",  "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/RevvitySignalsLink/credits.md",
+    "doc:/packages/Admetica/credits.md",
+    "doc:/packages/Alation/credits.md",
+    "doc:/packages/ApiSamples/credits.md",
+    "doc:/packages/ApiTests/credits.md",
+    "doc:/packages/Arrow/credits.md",
+    "doc:/packages/BenchlingLink/credits.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/BioNeMo/credits.md",
+    "doc:/packages/Biologics/credits.md",
+    "doc:/packages/BiostructureViewer/credits.md",
+    "doc:/packages/Boltz1/credits.md",
+    "doc:/packages/CVMTests/credits.md",
+    "doc:/packages/CddVaultLink/credits.md"
+  ]
+}

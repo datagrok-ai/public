@@ -1,0 +1,42 @@
+{
+  "package_id": "pkg:Alation",
+  "features": [
+    {
+      "id": "feature:Alation:catalog-app",
+      "implements": [
+        {
+          "path": "packages/Alation/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Alation/src/view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Alation/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Alation/src/const.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Alation/src/types.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Alation/src/tests/core.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts registers the Alation app; view.ts builds the catalog tree, connection dialog, table opener, and query runner; utils/const/types are support modules; tests/core.ts invokes the Alation:Alation function."
+    }
+  ]
+}

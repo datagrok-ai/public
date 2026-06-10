@@ -1,0 +1,32 @@
+{
+  "package_id": "pkg:CruddyDemo",
+  "features": [
+    {
+      "id": "feature:CruddyDemo:northwind-demo",
+      "name": "Northwind CRUD Demo",
+      "description": "An interactive app demonstrating the Cruddy CRUD framework with the classic Northwind relational dataset (customers, orders, products). Registered in the Dev browse path as the primary entry-point demo.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:CruddyDemo:northwindDemo", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/CruddyDemo/readme.md", "weight": 0.75, "role": "doc"}
+      ],
+      "evidence_summary": "northwindDemo is the only function with a browsePath ('Dev') and the readme describes the Cruddy framework through this dataset, making them the natural primary demo cluster."
+    },
+    {
+      "id": "feature:CruddyDemo:chembl-demo",
+      "name": "ChEMBL CRUD Demo",
+      "description": "An app demonstrating the Cruddy CRUD framework applied to ChEMBL chemical/bioactivity data, showing entity browsing and editing for chemistry-domain datasets.",
+      "category": "infra",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:CruddyDemo:chemblDemo", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "chemblDemo is a self-contained CRUD demo targeting ChEMBL data, distinguished from the Northwind demo by dataset domain and the absence of a registered browsePath."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:CruddyDemo:northwind-demo", "to": "feature:CruddyDemo:chembl-demo", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": ["doc:/packages/CruddyDemo/credits.md"]
+}

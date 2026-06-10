@@ -1,0 +1,295 @@
+{
+  "package": {
+    "id": "pkg:Python",
+    "name": "Python",
+    "friendly_name": "Python",
+    "category": "Compute",
+    "description": "Python server for code execution and data processing"
+  },
+  "files": {
+    "src": [
+      "packages/Python/src/package.ts"
+    ],
+    "tests": [
+      "packages/Python/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/Python/scripts/sample_a_plus_b.py",
+      "packages/Python/scripts/sample_pandas_input.py",
+      "packages/Python/scripts/sample_pandas_output.py",
+      "packages/Python/scripts/sample_rdkit_gasteiger.py",
+      "packages/Python/scripts/sample_sklearn_model.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Python/CHANGELOG.md",
+      "packages/Python/CREDITS.md",
+      "packages/Python/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Python:python-script-runtime",
+      "name": "Python Script Runtime",
+      "description": "Provides a server-side Python execution environment for running Python scripts within Datagrok, with built-in pandas support for reading and writing tabular data.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Python:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Python:Sample A+B",
+          "kind": "Script",
+          "name": "Sample A+B",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Python:Sample pandas input",
+          "kind": "Script",
+          "name": "Sample pandas input",
+          "language": "python",
+          "description": "Calculates number of cells in the table"
+        },
+        {
+          "id": "script:Python:Sample pandas output",
+          "kind": "Script",
+          "name": "Sample pandas output",
+          "language": "python",
+          "description": "Produces dataframe with an integer sequence"
+        },
+        {
+          "id": "doc:/packages/Python/readme.md",
+          "kind": "DocPage",
+          "title": "Python",
+          "url": "/packages/Python/readme.md"
+        },
+        {
+          "id": "doc:/packages/Python/credits.md",
+          "kind": "DocPage",
+          "title": "Python — Third-Party Libraries",
+          "url": "/packages/Python/credits.md"
+        },
+        {
+          "id": "doc:/help/develop/python-api",
+          "kind": "DocPage",
+          "title": "Python API",
+          "url": "/help/develop/python-api"
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/python-functions",
+          "kind": "DocPage",
+          "title": "Creating Python Docker Apps",
+          "url": "/help/develop/how-to/packages/python-functions"
+        },
+        {
+          "id": "doc:/help/compute/compute",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/help/compute/compute"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Python/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Python:rdkit-cheminformatics",
+      "name": "RDKit Cheminformatics",
+      "description": "Demonstrates RDKit-based cheminformatics computations (Gasteiger charge calculation) runnable as Python scripts on the Datagrok server.",
+      "category": "chem-compute",
+      "members": [
+        {
+          "id": "script:Python:Sample Gasteiger charges",
+          "kind": "Script",
+          "name": "Sample Gasteiger charges",
+          "language": "python",
+          "description": "RDKit-based script."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Python:sklearn-predictive-modeling",
+      "name": "Sklearn Predictive Modeling",
+      "description": "Provides a scikit-learn linear regression sample that integrates with Datagrok's predictive modeling toolkit, enabling Python-backed ML models.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Python:Sample Sklearn model",
+          "kind": "Script",
+          "name": "Sample Sklearn model",
+          "language": "python",
+          "description": "Trains sklearn linear regression model. Compatible with predictive modeling toolkit"
+        },
+        {
+          "id": "doc:/help/learn/custom-machine-learning-models",
+          "kind": "DocPage",
+          "title": "Custom machine learning models",
+          "url": "/help/learn/custom-machine-learning-models"
+        },
+        {
+          "id": "doc:/help/learn/learn",
+          "kind": "DocPage",
+          "title": "Predictive modeling",
+          "url": "/help/learn/learn"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Python:scripting-framework",
+      "name": "Scripting Framework",
+      "description": "Platform-wide scripting environment with a built-in editor, REST invocation, advanced input/output handling, UI customization, and output visualization — applicable to all scripting languages including Python.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/compute/scripting/getting-started",
+          "kind": "DocPage",
+          "title": "Getting started with scripting",
+          "url": "/help/compute/scripting/getting-started"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+          "kind": "DocPage",
+          "title": "Scripting features",
+          "url": "/help/compute/scripting/scripting-features/scripting-features"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+          "kind": "DocPage",
+          "title": "Work with the Datagrok script editor",
+          "url": "/help/compute/scripting/scripting-features/datagrok-script-editor"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+          "kind": "DocPage",
+          "title": "Complex data types",
+          "url": "/help/compute/scripting/scripting-features/complex-input-output"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+          "kind": "DocPage",
+          "title": "Enhance input UI",
+          "url": "/help/compute/scripting/scripting-features/enhance-input-ui"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+          "kind": "DocPage",
+          "title": "Visualize output data",
+          "url": "/help/compute/scripting/scripting-features/visualize-output-data"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+          "kind": "DocPage",
+          "title": "Automate inputs",
+          "url": "/help/compute/scripting/advanced-scripting/automate-inputs"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+          "kind": "DocPage",
+          "title": "Call via REST",
+          "url": "/help/compute/scripting/advanced-scripting/call-via-rest"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+          "kind": "DocPage",
+          "title": "Rich Function View",
+          "url": "/help/compute/scripting/advanced-scripting/rich-function-view"
+        },
+        {
+          "id": "doc:/help/compute/function-analysis",
+          "kind": "DocPage",
+          "title": "Model optimization tools",
+          "url": "/help/compute/function-analysis"
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        },
+        {
+          "id": "doc:/help/compute/jupyter-notebook",
+          "kind": "DocPage",
+          "title": "Jupyter Notebook",
+          "url": "/help/compute/jupyter-notebook"
+        },
+        {
+          "id": "doc:/help/compute/diff-studio",
+          "kind": "DocPage",
+          "title": "Diff Studio",
+          "url": "/help/compute/diff-studio"
+        },
+        {
+          "id": "doc:/packages/Compute/readme.md",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/packages/Compute/readme.md"
+        },
+        {
+          "id": "doc:/packages/Compute/credits.md",
+          "kind": "DocPage",
+          "title": "Compute — Third-Party Libraries",
+          "url": "/packages/Compute/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Python:info-panels",
+      "name": "Info Panels",
+      "description": "Developer guide for creating and registering context-sensitive info panels in Datagrok, including a reference of supported pane types and a how-to guide.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "package_id": "pkg:BiostructureViewer",
+  "features": [
+    {
+      "id": "feature:BiostructureViewer:molstar-viewer",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/index.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer-open.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/consts.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/binding-site.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/biostructure-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/molstar-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/molstar-viewer-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/molstar-preview-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "MolstarViewer class plus open/utils helpers and biostructure viewer test app."
+    },
+    {
+      "id": "feature:BiostructureViewer:ngl-viewer",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-viewer-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/ngl-gl-doc-service.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/ngl-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/ngl-viewer-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/ngl-gl-service-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "NglViewer plus the WebGL singleton service and the NglViewerApp test app."
+    },
+    {
+      "id": "feature:BiostructureViewer:biotrack-viewer",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/saguaro-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/twins/molstar-twin-viewer.tsx",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/twins/molstar-twin-viewer-base.tsx",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/biotrack-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/biostructure-and-track-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "SaguaroViewer wraps RCSB Saguaro tracks; twin viewer combines with MolstarViewer."
+    },
+    {
+      "id": "feature:BiostructureViewer:in-grid-rendering",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-grid-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/ngl-gl-doc-service.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/ngl-for-grid-test-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/ligands-with-base-app.ts",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/demo/biostructure-in-grid.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/demo/bio07-molecule3d-in-grid.ts",
+          "role": "demo",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-grid-cell-renderer-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-grid-cell-renderer-escape-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/packageFuncs-tests.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "PdbGridCellRenderer/PdbIdGridCellRenderer plus async NGL doc service used to render thumbnails."
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-import",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/view-preview.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/import-pdbqt.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/molstar-preview-tests.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-tests.ts",
+          "confidence": 0.65
+        }
+      ],
+      "notes": "fileHandler decorators in package.ts wire formats to viewMolstarUI / viewNgl / importPdbqtUI."
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-preview",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/view-preview.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/molstar-preview-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "previewNgl/previewBiostructure used by all six fileViewer-decorated panel functions."
+    },
+    {
+      "id": "feature:BiostructureViewer:rcsb-structure-fetch",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/rcsb-gql-adapter.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/sequence-handler.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/pdb-entry.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-helper-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/data-provider-tests.ts",
+          "confidence": 0.75
+        }
+      ],
+      "notes": "Three Molecule3D dataProvider funcs in package.ts plus the GraphQL sequence fetch path."
+    },
+    {
+      "id": "feature:BiostructureViewer:pdb-context-panel",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/panels/mol3d-atom-picker-link-panel.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/mol3d-link.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-info.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-file-info.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-helper.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdb-grid-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/rcsb-gql-adapter.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/BiostructureViewer/src/viewers/ngl-ui.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/mol3d-atom-picker-link-widget-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/mol3d-link-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdb-info-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "Panels: PDB id viewer, PDB Information, 3D Structure widget, mol3DAtomPickerLinkWidget, openPdbResidues."
+    },
+    {
+      "id": "feature:BiostructureViewer:docking-conformations",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/import-pdbqt.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/pdbqt-parser.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/consts-import.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/BiostructureViewer/src/demo/bio06-docking-ngl.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/demo/docking.ts",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/demo/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/pdbqt-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "PDBQT import + parser feed the NGL/Molstar docking demo apps."
+    },
+    {
+      "id": "feature:BiostructureViewer:biostructure-data-api",
+      "implements": [
+        {
+          "path": "packages/BiostructureViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/context-menu.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BiostructureViewer/src/apps/biostructure-data-provider-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BiostructureViewer/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/BiostructureViewer/src/tests/data-provider-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BiostructureViewer/src/tests/context-menu-tests.ts",
+          "confidence": 0.75
+        }
+      ],
+      "notes": "biostructureDataToJson + Copy/Download Biostructure raw value context-menu actions."
+    }
+  ]
+}

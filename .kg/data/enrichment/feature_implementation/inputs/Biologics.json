@@ -1,0 +1,259 @@
+{
+  "package": {
+    "id": "pkg:Biologics",
+    "name": "Biologics",
+    "friendly_name": "Biologics",
+    "category": null,
+    "description": "Demo Database wrapper for ADCs"
+  },
+  "files": {
+    "src": [
+      "packages/Biologics/src/config.ts",
+      "packages/Biologics/src/glyphs/glyphs.ts",
+      "packages/Biologics/src/helms.ts",
+      "packages/Biologics/src/package.ts",
+      "packages/Biologics/src/randsmiles.ts"
+    ],
+    "tests": [
+      "packages/Biologics/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/Biologics/queries/antibody_profile.layout",
+      "packages/Biologics/queries/antibody_profile.sql",
+      "packages/Biologics/queries/demo.sql"
+    ],
+    "docs": [
+      "packages/Biologics/CHANGELOG.md",
+      "packages/Biologics/CLAUDE.md",
+      "packages/Biologics/CREDITS.md",
+      "packages/Biologics/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Biologics:demo-database-setup",
+      "name": "Demo Biologics Database Setup",
+      "description": "Initializes and populates the demo Biologics (ADC) database on package start, providing sample data for exploration and demonstration.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Biologics:createDemoBiologicsData",
+          "kind": "RegisteredFunction",
+          "name": "createDemoBiologicsData",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Biologics:autostartbiologics",
+          "kind": "RegisteredFunction",
+          "name": "autostartbiologics",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Biologics:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Biologics/readme.md",
+          "kind": "DocPage",
+          "title": "Biologics",
+          "url": "/packages/Biologics/readme.md"
+        },
+        {
+          "id": "doc:/packages/Biologics/claude.md",
+          "kind": "DocPage",
+          "title": "CLAUDE.md — Biologics package",
+          "url": "/packages/Biologics/claude.md"
+        },
+        {
+          "id": "doc:/packages/Biologics/credits.md",
+          "kind": "DocPage",
+          "title": "Biologics — Third-Party Libraries",
+          "url": "/packages/Biologics/credits.md"
+        },
+        {
+          "id": "clog:Biologics:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Biologics/src/config.ts",
+          "packages/Biologics/src/helms.ts",
+          "packages/Biologics/src/package.ts",
+          "packages/Biologics/src/randsmiles.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:adc-glyph-rendering",
+      "name": "ADC Glyph Rendering",
+      "description": "Generates and populates visual glyph icons (PNG/base64) for ADC molecules, enabling rich visual representation of ADC compounds in grid and info-pane views.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Biologics:populateAdcGlyphs",
+          "kind": "RegisteredFunction",
+          "name": "populateAdcGlyphs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Populates missing ADC glyphs with random PNG (base64) strings",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Biologics/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:antibody-profile-query",
+      "name": "Antibody Profile & Assay Query",
+      "description": "Queries the biologics database for comprehensive antibody profiles and assay results filtered by organism and target, including HC/LC chain data.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Biologics:antibodyProfileByOrganismAndTarget",
+          "kind": "DataQuery",
+          "name": "antibodyProfileByOrganismAndTarget",
+          "description": "\"Get comprehensive antibody profile filtered by organism and target, including HC/LC chains, dose-response curves, and all assay data.\""
+        },
+        {
+          "id": "query:Biologics:assaysByOrganism",
+          "kind": "DataQuery",
+          "name": "assaysByOrganism",
+          "description": "\"Find biologics assays for a specified organism.\""
+        },
+        {
+          "id": "clog:Biologics:1.0.9:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Biologics:1.0.5:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:adc-activity-filtering",
+      "name": "ADC Activity & IC50 Filtering",
+      "description": "Finds ADCs that meet specified caspase-activity or IC50 thresholds, supporting compound triage by potency.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Biologics:ADCsWithCapsazeActivityHigherThan",
+          "kind": "DataQuery",
+          "name": "ADCsWithCapsazeActivityHigherThan",
+          "description": "\"Find biologics ADCs with caspase activity higher than a specified value.\""
+        },
+        {
+          "id": "query:Biologics:ADCsWithIC50HLThan",
+          "kind": "DataQuery",
+          "name": "ADCsWithIC50HLThan",
+          "description": "\"Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction.\""
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:adc-drug-linkage",
+      "name": "ADC-Drug Linkage Query",
+      "description": "Retrieves ADCs linked to a specified drug identifier, enabling drug-centric ADC exploration across the biologics database.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Biologics:adcsLinkedToDrug",
+          "kind": "DataQuery",
+          "name": "adcsLinkedToDrug",
+          "description": "\"Find ADCs in biologics database linked to a specified drug identifier.\""
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:dose-response-curve-retrieval",
+      "name": "Dose-Response Curve Retrieval",
+      "description": "Retrieves the dose-response curve JSON for a biologics assay result by its GROKCRV-###### identifier, enabling programmatic access to curve-fitting data.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Biologics:getBiologicsCurveByAssayResultIdentifier",
+          "kind": "DataQuery",
+          "name": "getBiologicsCurveByAssayResultIdentifier",
+          "description": "\"Retrieve the dose-response curve JSON for a biologics assay curve identifier (GROKCRV-######).\""
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Biologics:peptide-helm-sequence-retrieval",
+      "name": "Peptide HELM Sequence Retrieval",
+      "description": "Retrieves the HELM sequence notation for a biologics peptide by its GROKPEP-###### identifier, supporting sequence-level inspection of peptide therapeutics.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Biologics:getBiologicsPeptideHelmByIdentifier",
+          "kind": "DataQuery",
+          "name": "getBiologicsPeptideHelmByIdentifier",
+          "description": "\"Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######.\""
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

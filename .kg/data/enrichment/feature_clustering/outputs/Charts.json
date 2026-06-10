@@ -1,0 +1,204 @@
+{
+  "package_id": "pkg:Charts",
+  "features": [
+    {
+      "id": "feature:Charts:chord",
+      "name": "Chord Viewer",
+      "description": "Visualizes weighted relationships between entities as a chord diagram, with row-source selection and collaborative filtering.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Charts:Chord",           "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:chordViewerDemo", "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/chord", "weight": 0.9, "role": "doc"},
+        {"id": "clog:Charts:1.6.2:5",         "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:7",         "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.0:3",         "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, help page, and three changelog entries all share the 'Chord' name root."
+    },
+    {
+      "id": "feature:Charts:globe",
+      "name": "Globe Viewer",
+      "description": "Renders geospatial data on an interactive 3D globe with filtering and row-source support.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Charts:Globe",                 "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/globe", "weight": 0.9, "role": "doc"},
+        {"id": "clog:Charts:1.6.2:6",               "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, help page, and the Globe-specific changelog fix share the same name root."
+    },
+    {
+      "id": "feature:Charts:radar",
+      "name": "Radar Viewer",
+      "description": "Plots multivariate data across several axes in a spider/radar chart with configurable column labels and legend.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Charts:Radar",                 "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:radarViewerDemo",       "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/radar", "weight": 0.9, "role": "doc"},
+        {"id": "clog:Charts:1.7.0:0",               "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:1",               "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:4",               "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:8",               "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.0:0",               "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.0:4",               "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, help page, and six changelog entries all reference 'Radar' by name."
+    },
+    {
+      "id": "feature:Charts:sankey",
+      "name": "Sankey Viewer",
+      "description": "Depicts flow between sets of values as a Sankey diagram with color-coding for nodes and links.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Charts:Sankey",           "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:sankeyViewerDemo", "weight": 0.8, "role": "related"},
+        {"id": "clog:Charts:1.6.2:0",          "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:6",          "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:7",          "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, and three Sankey-labeled changelog entries form a clear naming cluster."
+    },
+    {
+      "id": "feature:Charts:sunburst",
+      "name": "Sunburst Viewer",
+      "description": "Displays hierarchical data as a multi-ring sunburst chart with collaborative filtering and molecule rendering support.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Charts:Sunburst",           "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:sunburstViewerDemo", "weight": 0.8, "role": "related"},
+        {"id": "clog:Charts:1.7.0:2",            "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.4:0",            "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.3:0",            "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:3",            "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:4",            "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:5",            "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, and six Sunburst-labeled changelog entries share the same name root."
+    },
+    {
+      "id": "feature:Charts:surface-plot",
+      "name": "Surface Plot Viewer",
+      "description": "Renders three-dimensional numeric datasets as an interactive mesh surface plot.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Charts:Surface plot",              "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:surfacePlotDemo",           "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/surface-plot", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Viewer function, demo, and help page all reference 'Surface plot' / 'surface-plot'."
+    },
+    {
+      "id": "feature:Charts:timelines",
+      "name": "Timelines Viewer",
+      "description": "Displays sequences of events along a time axis with a range slider and configurable legend colors.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Charts:Timelines",                    "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:timelinesViewerDemo",          "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/timelines",    "weight": 0.9, "role": "doc"},
+        {"id": "clog:Charts:1.7.0:1",                      "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:9",                      "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, help page, and two Timelines-tagged changelog entries share the same name root."
+    },
+    {
+      "id": "feature:Charts:multiplot",
+      "name": "Multiplot Viewer",
+      "description": "Combines multiple chart series in a single synchronized view for comparative multi-variable analysis.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Charts:Multiplot", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Single viewer function with the 'Multiplot' name; no demo, doc, or changelog entries present in this snapshot."
+    },
+    {
+      "id": "feature:Charts:group-analysis",
+      "name": "Group Analysis Viewer",
+      "description": "Visualizes statistical summaries and comparisons across user-defined row groups to support exploratory analysis.",
+      "category": "viz",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:Charts:Group Analysis",                  "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/group-analysis",  "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Viewer function and help page share the 'Group Analysis' name."
+    },
+    {
+      "id": "feature:Charts:word-cloud",
+      "name": "Word Cloud Viewer",
+      "description": "Renders unstructured text data as a word cloud where word size reflects frequency.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Charts:Word cloud",                  "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:wordCloudViewerDemo",         "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/word-cloud",  "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Viewer function, demo, and help page all reference 'Word cloud' / 'word-cloud'."
+    },
+    {
+      "id": "feature:Charts:tree",
+      "name": "Tree Viewer",
+      "description": "Visualizes hierarchical categorical data as an interactive tree with standard and radial layout options, Ctrl+Click branch selection, and collaborative filtering.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Charts:Tree",                     "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:treeViewerDemo",           "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/visualize/viewers/tree",     "weight": 0.9, "role": "doc"},
+        {"id": "clog:Charts:1.7.0:3",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:2",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.2:3",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.0:1",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.6.0:2",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.5:0",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:0",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:1",                  "weight": 0.5, "role": "related"},
+        {"id": "clog:Charts:1.5.2:2",                  "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Viewer function, demo, help page, and nine changelog entries all reference the 'Tree' viewer."
+    },
+    {
+      "id": "feature:Charts:flag-renderer",
+      "name": "Flag Cell Renderer",
+      "description": "Renders country/region flag icons in grid cells; the paired semantic-type detector auto-identifies columns eligible for flag display.",
+      "category": "viz",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:Charts:flagCellRenderer", "weight": 1.0, "role": "core"},
+        {"id": "func:Charts:<anonymous>",      "weight": 0.7, "role": "core"}
+      ],
+      "evidence_summary": "The flagCellRenderer and the anonymous semTypeDetector are co-registered infrastructure functions: the detector identifies suitable columns and the renderer displays flag icons."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": [
+    "doc:/packages/Charts/credits.md",
+    "doc:/packages/Charts/readme.md",
+    "doc:/help/access/files/shares/googlecloud",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/workflows/eda",
+    "doc:/help/develop/help-pages/word-list",
+    "doc:/help/explore/anova",
+    "doc:/help/explore/multivariate-analysis",
+    "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+    "doc:/help/govern/_deprecated/group",
+    "doc:/help/govern/access-control/group-test",
+    "doc:/help/govern/audit/usage-analysis",
+    "doc:/help/visualize/viewers/3d-scatter-plot",
+    "doc:/help/visualize/viewers/box-plot",
+    "doc:/help/visualize/viewers/correlation-plot",
+    "doc:/help/visualize/viewers/density-plot",
+    "doc:/help/visualize/viewers/matrix-plot"
+  ]
+}

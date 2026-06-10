@@ -1,0 +1,95 @@
+{
+  "package_id": "pkg:DevTools",
+  "features": [
+    {
+      "id": "feature:DevTools:test-manager",
+      "implements": [
+        {
+          "path": "packages/DevTools/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DevTools/src/package-testing.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/DevTools/src/utils/test-detectors.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DevTools/src/tests/test-manager-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package-testing.ts holds the TestManager class; package.ts wires the app, app tree browser, TestDetectors, TestDetectorsStandard, and testFunctions; test-detectors.ts implements the detector dialog/standard run."
+    },
+    {
+      "id": "feature:DevTools:dev-panel",
+      "implements": [
+        {
+          "path": "packages/DevTools/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DevTools/src/dev-panel.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/DevTools/src/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DevTools/src/script-editor.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DevTools/src/signature-editor/function-signature-editor.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DevTools/src/signature-editor/const.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DevTools/src/utils/code-mirror-check.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DevTools/src/tests/dev-panel-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DevTools/src/tests/function-signature-editor-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "autostartTools subscribes to onAccordionConstructed/onContextMenu/onViewAdded, attaching the Dev pane (dev-panel.ts) and the script/signature editors loaded on view-added events."
+    },
+    {
+      "id": "feature:DevTools:inspector-panel",
+      "implements": [
+        {
+          "path": "packages/DevTools/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "_makeInspectorPanel is a stub registered with meta.inspectorPanel; entirely defined in package.ts and has no dedicated test file."
+    }
+  ]
+}

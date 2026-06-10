@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+kg.kuzu/
+kg.kuzu*
+kg.html
+*.log
+.cache/
+.kg_server.pid
+.dirty-packages
+# Raw learned-facts queue is transient (drained on Stop hook).
+# The applied/ subdir is kept as audit trail.
+.learned/*.md
+!.learned/applied/

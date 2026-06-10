@@ -1,0 +1,105 @@
+{
+  "package_id": "pkg:Helm",
+  "features": [
+    {
+      "id": "feature:Helm:helm-cell-rendering",
+      "name": "HELM Cell Rendering",
+      "description": "Renders HELM macromolecule notation as structural images in Datagrok grid cells, supporting async rendering, caching, and multi-type polymers.",
+      "category": "bio-rendering",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Helm:helmCellRenderer",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Helm:getHelmService",     "weight": 0.9,  "role": "core"},
+        {"id": "func:Helm:helmAsync",          "weight": 0.85, "role": "core"},
+        {"id": "func:Helm:measureCellRenderer","weight": 0.7,  "role": "core"},
+        {"id": "doc:/packages/Helm/readme.md", "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/bio", "weight": 0.4, "role": "doc"}
+      ],
+      "evidence_summary": "helmCellRenderer, getHelmService, helmAsync, and measureCellRenderer share renderer naming and changelog history of async rendering fixes, caching bugs, and flickering issues."
+    },
+    {
+      "id": "feature:Helm:helm-editor",
+      "name": "HELM Macromolecule Editor",
+      "description": "Provides an interactive HELM Web Editor (HWE) for creating and modifying macromolecule sequences directly within the Datagrok grid and value inputs.",
+      "category": "bio-editing",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Helm:editMoleculeCell",  "weight": 1.0,  "role": "core"},
+        {"id": "func:Helm:helmInput",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Helm:Edit Helm...",      "weight": 0.9,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/faq_bio", "weight": 0.4, "role": "doc"}
+      ],
+      "evidence_summary": "All three functions are registered as cellEditor/valueEditor roles for Macromolecule semantic type; changelog entries reference HWE and HelmInput fixes across multiple releases."
+    },
+    {
+      "id": "feature:Helm:molfile-conversion",
+      "name": "HELM to Molfile/Chemistry Format Conversion",
+      "description": "Converts HELM-encoded macromolecule columns to molfile format and supports SMILES/CHEMS notation, enabling downstream cheminformatics workflows.",
+      "category": "bio-conversion",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:Helm:getMolfiles", "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/polytool", "weight": 0.4, "role": "doc"}
+      ],
+      "evidence_summary": "getMolfiles converts a HELM column to molfiles; changelog entries describe pseudo-molfile retrieval optimization and CHEMS/SMILES support added in v2.13.0."
+    },
+    {
+      "id": "feature:Helm:monomer-library",
+      "name": "Monomer Library Management",
+      "description": "Manages the monomer library used for HELM parsing, rendering, and gap handling, supporting multiple library providers and monomer highlighting.",
+      "category": "bio-infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:Helm:getHelmHelper",      "weight": 1.0, "role": "core"},
+        {"id": "func:Helm:Highlight Monomers", "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "getHelmHelper exposes HelmHelper (monomer gap removal, library operations per changelog); Highlight Monomers operates on the same monomer vocabulary; v2.13.0 introduced multi-provider monomer libraries."
+    },
+    {
+      "id": "feature:Helm:properties-panel",
+      "name": "HELM Properties Panel",
+      "description": "Displays a context-panel widget with structural and bioinformatics properties for a selected HELM macromolecule.",
+      "category": "bio-rendering",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Helm:Properties", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Properties is registered as role widgets/panel with domain:bio for the Macromolecule semantic type, appearing in the context panel when a HELM cell is selected."
+    },
+    {
+      "id": "feature:Helm:bootstrap",
+      "name": "Plugin Bootstrap and Initialization",
+      "description": "Handles plugin startup, HELM service registration, and dynamic loading of heavy dependencies for optimal performance.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Helm:initHelm",            "weight": 1.0, "role": "core"},
+        {"id": "func:Helm:autostart",           "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Helm/claude.md",  "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/Helm/credits.md", "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "initHelm (role:init) and autostart (role:autostart, description 'Helm bootstrap') are the plugin lifecycle functions; v2.13.4 changelog explicitly notes startup performance improvement via dynamic imports."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Helm:helm-cell-rendering", "to": "feature:Helm:helm-editor",        "kind": "sibling"},
+    {"from": "feature:Helm:helm-editor",         "to": "feature:Helm:molfile-conversion",  "kind": "related"},
+    {"from": "feature:Helm:monomer-library",     "to": "feature:Helm:helm-cell-rendering", "kind": "related"},
+    {"from": "feature:Helm:bootstrap",           "to": "feature:Helm:helm-cell-rendering", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/deploy/k8s/install-helm-chart",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/access/_stashed/_edit-socrata-query",
+    "doc:/help/datagrok/_deprecated/_column-properties",
+    "doc:/help/transform/batch-edit"
+  ]
+}

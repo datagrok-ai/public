@@ -1,0 +1,145 @@
+{
+  "package": {
+    "id": "pkg:ChemblAPI",
+    "name": "ChemblAPI",
+    "friendly_name": "ChEMBL API",
+    "category": "Cheminformatics",
+    "description": "Similarity and substructure search in ChEMBL using its API"
+  },
+  "files": {
+    "src": [
+      "packages/ChemblAPI/src/package.ts",
+      "packages/ChemblAPI/src/utils.ts"
+    ],
+    "tests": [
+      "packages/ChemblAPI/src/package-test.ts",
+      "packages/ChemblAPI/src/tests/chem-panels.ts",
+      "packages/ChemblAPI/src/tests/searches.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/ChemblAPI/CHANGELOG.md",
+      "packages/ChemblAPI/CLAUDE.md",
+      "packages/ChemblAPI/CREDITS.md",
+      "packages/ChemblAPI/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:ChemblAPI:substructure-search",
+      "name": "ChEMBL Substructure Search",
+      "description": "Provides an info-panel widget that queries the ChEMBL REST API for compounds containing a given substructure, displaying matched results inside Datagrok.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:ChemblAPI:Databases | ChEMBL | Substructure Search API",
+          "kind": "RegisteredFunction",
+          "name": "Databases | ChEMBL | Substructure Search API",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:ChemblAPI:1.1.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/packages/ChemblAPI/readme.md",
+          "kind": "DocPage",
+          "title": "ChEMBL API",
+          "url": "/packages/ChemblAPI/readme.md"
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ChemblAPI:similarity-search",
+      "name": "ChEMBL Similarity Search",
+      "description": "Provides an info-panel widget that queries the ChEMBL REST API for structurally similar compounds with alignment scores, displayed inline within Datagrok.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:ChemblAPI:Databases | ChEMBL | Similarity Search API",
+          "kind": "RegisteredFunction",
+          "name": "Databases | ChEMBL | Similarity Search API",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:ChemblAPI:1.2.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+          "kind": "DocPage",
+          "title": "Similarity maps using fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ChemblAPI:compound-lookup",
+      "name": "ChEMBL Compound Lookup",
+      "description": "Fetches ChEMBL compound records by ChEMBL ID or InChI key, returning a data frame suitable for downstream analysis.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:ChemblAPI:GetCompoundsIds",
+          "kind": "RegisteredFunction",
+          "name": "GetCompoundsIds",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:ChemblAPI:Chembl Get by Id",
+          "kind": "RegisteredFunction",
+          "name": "Chembl Get by Id",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:ChemblAPI:1.0.12:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/access/public-datasets",
+          "kind": "DocPage",
+          "title": "Public datasets",
+          "url": "/help/access/public-datasets"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

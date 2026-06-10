@@ -1,0 +1,70 @@
+{
+  "package_id": "pkg:JiraConnect",
+  "features": [
+    {
+      "id": "feature:JiraConnect:connection-setup",
+      "name": "Jira Connection Setup",
+      "description": "Handles plugin initialization and credential management for connecting Datagrok to a Jira instance via web service authentication.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:JiraConnect:_init",                              "weight": 1.0, "role": "core"},
+        {"id": "func:JiraConnect:info",                               "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/JiraConnect/readme.md",                 "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_access/_06-connect-to-web-services",       "weight": 0.7, "role": "doc"},
+        {"id": "clog:JiraConnect:1.0.1:0",                           "weight": 0.9, "role": "related"},
+        {"id": "clog:JiraConnect:1.0.0:0",                           "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "The autostart _init and info() share the infrastructure/lifecycle role; changelog entries for credential checks and initial NPM release confirm this is the connection-setup layer."
+    },
+    {
+      "id": "feature:JiraConnect:project-browser",
+      "name": "Jira Project Browser",
+      "description": "Allows users to list all Jira projects and retrieve structured data for a specific project.",
+      "category": "data-import",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:JiraConnect:projectsList", "weight": 1.0, "role": "core"},
+        {"id": "func:JiraConnect:projectData",  "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "projectsList and projectData share the 'project' name root and together cover listing and drilling into Jira projects."
+    },
+    {
+      "id": "feature:JiraConnect:ticket-retrieval",
+      "name": "Jira Ticket Retrieval",
+      "description": "Fetches Jira issue data by key, by JQL filter, or in bulk, enabling users to query and import Jira tickets as structured data into Datagrok.",
+      "category": "data-import",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:JiraConnect:issueData",               "weight": 1.0, "role": "core"},
+        {"id": "func:JiraConnect:getJiraTicketsByFilter",  "weight": 1.0, "role": "core"},
+        {"id": "func:JiraConnect:getJiraTicketsBulk",      "weight": 1.0, "role": "core"},
+        {"id": "clog:JiraConnect:1.1.3:0",                "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "issueData, getJiraTicketsByFilter, and getJiraTicketsBulk all retrieve Jira ticket content via different query modes (single key, JQL filter, bulk ID list); 'Added api' changelog entry marks their introduction."
+    },
+    {
+      "id": "feature:JiraConnect:jira-field-info-panel",
+      "name": "Jira Field Info Panel",
+      "description": "Renders Jira fields as a Datagrok info panel column, detecting one or multiple ticket IDs embedded in a cell and displaying linked ticket metadata inline.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:JiraConnect:getJiraField",                                               "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",                           "weight": 0.8, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",                            "weight": 0.8, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                                  "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",           "weight": 0.4, "role": "related"},
+        {"id": "clog:JiraConnect:1.2.3:0",                                                    "weight": 0.9, "role": "related"}
+      ],
+      "evidence_summary": "getJiraField produces a column from an object input and a field-name string, backed by info-panel platform docs and the changelog entry about detecting multiple tickets in a single cell."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:JiraConnect:project-browser",       "to": "feature:JiraConnect:ticket-retrieval",    "kind": "sibling"},
+    {"from": "feature:JiraConnect:jira-field-info-panel", "to": "feature:JiraConnect:ticket-retrieval",    "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/JiraConnect/credits.md"
+  ]
+}

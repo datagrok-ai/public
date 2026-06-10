@@ -1,0 +1,194 @@
+{
+  "package_id": "pkg:PowerPack",
+  "features": [
+    {
+      "id": "feature:PowerPack:spotlight",
+      "name": "Spotlight",
+      "description": "A dashboard widget that surfaces recently-viewed and recently-shared platform entities, giving users a fast way to resume work and discover shared content.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:PowerPack:Spotlight",                    "weight": 1.0,  "role": "core"},
+        {"id": "query:PowerPack:MostRecentEntities",          "weight": 0.9,  "role": "core"},
+        {"id": "query:PowerPack:RecentlySharedWithMe",        "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "The Spotlight dashboard widget (role:dashboard) is backed by the MostRecentEntities and RecentlySharedWithMe queries that supply its entity feed."
+    },
+    {
+      "id": "feature:PowerPack:welcome-view",
+      "name": "Welcome View",
+      "description": "The home/activity dashboard view that greets users on startup, aggregating recent work and platform activity into a single landing screen.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:PowerPack:welcomeView",      "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerPack:1.8.0:10",         "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "welcomeView outputs a view; changelog entry GROK-19524 explicitly names 'Welcome View: Activity Dashboard' and describes a startup regression fix."
+    },
+    {
+      "id": "feature:PowerPack:dashboard-widgets",
+      "name": "Dashboard Widgets",
+      "description": "A collection of embeddable dashboard widgets — community forum feed, web-page embed, custom HTML, and KPI metric display — for composing informational home screens.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:PowerPack:Community",               "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:webWidget",               "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:htmlWidget",              "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:kpiWidget",               "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/collaborate/forum",            "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "All four functions share role:widget / role:dashboard and produce widget outputs for dashboard composition; the forum doc is linked via the Community widget."
+    },
+    {
+      "id": "feature:PowerPack:power-search",
+      "name": "Power Search",
+      "description": "A platform-wide search provider with AI-powered query interpretation and entity similarity search, accessible via the global search bar.",
+      "category": "infra",
+      "confidence": 0.87,
+      "members": [
+        {"id": "func:PowerPack:powerPackSearchProvider",  "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerPack:1.8.0:11",                "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:12",                "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "The role:searchProvider function is explicitly named 'Power Search' in changelog entries that describe AI query support and entity similarity search additions."
+    },
+    {
+      "id": "feature:PowerPack:formula-lines",
+      "name": "Formula Lines",
+      "description": "Adds formula-driven reference lines and bands to viewers, with a visual editor for defining, validating, and editing formula expressions directly from viewer context menus.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:PowerPack:isFormulaColumn",                          "weight": 0.85, "role": "core"},
+        {"id": "func:PowerPack:Formula",                                  "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:formulaLinesEditor",                       "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/develop/how-to/viewers/show-formula-lines",     "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/transform/formula-syntax",                      "weight": 0.75, "role": "doc"},
+        {"id": "clog:PowerPack:1.8.0:8",                                  "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:15",                                 "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:18",                                 "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:19",                                 "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:20",                                 "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "Formula, formulaLinesEditor, and isFormulaColumn share the 'formula' name root; five changelog entries and two dedicated help docs explicitly describe Formula Lines validation, editing, and filter support."
+    },
+    {
+      "id": "feature:PowerPack:add-new-column",
+      "name": "Add New Column",
+      "description": "An interactive dialog for appending a computed column to a dataframe by authoring a formula expression, with auto-complete, type checking, and validation.",
+      "category": "data-import",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:PowerPack:addNewColumn",     "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerPack:1.8.0:16",         "weight": 0.75, "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:21",         "weight": 0.75, "role": "related"},
+        {"id": "clog:PowerPack:1.7.14:0",         "weight": 0.75, "role": "related"},
+        {"id": "clog:PowerPack:1.7.12:0",         "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.7.11:0",         "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.7.10:0",         "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "addNewColumn (input: funccall) is the core function; six changelog entries across multiple versions all reference 'Add new column dialog' by name for formula, validation, and type fixes."
+    },
+    {
+      "id": "feature:PowerPack:data-enrichment",
+      "name": "Data Enrichment",
+      "description": "Augments dataframe columns with external data by matching on a key column, supporting catalog browsing, data sync, and cross-connection lookups.",
+      "category": "data-import",
+      "confidence": 0.86,
+      "members": [
+        {"id": "func:PowerPack:runEnrichment",    "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerPack:1.8.0:0",          "weight": 0.65, "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:1",          "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:2",          "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:3",          "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:14",         "weight": 0.7,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:22",         "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "runEnrichment (role:transform, multi-parameter including dataframe and connection strings) is the sole dedicated function; v1.8.0 opens with an 'Enrichments:' section covering data sync and catalog support."
+    },
+    {
+      "id": "feature:PowerPack:file-viewers",
+      "name": "File Viewers",
+      "description": "In-platform rendering of Markdown (.md / .mdx) files and Excel (.xlsx) spreadsheets without leaving the Datagrok UI.",
+      "category": "viz",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:PowerPack:markdownFileViewer",  "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:xlsxFileHandler",     "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "Both functions carry role:fileViewer / role:fileHandler and together cover the two most common non-tabular file formats users encounter."
+    },
+    {
+      "id": "feature:PowerPack:viewer-gallery",
+      "name": "Viewer Gallery",
+      "description": "A browsable gallery for discovering and adding viewers to a table view, automatically filtering out specialty viewers incompatible with the active dataset.",
+      "category": "viz",
+      "confidence": 0.91,
+      "members": [
+        {"id": "func:PowerPack:viewerDialog",         "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:viewerGallery",        "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerPack:getFuncTableViewWidget","weight": 0.55, "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:9",              "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerPack:1.8.0:17",             "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "viewerDialog and viewerGallery share the 'Viewer Gallery' name root; GROK-19533 and GROK-19005 explicitly name the Viewers Gallery in bug-fix entries."
+    },
+    {
+      "id": "feature:PowerPack:cron-input",
+      "name": "Cron Input",
+      "description": "A value-editor widget for cron-syntax scheduling expressions, used when configuring timed jobs and automations in the platform.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:PowerPack:cronInput",    "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerPack:1.8.0:7",     "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "cronInput carries role:valueEditor and semType:cron; the changelog entry explicitly introduces 'Cron Input: Introduced new cron schedule input widget'."
+    },
+    {
+      "id": "feature:PowerPack:compare-columns",
+      "name": "Compare Columns",
+      "description": "A utility that compares two or more dataframe columns side-by-side to highlight differences and statistical similarities.",
+      "category": "viz",
+      "confidence": 0.65,
+      "members": [
+        {"id": "func:PowerPack:compareColumns",  "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "compareColumns is a standalone function whose name unambiguously signals column comparison; no tags or changelog entries provide additional signals."
+    },
+    {
+      "id": "feature:PowerPack:windows-manager",
+      "name": "Windows Manager",
+      "description": "An autostart service that manages platform window layout, docking, and lifecycle so user sessions resume in a consistent spatial arrangement.",
+      "category": "infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:PowerPack:windowsManager",  "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "windowsManager has role:autostart and description 'Windows Manager', indicating persistent window-management behavior registered at startup."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:PowerPack:spotlight",       "to": "feature:PowerPack:welcome-view",      "kind": "related"},
+    {"from": "feature:PowerPack:spotlight",       "to": "feature:PowerPack:dashboard-widgets", "kind": "sibling"},
+    {"from": "feature:PowerPack:welcome-view",    "to": "feature:PowerPack:dashboard-widgets", "kind": "related"},
+    {"from": "feature:PowerPack:formula-lines",   "to": "feature:PowerPack:add-new-column",    "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:PowerPack:powerPackInit",
+    "func:PowerPack:<anonymous>",
+    "doc:/packages/PowerPack/readme.md",
+    "doc:/packages/PowerPack/claude.md",
+    "doc:/packages/PowerPack/credits.md",
+    "doc:/packages/PowerGrid/readme.md",
+    "clog:PowerPack:1.8.0:4",
+    "clog:PowerPack:1.8.0:5",
+    "clog:PowerPack:1.8.0:6",
+    "clog:PowerPack:1.8.0:13",
+    "clog:PowerPack:1.8.0:23",
+    "clog:PowerPack:1.7.19:0",
+    "clog:PowerPack:1.7.15:0"
+  ]
+}

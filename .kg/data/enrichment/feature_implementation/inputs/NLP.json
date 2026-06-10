@@ -1,0 +1,350 @@
+{
+  "package": {
+    "id": "pkg:NLP",
+    "name": "NLP",
+    "friendly_name": null,
+    "category": "Machine Learning",
+    "description": "Natural Language Processing Package"
+  },
+  "files": {
+    "src": [
+      "packages/NLP/src/code2lang.json",
+      "packages/NLP/src/lang2code.json",
+      "packages/NLP/src/minilm-feature-worker.ts",
+      "packages/NLP/src/package.ts",
+      "packages/NLP/src/stemming-tools/constants.ts",
+      "packages/NLP/src/stemming-tools/metrics.ts",
+      "packages/NLP/src/stemming-tools/stemming-tools.ts",
+      "packages/NLP/src/stemming-tools/stemming-ui.ts",
+      "packages/NLP/src/utils/sentence-similarity-viewer.ts"
+    ],
+    "tests": [
+      "packages/NLP/src/package-test.ts",
+      "packages/NLP/src/tests/nlp-panels.ts",
+      "packages/NLP/src/tests/test-utils.ts"
+    ],
+    "scripts": [
+      "packages/NLP/scripts/extractive-summarizer-file.py",
+      "packages/NLP/scripts/language-detection.py",
+      "packages/NLP/scripts/readability-score-file.py",
+      "packages/NLP/scripts/sentiment-analysis.py",
+      "packages/NLP/scripts/sentiment.R",
+      "packages/NLP/scripts/text-extractor.py",
+      "packages/NLP/scripts/vader-sentiment-analysis.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/NLP/CHANGELOG.md",
+      "packages/NLP/CREDITS.md",
+      "packages/NLP/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:NLP:sentence-similarity-search",
+      "name": "Sentence Similarity Search",
+      "description": "A viewer and widget set that lets users search a text column for semantically similar sentences, and inspect pairwise distances between them in real time.",
+      "category": "nlp-search",
+      "members": [
+        {
+          "id": "func:NLP:Sentence Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Sentence Similarity Search",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:NLP:sentenceSearch",
+          "kind": "RegisteredFunction",
+          "name": "sentenceSearch",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:NLP:Similar",
+          "kind": "RegisteredFunction",
+          "name": "Similar",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:NLP:Distance",
+          "kind": "RegisteredFunction",
+          "name": "Distance",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+          "kind": "DocPage",
+          "title": "Natural language processing",
+          "url": "/help/datagrok/solutions/domains/nlp/nlp"
+        },
+        {
+          "id": "doc:/packages/NLP/readme.md",
+          "kind": "DocPage",
+          "title": "NLP",
+          "url": "/packages/NLP/readme.md"
+        },
+        {
+          "id": "clog:NLP:1.0.9:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NLP/src/package.ts",
+          "packages/NLP/src/stemming-tools/constants.ts",
+          "packages/NLP/src/stemming-tools/stemming-tools.ts",
+          "packages/NLP/src/stemming-tools/stemming-ui.ts",
+          "packages/NLP/src/utils/sentence-similarity-viewer.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:text-embeddings",
+      "name": "Text Embeddings",
+      "description": "Computes dense vector embeddings for text columns (UMAP-based and sentence-level), serving as the backbone for dimensionality reduction, clustering, and radial coloring of text data.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:NLP:Sentence Embeddings",
+          "kind": "RegisteredFunction",
+          "name": "Sentence Embeddings",
+          "friendly_name": null,
+          "role": "dimRedPreprocessingFunction",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:NLP:Compute Text Embeddings",
+          "kind": "RegisteredFunction",
+          "name": "Compute Text Embeddings",
+          "friendly_name": null,
+          "role": null,
+          "description": "Compute text embeddings using UMAP",
+          "tags": []
+        },
+        {
+          "id": "func:NLP:getEmbeddings",
+          "kind": "RegisteredFunction",
+          "name": "getEmbeddings",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:NLP:Radial Coloring",
+          "kind": "RegisteredFunction",
+          "name": "Radial Coloring",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:NLP:1.2.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:NLP:1.0.7:2",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+          "kind": "DocPage",
+          "title": "Natural language processing",
+          "url": "/help/datagrok/solutions/domains/nlp/nlp"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NLP/src/package.ts",
+          "packages/NLP/src/stemming-tools/constants.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:stemming-based-search",
+      "name": "Stemming-Based Search",
+      "description": "Adds stemming-aware search and filtering for text columns, including a Stem Column transform and context/distance edit panels introduced in v1.0.7.",
+      "category": "nlp-search",
+      "members": [
+        {
+          "id": "func:NLP:Stem Column",
+          "kind": "RegisteredFunction",
+          "name": "Stem Column",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:NLP:1.0.7:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:NLP:1.0.7:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:NLP:1.0.8:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/transform/functions/text-functions",
+          "kind": "DocPage",
+          "title": "Text functions",
+          "url": "/help/transform/functions/text-functions"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NLP/src/package.ts",
+          "packages/NLP/src/stemming-tools/constants.ts",
+          "packages/NLP/src/stemming-tools/stemming-tools.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:sentiment-analysis",
+      "name": "Sentiment Analysis",
+      "description": "Detects polarity and emotion sentiment in text using multiple complementary approaches: rule-based VADER lexicon, ML-based polarity detection, and R-based emotion classification.",
+      "category": "nlp-analysis",
+      "members": [
+        {
+          "id": "script:NLP:Sentiment Analysis",
+          "kind": "Script",
+          "name": "Sentiment Analysis",
+          "language": "python",
+          "description": "Detect polar sentiments in a text"
+        },
+        {
+          "id": "script:NLP:Sentiment Classification",
+          "kind": "Script",
+          "name": "Sentiment Classification",
+          "language": "r",
+          "description": "Sentiment classification of emotions and polarity"
+        },
+        {
+          "id": "script:NLP:Rule-Based Sentiment Analysis",
+          "kind": "Script",
+          "name": "Rule-Based Sentiment Analysis",
+          "language": "python",
+          "description": "Detect polar sentiments in a text with the VADER lexicon"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+          "kind": "DocPage",
+          "title": "Natural language processing",
+          "url": "/help/datagrok/solutions/domains/nlp/nlp"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:text-summarization",
+      "name": "Text Summarization",
+      "description": "Produces extractive summaries of documents using the TextRank graph-based algorithm.",
+      "category": "nlp-analysis",
+      "members": [
+        {
+          "id": "script:NLP:Summary",
+          "kind": "Script",
+          "name": "Summary",
+          "language": "python",
+          "description": "Extractive Text Summarization Using TextRank Algorithm"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:language-and-text-statistics",
+      "name": "Language Detection & Text Statistics",
+      "description": "Identifies the language of a text and provides readability/complexity statistics, giving users a quick profile of their text data quality.",
+      "category": "nlp-analysis",
+      "members": [
+        {
+          "id": "script:NLP:Language Detector",
+          "kind": "Script",
+          "name": "Language Detector",
+          "language": "python",
+          "description": "Detect the language in which a text is written"
+        },
+        {
+          "id": "script:NLP:Text Statistics",
+          "kind": "Script",
+          "name": "Text Statistics",
+          "language": "python",
+          "description": "Check how easy your text is to understand"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:translation",
+      "name": "Translation",
+      "description": "Provides an in-context translation widget that accepts a file input and renders translated text as a Datagrok panel.",
+      "category": "nlp-analysis",
+      "members": [
+        {
+          "id": "func:NLP:Translation",
+          "kind": "RegisteredFunction",
+          "name": "Translation",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NLP/src/code2lang.json",
+          "packages/NLP/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NLP:text-extraction",
+      "name": "Text Extraction",
+      "description": "Extracts plain text content from binary files (PDFs, Office documents, etc.) to feed downstream NLP scripts.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:NLP:Text Extractor",
+          "kind": "Script",
+          "name": "Text Extractor",
+          "language": "python",
+          "description": "Extracts text from a file"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

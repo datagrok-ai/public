@@ -1,0 +1,383 @@
+{
+  "package": {
+    "id": "pkg:Grokky",
+    "name": "Grokky",
+    "friendly_name": "Grokky",
+    "category": null,
+    "description": "Grokky AI assistant for Datagrok"
+  },
+  "files": {
+    "src": [
+      "packages/Grokky/dockerfiles/claude-runtime/src/constants.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/package-knowledge-tool.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/server.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/shared-api-client.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/sync/home-files.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/sync/orchestrator.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/sync/packages.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/sync/shared-connections.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/sync/workspace.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/types.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/user/installed-packages.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/user/staged-workspace.ts",
+      "packages/Grokky/dockerfiles/claude-runtime/src/user/user-dir.ts",
+      "packages/Grokky/dockerfiles/mcp-server/src/api-client.ts",
+      "packages/Grokky/dockerfiles/mcp-server/src/index.ts",
+      "packages/Grokky/dockerfiles/mcp-server/src/shared-api-client.ts",
+      "packages/Grokky/src/ai/panel.ts",
+      "packages/Grokky/src/ai/search/combined-search.ts",
+      "packages/Grokky/src/ai/search/query-matching.ts",
+      "packages/Grokky/src/ai/storage.ts",
+      "packages/Grokky/src/ai/suggestions-panel.ts",
+      "packages/Grokky/src/ai/ui.ts",
+      "packages/Grokky/src/ai/usage-limiter.ts",
+      "packages/Grokky/src/claude/exec-blocks.ts",
+      "packages/Grokky/src/claude/runtime-client.ts",
+      "packages/Grokky/src/db/db-index-tools.ts",
+      "packages/Grokky/src/db/indexes/biologics-index.ts",
+      "packages/Grokky/src/db/indexes/chembl-index.ts",
+      "packages/Grokky/src/db/query-meta-utils.ts",
+      "packages/Grokky/src/db/sql-tools.ts",
+      "packages/Grokky/src/depr/AI-API-providers/openai-chat-completions-provider.ts",
+      "packages/Grokky/src/depr/AI-API-providers/openai-responses-provider.ts",
+      "packages/Grokky/src/depr/AI-API-providers/types.ts",
+      "packages/Grokky/src/depr/LLM-client.ts",
+      "packages/Grokky/src/depr/ai-panel.ts",
+      "packages/Grokky/src/depr/chatgpt-assistant.ts",
+      "packages/Grokky/src/depr/creds.ts",
+      "packages/Grokky/src/depr/deepwikiclient.ts",
+      "packages/Grokky/src/depr/depr.ts",
+      "packages/Grokky/src/depr/embeddings.ts",
+      "packages/Grokky/src/depr/indexes/dg-repository-index.ts",
+      "packages/Grokky/src/depr/interfaces.ts",
+      "packages/Grokky/src/depr/is-help-request.ts",
+      "packages/Grokky/src/depr/prompt-engine.ts",
+      "packages/Grokky/src/depr/rendering-tools.ts",
+      "packages/Grokky/src/depr/script-tools.ts",
+      "packages/Grokky/src/depr/sql-utils.ts",
+      "packages/Grokky/src/depr/tableview-tools.ts",
+      "packages/Grokky/src/depr/viewers-ai.ts",
+      "packages/Grokky/src/package.ts",
+      "packages/Grokky/src/utils.ts"
+    ],
+    "tests": [
+      "packages/Grokky/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Grokky/.claude/skills/deploy-grokky/SKILL.md",
+      "packages/Grokky/CHANGELOG.md",
+      "packages/Grokky/CLAUDE.md",
+      "packages/Grokky/CREDITS.md",
+      "packages/Grokky/README.md",
+      "packages/Grokky/dockerfiles/claude-runtime/plugin/skills/datagrok-entities/SKILL.md",
+      "packages/Grokky/dockerfiles/claude-runtime/plugin/skills/datagrok-exec/SKILL.md",
+      "packages/Grokky/docs/CLAUDE_CODE_FLOW.md",
+      "packages/Grokky/docs/EXAMPLES.md",
+      "packages/Grokky/docs/FEATURES.md",
+      "packages/Grokky/docs/IMPLEMENTATION.md",
+      "packages/Grokky/docs/VISION.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Grokky:ai-doc-help",
+      "name": "AI Documentation Help",
+      "description": "Answers user questions about Datagrok by searching and synthesizing answers from platform documentation and public code via an LLM, surfaced through the platform's Powersearch panel.",
+      "category": "ai-assistant",
+      "members": [
+        {
+          "id": "func:Grokky:Help",
+          "kind": "RegisteredFunction",
+          "name": "Help",
+          "friendly_name": null,
+          "role": "aiSearchProvider",
+          "description": "Get answers from AI assistant based on Datagrok documentation and public code.",
+          "tags": []
+        },
+        {
+          "id": "func:Grokky:combinedLLMSearchProvider",
+          "kind": "RegisteredFunction",
+          "name": "combinedLLMSearchProvider",
+          "friendly_name": null,
+          "role": "searchProvider",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Grokky/readme.md",
+          "kind": "DocPage",
+          "title": "Grokky",
+          "url": "/packages/Grokky/readme.md"
+        },
+        {
+          "id": "doc:/help/_internal/tests/help-test",
+          "kind": "DocPage",
+          "title": "Tests: Help",
+          "url": "/help/_internal/tests/help-test"
+        },
+        {
+          "id": "clog:Grokky:1.0.0:2",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Grokky/src/ai/panel.ts",
+          "packages/Grokky/src/ai/search/combined-search.ts",
+          "packages/Grokky/src/ai/ui.ts",
+          "packages/Grokky/src/ai/usage-limiter.ts",
+          "packages/Grokky/src/claude/exec-blocks.ts",
+          "packages/Grokky/src/claude/runtime-client.ts",
+          "packages/Grokky/src/db/query-meta-utils.ts",
+          "packages/Grokky/src/db/sql-tools.ts",
+          "packages/Grokky/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Grokky:ai-function-execution",
+      "name": "AI Function Execution",
+      "description": "Plans and executes chains of Datagrok functions to achieve a goal described in natural language, enabling agentic task completion within the platform.",
+      "category": "ai-assistant",
+      "members": [
+        {
+          "id": "func:Grokky:Execute",
+          "kind": "RegisteredFunction",
+          "name": "Execute",
+          "friendly_name": null,
+          "role": "aiSearchProvider",
+          "description": "Plans and executes function steps to achieve needed results",
+          "tags": []
+        },
+        {
+          "id": "clog:Grokky:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Grokky/src/ai/panel.ts",
+          "packages/Grokky/src/ai/search/combined-search.ts",
+          "packages/Grokky/src/ai/ui.ts",
+          "packages/Grokky/src/ai/usage-limiter.ts",
+          "packages/Grokky/src/claude/exec-blocks.ts",
+          "packages/Grokky/src/claude/runtime-client.ts",
+          "packages/Grokky/src/db/query-meta-utils.ts",
+          "packages/Grokky/src/db/sql-tools.ts",
+          "packages/Grokky/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Grokky:ai-query-matching",
+      "name": "AI Query Matching",
+      "description": "Matches a natural-language prompt to an existing Datagrok SQL query using fuzzy/pattern search and executes it, backed by tools that index database schemas and persist query metadata.",
+      "category": "ai-assistant",
+      "members": [
+        {
+          "id": "func:Grokky:Query",
+          "kind": "RegisteredFunction",
+          "name": "Query",
+          "friendly_name": null,
+          "role": "aiSearchProvider",
+          "description": "Tries to find a query which has the similar pattern as the prompt user entered and executes it",
+          "tags": []
+        },
+        {
+          "id": "func:Grokky:findMatchingPatternQuery",
+          "kind": "RegisteredFunction",
+          "name": "findMatchingPatternQuery",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Grokky:setupAIQueryEditor",
+          "kind": "RegisteredFunction",
+          "name": "setupAIQueryEditor",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Grokky:indexDatabaseSchema",
+          "kind": "RegisteredFunction",
+          "name": "indexDatabaseSchema",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Grokky:moveMetaToDB",
+          "kind": "RegisteredFunction",
+          "name": "moveMetaToDB",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:Grokky:1.0.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.0:4",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/_access/_05-transform-query-results",
+          "kind": "DocPage",
+          "title": "Transform query results",
+          "url": "/help/_access/_05-transform-query-results"
+        },
+        {
+          "id": "doc:/help/transform/query-transformations",
+          "kind": "DocPage",
+          "title": "Query transformations",
+          "url": "/help/transform/query-transformations"
+        },
+        {
+          "id": "doc:/help/develop/advanced/query-debugging",
+          "kind": "DocPage",
+          "title": "Query debugging",
+          "url": "/help/develop/advanced/query-debugging"
+        },
+        {
+          "id": "doc:/help/_internal/tests/release-cheklist-cases/adding-query",
+          "kind": "DocPage",
+          "title": "Manual Test: Adding Query",
+          "url": "/help/_internal/tests/release-cheklist-cases/adding-query"
+        },
+        {
+          "id": "doc:/help/_internal/tests/release-cheklist-cases/delete-query",
+          "kind": "DocPage",
+          "title": "Manual Test: Delete Query",
+          "url": "/help/_internal/tests/release-cheklist-cases/delete-query"
+        },
+        {
+          "id": "doc:/help/_internal/tests/release-cheklist-cases/query-browser",
+          "kind": "DocPage",
+          "title": "Manual Test: Query Browser",
+          "url": "/help/_internal/tests/release-cheklist-cases/query-browser"
+        },
+        {
+          "id": "doc:/help/_internal/tests/release-cheklist-cases/query-transformations",
+          "kind": "DocPage",
+          "title": "Manual Test: Query Transformations",
+          "url": "/help/_internal/tests/release-cheklist-cases/query-transformations"
+        },
+        {
+          "id": "doc:/help/access/_stashed/_edit-socrata-query",
+          "kind": "DocPage",
+          "title": "Edit Socrata query",
+          "url": "/help/access/_stashed/_edit-socrata-query"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Grokky/src/ai/panel.ts",
+          "packages/Grokky/src/ai/search/combined-search.ts",
+          "packages/Grokky/src/ai/search/query-matching.ts",
+          "packages/Grokky/src/ai/ui.ts",
+          "packages/Grokky/src/ai/usage-limiter.ts",
+          "packages/Grokky/src/claude/exec-blocks.ts",
+          "packages/Grokky/src/claude/runtime-client.ts",
+          "packages/Grokky/src/db/db-index-tools.ts",
+          "packages/Grokky/src/db/indexes/biologics-index.ts",
+          "packages/Grokky/src/db/indexes/chembl-index.ts",
+          "packages/Grokky/src/db/query-meta-utils.ts",
+          "packages/Grokky/src/db/sql-tools.ts",
+          "packages/Grokky/src/package.ts",
+          "packages/Grokky/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Grokky:plugin-lifecycle",
+      "name": "Plugin Lifecycle and LLM Client Infrastructure",
+      "description": "Handles package initialization, autostart registration, and the underlying LLM client setup (Azure, Gemini/Vercel AI, proxy) that all Grokky AI providers depend on.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Grokky:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": [
+            "init"
+          ]
+        },
+        {
+          "id": "func:Grokky:autostart",
+          "kind": "RegisteredFunction",
+          "name": "autostart",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": [
+            "autostart"
+          ]
+        },
+        {
+          "id": "doc:/packages/Grokky/claude.md",
+          "kind": "DocPage",
+          "title": "Grokky",
+          "url": "/packages/Grokky/claude.md"
+        },
+        {
+          "id": "clog:Grokky:1.0.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.4:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.4:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.4:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Grokky:1.0.0:5",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Grokky/src/ai/panel.ts",
+          "packages/Grokky/src/ai/search/combined-search.ts",
+          "packages/Grokky/src/ai/ui.ts",
+          "packages/Grokky/src/ai/usage-limiter.ts",
+          "packages/Grokky/src/claude/exec-blocks.ts",
+          "packages/Grokky/src/claude/runtime-client.ts",
+          "packages/Grokky/src/db/query-meta-utils.ts",
+          "packages/Grokky/src/db/sql-tools.ts",
+          "packages/Grokky/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

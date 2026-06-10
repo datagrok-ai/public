@@ -1,0 +1,587 @@
+{
+  "package": {
+    "id": "pkg:Helm",
+    "name": "Helm",
+    "friendly_name": "Helm",
+    "version": "2.13.7",
+    "category": "Bioinformatics",
+    "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
+    "extras": {
+      "npm_name": "@datagrok/helm",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Helm:initHelm",
+      "name": "initHelm",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:getHelmService",
+      "name": "getHelmService",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Helm renderer service",
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:helmCellRenderer",
+      "name": "helmCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:editMoleculeCell",
+      "name": "editMoleculeCell",
+      "friendly_name": null,
+      "role": "cellEditor",
+      "tags": [],
+      "description": "Macromolecule",
+      "input_types": [
+        "grid_cell"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "cellEditor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:Edit Helm...",
+      "name": "Edit Helm...",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Adds editor",
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:Properties",
+      "name": "Properties",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:getMolfiles",
+      "name": "getMolfiles",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:helmInput",
+      "name": "helmInput",
+      "friendly_name": null,
+      "role": "valueEditor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "semType": "Macromolecule",
+        "role": "valueEditor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:getHelmHelper",
+      "name": "getHelmHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:measureCellRenderer",
+      "name": "measureCellRenderer",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:Highlight Monomers",
+      "name": "Highlight Monomers",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Helm:autostart",
+      "name": "autostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": "Helm bootstrap",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:Helm:helmAsync",
+      "name": "helmAsync",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Helm/credits.md",
+      "title": "Helm — Third-Party Libraries",
+      "url": "/packages/Helm/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Helm/readme.md",
+      "title": "HELM",
+      "url": "/packages/Helm/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Helm/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Helm/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/deploy/k8s/install-helm-chart",
+      "title": "Install Datagrok with Helm",
+      "url": "/help/deploy/k8s/install-helm-chart",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/access/_stashed/_edit-socrata-query",
+      "title": "Edit Socrata query",
+      "url": "/help/access/_stashed/_edit-socrata-query",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/_column-properties",
+      "title": "Column properties",
+      "url": "/help/datagrok/_deprecated/_column-properties",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/transform/batch-edit",
+      "title": "Batch edit",
+      "url": "/help/transform/batch-edit",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Helm:2.13.4:0",
+      "version": "2.13.4",
+      "released_at": "2026-03-31",
+      "ticket": null,
+      "text": "Added reverse compatibility support"
+    },
+    {
+      "id": "clog:Helm:2.13.4:1",
+      "version": "2.13.4",
+      "released_at": "2026-03-31",
+      "ticket": null,
+      "text": "Improved startup performance with dynamic imports for heavy dependencies"
+    },
+    {
+      "id": "clog:Helm:2.13.4:2",
+      "version": "2.13.4",
+      "released_at": "2026-03-31",
+      "ticket": null,
+      "text": "[#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated function tags to roles"
+    },
+    {
+      "id": "clog:Helm:2.13.4:3",
+      "version": "2.13.4",
+      "released_at": "2026-03-31",
+      "ticket": null,
+      "text": "Gap symbol connections now correctly restore for complex and multi-connection cases"
+    },
+    {
+      "id": "clog:Helm:2.13.4:4",
+      "version": "2.13.4",
+      "released_at": "2026-03-31",
+      "ticket": null,
+      "text": "Async renderer no longer causes infinite queues"
+    },
+    {
+      "id": "clog:Helm:2.13.1:0",
+      "version": "2.13.1",
+      "released_at": "2025-10-31",
+      "ticket": null,
+      "text": "Polifill for 1.25"
+    },
+    {
+      "id": "clog:Helm:2.13.0:0",
+      "version": "2.13.0",
+      "released_at": "2025-10-29",
+      "ticket": null,
+      "text": "CHEMS and SMILES support in HELM"
+    },
+    {
+      "id": "clog:Helm:2.13.0:1",
+      "version": "2.13.0",
+      "released_at": "2025-10-29",
+      "ticket": null,
+      "text": "Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers."
+    },
+    {
+      "id": "clog:Helm:2.11.0:0",
+      "version": "2.11.0",
+      "released_at": "2025-10-17",
+      "ticket": null,
+      "text": "Support for multi type polymers in Helm Web Editor"
+    },
+    {
+      "id": "clog:Helm:2.10.0:0",
+      "version": "2.10.0",
+      "released_at": "2025-04-14",
+      "ticket": null,
+      "text": "Non-Drawing HWE for faster pseudo-molfile retrieval"
+    },
+    {
+      "id": "clog:Helm:2.8.3:0",
+      "version": "2.8.3",
+      "released_at": "2025-03-27",
+      "ticket": null,
+      "text": "Fix MAJOR bug with overcached renderer after using polytool rules"
+    },
+    {
+      "id": "clog:Helm:2.8.2:0",
+      "version": "2.8.2",
+      "released_at": "2025-03-26",
+      "ticket": null,
+      "text": "Fix Helm Service editor moving datagrok page up"
+    },
+    {
+      "id": "clog:Helm:2.8.1:0",
+      "version": "2.8.1",
+      "released_at": "2025-03-03",
+      "ticket": null,
+      "text": "Fix error on empty R group in HELM"
+    },
+    {
+      "id": "clog:Helm:2.8.0:0",
+      "version": "2.8.0",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "Supporting all notations for hovering, conversion and context actions"
+    },
+    {
+      "id": "clog:Helm:2.7.4:0",
+      "version": "2.7.4",
+      "released_at": "2025-02-17",
+      "ticket": null,
+      "text": "Fix Helm Splitter for marginal cases and tests"
+    },
+    {
+      "id": "clog:Helm:2.7.3:0",
+      "version": "2.7.3",
+      "released_at": "2025-02-17",
+      "ticket": null,
+      "text": "Support for DNA/RNA for hover and other effects"
+    },
+    {
+      "id": "clog:Helm:2.7.2:0",
+      "version": "2.7.2",
+      "released_at": "2025-01-21",
+      "ticket": null,
+      "text": "Support for async rendering in non-grid views"
+    },
+    {
+      "id": "clog:Helm:2.7.1:0",
+      "version": "2.7.1",
+      "released_at": "2024-12-30",
+      "ticket": null,
+      "text": "Moved some tests from Bio package to Helm package (for Bio not to depend on Helm)"
+    },
+    {
+      "id": "clog:Helm:2.6.0:0",
+      "version": "2.6.0",
+      "released_at": "2024-11-18",
+      "ticket": null,
+      "text": "Correct helm loading"
+    },
+    {
+      "id": "clog:Helm:2.5.10:0",
+      "version": "2.5.10",
+      "released_at": "2024-11-15",
+      "ticket": null,
+      "text": "Fix async renderer invalidation on cached rendering"
+    },
+    {
+      "id": "clog:Helm:2.5.9:0",
+      "version": "2.5.9",
+      "released_at": "2024-11-01",
+      "ticket": null,
+      "text": "Correct initialization of the Helm"
+    },
+    {
+      "id": "clog:Helm:2.5.8:0",
+      "version": "2.5.8",
+      "released_at": "2024-10-31",
+      "ticket": null,
+      "text": "Fix HelmInput for SeqValueBase"
+    },
+    {
+      "id": "clog:Helm:2.5.8:1",
+      "version": "2.5.8",
+      "released_at": "2024-10-31",
+      "ticket": null,
+      "text": "Fix HelmGridCellRenderer for original and canonical symbols"
+    },
+    {
+      "id": "clog:Helm:2.5.8:2",
+      "version": "2.5.8",
+      "released_at": "2024-10-31",
+      "ticket": null,
+      "text": "Fix using HelmAtom"
+    },
+    {
+      "id": "clog:Helm:2.5.7:0",
+      "version": "2.5.7",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Fix HelmHelper adding .seqHelper"
+    },
+    {
+      "id": "clog:Helm:2.5.6:0",
+      "version": "2.5.6",
+      "released_at": "2024-10-22",
+      "ticket": null,
+      "text": "Fix HelmGridCellRenderer for size limit and flickering"
+    },
+    {
+      "id": "clog:Helm:2.5.6:1",
+      "version": "2.5.6",
+      "released_at": "2024-10-22",
+      "ticket": null,
+      "text": "Remove HelmMonomerPlacer, cleanup"
+    },
+    {
+      "id": "clog:Helm:2.5.6:2",
+      "version": "2.5.6",
+      "released_at": "2024-10-22",
+      "ticket": null,
+      "text": "Fix HelmHelper removeGaps tests using standard monomer libs"
+    },
+    {
+      "id": "clog:Helm:2.5.6:3",
+      "version": "2.5.6",
+      "released_at": "2024-10-22",
+      "ticket": null,
+      "text": "Fix HelmHelper adding tests for parse Helm, and with gaps"
+    },
+    {
+      "id": "clog:Helm:2.5.5:0",
+      "version": "2.5.5",
+      "released_at": "2024-10-15",
+      "ticket": null,
+      "text": "Fix Getting monomers in HWE that can contain square brackets"
+    }
+  ],
+  "stats": {
+    "functions": 13,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 19,
+    "changelog": 113
+  }
+}

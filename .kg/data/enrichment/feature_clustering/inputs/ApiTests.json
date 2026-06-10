@@ -1,0 +1,698 @@
+{
+  "package": {
+    "id": "pkg:ApiTests",
+    "name": "ApiTests",
+    "friendly_name": "API Tests",
+    "version": "1.10.2",
+    "category": "Development",
+    "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
+    "extras": {
+      "npm_name": "@datagrok/api-tests",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "INT",
+      "type": "int",
+      "choices": [],
+      "default": 1
+    },
+    {
+      "name": "FLOAT",
+      "type": "double",
+      "choices": [],
+      "default": 1.234
+    },
+    {
+      "name": "BOOL",
+      "type": "bool",
+      "choices": [],
+      "default": true
+    },
+    {
+      "name": "STRING",
+      "type": "string",
+      "choices": [],
+      "default": "value1"
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:ApiTests:getTable",
+      "name": "getTable",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:getColumn",
+      "name": "getColumn",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:getDT [get demo table]",
+      "name": "getDT [get demo table]",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:getCell [get table cell]",
+      "name": "getCell [get table cell]",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "int",
+        "string"
+      ],
+      "output_types": [
+        "cell"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:expectTable",
+      "name": "expectTable",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dataframe"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:dummyPackageFunctionWithDefaultValue",
+      "name": "dummyPackageFunctionWithDefaultValue",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "int"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:dummyPackageFunction",
+      "name": "dummyPackageFunction",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "int"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:dummyDataFrameFunction",
+      "name": "dummyDataFrameFunction",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        null
+      ],
+      "output_types": [
+        "int",
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testStringAsync",
+      "name": "testStringAsync",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "int"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:CustomStringInput",
+      "name": "CustomStringInput",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationJoinDf",
+      "name": "testOutputAnnotationJoinDf",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationJoinCol",
+      "name": "testOutputAnnotationJoinCol",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationJoinColList",
+      "name": "testOutputAnnotationJoinColList",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column_list"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationReplaceDf",
+      "name": "testOutputAnnotationReplaceDf",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationReplaceCol",
+      "name": "testOutputAnnotationReplaceCol",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputAnnotationReplaceColList",
+      "name": "testOutputAnnotationReplaceColList",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testOutputWithoutAction",
+      "name": "testOutputWithoutAction",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:expectDate",
+      "name": "expectDate",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "datetime",
+        "datetime"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testVectorFunc",
+      "name": "testVectorFunc",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:testVectorFuncNonVectorizableParam",
+      "name": "testVectorFuncNonVectorizableParam",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string",
+        "column"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:ApiTests:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:ApiTests:FileFuncTest",
+      "name": "FileFuncTest",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:dummyPackageScript",
+      "name": "dummyPackageScript",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:FormulaScript",
+      "name": "FormulaScript",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:InputFormTest",
+      "name": "InputFormTest",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:InputFormTest2",
+      "name": "InputFormTest2",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:Test NaN output",
+      "name": "Test NaN output",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:propertyParsing",
+      "name": "propertyParsing",
+      "language": "javascript",
+      "description": "Hello world script"
+    },
+    {
+      "id": "script:ApiTests:ValueLookup",
+      "name": "ValueLookup",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:ValueLookupWithNullable",
+      "name": "ValueLookupWithNullable",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:vectorScript",
+      "name": "vectorScript",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:ApiTests:vectorScriptNonVectorizableParam",
+      "name": "vectorScriptNonVectorizableParam",
+      "language": "javascript",
+      "description": null
+    }
+  ],
+  "queries": [
+    {
+      "id": "query:ApiTests:dummyPackageQuery",
+      "name": "dummyPackageQuery",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/ApiTests/credits.md",
+      "title": "ApiTests — Third-Party Libraries",
+      "url": "/packages/ApiTests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ApiTests/readme.md",
+      "title": "API Tests",
+      "url": "/packages/ApiTests/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/build-query-test",
+      "title": "Tests: Join DB Tables",
+      "url": "/help/_internal/tests/build-query-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/collections-test",
+      "title": "Tests: Collections",
+      "url": "/help/_internal/tests/collections-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/color-coding-test",
+      "title": "Tests: Color Coding",
+      "url": "/help/_internal/tests/color-coding-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/datetime-extract-test",
+      "title": "Tests: Datetime Extract",
+      "url": "/help/_internal/tests/datetime-extract-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-input-fields-test",
+      "title": "Tests: Dialogs Input Fields",
+      "url": "/help/_internal/tests/dialogs-input-fields-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-test",
+      "title": "Tests: Dialogs",
+      "url": "/help/_internal/tests/dialogs-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/elastic-search-test",
+      "title": "Tests: Elastic search",
+      "url": "/help/_internal/tests/elastic-search-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/export-test",
+      "title": "Tests: Export",
+      "url": "/help/_internal/tests/export-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/file-connector-test",
+      "title": "Tests: File connector",
+      "url": "/help/_internal/tests/file-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/help-test",
+      "title": "Tests: Help",
+      "url": "/help/_internal/tests/help-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/hide-menus-test",
+      "title": "Tests: Hide Menus",
+      "url": "/help/_internal/tests/hide-menus-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/inviting-a-friend-test",
+      "title": "Tests: Inviting a friend",
+      "url": "/help/_internal/tests/inviting-a-friend-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/normalize-test",
+      "title": "Tests: Normalize",
+      "url": "/help/_internal/tests/normalize-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/projects-browser-test",
+      "title": "Tests: Projects Browser",
+      "url": "/help/_internal/tests/projects-browser-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/recently-open-test",
+      "title": "Tests: Recently Open Views",
+      "url": "/help/_internal/tests/recently-open-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/registration-test",
+      "title": "Tests: Registration",
+      "url": "/help/_internal/tests/registration-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/sorting-test",
+      "title": "Tests: Sorting",
+      "url": "/help/_internal/tests/sorting-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/substructure-filter",
+      "title": "Tests: Substructure Filter",
+      "url": "/help/_internal/tests/substructure-filter",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tables-schema-test",
+      "title": "Tests: Tables Schema",
+      "url": "/help/_internal/tests/tables-schema-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tags-favorites-test",
+      "title": "Tests: Tags",
+      "url": "/help/_internal/tests/tags-favorites-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/transformation-editor-test",
+      "title": "Tests: Transformation Editor",
+      "url": "/help/_internal/tests/transformation-editor-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/web-connector-test",
+      "title": "Tests: Web connector",
+      "url": "/help/_internal/tests/web-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/collaborate/project-gallery-test",
+      "title": "Tests: Project Browser",
+      "url": "/help/collaborate/project-gallery-test",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:ApiTests:1.10.2:0",
+      "version": "1.10.2",
+      "released_at": "2026-03-17",
+      "ticket": null,
+      "text": "Additonal setOptions tests"
+    },
+    {
+      "id": "clog:ApiTests:1.7.17:0",
+      "version": "1.7.17",
+      "released_at": "2024-08-30",
+      "ticket": null,
+      "text": "Add tests for grok.dapi.files.list"
+    }
+  ],
+  "stats": {
+    "functions": 21,
+    "scripts": 11,
+    "queries": 1,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 2
+  }
+}

@@ -1,0 +1,304 @@
+{
+  "package_id": "pkg:Tutorials",
+  "features": [
+    {
+      "id": "feature:Tutorials:tutorial-framework",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tutorial-runner.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Tutorials/src/widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/shortcuts.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Tutorials/src/tests/tutorial-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tests/app-test.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts wires the Tutorials app, tutorialWidget, autostart, init; tutorial-runner.ts and widget.ts implement the runner UI and Learn widget."
+    },
+    {
+      "id": "feature:Tutorials:demo-app",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Tutorials/src/demo-app/demo-app.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Tutorials/src/demo-app/widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/demo-app/const.ts",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Tutorials/src/demo-app/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Demo app entry (DemoView), widget, hierarchy constants, and helper utils registered through package.ts."
+    },
+    {
+      "id": "feature:Tutorials:viewer-demos",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/demo-app/platform-viewers-demo.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Tutorials/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "platform-viewers-demo.ts implements the shared viewerDemo runner; package.ts exposes one decorator-registered function per viewer."
+    },
+    {
+      "id": "feature:Tutorials:eda-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/eda/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/embedded-viewers.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/filters.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/grid.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/scatter-plot.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/viewers-basics.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/eda/tutorials/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/data-access/tutorials/sticky-meta.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "EDA track + per-viewer tutorial classes; StickyMetaTutorial lives under data-access/ but is part of this feature's members."
+    },
+    {
+      "id": "feature:Tutorials:data-transformation-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/transform/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/transform/tutorials/calculated-columns.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/transform/tutorials/data-aggregation.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Transform track + CalculatedColumnsTutorial and AggregationTutorial implementations."
+    },
+    {
+      "id": "feature:Tutorials:machine-learning-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/ml/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/ml/tutorials/multivariate-analysis.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/ml/tutorials/predictive-modeling.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "ML track wires MultivariateAnalysisTutorial; PredictiveModelingTutorial source still present although currently commented out in index.ts."
+    },
+    {
+      "id": "feature:Tutorials:data-access-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/data-access/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/data-access/tutorials/data-connectors.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Data-access track + DataConnectorsTutorial; filesDemo and databasesDemo functions are declared in package.ts."
+    },
+    {
+      "id": "feature:Tutorials:cheminformatics-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/chem/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/chem/tutorials/activity-cliffs.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/chem/tutorials/r-groups-analysis.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/chem/tutorials/similarity-diversity-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/chem/tutorials/substructure-search-filtering.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/chem/tutorials/virtual-screening.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Chem track index + the five tutorial classes (VirtualScreeningTutorial source remains although currently commented out in index.ts)."
+    },
+    {
+      "id": "feature:Tutorials:bioinformatics-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/bio/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/bio/tutorials/peptides-sar.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Bio track + PeptidesSarTutorial implementation."
+    },
+    {
+      "id": "feature:Tutorials:scientific-computing-tutorials",
+      "implements": [
+        {
+          "path": "packages/Tutorials/src/tracks/compute/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/compute/tutorials/diff-equations-tutorial.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/compute/tutorials/fitting-tutorial.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/compute/tutorials/sensitivity-analysis-tutorial.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/ml/tutorials/scripting.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/compute/tutorials/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Tutorials/src/tracks/compute/tutorials/ui-describer.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "Compute track + diff-eq/fitting/sensitivity tutorials; ScriptingTutorial lives under tracks/ml/ but is part of this feature's members."
+    }
+  ]
+}

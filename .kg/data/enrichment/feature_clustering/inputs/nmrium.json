@@ -1,0 +1,165 @@
+{
+  "package": {
+    "id": "pkg:nmrium",
+    "name": "nmrium",
+    "friendly_name": "NMRium",
+    "version": "1.3.0",
+    "category": null,
+    "description": "Datagrok package for NMR data visualization",
+    "extras": {
+      "npm_name": "@datagrok/nmrium",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:nmrium:jdxFileHandler",
+      "name": "jdxFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "list"
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "jdx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:nmrium:nmriumFileHandler",
+      "name": "nmriumFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "list"
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "nmrium"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:nmrium:previewNMRData",
+      "name": "previewNMRData",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "nmrium"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:nmrium:previewNMRFromDX",
+      "name": "previewNMRFromDX",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "dx, jdx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:nmrium:checkNmriumJdx",
+      "name": "checkNmriumJdx",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/nmrium/credits.md",
+      "title": "NMRium — Third-Party Libraries",
+      "url": "/packages/nmrium/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/nmrium/readme.md",
+      "title": "NMRium",
+      "url": "/packages/nmrium/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:nmrium:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-07-25",
+      "ticket": null,
+      "text": "Update dependencies"
+    },
+    {
+      "id": "clog:nmrium:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2025-03-03",
+      "ticket": null,
+      "text": "Content dependent view for opening NMRium"
+    },
+    {
+      "id": "clog:nmrium:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-01-21",
+      "ticket": null,
+      "text": "Add NMRium to datagrok. preview ability for .nmrium and JDOL files"
+    }
+  ],
+  "stats": {
+    "functions": 5,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 3
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "package_id": "pkg:OligoBatchCalculator",
+  "features": [
+    {
+      "id": "feature:OligoBatchCalculator:oligo-batch-calculator-app",
+      "implements": [
+        {
+          "path": "packages/OligoBatchCalculator/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/additional-modifications.ts",
+          "role": "support",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/validation.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/calculations-simplified.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/helpers.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/OligoBatchCalculator/src/tests/sequence-validation.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "OligoBatchCalculatorApp in package.ts wires the UI; it imports add/editModification, validate, normalizeSequence, saveAsCsv, isCurrentUserAppAdmin, and the simplified calc helpers."
+    },
+    {
+      "id": "feature:OligoBatchCalculator:oligonucleotide-property-calculation",
+      "implements": [
+        {
+          "path": "packages/OligoBatchCalculator/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/calculations-simplified.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/helpers.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/OligoBatchCalculator/src/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "Registered functions opticalDensity, nMole, molecularMass, molecularWeight, getUnits and the helper extinctionCoefficient all live in package.ts; they consume WEIGHTS/UNITS/NEAREST_NEIGHBOUR from constants.ts and sortByStringLengthInDescOrder/mergeOptions/normalizeSequence/deleteWord from helpers.ts. No direct unit tests for the calc functions."
+    }
+  ]
+}

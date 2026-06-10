@@ -1,0 +1,202 @@
+{
+  "package": {
+    "id": "pkg:PhyloTreeViewer",
+    "name": "PhyloTreeViewer",
+    "friendly_name": "PhyloTree Viewer",
+    "category": "Visualizations",
+    "description": "Phylogenetic trees visualization."
+  },
+  "files": {
+    "src": [
+      "packages/PhyloTreeViewer/src/apps/phylocanvas-gl-viewer-app.ts",
+      "packages/PhyloTreeViewer/src/apps/tree-cut-as-tree-app.ts",
+      "packages/PhyloTreeViewer/src/apps/tree-in-grid-cell-app.ts",
+      "packages/PhyloTreeViewer/src/apps/tree-to-grid-app.ts",
+      "packages/PhyloTreeViewer/src/consts.ts",
+      "packages/PhyloTreeViewer/src/package.ts",
+      "packages/PhyloTreeViewer/src/scripts-api.ts",
+      "packages/PhyloTreeViewer/src/typings/index.d.ts",
+      "packages/PhyloTreeViewer/src/utils/phylocanvas-gl-service.ts",
+      "packages/PhyloTreeViewer/src/utils/tree-generator.ts",
+      "packages/PhyloTreeViewer/src/viewers/grid-with-tree-viewer.ts",
+      "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts",
+      "packages/PhyloTreeViewer/src/viewers/phylocanvas-gl-viewer.ts"
+    ],
+    "tests": [
+      "packages/PhyloTreeViewer/src/package-test.ts",
+      "packages/PhyloTreeViewer/src/tests/grid-with-tree-tests.ts",
+      "packages/PhyloTreeViewer/src/tests/newick-phylocanvas-tests.ts",
+      "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+      "packages/PhyloTreeViewer/src/tests/phylocanvas-gl-viewer-tests.ts",
+      "packages/PhyloTreeViewer/src/tests/utils/index.ts",
+      "packages/PhyloTreeViewer/src/tests/viewers.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/PhyloTreeViewer/CHANGELOG.md",
+      "packages/PhyloTreeViewer/CREDITS.md",
+      "packages/PhyloTreeViewer/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:PhyloTreeViewer:phylocanvas-gl-viewer",
+      "name": "PhylocanvasGL Phylogenetic Tree Viewer",
+      "description": "Interactive WebGL-accelerated viewer for rendering phylogenetic trees from Newick data, registered as a Datagrok viewer type. Backed by a singleton service that other components can query.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PhyloTreeViewer:PhylocanvasGL",
+          "kind": "RegisteredFunction",
+          "name": "PhylocanvasGL",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Phylogenetic tree visualization",
+          "tags": []
+        },
+        {
+          "id": "func:PhyloTreeViewer:getPhylocanvasGlService",
+          "kind": "RegisteredFunction",
+          "name": "getPhylocanvasGlService",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PhyloTreeViewer:phylocanvasGlViewerApp",
+          "kind": "RegisteredFunction",
+          "name": "phylocanvasGlViewerApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for PhylocanvasGlViewer",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/PhyloTreeViewer/readme.md",
+          "kind": "DocPage",
+          "title": "PhyloTree Viewer",
+          "url": "/packages/PhyloTreeViewer/readme.md"
+        },
+        {
+          "id": "clog:PhyloTreeViewer:1.2.9:1",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/phylocanvas-gl",
+          "kind": "DocPage",
+          "title": "Phylocanvas.gl",
+          "url": "/help/visualize/viewers/phylocanvas-gl"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PhyloTreeViewer/src/apps/phylocanvas-gl-viewer-app.ts",
+          "packages/PhyloTreeViewer/src/consts.ts",
+          "packages/PhyloTreeViewer/src/package.ts",
+          "packages/PhyloTreeViewer/src/viewers/phylocanvas-gl-viewer.ts"
+        ],
+        "tests": [
+          "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+          "packages/PhyloTreeViewer/src/tests/phylocanvas-gl-viewer-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-in-grid",
+      "name": "Tree-in-Grid / Newick Cell Renderer",
+      "description": "Embeds phylogenetic tree thumbnails directly inside Datagrok grid cells, allowing users to view per-row trees alongside tabular data. Implemented by the TreeToGrid and TreeInGridCell utilities.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PhyloTreeViewer:TreeToGrid",
+          "kind": "RegisteredFunction",
+          "name": "TreeToGrid",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeToGrid (PhylocanvasGL based)",
+          "tags": []
+        },
+        {
+          "id": "func:PhyloTreeViewer:TreeInGridCell",
+          "kind": "RegisteredFunction",
+          "name": "TreeInGridCell",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeInGridCell",
+          "tags": []
+        },
+        {
+          "id": "clog:PhyloTreeViewer:1.2.9:2",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PhyloTreeViewer/src/apps/tree-in-grid-cell-app.ts",
+          "packages/PhyloTreeViewer/src/apps/tree-to-grid-app.ts",
+          "packages/PhyloTreeViewer/src/package.ts",
+          "packages/PhyloTreeViewer/src/viewers/grid-with-tree-viewer.ts",
+          "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts"
+        ],
+        "tests": [
+          "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:PhyloTreeViewer:newick-file-import",
+      "name": "Newick File Import",
+      "description": "Lets users open a Newick-format file and inject its tree data into an existing PhylocanvasGL viewer instance.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:PhyloTreeViewer:injectTree",
+          "kind": "RegisteredFunction",
+          "name": "injectTree",
+          "friendly_name": null,
+          "role": null,
+          "description": "Opens Newick file",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PhyloTreeViewer/src/package.ts",
+          "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts"
+        ],
+        "tests": [
+          "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-cut",
+      "name": "Tree Cut / Subtree Extraction",
+      "description": "Provides the ability to cut a phylogenetic tree at a threshold and return the resulting subtree as a new tree object, enabling downstream analysis on clades.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PhyloTreeViewer:TreeCutAsTree",
+          "kind": "RegisteredFunction",
+          "name": "TreeCutAsTree",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeCutAsTree",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PhyloTreeViewer/src/apps/tree-cut-as-tree-app.ts",
+          "packages/PhyloTreeViewer/src/package.ts"
+        ],
+        "tests": [
+          "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts"
+        ]
+      }
+    }
+  ]
+}

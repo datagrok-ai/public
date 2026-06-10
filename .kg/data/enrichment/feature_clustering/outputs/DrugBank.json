@@ -1,0 +1,84 @@
+{
+  "package_id": "pkg:DrugBank",
+  "features": [
+    {
+      "id": "feature:DrugBank:substructure-search",
+      "name": "Substructure Search",
+      "description": "Panel-based substructure search against the DrugBank Open Structures dataset, returning matching drug compounds for a drawn or pasted molecule.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:DrugBank:Databases | DrugBank | Substructure Search", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/DrugBank/readme.md", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "Function name explicitly encodes 'Substructure Search' under the Databases > DrugBank menu path, and the readme describes it as a primary capability of the plugin."
+    },
+    {
+      "id": "feature:DrugBank:similarity-search",
+      "name": "Similarity Search",
+      "description": "Panel-based molecular similarity search against the DrugBank Open Structures dataset, displaying similarity scores alongside each matching compound.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:DrugBank:Databases | DrugBank | Similarity Search", "weight": 1.0, "role": "core"},
+        {"id": "clog:DrugBank:1.0.16:1", "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps", "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Function name encodes 'Similarity Search' under Databases > DrugBank; the v1.0.16 changelog entry 'Added similarity score for compounds in the similarity panel' directly tracks this feature's evolution."
+    },
+    {
+      "id": "feature:DrugBank:drug-name-lookup",
+      "name": "Drug Name to Molecule Lookup",
+      "description": "Converter that resolves a drug name string to its corresponding molecular structure using the DrugBank dataset.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:DrugBank:Drug Name Molecule", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The 'Drug Name Molecule' converter function is a standalone name-to-structure lookup, distinct from the search panels and backed by the DrugBank compound registry."
+    },
+    {
+      "id": "feature:DrugBank:package-init",
+      "name": "Package Initialization",
+      "description": "Internal bootstrapping routine that initializes the DrugBank plugin on load.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:DrugBank:initDrugBank", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/DrugBank/claude.md", "weight": 0.7, "role": "doc"},
+        {"id": "doc:/packages/DrugBank/credits.md", "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "The init-role function plus developer-facing docs (claude.md, credits.md) describe plugin scaffolding rather than any user-facing capability."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:DrugBank:substructure-search", "to": "feature:DrugBank:similarity-search", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "clog:DrugBank:1.2.0:0",
+    "clog:DrugBank:1.1.1:0",
+    "clog:DrugBank:1.0.17:0",
+    "clog:DrugBank:1.0.16:0",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds"
+  ]
+}

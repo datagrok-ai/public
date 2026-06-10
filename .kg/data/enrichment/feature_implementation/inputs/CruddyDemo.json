@@ -1,0 +1,99 @@
+{
+  "package": {
+    "id": "pkg:CruddyDemo",
+    "name": "CruddyDemo",
+    "friendly_name": "Cruddy Demo",
+    "category": null,
+    "description": "Database-driven apps: define entities, browse/edit data, filters, privileges, events."
+  },
+  "files": {
+    "src": [
+      "packages/CruddyDemo/src/apps/chembl-app.ts",
+      "packages/CruddyDemo/src/apps/northwind-app.ts",
+      "packages/CruddyDemo/src/cruddy-test.ts",
+      "packages/CruddyDemo/src/cruddy/app.ts",
+      "packages/CruddyDemo/src/cruddy/crud.ts",
+      "packages/CruddyDemo/src/cruddy/cruddy.ts",
+      "packages/CruddyDemo/src/cruddy/entity.ts",
+      "packages/CruddyDemo/src/cruddy/filters.ts",
+      "packages/CruddyDemo/src/cruddy/table.ts",
+      "packages/CruddyDemo/src/package.ts"
+    ],
+    "tests": [
+      "packages/CruddyDemo/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/CruddyDemo/CREDITS.md",
+      "packages/CruddyDemo/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:CruddyDemo:northwind-demo",
+      "name": "Northwind CRUD Demo",
+      "description": "An interactive app demonstrating the Cruddy CRUD framework with the classic Northwind relational dataset (customers, orders, products). Registered in the Dev browse path as the primary entry-point demo.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:CruddyDemo:northwindDemo",
+          "kind": "RegisteredFunction",
+          "name": "northwindDemo",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/CruddyDemo/readme.md",
+          "kind": "DocPage",
+          "title": "Cruddy Demo",
+          "url": "/packages/CruddyDemo/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/CruddyDemo/src/apps/northwind-app.ts",
+          "packages/CruddyDemo/src/cruddy/app.ts",
+          "packages/CruddyDemo/src/cruddy/crud.ts",
+          "packages/CruddyDemo/src/cruddy/entity.ts",
+          "packages/CruddyDemo/src/cruddy/filters.ts",
+          "packages/CruddyDemo/src/cruddy/table.ts",
+          "packages/CruddyDemo/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CruddyDemo:chembl-demo",
+      "name": "ChEMBL CRUD Demo",
+      "description": "An app demonstrating the Cruddy CRUD framework applied to ChEMBL chemical/bioactivity data, showing entity browsing and editing for chemistry-domain datasets.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:CruddyDemo:chemblDemo",
+          "kind": "RegisteredFunction",
+          "name": "chemblDemo",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/CruddyDemo/src/apps/chembl-app.ts",
+          "packages/CruddyDemo/src/cruddy/app.ts",
+          "packages/CruddyDemo/src/cruddy/crud.ts",
+          "packages/CruddyDemo/src/cruddy/entity.ts",
+          "packages/CruddyDemo/src/cruddy/filters.ts",
+          "packages/CruddyDemo/src/cruddy/table.ts",
+          "packages/CruddyDemo/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

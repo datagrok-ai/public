@@ -1,0 +1,458 @@
+{
+  "package": {
+    "id": "pkg:Pyodide",
+    "name": "Pyodide",
+    "friendly_name": "Pyodide",
+    "version": "1.4.0",
+    "category": "Compute",
+    "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)",
+    "extras": {
+      "npm_name": "@datagrok/pyodide",
+      "fullName": null,
+      "browserFeatures": [
+        "wasm"
+      ]
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Pyodide:initPyodide",
+      "name": "initPyodide",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Pyodide:makeVectorCode",
+      "name": "makeVectorCode",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "script"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Pyodide:pyodideLanguageHandler",
+      "name": "pyodideLanguageHandler",
+      "friendly_name": null,
+      "role": "scriptHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "scriptHandler"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Pyodide:Pyodide Blob Input Output",
+      "name": "Pyodide Blob Input Output",
+      "language": "pyodide",
+      "description": "file and blob"
+    },
+    {
+      "id": "script:Pyodide:Pyodide Bool",
+      "name": "Pyodide Bool",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Calc Column Call",
+      "name": "Pyodide Calc Column Call",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Calc Column",
+      "name": "Pyodide Calc Column",
+      "language": "pyodide",
+      "description": "calc column"
+    },
+    {
+      "id": "script:Pyodide:Pyodide Column List",
+      "name": "Pyodide Column List",
+      "language": "pyodide",
+      "description": "column list input"
+    },
+    {
+      "id": "script:Pyodide:DataFrameInputCallJS",
+      "name": "DataFrameInputCallJS",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:DataFrameInputCallPy",
+      "name": "DataFrameInputCallPy",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Date",
+      "name": "Pyodide Date",
+      "language": "pyodide",
+      "description": "datetime input/output"
+    },
+    {
+      "id": "script:Pyodide:DatetimeInputCallJS",
+      "name": "DatetimeInputCallJS",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:DatetimeInputCallPy",
+      "name": "DatetimeInputCallPy",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:DatetimeTestJS",
+      "name": "DatetimeTestJS",
+      "language": "javascript",
+      "description": "datetime input/output"
+    },
+    {
+      "id": "script:Pyodide:DatetimeTestPy",
+      "name": "DatetimeTestPy",
+      "language": "pyodide",
+      "description": "datetime input/output"
+    },
+    {
+      "id": "script:Pyodide:Pyodide Deps Test",
+      "name": "Pyodide Deps Test",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Double",
+      "name": "Pyodide Double",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:EditDFJS",
+      "name": "EditDFJS",
+      "language": "javascript",
+      "description": "dataframe input/output"
+    },
+    {
+      "id": "script:Pyodide:EditDFPy",
+      "name": "EditDFPy",
+      "language": "pyodide",
+      "description": "dataframe input/output"
+    },
+    {
+      "id": "script:Pyodide:Pyodide Empty Dataframe",
+      "name": "Pyodide Empty Dataframe",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Graphics",
+      "name": "Pyodide Graphics",
+      "language": "pyodide",
+      "description": "graphics output column input"
+    },
+    {
+      "id": "script:Pyodide:Pyodide Int",
+      "name": "Pyodide Int",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Map",
+      "name": "Pyodide Map",
+      "language": "pyodide",
+      "description": "map input/output"
+    },
+    {
+      "id": "script:Pyodide:SimpleInputsJS",
+      "name": "SimpleInputsJS",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:SimpleInputsPy",
+      "name": "SimpleInputsPy",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:SimpleInputsCallJS",
+      "name": "SimpleInputsCallJS",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:SimpleInputsCallPy",
+      "name": "SimpleInputsCallPy",
+      "language": "pyodide",
+      "description": null
+    },
+    {
+      "id": "script:Pyodide:Pyodide Single Df",
+      "name": "Pyodide Single Df",
+      "language": "pyodide",
+      "description": "df performance"
+    },
+    {
+      "id": "script:Pyodide:Pyodide String",
+      "name": "Pyodide String",
+      "language": "pyodide",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Pyodide/credits.md",
+      "title": "Pyodide — Third-Party Libraries",
+      "url": "/packages/Pyodide/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Pyodide/readme.md",
+      "title": "Pyodide",
+      "url": "/packages/Pyodide/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Pyodide:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "[#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles"
+    },
+    {
+      "id": "clog:Pyodide:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-07-25",
+      "ticket": null,
+      "text": "Allow calling FuncCalls via run_sync and execFuncCall"
+    },
+    {
+      "id": "clog:Pyodide:1.3.0:1",
+      "version": "1.3.0",
+      "released_at": "2025-07-25",
+      "ticket": null,
+      "text": "Allow script dependencies with meta.dependencies annotation"
+    },
+    {
+      "id": "clog:Pyodide:1.3.0:2",
+      "version": "1.3.0",
+      "released_at": "2025-07-25",
+      "ticket": null,
+      "text": "Print scripts errors in console with actual line numbers"
+    },
+    {
+      "id": "clog:Pyodide:1.2.1:0",
+      "version": "1.2.1",
+      "released_at": "2025-06-19",
+      "ticket": null,
+      "text": "Fixed bug that happened during code generation for dataframes"
+    },
+    {
+      "id": "clog:Pyodide:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.25.0*"
+    },
+    {
+      "id": "clog:Pyodide:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2025-02-18",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.24.0*"
+    },
+    {
+      "id": "clog:Pyodide:1.1.0:1",
+      "version": "1.1.0",
+      "released_at": "2025-02-18",
+      "ticket": null,
+      "text": "Enables usage statistic for script handlers"
+    },
+    {
+      "id": "clog:Pyodide:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Initial release version. Requires datagarok-api >= 1.22.0"
+    },
+    {
+      "id": "clog:Pyodide:1.0.0:1",
+      "version": "1.0.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Provides possibility to execute python code directly in browser for Datagrok platform without client-server trips"
+    },
+    {
+      "id": "clog:Pyodide:1.0.0:2",
+      "version": "1.0.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Provides support of scripts vectorization for scripts with language set to `pyodide`"
+    },
+    {
+      "id": "clog:Pyodide:1.0.0:3",
+      "version": "1.0.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Contains sample code that can be used as template to register script handlers for other languages for Datagrok platform"
+    },
+    {
+      "id": "clog:Pyodide:1.0.0:4",
+      "version": "1.0.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Features auto tests"
+    }
+  ],
+  "stats": {
+    "functions": 3,
+    "scripts": 26,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 18,
+    "changelog": 13
+  }
+}

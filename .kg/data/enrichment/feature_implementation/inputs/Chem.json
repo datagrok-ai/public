@@ -1,0 +1,2648 @@
+{
+  "package": {
+    "id": "pkg:Chem",
+    "name": "Chem",
+    "friendly_name": "Chem",
+    "category": "Cheminformatics",
+    "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses."
+  },
+  "files": {
+    "src": [
+      "packages/Chem/src/RDKit_minimal.js",
+      "packages/Chem/src/analysis/activity-cliffs.ts",
+      "packages/Chem/src/analysis/bit-birch/bitbirch-clustering.ts",
+      "packages/Chem/src/analysis/bit-birch/bitbirch-worker.ts",
+      "packages/Chem/src/analysis/chem-diversity-viewer.ts",
+      "packages/Chem/src/analysis/chem-search-base-viewer.ts",
+      "packages/Chem/src/analysis/chem-similarity-viewer.ts",
+      "packages/Chem/src/analysis/chem-space.ts",
+      "packages/Chem/src/analysis/chem-spe.js",
+      "packages/Chem/src/analysis/deprotect.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-differences.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-generations.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-function-editor.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-cliffs.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-constants.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-filters.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-frag-vs-frag.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-generations.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-grids.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-lines.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-mol-rendering.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-substruct-provider.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/palette.ts",
+      "packages/Chem/src/analysis/molecular-matched-pairs/mmpa-activity-cell-renderer.ts",
+      "packages/Chem/src/analysis/mpo.ts",
+      "packages/Chem/src/analysis/r-group-analysis.ts",
+      "packages/Chem/src/bbwasm.d.ts",
+      "packages/Chem/src/bbwasm.js",
+      "packages/Chem/src/chem-searches.ts",
+      "packages/Chem/src/constants.ts",
+      "packages/Chem/src/demo/demo.ts",
+      "packages/Chem/src/descriptors/descriptors-calculation.ts",
+      "packages/Chem/src/docker/api.ts",
+      "packages/Chem/src/file-importers/mol2-importer.ts",
+      "packages/Chem/src/file-importers/smi-importer.ts",
+      "packages/Chem/src/mpo/mpo-context-panel.ts",
+      "packages/Chem/src/mpo/mpo-create-profile.ts",
+      "packages/Chem/src/mpo/mpo-profile-handler.ts",
+      "packages/Chem/src/mpo/mpo-profile-manager.ts",
+      "packages/Chem/src/mpo/mpo-profiles-view.ts",
+      "packages/Chem/src/mpo/mpo-scores-viewer.ts",
+      "packages/Chem/src/mpo/utils.ts",
+      "packages/Chem/src/open-chem/ocl-cell-renderer.ts",
+      "packages/Chem/src/open-chem/ocl-service/calculations.ts",
+      "packages/Chem/src/open-chem/ocl-service/consts.ts",
+      "packages/Chem/src/open-chem/ocl-service/index.ts",
+      "packages/Chem/src/open-chem/ocl-service/ocl-service.ts",
+      "packages/Chem/src/open-chem/ocl-service/types.ts",
+      "packages/Chem/src/open-chem/ocl-service/workers/ocl-worker.ts",
+      "packages/Chem/src/open-chem/ocl-sketcher.ts",
+      "packages/Chem/src/open-chem/sdf-importer.ts",
+      "packages/Chem/src/package-info.ts",
+      "packages/Chem/src/package.ts",
+      "packages/Chem/src/panels/chem-column-property-panel.ts",
+      "packages/Chem/src/panels/inchi.ts",
+      "packages/Chem/src/panels/pharmacophore-features.ts",
+      "packages/Chem/src/panels/structural-alerts.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker-api.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker-base.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker-client.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker-substructure.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service-worker.ts",
+      "packages/Chem/src/rdkit-service/rdkit-service.ts",
+      "packages/Chem/src/rdkit.worker.ts",
+      "packages/Chem/src/rdkit_lib_version.js",
+      "packages/Chem/src/rendering/atom-picker-controller.ts",
+      "packages/Chem/src/rendering/mixture-cell-renderer.ts",
+      "packages/Chem/src/rendering/mol3d-hover-handler.ts",
+      "packages/Chem/src/rendering/molecule-label.ts",
+      "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+      "packages/Chem/src/rendering/rdkit-reaction-renderer.ts",
+      "packages/Chem/src/rendering/render-molecule.ts",
+      "packages/Chem/src/scripts-api.ts",
+      "packages/Chem/src/utils/atom-index-mapper.ts",
+      "packages/Chem/src/utils/chem-atom-picker-utils.ts",
+      "packages/Chem/src/utils/chem-common-ocl.ts",
+      "packages/Chem/src/utils/chem-common-rdkit.ts",
+      "packages/Chem/src/utils/chem-common.ts",
+      "packages/Chem/src/utils/convert-notation-utils.ts",
+      "packages/Chem/src/utils/demo-utils.ts",
+      "packages/Chem/src/utils/elemental-analysis-utils.ts",
+      "packages/Chem/src/utils/err-info.ts",
+      "packages/Chem/src/utils/locked-entitie.ts",
+      "packages/Chem/src/utils/malformed-data-utils.ts",
+      "packages/Chem/src/utils/mixfile.ts",
+      "packages/Chem/src/utils/mol-creation_rdkit.ts",
+      "packages/Chem/src/utils/most-common-subs.ts",
+      "packages/Chem/src/utils/reaction-enumeration/config-form.ts",
+      "packages/Chem/src/utils/reaction-enumeration/config.ts",
+      "packages/Chem/src/utils/reaction-enumeration/enumerate.ts",
+      "packages/Chem/src/utils/reaction-enumeration/enumerator-app.ts",
+      "packages/Chem/src/utils/reaction-enumeration/filters.ts",
+      "packages/Chem/src/utils/reactions/consts.ts",
+      "packages/Chem/src/utils/reactions/reaction-browser.ts",
+      "packages/Chem/src/utils/reactions/reaction-editor.ts",
+      "packages/Chem/src/utils/reactions/reaction-storage.ts",
+      "packages/Chem/src/utils/reactions/reactions.ts",
+      "packages/Chem/src/utils/reactions/types.ts",
+      "packages/Chem/src/utils/reactions/ui.ts",
+      "packages/Chem/src/utils/sdf-utils.ts",
+      "packages/Chem/src/utils/similarity-utils.ts",
+      "packages/Chem/src/utils/ui-utils.ts",
+      "packages/Chem/src/widgets/biochem-properties-widget.ts",
+      "packages/Chem/src/widgets/chem-substructure-filter.ts",
+      "packages/Chem/src/widgets/col-highlights.ts",
+      "packages/Chem/src/widgets/drug-likeness.ts",
+      "packages/Chem/src/widgets/identifiers.ts",
+      "packages/Chem/src/widgets/molfile.ts",
+      "packages/Chem/src/widgets/pharmacophore-features.ts",
+      "packages/Chem/src/widgets/properties.ts",
+      "packages/Chem/src/widgets/scaffold-tree-filter.ts",
+      "packages/Chem/src/widgets/scaffold-tree.ts",
+      "packages/Chem/src/widgets/structural-alerts.ts",
+      "packages/Chem/src/widgets/structure2d.ts",
+      "packages/Chem/src/widgets/structure3d.ts",
+      "packages/Chem/src/widgets/synthon-search.ts",
+      "packages/Chem/src/widgets/toxicity.ts",
+      "packages/Chem/src/worker-loader.d.ts",
+      "packages/Chem/src/worker-message-bus-client.ts"
+    ],
+    "tests": [
+      "packages/Chem/src/package-test.ts",
+      "packages/Chem/src/tests/api-based-tests.ts",
+      "packages/Chem/src/tests/atom-index-mapper-tests.ts",
+      "packages/Chem/src/tests/atom-picker-3d-hover-tests.ts",
+      "packages/Chem/src/tests/atom-picker-escape-tests.ts",
+      "packages/Chem/src/tests/atom-picker-tests.ts",
+      "packages/Chem/src/tests/calculate.ts",
+      "packages/Chem/src/tests/cell-panel-tests.ts",
+      "packages/Chem/src/tests/chemical-table-parsing.ts",
+      "packages/Chem/src/tests/chemprop-tests.ts",
+      "packages/Chem/src/tests/clone-layout-tests.ts",
+      "packages/Chem/src/tests/col-panel-tests.ts",
+      "packages/Chem/src/tests/const.ts",
+      "packages/Chem/src/tests/detector-tests.ts",
+      "packages/Chem/src/tests/fingerprints.ts",
+      "packages/Chem/src/tests/gui-utils.ts",
+      "packages/Chem/src/tests/is-smarts-tests.ts",
+      "packages/Chem/src/tests/menu-tests-chem-space.ts",
+      "packages/Chem/src/tests/menu-tests-cliffs.ts",
+      "packages/Chem/src/tests/menu-tests-rgroups.ts",
+      "packages/Chem/src/tests/menu-tests-script-based.ts",
+      "packages/Chem/src/tests/menu-tests-similarity-diversity.ts",
+      "packages/Chem/src/tests/mmpa-tests.ts",
+      "packages/Chem/src/tests/mol2-importer-tests.ts",
+      "packages/Chem/src/tests/notation-converter-tests.ts",
+      "packages/Chem/src/tests/pharmacophore-features-tests.ts",
+      "packages/Chem/src/tests/projects-tests.ts",
+      "packages/Chem/src/tests/reaction-enumeration-tests.ts",
+      "packages/Chem/src/tests/renderer-hover-tests.ts",
+      "packages/Chem/src/tests/rendering-scatter-plot-tooltip-tests.ts",
+      "packages/Chem/src/tests/rendering-tests.ts",
+      "packages/Chem/src/tests/save-as-sdf-tests.ts",
+      "packages/Chem/src/tests/scaffold-tree-tests.ts",
+      "packages/Chem/src/tests/screening-tools.ts",
+      "packages/Chem/src/tests/sketcher-tests.ts",
+      "packages/Chem/src/tests/substructure-filter-tests.ts",
+      "packages/Chem/src/tests/substructure-search-tests.ts",
+      "packages/Chem/src/tests/synthon-search-tests.ts",
+      "packages/Chem/src/tests/utils.ts",
+      "packages/Chem/src/tests/vector-funcs-tests.ts",
+      "packages/Chem/src/tests/viewers.ts"
+    ],
+    "scripts": [
+      "packages/Chem/scripts/add-morgan-fp-cache.js",
+      "packages/Chem/scripts/biochemical-calculators/calc_logD.py",
+      "packages/Chem/scripts/biochemical-calculators/calc_logP.py",
+      "packages/Chem/scripts/biochemical-calculators/calc_logS.py",
+      "packages/Chem/scripts/biochemical-calculators/calc_pI.py",
+      "packages/Chem/scripts/biochemical-calculators/calc_pKas.py",
+      "packages/Chem/scripts/chem-rendering-methods.js",
+      "packages/Chem/scripts/chem-reset-cache-test.js",
+      "packages/Chem/scripts/chem-test-filter.js",
+      "packages/Chem/scripts/curate.py",
+      "packages/Chem/scripts/descriptors.py",
+      "packages/Chem/scripts/find_mcs.py",
+      "packages/Chem/scripts/find_rgroups.py",
+      "packages/Chem/scripts/find_rgroups_with_core.py",
+      "packages/Chem/scripts/gasteiger_charges.py",
+      "packages/Chem/scripts/generate_conformers.py",
+      "packages/Chem/scripts/inchiToMol.py",
+      "packages/Chem/scripts/mutate.py",
+      "packages/Chem/scripts/scaffold_tree.py",
+      "packages/Chem/scripts/smiles_to_3d_coordinates.py",
+      "packages/Chem/scripts/stand-alone/amide-reaction.py",
+      "packages/Chem/scripts/stand-alone/butina_cluster.py",
+      "packages/Chem/scripts/stand-alone/chem_usrcat.py",
+      "packages/Chem/scripts/stand-alone/filter_catalogs.py",
+      "packages/Chem/scripts/stand-alone/murcko_scaffold.py",
+      "packages/Chem/scripts/stand-alone/sim_maps.py",
+      "packages/Chem/scripts/stand-alone/tsne.py",
+      "packages/Chem/scripts/stand-alone/two_component_reaction.py",
+      "packages/Chem/scripts/stand-alone/umap.py",
+      "packages/Chem/scripts/synthon_search.py",
+      "packages/Chem/scripts/test_script.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Chem/CHANGELOG.md",
+      "packages/Chem/CLAUDE.md",
+      "packages/Chem/CONTRIB.md",
+      "packages/Chem/CREDITS.md",
+      "packages/Chem/README.md"
+    ],
+    "config": [
+      "packages/Chem/environments/bio-pichemist-env.yaml"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:Chem:substructure-search",
+      "name": "Substructure Search",
+      "description": "Enables users to search a molecular column for rows matching a drawn or typed substructure query, with matched-fragment highlighting and an integrated filter panel.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:searchSubstructure",
+          "kind": "RegisteredFunction",
+          "name": "searchSubstructure",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:SearchSubstructureEditor",
+          "kind": "RegisteredFunction",
+          "name": "SearchSubstructureEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Substructure Search",
+          "kind": "RegisteredFunction",
+          "name": "Substructure Search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Substructure Filter",
+          "kind": "RegisteredFunction",
+          "name": "Substructure Filter",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "RDKit-based substructure filter",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Use as filter",
+          "kind": "RegisteredFunction",
+          "name": "Use as filter",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds this structure as a substructure filter",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+          "kind": "DocPage",
+          "title": "Chemical scripts",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+          "kind": "DocPage",
+          "title": "Chemical scripts",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/scripts"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/widgets/chem-substructure-filter.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/api-based-tests.ts",
+          "packages/Chem/src/tests/substructure-search-tests.ts",
+          "packages/Chem/src/tests/utils.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:similarity-search",
+      "name": "Similarity Search",
+      "description": "Finds molecules similar to a query structure by fingerprint-based Tanimoto scoring, returning a ranked table or scatter view and supporting sort-by-similarity.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:getSimilarities",
+          "kind": "RegisteredFunction",
+          "name": "getSimilarities",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:findSimilar",
+          "kind": "RegisteredFunction",
+          "name": "findSimilar",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chem Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Chem Similarity Search",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Similarity Search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Sort by similarity",
+          "kind": "RegisteredFunction",
+          "name": "Sort by similarity",
+          "friendly_name": null,
+          "role": null,
+          "description": "Sorts a molecular column by similarity",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemSimilaritySearch",
+          "kind": "RegisteredFunction",
+          "name": "chemSimilaritySearch",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Similarity Matrix",
+          "kind": "RegisteredFunction",
+          "name": "Similarity Matrix",
+          "friendly_name": null,
+          "role": null,
+          "description": "Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chem Similarities Matrix",
+          "kind": "RegisteredFunction",
+          "name": "Chem Similarities Matrix",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Demo Similarity Search",
+          "friendly_name": null,
+          "role": null,
+          "description": "Searching for most similar or diverse molecules in dataset",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Similarity Maps Using Fingerprints",
+          "kind": "Script",
+          "name": "Similarity Maps Using Fingerprints",
+          "language": "python",
+          "description": "Similarity Maps Using Fingerprints, RDKit based"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+          "kind": "DocPage",
+          "title": "Similarity maps using fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/usrcat",
+          "kind": "DocPage",
+          "title": "USRCAT",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/usrcat"
+        },
+        {
+          "id": "doc:/help/datagrok/resources/video-contents",
+          "kind": "DocPage",
+          "title": "Videos. Interesting topics",
+          "url": "/help/datagrok/resources/video-contents"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/analysis/chem-search-base-viewer.ts",
+          "packages/Chem/src/analysis/chem-similarity-viewer.ts",
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rendering/render-molecule.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/malformed-data-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/utils/similarity-utils.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/api-based-tests.ts",
+          "packages/Chem/src/tests/menu-tests-similarity-diversity.ts",
+          "packages/Chem/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:diversity-search",
+      "name": "Diversity Search",
+      "description": "Selects a maximally diverse subset of molecules using fingerprint-based distance metrics, useful for compound library design and representative-set selection.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:getDiversities",
+          "kind": "RegisteredFunction",
+          "name": "getDiversities",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chem Diversity Search",
+          "kind": "RegisteredFunction",
+          "name": "Chem Diversity Search",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Diversity Search",
+          "kind": "RegisteredFunction",
+          "name": "Diversity Search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemDiversitySearch",
+          "kind": "RegisteredFunction",
+          "name": "chemDiversitySearch",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Most Diverse Structures",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Most Diverse Structures",
+          "friendly_name": null,
+          "role": "tooltip",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/analysis/chem-diversity-viewer.ts",
+          "packages/Chem/src/analysis/chem-search-base-viewer.ts",
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rendering/render-molecule.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/malformed-data-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/menu-tests-similarity-diversity.ts",
+          "packages/Chem/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:fingerprints",
+      "name": "Molecular Fingerprints",
+      "description": "Computes and caches Morgan (circular) fingerprints for molecular columns, providing the common numeric representation for similarity, diversity, and chemical-space analyses.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:getMorganFingerprints",
+          "kind": "RegisteredFunction",
+          "name": "getMorganFingerprints",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getMorganFingerprint",
+          "kind": "RegisteredFunction",
+          "name": "getMorganFingerprint",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Fingerprints",
+          "kind": "RegisteredFunction",
+          "name": "Fingerprints",
+          "friendly_name": null,
+          "role": "dim-red-preprocessing-function",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Chem:AddMorganFPCache",
+          "kind": "Script",
+          "name": "AddMorganFPCache",
+          "language": "javascript",
+          "description": "Adds a column with Morgan fingerprints"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+          "kind": "DocPage",
+          "title": "Supported fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/fingerprints"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+          "kind": "DocPage",
+          "title": "Similarity maps using fingerprints",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/malformed-data-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/menu-tests-cliffs.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:chemical-space",
+      "name": "Chemical Space",
+      "description": "Projects a molecular dataset into a 2D scatter plot via dimensionality reduction (UMAP, t-SNE) on fingerprints, revealing structural neighborhoods and clusters.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:Chem Space",
+          "kind": "RegisteredFunction",
+          "name": "Chem Space",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Maps the dataset to 2D plot based on similarity",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:ChemSpaceEditor",
+          "kind": "RegisteredFunction",
+          "name": "ChemSpaceEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemSpaceTransform",
+          "kind": "RegisteredFunction",
+          "name": "chemSpaceTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chem Space Embeddings",
+          "kind": "RegisteredFunction",
+          "name": "Chem Space Embeddings",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo Chemical Space",
+          "kind": "RegisteredFunction",
+          "name": "Demo Chemical Space",
+          "friendly_name": null,
+          "role": null,
+          "description": "Maps the dataset to 2D plot based on similarity",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Chemical Space Using tSNE",
+          "kind": "Script",
+          "name": "Chemical Space Using tSNE",
+          "language": "python",
+          "description": "Chemical space using t-distributed Stochastic Neighbor Embedding"
+        },
+        {
+          "id": "script:Chem:Chemical Space Using UMAP",
+          "kind": "Script",
+          "name": "Chemical Space Using UMAP",
+          "language": "python",
+          "description": "Chemical space using Uniform Manifold Approximation and Projection"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/tsne",
+          "kind": "DocPage",
+          "title": "Chemical space using tSNE",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/tsne"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/umap",
+          "kind": "DocPage",
+          "title": "Chemical Space Using UMAP",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/umap"
+        },
+        {
+          "id": "doc:/help/explore/dim-reduction",
+          "kind": "DocPage",
+          "title": "Dimensionality reduction",
+          "url": "/help/explore/dim-reduction"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/analysis/chem-space.ts",
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/malformed-data-utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:molecular-clustering",
+      "name": "Molecular Clustering",
+      "description": "Clusters molecules into groups using fingerprint-based algorithms (BitBIRCH, Butina) and annotates each cluster with its maximum common substructure.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:BitBIRCH Clustering",
+          "kind": "RegisteredFunction",
+          "name": "BitBIRCH Clustering",
+          "friendly_name": null,
+          "role": null,
+          "description": "O(N) incremental clustering of molecules based on binary fingerprint similarity",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Cluster MCS",
+          "kind": "RegisteredFunction",
+          "name": "Cluster MCS",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates most common substructures for each cluster",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:clusterMCS",
+          "kind": "RegisteredFunction",
+          "name": "clusterMCS",
+          "friendly_name": "Cluster MCS",
+          "role": null,
+          "description": "Calculates most common substructures for each cluster",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Butina Molecules Clustering",
+          "kind": "Script",
+          "name": "Butina Molecules Clustering",
+          "language": "python",
+          "description": "Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+          "kind": "DocPage",
+          "title": "Butina cluster",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/RDKit_minimal.js",
+          "packages/Chem/src/analysis/r-group-analysis.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rdkit_lib_version.js",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:scaffold-tree",
+      "name": "Scaffold Tree",
+      "description": "Generates a hierarchical Murcko-scaffold tree from a molecular dataset, enabling navigation and filtering of compounds by structural core.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:Scaffold Tree",
+          "kind": "RegisteredFunction",
+          "name": "Scaffold Tree",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:addScaffoldTree",
+          "kind": "RegisteredFunction",
+          "name": "addScaffoldTree",
+          "friendly_name": null,
+          "role": null,
+          "description": "Generates a hierarchical tree based on the scaffolds presented in dataset",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Scaffold Tree Filter",
+          "kind": "RegisteredFunction",
+          "name": "Scaffold Tree Filter",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "Scaffold Tree filter",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getScaffoldTree",
+          "kind": "RegisteredFunction",
+          "name": "getScaffoldTree",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo Scaffold Tree",
+          "kind": "RegisteredFunction",
+          "name": "Demo Scaffold Tree",
+          "friendly_name": null,
+          "role": null,
+          "description": "Running scaffold analysis with hierarchical tree",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:GenerateScaffoldTree",
+          "kind": "Script",
+          "name": "GenerateScaffoldTree",
+          "language": "python",
+          "description": "generation scaffold tree from dataset"
+        },
+        {
+          "id": "script:Chem:Murcko Scaffolds",
+          "kind": "Script",
+          "name": "Murcko Scaffolds",
+          "language": "python",
+          "description": "Generation of Murcko scaffolds from a molecule"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/scaffold-tree",
+          "kind": "DocPage",
+          "title": "Scaffold tree",
+          "url": "/help/visualize/viewers/scaffold-tree"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+          "kind": "DocPage",
+          "title": "Scaffold tree",
+          "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+          "kind": "DocPage",
+          "title": "Murcko Scaffolds",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/chem-searches.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "packages/Chem/src/scripts-api.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/widgets/scaffold-tree-filter.ts",
+          "packages/Chem/src/widgets/scaffold-tree.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:r-groups-analysis",
+      "name": "R-Groups Analysis",
+      "description": "Decomposes a set of molecules around a common core scaffold into R-group substituent columns, enabling SAR analysis across the substituent space.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:R-Groups Analysis",
+          "kind": "RegisteredFunction",
+          "name": "R-Groups Analysis",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:rGroupDecomposition",
+          "kind": "RegisteredFunction",
+          "name": "rGroupDecomposition",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo R Group Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Demo R Group Analysis",
+          "friendly_name": null,
+          "role": null,
+          "description": "R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:FindRGroups",
+          "kind": "Script",
+          "name": "FindRGroups",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Chem:FindRGroupsWithCore",
+          "kind": "Script",
+          "name": "FindRGroupsWithCore",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Chem:FindMCS",
+          "kind": "Script",
+          "name": "FindMCS",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+          "kind": "DocPage",
+          "title": "Chemical scripts",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/menu-tests-rgroups.ts",
+          "packages/Chem/src/tests/projects-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:activity-cliffs",
+      "name": "Activity Cliffs",
+      "description": "Identifies pairs of structurally similar molecules with large differences in a biological activity value and visualises them in a chemical-space scatter plot with cliff edges.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:Activity Cliffs",
+          "kind": "RegisteredFunction",
+          "name": "Activity Cliffs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Detects pairs of molecules with similar structure and significant difference in any given property",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:ActivityCliffsEditor",
+          "kind": "RegisteredFunction",
+          "name": "ActivityCliffsEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:activityCliffsInitFunction",
+          "kind": "RegisteredFunction",
+          "name": "activityCliffsInitFunction",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:activityCliffsTransform",
+          "kind": "RegisteredFunction",
+          "name": "activityCliffsTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo Activity Cliffs",
+          "kind": "RegisteredFunction",
+          "name": "Demo Activity Cliffs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Searching similar structures with significant activity difference",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/analysis/activity-cliffs.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/most-common-subs.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:matched-molecular-pairs",
+      "name": "Matched Molecular Pairs",
+      "description": "Detects matched molecular pairs (MMP) — molecules differing by a single structural transformation — and quantifies the effect of each transformation on measured properties.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:Matched Molecular Pairs Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Matched Molecular Pairs Analysis",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:MMPEditor",
+          "kind": "RegisteredFunction",
+          "name": "MMPEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Matched Molecular Pairs",
+          "kind": "RegisteredFunction",
+          "name": "Matched Molecular Pairs",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Demo Matched Molecular Pairs",
+          "kind": "RegisteredFunction",
+          "name": "Demo Matched Molecular Pairs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Detect matched molecule pairs calculate the difference in activity values between them",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-function-editor.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-cliffs.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-constants.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-filters.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-frag-vs-frag.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-generations.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-grids.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-lines.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer.ts",
+          "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/palette.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/ui-utils.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/mmpa-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:mpo",
+      "name": "Multi-Parameter Optimization (MPO)",
+      "description": "Calculates a composite desirability score for molecules using user-defined profiles that weight and combine multiple physicochemical properties, with a dedicated profile-management app.",
+      "category": "chem-mpo",
+      "members": [
+        {
+          "id": "func:Chem:mpo",
+          "kind": "RegisteredFunction",
+          "name": "mpo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates the MPO score for the column of molecules",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:mpoCalculate",
+          "kind": "RegisteredFunction",
+          "name": "mpoCalculate",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:mpoTransformFunction",
+          "kind": "RegisteredFunction",
+          "name": "mpoTransformFunction",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:mpoProfileEditor",
+          "kind": "RegisteredFunction",
+          "name": "mpoProfileEditor",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:checkJsonMpoProfile",
+          "kind": "RegisteredFunction",
+          "name": "checkJsonMpoProfile",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:MPO profiles",
+          "kind": "RegisteredFunction",
+          "name": "MPO profiles",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | MPO",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | MPO",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:mpoProfilesAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "mpoProfilesAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+          "kind": "DocPage",
+          "title": "Multiparameter optimization",
+          "url": "/help/datagrok/solutions/domains/chem/mpo"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/mpo/mpo-context-panel.ts",
+          "packages/Chem/src/mpo/mpo-create-profile.ts",
+          "packages/Chem/src/mpo/mpo-profile-handler.ts",
+          "packages/Chem/src/mpo/mpo-profile-manager.ts",
+          "packages/Chem/src/mpo/mpo-profiles-view.ts",
+          "packages/Chem/src/mpo/utils.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/elemental-analysis-utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:chemical-descriptors",
+      "name": "Chemical Descriptors",
+      "description": "Computes a broad library of RDKit molecular descriptors (topological, geometric, electronic) and appends them as new columns, with an interactive descriptor-picker panel.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:descriptorsDocker",
+          "kind": "RegisteredFunction",
+          "name": "descriptorsDocker",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:calculateDescriptorsTransform",
+          "kind": "RegisteredFunction",
+          "name": "calculateDescriptorsTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getDescriptors",
+          "kind": "RegisteredFunction",
+          "name": "getDescriptors",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemDescriptorsTree",
+          "kind": "RegisteredFunction",
+          "name": "chemDescriptorsTree",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemDescriptors",
+          "kind": "RegisteredFunction",
+          "name": "chemDescriptors",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Descriptors",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Descriptors",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Desc",
+          "kind": "Script",
+          "name": "Desc",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+          "kind": "DocPage",
+          "title": "Supported descriptors",
+          "url": "/help/datagrok/solutions/domains/chem/descriptors"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+          "kind": "DocPage",
+          "title": "Tests: Chem descriptors",
+          "url": "/help/datagrok/solutions/domains/chem/descriptors-test"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+          "kind": "DocPage",
+          "title": "Chemical scripts",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/scripts",
+          "kind": "DocPage",
+          "title": "Chemical scripts",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/scripts"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/descriptors/descriptors-calculation.ts",
+          "packages/Chem/src/docker/api.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/scripts-api.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/utils/ui-utils.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/cell-panel-tests.ts",
+          "packages/Chem/src/tests/projects-tests.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:chemical-properties",
+      "name": "Chemical Properties",
+      "description": "Calculates key physicochemical properties (MW, logP, logS, HBA, HBD, PSA, pKa, pI, logD, rotatable bonds) and elemental composition as new columns.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:Chemical Properties",
+          "kind": "RegisteredFunction",
+          "name": "Chemical Properties",
+          "friendly_name": null,
+          "role": "hitTriageFunction,transform",
+          "description": "Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen…",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getProperties",
+          "kind": "RegisteredFunction",
+          "name": "getProperties",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Properties",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Properties",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Basic molecule properties",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getCLogP",
+          "kind": "RegisteredFunction",
+          "name": "getCLogP",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getChemPropertyFunction",
+          "kind": "RegisteredFunction",
+          "name": "getChemPropertyFunction",
+          "friendly_name": null,
+          "role": null,
+          "description": "Return chem property function",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Elemental Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Elemental Analysis",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:runElementalAnalysis",
+          "kind": "RegisteredFunction",
+          "name": "runElementalAnalysis",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getMolecularFormula",
+          "kind": "RegisteredFunction",
+          "name": "getMolecularFormula",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Biochemical Properties",
+          "kind": "RegisteredFunction",
+          "name": "Biochemical Properties",
+          "friendly_name": null,
+          "role": null,
+          "description": "Dynamically discovers and executes tagged biochemical calculators",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Calculate logD",
+          "kind": "Script",
+          "name": "Calculate logD",
+          "language": "python",
+          "description": "Calculates the distribution coefficient (logD) at a specified pH using pKa and logP."
+        },
+        {
+          "id": "script:Chem:Calculate logP",
+          "kind": "Script",
+          "name": "Calculate logP",
+          "language": "python",
+          "description": "Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method."
+        },
+        {
+          "id": "script:Chem:Calculate logS",
+          "kind": "Script",
+          "name": "Calculate logS",
+          "language": "python",
+          "description": "Predicts aqueous solubility (logS) using the AqSolPred consensus model. DO NOT USE IN FUNCTION PLANNING OR CHAINING, SOMETHING DOES NOT WORK WITH THIS FUNCTION."
+        },
+        {
+          "id": "script:Chem:Calculate pI",
+          "kind": "Script",
+          "name": "Calculate pI",
+          "language": "python",
+          "description": "Calculates Isoelectric Point (pI) using various pKa datasets."
+        },
+        {
+          "id": "script:Chem:Calculate pKa",
+          "kind": "Script",
+          "name": "Calculate pKa",
+          "language": "python",
+          "description": "Calculates acidic and basic pKa values, noting non-ionizable molecules."
+        },
+        {
+          "id": "script:Chem:Chemistry | Gasteiger Partial Charges",
+          "kind": "Script",
+          "name": "Chemistry | Gasteiger Partial Charges",
+          "language": "python",
+          "description": "RDKit-based script."
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+          "kind": "DocPage",
+          "title": "Gasteiger Partial Charges",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/solubility-prediction",
+          "kind": "DocPage",
+          "title": "Solubility prediction",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/solubility-prediction"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/open-chem/ocl-service/calculations.ts",
+          "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "packages/Chem/src/open-chem/ocl-service/types.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common-ocl.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/elemental-analysis-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/utils/ui-utils.ts",
+          "packages/Chem/src/widgets/properties.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/calculate.ts",
+          "packages/Chem/src/tests/cell-panel-tests.ts",
+          "packages/Chem/src/tests/projects-tests.ts",
+          "packages/Chem/src/tests/rendering-scatter-plot-tooltip-tests.ts",
+          "packages/Chem/src/tests/screening-tools.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:structural-alerts",
+      "name": "Structural Alerts & Catalog Filters",
+      "description": "Screens molecules against PAINS, toxicophore, and other structural-alert catalogs, flagging problematic fragments that may cause assay interference.",
+      "category": "chem-mpo",
+      "members": [
+        {
+          "id": "func:Chem:Structural Alerts",
+          "kind": "RegisteredFunction",
+          "name": "Structural Alerts",
+          "friendly_name": null,
+          "role": "hitTriageFunction",
+          "description": "Highlights the fragments that could lead to potential chemical hazards",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:runStructuralAlerts",
+          "kind": "RegisteredFunction",
+          "name": "runStructuralAlerts",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getStructuralAlerts",
+          "kind": "RegisteredFunction",
+          "name": "getStructuralAlerts",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Biology | Structural Alerts",
+          "kind": "RegisteredFunction",
+          "name": "Biology | Structural Alerts",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Filter by Catalogs",
+          "kind": "Script",
+          "name": "Filter by Catalogs",
+          "language": "python",
+          "description": "Finds undesireable molecules based on various criteria"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+          "kind": "DocPage",
+          "title": "Structural alerts",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+          "kind": "DocPage",
+          "title": "Filter by catalogs",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/panels/structural-alerts.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/cell-panel-tests.ts",
+          "packages/Chem/src/tests/projects-tests.ts",
+          "packages/Chem/src/tests/screening-tools.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:drug-likeness-admet",
+      "name": "Drug Likeness & Toxicity",
+      "description": "Evaluates drug-likeness via fragment-contribution scoring (OCL) and predicts toxicity risks (mutagenicity, carcinogenicity, etc.) for candidate molecules.",
+      "category": "chem-mpo",
+      "members": [
+        {
+          "id": "func:Chem:Biology | Drug Likeness",
+          "kind": "RegisteredFunction",
+          "name": "Biology | Drug Likeness",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Biology | Toxicity",
+          "kind": "RegisteredFunction",
+          "name": "Biology | Toxicity",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Toxicity prediction. Calculated by openchemlib",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Toxicity Risks",
+          "kind": "RegisteredFunction",
+          "name": "Toxicity Risks",
+          "friendly_name": null,
+          "role": "hitTriageFunction,transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getToxicityRisks",
+          "kind": "RegisteredFunction",
+          "name": "getToxicityRisks",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+          "kind": "DocPage",
+          "title": "Drug likeness",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+          "kind": "DocPage",
+          "title": "Toxicity risks",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common-ocl.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/widgets/toxicity.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:pharmacophore-features",
+      "name": "Pharmacophore Features",
+      "description": "Detects and highlights hydrogen-bond donors, acceptors, hydrophobic regions, and other pharmacophoric features on 2D molecular structures.",
+      "category": "chem-mpo",
+      "members": [
+        {
+          "id": "func:Chem:Pharmacophore Features",
+          "kind": "RegisteredFunction",
+          "name": "Pharmacophore Features",
+          "friendly_name": null,
+          "role": "hitTriageFunction",
+          "description": "Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:runPharmacophoreFeatures",
+          "kind": "RegisteredFunction",
+          "name": "runPharmacophoreFeatures",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Biology | Pharmacophore Features",
+          "kind": "RegisteredFunction",
+          "name": "Biology | Pharmacophore Features",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Detects and highlights pharmacophore features (donors, acceptors, hydrophobic, aromatic, positive, negative)",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:USRCAT",
+          "kind": "Script",
+          "name": "USRCAT",
+          "language": "python",
+          "description": "USRCAT - real-time ultrafast shape recognition with pharmacophoric constraints"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/panels/pharmacophore-features.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:molecular-rendering",
+      "name": "Molecular Rendering",
+      "description": "Renders 2D molecular structures in grid cells and widgets using RDKit or OpenChemLib, with optional substructure highlighting and coordinate recalculation.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:Chem:rdKitCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "rdKitCellRenderer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:chemCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "chemCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:oclCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "oclCellRenderer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:canvasMol",
+          "kind": "RegisteredFunction",
+          "name": "canvasMol",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:drawMolecule",
+          "kind": "RegisteredFunction",
+          "name": "drawMolecule",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Rendering",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Rendering",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Highlight",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Highlight",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Recalculate Coordinates",
+          "kind": "RegisteredFunction",
+          "name": "Recalculate Coordinates",
+          "friendly_name": null,
+          "role": "transform",
+          "description": "Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:beautifyMols",
+          "kind": "RegisteredFunction",
+          "name": "beautifyMols",
+          "friendly_name": null,
+          "role": null,
+          "description": "Beautifies the list of molecules and returns the list of beautified molecules",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Structure | 2D Structure",
+          "kind": "RegisteredFunction",
+          "name": "Structure | 2D Structure",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "2D molecule representation",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as IMAGE",
+          "kind": "RegisteredFunction",
+          "name": "Copy as IMAGE",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure as Image",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/cheminformatics",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/develop/domains/chem/cheminformatics"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+          "kind": "DocPage",
+          "title": "Chemically-aware viewers",
+          "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/RDKit_minimal.js",
+          "packages/Chem/src/analysis/r-group-analysis.ts",
+          "packages/Chem/src/constants.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/panels/chem-column-property-panel.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rdkit_lib_version.js",
+          "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "packages/Chem/src/rendering/rdkit-reaction-renderer.ts",
+          "packages/Chem/src/rendering/render-molecule.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/utils/reactions/consts.ts",
+          "packages/Chem/src/widgets/col-highlights.ts",
+          "packages/Chem/src/widgets/structure2d.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/cell-panel-tests.ts",
+          "packages/Chem/src/tests/rendering-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:3d-structure",
+      "name": "3D Structure",
+      "description": "Generates 3D conformers from SMILES/Molfile and displays interactive 3D molecular structures in an info panel.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:Chem:Structure | 3D Structure",
+          "kind": "RegisteredFunction",
+          "name": "Structure | 3D Structure",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "3D molecule representation",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:SmilesTo3DCoordinates",
+          "kind": "Script",
+          "name": "SmilesTo3DCoordinates",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Chem:Generate Conformers",
+          "kind": "Script",
+          "name": "Generate Conformers",
+          "language": "python",
+          "description": "Generates multiple conformers for a molecule using RDKit"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/scripts-api.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/widgets/structure3d.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:notation-conversion",
+      "name": "Notation Conversion",
+      "description": "Converts molecular structures between SMILES, SMARTS, InChI, Molfile V2000/V3000, and canonical SMILES formats, including clipboard copy in any format.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:convertMoleculeNotation",
+          "kind": "RegisteredFunction",
+          "name": "convertMoleculeNotation",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:convertMolNotation",
+          "kind": "RegisteredFunction",
+          "name": "convertMolNotation",
+          "friendly_name": null,
+          "role": "unitConverter",
+          "description": "RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Convert Notation",
+          "kind": "RegisteredFunction",
+          "name": "Convert Notation",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Convert Notation...",
+          "kind": "RegisteredFunction",
+          "name": "Convert Notation...",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:canonicalize",
+          "kind": "RegisteredFunction",
+          "name": "canonicalize",
+          "friendly_name": null,
+          "role": "canonicalizer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:isSmiles",
+          "kind": "RegisteredFunction",
+          "name": "isSmiles",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:isSmarts",
+          "kind": "RegisteredFunction",
+          "name": "isSmarts",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as...",
+          "kind": "RegisteredFunction",
+          "name": "Copy as...",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure in different formats",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as SMILES",
+          "kind": "RegisteredFunction",
+          "name": "Copy as SMILES",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure as smiles",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as MOLFILE V2000",
+          "kind": "RegisteredFunction",
+          "name": "Copy as MOLFILE V2000",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure as molfile V2000",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as MOLFILE V3000",
+          "kind": "RegisteredFunction",
+          "name": "Copy as MOLFILE V3000",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure as molfile V3000",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Copy as SMARTS",
+          "kind": "RegisteredFunction",
+          "name": "Copy as SMARTS",
+          "friendly_name": null,
+          "role": null,
+          "description": "Copies structure as smarts",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:convertToV3KViaOCL",
+          "kind": "RegisteredFunction",
+          "name": "convertToV3KViaOCL",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts the list of molecules to V3K format using OCL",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/intro",
+          "kind": "DocPage",
+          "title": "Cheminformatics concepts",
+          "url": "/help/develop/domains/chem/intro"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/RDKit_minimal.js",
+          "packages/Chem/src/analysis/r-group-analysis.ts",
+          "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rdkit_lib_version.js",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/is-smarts-tests.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:sdf-mol-import",
+      "name": "SDF/MOL File Import & Export",
+      "description": "Registers file handlers for SDF, MOL, MOL2, and SMILES formats enabling transparent open-in-Datagrok, plus SDF export of the current table.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Chem:importSdf",
+          "kind": "RegisteredFunction",
+          "name": "importSdf",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens SDF file",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:importSmi",
+          "kind": "RegisteredFunction",
+          "name": "importSmi",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens smi file",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:importMol2",
+          "kind": "RegisteredFunction",
+          "name": "importMol2",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens smi file",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:importMol",
+          "kind": "RegisteredFunction",
+          "name": "importMol",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens MOL file",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:saveAsSdf",
+          "kind": "RegisteredFunction",
+          "name": "saveAsSdf",
+          "friendly_name": null,
+          "role": "fileExporter",
+          "description": "As SDF...",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getMolFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "getMolFileHandler",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Chem/readme.md",
+          "kind": "DocPage",
+          "title": "Cheminformatics support",
+          "url": "/packages/Chem/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/file-importers/mol2-importer.ts",
+          "packages/Chem/src/file-importers/smi-importer.ts",
+          "packages/Chem/src/open-chem/sdf-importer.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/sdf-utils.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/save-as-sdf-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:sketcher",
+      "name": "Molecule Sketcher",
+      "description": "Provides in-grid molecule editing via an embedded molecular sketcher (OpenChemLib, Ketcher, Marvin, or ChemDraw), used for cell editing and as the input widget for search functions.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:Chem:OpenChemLib",
+          "kind": "RegisteredFunction",
+          "name": "OpenChemLib",
+          "friendly_name": null,
+          "role": "moleculeSketcher",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:editMoleculeCell",
+          "kind": "RegisteredFunction",
+          "name": "editMoleculeCell",
+          "friendly_name": null,
+          "role": "cellEditor",
+          "description": "Molecule",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/datagrok/solutions/domains/chem/chem"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/RDKit_minimal.js",
+          "packages/Chem/src/analysis/r-group-analysis.ts",
+          "packages/Chem/src/open-chem/ocl-sketcher.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rdkit_lib_version.js",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/clone-layout-tests.ts",
+          "packages/Chem/src/tests/substructure-filter-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:reaction-enumeration",
+      "name": "Reaction Enumeration",
+      "description": "Applies SMARTS reaction templates to building blocks to enumerate product libraries, supporting single-component transformations and two-component reactions.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:Reaction Enumerator",
+          "kind": "RegisteredFunction",
+          "name": "Reaction Enumerator",
+          "friendly_name": null,
+          "role": "app",
+          "description": "Forward-reaction library enumeration over building blocks and SMARTS templates.",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:transformationReactions",
+          "kind": "RegisteredFunction",
+          "name": "transformationReactions",
+          "friendly_name": "Run Reaction",
+          "role": null,
+          "description": "Runs reaction based on the reaction SMARTS and list of reactants",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:twoComponentReaction",
+          "kind": "RegisteredFunction",
+          "name": "twoComponentReaction",
+          "friendly_name": "Two-Component Reaction",
+          "role": null,
+          "description": "Runs a reaction between molecules from two columns",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Transformation Reactions",
+          "kind": "RegisteredFunction",
+          "name": "Transformation Reactions",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:Chem:Two-Component Reactions",
+          "kind": "RegisteredFunction",
+          "name": "Two-Component Reactions",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:Chem:detectReactions",
+          "kind": "RegisteredFunction",
+          "name": "detectReactions",
+          "friendly_name": null,
+          "role": "semTypeDetector",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Amide reaction",
+          "kind": "Script",
+          "name": "Amide reaction",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Chem:Two Component Reaction",
+          "kind": "Script",
+          "name": "Two Component Reaction",
+          "language": "python",
+          "description": "Two component reaction"
+        },
+        {
+          "id": "script:Chem:Mutate",
+          "kind": "Script",
+          "name": "Mutate",
+          "language": "python",
+          "description": "Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures."
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/reactions",
+          "kind": "DocPage",
+          "title": "Reactions",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/reactions"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+          "kind": "DocPage",
+          "title": "Mutate",
+          "url": "/help/datagrok/solutions/domains/chem/scripts/mutate"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rendering/rdkit-reaction-renderer.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/reactions/reaction-browser.ts",
+          "packages/Chem/src/utils/reactions/reaction-editor.ts",
+          "packages/Chem/src/utils/reactions/reactions.ts",
+          "packages/Chem/src/utils/reactions/types.ts",
+          "packages/Chem/src/utils/reactions/ui.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:mixture-support",
+      "name": "Mixture Support",
+      "description": "Handles mixture-encoded SMILES (multi-component notation) with a dedicated cell renderer, tree-visualization panel, and conversion to flat SMILES.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:Chem:chemMixtureRenderer",
+          "kind": "RegisteredFunction",
+          "name": "chemMixtureRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | Mixture",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | Mixture",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Chemistry | MixtureTree",
+          "kind": "RegisteredFunction",
+          "name": "Chemistry | MixtureTree",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Convert Mixture To Smiles...",
+          "kind": "RegisteredFunction",
+          "name": "Convert Mixture To Smiles...",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rendering/mixture-cell-renderer.ts",
+          "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "packages/Chem/src/rendering/render-molecule.ts",
+          "packages/Chem/src/utils/mixfile.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:chemprop-ml",
+      "name": "ChemProp Machine Learning",
+      "description": "Trains message-passing neural network (D-MPNN) models on molecular property data using ChemProp and applies them to predict properties for new molecules.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Chem:trainChemprop",
+          "kind": "RegisteredFunction",
+          "name": "trainChemprop",
+          "friendly_name": null,
+          "role": null,
+          "description": "To be added",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:applyChemprop",
+          "kind": "RegisteredFunction",
+          "name": "applyChemprop",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:isApplicableNN",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableNN",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:isInteractiveNN",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveNN",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+          "kind": "DocPage",
+          "title": "Chemprop",
+          "url": "/help/datagrok/solutions/domains/chem/chemprop"
+        },
+        {
+          "id": "doc:/help/learn/custom-machine-learning-models",
+          "kind": "DocPage",
+          "title": "Custom machine learning models",
+          "url": "/help/learn/custom-machine-learning-models"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chem:synthon-search",
+      "name": "Synthon Search",
+      "description": "Searches virtual combinatorial libraries (synthon spaces) by substructure or fingerprint similarity using RDKit SynthonSpaceSearch, returning enumerated products.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chem:Databases | Synthon Search | Substructure Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | Synthon Search | Substructure Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Substructure search in synthon chemical space using RDKit SynthonSpaceSearch",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Databases | Synthon Search | Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | Synthon Search | Similarity Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Search Synthons",
+          "kind": "RegisteredFunction",
+          "name": "Search Synthons",
+          "friendly_name": null,
+          "role": null,
+          "description": "Search in synthon chemical space and return products with synthon structures",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Get Synthon Spaces",
+          "kind": "RegisteredFunction",
+          "name": "Get Synthon Spaces",
+          "friendly_name": null,
+          "role": null,
+          "description": "Get all available synthon spaces from Chem package files",
+          "tags": []
+        },
+        {
+          "id": "script:Chem:SynthonSearch",
+          "kind": "Script",
+          "name": "SynthonSearch",
+          "language": "python",
+          "description": "Search in synthon chemical space using RDKit SynthonSpaceSearch"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/package-api.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/widgets/synthon-search.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/synthon-search-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:identifier-mapping",
+      "name": "Identifier Mapping",
+      "description": "Maps between molecular identifier formats (SMILES, InChI, InChIKey, chemical names) via lookup or computation, including name-to-SMILES resolution.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:Map Identifiers",
+          "kind": "RegisteredFunction",
+          "name": "Map Identifiers",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:mapIdentifiersTransform",
+          "kind": "RegisteredFunction",
+          "name": "mapIdentifiersTransform",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Structure | Identifiers",
+          "kind": "RegisteredFunction",
+          "name": "Structure | Identifiers",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Names To Smiles",
+          "kind": "RegisteredFunction",
+          "name": "Names To Smiles",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:freeTextToSmiles",
+          "kind": "RegisteredFunction",
+          "name": "freeTextToSmiles",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getInchis",
+          "kind": "RegisteredFunction",
+          "name": "getInchis",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:To InchI",
+          "kind": "RegisteredFunction",
+          "name": "To InchI",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:To InchI Keys",
+          "kind": "RegisteredFunction",
+          "name": "To InchI Keys",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:getInchiKeys",
+          "kind": "RegisteredFunction",
+          "name": "getInchiKeys",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Chem:inchiToMol",
+          "kind": "Script",
+          "name": "inchiToMol",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/db/register-identifiers",
+          "kind": "DocPage",
+          "title": "Register identifier patterns",
+          "url": "/help/develop/how-to/db/register-identifiers"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/docker/api.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/panels/inchi.ts",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/convert-notation-utils.ts",
+          "packages/Chem/src/utils/elemental-analysis-utils.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/widgets/identifiers.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/calculate.ts",
+          "packages/Chem/src/tests/cell-panel-tests.ts",
+          "packages/Chem/src/tests/projects-tests.ts",
+          "packages/Chem/src/tests/vector-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chem:validation-curation",
+      "name": "Molecule Validation & Curation",
+      "description": "Validates, standardizes, and curates molecular structures by detecting invalid entries, removing salts and waters, deprotecting groups, and deduplicating a dataset.",
+      "category": "chem-infra",
+      "members": [
+        {
+          "id": "func:Chem:validateMolecule",
+          "kind": "RegisteredFunction",
+          "name": "validateMolecule",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:removeWaterAndSalts",
+          "kind": "RegisteredFunction",
+          "name": "removeWaterAndSalts",
+          "friendly_name": "Remove Water and Salts",
+          "role": null,
+          "description": "Removes water and salts from the list of molecules",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:filterMoleculeDuplicates",
+          "kind": "RegisteredFunction",
+          "name": "filterMoleculeDuplicates",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Deprotect",
+          "kind": "RegisteredFunction",
+          "name": "Deprotect",
+          "friendly_name": null,
+          "role": "transform",
+          "description": "Removes drawn protecting groups / fragments from molecules",
+          "tags": []
+        },
+        {
+          "id": "func:Chem:Deprotect Editor",
+          "kind": "RegisteredFunction",
+          "name": "Deprotect Editor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Chem:Curate",
+          "kind": "Script",
+          "name": "Curate",
+          "language": "python",
+          "description": "Standardizes the dataset"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chem/src/RDKit_minimal.js",
+          "packages/Chem/src/analysis/deprotect.ts",
+          "packages/Chem/src/analysis/r-group-analysis.ts",
+          "packages/Chem/src/package.ts",
+          "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "packages/Chem/src/rdkit_lib_version.js",
+          "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "packages/Chem/src/utils/chem-common.ts",
+          "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "packages/Chem/src/utils/reactions/consts.ts",
+          "packages/Chem/src/utils/reactions/reactions.ts",
+          "packages/Chem/src/utils/reactions/types.ts"
+        ],
+        "tests": [
+          "packages/Chem/src/tests/sketcher-tests.ts"
+        ]
+      }
+    }
+  ]
+}

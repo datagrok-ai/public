@@ -1,0 +1,46 @@
+{
+  "package_id": "pkg:Tableau",
+  "features": [
+    {
+      "id": "feature:Tableau:twb-file-integration",
+      "implements": [
+        {
+          "path": "packages/Tableau/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Tableau/src/tableau/tableau-parser.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Tableau/src/tableau/tableau-to-dataframe.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Tableau/src/tableau/tableau-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tableau/src/tableau/tableau-types.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Tableau/src/tests/tableau-parser-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Tableau/src/tests/tableau-import-test.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts wires importTwb (fileHandler) and previewTwb (fileViewer) to parser, dataframe converter, and viewer; types module provides shared TWB type definitions."
+    }
+  ]
+}

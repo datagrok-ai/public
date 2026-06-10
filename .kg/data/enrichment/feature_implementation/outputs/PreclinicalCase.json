@@ -1,0 +1,163 @@
+{
+  "package_id": "pkg:PreclinicalCase",
+  "features": [
+    {
+      "id": "feature:PreclinicalCase:preclinical-case-app",
+      "implements": [
+        {
+          "path": "packages/PreclinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/app-utils.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/PreclinicalCase/src/preclinical-study.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/views-creation-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/initial-statistics-widget.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/PreclinicalCase/src/views/import-study-view.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/layout-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PreclinicalCase/src/tests/preclinical-case-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts wires the #app/#appTreeBrowser/openPreclinicalCaseView funcs; app-utils.ts owns openApp/cdiscAppTB/study registry; preclinical-study.ts is the in-memory study model; views-creation-utils + import-study-view are wired in by the tree browser."
+    },
+    {
+      "id": "feature:PreclinicalCase:xpt-sas-import",
+      "implements": [
+        {
+          "path": "packages/PreclinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/app-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "xptFileHandler is declared in package.ts and delegates to the readSas Python script; readClinicalFile/readClinicalData in app-utils consume the parsed DataFrames during study load."
+    },
+    {
+      "id": "feature:PreclinicalCase:cdisc-validation",
+      "implements": [
+        {
+          "path": "packages/PreclinicalCase/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PreclinicalCase/src/preclinical-study.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/views/validation-table-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/views-validation-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/rule-violation-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/rule-target-resolvers.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/validation-fix-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PreclinicalCase/src/types/validation-result.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "runCoreValidate is declared in package.ts; PreclinicalStudy.validate() invokes the Docker-backed CDISC CORE engine and addValidationColumnsToDomains decorates the data; validation-table-view renders Issue_Summary/Issue_Details with fix actions; sdiscRuleViolationRenderer + setupValidationErrorIndicators surface per-cell violations."
+    },
+    {
+      "id": "feature:PreclinicalCase:study-measurements-visualization",
+      "implements": [
+        {
+          "path": "packages/PreclinicalCase/src/utils/combined-measurements-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PreclinicalCase/src/utils/y-axis-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PreclinicalCase/src/package.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PreclinicalCase/src/data-preparation/data-preparation.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PreclinicalCase/src/views/observation-timelines-view.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PreclinicalCase/src/views/measurement-profile-table-view.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PreclinicalCase/src/tests/preclinical-case-tests.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "Two #cellRenderer classes register the combined-measurements / y-axis cell types; data-preparation builds the combined frame; observation-timelines + measurement-profile views consume the renderers and createAllMeasurementsDf."
+    }
+  ]
+}

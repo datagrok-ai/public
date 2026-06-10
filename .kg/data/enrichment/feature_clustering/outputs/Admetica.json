@@ -1,0 +1,112 @@
+{
+  "package_id": "pkg:Admetica",
+  "features": [
+    {
+      "id": "feature:Admetica:admet-batch-prediction",
+      "name": "ADMET Batch Prediction",
+      "description": "Predicts ADMET properties for an entire molecule column using Chemprop deep-learning models and appends results as new columns with color-coded values. Accessible via the main menu or programmatically.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Admetica:AdmeticaMenu",       "weight": 1.0, "role": "core"},
+        {"id": "func:Admetica:getAdmeProperties",   "weight": 1.0, "role": "core"},
+        {"id": "func:Admetica:AdmeticaEditor",      "weight": 0.9, "role": "core"},
+        {"id": "func:Admetica:getModels",           "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/Admetica/readme.md",  "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/chemprop", "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "AdmeticaMenu, getAdmeProperties, and AdmeticaEditor share the same batch prediction workflow; getModels drives model selection for that workflow; Chemprop doc covers the underlying engine."
+    },
+    {
+      "id": "feature:Admetica:admet-info-panel",
+      "name": "ADMET Info Panel",
+      "description": "Displays ADMET property predictions for the currently selected molecule in a context-pane panel, with a summary pie chart, color-coded values, and sub-categories including toxicity and drug-likeness.",
+      "category": "chem-rendering",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Admetica:Biology | Admetica",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Admetica:getAdmePropertiesSingle",  "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",       "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",     "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",    "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "Biology | Admetica is a panel widget (role:widgets,panel, domain:chem) for a single molecule; getAdmePropertiesSingle is its compute function; info-panel docs cover the same surface area (drug-likeness, toxicity, structural alerts are ADMET sub-domains)."
+    },
+    {
+      "id": "feature:Admetica:admetica-app",
+      "name": "Admetica App",
+      "description": "A standalone application view (browseable under Chem) for interactively exploring ADMET predictions, including a demo mode that showcases the plugin's main functionality.",
+      "category": "viz",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:Admetica:Admetica",      "weight": 1.0, "role": "core"},
+        {"id": "func:Admetica:Admetica Demo", "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Admetica (role:app, browsePath:Chem) and Admetica Demo (description:Evaluating ADMET properties) share the same name root and represent the app view plus its demo entry point."
+    },
+    {
+      "id": "feature:Admetica:hit-triage-integration",
+      "name": "Hit Triage Integration",
+      "description": "Integrates ADMET predictions into the Datagrok Hit Triage workflow as a scored triage function, enabling ADMET-based compound prioritization.",
+      "category": "ml",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Admetica:AdmeticaHT", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "AdmeticaHT has role:hitTriageFunction and its description explicitly states it runs ADMET predictions for Hit Triage."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Admetica:admet-batch-prediction",  "to": "feature:Admetica:admet-info-panel",       "kind": "sibling"},
+    {"from": "feature:Admetica:admet-batch-prediction",  "to": "feature:Admetica:hit-triage-integration", "kind": "sibling"},
+    {"from": "feature:Admetica:admetica-app",            "to": "feature:Admetica:admet-batch-prediction",  "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Admetica:info",
+    "doc:/packages/Admetica/credits.md",
+    "doc:/packages/Admetica/claude.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+    "clog:Admetica:1.3.1:0",
+    "clog:Admetica:1.1.0:0",
+    "clog:Admetica:1.1.0:1",
+    "clog:Admetica:1.1.0:2",
+    "clog:Admetica:1.1.0:3",
+    "clog:Admetica:1.1.0:4",
+    "clog:Admetica:1.0.2:0",
+    "clog:Admetica:1.0.2:1",
+    "clog:Admetica:1.0.1:0",
+    "clog:Admetica:1.0.1:1",
+    "clog:Admetica:1.0.1:2",
+    "clog:Admetica:1.0.1:3",
+    "clog:Admetica:1.0.1:4",
+    "clog:Admetica:1.0.1:5",
+    "clog:Admetica:1.0.1:6",
+    "clog:Admetica:1.0.0:0",
+    "clog:Admetica:1.0.0:1",
+    "clog:Admetica:1.0.0:2",
+    "clog:Admetica:1.0.0:3",
+    "clog:Admetica:1.0.0:4",
+    "clog:Admetica:1.0.0:5",
+    "clog:Admetica:1.0.0:6",
+    "clog:Admetica:1.0.0:7",
+    "clog:Admetica:1.0.0:8",
+    "clog:Admetica:v.next:0"
+  ]
+}

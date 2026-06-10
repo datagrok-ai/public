@@ -1,0 +1,100 @@
+{
+  "package_id": "pkg:UITests",
+  "features": [
+    {
+      "id": "feature:UITests:data-grid-tests",
+      "name": "Data Grid Tests",
+      "description": "Automated UI tests covering data grid behaviors including sorting, collections management, color coding, datetime extraction, normalization, and table schema validation.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "doc:/help/_internal/tests/collections-test",      "weight": 0.9, "role": "test"},
+        {"id": "doc:/help/_internal/tests/color-coding-test",     "weight": 0.9, "role": "test"},
+        {"id": "doc:/help/_internal/tests/datetime-extract-test", "weight": 0.9, "role": "test"},
+        {"id": "doc:/help/_internal/tests/normalize-test",        "weight": 0.9, "role": "test"},
+        {"id": "doc:/help/_internal/tests/sorting-test",          "weight": 1.0, "role": "test"},
+        {"id": "doc:/help/_internal/tests/tables-schema-test",    "weight": 0.9, "role": "test"}
+      ],
+      "evidence_summary": "All six guides cover internal tests for data grid operations (sorting, schema, color coding, normalization, datetime, collections) sharing the /help/_internal/tests/ URL prefix and the same grid-layer concern."
+    },
+    {
+      "id": "feature:UITests:dialog-ui-controls-tests",
+      "name": "Dialog and UI Controls Tests",
+      "description": "Automated UI tests for dialogs, input fields, context menus, tags, and viewer property panels.",
+      "category": "infra",
+      "confidence": 0.82,
+      "members": [
+        {"id": "doc:/help/_internal/tests/dialogs-input-fields-test", "weight": 1.0, "role": "test"},
+        {"id": "doc:/help/_internal/tests/dialogs-test",              "weight": 1.0, "role": "test"},
+        {"id": "doc:/help/_internal/tests/hide-menus-test",           "weight": 0.85, "role": "test"},
+        {"id": "doc:/help/_internal/tests/tags-favorites-test",       "weight": 0.8, "role": "test"},
+        {"id": "func:UITests:TestViewerForProperties",                 "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Dialogs, input fields, menus, and tags guides share UI-interaction themes; TestViewerForProperties is the live viewer fixture used for property-panel testing."
+    },
+    {
+      "id": "feature:UITests:data-connectivity-tests",
+      "name": "Data Connectivity Tests",
+      "description": "Automated UI tests for data connectors and export: file connector, web connector, Elastic Search, DB query builder, and data export.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "doc:/help/_internal/tests/build-query-test",    "weight": 0.9,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/elastic-search-test", "weight": 0.9,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/export-test",         "weight": 0.85, "role": "test"},
+        {"id": "doc:/help/_internal/tests/file-connector-test", "weight": 1.0,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/web-connector-test",  "weight": 1.0,  "role": "test"}
+      ],
+      "evidence_summary": "File connector, web connector, Elastic Search, query-join, and export guides collectively verify the platform's data ingestion and connectivity layer."
+    },
+    {
+      "id": "feature:UITests:data-transformation-tests",
+      "name": "Data Transformation Tests",
+      "description": "Automated UI tests for the transformation editor, substructure filter, and the custom filter extension point.",
+      "category": "infra",
+      "confidence": 0.80,
+      "members": [
+        {"id": "doc:/help/_internal/tests/transformation-editor-test", "weight": 1.0,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/substructure-filter",        "weight": 0.85, "role": "test"},
+        {"id": "func:UITests:testCustomFilter",                         "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "Transformation editor guide, substructure filter guide, and the testCustomFilter fixture all exercise data-mutation and filtering pipelines."
+    },
+    {
+      "id": "feature:UITests:collaboration-user-tests",
+      "name": "Collaboration and User Management Tests",
+      "description": "Automated UI tests for user registration, invitations, project browsing, recently-opened views, and platform help.",
+      "category": "infra",
+      "confidence": 0.83,
+      "members": [
+        {"id": "doc:/help/_internal/tests/inviting-a-friend-test",  "weight": 1.0,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/projects-browser-test",   "weight": 0.9,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/recently-open-test",      "weight": 0.85, "role": "test"},
+        {"id": "doc:/help/_internal/tests/registration-test",       "weight": 1.0,  "role": "test"},
+        {"id": "doc:/help/_internal/tests/help-test",               "weight": 0.75, "role": "test"},
+        {"id": "doc:/help/collaborate/project-gallery-test",        "weight": 0.9,  "role": "test"}
+      ],
+      "evidence_summary": "Registration, inviting friends, project browser, project gallery, recently-open views, and help guides collectively cover user onboarding and collaboration workflows."
+    },
+    {
+      "id": "feature:UITests:test-infrastructure",
+      "name": "Test Infrastructure",
+      "description": "Shared fixtures, placeholder scripts, and package-level metadata supporting the UITests test suite.",
+      "category": "infra",
+      "confidence": 0.75,
+      "members": [
+        {"id": "script:UITests:Dummy",              "weight": 0.7,  "role": "core"},
+        {"id": "doc:/packages/UITests/readme.md",   "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/packages/UITests/credits.md",  "weight": 0.6,  "role": "doc"},
+        {"id": "clog:UITests:1.0.12:0",             "weight": 0.5,  "role": "related"}
+      ],
+      "evidence_summary": "The Dummy script, readme, credits, and changelog entry are package-level infrastructure items not tied to any specific test domain."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:UITests:data-grid-tests",          "to": "feature:UITests:data-transformation-tests", "kind": "related"},
+    {"from": "feature:UITests:dialog-ui-controls-tests", "to": "feature:UITests:data-grid-tests",           "kind": "sibling"},
+    {"from": "feature:UITests:data-connectivity-tests",  "to": "feature:UITests:data-transformation-tests", "kind": "related"}
+  ],
+  "unassigned_member_ids": []
+}

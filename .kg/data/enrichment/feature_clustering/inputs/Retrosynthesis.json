@@ -1,0 +1,332 @@
+{
+  "package": {
+    "id": "pkg:Retrosynthesis",
+    "name": "Retrosynthesis",
+    "friendly_name": null,
+    "version": "1.0.6",
+    "category": "Cheminformatics",
+    "description": "Creates retrosynthesis paths for the selected molecule",
+    "extras": {
+      "npm_name": "@datagrok/retrosynthesis",
+      "fullName": "Retrosynthesis",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Retrosynthesis:Chemistry | Retrosynthesis",
+      "name": "Chemistry | Retrosynthesis",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Retrosynthesis:Retrosynthesis Demo",
+      "name": "Retrosynthesis Demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Generate retrosynthesis paths",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Retrosynthesis/claude.md",
+      "title": "Retrosynthesis",
+      "url": "/packages/Retrosynthesis/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Retrosynthesis/credits.md",
+      "title": "Retrosynthesis — Third-Party Libraries",
+      "url": "/packages/Retrosynthesis/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Retrosynthesis/readme.md",
+      "title": "Retrosynthesis",
+      "url": "/packages/Retrosynthesis/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Retrosynthesis:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2025-05-29",
+      "ticket": null,
+      "text": "Ability to add results to workspace"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.5:1",
+      "version": "1.0.5",
+      "released_at": "2025-05-29",
+      "ticket": null,
+      "text": "Ability to use user specific configuration"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2025-04-07",
+      "ticket": null,
+      "text": "Removed Retrosynthesis function from top menu"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.4:1",
+      "version": "1.0.4",
+      "released_at": "2025-04-07",
+      "ticket": null,
+      "text": "Some styles fixes"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.3:0",
+      "version": "1.0.3",
+      "released_at": "2025-04-03",
+      "ticket": null,
+      "text": "Adjusted container resources"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.2:0",
+      "version": "1.0.2",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Use multiprocessing.Manager to terminate concurrent requests."
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Add ability to terminate concurrent requests."
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Application which works backward from a target molecule (the desired final product) to identify simpler,"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.6:0",
+      "version": "1.0.6",
+      "released_at": "2025-03-16",
+      "ticket": null,
+      "text": "Re-calculate on config change"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.6:1",
+      "version": "1.0.6",
+      "released_at": "2025-03-16",
+      "ticket": null,
+      "text": "Use celery for aizynthfinder"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.6:2",
+      "version": "1.0.6",
+      "released_at": "2025-03-16",
+      "ticket": null,
+      "text": "Requests cancellation, widget debounce"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.6:3",
+      "version": "1.0.6",
+      "released_at": "2025-03-16",
+      "ticket": "GROK-18930",
+      "text": "GROK-18930: Retrosynthesis: Loader in the property panel intrudes into the Descriptors tab"
+    },
+    {
+      "id": "clog:Retrosynthesis:1.0.6:4",
+      "version": "1.0.6",
+      "released_at": "2025-03-16",
+      "ticket": null,
+      "text": "Image build fixes"
+    }
+  ],
+  "stats": {
+    "functions": 2,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 13
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "package": {
+    "id": "pkg:PubChemApi",
+    "name": "PubChemApi",
+    "friendly_name": "PubChem",
+    "category": "Cheminformatics",
+    "description": "Integration with the PubChem web service."
+  },
+  "files": {
+    "src": [
+      "packages/PubChemApi/src/constants.ts",
+      "packages/PubChemApi/src/package.ts",
+      "packages/PubChemApi/src/pubchem.ts",
+      "packages/PubChemApi/src/utils.ts",
+      "packages/PubChemApi/src/widget.ts"
+    ],
+    "tests": [
+      "packages/PubChemApi/src/package-test.ts",
+      "packages/PubChemApi/src/tests/chem-panels.ts",
+      "packages/PubChemApi/src/tests/const.ts",
+      "packages/PubChemApi/src/tests/pubchem-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/PubChemApi/CHANGELOG.md",
+      "packages/PubChemApi/CLAUDE.md",
+      "packages/PubChemApi/CREDITS.md",
+      "packages/PubChemApi/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:PubChemApi:compound-info-panel",
+      "name": "Compound Info Panel",
+      "description": "Displays a PubChem-sourced information panel for a selected compound, surfacing physicochemical properties and metadata directly in the Datagrok sidebar.",
+      "category": "chem-infopanel",
+      "members": [
+        {
+          "id": "func:PubChemApi:Databases | PubChem | Info",
+          "kind": "RegisteredFunction",
+          "name": "Databases | PubChem | Info",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/PubChemApi/readme.md",
+          "kind": "DocPage",
+          "title": "PubChem",
+          "url": "/packages/PubChemApi/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "clog:PubChemApi:1.2.1:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PubChemApi:1.1.13:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PubChemApi:chemical-search",
+      "name": "Chemical Structure Search",
+      "description": "Three PubChem-backed search widgets (Substructure, Similarity, Identity) that let users query the PubChem database for related compounds from within Datagrok.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:PubChemApi:Databases | PubChem | Substructure Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | PubChem | Substructure Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PubChemApi:Databases | PubChem | Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | PubChem | Similarity Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PubChemApi:Databases | PubChem | Identity Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | PubChem | Identity Search",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PubChemApi:1.2.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PubChemApi:1.2.1:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PubChemApi:1.1.13:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PubChemApi:1.3.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PubChemApi:identifier-conversion",
+      "name": "Chemical Identifier Conversion",
+      "description": "Converter functions that translate between PubChem CIDs, InChI Keys, SMILES, and IUPAC names by calling the PubChem REST API.",
+      "category": "chem-conversion",
+      "members": [
+        {
+          "id": "func:PubChemApi:pubChemToSmiles",
+          "kind": "RegisteredFunction",
+          "name": "pubChemToSmiles",
+          "friendly_name": null,
+          "role": "converter",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PubChemApi:inchiKeysToSmiles",
+          "kind": "RegisteredFunction",
+          "name": "inchiKeysToSmiles",
+          "friendly_name": null,
+          "role": "converter",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PubChemApi:GetIupacName",
+          "kind": "RegisteredFunction",
+          "name": "GetIupacName",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PubChemApi:1.1.16:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PubChemApi:1.1.15:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PubChemApi/src/package.ts"
+        ],
+        "tests": [
+          "packages/PubChemApi/src/tests/pubchem-tests.ts"
+        ]
+      }
+    }
+  ]
+}

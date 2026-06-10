@@ -1,0 +1,130 @@
+{
+  "package_id": "pkg:ClinicalCase",
+  "features": [
+    {
+      "id": "feature:ClinicalCase:app-shell",
+      "name": "Clinical Case Application Shell",
+      "description": "The main app entry point and navigation scaffolding — study browser tree, study list widget, and domain-level exploration for SDTM/SEND datasets.",
+      "category": "health",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:ClinicalCase:Clinical Case",               "weight": 1.0,  "role": "core"},
+        {"id": "func:ClinicalCase:clinicalCaseAppTreeBrowser",  "weight": 0.9,  "role": "core"},
+        {"id": "func:ClinicalCase:Get list of studies",         "weight": 0.85, "role": "core"},
+        {"id": "doc:/packages/ClinicalCase/readme.md",          "weight": 0.85, "role": "doc"},
+        {"id": "clog:ClinicalCase:1.0.5:0",                    "weight": 0.6,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.0.5:1",                    "weight": 0.6,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.4.0:5",                    "weight": 0.65, "role": "related"},
+        {"id": "clog:ClinicalCase:1.3.3:0",                    "weight": 0.5,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.3.2:0",                    "weight": 0.55, "role": "related"},
+        {"id": "clog:ClinicalCase:1.3.1:0",                    "weight": 0.5,  "role": "related"}
+      ],
+      "evidence_summary": "Three functions share the 'app', 'appTreeBrowser', and study-list-widget roles, all tied to the top-level 'Clinical Case' app name and its initial-view changelog entries."
+    },
+    {
+      "id": "feature:ClinicalCase:data-import",
+      "name": "SDTM/SEND Data Import",
+      "description": "Loads clinical and preclinical study datasets from XPT files and SDTM/SEND folders, including SAS file reading and define.xml column metadata extraction.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:ClinicalCase:clinicalCaseFolderLauncher",  "weight": 1.0,  "role": "core"},
+        {"id": "func:ClinicalCase:xptFileHandler",              "weight": 1.0,  "role": "core"},
+        {"id": "script:ClinicalCase:ReadSas",                   "weight": 0.95, "role": "core"},
+        {"id": "doc:/packages/PreclinicalCase/readme.md",       "weight": 0.7,  "role": "doc"},
+        {"id": "clog:ClinicalCase:1.4.0:0",                    "weight": 0.75, "role": "related"},
+        {"id": "clog:ClinicalCase:1.4.0:1",                    "weight": 0.75, "role": "related"},
+        {"id": "clog:ClinicalCase:1.4.0:4",                    "weight": 0.7,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.4.0:6",                    "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "folderViewer + fileHandler (ext=xpt) + ReadSas script all converge on loading SDTM/SEND study data; changelog entries add XPT handler, directory selection, import view, and define.xml parsing."
+    },
+    {
+      "id": "feature:ClinicalCase:cdisc-validation",
+      "name": "CDISC CORE Validation",
+      "description": "Runs the CDISC CORE engine against loaded datasets to surface rule violations, with an inline cell renderer for displaying and toggling validation errors.",
+      "category": "health",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:ClinicalCase:Run CDISC CORE Validation",   "weight": 1.0,  "role": "core"},
+        {"id": "func:ClinicalCase:sdiscRuleViolationRenderer",  "weight": 0.95, "role": "core"},
+        {"id": "clog:ClinicalCase:1.4.0:2",                    "weight": 0.8,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.4.0:3",                    "weight": 0.75, "role": "related"}
+      ],
+      "evidence_summary": "Run CDISC CORE Validation + sdiscRuleViolationRenderer share the 'CDISC/sdisc' name root and are corroborated by two 1.4.0 changelog entries about CDISC engine and validation-error visibility."
+    },
+    {
+      "id": "feature:ClinicalCase:adverse-events",
+      "name": "Adverse Events Analysis",
+      "description": "Provides an adverse events browser, summary tables, and AE risk-assessment scatter plots for reviewing safety signals across subjects.",
+      "category": "health",
+      "confidence": 0.78,
+      "members": [
+        {"id": "clog:ClinicalCase:1.0.5:4",  "weight": 0.85, "role": "related"},
+        {"id": "clog:ClinicalCase:1.0.7:0",  "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "Two changelog entries explicitly name adverse events browser/summary and AE Risk Assessment scatter plot; no dedicated function or script is registered (likely implemented inline in the app view)."
+    },
+    {
+      "id": "feature:ClinicalCase:laboratory-analysis",
+      "name": "Laboratory Results Analysis",
+      "description": "Summarises lab test results with Hy's law plots, baseline-vs-endpoint comparisons, and boxplots to support safety and efficacy review.",
+      "category": "health",
+      "confidence": 0.8,
+      "members": [
+        {"id": "clog:ClinicalCase:1.0.5:5",  "weight": 0.9, "role": "related"}
+      ],
+      "evidence_summary": "Changelog entry 1.0.5 explicitly lists lab results summary, Hy's law plot, baseline/endpoint plot, and boxplots as a distinct capability group."
+    },
+    {
+      "id": "feature:ClinicalCase:survival-analysis",
+      "name": "Survival Analysis (Kaplan-Meier)",
+      "description": "Generates Kaplan-Meier survival curves and runs covariate regression to quantify time-to-event outcomes in clinical and preclinical studies.",
+      "category": "health",
+      "confidence": 0.93,
+      "members": [
+        {"id": "script:ClinicalCase:survivalPlot",  "weight": 1.0,  "role": "core"},
+        {"id": "script:ClinicalCase:covariates",    "weight": 0.95, "role": "core"},
+        {"id": "clog:ClinicalCase:1.0.5:6",        "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "survivalPlot (R) and covariates (R) scripts correspond directly to the '1.0.5: Kaplan-Meier curves and covariates analysis' changelog entry, forming a tightly coupled survival-analysis cluster."
+    },
+    {
+      "id": "feature:ClinicalCase:biomarkers-analysis",
+      "name": "Biomarkers Analysis",
+      "description": "Visualises biomarker distributions and pairwise correlation matrices to support translational and pharmacodynamic data review.",
+      "category": "health",
+      "confidence": 0.82,
+      "members": [
+        {"id": "clog:ClinicalCase:1.0.5:7",  "weight": 0.85, "role": "related"},
+        {"id": "clog:ClinicalCase:1.0.5:8",  "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "Two adjacent 1.0.5 changelog entries cover biomarker distributions and correlation matrices, signalling a deliberate biomarker analytics section in the app."
+    },
+    {
+      "id": "feature:ClinicalCase:subject-profiling",
+      "name": "Subject Profiling and Timelines",
+      "description": "Displays an individual subject's clinical profile and renders all subject events as an interactive timeline to support patient-level safety review.",
+      "category": "health",
+      "confidence": 0.85,
+      "members": [
+        {"id": "clog:ClinicalCase:1.0.5:2",  "weight": 0.85, "role": "related"},
+        {"id": "clog:ClinicalCase:1.0.5:3",  "weight": 0.9,  "role": "related"},
+        {"id": "clog:ClinicalCase:1.0.6:0",  "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "1.0.5 changelog groups 'subjects events flow in time' and 'individual subject's profile' together; 1.0.6 fixes a timelines-viewer regression confirming this is a distinct navigable view."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:ClinicalCase:cdisc-validation", "to": "feature:ClinicalCase:data-import",       "kind": "related"},
+    {"from": "feature:ClinicalCase:survival-analysis", "to": "feature:ClinicalCase:subject-profiling", "kind": "sibling"},
+    {"from": "feature:ClinicalCase:biomarkers-analysis", "to": "feature:ClinicalCase:laboratory-analysis", "kind": "sibling"},
+    {"from": "feature:ClinicalCase:adverse-events", "to": "feature:ClinicalCase:subject-profiling",    "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "clog:ClinicalCase:1.3.0:0",
+    "clog:ClinicalCase:1.0.8:0",
+    "doc:/help/datagrok/concepts/concepts",
+    "doc:/packages/ClinicalCase/credits.md"
+  ]
+}

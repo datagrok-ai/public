@@ -1,0 +1,49 @@
+{
+  "package_id": "pkg:SureChembl",
+  "features": [
+    {
+      "id": "feature:SureChembl:patent-substructure-search",
+      "implements": [
+        {
+          "path": "packages/SureChembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/SureChembl/src/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SureChembl/src/tests/search-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts defines sureChemblSubstructureSearch + its widget and the shared patentDataSearch/patentSearch helpers; constants.ts provides the SearchType enum that selects the substructure branch."
+    },
+    {
+      "id": "feature:SureChembl:patent-similarity-search",
+      "implements": [
+        {
+          "path": "packages/SureChembl/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/SureChembl/src/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SureChembl/src/tests/search-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts defines sureChemblSimilaritySearch + its widget and the shared patentDataSearch helper (similarity branch sets get_smiles + threshold); constants.ts provides the SearchType enum."
+    }
+  ]
+}

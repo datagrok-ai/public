@@ -1,0 +1,162 @@
+{
+  "package": {
+    "id": "pkg:monomerDB",
+    "name": "monomerDB",
+    "friendly_name": "monomerDB",
+    "version": "0.0.1",
+    "category": null,
+    "description": "monomerDB description",
+    "extras": {
+      "npm_name": "@datagrok/monomerdb",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:monomerDB:Monomers DB Provider",
+      "name": "Monomers DB Provider",
+      "friendly_name": null,
+      "role": "monomerLibProvider",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "monomerLibProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:monomerDB:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:monomerDB:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:monomerDB:getMonomerByGrokID",
+      "name": "getMonomerByGrokID",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:monomerDB:upsertMonomer",
+      "name": "upsertMonomer",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:monomerDB:createLibrary",
+      "name": "createLibrary",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:monomerDB:upsertMonomerProperty",
+      "name": "upsertMonomerProperty",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:monomerDB:getMonomersByLibrary",
+      "name": "getMonomersByLibrary",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:monomerDB:listLibraries",
+      "name": "listLibraries",
+      "connection": "MonomerDB:mdb1",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/monomerDB/credits.md",
+      "title": "monomerDB — Third-Party Libraries",
+      "url": "/packages/monomerDB/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/monomerDB/readme.md",
+      "title": "monomerDB",
+      "url": "/packages/monomerDB/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 3,
+    "scripts": 0,
+    "queries": 6,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 0
+  }
+}

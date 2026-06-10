@@ -1,0 +1,171 @@
+{
+  "package": {
+    "id": "pkg:Widgets",
+    "name": "Widgets",
+    "friendly_name": "Widgets",
+    "version": "0.4.0",
+    "category": "Visualizations",
+    "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
+    "extras": {
+      "npm_name": "@datagrok/widgets",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Widgets:Single Choice",
+      "name": "Single Choice",
+      "friendly_name": null,
+      "role": "filter",
+      "tags": [],
+      "description": "A filter that lets you select exactly one category",
+      "input_types": [],
+      "output_types": [
+        "filter"
+      ],
+      "meta": {
+        "role": "filter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Widgets:Multi Choice",
+      "name": "Multi Choice",
+      "friendly_name": null,
+      "role": "filter",
+      "tags": [],
+      "description": "A filter that works with columns of multi-value cells (such as lists of identifiers)",
+      "input_types": [],
+      "output_types": [
+        "filter"
+      ],
+      "meta": {
+        "role": "filter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Widgets:TimeWidget",
+      "name": "TimeWidget",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": "Shows current time",
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Widgets:TableSummary",
+      "name": "TableSummary",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Widgets:inputDemo",
+      "name": "inputDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Widgets:fooInput",
+      "name": "fooInput",
+      "friendly_name": null,
+      "role": "valueEditor",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "semType": "foo",
+        "role": "valueEditor"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Widgets/credits.md",
+      "title": "Widgets — Third-Party Libraries",
+      "url": "/packages/Widgets/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Widgets/readme.md",
+      "title": "Widgets",
+      "url": "/packages/Widgets/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/packages/home-page-widgets",
+      "title": "Develop widgets for home page",
+      "url": "/help/develop/how-to/packages/home-page-widgets",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/widgets",
+      "title": "Widgets",
+      "url": "/help/visualize/widgets",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/help-pages/_stash/single-source-of-truth",
+      "title": "Single source of truth",
+      "url": "/help/develop/help-pages/_stash/single-source-of-truth",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "title": "Multi curve viewer",
+      "url": "/help/visualize/viewers/multi-curve-viewer",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 6,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 0
+  }
+}

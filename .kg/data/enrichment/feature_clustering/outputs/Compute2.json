@@ -1,0 +1,157 @@
+{
+  "package_id": "pkg:Compute2",
+  "features": [
+    {
+      "id": "feature:Compute2:rich-function-view",
+      "name": "Rich Function View",
+      "description": "A configurable, tabbed UI wrapper for any Datagrok function call that provides rich input forms, output viewers, call history, and REST panel integration. Supports custom panel layouts, input enhancements, and formula-based parameter linking.",
+      "category": "compute",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Compute2:Rich Function View Editor", "weight": 1.0, "role": "core"},
+        {"id": "func:Compute2:Custom Function View Editor", "weight": 0.9, "role": "core"},
+        {"id": "func:Compute2:renderRestPanel", "weight": 0.8, "role": "core"},
+        {"id": "script:Compute2:SimpleInputs2", "weight": 0.7, "role": "sample"},
+        {"id": "script:Compute2:ObjectCooling2", "weight": 0.65, "role": "sample"},
+        {"id": "func:Compute2:FormTestApp", "weight": 0.7, "role": "test"},
+        {"id": "func:Compute2:ViewerTestApp", "weight": 0.65, "role": "test"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view", "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui", "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/visualize-output-data", "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/complex-input-output", "weight": 0.8, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/scripting-features", "weight": 0.75, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor", "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs", "weight": 0.75, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest", "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/compute/scripting/getting-started", "weight": 0.65, "role": "doc"},
+        {"id": "clog:Compute2:1.3.17:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:Compute2:1.3.16:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:Compute2:1.3.13:0", "weight": 0.65, "role": "related"},
+        {"id": "clog:Compute2:1.3.9:1", "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "Rich Function View Editor and Custom Function View Editor share the RFV naming root with the dedicated /help/compute/scripting/advanced-scripting/rich-function-view doc page; SimpleInputs2 and ObjectCooling2 are described as RFV test/demo scripts."
+    },
+    {
+      "id": "feature:Compute2:workflows",
+      "name": "Workflows and Pipeline Execution",
+      "description": "A multi-step workflow engine that chains function calls into sequential pipelines with wizard-style navigation, step branching, action steps, back/next controls, export customization, and call-history tracking. Managed via the Tree Wizard Editor and StartWorkflow API.",
+      "category": "compute",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Compute2:StartWorkflow", "weight": 1.0, "role": "core"},
+        {"id": "func:Compute2:Tree Wizard Editor", "weight": 1.0, "role": "core"},
+        {"id": "func:Compute2:MockPipeline1", "weight": 0.6, "role": "test"},
+        {"id": "func:Compute2:MockPipeline2", "weight": 0.6, "role": "test"},
+        {"id": "func:Compute2:StressTestPipeline", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:TestAdd2", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:TestSub2", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:TestMul2", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:TestDiv2", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:TestDF1", "weight": 0.55, "role": "test"},
+        {"id": "func:Compute2:HistoryTestApp", "weight": 0.65, "role": "test"},
+        {"id": "script:Compute2:MockPipeline3", "weight": 0.6, "role": "test"},
+        {"id": "script:Compute2:FastScript", "weight": 0.5, "role": "test"},
+        {"id": "script:Compute2:LongScript", "weight": 0.5, "role": "test"},
+        {"id": "script:Compute2:StressMutateStep", "weight": 0.55, "role": "test"},
+        {"id": "script:Compute2:StressSharedProducer", "weight": 0.55, "role": "test"},
+        {"id": "clog:Compute2:1.4.1:1", "weight": 0.8, "role": "related"},
+        {"id": "clog:Compute2:1.3.22:0", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.21:0", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.20:0", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.18:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:Compute2:1.3.8:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:Compute2:1.3.7:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:Compute2:1.3.9:0", "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "StartWorkflow, Tree Wizard Editor, and all MockPipeline/StressTest* entities share the pipeline/workflow naming root; changelog entries from 1.3.7 through 1.4.1 consistently track workflow navigation, export, step-type, and history improvements."
+    },
+    {
+      "id": "feature:Compute2:model-hub",
+      "name": "Model Hub",
+      "description": "A dedicated application and tree-based catalog browser for discovering, organizing, and launching registered computational models, accessible from the Compute browse path.",
+      "category": "compute",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Compute2:Model Hub", "weight": 1.0, "role": "core"},
+        {"id": "func:Compute2:modelCatalogTreeBrowser", "weight": 0.9, "role": "core"},
+        {"id": "doc:/help/compute/models", "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/compute/compute", "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "The 'Model Hub' app function (browsePath: 'Compute') and 'modelCatalogTreeBrowser' share the model-catalog concept and are directly covered by the /help/compute/models doc page."
+    },
+    {
+      "id": "feature:Compute2:sensitivity-analysis-fitting",
+      "name": "Sensitivity Analysis and Curve Fitting",
+      "description": "Tools for parameter sensitivity analysis, multi-objective optimization, and curve fitting applied to any registered function, supporting formula-based fitting, primary parameter filtering, and per-script defaults.",
+      "category": "compute",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Compute2:RunOptimizer", "weight": 1.0, "role": "core"},
+        {"id": "func:Compute2:fitTestFunc", "weight": 0.75, "role": "test"},
+        {"id": "func:Compute2:testFittingOutputs", "weight": 0.65, "role": "test"},
+        {"id": "doc:/help/compute/function-analysis", "weight": 1.0, "role": "doc"},
+        {"id": "clog:Compute2:1.3.19:0", "weight": 0.8, "role": "related"},
+        {"id": "clog:Compute2:1.3.15:0", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.12:0", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.12:1", "weight": 0.75, "role": "related"},
+        {"id": "clog:Compute2:1.3.11:0", "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "RunOptimizer and the fitTestFunc/testFittingOutputs functions cluster with the 'function-analysis' doc (titled 'Model optimization tools') and five changelog entries explicitly about fitting, optimization view, and optimizer bug fixes."
+    },
+    {
+      "id": "feature:Compute2:diff-studio",
+      "name": "Diff Studio",
+      "description": "An ODE-based simulation environment for building and running differential equation models, surfaced through Compute2's documentation and help system; the core UI implementation resides in the sibling DiffStudio package.",
+      "category": "compute",
+      "confidence": 0.6,
+      "members": [
+        {"id": "doc:/help/compute/diff-studio", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "The /help/compute/diff-studio help page is linked from this package's compute doc tree, but no Compute2 functions are registered for it, indicating the implementation lives in the DiffStudio package."
+    },
+    {
+      "id": "feature:Compute2:pipeline-inspector",
+      "name": "Pipeline Inspector",
+      "description": "An interactive debug and monitoring panel embedded in pipeline views, providing step-level logs, unified log filters, FilterDropdown component, and path formatting controls for pipeline execution diagnosis.",
+      "category": "compute",
+      "confidence": 0.72,
+      "members": [
+        {"id": "clog:Compute2:1.4.1:2", "weight": 0.85, "role": "related"},
+        {"id": "clog:Compute2:1.4.1:3", "weight": 0.9, "role": "related"}
+      ],
+      "evidence_summary": "Two 1.4.1 changelog entries explicitly name the Inspector debug tool as a distinct sub-component with its own FilterDropdown, log filters, and path formatting, made available to all users."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Compute2:pipeline-inspector", "to": "feature:Compute2:workflows", "kind": "subfeature"},
+    {"from": "feature:Compute2:rich-function-view", "to": "feature:Compute2:workflows", "kind": "sibling"},
+    {"from": "feature:Compute2:sensitivity-analysis-fitting", "to": "feature:Compute2:rich-function-view", "kind": "related"},
+    {"from": "feature:Compute2:diff-studio", "to": "feature:Compute2:model-hub", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Compute2:init",
+    "func:Compute2:Custom View (Compute 2 Test)",
+    "doc:/packages/Compute2/claude.md",
+    "doc:/packages/Compute2/credits.md",
+    "doc:/packages/Compute2/readme.md",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/help/compute/jupyter-notebook",
+    "doc:/help/develop/how-to/views/custom-views",
+    "doc:/help/_internal/tests/transformation-editor-test",
+    "doc:/help/access/databases/create-custom-connectors",
+    "doc:/help/datagrok/navigation/views/_flex-view",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/develop/how-to/files/create-custom-file-viewers",
+    "clog:Compute2:1.3.10:0",
+    "clog:Compute2:1.4.0:0",
+    "clog:Compute2:1.4.0:1",
+    "clog:Compute2:1.4.1:0",
+    "clog:Compute2:1.4.1:4",
+    "clog:Compute2:1.4.1:5",
+    "clog:Compute2:1.4.1:6",
+    "clog:Compute2:1.4.1:7",
+    "clog:Compute2:1.4.1:8",
+    "clog:Compute2:1.4.1:9"
+  ]
+}

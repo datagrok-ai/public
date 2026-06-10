@@ -1,0 +1,326 @@
+{
+  "package_id": "pkg:Plates",
+  "features": [
+    {
+      "id": "feature:Plates:plates-app",
+      "implements": [
+        {
+          "path": "packages/Plates/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plates/plates-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/objects/plate-template-handler.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Plates/src/plates/plates-demo.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-create-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-search-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/views/analyses-search-view.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-templates-view.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers app + appTreeBrowser + init; plates-app wires the tree to view factories."
+    },
+    {
+      "id": "feature:Plates:plate-file-import",
+      "implements": [
+        {
+          "path": "packages/Plates/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-reader.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/plate.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/excel-plates.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/csv-plates.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plate/readers/bmg-pherastar-96.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/readers/delfia-envision-96-max-rlu.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/readers/delfia-envision-by-row.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/readers/spectramax.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Plates/src/tests/plate-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "Tests cover fromCsvPlate, fromFile, fromExcel; package.ts registers checkFileIsPlate / importPlate(Xlsx) / checkExcelIsPlate / checkCsvIsPlate."
+    },
+    {
+      "id": "feature:Plates:plate-visualization",
+      "implements": [
+        {
+          "path": "packages/Plates/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-widget/plate-widget.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-widget/plate-selection-controller.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/plates-folder-preview.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/plate.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-reader.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Plates/src/plate/plate-well-validators.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Plates/src/tests/plate-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "render test uses PlateWidget.detailedView; folder preview + cell renderer + xlsx file viewer all wrap PlateWidget."
+    },
+    {
+      "id": "feature:Plates:plate-retrieval",
+      "implements": [
+        {
+          "path": "packages/Plates/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/plate.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/matchers.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "getPlateByBarcode wrapper in package.ts calls Plate.fromDbDataFrame via api.queries.getWellValuesByBarcode; plates-crud.ts holds getPlateById/queryPlates/getPlatesCount usage."
+    },
+    {
+      "id": "feature:Plates:well-data-access",
+      "implements": [
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/plate.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Well-level queries (getWellLevelProperties, getWellValuesByBarcode/ById, getWellRoles, getUniqueWellPropertyValues) are consumed inside plates-crud.ts; SQL definitions live in queries/plates-crud.sql (outside src)."
+    },
+    {
+      "id": "feature:Plates:plate-properties",
+      "implements": [
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-schema-view.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-validation-panel.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Property CRUD (createProperty, getProperties, getAllowedValues, getUniquePlatePropertyValues, getPropertyNames) is wrapped in plates-crud.ts; schema view + validation panel surface them."
+    },
+    {
+      "id": "feature:Plates:plate-templates",
+      "implements": [
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plates/objects/plate-template-handler.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-templates-view.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plates/views/plates-schema-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/views/template-editor-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/views/components/template-panel/template-panel.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Template CRUD (createTemplate, getPlateTemplates, getPlateTypes, addTemplate*Property, removeTemplate*Property, getTemplate*Properties) flows through plates-crud.ts; UI lives in templates-view, schema-view, template-editor-view, and the template panel component."
+    },
+    {
+      "id": "feature:Plates:analysis-runs",
+      "implements": [
+        {
+          "path": "packages/Plates/src/plates/plates-crud.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/analysis-manager.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/base-analysis.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/base-analysis-view.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/drc/drc-analysis.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/dose-ratio/dose-ratio-analysis.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plate/analyses/qpcr/qpcr-analysis.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Plates/src/plates/views/analyses-search-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "createAnalysisRun/saveAnalysisRunParameter/saveAnalysisResult flow through plates-crud.ts + base-analysis.saveResults; queryAnalyses/queryAnalysesTemplate/getAnalysisRunGroups are surfaced by analyses-search-view."
+    }
+  ]
+}

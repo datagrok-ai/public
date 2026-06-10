@@ -1,0 +1,46 @@
+{
+  "package_id": "pkg:GenomeBrowser",
+  "features": [
+    {
+      "id": "feature:GenomeBrowser:genomic-data-viewer",
+      "name": "Genomic Data Viewer",
+      "description": "Interactive visualization of genomic data files and their annotations, surfaced as a JSON file viewer and info panel within the Datagrok platform.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:GenomeBrowser:previewGenomeBrowse", "weight": 1.0,  "role": "core"},
+        {"id": "func:GenomeBrowser:info",                "weight": 0.75, "role": "core"},
+        {"id": "doc:/packages/GenomeBrowser/readme.md",  "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",          "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",           "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                 "weight": 0.7,  "role": "doc"},
+        {"id": "clog:GenomeBrowser:1.0.0:0",             "weight": 0.8,  "role": "related"},
+        {"id": "clog:GenomeBrowser:1.0.1:0",             "weight": 0.4,  "role": "related"}
+      ],
+      "evidence_summary": "previewGenomeBrowse is the fileViewer entry point for JSON genomic files; info and the info-panel docs confirm annotation context is surfaced in the platform's info panel area."
+    },
+    {
+      "id": "feature:GenomeBrowser:genome-config-validation",
+      "name": "Genome Config Validation",
+      "description": "Plugin startup check and genome configuration validation that guards activation of visualization features until a valid genome config is confirmed.",
+      "category": "infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:GenomeBrowser:autostartChecker",    "weight": 1.0, "role": "core"},
+        {"id": "func:GenomeBrowser:checkGenomeConfig",   "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "autostartChecker (autostart role) and checkGenomeConfig (string→bool) share a lifecycle purpose: validate genome configuration before activating the viewer."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:GenomeBrowser:genome-config-validation",
+      "to": "feature:GenomeBrowser:genomic-data-viewer",
+      "kind": "subfeature"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/GenomeBrowser/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+  ]
+}

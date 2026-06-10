@@ -1,0 +1,664 @@
+{
+  "package": {
+    "id": "pkg:CddVaultLink",
+    "name": "CddVaultLink",
+    "friendly_name": "CDD Vault Link",
+    "version": "1.1.0",
+    "category": "Cheminformatics",
+    "description": "Integration with CDD Vault registration system",
+    "extras": {
+      "npm_name": "@datagrok/cddvaultlink",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:CddVaultLink:CDD Vault",
+      "name": "CDD Vault",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:cddVaultAppTreeBrowser",
+      "name": "cddVaultAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Databases | CDD Vault",
+      "name": "Databases | CDD Vault",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:CDDVaultSearchEditor",
+      "name": "CDDVaultSearchEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Vault Stats",
+      "name": "Get Vault Stats",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Vaults",
+      "name": "Get Vaults",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Molecules",
+      "name": "Get Molecules",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Molecules Async",
+      "name": "Get Molecules Async",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string",
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Batches",
+      "name": "Get Batches",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Batches Async",
+      "name": "Get Batches Async",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Protocols Async",
+      "name": "Get Protocols Async",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Collections Async",
+      "name": "Get Collections Async",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Saved Searches",
+      "name": "Get Saved Searches",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:Get Saved Search Results",
+      "name": "Get Saved Search Results",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:CDD Vault Search Async",
+      "name": "CDD Vault Search Async",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string",
+        "string",
+        "double",
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:CDD Vault search 2",
+      "name": "CDD Vault search 2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string",
+        "string",
+        "bool",
+        "bool",
+        "bool",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "double",
+        "string",
+        null,
+        null,
+        null
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CddVaultLink:CDD Vault search",
+      "name": "CDD Vault search",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string",
+        "string",
+        "double",
+        "int",
+        "int",
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/CddVaultLink/readme.md",
+      "title": "CDD Vault Link",
+      "url": "/packages/CddVaultLink/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/CddVaultLink/credits.md",
+      "title": "CddVaultLink — Third-Party Libraries",
+      "url": "/packages/CddVaultLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/CddVaultLink/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/CddVaultLink/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:CddVaultLink:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2026-03-16",
+      "ticket": "GROK-19523",
+      "text": "GROK-19523: AppTreeBrowser decorator: Fixed behavior, so it finds the app properly, fixed usages"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2025-12-24",
+      "ticket": "GROK-18964",
+      "text": "GROK-18964 CDD Vault: Cannot get statistics for vault DataGrok test vault: Failed to fetch"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2025-05-28",
+      "ticket": null,
+      "text": "Some UI fixes"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.4:1",
+      "version": "1.0.4",
+      "released_at": "2025-05-28",
+      "ticket": null,
+      "text": "Having only one view opened in a preview at once"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.3:0",
+      "version": "1.0.3",
+      "released_at": "2025-05-22",
+      "ticket": null,
+      "text": "Cache fixes"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.3:1",
+      "version": "1.0.3",
+      "released_at": "2025-05-22",
+      "ticket": null,
+      "text": "Implemented routing"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.2:0",
+      "version": "1.0.2",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Added 'Protocols' and 'Collections' links to initial page"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Fixed error when receiving empty result"
+    },
+    {
+      "id": "clog:CddVaultLink:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system."
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Tests: Added basic smoke tests covering app launch, opening Molecules/Batches tabs, and the main `getVaults` / `getMolecules` / `getBatches` / `getProtocolsAsync` / `getCollectionsAsync` /…"
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:1",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Molecules search: Remember the last search per vault and restore it when reopening the tab."
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:2",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Fix: `paramsStringFromObj` now URL-encodes values via `URLSearchParams`; previously unencoded values could silently malform requests."
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:3",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Tab loading: Unified all tabs on a preview-then-\"Load all\" pattern. Initial open always shows the first 100 rows via the sync endpoint; if more exist, a ribbon appears with a \"Load all\" button that…"
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:4",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "API: Added sync `queryCollections` and `queryBatches` wrappers to pair with their async counterparts."
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:5",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Types: Added `molecule` (parent `Molecule`) to `Batch`; added `registration_type`, `registration_form`, `num_aromatic_rings`, `p_k_a_basic`, `bbb2_score` to `Molecule`; made `Molecule.batches`…"
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:6",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Added Batches tab to the CDD Vault app (preview + Load all, parent molecule id/smiles columns)."
+    },
+    {
+      "id": "clog:CddVaultLink:v.next:7",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Renamed search functions: `cDDVaultSearch2` → `cDDVaultSearch` (now the canonical sync counterpart to `cDDVaultSearchAsync`, with a `page_size` parameter); the old 25-parameter `cDDVaultSearch` moved…"
+    }
+  ],
+  "stats": {
+    "functions": 17,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 17
+  }
+}

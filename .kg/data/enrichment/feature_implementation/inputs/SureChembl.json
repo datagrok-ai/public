@@ -1,0 +1,142 @@
+{
+  "package": {
+    "id": "pkg:SureChembl",
+    "name": "SureChembl",
+    "friendly_name": "SureChEMBL",
+    "category": "Cheminformatics",
+    "description": "Performs patents searches through a locally deployed SureChEMBL database"
+  },
+  "files": {
+    "src": [
+      "packages/SureChembl/src/constants.ts",
+      "packages/SureChembl/src/download-patents.ts",
+      "packages/SureChembl/src/package.ts",
+      "packages/SureChembl/src/surechembl-api.ts"
+    ],
+    "tests": [
+      "packages/SureChembl/src/package-test.ts",
+      "packages/SureChembl/src/tests/search-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/SureChembl/queries/queries.sql"
+    ],
+    "docs": [
+      "packages/SureChembl/CHANGELOG.md",
+      "packages/SureChembl/CLAUDE.md",
+      "packages/SureChembl/CREDITS.md",
+      "packages/SureChembl/README.md"
+    ],
+    "config": [
+      "packages/SureChembl/connections/surechembl.json"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:SureChembl:patent-substructure-search",
+      "name": "Patent Substructure Search",
+      "description": "Search a locally deployed SureChEMBL database for patents whose compounds match a given substructure query. Exposed both as a callable function and a context-panel widget surfaced when a molecule is selected.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:SureChembl:sureChemblSubstructureSearch",
+          "kind": "RegisteredFunction",
+          "name": "sureChemblSubstructureSearch",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SureChembl:Databases | SureChEMBL | Substructure Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | SureChEMBL | Substructure Search",
+          "friendly_name": null,
+          "role": "panel,widgets",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:SureChembl:searchPatentBySubstructure",
+          "kind": "DataQuery",
+          "name": "searchPatentBySubstructure",
+          "description": null
+        },
+        {
+          "id": "clog:SureChembl:1.0.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SureChembl:1.1.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+          "kind": "DocPage",
+          "title": "SureChEMBL integration",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SureChembl/src/constants.ts",
+          "packages/SureChembl/src/package.ts"
+        ],
+        "tests": [
+          "packages/SureChembl/src/tests/search-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:SureChembl:patent-similarity-search",
+      "name": "Patent Similarity Search",
+      "description": "Search a locally deployed SureChEMBL database for patents containing compounds similar to a query molecule, with a configurable similarity threshold. Exposed as a standalone function and a context-panel widget.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:SureChembl:sureChemblSimilaritySearch",
+          "kind": "RegisteredFunction",
+          "name": "sureChemblSimilaritySearch",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SureChembl:Databases | SureChEMBL | Similarity Search",
+          "kind": "RegisteredFunction",
+          "name": "Databases | SureChEMBL | Similarity Search",
+          "friendly_name": null,
+          "role": "panel,widgets",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:SureChembl:searchPatentBySimilarity",
+          "kind": "DataQuery",
+          "name": "searchPatentBySimilarity",
+          "description": null
+        },
+        {
+          "id": "clog:SureChembl:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+          "kind": "DocPage",
+          "title": "SureChEMBL integration",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SureChembl/src/constants.ts",
+          "packages/SureChembl/src/package.ts"
+        ],
+        "tests": [
+          "packages/SureChembl/src/tests/search-tests.ts"
+        ]
+      }
+    }
+  ]
+}

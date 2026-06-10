@@ -1,0 +1,66 @@
+{
+  "package_id": "pkg:KnimeLink",
+  "features": [
+    {
+      "id": "feature:KnimeLink:knime-application",
+      "name": "KNIME Application",
+      "description": "Provides an integrated KNIME analytics platform view within Datagrok, accessible from the Compute browse path, with a tree browser for navigating KNIME resources.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:KnimeLink:KNIME",                  "weight": 1.0, "role": "core"},
+        {"id": "func:KnimeLink:knimeLinkAppTreeBrowser", "weight": 0.9, "role": "core"},
+        {"id": "doc:/packages/KnimeLink/readme.md",      "weight": 0.8, "role": "doc"},
+        {"id": "doc:/packages/KnimeLink/claude.md",      "weight": 0.7, "role": "doc"},
+        {"id": "doc:/packages/KnimeLink/credits.md",     "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "KNIME (role: app, browsePath: Compute) and knimeLinkAppTreeBrowser (role: appTreeBrowser) share the KNIME name prefix and together constitute the integrated app UI entry point."
+    },
+    {
+      "id": "feature:KnimeLink:workflow-execution",
+      "name": "KNIME Workflow Execution",
+      "description": "Discovers KNIME deployments, registers them as callable Datagrok functions, and retrieves workflow preview images, enabling users to run KNIME workflows from within Datagrok.",
+      "category": "compute",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:KnimeLink:knimeListDeployments",     "weight": 1.0, "role": "core"},
+        {"id": "func:KnimeLink:knimeGetOrRegisterFunc",   "weight": 1.0, "role": "core"},
+        {"id": "func:KnimeLink:knimeGetWorkflowImageUrl", "weight": 0.75, "role": "core"}
+      ],
+      "evidence_summary": "knimeListDeployments, knimeGetOrRegisterFunc, and knimeGetWorkflowImageUrl share the knime prefix and together implement the deployment-discovery → dynamic-function-registration → preview pipeline."
+    },
+    {
+      "id": "feature:KnimeLink:plugin-init",
+      "name": "Plugin Initialization",
+      "description": "Autostart hook that registers KnimeLink functions on Datagrok startup, wiring up the KNIME integration before any user interaction.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:KnimeLink:knimeLinkAutostart", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "knimeLinkAutostart carries role 'autostart' and description 'KnimeLink function registration', unambiguously an infrastructure initialization entry point."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:KnimeLink:workflow-execution", "to": "feature:KnimeLink:knime-application", "kind": "related"},
+    {"from": "feature:KnimeLink:plugin-init",        "to": "feature:KnimeLink:knime-application", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/compute/compute",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/help/compute/diff-studio",
+    "doc:/help/compute/function-analysis",
+    "doc:/help/compute/jupyter-notebook",
+    "doc:/help/compute/models",
+    "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+    "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+    "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+    "doc:/help/compute/scripting/getting-started",
+    "doc:/help/compute/scripting/scripting-features/complex-input-output",
+    "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+    "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+    "doc:/help/compute/scripting/scripting-features/scripting-features",
+    "doc:/help/compute/scripting/scripting-features/visualize-output-data"
+  ]
+}

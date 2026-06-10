@@ -1,0 +1,377 @@
+{
+  "package": {
+    "id": "pkg:Grokky",
+    "name": "Grokky",
+    "friendly_name": "Grokky",
+    "version": "1.0.4",
+    "category": null,
+    "description": "Grokky AI assistant for Datagrok",
+    "extras": {
+      "npm_name": "@datagrok/grokky",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Grokky:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:autostart",
+      "name": "autostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [
+        "autostart"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:combinedLLMSearchProvider",
+      "name": "combinedLLMSearchProvider",
+      "friendly_name": null,
+      "role": "searchProvider",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {
+        "role": "searchProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:Help",
+      "name": "Help",
+      "friendly_name": null,
+      "role": "aiSearchProvider",
+      "tags": [],
+      "description": "Get answers from AI assistant based on Datagrok documentation and public code.",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "aiSearchProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:Execute",
+      "name": "Execute",
+      "friendly_name": null,
+      "role": "aiSearchProvider",
+      "tags": [],
+      "description": "Plans and executes function steps to achieve needed results",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "aiSearchProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:Query",
+      "name": "Query",
+      "friendly_name": null,
+      "role": "aiSearchProvider",
+      "tags": [],
+      "description": "Tries to find a query which has the similar pattern as the prompt user entered and executes it",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "aiSearchProvider"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:findMatchingPatternQuery",
+      "name": "findMatchingPatternQuery",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:setupAIQueryEditor",
+      "name": "setupAIQueryEditor",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "view",
+        "string",
+        "dynamic",
+        "dynamic"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:moveMetaToDB",
+      "name": "moveMetaToDB",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Grokky:indexDatabaseSchema",
+      "name": "indexDatabaseSchema",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Grokky/claude.md",
+      "title": "Grokky",
+      "url": "/packages/Grokky/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Grokky/credits.md",
+      "title": "Grokky — Third-Party Libraries",
+      "url": "/packages/Grokky/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Grokky/readme.md",
+      "title": "Grokky",
+      "url": "/packages/Grokky/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_access/_05-transform-query-results",
+      "title": "Transform query results",
+      "url": "/help/_access/_05-transform-query-results",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/help-test",
+      "title": "Tests: Help",
+      "url": "/help/_internal/tests/help-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/adding-query",
+      "title": "Manual Test: Adding Query",
+      "url": "/help/_internal/tests/release-cheklist-cases/adding-query",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/delete-query",
+      "title": "Manual Test: Delete Query",
+      "url": "/help/_internal/tests/release-cheklist-cases/delete-query",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/query-browser",
+      "title": "Manual Test: Query Browser",
+      "url": "/help/_internal/tests/release-cheklist-cases/query-browser",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/query-transformations",
+      "title": "Manual Test: Query Transformations",
+      "url": "/help/_internal/tests/release-cheklist-cases/query-transformations",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/access/_stashed/_edit-socrata-query",
+      "title": "Edit Socrata query",
+      "url": "/help/access/_stashed/_edit-socrata-query",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/advanced/query-debugging",
+      "title": "Query debugging",
+      "url": "/help/develop/advanced/query-debugging",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/help-pages/_stash/_contrib",
+      "title": "Contributor's guide to help",
+      "url": "/help/develop/help-pages/_stash/_contrib",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/transform/query-transformations",
+      "title": "Query transformations",
+      "url": "/help/transform/query-transformations",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Grokky:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2026-02-01",
+      "ticket": null,
+      "text": "Grokky: Azure compatible client"
+    },
+    {
+      "id": "clog:Grokky:1.0.4:1",
+      "version": "1.0.4",
+      "released_at": "2026-02-01",
+      "ticket": null,
+      "text": "AI: Made a namespace, made a nested config, improved namings"
+    },
+    {
+      "id": "clog:Grokky:1.0.4:2",
+      "version": "1.0.4",
+      "released_at": "2026-02-01",
+      "ticket": null,
+      "text": "Got rid of \"latest\" versions"
+    },
+    {
+      "id": "clog:Grokky:1.0.4:3",
+      "version": "1.0.4",
+      "released_at": "2026-02-01",
+      "ticket": null,
+      "text": "Grokky: Refactor to Vercel AI"
+    },
+    {
+      "id": "clog:Grokky:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-12-18",
+      "ticket": null,
+      "text": "Grokky: Move stuff to proxy"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "Grokky: Invoking function and chains of functions"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:1",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "Grokky: Fuzzy matching"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:2",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "AI: Powersearch Search AI features"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:3",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "Grokky: Add structured output and reuse Gemini session to avoid recreating on each call"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:4",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": null,
+      "text": "Grokky: AI sql"
+    },
+    {
+      "id": "clog:Grokky:1.0.0:5",
+      "version": "1.0.0",
+      "released_at": "2025-12-17",
+      "ticket": "GROK-19198",
+      "text": "GROK-19198: Duplicating AI icons issue"
+    }
+  ],
+  "stats": {
+    "functions": 10,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 13,
+    "changelog": 11
+  }
+}

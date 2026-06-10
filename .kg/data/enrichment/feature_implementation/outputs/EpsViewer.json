@@ -1,0 +1,17 @@
+{
+  "package_id": "pkg:EpsViewer",
+  "features": [
+    {
+      "id": "feature:EpsViewer:eps-file-preview",
+      "implements": [
+        {
+          "path": "packages/EpsViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "Single-file plugin: package.ts contains the @fileViewer-decorated previewEps plus EPS/TIFF/EPSI/UDOC rendering helpers. package-test.ts only re-exports the test harness and contains no feature-specific assertions."
+    }
+  ]
+}

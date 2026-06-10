@@ -1,0 +1,198 @@
+{
+  "package_id": "pkg:Grokky",
+  "features": [
+    {
+      "id": "feature:Grokky:ai-doc-help",
+      "implements": [
+        {
+          "path": "packages/Grokky/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/search/combined-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/claude/runtime-client.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/claude/exec-blocks.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Grokky/src/ai/panel.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Grokky/src/ai/usage-limiter.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Grokky/src/ai/storage.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Grokky/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Help search provider routes through askWiki -> streamingWidget -> ClaudeRuntimeClient; CombinedAISearchAssistant orchestrates search-bar entry."
+    },
+    {
+      "id": "feature:Grokky:ai-function-execution",
+      "implements": [
+        {
+          "path": "packages/Grokky/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/claude/exec-blocks.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/claude/runtime-client.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/ai/search/combined-search.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Grokky/src/ai/panel.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Grokky/src/ai/usage-limiter.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Grokky/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "smartExecution uses structured-output schema and runs returned datagrok-exec blocks via executeDatagrokBlocks."
+    },
+    {
+      "id": "feature:Grokky:ai-query-matching",
+      "implements": [
+        {
+          "path": "packages/Grokky/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/search/query-matching.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/ui.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/db/sql-tools.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/db/db-index-tools.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/db/query-meta-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Grokky/src/db/indexes/biologics-index.ts",
+          "role": "config",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Grokky/src/db/indexes/chembl-index.ts",
+          "role": "config",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Grokky/src/ai/panel.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Grokky/src/claude/runtime-client.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Query provider, findBestMatchingQuery, setupAIQueryEditorUI (DBAIPanel + SQLGenerationContext), and moveMetaToDB / indexDatabaseSchema persist hardcoded indexes for biologics/chembl."
+    },
+    {
+      "id": "feature:Grokky:plugin-lifecycle",
+      "implements": [
+        {
+          "path": "packages/Grokky/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Grokky/src/ai/ui.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Grokky/src/ai/usage-limiter.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Grokky/src/claude/runtime-client.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Grokky/src/ai/panel.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Grokky/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "init() seeds UsageLimiter, agents/ folder, sync subscriptions, panel setups; autostart() wires the Shell AI panel."
+    }
+  ]
+}

@@ -1,0 +1,400 @@
+{
+  "package_id": "pkg:Peptides",
+  "features": [
+    {
+      "id": "feature:Peptides:peptide-sar-analysis",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/widgets/peptides.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Peptides/src/peptideUtils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/widgets/settings.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/widgets/selection.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/widgets/distribution.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/misc.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/demo/fasta.ts",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/core.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Peptides/src/tests/model.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "Top-level SAR app: package.ts registers Peptides/initPeptides/Peptide SAR; widgets/peptides.ts.startAnalysis is the central pipeline orchestrating PeptidesModel and viewers."
+    },
+    {
+      "id": "feature:Peptides:sequence-variability-map",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/sar-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/algorithms.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/statistics.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/tooltips.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/misc.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/viewers.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Peptides/src/tests/table-view.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "MonomerPosition class in sar-viewer.ts; tests cover Monomer-Position viewer and invariant-map selection."
+    },
+    {
+      "id": "feature:Peptides:most-potent-residues",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/sar-viewer.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/algorithms.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/statistics.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/tooltips.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/viewers.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "MostPotentResidues class shares sar-viewer.ts with MonomerPosition."
+    },
+    {
+      "id": "feature:Peptides:mutation-cliffs",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/mutation-cliffs-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/utils/parallel-mutation-cliffs.ts",
+          "role": "support",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Peptides/src/utils/algorithms.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/workers/mutation-cliffs-worker.ts",
+          "role": "support",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Peptides/src/widgets/mutation-cliffs.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/misc.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/tests/widgets.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "MutationCliffsViewer + parallel worker pipeline; tests/misc.ts unit-tests findMutations, tests/widgets.ts covers Widgets: Mutation cliffs."
+    },
+    {
+      "id": "feature:Peptides:logo-summary-table",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/logo-summary.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/utils/cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Peptides/src/utils/algorithms.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/utils/statistics.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/widgets/distribution.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Peptides/src/utils/tooltips.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/viewers.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Peptides/src/tests/widgets.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "LogoSummaryTable viewer + LSTPieChartRenderer in cell-renderer.ts. Tests cover viewer properties/tooltip and Widgets: Actions custom-clusters."
+    },
+    {
+      "id": "feature:Peptides:position-statistics",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/position-statistics-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/peptideUtils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "Self-contained viewer; no dedicated test category found."
+    },
+    {
+      "id": "feature:Peptides:active-peptide-selection",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/viewers/cluster-max-activity-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "ClusterMaxActivityViewer; no dedicated test."
+    },
+    {
+      "id": "feature:Peptides:manual-alignment",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/widgets/manual-alignment.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Peptides/src/peptideUtils.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "manualAlignmentWidget plus the @panel registration in package.ts."
+    },
+    {
+      "id": "feature:Peptides:smiles-to-3d",
+      "implements": [],
+      "tests": [],
+      "notes": "Implementation is scripts/smiles-to-3D.py (Python), which falls outside files.src; no test coverage."
+    },
+    {
+      "id": "feature:Peptides:bio-integration",
+      "implements": [
+        {
+          "path": "packages/Peptides/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Peptides/src/widgets/peptides.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Peptides/src/peptideUtils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Peptides/src/model.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Peptides/src/tests/core.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "peptidesDialog (name: 'Bio Peptides', top-menu Bio | Analyze | SAR...) wires Peptides into the Bio package; uses Bio:getBioLib in initPeptides."
+    }
+  ]
+}

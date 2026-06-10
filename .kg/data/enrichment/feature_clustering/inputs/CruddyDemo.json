@@ -1,0 +1,77 @@
+{
+  "package": {
+    "id": "pkg:CruddyDemo",
+    "name": "CruddyDemo",
+    "friendly_name": "Cruddy Demo",
+    "version": "0.0.2",
+    "category": null,
+    "description": "Database-driven apps: define entities, browse/edit data, filters, privileges, events.",
+    "extras": {
+      "npm_name": "@datagrok/cruddydemo",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:CruddyDemo:northwindDemo",
+      "name": "northwindDemo",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app",
+        "browsePath": "Dev"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:CruddyDemo:chemblDemo",
+      "name": "chemblDemo",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/CruddyDemo/credits.md",
+      "title": "CruddyDemo — Third-Party Libraries",
+      "url": "/packages/CruddyDemo/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/CruddyDemo/readme.md",
+      "title": "Cruddy Demo",
+      "url": "/packages/CruddyDemo/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 2,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 0
+  }
+}

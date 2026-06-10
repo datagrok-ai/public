@@ -1,0 +1,81 @@
+{
+  "package_id": "pkg:Dendrogram",
+  "features": [
+    {
+      "id": "feature:Dendrogram:dendrogram-viewer",
+      "name": "Dendrogram Viewer",
+      "description": "An interactive tree viewer for hierarchical data, supporting zoom, pan, node selection, and row-highlight synced with the grid.",
+      "category": "viz",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Dendrogram:Dendrogram",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Dendrogram:getDendrogramService", "weight": 0.9,  "role": "core"},
+        {"id": "func:Dendrogram:getTreeHelper",        "weight": 0.85, "role": "core"},
+        {"id": "func:Dendrogram:dendrogramApp",        "weight": 0.8,  "role": "sample"},
+        {"id": "func:Dendrogram:dendrogramLargeApp",   "weight": 0.75, "role": "sample"},
+        {"id": "func:Dendrogram:heatMapDemo",          "weight": 0.65, "role": "sample"},
+        {"id": "doc:/help/visualize/viewers/dendrogram","weight": 1.0,  "role": "doc"},
+        {"id": "doc:/packages/Dendrogram/readme.md",   "weight": 0.8,  "role": "doc"}
+      ],
+      "evidence_summary": "The viewer function, its backing service, and tree-helper share the 'Dendrogram'/'dendrogramService'/'treeHelper' naming root; the demo apps exercise the viewer directly and the help guide documents it."
+    },
+    {
+      "id": "feature:Dendrogram:hierarchical-clustering",
+      "name": "Hierarchical Clustering",
+      "description": "Computes hierarchical clustering on tabular data (numeric features, sequences, or molecules) via Python scripts and injects the resulting Newick tree into the grid.",
+      "category": "ml",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Dendrogram:Hierarchical Clustering",            "weight": 1.0,  "role": "core"},
+        {"id": "func:Dendrogram:Hierarchical Clustering (Sequences)","weight": 1.0,  "role": "core"},
+        {"id": "func:Dendrogram:Hierarchical Clustering (Molecules)","weight": 1.0,  "role": "core"},
+        {"id": "func:Dendrogram:Hierarchical Clustering (All)",      "weight": 0.9,  "role": "core"},
+        {"id": "func:Dendrogram:generateTreeDialog",                 "weight": 0.8,  "role": "core"},
+        {"id": "script:Dendrogram:hierarchicalClusteringScript",           "weight": 1.0,  "role": "core"},
+        {"id": "script:Dendrogram:hierarchicalClusteringByDistanceScript", "weight": 0.95, "role": "core"},
+        {"id": "script:Dendrogram:distanceScript",                         "weight": 0.9,  "role": "core"},
+        {"id": "func:Dendrogram:hierarchicalClusteringApp",          "weight": 0.75, "role": "sample"},
+        {"id": "func:Dendrogram:hierarchicalClusteringSequencesApp", "weight": 0.75, "role": "sample"}
+      ],
+      "evidence_summary": "All four user-callable functions share the 'Hierarchical Clustering' name and description 'injects tree to grid', backed by three Python scripts for distance/tree computation, with two demo apps and a tree-generation dialog."
+    },
+    {
+      "id": "feature:Dendrogram:tree-in-grid",
+      "name": "Tree-in-Grid Rendering",
+      "description": "Renders a dendrogram as a resizable neighbor panel alongside the data grid, with an interactive cut-off slider that assigns rows to clusters.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Dendrogram:treeForGridApp",       "weight": 0.85, "role": "sample"},
+        {"id": "func:Dendrogram:treeForGridFilterApp", "weight": 0.85, "role": "sample"},
+        {"id": "func:Dendrogram:treeForGridCutApp",    "weight": 0.9,  "role": "sample"}
+      ],
+      "evidence_summary": "Three demo apps named 'treeForGrid*' exercise the custom grid renderer and cut-off slider; changelog entries confirm a resizable neighbor panel, cut-slider indicator, and cluster assignment by cut-off."
+    },
+    {
+      "id": "feature:Dendrogram:newick-file-support",
+      "name": "Newick File Import and Preview",
+      "description": "Registers file handlers for .nwk/.newick files, enabling import into Datagrok and inline preview of Newick-format phylogenetic trees.",
+      "category": "data-import",
+      "confidence": 0.98,
+      "members": [
+        {"id": "func:Dendrogram:importNwk",     "weight": 1.0, "role": "core"},
+        {"id": "func:Dendrogram:previewNewick", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "importNwk (role: fileHandler, ext: nwk/newick) and previewNewick (role: fileViewer, fileViewer: nwk/newick) are both explicitly bound to Newick file extensions with no ambiguity."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Dendrogram:hierarchical-clustering", "to": "feature:Dendrogram:dendrogram-viewer", "kind": "related"},
+    {"from": "feature:Dendrogram:hierarchical-clustering", "to": "feature:Dendrogram:tree-in-grid",      "kind": "related"},
+    {"from": "feature:Dendrogram:newick-file-support",     "to": "feature:Dendrogram:dendrogram-viewer", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Dendrogram:info",
+    "doc:/packages/Dendrogram/credits.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel"
+  ]
+}

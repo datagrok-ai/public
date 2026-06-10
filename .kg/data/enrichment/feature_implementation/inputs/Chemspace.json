@@ -1,0 +1,173 @@
+{
+  "package": {
+    "id": "pkg:Chemspace",
+    "name": "Chemspace",
+    "friendly_name": "Enamine ChemSpace",
+    "category": "Cheminformatics",
+    "description": "Integration with Chemspace. Allows to search for molecules available in Chemspace, and provides contextual information for the current molecule."
+  },
+  "files": {
+    "src": [
+      "packages/Chemspace/src/country-codes.ts",
+      "packages/Chemspace/src/model.ts",
+      "packages/Chemspace/src/package.ts"
+    ],
+    "tests": [
+      "packages/Chemspace/src/package-test.ts",
+      "packages/Chemspace/src/tests/tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Chemspace/CHANGELOG.md",
+      "packages/Chemspace/CLAUDE.md",
+      "packages/Chemspace/CREDITS.md",
+      "packages/Chemspace/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Chemspace:catalog-browser",
+      "name": "Chemspace Catalog Browser",
+      "description": "Standalone application (browsePath: Chem) for searching and browsing the Chemspace virtual compound catalog directly within Datagrok.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chemspace:Chemspace",
+          "kind": "RegisteredFunction",
+          "name": "Chemspace",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Chemspace/readme.md",
+          "kind": "DocPage",
+          "title": "Chemspace",
+          "url": "/packages/Chemspace/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": [
+          "packages/Chemspace/src/tests/tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Chemspace:molecule-availability-panel",
+      "name": "Molecule Availability Panel",
+      "description": "Context panel that shows similar molecules available for purchase in Chemspace for the currently selected compound, including similarity scores.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:Chemspace:Databases | Chemspace",
+          "kind": "RegisteredFunction",
+          "name": "Databases | Chemspace",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Chemspace Samples",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Chemspace/claude.md",
+          "kind": "DocPage",
+          "title": "Chemspace",
+          "url": "/packages/Chemspace/claude.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chemspace:compound-pricing",
+      "name": "Compound Pricing",
+      "description": "Panel and batch function that surface Chemspace pricing by country and supplier for individual molecules and entire datasets.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Chemspace:Chemspace Prices",
+          "kind": "RegisteredFunction",
+          "name": "Chemspace Prices",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Chemspace Prices",
+          "tags": []
+        },
+        {
+          "id": "func:Chemspace:getChemspacePrices",
+          "kind": "RegisteredFunction",
+          "name": "getChemspacePrices",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chemspace:chemspace-id-resolution",
+      "name": "Chemspace ID Resolution",
+      "description": "Resolves molecules to their Chemspace identifiers and highlights columns carrying the chemspace_id semantic type, enabling enrichment via the 'Add new column' dialog.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Chemspace:getChemspaceIds",
+          "kind": "RegisteredFunction",
+          "name": "getChemspaceIds",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Chemspace:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semValueExtractor",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chemspace/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Chemspace:api-client",
+      "name": "Chemspace API Client",
+      "description": "Low-level HTTP utility handling multipart form requests, OAuth token refresh, and retry logic against the Chemspace API v4.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Chemspace:queryMultipart",
+          "kind": "RegisteredFunction",
+          "name": "queryMultipart",
+          "friendly_name": null,
+          "role": null,
+          "description": "Perform query with multipart form data",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Chemspace/src/model.ts",
+          "packages/Chemspace/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

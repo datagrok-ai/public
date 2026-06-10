@@ -1,0 +1,853 @@
+{
+  "package": {
+    "id": "pkg:Compute2",
+    "name": "Compute2",
+    "friendly_name": "Compute2",
+    "version": "1.4.1",
+    "category": "Compute",
+    "description": "Provides modeling UI and Workflows [Documentaion](https://datagrok.ai/help/compute/)",
+    "extras": {
+      "npm_name": "@datagrok/compute2",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Compute2:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:renderRestPanel",
+      "name": "renderRestPanel",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "func"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:Model Hub",
+      "name": "Model Hub",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Compute"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:modelCatalogTreeBrowser",
+      "name": "modelCatalogTreeBrowser",
+      "friendly_name": null,
+      "role": "",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "view"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": ""
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:Custom Function View Editor",
+      "name": "Custom Function View Editor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:Rich Function View Editor",
+      "name": "Rich Function View Editor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:Tree Wizard Editor",
+      "name": "Tree Wizard Editor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:StartWorkflow",
+      "name": "StartWorkflow",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:RunOptimizer",
+      "name": "RunOptimizer",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:ViewerTestApp",
+      "name": "ViewerTestApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:FormTestApp",
+      "name": "FormTestApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:HistoryTestApp",
+      "name": "HistoryTestApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:MockPipeline1",
+      "name": "MockPipeline1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:MockPipeline2",
+      "name": "MockPipeline2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:StressTestPipeline",
+      "name": "StressTestPipeline",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "stress"
+      ],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:TestAdd2",
+      "name": "TestAdd2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:TestSub2",
+      "name": "TestSub2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:TestMul2",
+      "name": "TestMul2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:TestDiv2",
+      "name": "TestDiv2",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:TestDF1",
+      "name": "TestDF1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:Custom View (Compute 2 Test)",
+      "name": "Custom View (Compute 2 Test)",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:fitTestFunc",
+      "name": "fitTestFunc",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test for optimization: multiple scalars output",
+      "input_types": [
+        "double",
+        "double",
+        "dataframe",
+        "bool"
+      ],
+      "output_types": [
+        "int",
+        "double",
+        "double",
+        "dataframe",
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute2:testFittingOutputs",
+      "name": "testFittingOutputs",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test for optimization: multiple scalars output",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Compute2:MockPipeline3",
+      "name": "MockPipeline3",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Compute2:FastScript",
+      "name": "FastScript",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Compute2:LongScript",
+      "name": "LongScript",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Compute2:ObjectCooling2",
+      "name": "ObjectCooling2",
+      "language": "javascript",
+      "description": "Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air."
+    },
+    {
+      "id": "script:Compute2:SimpleInputs2",
+      "name": "SimpleInputs2",
+      "language": "javascript",
+      "description": "RichFunctionView simple inputs test"
+    },
+    {
+      "id": "script:Compute2:StressMutateStep",
+      "name": "StressMutateStep",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Compute2:StressSharedProducer",
+      "name": "StressSharedProducer",
+      "language": "javascript",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Compute2/claude.md",
+      "title": "CLAUDE.md - Compute2",
+      "url": "/packages/Compute2/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute2/credits.md",
+      "title": "Compute2 — Third-Party Libraries",
+      "url": "/packages/Compute2/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute2/readme.md",
+      "title": "Compute2",
+      "url": "/packages/Compute2/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/views/custom-views",
+      "title": "Create a custom view",
+      "url": "/help/develop/how-to/views/custom-views",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/transformation-editor-test",
+      "title": "Tests: Transformation Editor",
+      "url": "/help/_internal/tests/transformation-editor-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/access/databases/create-custom-connectors",
+      "title": "Create custom connectors",
+      "url": "/help/access/databases/create-custom-connectors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/views/_flex-view",
+      "title": "Flex View",
+      "url": "/help/datagrok/navigation/views/_flex-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+      "title": "Create custom file viewers",
+      "url": "/help/develop/how-to/files/create-custom-file-viewers",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Compute2:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Compositor-thread loading overlay"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:1",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Action step type with unified Back/Next pipeline navigation"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:2",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Inspector improvements: FilterDropdown component, unified log filters, improved log and path formatting"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:3",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Inspector debug tool available to all users"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:4",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Stress test pipeline with onInit and chained steps"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:5",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "E2e test suite for apps, RFV editors, and pipelines"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:6",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Buffer RxJS-to-Vue reactive updates during global lock"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:7",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Suppress Vue rerenders during global lock"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:8",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Webpack filesystem cache and babel-loader caching for faster rebuilds"
+    },
+    {
+      "id": "clog:Compute2:1.4.1:9",
+      "version": "1.4.1",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Left-aligned navigation buttons in RFV and PipelineView bottom bar"
+    },
+    {
+      "id": "clog:Compute2:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2026-03-19",
+      "ticket": null,
+      "text": "1.27 platform support"
+    },
+    {
+      "id": "clog:Compute2:1.4.0:1",
+      "version": "1.4.0",
+      "released_at": "2026-03-19",
+      "ticket": null,
+      "text": "More export improvements"
+    },
+    {
+      "id": "clog:Compute2:1.3.22:0",
+      "version": "1.3.22",
+      "released_at": "2026-02-19",
+      "ticket": null,
+      "text": "Workflows export customization options"
+    },
+    {
+      "id": "clog:Compute2:1.3.21:0",
+      "version": "1.3.21",
+      "released_at": "2025-11-24",
+      "ticket": null,
+      "text": "Show workflow help button in ribbon panel as well"
+    },
+    {
+      "id": "clog:Compute2:1.3.20:0",
+      "version": "1.3.20",
+      "released_at": "2025-11-20",
+      "ticket": null,
+      "text": "Workflows new buttons-based navigation"
+    },
+    {
+      "id": "clog:Compute2:1.3.19:0",
+      "version": "1.3.19",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Fitting with formulas support"
+    },
+    {
+      "id": "clog:Compute2:1.3.18:0",
+      "version": "1.3.18",
+      "released_at": "2025-09-11",
+      "ticket": null,
+      "text": "Hisotry and export fixes for workflows"
+    },
+    {
+      "id": "clog:Compute2:1.3.17:0",
+      "version": "1.3.17",
+      "released_at": "2025-09-09",
+      "ticket": null,
+      "text": "Save focused RFV tab in session storage"
+    },
+    {
+      "id": "clog:Compute2:1.3.16:0",
+      "version": "1.3.16",
+      "released_at": "2025-09-08",
+      "ticket": null,
+      "text": "Fix funcCall reactive updates edge case"
+    },
+    {
+      "id": "clog:Compute2:1.3.15:0",
+      "version": "1.3.15",
+      "released_at": "2025-09-05",
+      "ticket": null,
+      "text": "Fix optimizer returned funcCall redraw"
+    },
+    {
+      "id": "clog:Compute2:1.3.14:0",
+      "version": "1.3.14",
+      "released_at": "2025-09-04",
+      "ticket": null,
+      "text": "Small bug fixes"
+    },
+    {
+      "id": "clog:Compute2:1.3.13:0",
+      "version": "1.3.13",
+      "released_at": "2025-08-15",
+      "ticket": null,
+      "text": "Fix DataFrame input viewers updates"
+    },
+    {
+      "id": "clog:Compute2:1.3.12:0",
+      "version": "1.3.12",
+      "released_at": "2025-08-15",
+      "ticket": null,
+      "text": "Optimization view support primary params filtering"
+    },
+    {
+      "id": "clog:Compute2:1.3.12:1",
+      "version": "1.3.12",
+      "released_at": "2025-08-15",
+      "ticket": null,
+      "text": "Optimization view support support per script defaults"
+    },
+    {
+      "id": "clog:Compute2:1.3.11:0",
+      "version": "1.3.11",
+      "released_at": "2025-08-08",
+      "ticket": null,
+      "text": "Optimization tool integration fixes"
+    },
+    {
+      "id": "clog:Compute2:1.3.10:0",
+      "version": "1.3.10",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "API updated for 1.26.0"
+    },
+    {
+      "id": "clog:Compute2:1.3.9:0",
+      "version": "1.3.9",
+      "released_at": "2025-07-22",
+      "ticket": null,
+      "text": "Template links syntax"
+    },
+    {
+      "id": "clog:Compute2:1.3.9:1",
+      "version": "1.3.9",
+      "released_at": "2025-07-22",
+      "ticket": null,
+      "text": "Allow multiple meta handlers targiting the same io"
+    },
+    {
+      "id": "clog:Compute2:1.3.8:0",
+      "version": "1.3.8",
+      "released_at": "2025-06-30",
+      "ticket": null,
+      "text": "Fix adding steps from pipeline view"
+    },
+    {
+      "id": "clog:Compute2:1.3.7:0",
+      "version": "1.3.7",
+      "released_at": "2025-06-09",
+      "ticket": null,
+      "text": "Add StartWorkflow return"
+    }
+  ],
+  "stats": {
+    "functions": 23,
+    "scripts": 7,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 45
+  }
+}

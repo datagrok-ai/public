@@ -1,0 +1,464 @@
+{
+  "package": {
+    "id": "pkg:DevTools",
+    "name": "DevTools",
+    "friendly_name": "Dev Tools",
+    "version": "1.7.1",
+    "category": "Development",
+    "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
+    "extras": {
+      "npm_name": "@datagrok/dev-tools",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:DevTools:renderDevPanel",
+      "name": "renderDevPanel",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:_makeInspectorPanel",
+      "name": "_makeInspectorPanel",
+      "friendly_name": "DevTools",
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:autostartTools",
+      "name": "autostartTools",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": "DevTools autostart function",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:_IconTool",
+      "name": "_IconTool",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "IconTool",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:Test Manager",
+      "name": "Test Manager",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "app",
+        "browsePath": "Admin"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:testManagerAppTreeBrowser",
+      "name": "testManagerAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:TestDetectors",
+      "name": "TestDetectors",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:TestDetectorsStandard",
+      "name": "TestDetectorsStandard",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DevTools:testFunctions",
+      "name": "testFunctions",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "map"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:DevTools:TestHistory",
+      "name": "TestHistory",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DevTools:CategoryHistory",
+      "name": "CategoryHistory",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DevTools:PackageHistory",
+      "name": "PackageHistory",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/DevTools/credits.md",
+      "title": "DevTools — Third-Party Libraries",
+      "url": "/packages/DevTools/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/DevTools/readme.md",
+      "title": "Dev Tools",
+      "url": "/packages/DevTools/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tutorials/data-tools",
+      "title": "Use Cases: Data tools",
+      "url": "/help/_internal/tutorials/data-tools",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/column-manager",
+      "title": "Column Manager",
+      "url": "/help/datagrok/navigation/panels/column-manager",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/table-manager",
+      "title": "Table Manager",
+      "url": "/help/datagrok/navigation/panels/table-manager",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/dev-process/tools/test-manager",
+      "title": "Test Manager",
+      "url": "/help/develop/dev-process/tools/test-manager",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/packages/_overview",
+      "title": "JavaScript Development Overview",
+      "url": "/help/develop/packages/_overview",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/explore/column-manager-test",
+      "title": "Tests: Column Manager",
+      "url": "/help/explore/column-manager-test",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:DevTools:1.5.1:0",
+      "version": "1.5.1",
+      "released_at": "2025-27-01",
+      "ticket": null,
+      "text": "Build fix"
+    },
+    {
+      "id": "clog:DevTools:1.6.4:0",
+      "version": "1.6.4",
+      "released_at": "2025-10-16",
+      "ticket": null,
+      "text": "Core: Projects: Fixed data-sync projects from scripts fail"
+    },
+    {
+      "id": "clog:DevTools:1.3.47:0",
+      "version": "1.3.47",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "Update package according js-api updates"
+    },
+    {
+      "id": "clog:DevTools:1.3.46:0",
+      "version": "1.3.46",
+      "released_at": "2024-06-26",
+      "ticket": null,
+      "text": "TM: init compute package"
+    },
+    {
+      "id": "clog:DevTools:1.3.45:0",
+      "version": "1.3.45",
+      "released_at": "2024-06-17",
+      "ticket": null,
+      "text": "Core tests compatibility fix"
+    },
+    {
+      "id": "clog:DevTools:1.3.43:0",
+      "version": "1.3.43",
+      "released_at": "2024-04-02",
+      "ticket": null,
+      "text": "TM: Fix error on selection non-executed test, Invalid argument (index): null"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:0",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.17.3"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:1",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "TM: Copy URL link fix"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:2",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "TM: Filter condition fix (bug with test name)"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:3",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "TM: history grid style"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:4",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "UI: Fix all ui inputs"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:5",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "Script Editor: Fixed 'read properties of undefined (reading 'getDoc')'"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:6",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "TM: category & package status"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:7",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": null,
+      "text": "TM: last failure/success"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:8",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": "GROK-14439",
+      "text": "GROK-14439: Save test console logs"
+    },
+    {
+      "id": "clog:DevTools:1.3.42:9",
+      "version": "1.3.42",
+      "released_at": "2024-01-24",
+      "ticket": "GROK-14063",
+      "text": "GROK-14063: Integrate dart tests"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:0",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.17.3"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:1",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "Links fixed"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:2",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "Dart test in TM"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:3",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "TM: copy URL option"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:4",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "TM: Run force option"
+    },
+    {
+      "id": "clog:DevTools:1.3.41:5",
+      "version": "1.3.41",
+      "released_at": "2023-11-14",
+      "ticket": null,
+      "text": "TM: Routing"
+    },
+    {
+      "id": "clog:DevTools:1.3.40:0",
+      "version": "1.3.40",
+      "released_at": "2023-09-20",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.16.6"
+    },
+    {
+      "id": "clog:DevTools:1.3.40:1",
+      "version": "1.3.40",
+      "released_at": "2023-09-20",
+      "ticket": "GROK-13970",
+      "text": "GROK-13970 DevTools: Run option in Dev panel does not work"
+    },
+    {
+      "id": "clog:DevTools:1.3.39:0",
+      "version": "1.3.39",
+      "released_at": "2023-08-30",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.16.0"
+    },
+    {
+      "id": "clog:DevTools:1.3.39:1",
+      "version": "1.3.39",
+      "released_at": "2023-08-30",
+      "ticket": "GROK-13583",
+      "text": "GROK-13583: TM: save state"
+    },
+    {
+      "id": "clog:DevTools:1.3.39:2",
+      "version": "1.3.39",
+      "released_at": "2023-08-30",
+      "ticket": "GROK-13850",
+      "text": "GROK-13850: TM: improve hierarchy"
+    },
+    {
+      "id": "clog:DevTools:1.3.38:0",
+      "version": "1.3.38",
+      "released_at": "2023-07-20",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.16.0"
+    },
+    {
+      "id": "clog:DevTools:1.3.38:1",
+      "version": "1.3.38",
+      "released_at": "2023-07-20",
+      "ticket": "GROK-13265",
+      "text": "GROK-13265: Core: Inspector: ability to add custom inspector panels"
+    },
+    {
+      "id": "clog:DevTools:1.3.38:2",
+      "version": "1.3.38",
+      "released_at": "2023-07-20",
+      "ticket": "GROK-13293",
+      "text": "GROK-13293: DevTools: Copy names in TM"
+    }
+  ],
+  "stats": {
+    "functions": 9,
+    "scripts": 0,
+    "queries": 3,
+    "tutorials": 0,
+    "docs": 9,
+    "changelog": 35
+  }
+}

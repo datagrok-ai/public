@@ -1,0 +1,185 @@
+{
+  "slice_id": "help-access",
+  "links": [
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "pkg:Chembl",
+      "confidence": 0.92,
+      "evidence": "snippet explicitly lists ChEMBL bioactive molecule dataset as a hosted Datagrok public dataset"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:Chembl:chembl-browser",
+      "confidence": 0.82,
+      "evidence": "ChEMBL Browser is the interactive interface for the ChEMBL public dataset listed in this doc"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:Chembl:substructure-search",
+      "confidence": 0.78,
+      "evidence": "substructure search is a primary access pattern for the ChEMBL data described as a public dataset"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:Chembl:similarity-search",
+      "confidence": 0.78,
+      "evidence": "similarity search is a primary access pattern for the ChEMBL data described as a public dataset"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:Chembl:db-explorer",
+      "confidence": 0.72,
+      "evidence": "DB Explorer integration registers ChEMBL as a lazily-loaded data source, matching the public dataset listing"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "pkg:ChemblAPI",
+      "confidence": 0.75,
+      "evidence": "ChEMBL API package enables search against the same ChEMBL database described in the public datasets overview"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:ChemblAPI:compound-lookup",
+      "confidence": 0.72,
+      "evidence": "compound lookup retrieves records from the ChEMBL dataset listed in the public datasets doc"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:ChemblAPI:substructure-search",
+      "confidence": 0.70,
+      "evidence": "ChEMBL API substructure search is a programmatic access path to the ChEMBL public dataset"
+    },
+    {
+      "doc_id": "doc:/help/access/public-datasets",
+      "target_id": "feature:ChemblAPI:similarity-search",
+      "confidence": 0.70,
+      "evidence": "ChEMBL API similarity search is a programmatic access path to the ChEMBL public dataset"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/connectors",
+      "target_id": "pkg:Samples",
+      "confidence": 0.82,
+      "evidence": "Samples explicitly contains sample data connectors; this overview doc describes what Samples demonstrates"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/connectors",
+      "target_id": "pkg:DBTests",
+      "confidence": 0.78,
+      "evidence": "DBTests automates JDBC provider validation across the 30+ connectors surveyed in this doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/databases",
+      "target_id": "pkg:Samples",
+      "confidence": 0.75,
+      "evidence": "Samples provides DB connector demos (MSSQL, PostgreSQL, ClickHouse) for the database access features described"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/databases",
+      "target_id": "pkg:DBTests",
+      "confidence": 0.72,
+      "evidence": "DBTests provides automated JDBC connector tests backing the database access capabilities described in this doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/clickhouse",
+      "target_id": "feature:DBTests:clickhouse-connector-tests",
+      "confidence": 0.80,
+      "evidence": "ClickHouse connector tests validate JDBC type mapping and parameterized queries described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/clickhouse",
+      "target_id": "feature:Samples:clickhouse-connector-demo",
+      "confidence": 0.82,
+      "evidence": "ClickHouse Northwind sample queries in Samples directly demonstrate the connector described in this doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mariadb",
+      "target_id": "feature:DBTests:mariadb-connector-tests",
+      "confidence": 0.80,
+      "evidence": "MariaDB connector tests validate JDBC type mapping and parameterized-query patterns described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mariadb",
+      "target_id": "feature:Samples:rdbms-connector-demos",
+      "confidence": 0.75,
+      "evidence": "RDBMS Connector Demos in Samples include MariaDB sample queries for the connector described here"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mssql",
+      "target_id": "feature:DBTests:mssql-connector-tests",
+      "confidence": 0.82,
+      "evidence": "MSSQL connector tests directly validate the SQL Server JDBC types and query patterns described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mssql",
+      "target_id": "feature:Samples:mssql-connector-demo",
+      "confidence": 0.88,
+      "evidence": "MSSQL Northwind demo in Samples showcases every parameter annotation type described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mysql",
+      "target_id": "feature:DBTests:mysql-connector-tests",
+      "confidence": 0.80,
+      "evidence": "MySQL connector tests validate JDBC type mapping and spatial types described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/mysql",
+      "target_id": "feature:Samples:rdbms-connector-demos",
+      "confidence": 0.75,
+      "evidence": "RDBMS Connector Demos in Samples include MySQL sample queries for the connector described here"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/oracle",
+      "target_id": "feature:DBTests:oracle-connector-tests",
+      "confidence": 0.80,
+      "evidence": "Oracle connector tests validate JDBC type mapping (XML, JSON, Varray, LOB) described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/oracle",
+      "target_id": "feature:Samples:rdbms-connector-demos",
+      "confidence": 0.75,
+      "evidence": "RDBMS Connector Demos in Samples include Oracle sample queries for the connector described here"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/postgres",
+      "target_id": "feature:DBTests:postgresql-connector-tests",
+      "confidence": 0.85,
+      "evidence": "PostgreSQL connector tests validate advanced type mapping (array, JSONB, UUID, composite) described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/postgres",
+      "target_id": "feature:Samples:postgresql-connector-demo",
+      "confidence": 0.88,
+      "evidence": "PostgreSQL Northwind and World sample queries in Samples directly demonstrate the connector described in this doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/snowflake",
+      "target_id": "feature:DBTests:snowflake-connector-tests",
+      "confidence": 0.80,
+      "evidence": "Snowflake connector tests validate JDBC type mapping (binary, geo, semi-structured JSON) described in the connector doc"
+    },
+    {
+      "doc_id": "doc:/help/access/databases/connectors/access",
+      "target_id": "feature:Samples:rdbms-connector-demos",
+      "confidence": 0.72,
+      "evidence": "RDBMS Connector Demos in Samples include Microsoft Access sample queries for the connector described here"
+    },
+    {
+      "doc_id": "doc:/help/access/access",
+      "target_id": "pkg:Alation",
+      "confidence": 0.65,
+      "evidence": "Alation provides data catalog browsing for org-wide data access, matching the data unification theme of this overview"
+    },
+    {
+      "doc_id": "doc:/help/access/access",
+      "target_id": "feature:Alation:catalog-app",
+      "confidence": 0.65,
+      "evidence": "Alation Catalog Browser is a concrete implementation of the unified data access concept described in this overview"
+    },
+    {
+      "doc_id": "doc:/help/access/access",
+      "target_id": "pkg:Samples",
+      "confidence": 0.65,
+      "evidence": "Samples provides sample data connectors demonstrating the data access capabilities described in this overview"
+    }
+  ]
+}

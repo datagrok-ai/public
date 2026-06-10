@@ -1,0 +1,49 @@
+{
+  "package_id": "pkg:TensorFlow.js",
+  "features": [
+    {
+      "id": "feature:TensorFlow.js:neural-network-model",
+      "implements": [
+        {
+          "path": "packages/TensorFlow.js/src/package.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/TensorFlow.js/src/nn.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/TensorFlow.js/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/TensorFlow.js/src/no-validation/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "package.js registers trainNN/applyNN/isApplicableNN; nn.ts implements prepareAndTrainNN and trainNeuralNetwork; utils.ts provides processFeatures/processLables/saveModel/loadModel."
+    },
+    {
+      "id": "feature:TensorFlow.js:neural-network-visualization",
+      "implements": [
+        {
+          "path": "packages/TensorFlow.js/src/package.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/TensorFlow.js/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "visualizeNN is defined in package.js and uses loadModel from utils.ts to render a canvas of weights/layers."
+    }
+  ]
+}

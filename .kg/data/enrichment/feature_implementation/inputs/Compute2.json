@@ -1,0 +1,559 @@
+{
+  "package": {
+    "id": "pkg:Compute2",
+    "name": "Compute2",
+    "friendly_name": "Compute2",
+    "category": "Compute",
+    "description": "Provides modeling UI and Workflows [Documentaion](https://datagrok.ai/help/compute/)"
+  },
+  "files": {
+    "src": [
+      "packages/Compute2/src/apps/FormTestApp.tsx",
+      "packages/Compute2/src/apps/HistoryApp.tsx",
+      "packages/Compute2/src/apps/HistoryTestApp.tsx",
+      "packages/Compute2/src/apps/RFVApp.tsx",
+      "packages/Compute2/src/apps/TreeWizardApp.tsx",
+      "packages/Compute2/src/apps/ViewerTestApp.tsx",
+      "packages/Compute2/src/components/History/History.tsx",
+      "packages/Compute2/src/components/Inspector/FilterDropdown.tsx",
+      "packages/Compute2/src/components/Inspector/Inspector.tsx",
+      "packages/Compute2/src/components/Logger/Logger.tsx",
+      "packages/Compute2/src/components/PipelineView/PipelineView.tsx",
+      "packages/Compute2/src/components/RFV/RichFunctionView.css",
+      "packages/Compute2/src/components/RFV/RichFunctionView.tsx",
+      "packages/Compute2/src/components/RFV/ScalarsPanel.css",
+      "packages/Compute2/src/components/RFV/ScalarsPanel.tsx",
+      "packages/Compute2/src/components/TreeWizard/TreeNode.tsx",
+      "packages/Compute2/src/components/TreeWizard/TreeWizard.tsx",
+      "packages/Compute2/src/components/TreeWizard/types.ts",
+      "packages/Compute2/src/composables/use-compositor-overlay.ts",
+      "packages/Compute2/src/composables/use-help.ts",
+      "packages/Compute2/src/composables/use-reactive-tree-driver.ts",
+      "packages/Compute2/src/composables/use-viewers-hook.ts",
+      "packages/Compute2/src/directives/compositor-overlay.css",
+      "packages/Compute2/src/directives/compositor-overlay.ts",
+      "packages/Compute2/src/package-instance.ts",
+      "packages/Compute2/src/package.ts",
+      "packages/Compute2/src/tailwind.css",
+      "packages/Compute2/src/test/app-launch.ts",
+      "packages/Compute2/src/test/navigation.ts",
+      "packages/Compute2/src/test/rfv.ts",
+      "packages/Compute2/src/test/utils.ts",
+      "packages/Compute2/src/test/viewers-hook.ts",
+      "packages/Compute2/src/utils.ts"
+    ],
+    "tests": [
+      "packages/Compute2/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/Compute2/scripts/config-script.js",
+      "packages/Compute2/scripts/long-failing-script.js",
+      "packages/Compute2/scripts/long-script.js",
+      "packages/Compute2/scripts/object-cooling-2.js",
+      "packages/Compute2/scripts/simpleInputs.js",
+      "packages/Compute2/scripts/stress-mutate-step.js",
+      "packages/Compute2/scripts/stress-shared-producer.js"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Compute2/CHANGELOG.md",
+      "packages/Compute2/CLAUDE.md",
+      "packages/Compute2/CREDITS.md",
+      "packages/Compute2/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Compute2:rich-function-view",
+      "name": "Rich Function View",
+      "description": "A configurable, tabbed UI wrapper for any Datagrok function call that provides rich input forms, output viewers, call history, and REST panel integration. Supports custom panel layouts, input enhancements, and…",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Compute2:Rich Function View Editor",
+          "kind": "RegisteredFunction",
+          "name": "Rich Function View Editor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:Custom Function View Editor",
+          "kind": "RegisteredFunction",
+          "name": "Custom Function View Editor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:renderRestPanel",
+          "kind": "RegisteredFunction",
+          "name": "renderRestPanel",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Compute2:SimpleInputs2",
+          "kind": "Script",
+          "name": "SimpleInputs2",
+          "language": "javascript",
+          "description": "RichFunctionView simple inputs test"
+        },
+        {
+          "id": "script:Compute2:ObjectCooling2",
+          "kind": "Script",
+          "name": "ObjectCooling2",
+          "language": "javascript",
+          "description": "Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air."
+        },
+        {
+          "id": "func:Compute2:FormTestApp",
+          "kind": "RegisteredFunction",
+          "name": "FormTestApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:ViewerTestApp",
+          "kind": "RegisteredFunction",
+          "name": "ViewerTestApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+          "kind": "DocPage",
+          "title": "Rich Function View",
+          "url": "/help/compute/scripting/advanced-scripting/rich-function-view"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+          "kind": "DocPage",
+          "title": "Enhance input UI",
+          "url": "/help/compute/scripting/scripting-features/enhance-input-ui"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+          "kind": "DocPage",
+          "title": "Visualize output data",
+          "url": "/help/compute/scripting/scripting-features/visualize-output-data"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+          "kind": "DocPage",
+          "title": "Complex data types",
+          "url": "/help/compute/scripting/scripting-features/complex-input-output"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+          "kind": "DocPage",
+          "title": "Scripting features",
+          "url": "/help/compute/scripting/scripting-features/scripting-features"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+          "kind": "DocPage",
+          "title": "Work with the Datagrok script editor",
+          "url": "/help/compute/scripting/scripting-features/datagrok-script-editor"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+          "kind": "DocPage",
+          "title": "Automate inputs",
+          "url": "/help/compute/scripting/advanced-scripting/automate-inputs"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+          "kind": "DocPage",
+          "title": "Call via REST",
+          "url": "/help/compute/scripting/advanced-scripting/call-via-rest"
+        },
+        {
+          "id": "doc:/help/compute/scripting/getting-started",
+          "kind": "DocPage",
+          "title": "Getting started with scripting",
+          "url": "/help/compute/scripting/getting-started"
+        },
+        {
+          "id": "clog:Compute2:1.3.17:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.16:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.13:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.9:1",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/learn/interactive-modeling",
+          "kind": "DocPage",
+          "title": "Interactive modeling",
+          "url": "/help/learn/interactive-modeling"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute2/src/apps/FormTestApp.tsx",
+          "packages/Compute2/src/apps/HistoryApp.tsx",
+          "packages/Compute2/src/apps/RFVApp.tsx",
+          "packages/Compute2/src/apps/ViewerTestApp.tsx",
+          "packages/Compute2/src/components/History/History.tsx",
+          "packages/Compute2/src/components/RFV/RichFunctionView.tsx",
+          "packages/Compute2/src/directives/compositor-overlay.ts",
+          "packages/Compute2/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute2:workflows",
+      "name": "Workflows and Pipeline Execution",
+      "description": "A multi-step workflow engine that chains function calls into sequential pipelines with wizard-style navigation, step branching, action steps, back/next controls, export customization, and call-history tracking. Managed…",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Compute2:StartWorkflow",
+          "kind": "RegisteredFunction",
+          "name": "StartWorkflow",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:Tree Wizard Editor",
+          "kind": "RegisteredFunction",
+          "name": "Tree Wizard Editor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:MockPipeline1",
+          "kind": "RegisteredFunction",
+          "name": "MockPipeline1",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:MockPipeline2",
+          "kind": "RegisteredFunction",
+          "name": "MockPipeline2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:StressTestPipeline",
+          "kind": "RegisteredFunction",
+          "name": "StressTestPipeline",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": [
+            "stress"
+          ]
+        },
+        {
+          "id": "func:Compute2:TestAdd2",
+          "kind": "RegisteredFunction",
+          "name": "TestAdd2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:TestSub2",
+          "kind": "RegisteredFunction",
+          "name": "TestSub2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:TestMul2",
+          "kind": "RegisteredFunction",
+          "name": "TestMul2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:TestDiv2",
+          "kind": "RegisteredFunction",
+          "name": "TestDiv2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:TestDF1",
+          "kind": "RegisteredFunction",
+          "name": "TestDF1",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:HistoryTestApp",
+          "kind": "RegisteredFunction",
+          "name": "HistoryTestApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Compute2:MockPipeline3",
+          "kind": "Script",
+          "name": "MockPipeline3",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Compute2:FastScript",
+          "kind": "Script",
+          "name": "FastScript",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Compute2:LongScript",
+          "kind": "Script",
+          "name": "LongScript",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Compute2:StressMutateStep",
+          "kind": "Script",
+          "name": "StressMutateStep",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Compute2:StressSharedProducer",
+          "kind": "Script",
+          "name": "StressSharedProducer",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "clog:Compute2:1.4.1:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.22:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.21:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.20:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.18:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.8:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.7:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.9:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute2/src/apps/HistoryTestApp.tsx",
+          "packages/Compute2/src/apps/TreeWizardApp.tsx",
+          "packages/Compute2/src/components/History/History.tsx",
+          "packages/Compute2/src/components/TreeWizard/TreeWizard.tsx",
+          "packages/Compute2/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute2:model-hub",
+      "name": "Model Hub",
+      "description": "A dedicated application and tree-based catalog browser for discovering, organizing, and launching registered computational models, accessible from the Compute browse path.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Compute2:Model Hub",
+          "kind": "RegisteredFunction",
+          "name": "Model Hub",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:modelCatalogTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "modelCatalogTreeBrowser",
+          "friendly_name": null,
+          "role": "",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        },
+        {
+          "id": "doc:/help/compute/compute",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/help/compute/compute"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute2/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute2:sensitivity-analysis-fitting",
+      "name": "Sensitivity Analysis and Curve Fitting",
+      "description": "Tools for parameter sensitivity analysis, multi-objective optimization, and curve fitting applied to any registered function, supporting formula-based fitting, primary parameter filtering, and per-script defaults.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Compute2:RunOptimizer",
+          "kind": "RegisteredFunction",
+          "name": "RunOptimizer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:fitTestFunc",
+          "kind": "RegisteredFunction",
+          "name": "fitTestFunc",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test for optimization: multiple scalars output",
+          "tags": []
+        },
+        {
+          "id": "func:Compute2:testFittingOutputs",
+          "kind": "RegisteredFunction",
+          "name": "testFittingOutputs",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test for optimization: multiple scalars output",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/function-analysis",
+          "kind": "DocPage",
+          "title": "Model optimization tools",
+          "url": "/help/compute/function-analysis"
+        },
+        {
+          "id": "clog:Compute2:1.3.19:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.15:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.12:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.12:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.3.11:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute2/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute2:diff-studio",
+      "name": "Diff Studio",
+      "description": "An ODE-based simulation environment for building and running differential equation models, surfaced through Compute2's documentation and help system; the core UI implementation resides in the sibling DiffStudio package.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "doc:/help/compute/diff-studio",
+          "kind": "DocPage",
+          "title": "Diff Studio",
+          "url": "/help/compute/diff-studio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute2:pipeline-inspector",
+      "name": "Pipeline Inspector",
+      "description": "An interactive debug and monitoring panel embedded in pipeline views, providing step-level logs, unified log filters, FilterDropdown component, and path formatting controls for pipeline execution diagnosis.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "clog:Compute2:1.4.1:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Compute2:1.4.1:3",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

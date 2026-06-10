@@ -1,0 +1,858 @@
+{
+  "package": {
+    "id": "pkg:SequenceTranslator",
+    "name": "SequenceTranslator",
+    "friendly_name": "Sequence Translator",
+    "category": "Bioinformatics",
+    "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations)."
+  },
+  "files": {
+    "src": [
+      "packages/SequenceTranslator/src/apps/common/model/const.ts",
+      "packages/SequenceTranslator/src/apps/common/model/data-loader/const.ts",
+      "packages/SequenceTranslator/src/apps/common/model/data-loader/json-loader.ts",
+      "packages/SequenceTranslator/src/apps/common/model/data-loader/types.ts",
+      "packages/SequenceTranslator/src/apps/common/model/helpers.ts",
+      "packages/SequenceTranslator/src/apps/common/model/monomer-lib/const.ts",
+      "packages/SequenceTranslator/src/apps/common/model/monomer-lib/lib-wrapper.ts",
+      "packages/SequenceTranslator/src/apps/common/model/oligo-toolkit-package.ts",
+      "packages/SequenceTranslator/src/apps/common/model/parsing-validation/format-detector.ts",
+      "packages/SequenceTranslator/src/apps/common/model/parsing-validation/format-handler.ts",
+      "packages/SequenceTranslator/src/apps/common/model/parsing-validation/sequence-validator.ts",
+      "packages/SequenceTranslator/src/apps/common/view/app-ui-base.ts",
+      "packages/SequenceTranslator/src/apps/common/view/combined-app-ui.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/app-info-dialog.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/colored-input/colored-text-input.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/colored-input/input-painters.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/colored-input/style.css",
+      "packages/SequenceTranslator/src/apps/common/view/components/draw-molecule.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/molecule-img.ts",
+      "packages/SequenceTranslator/src/apps/common/view/components/router.ts",
+      "packages/SequenceTranslator/src/apps/common/view/const.ts",
+      "packages/SequenceTranslator/src/apps/common/view/isolated-app-ui.ts",
+      "packages/SequenceTranslator/src/apps/common/view/monomer-lib-viewer.ts",
+      "packages/SequenceTranslator/src/apps/common/view/utils.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/const.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/data-manager.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/event-bus.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/router.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/subscription-manager.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/translator.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/types.ts",
+      "packages/SequenceTranslator/src/apps/pattern/model/utils.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/bulk-convert/column-input.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/bulk-convert/table-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/bulk-convert/table-input.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/edit-block-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/left-section.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/load-block-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/numeric-label-visibility-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/right-section.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/strand-editor/dialog.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/strand-editor/header-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/strand-editor/strand-controls.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/terminal-modification-editor.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/components/translation-examples-block.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/style.css",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/const.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/legend-block.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/strands-block.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-block-base.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-display-manager.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-element-factory.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/svg-renderer.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/text-dimensions-calculator.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/title-block.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/svg-utils/utils.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/types.ts",
+      "packages/SequenceTranslator/src/apps/pattern/view/ui.ts",
+      "packages/SequenceTranslator/src/apps/structure/model/const.ts",
+      "packages/SequenceTranslator/src/apps/structure/model/mol-transformations.ts",
+      "packages/SequenceTranslator/src/apps/structure/model/monomer-code-parser.ts",
+      "packages/SequenceTranslator/src/apps/structure/model/oligo-structure.ts",
+      "packages/SequenceTranslator/src/apps/structure/model/sequence-to-molfile.ts",
+      "packages/SequenceTranslator/src/apps/structure/view/style.css",
+      "packages/SequenceTranslator/src/apps/structure/view/ui.ts",
+      "packages/SequenceTranslator/src/apps/translator/model/const.ts",
+      "packages/SequenceTranslator/src/apps/translator/model/conversion-utils.ts",
+      "packages/SequenceTranslator/src/apps/translator/model/format-converter.ts",
+      "packages/SequenceTranslator/src/apps/translator/view/const.ts",
+      "packages/SequenceTranslator/src/apps/translator/view/style.css",
+      "packages/SequenceTranslator/src/apps/translator/view/ui.ts",
+      "packages/SequenceTranslator/src/consts.ts",
+      "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/canvas-renderer.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/cell-renderer.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/helm-parser.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/legend-panel.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/structures-panel.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/tooltip.ts",
+      "packages/SequenceTranslator/src/oligo-renderer/types.ts",
+      "packages/SequenceTranslator/src/package.ts",
+      "packages/SequenceTranslator/src/plugins/const.ts",
+      "packages/SequenceTranslator/src/plugins/mermade.ts",
+      "packages/SequenceTranslator/src/polytool/const.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-atomic.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-conversion.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-misc.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-rule-cards.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-synthetic.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-tools-helmmol.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/pt-tools-parse.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/rule-manager.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/rule-reaction-editor.ts",
+      "packages/SequenceTranslator/src/polytool/conversion/style.css",
+      "packages/SequenceTranslator/src/polytool/csv-to-json-monomer-lib-converter.ts",
+      "packages/SequenceTranslator/src/polytool/monomer-lib-handler.ts",
+      "packages/SequenceTranslator/src/polytool/pt-chem-enum-dialog.ts",
+      "packages/SequenceTranslator/src/polytool/pt-chem-enum.ts",
+      "packages/SequenceTranslator/src/polytool/pt-combine-dialog.ts",
+      "packages/SequenceTranslator/src/polytool/pt-convert-editor.ts",
+      "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+      "packages/SequenceTranslator/src/polytool/pt-enumerate-seq-dialog.ts",
+      "packages/SequenceTranslator/src/polytool/pt-enumeration-helm.ts",
+      "packages/SequenceTranslator/src/polytool/pt-placeholders-breadth-input.ts",
+      "packages/SequenceTranslator/src/polytool/pt-placeholders-input.ts",
+      "packages/SequenceTranslator/src/polytool/pt-unrule-dialog.ts",
+      "packages/SequenceTranslator/src/polytool/pt-unrule.ts",
+      "packages/SequenceTranslator/src/polytool/types.ts",
+      "packages/SequenceTranslator/src/polytool/utils.ts",
+      "packages/SequenceTranslator/src/types.ts",
+      "packages/SequenceTranslator/src/utils/cell-renderer-cyclized.ts",
+      "packages/SequenceTranslator/src/utils/cyclized.ts",
+      "packages/SequenceTranslator/src/utils/dimerized.ts",
+      "packages/SequenceTranslator/src/utils/err-info.ts"
+    ],
+    "tests": [
+      "packages/SequenceTranslator/src/package-test.ts",
+      "packages/SequenceTranslator/src/tests/const.ts",
+      "packages/SequenceTranslator/src/tests/files-tests.ts",
+      "packages/SequenceTranslator/src/tests/formats-support.ts",
+      "packages/SequenceTranslator/src/tests/formats-to-helm.ts",
+      "packages/SequenceTranslator/src/tests/helm-to-nucleotides.ts",
+      "packages/SequenceTranslator/src/tests/oligo-renderer-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-chain-from-notation-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-chain-parse-notation-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-convert-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-detectors-custom-notation-test.ts",
+      "packages/SequenceTranslator/src/tests/polytool-enumerate-breadth-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-enumerate-chem-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-enumerate-tests.ts",
+      "packages/SequenceTranslator/src/tests/polytool-unrule-tests.ts",
+      "packages/SequenceTranslator/src/tests/toAtomicLevel-tests.ts",
+      "packages/SequenceTranslator/src/tests/utils/detect-macromolecule-utils.ts",
+      "packages/SequenceTranslator/src/tests/utils/index.ts"
+    ],
+    "scripts": [
+      "packages/SequenceTranslator/scripts/build-monomer-lib.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/SequenceTranslator/CHANGELOG.md",
+      "packages/SequenceTranslator/CLAUDE.md",
+      "packages/SequenceTranslator/CREDITS.md",
+      "packages/SequenceTranslator/README.md",
+      "packages/SequenceTranslator/files/monomers-sample/README.md",
+      "packages/SequenceTranslator/files/tests/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "name": "Oligo Sequence Translation",
+      "description": "Translates oligonucleotide sequences between notation formats accepted by different synthesizers, with format validation and a monomer-weight-code mapping for modifications.",
+      "category": "bio-translation",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:Oligo Translator",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Translator",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:translateOligonucleotideSequence",
+          "kind": "RegisteredFunction",
+          "name": "translateOligonucleotideSequence",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:getTranslationHelper",
+          "kind": "RegisteredFunction",
+          "name": "getTranslationHelper",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:validateSequence",
+          "kind": "RegisteredFunction",
+          "name": "validateSequence",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:getCodeToWeightsMap",
+          "kind": "RegisteredFunction",
+          "name": "getCodeToWeightsMap",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:demoOligoTranslator",
+          "kind": "RegisteredFunction",
+          "name": "demoOligoTranslator",
+          "friendly_name": null,
+          "role": null,
+          "description": "Translate oligonucleotide sequences across various formats accepted by different synthesizers",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Oligo Toolkit",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Toolkit",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+          "kind": "DocPage",
+          "title": "Oligonucleotide Sequence Design",
+          "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design"
+        },
+        {
+          "id": "doc:/packages/SequenceTranslator/readme.md",
+          "kind": "DocPage",
+          "title": "Sequence Translator",
+          "url": "/packages/SequenceTranslator/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+          "kind": "DocPage",
+          "title": "Polytool",
+          "url": "/help/datagrok/solutions/domains/bio/polytool"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/apps/common/model/helpers.ts",
+          "packages/SequenceTranslator/src/apps/common/model/monomer-lib/lib-wrapper.ts",
+          "packages/SequenceTranslator/src/apps/common/view/app-ui-base.ts",
+          "packages/SequenceTranslator/src/apps/common/view/combined-app-ui.ts",
+          "packages/SequenceTranslator/src/apps/common/view/components/colored-input/colored-text-input.ts",
+          "packages/SequenceTranslator/src/apps/common/view/const.ts",
+          "packages/SequenceTranslator/src/apps/common/view/isolated-app-ui.ts",
+          "packages/SequenceTranslator/src/apps/common/view/utils.ts",
+          "packages/SequenceTranslator/src/apps/pattern/view/ui.ts",
+          "packages/SequenceTranslator/src/apps/structure/model/monomer-code-parser.ts",
+          "packages/SequenceTranslator/src/apps/structure/model/sequence-to-molfile.ts",
+          "packages/SequenceTranslator/src/apps/structure/view/ui.ts",
+          "packages/SequenceTranslator/src/apps/translator/view/ui.ts",
+          "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/plugins/const.ts",
+          "packages/SequenceTranslator/src/plugins/mermade.ts",
+          "packages/SequenceTranslator/src/types.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-modification-pattern",
+      "name": "Oligo Modification Pattern Design",
+      "description": "Provides an interactive designer for specifying and visualising chemical modification patterns on oligonucleotide sequences.",
+      "category": "bio-design",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:Oligo Pattern",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Pattern",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:demoOligoPattern",
+          "kind": "RegisteredFunction",
+          "name": "demoOligoPattern",
+          "friendly_name": null,
+          "role": null,
+          "description": "Design a modification pattern for an oligonucleotide sequence",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+          "kind": "DocPage",
+          "title": "Oligonucleotide Sequence Design",
+          "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/apps/common/model/helpers.ts",
+          "packages/SequenceTranslator/src/apps/common/view/const.ts",
+          "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "packages/SequenceTranslator/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-duplex-rendering",
+      "name": "Oligo Duplex Rendering",
+      "description": "Renders siRNA/ASO duplex views in grid cells and property panels, showing modifications, lengths, conjugates, and full sense/antisense molecular structures exportable as SDF.",
+      "category": "bio-rendering",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:oligoNucleotideCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "oligoNucleotideCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": "Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells",
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:Oligo-Nucleotide",
+          "kind": "RegisteredFunction",
+          "name": "Oligo-Nucleotide",
+          "friendly_name": null,
+          "role": "widget",
+          "description": "Modifications, lengths, conjugates and color legend for an OligoNucleotide cell",
+          "tags": [
+            "panel",
+            "widgets"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:Oligo Structures",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Structures",
+          "friendly_name": null,
+          "role": "widget",
+          "description": "Sense and antisense full molecular structures rendered separately",
+          "tags": [
+            "panel",
+            "widgets"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:Oligo Structure",
+          "kind": "RegisteredFunction",
+          "name": "Oligo Structure",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:convertHelmToOligoNucleotide",
+          "kind": "RegisteredFunction",
+          "name": "convertHelmToOligoNucleotide",
+          "friendly_name": null,
+          "role": null,
+          "description": "Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:combineSenseAntisenseToOligoNucleotide",
+          "kind": "RegisteredFunction",
+          "name": "combineSenseAntisenseToOligoNucleotide",
+          "friendly_name": null,
+          "role": null,
+          "description": "Combine separate sense + antisense HELM columns into one OligoNucleotide column",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:harmonizedSequenceNotationProviderConstructor",
+          "kind": "RegisteredFunction",
+          "name": "harmonizedSequenceNotationProviderConstructor",
+          "friendly_name": null,
+          "role": "notationProviderConstructor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:applyNotationProviderForHarmonizedSequence",
+          "kind": "RegisteredFunction",
+          "name": "applyNotationProviderForHarmonizedSequence",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:refineNotationProviderForHarmonizedSequence",
+          "kind": "RegisteredFunction",
+          "name": "refineNotationProviderForHarmonizedSequence",
+          "friendly_name": null,
+          "role": "notationRefiner",
+          "description": null,
+          "tags": [
+            "notationRefiner"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:demoOligoStructure",
+          "kind": "RegisteredFunction",
+          "name": "demoOligoStructure",
+          "friendly_name": null,
+          "role": null,
+          "description": "Visualize duplex and save SDF",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+          "kind": "DocPage",
+          "title": "Oligo Toolkit",
+          "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.2:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/apps/common/model/helpers.ts",
+          "packages/SequenceTranslator/src/apps/common/view/const.ts",
+          "packages/SequenceTranslator/src/consts.ts",
+          "packages/SequenceTranslator/src/demo/demo-st-ui.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/canvas-renderer.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/cell-renderer.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/helm-parser.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/legend-panel.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/structures-panel.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/tooltip.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/types.ts",
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+          "packages/SequenceTranslator/src/utils/cell-renderer-cyclized.ts",
+          "packages/SequenceTranslator/src/utils/cyclized.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:polytool-notation-to-molfile",
+      "name": "PolyTool Notation to Molfile Conversion",
+      "description": "Converts sequences expressed in custom monomer notations to molfile (SDF) chemical structures, with a rule manager for defining synthesis transformations on modified and synthetic monomers.",
+      "category": "bio-cheminformatics",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:polyToolConvert",
+          "kind": "RegisteredFunction",
+          "name": "polyToolConvert",
+          "friendly_name": null,
+          "role": null,
+          "description": "editor for Performing conversion of sequences in custom notation to molfiles",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:getPolyToolConvertEditor",
+          "kind": "RegisteredFunction",
+          "name": "getPolyToolConvertEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:polyToolConvert2",
+          "kind": "RegisteredFunction",
+          "name": "polyToolConvert2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:createMonomerLibraryForPolyTool",
+          "kind": "RegisteredFunction",
+          "name": "createMonomerLibraryForPolyTool",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:polyToolColumnChoice",
+          "kind": "RegisteredFunction",
+          "name": "polyToolColumnChoice",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+          "kind": "DocPage",
+          "title": "Polytool",
+          "url": "/help/datagrok/solutions/domains/bio/polytool"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.14:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.2:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.2:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.9.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.9.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.8.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.8.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.5:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.5:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.1:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.5.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.5.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.5.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.5.1:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.5.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/polytool/const.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-atomic.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-conversion.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-synthetic.ts",
+          "packages/SequenceTranslator/src/polytool/csv-to-json-monomer-lib-converter.ts",
+          "packages/SequenceTranslator/src/polytool/monomer-lib-handler.ts",
+          "packages/SequenceTranslator/src/polytool/pt-convert-editor.ts",
+          "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+          "packages/SequenceTranslator/src/polytool/utils.ts",
+          "packages/SequenceTranslator/src/utils/err-info.ts"
+        ],
+        "tests": [
+          "packages/SequenceTranslator/src/tests/polytool-convert-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:helm-sequence-enumeration",
+      "name": "HELM Sequence Enumeration",
+      "description": "Enumerates HELM sequences by substituting specified positions with selected monomers (including natural amino acids), generating a new table of sequence variants with optional molfile output.",
+      "category": "bio-enumeration",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:HELM Enumerator",
+          "kind": "RegisteredFunction",
+          "name": "HELM Enumerator",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:polyToolEnumerateHelm",
+          "kind": "RegisteredFunction",
+          "name": "polyToolEnumerateHelm",
+          "friendly_name": null,
+          "role": null,
+          "description": "Dialog for configuring enumeration of a HELM sequence",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Polytool Helm Enumerator dialog",
+          "kind": "RegisteredFunction",
+          "name": "Polytool Helm Enumerator dialog",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Enumerate Single HELM Sequence",
+          "kind": "RegisteredFunction",
+          "name": "Enumerate Single HELM Sequence",
+          "friendly_name": null,
+          "role": null,
+          "description": "Enumerate provided HELM sequence on provided positions with provided monomers and generates new table",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Enumerate Single HELM Sequence with natural amino acids",
+          "kind": "RegisteredFunction",
+          "name": "Enumerate Single HELM Sequence with natural amino acids",
+          "friendly_name": null,
+          "role": null,
+          "description": "Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called \"Enumerated\",…",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+          "kind": "DocPage",
+          "title": "Polytool",
+          "url": "/help/datagrok/solutions/domains/bio/polytool"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.14:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.8.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:SequenceTranslator:1.6.4:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/consts.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/polytool/const.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+          "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+          "packages/SequenceTranslator/src/polytool/pt-enumerate-seq-dialog.ts",
+          "packages/SequenceTranslator/src/polytool/pt-enumeration-helm.ts",
+          "packages/SequenceTranslator/src/polytool/pt-placeholders-breadth-input.ts",
+          "packages/SequenceTranslator/src/polytool/pt-placeholders-input.ts",
+          "packages/SequenceTranslator/src/polytool/types.ts",
+          "packages/SequenceTranslator/src/utils/cyclized.ts",
+          "packages/SequenceTranslator/src/utils/err-info.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:chem-enumeration",
+      "name": "Chem Enumeration",
+      "description": "Enumerates molecules using fragment substitutions at specified positions or via reaction enumeration (Zip or Cartesian product of cores and R-group lists), producing a molecule table.",
+      "category": "chem-enumeration",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:Chem Enumerator",
+          "kind": "RegisteredFunction",
+          "name": "Chem Enumerator",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:SequenceTranslator:polyToolEnumerateChem",
+          "kind": "RegisteredFunction",
+          "name": "polyToolEnumerateChem",
+          "friendly_name": null,
+          "role": null,
+          "description": "Perform enumeration of a molecule using different fragments at specified positions",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:chemEnumerateReactions",
+          "kind": "RegisteredFunction",
+          "name": "chemEnumerateReactions",
+          "friendly_name": null,
+          "role": null,
+          "description": "Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)",
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Polytool Chem Enumerator dialog",
+          "kind": "RegisteredFunction",
+          "name": "Polytool Chem Enumerator dialog",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:SequenceTranslator:1.10.14:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/polytool/pt-chem-enum-dialog.ts",
+          "packages/SequenceTranslator/src/utils/err-info.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:SequenceTranslator:sequence-combination",
+      "name": "Sequence Combination",
+      "description": "Combines separate sequence sets or dual strands (sense + antisense) into unified tables or linked oligo representations for downstream analysis.",
+      "category": "bio-design",
+      "members": [
+        {
+          "id": "func:SequenceTranslator:Combine Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Combine Sequences",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:Polytool Oligo Enumerator dialog",
+          "kind": "RegisteredFunction",
+          "name": "Polytool Oligo Enumerator dialog",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:SequenceTranslator:linkStrands",
+          "kind": "RegisteredFunction",
+          "name": "linkStrands",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:SequenceTranslator:1.9.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SequenceTranslator/src/apps/structure/model/mol-transformations.ts",
+          "packages/SequenceTranslator/src/consts.ts",
+          "packages/SequenceTranslator/src/oligo-renderer/converters.ts",
+          "packages/SequenceTranslator/src/package.ts",
+          "packages/SequenceTranslator/src/polytool/const.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-chain.ts",
+          "packages/SequenceTranslator/src/polytool/conversion/pt-rules.ts",
+          "packages/SequenceTranslator/src/polytool/pt-dialog.ts",
+          "packages/SequenceTranslator/src/polytool/pt-enumerate-seq-dialog.ts",
+          "packages/SequenceTranslator/src/polytool/pt-enumeration-helm.ts",
+          "packages/SequenceTranslator/src/polytool/pt-placeholders-breadth-input.ts",
+          "packages/SequenceTranslator/src/polytool/pt-placeholders-input.ts",
+          "packages/SequenceTranslator/src/polytool/types.ts",
+          "packages/SequenceTranslator/src/utils/cyclized.ts",
+          "packages/SequenceTranslator/src/utils/err-info.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

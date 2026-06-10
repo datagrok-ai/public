@@ -1,0 +1,79 @@
+{
+  "package_id": "pkg:Docking",
+  "features": [
+    {
+      "id": "feature:Docking:autodock-vina-batch",
+      "name": "AutoDock Vina Batch Docking",
+      "description": "Docks a column of small-molecule ligands against a protein target using a Docker-backed AutoDock Vina service, returning scored poses for each compound. Exposed as a Hit Triage function so it integrates into Datagrok screening workflows.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Docking:AutoDock",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:Docking:getAutodockResults",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Docking:dockLigandCached",           "weight": 0.9,  "role": "core"},
+        {"id": "func:Docking:isApplicableAutodock",       "weight": 0.8,  "role": "core"},
+        {"id": "func:Docking:getAutoDockService",         "weight": 0.75, "role": "core"},
+        {"id": "func:Docking:getConfigFiles",             "weight": 0.7,  "role": "core"},
+        {"id": "doc:/help/develop/domains/chem/docking",  "weight": 0.95, "role": "doc"},
+        {"id": "doc:/packages/Docking/readme.md",         "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "All share the 'AutoDock'/'autodock' name root, the hitTriage role, and the get→dock→results call chain; changelog entries confirm iterative GPU, error-handling, and caching fixes to this same compute path."
+    },
+    {
+      "id": "feature:Docking:docking-app",
+      "name": "Docking Application",
+      "description": "A full-screen interactive application (accessible via the Bio browse path) that lets users configure targets and ligand sets, launch AutoDock runs, and explore docked poses in an integrated 3-D view.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Docking:Docking",             "weight": 1.0,  "role": "core"},
+        {"id": "func:Docking:autoDockApp",         "weight": 0.9,  "role": "core"},
+        {"id": "func:Docking:Demo Docking",        "weight": 0.8,  "role": "sample"},
+        {"id": "doc:/packages/Docking/credits.md", "weight": 0.6,  "role": "doc"}
+      ],
+      "evidence_summary": "The 'Docking' app function (role=app, browsePath=Bio) and autoDockApp build the same interactive UI; Demo Docking (description: 'pose visualization') and changelog 'Add demo / Demo improvements' entries confirm this as the primary entry-point experience."
+    },
+    {
+      "id": "feature:Docking:molecule-docking-panel",
+      "name": "Molecule Docking Info Panel",
+      "description": "Context-sensitive panel widget that runs AutoDock on the currently selected molecule and renders the docked pose inline, giving users per-compound docking feedback while browsing a table.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Docking:getAutodockSingle",                                      "weight": 1.0,  "role": "core"},
+        {"id": "func:Docking:Biology | AutoDock",                                     "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",   "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "getAutodockSingle (role=widget, inputs: semantic_value) and 'Biology | AutoDock' (role=widgets,panel) share the same panel-registration pattern and together deliver single-molecule docking in the info-pane."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Docking:autodock-vina-batch",   "to": "feature:Docking:docking-app",           "kind": "related"},
+    {"from": "feature:Docking:autodock-vina-batch",   "to": "feature:Docking:molecule-docking-panel", "kind": "related"},
+    {"from": "feature:Docking:docking-app",           "to": "feature:Docking:molecule-docking-panel", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "func:Docking:info",
+    "doc:/help/datagrok/navigation/views/docking",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds"
+  ]
+}
