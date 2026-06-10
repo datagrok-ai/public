@@ -66,7 +66,7 @@ category('Functions: General', () => {
       .call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
     expect(dfList[0].columns instanceof DG.ColumnList, true);
   }, {stressTest: true});
-  
+
   test('def param', async () => {
     await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
   });
@@ -87,19 +87,19 @@ category('Functions: General', () => {
   });
 
   test(`script's package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
-    expect(sin.package.nqName, 'ApiTests');
-  }, {skipReason: 'GROK-15178'});
+    const f: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    expect(f.package.nqName, 'ApiTests');
+  });
 
   test(`package func's package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
-    expect(sin.package.nqName, 'ApiTests');
-  }, {skipReason: 'GROK-15178'});
+    const f: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    expect(f.package.nqName, 'ApiTests');
+  });
 
-  test(`core package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('Sin');
-    expect(sin.package.nqName, 'core');
-  }, {skipReason: 'GROK-15178'});
+  test(`core func has no package`, async () => {
+    const f: DG.Func = await grok.functions.eval('Sin');
+    expect(f.package, null);
+  });
 
   test('getResultViews', async () => {
     const f = grok.functions.register({
