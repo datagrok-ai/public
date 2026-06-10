@@ -151,7 +151,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
       expect(tabTexts, `Spotlight should have a "${tab}" tab`).toContain(tab);
 
     // "Demo of the day" footer link is present.
-    await expect(spotlight.getByText(DEMO_OF_THE_DAY, { exact: false })).toBeVisible();
+    await expect(spotlight.getByText(DEMO_OF_THE_DAY)).toBeVisible();
 
     await expectNoErrors(page, sink);
   });
