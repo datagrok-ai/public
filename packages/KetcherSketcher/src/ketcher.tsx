@@ -14,6 +14,27 @@ import {KETCHER_MOLV2000, KETCHER_MOLV3000} from './constants';
 
 type NotationKey = 'smiles' | 'molblock' | 'molblockV3000' | 'smarts';
 
+// Ketcher's <RulerArea> reads SVGLength.value on a width="100%" canvas before the SVG can
+// resolve relative units (e.g. while the macromolecules editor is still display:none),
+// throwing NotSupportedError ("Could not resolve relative length") mid-render and blanking
+// the editor. Return 0 in only that case — Ketcher already handles a 0-width canvas — while
+// letting any unrelated error propagate. Workaround for upstream epam/ketcher#7568 / #3515;
+// remove once Ketcher stops measuring the hidden canvas during initialization.
+const _svgLenDesc = Object.getOwnPropertyDescriptor(SVGLength.prototype, 'value')!;
+const _svgLenGet = _svgLenDesc.get!;
+Object.defineProperty(SVGLength.prototype, 'value', {
+  ..._svgLenDesc,
+  get() {
+    try {
+      return _svgLenGet.call(this);
+    } catch (e) {
+      if (e instanceof DOMException)
+        return 0;
+      throw e;
+    }
+  },
+});
+
 export class KetcherSketcher extends grok.chem.SketcherBase {
   _smiles: string | null = null;
   _molV2000: string | null = null;
@@ -23,9 +44,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   ketcherHost: HTMLDivElement;
   reactRoot: ReactDOM.Root | null = null;
   updatingMolecule = false;
-  private _editorComponent: React.ReactElement | null = null;
-  private _editorMounted = false;
-  private _resizeObserver: ResizeObserver | null = null;
   private importedMoleculesCounter = 0;
   private _detached = false;
 
@@ -91,43 +109,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
-    this._editorComponent = React.createElement(Editor, props, null);
-    this.root.appendChild(this.ketcherHost);
 
-    // Mounting Ketcher's <Editor> into a zero-sized or detached host causes
-    // <RulerArea> to throw NotSupportedError reading SVGLength.value
-    // ('Could not resolve relative length') because the canvas SVG uses
-    // width/height="100%" and cannot resolve relative units without a sized
-    // containing block. Defer the React mount until the host actually has
-    // non-zero dimensions. (Adopted from PR #3789.)
-    this._mountEditorWhenSized();
-  }
-
-  private _mountEditorWhenSized(): void {
-    if (this._editorMounted) return;
-    const rect = this.ketcherHost.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      this._mountEditor();
-      return;
-    }
-    this._resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          this._mountEditor();
-          break;
-        }
-      }
-    });
-    this._resizeObserver.observe(this.ketcherHost);
-  }
-
-  private _mountEditor(): void {
-    if (this._editorMounted || !this._editorComponent) return;
-    this._editorMounted = true;
-    this._resizeObserver?.disconnect();
-    this._resizeObserver = null;
+    const component = React.createElement(Editor, props, null);
     this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
-    this.reactRoot.render(this._editorComponent);
+    this.reactRoot.render(component);
+
+    this.root.appendChild(this.ketcherHost);
   }
 
   async init(host: grok.chem.Sketcher) {
@@ -272,9 +259,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   detach() {
     this._detached = true;
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
-    this._resizeObserver?.disconnect();
-    this._resizeObserver = null;
-    this._editorComponent = null;
     this.reactRoot?.unmount();
     this.reactRoot = null;
     super.detach();
