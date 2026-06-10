@@ -67,6 +67,18 @@ test.describe('Browse Dashboards (Browse-Dash-*)', () => {
     await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
     await page.waitForTimeout(1500);
 
+    // CI: the demo dashboards aren't deployed on the minimal stack — skip when the first
+    // one isn't searchable in the Projects gallery.
+    {
+      const probe = page.locator('input[placeholder^="Search projects"]').first();
+      await probe.fill('chemical_space_demo');
+      await page.waitForTimeout(2000);
+      const hasDemo = await page.locator('.grok-gallery-grid-item-title', { hasText: /^chemical_space_demo$/i })
+        .first().isVisible().catch(() => false);
+      test.skip(!hasDemo, 'Demo dashboards (chemical_space_demo) not present on this stack');
+      await probe.fill('');
+    }
+
     /**
      * Search for a project and click it, then poll the Context Panel until it
      * actually reflects the selected entity (substring match) — avoids stale

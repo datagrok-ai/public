@@ -23,6 +23,13 @@ test.describe('Browse Databases (Browse-DB-*)', () => {
     await goHome(page);
     await ensureBrowsePanelOpen(page);
     await ensureContextPanelOpen(page);
+    // CI: the demo Postgres connections (CHEMBL, Datagrok) aren't deployed on the minimal
+    // stack, so these connection-level DB tests can't run. Skip when CHEMBL is absent.
+    await expandTreeGroup(page, 'Databases').catch(() => undefined);
+    await expandTreeGroup(page, 'Postgres').catch(() => undefined);
+    const hasChembl = await treeNodeByPath(page, ['Databases', 'Postgres', 'CHEMBL'])
+      .isVisible().catch(() => false);
+    test.skip(!hasChembl, 'CHEMBL demo connection not present on this stack');
   });
 
   test('Browse-DB-01 — Databases section lists connected providers', async ({ page }) => {
