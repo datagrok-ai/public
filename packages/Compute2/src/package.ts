@@ -10,15 +10,17 @@ import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
-import {PipelineConfiguration, CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
-import {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
+import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OptimizerParams, runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
