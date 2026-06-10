@@ -236,9 +236,37 @@ M  END
   test('rgroups.cancel.recovery', async () => {
     const svc = await chemCommonRdKit.getRdKitService();
     await svc.restartWorker(0); // kill + reload worker 0 — what a cancel does
-    await svc.whenWorkersReady();
     const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
     expect(res.rGroups.length > 0, true, 'R-Group works after its worker is restarted');
+  }, {timeout: 60000});
+
+  // A long task runs normally while a second one is launched and cancelled: the first must finish
+  // (not collaterally cancelled), the second must bail without running.
+  test('rgroups.cancel.secondNotFirst', async () => {
+    const col = sampleTable.col('smiles')!;
+    const opA = newChemOpId('rgroupA');
+    const opB = newChemOpId('rgroupB');
+    let bCanceled = false;
+    let bWorkRan = false;
+    // process 1 (A): holds the worker a while, runs a real R-Group, never cancelled
+    const aProm = runCancellableChemOp(opA, () => false, async () => {
+      await new Promise((r) => setTimeout(r, 500));
+      return rGroupsMinilib(col, 'c1ccccc1', false, 0, rGroupOpts);
+    });
+    // process 2 (B): launched while A holds the section, so it queues behind A
+    const bProm = runCancellableChemOp(opB, () => bCanceled, async () => {
+      bWorkRan = true;
+      return rGroupsMinilib(col, 'c1ccccc1', false, 0, rGroupOpts);
+    });
+    // A is now running; cancel the SECOND op the way the UI does
+    await new Promise((r) => setTimeout(r, 100));
+    bCanceled = true;
+    // must be a no-op while B is only queued (not the running op) — A's worker must NOT be restarted
+    await chemCommonRdKit.cancelChemOp(opB, [0]);
+    const [aRes, bRes] = await Promise.all([aProm, bProm]);
+    expect(aRes !== undefined && aRes.rGroups.length > 0, true, 'first (running) op completes — not collaterally cancelled');
+    expect(bRes === undefined, true, 'second (queued) op is cancelled');
+    expect(bWorkRan, false, 'second op bails before running its work');
   }, {timeout: 60000});
 });
 

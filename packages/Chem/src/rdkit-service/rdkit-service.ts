@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
-import {chemBeginCriticalSection, chemEndCriticalSection, Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '../utils/chem-common';
+import {Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
@@ -73,8 +73,6 @@ export class RdKitService {
   async _doParallel<TMap, TReduce>(
     map: (workerIdx: number, workerCount: number) => Promise<TMap>,
     reduce: (_: TMap[]) => TReduce = (_: TMap[]) => [] as TReduce): Promise<TReduce> {
-    // Don't dispatch onto a worker that's still reloading after a cancel-restart.
-    await this.whenWorkersReady();
     const promises = [];
     const workerCount = this.workerCount;
     for (let workerIdx = 0; workerIdx < workerCount; workerIdx++)
@@ -91,8 +89,6 @@ export class RdKitService {
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
     map: (batch: TData[], workerIdx: number, workerCount: number, batchStartIdx: number) => Promise<BatchRes>,
     progressFunc: (progress: number) => void): Promise<IParallelBatchesRes> {
-    // Don't dispatch onto a worker that's still reloading after a cancel-restart.
-    await this.whenWorkersReady();
     let terminateFlag = false;
 
     const setTerminateFlag = () => {terminateFlag = true;};
@@ -487,14 +483,9 @@ export class RdKitService {
   }
 
   async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation, kekulize = false): Promise<string[]> {
-    const t = this;
-    const res =
-      await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
-      (data: string[][]) => {
-        return ([] as string[]).concat(...data);
-      });
-    return res;
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
+    (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]):
@@ -530,9 +521,8 @@ export class RdKitService {
       return {colNames: colNames, smiles: cols};
     }); */
 
-    // No parallelization (worker 0 only). Unlike sibling methods, the critical section is owned by the
-    // caller (runCancellableChemOp) so it spans the whole cancellable operation — don't call this bare.
-    return this.dispatch(0, (w) => w.rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options));
+    // Worker 0 only; caller must hold the critical section (don't call bare).
+    return this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
   }
 
   async invalidateCache(): Promise<void> {
@@ -582,38 +572,18 @@ export class RdKitService {
 
   async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
     // MCS does not support parallelization, so we will use the first worker
-    return withChemCriticalSection(() => this.dispatch(0, (w) => w.mostCommonStructure(molecules, exactAtomSearch, exactBondSearch)));
+    return withChemCriticalSection(() => this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch));
   }
 
-  // A worker index is present while it's being killed + reloaded, so callers can wait it out (whenWorkersReady).
-  // Keyed by index so concurrent restarts of different workers don't clobber each other.
-  private _restartPromises = new Map<number, Promise<void>>();
-
+  // Kills + reloads a worker (e.g. to cancel its in-flight call). Calls to the new worker self-gate on its
+  // moduleInit (see WorkerMessageBusClient), so no separate readiness fence is needed.
   async restartWorker(workerIndex: number) {
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
-    const restart = workerClient.moduleInit(this.webRoot ?? '');
-    this._restartPromises.set(workerIndex, restart);
-    try {
-      await restart;
-    } finally {
-      if (this._restartPromises.get(workerIndex) === restart)
-        this._restartPromises.delete(workerIndex);
-    }
+    await workerClient.moduleInit(this.webRoot ?? '');
   }
 
-  // Resolves once all in-progress restartWorker calls have finished, so callers don't dispatch to a reloading worker.
-  async whenWorkersReady(): Promise<void> {
-    while (this._restartPromises.size)
-      await Promise.all(this._restartPromises.values());
-  }
-
-  // Single-worker dispatch: waits out any in-progress restart, then calls the worker. (Fan-out goes via _doParallel.)
-  private async dispatch<T>(workerIndex: number, fn: (w: RdKitServiceWorkerClient) => Promise<T>): Promise<T> {
-    await this.whenWorkersReady();
-    return fn(this.parallelWorkers[workerIndex]);
-  }
   /**
    * gets MCS for every cluster of molecules
    * @param clusteredMolecules array of arrays of molecules per cluster
@@ -622,8 +592,7 @@ export class RdKitService {
    */
   async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
     const res = new Array<string>(clusteredMolecules.length).fill('');
-    await chemBeginCriticalSection();
-    try {
+    await withChemCriticalSection(async () => {
       const nWorkers = this.parallelWorkers.length;
       const lock = new LockedEntity(0);
       const process = async (workerIndex: number, resolver: Function) => {
@@ -632,10 +601,8 @@ export class RdKitService {
         const index = lock.value;
         lock.value = index + 1;
         lock.release();
-        if (index >= clusteredMolecules.length) {
-          console.log(index);
+        if (index >= clusteredMolecules.length)
           return;
-        }
         const mols = clusteredMolecules[index];
         if (mols.length < 2)
           res[index] = mols.length === 1 ? mols[0] : '';
@@ -646,7 +613,7 @@ export class RdKitService {
             resolver(); // no point in waiting... its probably stuck
           }, 45000); // if it is running for more than 30s, restart the worker
           try {
-            res[index] = await this.dispatch(workerIndex, (w) => w.mostCommonStructure(mols, exactAtomSearch, exactBondSearch));
+            res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
           } catch (e) {
             // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
             console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
@@ -663,9 +630,7 @@ export class RdKitService {
       });
 
       await Promise.all(promises);
-    } finally {
-      chemEndCriticalSection();
-    }
+    });
     return res.map((it) => {
       if (!it)
         return '';
@@ -680,19 +645,14 @@ export class RdKitService {
   }
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
-    await chemBeginCriticalSection();
-    try {
-      const segmentLength = Math.ceil(molfiles.length / this.workerCount);
-      return await this._doParallel(
-        (i: number, _: number) => {
-          return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
-        },
-        (data) => {
-          return data.flat();
-        },
-      );
-    } finally {
-      chemEndCriticalSection();
-    }
+    const segmentLength = Math.ceil(molfiles.length / this.workerCount);
+    return withChemCriticalSection(() => this._doParallel(
+      (i: number, _: number) => {
+        return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
+      },
+      (data) => {
+        return data.flat();
+      },
+    ));
   }
 }

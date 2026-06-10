@@ -88,6 +88,8 @@ export async function cancelChemOp(opId: string, workers: number[]): Promise<voi
   if (!isChemOpRunning(opId))
     return;
   const svc = await getRdKitService();
+  if (!isChemOpRunning(opId)) // re-check after the await: the op may have finished, freeing its worker
+    return;
   await Promise.all(workers.map((w) => svc.restartWorker(w)));
 }
 

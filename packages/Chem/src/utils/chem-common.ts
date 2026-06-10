@@ -62,14 +62,14 @@ const CHEM_TOKEN = 'CHEM_TOKEN';
 // opId of the operation currently holding the section, or null.
 let runningOpId: string | null = null;
 
-// Monotonic counter → unique operation ids (isChemOpRunning matches by id, so ids must not collide).
+// Monotonic counter → unique operation ids.
 let chemOpCounter = 0;
 
 export function newChemOpId(prefix = 'op'): string {
   return `${prefix}-${++chemOpCounter}`;
 }
 
-// True if opId is the running operation, not just queued for the section.
+// True for the op holding the section, not ones merely queued.
 export function isChemOpRunning(opId: string): boolean {
   return runningOpId === opId;
 }
@@ -90,7 +90,7 @@ export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN
 
 export function chemEndCriticalSection(opId?: string, token = CHEM_TOKEN): void {
   // Clear only if this op is the registered holder, so a non-cancellable / different op can't wipe a running op's id.
-  if (runningOpId === opId)
+  if (opId && runningOpId === opId)
     runningOpId = null;
   criticalSectionEnd(token);
 }

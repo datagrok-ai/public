@@ -9,8 +9,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     super(new Worker(new URL('../rdkit.worker', import.meta.url)));
   }
 
-  moduleInit = async (pathToRdkit: string) =>
-    this.call('module::init', [pathToRdkit]);
+  moduleInit = (pathToRdkit: string): Promise<unknown> =>
+    // Set readiness synchronously (ungated) so any call queued during a restart waits for this init.
+    (this._ready = this.call('module::init', [pathToRdkit], false));
 
   /** Creates RDMols for the specified {@link molecules}.
    * They will be used for subsequent substructure search, or calculation of fingerprints.

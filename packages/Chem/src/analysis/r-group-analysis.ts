@@ -244,6 +244,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
   let progressBar: DG.TaskBarProgressIndicator | undefined;
   let cancelSub: Subscription | undefined;
+  let canceled = false;
   try {
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
@@ -258,8 +259,14 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       core = coreSmarts;
     const opId = newChemOpId('rgroup');
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
-    // R-Group runs on worker 0; cancelChemOp restarts it only if this operation is the one running there.
-    cancelSub = progressBar.onCanceled.subscribe(() => cancelChemOp(opId, [0]).catch(() => {}));
+    // Close the bar at once on cancel so it disappears immediately — even if this operation is queued behind
+    // another one that's still holding the worker. cancelChemOp restarts the worker only if THIS operation is
+    // the one actually running there; the operation then unwinds on its own in the background.
+    cancelSub = progressBar.onCanceled.subscribe(() => {
+      canceled = true;
+      cancelChemOp(opId, [0]).catch(() => {});
+      progressBar?.close();
+    });
 
     const rGroupOptions = {
       matchingStrategy: params.rGroupMatchingStrategy,
@@ -268,7 +275,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     };
 
     // Run the R-Group call as a cancellable operation (undefined => cancelled).
-    const rgRes = await runCancellableChemOp(opId, () => !!progressBar?.canceled,
+    const rgRes = await runCancellableChemOp(opId, () => canceled,
       () => rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
     if (rgRes === undefined) return;
     const {rGroups, highlightCol} = rgRes;
@@ -279,10 +286,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
       latestAnalysisCols[col.dataFrame.name] = [];
       for (const resCol of rGroups) {
-        if (progressBar.canceled) return;
+        if (canceled) return;
         const molsArray = new Array<string>(resCol.length);
         for (let i = 0; i < resCol.length; i++) {
-          if (i % 256 === 0 && progressBar.canceled) return;
+          if (canceled) return;
           const molStr = resCol.get(i);
           if (resCol.name !== 'Core') { //R Group columns
             if (!molStr)
@@ -308,7 +315,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             }
           }
         }
-        if (progressBar.canceled) return;
+        if (canceled) return;
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
@@ -324,7 +331,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         col.dataFrame.columns.add(rCol);
         latestAnalysisCols[col.dataFrame.name].push(rColName);
       }
-      if (progressBar.canceled) return;
+      if (canceled) return;
       //create column for r groups highlight
       if (highlightCol) {
         col.dataFrame.columns.add(highlightCol);
@@ -350,7 +357,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
   } catch (e: any) {
-    if (!progressBar?.canceled)
+    if (!canceled)
       grok.shell.error(e);
   } finally {
     cancelSub?.unsubscribe();
