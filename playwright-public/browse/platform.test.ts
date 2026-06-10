@@ -21,8 +21,10 @@ test.describe('Browse Platform (Browse-Platform-*)', () => {
 
     await expandTreeGroup(page, 'Platform');
 
-    // The mandatory subnodes (subset of the full set documented in selectors.md).
-    for (const name of ['Admin', 'Plugins', 'Functions', 'Users', 'Groups', 'Roles']) {
+    // Mandatory subnodes present in every Datlas. "Admin" is deployment-specific (absent on
+    // the minimal CI stack — only Plugins/Credentials/Functions/Users/Groups/Roles show there)
+    // so it is not required here.
+    for (const name of ['Plugins', 'Functions', 'Users', 'Groups', 'Roles']) {
       await expect(
         treeNodeByPath(page, ['Platform', name]),
         `Platform subnode "${name}" should be present`,
