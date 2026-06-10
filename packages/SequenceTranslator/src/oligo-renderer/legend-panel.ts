@@ -21,6 +21,7 @@ import {
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
 import {getMonomerColors} from './monomer-colors';
+import {describeOverhangs} from './alignment';
 
 export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
@@ -51,14 +52,16 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const root = ui.divV([], {style: {fontSize: '12px'}});
 
   // Summary
-  root.appendChild(section('Summary', ui.tableFromMap({
+  const summary: Record<string, string> = {
     'Sense length': `${sLen} nt`,
     'Antisense length': aLen ? `${aLen} nt` : 'single-strand',
     'Modifications used': humanizeModSet(sugarCounts, phosCounts, baseCounts),
     'Conjugates': conjCounts.size ?
       Array.from(conjCounts.entries()).map(([s, n]) => `${resolveConjugate(s).meta.name} ×${n}`).join(', ') :
       '—',
-  })));
+  };
+  if (model.antisense) summary['Duplex'] = describeDuplexAlignment(model);
+  root.appendChild(section('Summary', ui.tableFromMap(summary)));
 
   // Legend — only modifications actually present in this cell.
   // Note: there's no "Copy" section here — the platform already adds a
@@ -70,6 +73,23 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
 
 function bump(map: Map<string, number>, key: string): void {
   map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+/** One-line human summary of how the two strands line up: blunt vs the
+ * overhangs implied by the alignment, plus where the register came from
+ * (explicit HELM pairs vs auto-aligned by complementarity). */
+function describeDuplexAlignment(model: ReturnType<typeof parseHelmDuplex>): string {
+  const o = describeOverhangs(model);
+  if (!o) return '—';
+  const ends: string[] = [];
+  if (o.sense5) ends.push(`5' sense +${o.sense5}`);
+  if (o.anti3) ends.push(`3' antisense +${o.anti3}`);
+  if (o.sense3) ends.push(`3' sense +${o.sense3}`);
+  if (o.anti5) ends.push(`5' antisense +${o.anti5}`);
+  const shape = ends.length ? `overhangs: ${ends.join(', ')}` : 'blunt';
+  const src = o.source === 'explicit' ? 'from HELM pairs' :
+    o.source === 'auto' ? 'auto-aligned' : '';
+  return `${o.paired} bp, ${shape}${src ? ` (${src})` : ''}`;
 }
 
 function humanizeModSet(

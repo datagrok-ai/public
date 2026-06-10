@@ -1,5 +1,13 @@
 # Sequence Translator changelog
 
+## 1.10.25 (2026-06-09)
+
+* OligoNucleotide renderer: strand alignment is now driven by the HELM when present — `strandtype` annotations decide the sense/antisense roles (chains are swapped accordingly) and `$connections$` `pair` entries fix the base-pair register.
+* OligoNucleotide renderer: when no explicit info is present, sense/antisense are auto-aligned by sliding the antisense to the column shift with the most complementary base pairs (natural-analog aware), with terminal overhangs on either end rendered true.
+* Oligo context panel: shows the resolved duplex register (blunt vs overhangs, and whether it came from explicit HELM pairs or auto-alignment).
+* Oligo Structures panel: order the Sense / Antisense panes by the parsed strand roles (honoring `strandtype` swaps) rather than raw chain order, so a flipped HELM (sense = RNA2) no longer mislabels the strands.
+* Demo data (`files/samples/sirna-demo.csv`): added rows with 3' overhangs and rows carrying explicit HELM pair / strandtype info.
+
 ## 1.10.24 (2026-05-19)
 
 * Removed redundant demos

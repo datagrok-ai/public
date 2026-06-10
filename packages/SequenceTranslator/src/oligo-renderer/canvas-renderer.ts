@@ -31,7 +31,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {
-  BASE_COLORS, FALLBACK_COLOR,
+  BASE_COLORS, DuplexAlignment, FALLBACK_COLOR,
   contrastTextColor,
   displayBase, isCanonicalBase,
   ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
@@ -39,6 +39,7 @@ import {
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
 import {getMonomerColors} from './monomer-colors';
+import {columnOffsets, reduceToCanonicalBase, resolveDuplexAlignment} from './alignment';
 
 export interface RenderOpts {
   /** Show base letter inside chip. False at very small sizes. */
@@ -95,7 +96,17 @@ export interface DuplexLayout {
   antiLinks: LinkagePos[];
   /** Whether antisense was rendered in reversed (3'→5') order. */
   antiReversed: boolean;
+  /** Column offset of the antisense display relative to sense (see
+   * `DuplexAlignment.shift`). 0 for a blunt / single-strand layout. */
+  shift: number;
+  /** Where the shift came from (explicit HELM pairs, auto-aligner, or none). */
+  shiftSource: DuplexAlignment['source'];
 }
+
+/** The size / position fields of `DuplexLayout` available before chips and
+ * linkages are placed (passed down to `placeStrand`). */
+export type LayoutBase = Omit<DuplexLayout,
+  'senseChips' | 'antiChips' | 'senseLinks' | 'antiLinks' | 'antiReversed' | 'shift' | 'shiftSource'>;
 
 export interface ChipPos {
   x: number;
@@ -104,6 +115,9 @@ export interface ChipPos {
   /** Original 0-based index in the data strand (regardless of display order). */
   origIdx: number;
   strand: StrandSide;
+  /** Pairing column index (shared coordinate across strands). `-1` for
+   * conjugates / non-nucleotides. Used to align base pairs across overhangs. */
+  col: number;
 }
 
 export interface LinkagePos {
@@ -130,6 +144,13 @@ export function computeLayout(
   const strandsCount = hasAnti ? 2 : 1;
   const maxLen = Math.max(1, senseLen, antiLen);
 
+  // Strand alignment: explicit HELM pairs win; otherwise auto-align by
+  // complementarity. The shift is the antisense display's column offset
+  // relative to sense (overhangs ride on the column-offset difference). It is
+  // only meaningful when antisense is rendered anti-parallel (pair-aligned).
+  const alignment = resolveDuplexAlignment(model);
+  const shift = (hasAnti && o.pairAlign) ? alignment.shift : 0;
+
   // Height budget caps chipW from above (chip aspect ratio is fixed). The
   // vertical pad reserves breathing room above/below the apex zones so the
   // linkage marks never touch the cell border.
@@ -140,14 +161,11 @@ export function computeLayout(
   const heightCap = hChipH / ASPECT_H_OVER_W;
 
   // Pick chipW as the LARGEST value in [MIN_CHIP_W, heightCap] for which the
-  // *uniform* layout fits. We size based on uniform (every nucleotide at
-  // chipW, conjugates at their pill widths) so the canonical single-char
-  // chips stay as big as the cell allows. The body below then decides per
-  // cell whether the widened multi-char labels also fit at this chipW —
-  // if not, those few chips are ellipsized rather than shrinking every chip
-  // on the strand. Show-everything priority: shortening one long label is
-  // preferred over making the whole row smaller. If even uniform doesn't
-  // fit at MIN_CHIP_W, we fall back to a text-only summary.
+  // *uniform* layout (including any alignment shift / overhang columns) fits.
+  // We size based on uniform so canonical single-char chips stay as big as the
+  // cell allows; the body below then decides per cell whether the widened
+  // multi-char labels also fit at this chipW. If even uniform doesn't fit at
+  // MIN_CHIP_W, we fall back to a text-only summary.
   let chipW: number;
   let textOnlyFallback = false;
   // `maxLen` is read so this remains a no-op binding when callers reference it later.
@@ -155,8 +173,8 @@ export function computeLayout(
   if (heightCap < MIN_CHIP_W) {
     chipW = MIN_CHIP_W;
     textOnlyFallback = true;
-  } else if (fitsAtChipW(MIN_CHIP_W, cellW, model, o, 'uniform')) {
-    chipW = findMaxChipW(cellW, model, o, 'uniform', MIN_CHIP_W, heightCap);
+  } else if (computePlacement(MIN_CHIP_W, cellW, model, o, shift, 'uniform').fits) {
+    chipW = findMaxChipW(cellW, model, o, shift, 'uniform', MIN_CHIP_W, heightCap);
   } else {
     chipW = MIN_CHIP_W;
     textOnlyFallback = true;
@@ -175,9 +193,8 @@ export function computeLayout(
   const senseY = blockTop + apexH;
   const antiY = hasAnti ? senseY + chipH + strandGap : -1;
   const seqX = PAD + LABEL_W;
-  const seqEndX = cellW - PAD;
 
-  const layoutBase: Omit<DuplexLayout, 'senseChips' | 'antiChips' | 'senseLinks' | 'antiLinks' | 'antiReversed'> = {
+  const layoutBase: LayoutBase = {
     chipW, chipH, chipGap, strandGap, fontSize,
     labelW: LABEL_W, padding: PAD,
     senseY, antiY, seqX, apexH, textOnlyFallback,
@@ -187,45 +204,29 @@ export function computeLayout(
     return {
       ...layoutBase,
       senseChips: [], antiChips: [], senseLinks: [], antiLinks: [],
-      antiReversed: false,
+      antiReversed: false, shift: 0, shiftSource: alignment.source,
     };
   }
 
-  // Conjugates on either strand's leftmost end push back the start of
-  // *that* strand's nucleotide region. To keep base pairs aligned across
-  // strands, we measure the leading-conjugate width of each strand (in
-  // its display order — antisense is reversed when pair-aligned) and
-  // shift each strand right by the difference, so the first NUCLEOTIDE
-  // of each strand sits at the same X coordinate.
   const antiReversed = hasAnti && o.pairAlign;
-  const senseLeadW = leadingConjugateWidth(model.sense.monomers, false, chipW, fontSize, chipGap);
-  const antiLeadW = hasAnti ?
-    leadingConjugateWidth(model.antisense!.monomers, antiReversed, chipW, fontSize, chipGap) : 0;
-  const alignAt = Math.max(senseLeadW, antiLeadW);
-  const senseStartX = seqX + (alignAt - senseLeadW);
-  const antiStartX = seqX + (alignAt - antiLeadW);
 
-  // Per-chip widths: nucleotides with multi-char bases (e.g. `cpm6A`) want a
-  // wider chip so the full symbol fits. We try the wide layout first; if the
-  // total doesn't fit in the cell, we fall back to uniform chipW + ellipsis.
-  // For pair alignment, columns sync across strands (pair-aligned column
-  // takes the max width of the two strands' chips at that pair-index).
-  const senseDisplay = model.sense.monomers;
-  const antiDisplay = hasAnti ?
-    (antiReversed ? model.antisense!.monomers.slice().reverse() : model.antisense!.monomers) :
-    [];
-  let widths = computePairSyncedWidths(senseDisplay, antiDisplay, chipW, fontSize);
-  // Falls back to uniform chipW if either strand's chips don't fit.
-  const widthBudget = seqEndX - (seqX + alignAt);
-  if (!fitsInBudget(widths.sense, senseLeadW, chipGap, widthBudget) ||
-      !fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget))
-    widths = uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
-
+  // Final placement. A non-zero shift forces uniform widths so the integer
+  // column offsets land exactly on the chip grid (overhangs stay column-true);
+  // a blunt duplex tries widened widths first and falls back to uniform when
+  // the multi-char labels would overflow the cell.
+  let mode: 'widened' | 'uniform' = shift !== 0 ? 'uniform' : 'widened';
+  let place = computePlacement(chipW, cellW, model, o, shift, mode);
+  if (mode === 'widened' && !place.fits) {
+    mode = 'uniform';
+    place = computePlacement(chipW, cellW, model, o, shift, 'uniform');
+  }
 
   const senseRes = placeStrand(
-    model.sense, false, senseY, senseStartX, seqEndX, layoutBase, 'sense', widths.sense);
+    model.sense, false, senseY, place.senseStartX, place.seqEndX, layoutBase, 'sense',
+    place.senseWidths, place.senseColOffset);
   const antiRes = hasAnti ? placeStrand(
-    model.antisense!, antiReversed, antiY, antiStartX, seqEndX, layoutBase, 'antisense', widths.anti,
+    model.antisense!, antiReversed, antiY, place.antiStartX, place.seqEndX, layoutBase, 'antisense',
+    place.antiWidths, place.antiColOffset,
   ) : {chips: [], links: []};
 
   return {
@@ -235,30 +236,108 @@ export function computeLayout(
     senseLinks: senseRes.links,
     antiLinks: antiRes.links,
     antiReversed,
+    shift,
+    shiftSource: alignment.source,
   };
+}
+
+interface Placement {
+  fits: boolean;
+  senseStartX: number;
+  antiStartX: number;
+  seqEndX: number;
+  senseWidths: number[];
+  antiWidths: number[];
+  senseColOffset: number;
+  antiColOffset: number;
+}
+
+/** Compute strand start-X coordinates, per-chip widths, and whether everything
+ * fits horizontally, for a candidate `chipW`, alignment `shift`, and width
+ * `mode`. Shared by the chipW binary search and the final layout so sizing and
+ * placement never diverge.
+ *
+ * Geometry: both strands' nucleotides sit on a shared column grid of pitch
+ * `colW = chipW + chipGap`. Sense nucleotide `k` is at column `k + senseColOff`;
+ * antisense display nucleotide `d` at `d + antiColOff`. The leftmost element
+ * (conjugate or overhang nucleotide) is pinned to `seqX`. With `shift = 0` and
+ * no offsets this reduces exactly to "align both strands' first nucleotides". */
+function computePlacement(
+  chipW: number, cellW: number, model: ParsedDuplex, opts: RenderOpts,
+  shift: number, mode: 'widened' | 'uniform',
+): Placement {
+  const fontSize = Math.max(7, Math.min(13, chipW * 0.62));
+  const chipGap = Math.max(3, chipW * CHIP_GAP_RATIO);
+  const colW = chipW + chipGap;
+  const hasAnti = !!model.antisense && model.antisense.monomers.length > 0;
+  const antiReversed = hasAnti && opts.pairAlign;
+  const {sense: senseColOffset, anti: antiColOffset} = columnOffsets(hasAnti ? shift : 0);
+
+  const senseDisplay = model.sense.monomers;
+  const antiDisplay = hasAnti ?
+    (antiReversed ? model.antisense!.monomers.slice().reverse() : model.antisense!.monomers) :
+    [];
+
+  const senseLeadW = leadingConjugateWidth(model.sense.monomers, false, chipW, fontSize, chipGap);
+  const antiLeadW = hasAnti ?
+    leadingConjugateWidth(model.antisense!.monomers, antiReversed, chipW, fontSize, chipGap) : 0;
+
+  const widths = mode === 'widened' ?
+    computePairSyncedWidths(senseDisplay, antiDisplay, chipW, fontSize) :
+    uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
+
+  const seqX = PAD + LABEL_W;
+  const seqEndX = cellW - PAD;
+  // Pin the strand sticking out furthest left to seqX.
+  const N0 = seqX + Math.max(senseLeadW - senseColOffset * colW, antiLeadW - antiColOffset * colW);
+  const senseStartX = N0 + senseColOffset * colW - senseLeadW;
+  const antiStartX = N0 + antiColOffset * colW - antiLeadW;
+
+  const senseRightX = senseStartX + spanWidth(widths.sense, chipGap);
+  const antiRightX = hasAnti ? antiStartX + spanWidth(widths.anti, chipGap) : senseStartX;
+  const fits = seqEndX - seqX >= 0 && Math.max(senseRightX, antiRightX) <= seqEndX;
+
+  return {
+    fits, senseStartX, antiStartX, seqEndX,
+    senseWidths: widths.sense, antiWidths: widths.anti,
+    senseColOffset, antiColOffset,
+  };
+}
+
+/** Total horizontal span of a per-chip widths array (chips + inter-chip gaps). */
+function spanWidth(widths: number[], chipGap: number): number {
+  if (widths.length === 0) return 0;
+  let total = 0;
+  for (const w of widths) total += w;
+  return total + (widths.length - 1) * chipGap;
 }
 
 /** Place chips for one strand, optionally reversed. Returns chip and linkage positions.
  * `chipWidths` is per-display-monomer (i.e. matches the order of `strand.monomers` after
- * reversal if `reverse=true`). */
+ * reversal if `reverse=true`). `colOffset` is the nucleotide column index of this strand's
+ * first nucleotide on the shared duplex grid. */
 function placeStrand(
   strand: ParsedStrand, reverse: boolean, y: number, startX: number, endX: number,
-  layout: Omit<DuplexLayout, 'senseChips' | 'antiChips' | 'senseLinks' | 'antiLinks' | 'antiReversed'>,
+  layout: LayoutBase,
   side: StrandSide,
   chipWidths: number[],
+  colOffset: number,
 ): { chips: ChipPos[]; links: LinkagePos[] } {
   const monomers = reverse ? strand.monomers.slice().reverse() : strand.monomers;
   const chips: ChipPos[] = [];
   const links: LinkagePos[] = [];
   let x = startX;
+  let nucOrdinal = 0;
 
   for (let i = 0; i < monomers.length; i++) {
     const m = monomers[i];
     const w = chipWidths[i] ?? layout.chipW;
 
-    if (x + w > endX) break; // truncate at cell edge
+    if (x + w > endX + 0.5) break; // truncate at cell edge (0.5px float slack)
 
-    chips.push({x, w, monomer: m, origIdx: m.position, strand: side});
+    const col = m.kind === 'nucleotide' ? colOffset + nucOrdinal : -1;
+    if (m.kind === 'nucleotide') nucOrdinal++;
+    chips.push({x, w, monomer: m, origIdx: m.position, strand: side, col});
 
     // Linkage in the gap to the right of display index i (between chips i
     // and i+1). The `phosphate` field on a nucleotide always means "what
@@ -362,53 +441,15 @@ function uniformWidths(
   return {sense: senseDisplay.map(map), anti: antiDisplay.map(map)};
 }
 
-/** Whether the per-chip widths array fits in `budget` (which is measured from
- * the alignment point, i.e. `seqEndX − (seqX + alignAt)`).
- *
- * `widths` already includes any leading conjugates' pill widths at the front.
- * Those leading conjugates occupy the SHIFT area to the LEFT of the alignment
- * point (between `seqX` and `seqX + alignAt`) — so their cost against the
- * post-alignment `budget` is zero. Equivalently: this strand's chips start at
- * `seqX + (alignAt − leadW)` and span `chipsTotal`, fitting when
- *   `chipsTotal ≤ seqEndX − (seqX + alignAt − leadW) = budget + leadW`. */
-function fitsInBudget(widths: number[], leadW: number, chipGap: number, budget: number): boolean {
-  let total = 0;
-  for (let i = 0; i < widths.length; i++) {
-    total += widths[i];
-    if (i < widths.length - 1) total += chipGap;
-  }
-  return total <= budget + leadW;
-}
-
-/** True iff a layout at this `chipW` (using either widened or uniform widths)
- * places every chip inside the cell's horizontal budget. Same math as the
- * main `computeLayout` body, just packaged so the binary search can probe. */
+/** True iff a layout at this `chipW` (using either widened or uniform widths,
+ * including any alignment shift) places every chip inside the cell. Thin
+ * wrapper over `computePlacement` so the binary search and the final layout
+ * agree exactly. */
 function fitsAtChipW(
   chipW: number, cellW: number, model: ParsedDuplex, opts: RenderOpts,
-  mode: 'widened' | 'uniform',
+  shift: number, mode: 'widened' | 'uniform',
 ): boolean {
-  const fontSize = Math.max(7, Math.min(13, chipW * 0.62));
-  const chipGap = Math.max(3, chipW * CHIP_GAP_RATIO);
-  const hasAnti = !!model.antisense && model.antisense.monomers.length > 0;
-  const antiReversed = hasAnti && opts.pairAlign;
-
-  const senseLeadW = leadingConjugateWidth(model.sense.monomers, false, chipW, fontSize, chipGap);
-  const antiLeadW = hasAnti ?
-    leadingConjugateWidth(model.antisense!.monomers, antiReversed, chipW, fontSize, chipGap) : 0;
-  const alignAt = Math.max(senseLeadW, antiLeadW);
-
-  const senseDisplay = model.sense.monomers;
-  const antiDisplay = hasAnti ?
-    (antiReversed ? model.antisense!.monomers.slice().reverse() : model.antisense!.monomers) :
-    [];
-  const widths = mode === 'widened' ?
-    computePairSyncedWidths(senseDisplay, antiDisplay, chipW, fontSize) :
-    uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
-
-  const widthBudget = (cellW - PAD) - ((PAD + LABEL_W) + alignAt);
-  if (widthBudget < 0) return false;
-  return fitsInBudget(widths.sense, senseLeadW, chipGap, widthBudget) &&
-         fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget);
+  return computePlacement(chipW, cellW, model, opts, shift, mode).fits;
 }
 
 /** Binary-search the largest chipW ∈ [lo, hi] where `fitsAtChipW(..., mode)`
@@ -417,12 +458,12 @@ function fitsAtChipW(
  * sub-pixel resolution in a handful of iterations. */
 function findMaxChipW(
   cellW: number, model: ParsedDuplex, opts: RenderOpts,
-  mode: 'widened' | 'uniform', lo: number, hi: number,
+  shift: number, mode: 'widened' | 'uniform', lo: number, hi: number,
 ): number {
-  if (fitsAtChipW(hi, cellW, model, opts, mode)) return hi;
+  if (fitsAtChipW(hi, cellW, model, opts, shift, mode)) return hi;
   while (hi - lo > 0.25) {
     const mid = (lo + hi) / 2;
-    if (fitsAtChipW(mid, cellW, model, opts, mode)) lo = mid;
+    if (fitsAtChipW(mid, cellW, model, opts, shift, mode)) lo = mid;
     else hi = mid;
   }
   return lo;
@@ -651,22 +692,20 @@ const PAIR_LINE_W = 1.1;
 const MISMATCH_LINE_W = 1;
 
 function drawBasePairings(g: CanvasRenderingContext2D, layout: DuplexLayout): void {
-  const senseStart = layout.senseChips.findIndex((c) => c.monomer.kind === 'nucleotide');
-  const antiStart = layout.antiChips.findIndex((c) => c.monomer.kind === 'nucleotide');
-  if (senseStart < 0 || antiStart < 0) return;
-  const pairLen = Math.min(
-    layout.senseChips.length - senseStart,
-    layout.antiChips.length - antiStart,
-  );
-
   const yTop = layout.senseY + layout.chipH;
   const yBot = layout.antiY;
   if (yBot <= yTop) return;
 
-  for (let i = 0; i < pairLen; i++) {
-    const sc = layout.senseChips[senseStart + i];
-    const ac = layout.antiChips[antiStart + i];
-    if (sc.monomer.kind !== 'nucleotide' || ac.monomer.kind !== 'nucleotide') continue;
+  // Pair by shared column index, so overhang columns (present on only one
+  // strand) simply draw no mark, and a shift lines partners up correctly.
+  const antiByCol = new Map<number, ChipPos>();
+  for (const c of layout.antiChips)
+    if (c.monomer.kind === 'nucleotide' && c.col >= 0) antiByCol.set(c.col, c);
+
+  for (const sc of layout.senseChips) {
+    if (sc.monomer.kind !== 'nucleotide' || sc.col < 0) continue;
+    const ac = antiByCol.get(sc.col);
+    if (!ac) continue;
     const kind = basePairKind(
       (sc.monomer as ParsedNucleotide).base,
       (ac.monomer as ParsedNucleotide).base,
@@ -720,18 +759,9 @@ function drawPairingMark(
   g.restore();
 }
 
-/** Reduce any base to its canonical A/C/G/U/T letter for pair determination.
- * Returns null when the base is missing or has no resolvable natural analog. */
-function canonicalizeBaseForPair(b: string | null): string | null {
-  if (!b) return null;
-  if (isCanonicalBase(b)) return b;
-  const analog = getNaturalAnalog(b);
-  return analog && isCanonicalBase(analog) ? analog : null;
-}
-
 function basePairKind(senseBase: string | null, antiBase: string | null): PairKind {
-  const s = canonicalizeBaseForPair(senseBase);
-  const a = canonicalizeBaseForPair(antiBase);
+  const s = reduceToCanonicalBase(senseBase);
+  const a = reduceToCanonicalBase(antiBase);
   if (!s || !a) return 'mismatch';
   if ((s === 'G' && a === 'C') || (s === 'C' && a === 'G')) return 'GC';
   if ((s === 'A' && (a === 'U' || a === 'T')) ||

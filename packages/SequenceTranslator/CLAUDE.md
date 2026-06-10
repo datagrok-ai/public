@@ -52,9 +52,10 @@ src/
 │   └── structure/                # Molecular structure app
 │
 ├── oligo-renderer/               # OligoNucleotide semType, cell renderer, panels, converters
-│   ├── types.ts                  # Constants, parsed-model types, modification dictionary
-│   ├── helm-parser.ts            # Lightweight RNA/DNA HELM duplex parser + canonicalizer
-│   ├── canvas-renderer.ts        # Pure-fn canvas drawing of duplex, hit-testing
+│   ├── types.ts                  # Constants, parsed-model types, modification dictionary, DuplexAlignment
+│   ├── helm-parser.ts            # Lightweight RNA/DNA HELM duplex parser + canonicalizer + pair/strandtype parsing
+│   ├── alignment.ts              # Sense/antisense register: explicit HELM pairs or auto-align by complementarity
+│   ├── canvas-renderer.ts        # Pure-fn canvas drawing of duplex (shift-aware overhangs), hit-testing
 │   ├── cell-renderer.ts          # OligoNucleotideCellRenderer (extends DG.GridCellRenderer)
 │   ├── tooltip.ts                # Hover tooltip with cached RDKit structures
 │   ├── legend-panel.ts           # Per-cell summary + filtered color legend
@@ -209,12 +210,13 @@ A self-contained renderer + panels + converters for siRNA/ASO duplex HELM cells.
 | File | Purpose |
 |---|---|
 | `types.ts` | `OLIGO_SEM_TYPE` / `OLIGO_UNITS` constants, `ParsedNucleotide` / `ParsedConjugate` / `ParsedStrand` / `ParsedDuplex` interfaces, modification dictionary (`SUGAR_MODS`, `PHOSPHATE_MODS`, `CONJUGATE_MODS`), HELMCore-canonical alias maps (`SUGAR_ALIASES`, `PHOSPHATE_ALIASES`), color resolvers, hash-color fallback for unknowns |
-| `helm-parser.ts` | `parseHelmDuplex(helm)` returns `{sense, antisense, raw}`. Parses `RNA1{...}\|RNA2{...}$$$$` shape with bracketed/unbracketed monomers and standalone-conjugate units. Also `canonicalizeHelm()` / `canonicalizeChainBody()` for rewriting aliased symbols (`mR`, `fR`, `LR`, `sP`, …) to HELMCore canonical (`m`, `fl2r`, `lna`, `sp`) before sending HELM to Bio's library-driven pipelines. Custom (not bio's `HelmHelper.parse`) for hot-path performance |
-| `canvas-renderer.ts` | Pure functions: `computeLayout(cellW, cellH, model, opts)`, `drawDuplex()`, `hitTest()`. Variable chip widths (conjugates take their own width), antisense reversal for pair-alignment, leading-conjugate shift on each strand, sugar-mod stripe at chip bottom, PS bar in inter-chip gap (any non-canonical phosphate gets its own colored bar with deterministic color) |
+| `helm-parser.ts` | `parseHelmDuplex(helm)` returns `{sense, antisense, raw, pairs?, strandTypes?, alignment?}`. Parses `RNA1{...}\|RNA2{...}$conn$$ann$V2.0` shape with bracketed/unbracketed monomers and standalone-conjugate units. Reads the `$connections$` `pair` section (`parseHelmConnections`) and extended `strandtype` annotations (`parseHelmAnnotations`): swaps chains so `sense` is the real sense strand, maps HELM monomer positions → nucleotide indices, and derives the explicit alignment shift. Also `canonicalizeHelm()` / `canonicalizeChainBody()` for rewriting aliased symbols (`mR`, `fR`, `LR`, `sP`, …) to HELMCore canonical. Custom (not bio's `HelmHelper.parse`) for hot-path performance |
+| `alignment.ts` | Resolves the sense/antisense display register. `resolveDuplexAlignment(model)` returns `{shift, source}` — explicit HELM pairs win; else `computeAutoShift` slides the reversed antisense across sense and picks the column shift with the most Watson-Crick complementary pairs (`bestComplementaryShift`), reducing custom bases via natural analog. A fraction/min-count/gain guard keeps weakly-complementary inputs blunt. `columnOffsets(shift)`, `describeOverhangs(model)` (5'/3' overhang lengths per strand) for layout + panels |
+| `canvas-renderer.ts` | Pure functions: `computeLayout(cellW, cellH, model, opts)`, `drawDuplex()`, `hitTest()`. Lays sense/antisense on a shared nucleotide column grid; the alignment `shift` offsets one strand so **overhangs on either end render true** (non-zero shift forces uniform chip widths so columns stay exact). `ChipPos.col` is the shared column index; base pairings drawn per shared column (overhang columns simply unpaired). Variable chip widths (conjugates), antisense reversal, leading-conjugate shift, sugar-mod stripe, PS apex in inter-chip gap |
 | `cell-renderer.ts` | `OligoNucleotideCellRenderer extends DG.GridCellRenderer`. Per-value parse cache, per-cell layout cache keyed by `colName@col.version::rowIdx` (column-version invalidates on edits), `onMouseMove` resolves hover via `hitTest` → tooltip |
 | `tooltip.ts` | `showMonomerTooltip(hit, x, y)`. Builds details synchronously, async-loads sugar / base / 3'-linkage RDKit structures from the **central Bio monomer library** (`getMonomerLibHelper().getMonomerLib()`), with alias resolution and structure caching (`Map<kind:canonicalSymbol, HTMLElement>`, reused across hovers) |
 | `legend-panel.ts` | `buildOligoPanel(value)` widget — per-cell sense/antisense lengths, modification counts (collapsed by canonical symbol), conjugates, color legend filtered to mods actually present in the cell |
-| `structures-panel.ts` | `buildOligoStructuresPanel(value)` widget — splits duplex HELM into two single-strand HELMs, runs `canonicalizeHelm` on each, places into a temp Macromolecule DataFrame, wraps each row's cell as `DG.SemanticValue.fromTableCell(cell)` and forwards to `Bio:toAtomicLevelPanel` inside lazy `ui.accordion()` panes ("Sense" / "Antisense") |
+| `structures-panel.ts` | `buildOligoStructuresPanel(value)` widget — `splitDuplexToStrandStructures(helm)` splits the duplex into per-strand standalone HELMs **ordered + labeled by the parsed model** (so `strandtype` swaps put the real sense strand in the "Sense" pane, not just chain-0), runs `canonicalizeHelm` on each, places into a temp Macromolecule DataFrame, wraps each row's cell as `DG.SemanticValue.fromTableCell(cell)` and forwards to `Bio:toAtomicLevelPanel` inside lazy `ui.accordion()` panes ("Sense" / "Antisense") |
 | `converters.ts` | `tagAsOligoNucleotide(col)`, `convertHelmColumnToOligo(table, helmCol)` (creates a tagged clone), `combineSenseAntisenseToOligo(table, senseCol, antiCol)` (renumbers each chain to RNA1{…}, joins with `\|`) |
 
 ### `apps/common/model/` — Core Domain Model
@@ -324,7 +326,8 @@ Test entry: `package-test.ts` → imports each test file under `src/tests/`. Tes
 | `polytool-enumerate-chem-tests.ts` | PolyTool: Enumerate | Chem enumeration |
 | `polytool-unrule-tests.ts` | PolyTool: Unrule | HELM → harmonized notation |
 | `toAtomicLevel-tests.ts` | toAtomicLevel | Synthetic monomer generation via RDKit |
-| `oligo-renderer-tests.ts` | OligoRenderer: parser / dictionary / layout / hit testing / drawing smoke | HELM parse, alias resolution, layout invariants, hit-test correctness, smoke drawing |
+| `oligo-renderer-tests.ts` | OligoRenderer: parser / dictionary / layout / hit testing / drawing smoke / HELM connections & strand types / auto-alignment / alignment layout / complex HELMs | HELM parse, alias resolution, layout invariants, hit-test correctness, smoke drawing, explicit pair + strandtype parsing & strand swap, complementary auto-shift + overhang detection, shift-aware layout / column pairing, complex real-world duplexes (both-end conjugates, custom bases, ± / large / asymmetric shifts) |
+| `oligo-fixtures.ts` | — | Shared HELM fixtures for the OligoNucleotide test suites (blunt, explicit-pair, overhang, swap, and complex duplexes) |
 | `const.ts` | — | Test data: `formatsToHelm`, `helmToNucleotides` |
 | `utils/` | — | Test helpers (`detect-macromolecule-utils.ts`, `index.ts`) |
 
@@ -348,7 +351,7 @@ files/
 │   ├── cyclized.csv
 │   ├── cyclized_MSA.csv
 │   ├── bulk-translation-axolabs.csv
-│   └── sirna-demo.csv             # 30+ siRNA / ASO duplexes covering 2'-OMe, 2'-F, GalNAc-L3, Chol, LNA/MOE gapmers, fallback cases — generated by prototypes/gen-sirna-demo.mjs
+│   └── sirna-demo.csv             # 40+ siRNA / ASO duplexes: 2'-OMe, 2'-F, GalNAc-L3, Chol, LNA/MOE gapmers, plus 3' overhangs (auto-aligned) and rows with explicit HELM pair/strandtype info. Overhang/explicit rows patched in by prototypes/patch-sirna-demo.mjs
 └── tests/
     ├── axolabs1.csv
     ├── polytool-reaction-lib.json
@@ -363,14 +366,16 @@ files/
 
 ## `prototypes/` — Off-Tree Dev Tooling
 
-Helper scripts and a standalone HTML prototype for the OligoNucleotide subsystem. These are **not bundled** in the published package and do not register Datagrok functions.
+Helper / diagnostic scripts for the OligoNucleotide subsystem. Pure Node (no deps), **not bundled** in the published package, register no Datagrok functions. Run with `node prototypes/<file>`.
 
 | File | Purpose |
 |---|---|
-| `gen-sirna-demo.mjs` | Generates `files/samples/sirna-demo.csv` — 30+ siRNA / ASO duplexes, all conjugate placements (5'-only, 3'-only, both ends, AS-only, dual-strand) |
-| `gen-oligo-conjugates.mjs` | Fetches molfiles + canonical SMILES from PubChem, writes `packages/Bio/files/monomer-libraries/oligo-conjugates.json` (CHEM-type entries: GalNAc, L3, Chol, Bio, Toc, Pal, DBCO) |
-| `validate-oligo-conjugates.mjs` | Validates the generated `oligo-conjugates.json` against Bio's HELM monomer JSON schema using the same Ajv2020 + ajv-errors config as `MonomerLibFileValidator` |
-| `sirna-renderer-prototype.html` | Standalone HTML/CSS/JS prototype of the duplex cell renderer — reference visual against which the production canvas renderer was tuned |
+| `patch-sirna-demo.mjs` | Idempotently patches `files/samples/sirna-demo.csv`: adds 3' dTdT overhangs to a couple of existing blunt duplexes (auto-aligned) and appends rows with overhangs + explicit HELM `$connections$` pair info / `strandtype` annotations. Quotes fields containing commas (HELM connection sections) |
+| `verify-alignment.mjs` | Parses every duplex in the demo CSV, resolves the alignment, and prints an ASCII sense/pairing/antisense duplex so shifts + overhangs can be eyeballed |
+| `scan-test-fixtures.mjs` | Reports the auto-align shift the renderer would pick for every inline `RNA1{…}\|RNA2{…}` fixture in the tests — used to confirm the auto-aligner leaves existing (blunt) fixtures untouched |
+| `gen-complex-test-helms.mjs` | Builds the complex-HELM unit-test fixtures (both-end conjugates, custom bases, positive/large/asymmetric shifts, strand swap) — emits exact `$connections$` pair sections; pasted into `src/tests/oligo-fixtures.ts`. Also exports `FIXTURES` for probing |
+| `probe-complex.mjs` | Runs the real TS over the `gen-complex-test-helms` fixtures and prints each one's resolved properties (shift, source, overhangs, lengths, conjugates) — so the unit-test expectations are written from observed reality |
+| `run-real-ts.mjs` | Transpiles the real `types.ts` / `alignment.ts` / `helm-parser.ts` / `canvas-renderer.ts` (DG deps stubbed) and asserts parse + alignment + `computeLayout` shift behavior against the demo CSV and fixtures |
 
 ---
 
@@ -388,6 +393,7 @@ Helper scripts and a standalone HTML prototype for the OligoNucleotide subsystem
 10. **Column-version-keyed cache** — the OligoNucleotide cell renderer's per-cell layout cache is keyed by `${colName}@${col.version}::${rowIdx}`, so column edits orphan old entries automatically
 11. **Two-stage chem-enum pipeline** — `enumerateRaw` does pure-string assembly (ring-closure trick + atom splice for single-atom R-groups), produces parseable but uncanonical SMILES with **zero per-row RDKit calls**; `executeEnumeration` then canonicalizes the whole output column in a single batched `Chem:convertNotation` call (`overwrite: true`, `kekulize: false`). This also handles aromaticity case-fixup after a single-atom splice (e.g. uppercase `N` spliced into an aromatic ring). The bulk path is parallelized across Chem workers; per-row sync RDKit (`enumerate` / `enumerateSample`) is reserved for tests
 12. **Single-atom R-group shortcut** (chem-enum) — drawing a bare atom (`N`, `O`, `Cl`) without any `[*:N]` label is accepted as long as RDKit confirms exactly one heavy atom. Such groups bypass ring-closure joining and are spliced into the core's `[*:N]` slot via plain string replace; mixing single-atom and labeled R-groups in the same enumeration is supported per R-number
+13. **Alignment source-of-truth precedence** (oligo-renderer) — strand roles and base-pair register come from the HELM itself when present: `strandtype` annotations decide which chain is sense (chains are swapped so `sense` is always sense), and `$connections$` `pair` entries fix the alignment shift. Only when that info is absent does the renderer auto-align — a single rigid shift (not a gapped alignment) over `[-(antiLen-1), senseLen-1]` maximizing Watson-Crick complementary pairs, with custom bases reduced to their natural analog. A guard (≥3 pairs, ≥60% of the overlap, ≥2 more than blunt) keeps weakly-complementary / synthetic inputs blunt. The shift is a column offset on a shared nucleotide grid, so terminal overhangs render true on either end
 
 ---
 
@@ -413,9 +419,11 @@ Pattern:
 
 OligoNucleotide cell rendering:
   HELM cell value
-  → parseHelmDuplex() → ParsedDuplex {sense, antisense}
-  → computeLayout(w, h, model) → ChipPos[] with leading-conjugate shifts
-  → drawDuplex() → canvas
+  → parseHelmDuplex() → ParsedDuplex {sense, antisense, pairs?, strandTypes?, alignment?}
+                        (explicit HELM pairs/strandtype → swap chains + alignment shift)
+  → computeLayout(w, h, model) → resolveDuplexAlignment (explicit shift, else auto by complementarity)
+                               → ChipPos[] on a shared column grid (shift offsets overhangs)
+  → drawDuplex() → canvas (base pairs drawn per shared column; overhang columns unpaired)
   → onMouseMove → hitTest → showMonomerTooltip
                             → getBioLib() → findMonomerMolfile (canonical alias)
                             → grok.chem.drawMolecule → cached HTMLElement
@@ -445,6 +453,8 @@ OligoNucleotide structures panel:
 | Context-menu wiring + `Oligo` submenu | `detectors.js` (`autostartContextMenu`) |
 | OligoNucleotide cell renderer | `src/oligo-renderer/cell-renderer.ts` |
 | OligoNucleotide layout / drawing | `src/oligo-renderer/canvas-renderer.ts` |
+| Sense/antisense alignment, shift, overhangs | `src/oligo-renderer/alignment.ts` (`resolveDuplexAlignment`, `computeAutoShift`, `describeOverhangs`) |
+| HELM pair / strandtype parsing | `src/oligo-renderer/helm-parser.ts` (`parseHelmConnections`, `parseHelmAnnotations`) |
 | HELM canonicalization (alias → HELMCore) | `src/oligo-renderer/helm-parser.ts` (`canonicalizeHelm`) |
 | Modification colors / aliases | `src/oligo-renderer/types.ts` |
 | Sense/antisense structure panel | `src/oligo-renderer/structures-panel.ts` |
@@ -457,5 +467,5 @@ OligoNucleotide structures panel:
 | Chem enumeration (logic) | `src/polytool/pt-chem-enum.ts` (`buildJoinedSmiles` two-path assembly, `trySingleAtomCanonical`, `substituteRLabelWithAtom`) |
 | Chem enumeration (UI) | `src/polytool/pt-chem-enum-dialog.ts` (`buildChemEnumPanel`, sketch dialogs, `openImportWizard`, duplicate/edit/delete card icons) |
 | Demo / sample siRNA data | `files/samples/sirna-demo.csv` |
-| Off-tree dev tooling | `prototypes/` (gen / validate / HTML prototype) |
+| Off-tree dev tooling | `prototypes/` (patch demo / verify alignment / scan fixtures / run real TS) |
 | Auto-generated wrappers | `src/package.g.ts`, `src/package-api.ts` |
