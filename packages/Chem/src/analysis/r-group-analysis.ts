@@ -10,7 +10,7 @@ import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-subst
 import {cancelChemOp, getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
-import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp} from '../utils/chem-common';
+import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp, withChemCriticalSection} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -276,7 +276,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
     // Run the R-Group call as a cancellable operation (undefined => cancelled).
     const rgRes = await runCancellableChemOp(opId, () => canceled,
-      () => rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
+      () => rGroupsMinilibRaw(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
     if (rgRes === undefined) return;
     const {rGroups, highlightCol} = rgRes;
 
@@ -366,7 +366,16 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 }
 
 
+// Section-protected entry — safe for any caller.
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
+  coreIsQMol: boolean, rGroupPrefixIdx: number,
+  options?: { [key: string]: string | boolean }): Promise<RGroupsRes> {
+  return withChemCriticalSection(() =>
+    rGroupsMinilibRaw(molecules, coreMolecule, coreIsQMol, rGroupPrefixIdx, options));
+}
+
+// Raw — caller must already hold the Chem critical section (runCancellableChemOp does).
+async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
     { [key: string]: string | boolean }): Promise<RGroupsRes> {
   if (!coreMolecule)
