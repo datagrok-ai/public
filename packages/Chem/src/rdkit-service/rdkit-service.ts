@@ -507,7 +507,7 @@ export class RdKitService {
   }
 
   // Internal: worker 0 only, caller MUST hold the critical section (don't call bare). Use rGroupsMinilib instead.
-  async _getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
     Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
