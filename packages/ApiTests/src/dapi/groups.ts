@@ -89,7 +89,7 @@ category('Dapi: groups', () => {
     } finally {
       try {
         if (target)
-          await grok.dapi.groups.delete(target);\
+          await grok.dapi.groups.delete(target);
       } catch (_) {}
     }
   }, {stressTest: true});
