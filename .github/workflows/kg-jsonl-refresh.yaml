@@ -1,0 +1,187 @@
+# Knowledge-Graph JSONL refresh — REUSABLE (`workflow_call`)
+# ------------------------------------------------------------------------------
+# Option B: ONE file holds the KG-refresh logic; the existing per-area workflows
+# (packages.yaml, js-api.yml, libraries.yaml, docusaurus.yaml) each `uses:` this
+# workflow in a NEW job. Those area workflows already trigger on exactly the
+# paths the KG cares about (packages/**, js-api/**, libraries/**, help/**), so we
+# don't duplicate `on: push:` path filters here — this is a pure callee.
+#
+# What it does: re-extract ONLY the corresponding Knowledge Graph JSONL slices
+# under `.kg/data/**` for whatever changed in the triggering push, then commit
+# them back to the branch.
+#
+# FAST path: runs `.kg/build.py --no-db`, so it re-extracts a narrow scope and
+# MERGES into the per-kind JSONL (see `_merge_jsonl` in `.kg/extractors/_common.py`)
+# — it never runs the ~20-minute binary Kuzu build. Whole thing finishes in
+# seconds. The full Kuzu DB is rebuilt elsewhere/offline.
+#
+# Input contract:
+#   `scope` (optional string) — explicit args to pass straight to build.py, e.g.
+#       "--packages Chem,Bio" or "--extractors js_api,js_api_usage". When set,
+#       the job uses it verbatim and skips git diffing. When empty (the normal
+#       push case), the job computes the changed scope itself from the push's
+#       before/after SHAs. This keeps the common wiring trivial — area workflows
+#       call it with no `with:` block at all.
+#
+# Path -> extractor scope mapping (auto-computed when `scope` is empty):
+#   packages/<P>/**   -> build.py --packages <P,...>
+#   js-api/**         -> build.py --extractors js_api,js_api_usage
+#   libraries/<L>/**  -> build.py --extractors library
+#   help/**           -> build.py --extractors docs
+#
+# Infinite-loop guards (this workflow commits to the same branch it triggers on):
+#   1. The host area workflows trigger on their OWN area paths
+#      (packages/**, js-api/**, libraries/**, help/**) and NOT on `.kg/**`, so
+#      our `.kg/data/**` auto-commit cannot re-trigger them.
+#   2. `[skip ci]` in the auto-commit message — belt-and-suspenders against any
+#      future workflow that might watch `.kg/**`.
+#   3. The job bails out early if the head commit was already authored by the
+#      CI bot (`github-actions[bot]`).
+#
+# NOTE: `.kg/data` is slated to move into the `datagrok-ai/kg` git submodule.
+# When that happens the checkout, diff paths, and commit target below must be
+# repointed at the submodule (or this workflow moved into that repo).
+# ------------------------------------------------------------------------------
+name: KG JSONL refresh
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: 'Explicit build.py args (e.g. "--packages Chem"); empty = auto-detect from git diff'
+        required: false
+        type: string
+
+jobs:
+  refresh:
+    name: Refresh KG JSONL
+    runs-on: ubuntu-22.04
+    # Guard #3: only act on push events. The host workflows also trigger on
+    # pull_request, where committing/pushing .kg/data onto the PR branch is wrong
+    # (and head_commit is null, so the bot-author check below would pass vacuously).
+    # Guard #4: never act on a commit the CI bot itself authored.
+    if: github.event_name == 'push' && github.event.head_commit.author.username != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          # Need history so we can diff against the push's before-SHA.
+          fetch-depth: 0
+
+      - name: Compute changed scope
+        id: scope
+        run: |
+          # Explicit scope (e.g. from a manual workflow_dispatch upstream) wins.
+          EXPLICIT='${{ inputs.scope }}'
+          if [[ -n "$EXPLICIT" ]]; then
+            echo "Using explicit scope: $EXPLICIT"
+            echo "args=$EXPLICIT" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BEFORE='${{ github.event.before }}'
+          AFTER='${{ github.sha }}'
+
+          # New branch / force-push / first commit: github.event.before is the
+          # all-zero SHA or unreachable. Fall back to diffing the single tip
+          # commit so we still refresh something sensible.
+          if [[ -z "$BEFORE" || "$BEFORE" == "0000000000000000000000000000000000000000" ]] \
+             || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "before-SHA unavailable; diffing tip commit only"
+            CHANGED="$(git diff --name-only "${AFTER}~1" "${AFTER}" 2>/dev/null || git show --name-only --pretty=format: "${AFTER}")"
+          else
+            CHANGED="$(git diff --name-only "$BEFORE" "$AFTER")"
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # packages/<P>/** -> collect distinct package folder names
+          CHANGED_PACKAGES="$(echo "$CHANGED" | awk -F'/' '$1=="packages" && NF>=2 {print $2}' | sort -u | paste -sd, -)"
+
+          # Per-area extractor flags
+          EXTRACTORS=""
+          if echo "$CHANGED" | grep -q '^js-api/'; then
+            EXTRACTORS="${EXTRACTORS:+$EXTRACTORS,}js_api,js_api_usage"
+          fi
+          if echo "$CHANGED" | grep -q '^libraries/'; then
+            EXTRACTORS="${EXTRACTORS:+$EXTRACTORS,}library"
+          fi
+          if echo "$CHANGED" | grep -q '^help/'; then
+            EXTRACTORS="${EXTRACTORS:+$EXTRACTORS,}docs"
+          fi
+
+          ARGS=""
+          if [[ -n "$CHANGED_PACKAGES" ]]; then
+            ARGS="$ARGS --packages $CHANGED_PACKAGES"
+          fi
+          if [[ -n "$EXTRACTORS" ]]; then
+            ARGS="$ARGS --extractors $EXTRACTORS"
+          fi
+
+          if [[ -z "$ARGS" ]]; then
+            echo "no KG-relevant changes (only .kg/** or unrelated paths); nothing to do"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=${ARGS# }" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "args: ${ARGS}"
+
+      - name: Setup Python
+        if: steps.scope.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create venv and install deps
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          python -m venv .kg/.venv
+          .kg/.venv/bin/python -m pip install --upgrade pip
+          .kg/.venv/bin/python -m pip install -r .kg/requirements.txt
+
+      - name: Refresh JSONL (no Kuzu build)
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          ARGS='--no-db ${{ steps.scope.outputs.args }}'
+          echo "Running: .kg/build.py $ARGS"
+          .kg/.venv/bin/python .kg/build.py $ARGS
+
+      - name: Commit refreshed JSONL
+        if: steps.scope.outputs.run == 'true'
+        continue-on-error: true
+        run: |
+          if [ -z "$(git status -s .kg/data)" ]; then
+            echo "No JSONL changes to commit."
+            exit 0
+          fi
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git pull --rebase
+          git add .kg/data
+          # Guard #2: [skip ci] keeps this commit from re-triggering any workflow.
+          git commit -m "GitHub Actions: Refresh KG JSONL [skip ci]
+
+          Scope: ${{ steps.scope.outputs.args }}
+          Workflow ${{ github.workflow }} ${{ github.run_number }}
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          count=0
+          retries=10
+          until git push; do
+            exit=$?
+            wait=$((2 ** count))
+            count=$((count + 1))
+            if [ $count -lt "$retries" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+              sleep $wait
+              git pull --rebase
+            else
+              echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+              exit $exit
+            fi
+          done

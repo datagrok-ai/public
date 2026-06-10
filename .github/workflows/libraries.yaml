@@ -20,6 +20,15 @@ jobs:
     with:
       run_trigger: ${{ github.event_name }}
 
+  # Fast KG JSONL refresh for changed libraries/**. Reusable callee computes the
+  # changed scope from git itself; nothing else here depends on it, so it runs
+  # independently and cannot break the existing publish pipeline. The `.kg/data`
+  # auto-commit is guarded against re-triggering (this workflow watches
+  # libraries/** only, plus a [skip ci] commit message) — see the callee header.
+  kg-refresh:
+    name: KG JSONL refresh
+    uses: ./.github/workflows/kg-jsonl-refresh.yaml
+
   metadata:
     name: Check changes
     needs: common-check
