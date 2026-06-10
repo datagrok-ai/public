@@ -167,3 +167,17 @@ export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boole
 export async function testFittingOutputs() : Promise<void> {
   await PackageFunctions.testFittingOutputs();
 }
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestCustomExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestCustomExportModel(a);
+}
+
+//input: funccall funcCall 
+//input: bool startDownload 
+//output: string result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+}

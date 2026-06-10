@@ -13,6 +13,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
+import {getCustomExports} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
@@ -318,6 +319,19 @@ function getExportName(
 
 export function setDifference<T>(a: Set<T>, b: Set<T>) {
   return new Set(Array.from(a).filter((item) => !b.has(item)));
+}
+
+/** Resolves the custom export named `exportName` declared on the funcCall's function
+ *  (via `meta.customExports`) and applies it, passing the funcCall through. */
+export async function applyCustomExport(
+  fc: DG.FuncCall,
+  exportName: string,
+  args: Record<string, unknown> = {},
+): Promise<unknown> {
+  const item = getCustomExports(fc.func).find((x) => x.name === exportName);
+  if (!item)
+    throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+  return DG.Func.byName(item.function).apply({funcCall: fc, ...args});
 }
 
 export function applyDefaultGridFloatFormat(viewer: DG.Viewer | undefined, type: string) {

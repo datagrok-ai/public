@@ -481,6 +481,19 @@ The export function will receive the following arguments:
 * `validationState`: `Record<string, ValidationResult>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 * `consistencyState`: `Record<string, ConsistencyInfo>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 
+Declare these as `//input:` parameters of the export function. The current call must be
+typed `funccall`:
+
+```javascript
+//name: MyPDFExport
+//input: funccall funcCall
+//input: bool startDownload
+//output: object result
+export function myPDFExport(funcCall, startDownload) {
+  // build the report for funcCall; download it when startDownload is true
+}
+```
+
 Workflows also support a workflow-level `customExports` option with a different handler
 signature (it receives the whole pipeline state, not a single call). See the workflow
 [Custom exports reference](../../workflows/configuration.mdx) for details.

@@ -709,6 +709,19 @@ export class PackageFunctions {
     });
   }
 
+  // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
+  @grok.decorators.func({
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+  })
+  static async TestCustomExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
+    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  }
+
 }
 
 
