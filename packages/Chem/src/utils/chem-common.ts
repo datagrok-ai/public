@@ -106,7 +106,7 @@ export async function withChemCriticalSection<T>(work: () => Promise<T>, opId?: 
   }
 }
 
-// Runs `work` as a cancellable operation; returns undefined if cancelled, else the result.
+// Cancellable wrapper: undefined if cancelled, else the result.
 export async function runCancellableChemOp<T>(
   opId: string, isCanceled: () => boolean, work: () => Promise<T>): Promise<T | undefined> {
   return withChemCriticalSection(async (): Promise<T | undefined> => {

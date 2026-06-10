@@ -12,10 +12,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   moduleInit = (pathToRdkit: string): Promise<unknown> => {
     // Set readiness synchronously (ungated) so any call queued during a restart waits for this init.
     const init = this.call('module::init', [pathToRdkit], false);
-    // A failed init must not leave _ready permanently rejected — that would block every future call. Log and
-    // resolve instead, so the gate reopens and broken calls fail on their own. (restartWorker still sees `init`.)
+    // A failed init must not leave _ready permanently rejected — that would block every future call.
     this._ready = init.catch((e) => console.error('Chem | worker module init failed:', e));
-    return init;
+    return init; // raw promise, so restartWorker/init() still observe a real failure
   };
 
   /** Creates RDMols for the specified {@link molecules}.

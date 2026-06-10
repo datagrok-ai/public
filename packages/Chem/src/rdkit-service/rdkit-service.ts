@@ -574,13 +574,14 @@ export class RdKitService {
     return withChemCriticalSection(() => this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch));
   }
 
-  // Kills + reloads a worker (e.g. to cancel its in-flight call). Calls to the new worker self-gate on its
-  // moduleInit (see WorkerMessageBusClient), so no separate readiness fence is needed.
+  // Kills + reloads a worker (e.g. to cancel its in-flight call).
   async restartWorker(workerIndex: number) {
+    if (!this.webRoot)
+      throw new Error('Chem | cannot restart worker before the service is initialized (webRoot not set)');
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
-    await workerClient.moduleInit(this.webRoot ?? '');
+    await workerClient.moduleInit(this.webRoot);
   }
 
   /**
