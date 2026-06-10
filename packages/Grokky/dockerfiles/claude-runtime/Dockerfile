@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ && \
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates python3 python3-venv make g++ && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -12,11 +12,18 @@ RUN groupadd -g 2001 grok && \
     mkdir -p /users && \
     chown -R grok:grok ${HOME_DIR} /workspace /users
 
+# Bootstrap the knowledge-graph venv (kuzu + pydantic) and unpack kg.kuzu from the
+# committed .kg-dist artifact. Run as `grok` so the venv and DB are owned by the
+# runtime user. The smoke test starts/stops a local kg server — harmless at build.
+RUN su grok -c "bash /workspace/.kg/scripts/bootstrap.sh"
+
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
 COPY --chown=grok:grok src ./src
 RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production
 
 COPY --chown=grok:grok plugin /app/plugin
+COPY --chown=grok:grok entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 ENV CLAUDE_WORKSPACE=/workspace
 
@@ -27,4 +34,4 @@ EXPOSE 5355
 HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:5355/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/server.js"]
+CMD ["/app/entrypoint.sh"]

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* AI: claude-runtime container now bootstraps the codebase knowledge graph (kuzu venv + unpacked `kg.kuzu`) at build, re-unpacks the synced artifact at startup, and the system prompt + a new `datagrok-knowledge-graph` skill instruct the agent to query `workspace/.kg/qq.py` before grepping
+* AI: claude-runtime workspace sync now follows the branch the workspace was cloned from instead of hardcoded `master`, so a pre-merge image carrying `.kg` isn't reset to master and stripped of it
 * AI: Fixed query/script view going blank (tab unselected) on first click when switching back to it with the AI panel open — defer the panel dock/undock until after the view switch settles
 * AI: Replaced the 15-min skill/agent sync poll with an on-demand, TTL-gated refresh of packages + shared connections — idle sessions no longer sync
 * AI: Fixed shared-connection files that fail to download (e.g. invalid JSON) re-downloading on every sync

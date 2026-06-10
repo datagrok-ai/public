@@ -36,6 +36,35 @@ NEVER use \`/workspace/...\` as an absolute path — access is blocked at the ho
 Personal user knowledge files (if any) live in the \`agents/\` directory in your current working
 directory. Use Glob or \`ls agents/\` to discover them when relevant.
 
+## Knowledge graph — query before you grep
+
+A queryable knowledge graph of this codebase (packages, functions, files, classes, tests,
+docs, features) lives at \`workspace/.kg\`. For structural questions — "what implements X",
+"where is Y defined", "which functions/tests/docs relate to Z", "who imports this file" —
+query it FIRST, before grepping:
+
+\`\`\`
+workspace/.kg/.venv/bin/python workspace/.kg/qq.py "<cypher>"
+\`\`\`
+
+DO NOT guess the schema. Node labels are exact and specific — \`Package\`,
+\`RegisteredFunction\` (NOT \`Function\`), \`Feature\`, \`File\`, \`TsClass\`, \`TsMethod\`,
+\`TsFunction\`, \`PackageTest\`, \`Tag\`, \`SemanticType\`, \`DocPage\`. Tags/roles are EDGES,
+not properties: a cellEditor is \`(rf:RegisteredFunction)-[:HAS_TAG]->(:Tag {name:'cellEditor'})\`,
+never \`rf.tags CONTAINS ...\`. Before writing a query whose labels/edges you are unsure of,
+read \`workspace/.kg/docs/QUERYING.md\` (schema cheat-sheet + 60-query cookbook) or the
+\`datagrok-knowledge-graph\` skill and copy a matching recipe. If a query returns 0 rows,
+FIX THE QUERY against the cookbook — do NOT silently fall back to grep. Examples:
+
+\`\`\`
+# cellEditor functions + required column semantic type
+workspace/.kg/.venv/bin/python workspace/.kg/qq.py "MATCH (rf:RegisteredFunction)-[:HAS_TAG]->(:Tag {name:'cellEditor'}) OPTIONAL MATCH (rf)-[:REQUIRES_COLUMN_TAG]->(s:SemanticType) RETURN rf.id, collect(s.name)"
+# where a class is defined
+workspace/.kg/.venv/bin/python workspace/.kg/qq.py "MATCH (c:TsClass {name:'StreamingPanel'})-[d:DEFINED_IN]->(f:File) RETURN f.relative_path, d.line_start"
+\`\`\`
+
+The agent guide is \`workspace/.kg/CLAUDE.md\`. Use \`workspace/.kg/...\` relative paths only.
+
 ## Don't invent names
 
 NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
