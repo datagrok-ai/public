@@ -1,6 +1,7 @@
 ---
 title: 'Users and groups'
-format: 'mdx'
+mdx:
+  format: mdx
 unlisted: false
 sidebar_position: 1
 ---

@@ -1,8 +1,46 @@
 # Chem changelog
 
+## 1.17.13 (2026-06-08)
+
+* Chem: MPO: Optimized score calculation for large datasets
+* GROK-18818: Chem: MMP: do not allow to choose empty column in dialog
+* GROK-15991: Invalid argument(s): Array lengths differ
+* Chem: Fixed `waitFor` clearing the wrong timer handle, leaving the polling interval running after the condition was met
+* OCL worker: Added missing `break` statements so a drug-likeness or molfile-to-V3K request no longer also runs and posts later cases' results
+* OCL worker: Fixed an off-by-one atom loop that could miscalculate molecule charge
+* RDKit worker: Fixed the R-group analysis handler posting a stray `undefined` result due to a shadowed variable
+* Identifiers: Fixed the UniChem home-page link mapped to the base-ID URL instead of `src_url`
+* Map Identifiers: Fixed `column ids.key does not exist` when converting from InChIKey or via the ChEMBL bridge — `_chemMapViaQuery` now renames a cloned input column to `key` to match the converter SQL parameter name
+* Chem search: Replaced a floating promise with proper `if`/`.catch()` so substructure-search sub-task rejections are handled
+* RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
+* BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously
+* Highlight widget: Unsubscribe `ItemsGrid` event subscriptions when the grid is rebuilt or the widget is detached
+
+## 1.17.12 (2026-06-05)
+
+* GROK-20193: SDF import: Preserve molecule name and comment fields
+* MPO: Fixed disabled OK button with no explanation when creating a new profile
+* [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
+* Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
+
+## 1.17.10 (2026-05-28)
+
+* Chem: Record all generated reaction results in the enumerator
+
+## 1.17.9 (2026-05-26)
+
+* Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")
+* Chem Space: Guard editor entry against null current dataFrame / missing Molecule column to prevent `NullError: method not found: 'dart' on null` from `setColumnInputTable`
+* Chem: Toxicity Risks: Avoid 'Column already exists' crash on repeat invocation by using `getUnusedName` before adding risk columns
+* GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* Scaffold tree: Fixed severe load/scroll slowdown on large dataframes — molecule rendering and substructure searches now run only for on-screen nodes (IntersectionObserver rooted at the actual scroll container) instead of the entire tree
+* Scaffold tree: Deduplicated per-node bitset computation (reuses in-flight and completed searches) and added a one-time shared fingerprint warm-up, eliminating redundant full-column searches on load
+* Scaffold tree: Debounced scroll-driven substructure searches so fast scrolling no longer spawns a search for every node scrolled past
+
 ## 1.17.8 (2026-05-12)
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Chem: Scaffold Tree: Fixed `Array.from(undefined)` crash in `getPeerViewers` when the active view is not a TableView
 * Reaction enumerator: Reworked UI — replaced the preview with side-by-side reaction templates and building blocks grids that subset the enumeration via row selection; renamed inputs and the full-config button for clarity
 * Reaction enumerator: Right pane is now a tabbed view (Reaction templates, Building blocks, Reagents, Preview); preview tab re-runs lazily on activation
 * Reaction enumerator: Added reagents-mode enumeration — when a reagents file/column are provided, each step uses exactly one BB or earlier-round product plus reagents in every remaining slot (produces derivatives of each BB across rounds)

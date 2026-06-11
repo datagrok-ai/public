@@ -5,10 +5,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 function oclMol(mol: string): OCL.Molecule {
   const isMolFile = mol.includes('M  END');
-  if (!isMolFile && mol.length > 5000)
+  if (!isMolFile && mol.length > MAX_SMILES_LENGTH)
     throw new Error('Invalid molecule string');
   return mol.includes('M  END') ? OCL.Molecule.fromMolfile(mol) : OCL.Molecule.fromSmiles(mol);
 }

@@ -1,10 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {deserializeRestrictions} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 category('ComputeUtils: Driver state tree persistence', async () => {
   test('Load and save simple config', async () => {
@@ -87,5 +89,58 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
+  });
+
+  test('Save and load pipeline with action step', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapperAction', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
+    const metaCall = await tree.save().toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
+    await loadedTree.init().toPromise();
+    const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
+    expectDeepEqual(lc, sc);
+    // the action node survives the round-trip and is still marked as an action step in view state
+    const actionNode = loadedTree.nodeTree.getNode([{idx: 1}]);
+    const actionState = actionNode.getItem().toState({}) as any;
+    expectDeepEqual(actionState.type, 'static');
+    expectDeepEqual(actionState.isActionStep, true);
+  });
+
+  test('Save and load consistency dataframe', async () => {
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockWrapperDF', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(conf);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const df = DG.DataFrame.fromColumns([DG.Column.fromInt32Array('x', new Int32Array([1, 2, 3]))]);
+    const step2 = tree.nodeTree.getNode([{idx: 1}]);
+    step2.getItem().getStateStore().setState('df', df, 'restricted');
+    const metaCall = await tree.save().toPromise();
+    // loading must not crash when a step carries a dataframe restriction
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
+    await loadedTree.init().toPromise();
+    // verify the new on-disk format: an id reference, not an embedded dataframe blob
+    const fcId = (loadedTree.toSerializedState() as any).steps[1].funcCallId;
+    const fc = await historyUtils.loadRun(fcId);
+    const blob: string = fc.options['INPUT_RESTRICTIONS'];
+    expectDeepEqual(blob.includes('_DG_CONSISTENCY_DF_REF_'), true, {prefix: 'new format stores a df reference'});
+    expectDeepEqual(blob.includes('"DataFrame"'), false, {prefix: 'new format does not embed the dataframe'});
+    // the reference resolves back to the original dataframe
+    const restored = await deserializeRestrictions(blob);
+    expectDeepEqual(restored['df']?.type, 'restricted', {prefix: 'restored restriction type'});
+    expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true, {prefix: 'restored assignedValue is a dataframe'});
+    expectDeepEqual(restored['df']?.assignedValue?.rowCount, 3, {prefix: 'restored dataframe content'});
+  });
+
+  test('Load legacy embedded-DF consistency format', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromInt32Array('x', new Int32Array([1, 2, 3]))]);
+    // old format embedded the dataframe binary directly in the restrictions blob
+    const legacy = serialize({df: {type: 'restricted', assignedValue: df}}, {useJsonDF: false});
+    expectDeepEqual(legacy.includes('"DataFrame"'), true, {prefix: 'sanity: legacy blob embeds the dataframe'});
+    const restored = await deserializeRestrictions(legacy);
+    expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true, {prefix: 'legacy dataframe restored'});
+    expectDeepEqual(restored['df']?.assignedValue?.get('x', 1), 2, {prefix: 'legacy dataframe content'});
   });
 });

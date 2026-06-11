@@ -40,6 +40,7 @@ export interface Model {
   coloring: ModelColoring;
   line: any;
   weight: number;
+  functionType: 'numerical';
 }
 
 export interface Template {

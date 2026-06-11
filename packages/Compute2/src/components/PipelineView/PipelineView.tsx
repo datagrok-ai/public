@@ -31,6 +31,9 @@ export const PipelineView = Vue.defineComponent({
     buttonActions: {
       type: Object as Vue.PropType<ViewAction[]>,
     },
+    body: {
+      type: String,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -77,12 +80,14 @@ export const PipelineView = Vue.defineComponent({
     const name = Vue.ref('');
     const version = Vue.ref<string | undefined>(undefined);
     const isActionStep = Vue.ref(false);
+    const configDescription = Vue.ref<string | undefined>(undefined);
 
     Vue.watch(state, (state) => {
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
       version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
       disableHistory.value = !isFuncCallState(state) ? state.disableHistory : false;
       isActionStep.value = isStaticPipelineState(state) && !!state.isActionStep;
+      configDescription.value = !isFuncCallState(state) ? state.description : undefined;
     }, {immediate: true});
 
     Vue.watch(currentCall, (call) => {
@@ -90,6 +95,8 @@ export const PipelineView = Vue.defineComponent({
     }, {immediate: true});
 
     const description = Vue.computed(() => {
+      if (configDescription.value)
+        return configDescription.value;
       if (isActionStep.value)
         return `Available actions${name.value ? ` for ${name.value}` : ''}:`;
       return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`;
@@ -127,9 +134,12 @@ export const PipelineView = Vue.defineComponent({
               <div
                 style={{minWidth: '200px', flex: '1'}}
               >
-                <span>
-                  {description.value}
-                </span>
+                { props.body ?
+                  <MarkDown markdown={props.body} class='mtl-mb' /> :
+                  <span>
+                    {description.value}
+                  </span>
+                }
 
                 <div class={'grok-gallery-grid'}>
                   { !isActionStep.value && hasContextHelp(currentCall.value?.func) &&

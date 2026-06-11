@@ -2,6 +2,8 @@
 import * as path from 'path';
 import {findCodegenSources, processFile, checkFile} from './index';
 
+const TOOL = 'codegen-async-to-sync';
+
 interface CliArgs {
   roots: string[];
   check: boolean;
@@ -25,7 +27,7 @@ function parseArgs(argv: string[]): CliArgs {
       printHelp();
       process.exit(0);
     } else {
-      console.error(`codegen-async-to-sync: unknown argument '${a}'`);
+      reportError(`unknown argument '${a}'`);
       printHelp();
       process.exit(2);
     }
@@ -35,7 +37,7 @@ function parseArgs(argv: string[]): CliArgs {
 }
 
 function printHelp(): void {
-  console.log(`Usage: codegen-async-to-sync [--roots <dir>...] [--check]
+  console.log(`Usage: ${TOOL} [--roots <dir>...] [--check]
 
   --roots <dir>...   Directories to scan for @async-source files (relative to CWD).
                      Default: src
@@ -47,6 +49,11 @@ Files are only processed if their leading comment block contains an
 \`@async-source: <output-filename>\` directive.`);
 }
 
+/** `${TOOL}: <msg>`, but defensive against double-prefix if `msg` already starts with `${TOOL}:`. */
+function reportError(msg: string): void {
+  console.error(msg.startsWith(`${TOOL}:`) ? msg : `${TOOL}: ${msg}`);
+}
+
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
   const cwd = process.cwd();
@@ -54,7 +61,7 @@ function main(): void {
 
   const sources = findCodegenSources(absRoots);
   if (sources.length === 0) {
-    console.log(`codegen-async-to-sync: no @async-source files found under ${args.roots.join(', ')}`);
+    console.log(`${TOOL}: no @async-source files found under ${args.roots.join(', ')}`);
     return;
   }
 
@@ -65,17 +72,17 @@ function main(): void {
         const res = checkFile(src);
         if (res?.drift) drifted.push(res.outputPath);
       } catch (err) {
-        console.error(`codegen-async-to-sync: ${(err as Error).message}`);
+        reportError((err as Error).message);
         process.exit(2);
       }
     }
     if (drifted.length > 0) {
-      console.error(`codegen-async-to-sync: ${drifted.length} generated file(s) out of sync:`);
+      reportError(`${drifted.length} generated file(s) out of sync:`);
       for (const p of drifted) console.error(`  ${path.relative(cwd, p)}`);
       console.error(`Run \`npm run update-codegen\` to regenerate.`);
       process.exit(1);
     }
-    console.log(`codegen-async-to-sync: ${sources.length} file(s) up to date.`);
+    console.log(`${TOOL}: ${sources.length} file(s) up to date.`);
     return;
   }
 
@@ -84,7 +91,7 @@ function main(): void {
       const res = processFile(src);
       if (res) console.log(`codegen: wrote ${path.relative(cwd, res.outputPath)}`);
     } catch (err) {
-      console.error(`codegen-async-to-sync: ${(err as Error).message}`);
+      reportError((err as Error).message);
       process.exit(2);
     }
   }

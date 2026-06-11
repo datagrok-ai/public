@@ -746,23 +746,39 @@ export async function demoBioSequenceSpace() : Promise<void> {
 }
 
 //description: Activity Cliffs analysis on Macromolecules data
-//meta.demoPath: Bioinformatics | Activity Cliffs
+//meta.demoPath: Bioinformatics | Sequence Activity Cliffs
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 export async function demoBioActivityCliffs() : Promise<void> {
   await PackageFunctions.demoBioActivityCliffs();
 }
 
 //description: Atomic level structure of Macromolecules
+//meta.demoSkip: true
 //meta.demoPath: Bioinformatics | Atomic Level
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
 export async function demoBioAtomicLevel() : Promise<void> {
   await PackageFunctions.demoBioAtomicLevel();
 }
 
+//description: siRNA sequences, molecular structures, curves and assay data
+//meta.demoSkip: true
+//meta.demoPath: Bioinformatics | siRNA
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/siRNA
+export async function demoBioSiRNA() : Promise<void> {
+  await PackageFunctions.demoBioSiRNA();
+}
+
 //name: SDF to JSON Library
 //input: dataframe table 
 export async function sdfToJsonLib(table: DG.DataFrame) : Promise<void> {
   await PackageFunctions.sdfToJsonLib(table);
+}
+
+//description: Antibody sequences, numbering, liabilities, extraction and SAR
+//meta.demoPath: Bioinformatics | Antibodies
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Antibodies
+export async function demoAntibodies() : Promise<void> {
+  await PackageFunctions.demoAntibodies();
 }
 
 //description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation

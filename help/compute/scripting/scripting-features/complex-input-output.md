@@ -1,8 +1,16 @@
 ---
 title: "Complex data types"
 sidebar_position: 3
-format: 'md'
+mdx:
+  format: mdx
 ---
+
+:::tip Looking for the type table?
+
+For the full correspondence between Datagrok types and their native equivalents in
+Python, R, Octave, Julia, and JavaScript, see [Data types](data-types.md).
+
+:::
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
@@ -108,18 +116,6 @@ new_table.col(id_column).init((i) => `${id_prefix}${i}`);
 
 After running this script, Datagrok automatically opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
-
-:::note
-
-Datagrok's dataframe converts to:
-
-* Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
-* Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
-* [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
-* [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
-* [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
-
-:::
 
 :::caution Case-insensitive column names
 

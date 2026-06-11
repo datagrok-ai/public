@@ -19,8 +19,9 @@ async function openColumnPopup(page: Page, selectorName: string) {
 }
 
 /** Set column via column selector popup: open, press first key, type rest, ArrowDown, Enter.
- *  For nullable selectors (Color, Size) that have an empty first row, if the UI attempt
- *  fails to set the column, falls back to JS API via the provided propName. */
+ *  Synthetic mouse/keyboard events are timing-sensitive (the popup focuses its search input
+ *  asynchronously via Timer.run, so the first letter sometimes doesn't land in the input).
+ *  When propName is provided and the UI attempt didn't apply, falls back to JS API. */
 async function setColumnViaSelector(page: Page, selectorName: string, columnName: string, propName?: string) {
   await openColumnPopup(page, selectorName);
   await page.keyboard.press(columnName[0].toLowerCase());
@@ -133,27 +134,27 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Changing axes ──────────────────────────────────────────────────────
   await softStep('Changing axes', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE');
+    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('AGE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT');
+    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT', 'yColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.yColumnName
     )).toBe('WEIGHT');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'RACE');
+    await setColumnViaSelector(page, 'div-column-combobox-x', 'RACE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('RACE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'STARTED');
+    await setColumnViaSelector(page, 'div-column-combobox-x', 'STARTED', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('STARTED');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'HEIGHT');
+    await setColumnViaSelector(page, 'div-column-combobox-x', 'HEIGHT', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('HEIGHT');
@@ -161,8 +162,8 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Axis types and inversion ───────────────────────────────────────────
   await softStep('Axis types and inversion', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE');
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT');
+    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE', 'xColumnName');
+    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT', 'yColumnName');
 
     // Set X Axis Type to logarithmic via context menu
     await openScatterContextMenu(page);

@@ -164,7 +164,7 @@ export async function demoActivityCliffsCyclicLayout(): Promise<void> {
   const p = await grok.functions.eval('Bio:BioDemoActivityCliffs');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
-    let scatterPlot: DG.Viewer | null = null;
+  let scatterPlot: DG.Viewer | null = null;
   for (const i of grok.shell.tv.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)
       scatterPlot = i;
@@ -181,8 +181,4 @@ export async function demoActivityCliffsCyclicLayout(): Promise<void> {
     }, '', 10000);
     (cliffsLink as any as HTMLElement).click();
   } catch (e) {}
-  setTimeout(() => {
-    grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#activity-cliffs')
-  }, 2000);
 }

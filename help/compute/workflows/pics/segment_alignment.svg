@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 340" width="780" height="340" font-family="sans-serif" font-size="14">
+  <style>
+    text { fill: #222; }
+    .role { font-size: 14px; font-weight: 600; }
+    .seg { font-family: monospace; font-size: 13px; }
+    .base { fill: #ffe994; stroke: #ff4000; stroke-width: 2; }
+    .ref { fill: #dee7e5; stroke: #3465a4; stroke-width: 1; }
+    .io { fill: #f0f0f5; stroke: #888; stroke-width: 1; }
+    .arrow { fill: none; stroke: #3465a4; stroke-width: 1.5; }
+    .head { fill: #3465a4; stroke: none; }
+    .caption { font-size: 13px; fill: #555; }
+  </style>
+
+  <text x="20" y="26" font-size="18" font-weight="600">@base resolves position by position</text>
+
+  <!-- Row: from -->
+  <text x="20" y="80" class="role">from:</text>
+  <rect x="90" y="60" width="240" height="32" rx="3" class="ref"/>
+  <text x="100" y="80" class="seg">same(@base)</text>
+  <rect x="350" y="60" width="260" height="32" rx="3" class="ref"/>
+  <text x="360" y="80" class="seg">same(@base)</text>
+  <rect x="630" y="60" width="110" height="32" rx="3" class="io"/>
+  <text x="640" y="80" class="seg">output1</text>
+
+  <!-- Arrows: base segments ↑ to corresponding from segments -->
+  <path d="M 210,140 V 96" class="arrow"/>
+  <path d="M 210,92 l -5,8 h 10 z" class="head"/>
+  <path d="M 480,140 V 96" class="arrow"/>
+  <path d="M 480,92 l -5,8 h 10 z" class="head"/>
+
+  <!-- Row: base -->
+  <text x="20" y="160" class="role">base:</text>
+  <rect x="90" y="140" width="240" height="32" rx="3" class="base"/>
+  <text x="100" y="160" class="seg">expand(workflow1|workflow2)</text>
+  <rect x="350" y="140" width="260" height="32" rx="3" class="base"/>
+  <text x="360" y="160" class="seg">expand(script1)</text>
+
+  <!-- Arrows: base segments ↓ to corresponding to segments -->
+  <path d="M 210,172 V 216" class="arrow"/>
+  <path d="M 210,220 l -5,-8 h 10 z" class="head"/>
+  <path d="M 480,172 V 216" class="arrow"/>
+  <path d="M 480,220 l -5,-8 h 10 z" class="head"/>
+
+  <!-- Row: to -->
+  <text x="20" y="240" class="role">to:</text>
+  <rect x="90" y="220" width="240" height="32" rx="3" class="ref"/>
+  <text x="100" y="240" class="seg">same(@base)</text>
+  <rect x="350" y="220" width="260" height="32" rx="3" class="ref"/>
+  <text x="360" y="240" class="seg">after+(@base, script2)</text>
+  <rect x="630" y="220" width="110" height="32" rx="3" class="io"/>
+  <text x="640" y="240" class="seg">input1</text>
+
+  <!-- Caption -->
+  <text x="20" y="285" class="caption">Each `@base` reference is resolved against the base segment in the same column. The trailing IO segment</text>
+  <text x="20" y="303" class="caption">(`output1` / `input1`) sits outside the alignment — it just names an input or output on the final matched node.</text>
+</svg>

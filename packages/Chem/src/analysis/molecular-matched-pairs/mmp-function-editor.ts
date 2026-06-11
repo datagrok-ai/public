@@ -24,7 +24,7 @@ export class MmmpFunctionEditor {
   colInputRoot!: HTMLElement;
   activitiesInput!: DG.InputBase;
   activitiesInputRoot = ui.div();
-  cutoffInput = ui.input.float('Cutoff', {value: 0.4});
+  cutoffInput = ui.input.float('Cutoff', {value: 0.4, min: 0, max: 1, nullable: false});
   activitiesParams: {[key: string]: {deltaType: string, scaling: string}} = {};
   activitiesParamsDiv = ui.divV([]);
 
@@ -43,6 +43,7 @@ export class MmmpFunctionEditor {
     this.activitiesInput = ui.input.columns('Activities', {
       table: this.tableInput.value!,
       filter: (col: DG.Column) => numericalColumns.includes(col),
+      nullable: false,
       onValueChanged: () => {
         ui.empty(this.activitiesParamsDiv);
         const df = this.tableInput.value!;
@@ -82,7 +83,9 @@ export class MmmpFunctionEditor {
     const input = ui.input.column('Column', {
       table: this.tableInput.value!,
       filter: (col) => col.semType === DG.SEMTYPE.MOLECULE,
-      value: firstSupportedColumn});
+      value: firstSupportedColumn,
+      nullable: false,
+    });
     if (!this.colInputRoot)
       this.colInputRoot = input.root;
     return input;

@@ -94,7 +94,7 @@ Here's an example of Python code without syntax highlighting:
 
 ### Task lists
 
-* [x] @mentions, #refs, [links](https://datagrok.ai/help/datagrok/markdown#task-lists), **formatting**, and <del>tags</del> supported
+* [x] @mentions, #refs, [links](https://datagrok.ai/help/develop/help-pages/markdown), **formatting**, and <del>tags</del> supported
 * [x] list syntax required (any unordered or ordered list supported)
 * [x] this is a complete item
 * [ ] this is an incomplete item

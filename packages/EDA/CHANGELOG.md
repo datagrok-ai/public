@@ -1,5 +1,22 @@
 # EDA changelog
 
+## 1.5.6 (2026-06-01)
+
+* Add two-sample t-test (Welch and Student)
+* Add Control comparisons (Dunnett's test and Holm-corrected Welch's t-tests)
+
+## 1.5.5 (2026-05-26)
+
+Implement Welch ANOVA
+
+## 1.5.4 (2026-05-16)
+
+Updated the Multivariate Analysis demo
+
+## 1.5.3 (2026-05-14)
+
+Fixed hints in the multivariate analysis demo
+
 ## 1.5.2 (2026-04-24)
 
 Fix the column_list issue in PCA

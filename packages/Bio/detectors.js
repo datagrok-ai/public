@@ -325,6 +325,14 @@ class BioPackageDetectors extends DG.Package {
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely ? 0.15 : 0);
+        if (units == NOTATION.FASTA && alphabet != ALPHABET.UN) {
+          const minLength = colNameVeryLikely ? 6 : (colNameLikely ? 9 : 16);
+          const satisfiesMinLength = categoriesSample.filter((s) => (s?.length ?? 0) >= minLength).length >= Math.max(categoriesSample.length - 2, 2);
+          if (!satisfiesMinLength) {
+            last.rejectReason = 'FASTA min characters counts not reached for column';
+            return null;
+          }
+        }
         if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) {
           last.rejectReason = `FASTA single character alphabet is not allowed to be 'UN'.`;
           return null;

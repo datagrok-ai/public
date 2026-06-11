@@ -1,30 +1,7 @@
 // Async→sync TypeScript codegen via ts-morph AST transform.
-//
-// Public surface:
-//   transformText(srcText, srcStem) → { outputPath, outputText } | null
-//     Pure transform. Returns null if the source has no @async-source directive.
-//   processFile(srcPath) → { outputPath, wrote }
-//     Reads srcPath, transforms, writes the generated sibling. No-op (returns
-//     wrote=false) if the source is not a codegen source.
-//   checkFile(srcPath) → { outputPath, drift }
-//     Reads srcPath, transforms in memory, compares with what's on disk. Does
-//     not write. drift=true if the existing sync file differs from generated.
-//   findCodegenSources(roots) → string[]
-//     Walks the given root directories and returns absolute paths of files
-//     whose leading comment block contains `@async-source`.
-//
-// Directive grammar (in the source's leading comment block):
-//   // @async-source: <output-filename>
-//   // @codegen-rename: <old>=<new>          (repeatable)
-//   // @async-only                           (end-of-line — drops the host line)
+// Directive grammar and transformation rules: see README.md.
 
-import {
-  Project,
-  SyntaxKind,
-  Node,
-  SourceFile,
-  Statement,
-} from 'ts-morph';
+import {Project, Node, SourceFile, Statement} from 'ts-morph';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -44,7 +21,18 @@ function parseDirectives(sourceText: string): Directives | null {
     const asyncSource = /@async-source:\s*(\S+)/.exec(line);
     if (asyncSource) outputPath = asyncSource[1];
     const renameMatch = /@codegen-rename:\s*([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)/.exec(line);
-    if (renameMatch) renames.set(renameMatch[1], renameMatch[2]);
+    if (renameMatch) {
+      const [, src, dst] = renameMatch;
+      if (src === dst)
+        throw new Error(`rename '${src}=${dst}' is a no-op (source equals target)`);
+      for (const [otherSrc, otherDst] of renames) {
+        if (otherDst === dst && otherSrc !== src)
+          throw new Error(
+            `rename target '${dst}' is already used by '${otherSrc}=${otherDst}' ` +
+            `— two sources cannot share a target`);
+      }
+      renames.set(src, dst);
+    }
   }
   return outputPath ? {outputPath, renames} : null;
 }
@@ -63,22 +51,48 @@ function isAsyncTopLevel(stmt: Statement): boolean {
   return false;
 }
 
-function getDeclaredName(stmt: Statement): string | null {
-  if (Node.isFunctionDeclaration(stmt)) return stmt.getName() ?? null;
-  if (Node.isVariableStatement(stmt)) {
-    const decls = stmt.getDeclarations();
-    return decls.length === 1 ? decls[0].getName() : null;
+function getDeclaredNames(stmt: Statement): string[] {
+  if (Node.isFunctionDeclaration(stmt)) {
+    const n = stmt.getName();
+    return n ? [n] : [];
   }
+  if (Node.isVariableStatement(stmt))
+    return stmt.getDeclarations().map((d) => d.getName());
   if (Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt))
-    return stmt.getName();
-  return null;
+    return [stmt.getName()];
+  return [];
 }
 
+function collectDeclaredNames(
+  stmts: Statement[],
+  filter?: (s: Statement) => boolean,
+): Set<string> {
+  const out = new Set<string>();
+  for (const stmt of stmts) {
+    if (filter && !filter(stmt)) continue;
+    for (const n of getDeclaredNames(stmt)) out.add(n);
+  }
+  return out;
+}
+
+// Unmatched `@async-only-begin` strips to EOF on purpose: surfaces as a
+// downstream parse error rather than silently dropping less than intended.
+const ASYNC_ONLY_RE = /\/\/\s*@async-only(-begin|-end)?\b/;
 function stripAsyncOnlyLines(text: string): string {
-  return text
-    .split('\n')
-    .filter((line) => !/\/\/\s*@async-only\b/.test(line))
-    .join('\n');
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inBlock = false;
+  for (const line of lines) {
+    const m = ASYNC_ONLY_RE.exec(line);
+    if (m) {
+      if (m[1] === '-begin') inBlock = true;
+      else if (m[1] === '-end') inBlock = false;
+      continue;
+    }
+    if (inBlock) continue;
+    out.push(line);
+  }
+  return out.join('\n');
 }
 
 function stripDirectiveLines(text: string): string {
@@ -88,15 +102,8 @@ function stripDirectiveLines(text: string): string {
     .join('\n');
 }
 
-// Find any async function-like node (function decl, function expression, or
-// arrow), top-level or nested, and strip its `async` modifier. Returns false
-// when nothing left to strip. Re-walks from the SourceFile each call because
-// every previous edit has invalidated descendant node references.
-//
-// Nested async closures are common in async source code (local helpers like
-// `const evalF = async (p) => { ... }`); since `stripAwaits` removes their
-// awaits regardless of nesting, their `async` keyword must come off too — else
-// they'd still return Promises in the generated sync output.
+// One async-modifier removal per call. Re-walks from the SourceFile each
+// call: previous edits invalidated descendant references.
 function stripOneAsyncModifier(file: SourceFile): boolean {
   let target: Node | undefined;
   file.forEachDescendant((node, traversal) => {
@@ -115,39 +122,43 @@ function stripOneAsyncModifier(file: SourceFile): boolean {
   return true;
 }
 
-// One replacement per pass — `replaceWithText` re-parses the source file, which
-// forgets every Node reference except the SourceFile itself. So traverse from
-// the SourceFile (stable identity) and re-search each pass until nothing matches.
-function stripAwaits(file: SourceFile): void {
+// `replaceWithText` re-parses the file and forgets every descendant node, so
+// search from the SourceFile and re-search each pass until `match` finds
+// nothing. The callback returns the replacement text, or `undefined` for
+// a non-match.
+function replaceUntilFixedPoint(
+  file: SourceFile,
+  match: (node: Node) => string | undefined,
+): void {
   while (true) {
     let target: Node | undefined;
+    let replacement: string | undefined;
     file.forEachDescendant((node, traversal) => {
-      if (node.isKind(SyntaxKind.AwaitExpression)) {
+      const r = match(node);
+      if (r !== undefined) {
         target = node;
+        replacement = r;
         traversal.stop();
       }
     });
     if (!target) break;
-    const expr = target.asKindOrThrow(SyntaxKind.AwaitExpression).getExpression();
-    target.replaceWithText(expr.getText());
+    target.replaceWithText(replacement!);
   }
 }
 
+function stripAwaits(file: SourceFile): void {
+  replaceUntilFixedPoint(file, (node) =>
+    Node.isAwaitExpression(node) ? node.getExpression().getText() : undefined,
+  );
+}
+
 function unwrapPromiseTypes(file: SourceFile): void {
-  while (true) {
-    let target: Node | undefined;
-    file.forEachDescendant((node, traversal) => {
-      if (!node.isKind(SyntaxKind.TypeReference)) return;
-      const tr = node.asKindOrThrow(SyntaxKind.TypeReference);
-      if (tr.getTypeName().getText() !== 'Promise') return;
-      if (tr.getTypeArguments().length !== 1) return;
-      target = node;
-      traversal.stop();
-    });
-    if (!target) break;
-    const tr = target.asKindOrThrow(SyntaxKind.TypeReference);
-    target.replaceWithText(tr.getTypeArguments()[0].getText());
-  }
+  replaceUntilFixedPoint(file, (node) => {
+    if (!Node.isTypeReference(node)) return undefined;
+    if (node.getTypeName().getText() !== 'Promise') return undefined;
+    const args = node.getTypeArguments();
+    return args.length === 1 ? args[0].getText() : undefined;
+  });
 }
 
 function applyRenames(file: SourceFile, renames: Map<string, string>): void {
@@ -160,24 +171,17 @@ function applyRenames(file: SourceFile, renames: Map<string, string>): void {
         if (decl.getName() === oldName) decl.rename(newName);
       }
     }
-    // Import specifiers: renaming the local binding of an imported name lets
-    // a directive like `@codegen-rename: fooAsync=foo` route a sibling-module
-    // async import to its sync sibling. ts-morph's rename on the binding node
-    // produces `{fooAsync as foo}` in the source (body refs become `foo`),
-    // and the import-rebuild step downstream maps the original imported name
-    // through the rename map so the sync output's import line uses `foo`.
+    // Routes an async import to its sync sibling: rename the local binding
+    // here, the import-rebuild step downstream maps the original name through
+    // the rename map. String-literal import names (TS 5+) are skipped.
     for (const imp of file.getImportDeclarations()) {
       for (const ni of imp.getNamedImports()) {
         const aliasNode = ni.getAliasNode();
         const nameNode = ni.getNameNode();
-        // The local binding is the alias if present, otherwise the name.
-        // String-literal imported names (TS 5+ `import {"x" as y}`) aren't
-        // renameable in our use case; skip those.
         if (aliasNode) {
           if (aliasNode.getText() === oldName) aliasNode.rename(newName);
-        } else if (nameNode.getKind() === SyntaxKind.Identifier) {
-          const id = nameNode.asKindOrThrow(SyntaxKind.Identifier);
-          if (id.getText() === oldName) id.rename(newName);
+        } else if (Node.isIdentifier(nameNode)) {
+          if (nameNode.getText() === oldName) nameNode.rename(newName);
         }
       }
     }
@@ -199,22 +203,15 @@ function dropAsyncConstAnnotations(file: SourceFile): void {
 function collectReferencedNames(scope: Node): Set<string> {
   const out = new Set<string>();
   scope.forEachDescendant((node) => {
-    if (node.isKind(SyntaxKind.Identifier)) {
-      const parent = node.getParent();
-      if (parent && parent.isKind(SyntaxKind.PropertyAccessExpression)) {
-        if (parent.asKindOrThrow(SyntaxKind.PropertyAccessExpression).getNameNode() === node)
-          return;
-      }
-      if (parent && (
-        parent.isKind(SyntaxKind.PropertyAssignment) ||
-        parent.isKind(SyntaxKind.PropertySignature) ||
-        parent.isKind(SyntaxKind.ShorthandPropertyAssignment)
-      )) {
-        const nameNode = (parent as any).getNameNode?.();
-        if (nameNode === node) return;
-      }
-      out.add(node.getText());
+    if (!Node.isIdentifier(node)) return;
+    const parent = node.getParent();
+    if (Node.isPropertyAccessExpression(parent) && parent.getNameNode() === node)
+      return;
+    if (Node.isPropertyAssignment(parent) || Node.isPropertySignature(parent) ||
+        Node.isShorthandPropertyAssignment(parent)) {
+      if (parent.getNameNode() === node) return;
     }
+    out.add(node.getText());
   });
   return out;
 }
@@ -222,12 +219,14 @@ function collectReferencedNames(scope: Node): Set<string> {
 interface ImportInfo {
   moduleSpecifier: string;
   named: string[];
+  namespace?: string;
 }
 
 function collectImports(file: SourceFile): ImportInfo[] {
   return file.getImportDeclarations().map((imp) => ({
     moduleSpecifier: imp.getModuleSpecifierValue(),
     named: imp.getNamedImports().map((ni) => ni.getName()),
+    namespace: imp.getNamespaceImport()?.getText(),
   }));
 }
 
@@ -236,118 +235,114 @@ export interface TransformResult {
   outputText: string;
 }
 
-export function transformText(srcText: string, srcStem: string): TransformResult | null {
-  const directives = parseDirectives(srcText);
-  if (!directives) return null;
-
-  const cleanedText = stripDirectiveLines(stripAsyncOnlyLines(srcText));
-
-  const project = new Project({
-    compilerOptions: {target: 99, module: 99, strict: false, skipLibCheck: true},
-    useInMemoryFileSystem: true,
-  });
-  const work = project.createSourceFile('work.ts', cleanedText);
-
-  const asyncStmts: Statement[] = [];
-  const siblingNames = new Set<string>();
-  for (const stmt of work.getStatements()) {
-    if (isAsyncTopLevel(stmt)) {
-      asyncStmts.push(stmt);
-    } else if (Node.isFunctionDeclaration(stmt) || Node.isVariableStatement(stmt) ||
-               Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt)) {
-      const nm = getDeclaredName(stmt);
-      if (nm != null) siblingNames.add(nm);
-      if (Node.isVariableStatement(stmt)) {
-        for (const d of stmt.getDeclarations()) siblingNames.add(d.getName());
-      }
-    }
-  }
-  if (asyncStmts.length === 0)
-    throw new Error(`${srcStem}: @async-source declared but no async top-level declarations found`);
-
-  const sourceImports = collectImports(work);
-
-  for (const stmt of [...work.getStatements()]) {
+function pruneNonAsyncStatements(file: SourceFile, asyncStmts: Statement[]): void {
+  for (const stmt of [...file.getStatements()]) {
     if (Node.isImportDeclaration(stmt)) continue;
     if (asyncStmts.includes(stmt)) continue;
     stmt.remove();
   }
+}
 
-  // Order matters here. `await` is only a keyword inside async functions; once
-  // we strip the `async` modifier, `await x` re-parses as the call expression
-  // `await(x)`. So strip awaits FIRST (while the host functions are still
-  // async), then unwrap Promise<>, then strip the async modifiers.
-  // Each edit re-parses the SourceFile and forgets descendant references, so
-  // these helpers traverse from the SourceFile (whose identity survives) and
-  // iterate to a fixed point.
-  stripAwaits(work);
-  unwrapPromiseTypes(work);
-  while (stripOneAsyncModifier(work)) { /* iterate to fixed point */ }
+// Order: awaits FIRST. After `async` is stripped, `await x` re-parses as
+// the call `await(x)` (since `await` is only a keyword in async functions).
+function eraseAsyncSyntax(file: SourceFile): void {
+  stripAwaits(file);
+  unwrapPromiseTypes(file);
+  while (stripOneAsyncModifier(file)) {}
+}
 
-  dropAsyncConstAnnotations(work);
-  applyRenames(work, directives.renames);
-
-  for (const imp of [...work.getImportDeclarations()]) imp.remove();
+function rebuildImports(
+  file: SourceFile,
+  sourceImports: ImportInfo[],
+  renames: Map<string, string>,
+  siblingNames: Set<string>,
+  srcStem: string,
+): ImportInfo[] {
+  for (const imp of [...file.getImportDeclarations()]) imp.remove();
 
   const referenced = new Set<string>();
-  for (const stmt of work.getStatements()) {
+  for (const stmt of file.getStatements()) {
     for (const name of collectReferencedNames(stmt)) referenced.add(name);
   }
+  const declaredInOutput = collectDeclaredNames(file.getStatements());
 
-  const declaredInOutput = new Set<string>();
-  for (const stmt of work.getStatements()) {
-    const nm = getDeclaredName(stmt);
-    if (nm) declaredInOutput.add(nm);
-  }
-
-  // When the source imports an async-named symbol (e.g. `runLineSearchAsync`)
-  // that the sync body should resolve to its sync sibling (`runLineSearch`), a
-  // `@codegen-rename` directive on the async name routes the import through
-  // the rename: we ask the sibling module for the *renamed* name. The sibling
-  // module is expected to export it (this is the standard pattern when an
-  // async source file imports from a peer file that itself follows the
-  // async/sync-twin convention).
-  const rebuiltImports: ImportInfo[] = [];
+  // Async-named imports route through the rename map: the sibling module
+  // is expected to export the renamed (sync) name.
+  const rebuilt: ImportInfo[] = [];
   for (const imp of sourceImports) {
+    // Namespace imports aren't subject to @codegen-rename.
+    if (imp.namespace && referenced.has(imp.namespace) && !declaredInOutput.has(imp.namespace)) {
+      rebuilt.push({moduleSpecifier: imp.moduleSpecifier, named: [], namespace: imp.namespace});
+      continue;
+    }
     const used: string[] = [];
     for (const n of imp.named) {
-      const resolved = directives.renames.get(n) ?? n;
-      if (referenced.has(resolved) && !declaredInOutput.has(resolved))
-        used.push(resolved);
+      const resolved = renames.get(n) ?? n;
+      if (referenced.has(resolved) && !declaredInOutput.has(resolved)) used.push(resolved);
     }
-    if (used.length === 0) continue;
-    rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: used});
+    if (used.length > 0)
+      rebuilt.push({moduleSpecifier: imp.moduleSpecifier, named: used});
   }
 
-  const siblingsImported: string[] = [];
-  for (const name of referenced) {
-    if (declaredInOutput.has(name)) continue;
-    if (siblingNames.has(name)) siblingsImported.push(name);
-  }
-  if (siblingsImported.length > 0) {
-    rebuiltImports.push({
-      moduleSpecifier: `./${srcStem}`,
-      named: siblingsImported.sort(),
-    });
-  }
+  const siblings = [...referenced]
+    .filter((n) => !declaredInOutput.has(n) && siblingNames.has(n))
+    .sort();
+  if (siblings.length > 0)
+    rebuilt.push({moduleSpecifier: `./${srcStem}`, named: siblings});
 
-  const banner = [
+  return rebuilt;
+}
+
+function renderBanner(srcStem: string): string {
+  return [
     `/* eslint-disable */`,
     `// GENERATED — do not edit by hand.`,
     `// Run \`npm run update-codegen\` to regenerate.`,
     `// Source: ./${srcStem}.ts`,
     ``,
   ].join('\n');
+}
 
-  const importLines = rebuiltImports.map((imp) =>
-    `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`).join('\n');
+function renderImports(rebuilt: ImportInfo[]): string {
+  return rebuilt.map((imp) =>
+    imp.namespace
+      ? `import * as ${imp.namespace} from '${imp.moduleSpecifier}';`
+      : `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`,
+  ).join('\n');
+}
+
+export function transformText(srcText: string, srcStem: string): TransformResult | null {
+  const directives = parseDirectives(srcText);
+  if (!directives) return null;
+
+  const cleanedText = stripDirectiveLines(stripAsyncOnlyLines(srcText));
+  const project = new Project({
+    compilerOptions: {target: 99, module: 99, strict: false, skipLibCheck: true},
+    useInMemoryFileSystem: true,
+  });
+  const work = project.createSourceFile('work.ts', cleanedText);
+
+  const allStmts = work.getStatements();
+  const asyncStmts = allStmts.filter(isAsyncTopLevel);
+  const siblingNames = collectDeclaredNames(allStmts, (s) => !isAsyncTopLevel(s));
+  if (asyncStmts.length === 0)
+    throw new Error(`${srcStem}: @async-source set, but no async top-level declarations found`);
+
+  const sourceImports = collectImports(work);
+
+  pruneNonAsyncStatements(work, asyncStmts);
+  eraseAsyncSyntax(work);
+  dropAsyncConstAnnotations(work);
+  applyRenames(work, directives.renames);
+
+  const rebuilt = rebuildImports(work, sourceImports, directives.renames, siblingNames, srcStem);
 
   const bodyLines = work.getStatements()
     .filter((s) => !Node.isImportDeclaration(s))
     .map((s) => s.getText())
     .join('\n\n');
 
-  const outputText = `${banner}${importLines}\n\n${bodyLines}\n`;
+  const outputText = `${renderBanner(srcStem)}${renderImports(rebuilt)}\n\n${bodyLines}\n`;
   return {outputPath: directives.outputPath, outputText};
 }
 

@@ -22,15 +22,26 @@ on the right.
 
 Field color-coding and format are picked up from the corresponding grid, if possible.
 
-The following keyboard shortcuts work only when the form is in both read-only and presentation modes:
-
-|                   |                        |
-|-------------------|------------------------|
-| \<, left or up    | Previous row           |
-| > , right or down | Next row               |
-| Space             | Toggle selected state  |
-
 ![Form](../../uploads/gifs/form.gif "form")
+
+## Keyboard shortcuts
+
+|                            |                           |
+|----------------------------|---------------------------|
+|<h4>**Design mode**</h4>    ||
+| Undo                       | Ctrl+Z                    |
+| Redo                       | Ctrl+Y, Ctrl+Shift+Z      |
+| Delete selected elements   | Delete                    |
+| Copy selected elements     | Ctrl+C                    |
+| Paste                      | Ctrl+V                    |
+| Move selected elements     | ←→↑↓                      |
+| Move by one pixel          | Shift+←→↑↓                |
+| Toggle element selection   | Ctrl+Click                |
+| Add element to selection   | Shift+Click               |
+|<h4>**Presentation mode**</h4> ||
+| Previous row               | ←, ↑                      |
+| Next row                   | →, ↓                      |
+| Toggle selected state      | Space                     |
 
 ## Videos
 

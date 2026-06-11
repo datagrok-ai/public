@@ -43,7 +43,7 @@ Then grant the delegated permission your connector needs:
 | Azure AD            | BigQuery   | `https://bigquery.googleapis.com/.default` (requires Google [Workforce Identity Federation](https://cloud.google.com/iam/docs/workforce-identity-federation)) |
 | Azure AD            | Databricks | AzureDatabricks → **user_impersonation** (admin consent recommended)           |
 | Google Workspace    | BigQuery   | `https://www.googleapis.com/auth/bigquery`                                     |
-| Other OIDC (Okta, …) | Databricks | Requires a [Databricks federation policy](https://docs.databricks.com/aws/en/admin/users-groups/best-practices-federation.html) on the workspace |
+| Other OIDC (Okta, …) | Databricks | Requires a [Databricks federation policy](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-federation-policy) on the workspace |
 
 ## Scopes
 

@@ -208,7 +208,7 @@ export class PeptidesModel {
         updateVars.add('clusterMaxActivity');
         break;
       case 'showSequenceSpace':
-        updateVars.add('showSequenceSpace');
+        updateVars.add('sequenceSpaceParams');
         break;
       case 'showLogoSummaryTable':
         updateVars.add('logoSummaryTable');
@@ -293,7 +293,6 @@ export class PeptidesModel {
         mpr.render();
         break;
       case 'sequenceSpaceParams':
-      case 'showSequenceSpace':
         if (this.settings!.showSequenceSpace)
           this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
         break;

@@ -27,7 +27,9 @@ export function addCopyIcon(element: Object | HTMLElement, paneName: string) {
     e.stopImmediatePropagation();
   };
   copyIcon.classList.add('copy-icon');
-  const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
+  // Snapshot to a static array — getElementsByClassName returns a live collection
+  // that would silently reshape if DOM mutations changed class membership during the loop.
+  const accPanes = Array.from(document.getElementsByClassName('d4-accordion-pane-header'));
   for (let i = 0; i < accPanes.length; ++i) {
     if (accPanes[i].innerHTML === paneName) {
       const pane = accPanes[i];
@@ -39,12 +41,19 @@ export function addCopyIcon(element: Object | HTMLElement, paneName: string) {
 }
 
 
+/** ITU-R BT.601 luma coefficients — weighted RGB sum that approximates perceived brightness. */
+const LUMA_R = 0.299;
+const LUMA_G = 0.587;
+const LUMA_B = 0.114;
+/** Backgrounds with luma above this read as light, so use dark text on them. */
+const DARK_TEXT_LUMA_THRESHOLD = 186;
+
 export function pickTextColorBasedOnBgColor(bgColor: string, lightColor: string, darkColor: string) {
   const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
   const r = parseInt(color.substring(0, 2), 16); // hexToR
   const g = parseInt(color.substring(2, 4), 16); // hexToG
   const b = parseInt(color.substring(4, 6), 16); // hexToB
-  return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186) ?
+  return (((r * LUMA_R) + (g * LUMA_G) + (b * LUMA_B)) > DARK_TEXT_LUMA_THRESHOLD) ?
     darkColor : lightColor;
 }
 

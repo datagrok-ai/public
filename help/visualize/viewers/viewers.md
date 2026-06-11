@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Supported viewers"
 ---
 

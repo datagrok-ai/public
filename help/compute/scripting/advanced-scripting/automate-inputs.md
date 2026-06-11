@@ -1,7 +1,8 @@
 ---
 title: "Automate inputs"
 sidebar_position: 7
-format: 'md'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

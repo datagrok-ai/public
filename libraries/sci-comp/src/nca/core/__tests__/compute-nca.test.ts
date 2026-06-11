@@ -1,5 +1,5 @@
 import {computeNca} from '../compute-nca';
-import {ROUTE_IV_BOLUS, ROUTE_PO} from '../types';
+import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
 import type {ProfileInputs, NcaRules} from '../types';
 
 const DEFAULT_RULES: NcaRules = {
@@ -19,6 +19,7 @@ const DEFAULT_RULES: NcaRules = {
   },
   extrapWarnPct: 20,
   extrapErrorPct: 50,
+  extrapWarnPctAumc: 20,
   compensatedSummation: false,
 };
 
@@ -40,6 +41,16 @@ function poInputs(time: number[], conc: number[], dose: number): ProfileInputs {
 
 function ivInputs(time: number[], conc: number[], dose: number): ProfileInputs {
   return {...poInputs(time, conc, dose), route: ROUTE_IV_BOLUS};
+}
+
+function ivInfusionInputs(
+  time: number[], conc: number[], dose: number, tInf: number,
+): ProfileInputs {
+  return {
+    ...poInputs(time, conc, dose),
+    route: ROUTE_IV_INFUSION,
+    infusionDuration: tInf,
+  };
 }
 
 describe('computeNca — clean profiles', () => {
@@ -169,6 +180,128 @@ describe('computeNca — AUC method selection', () => {
     expect(Math.abs(rComp.values.aucLast - rNaive.values.aucLast))
       .toBeLessThan(1e-12);
     expect(rComp.provenance.compensated).toBe(true);
+  });
+});
+
+describe('computeNca — moment parameters (AUMC, MRT, Vss, Tlag)', () => {
+  const ke = 0.3;
+  const times = [0, 0.5, 1, 2, 4, 8, 12];
+  const decay = times.map((t) => Math.exp(-ke * t));
+  // A clean decaying IV-bolus-shaped profile starting above zero.
+  const ivTimes = [0.25, 0.5, 1, 2, 4, 8, 12];
+  const ivDecay = ivTimes.map((t) => 5 * Math.exp(-ke * t));
+
+  it('reports AUMClast/AUMCinf/MRT and the unified moment ratio', () => {
+    const r = computeNca(poInputs(times, decay, 2.5), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(r.values.aumcLast).toBeGreaterThan(0);
+    expect(r.values.aumcInf).toBeGreaterThan(r.values.aumcLast);
+    // MRT (bolus/EV, T_inf=0) is exactly the AUMCinf/AUCinf ratio.
+    expect(r.values.mrt).toBeCloseTo(r.values.aumcInf / r.values.aucInf, 12);
+    // %AUMCextrap ≥ %AUCextrap (moment tail is time-weighted).
+    expect(r.values.pctExtrapAumc).toBeGreaterThanOrEqual(r.values.pctExtrap);
+  });
+
+  it('Vss is NaN for extravascular, Tlag reported', () => {
+    const r = computeNca(poInputs(times, decay, 2.5), DEFAULT_RULES);
+    expect(Number.isNaN(r.values.vss)).toBe(true); // route gate: EV → NaN
+    expect(Number.isFinite(r.values.tlag)).toBe(true);
+  });
+
+  it('Vss reported for IV bolus, Tlag is NaN (no absorption)', () => {
+    const r = computeNca(ivInputs(ivTimes, ivDecay, 25), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(Number.isFinite(r.values.vss)).toBe(true);
+    expect(Number.isNaN(r.values.tlag)).toBe(true); // route gate: IV → NaN
+    // Vss = CL·MRT = dose·AUMCinf/AUCinf² for bolus.
+    expect(r.values.vss).toBeCloseTo(r.values.cl * r.values.mrt, 10);
+    expect(r.values.vss).toBeCloseTo(
+      25 * r.values.aumcInf / (r.values.aucInf * r.values.aucInf), 10);
+  });
+
+  it('Tlag detects an absorption lag', () => {
+    // Leading zeros at t=0 and t=0.5 → lag = last zero before the rise = 0.5.
+    const t = [0, 0.5, 1, 2, 4, 8, 12];
+    const c = [0, 0, 1.0, 0.8, 0.4, 0.15, 0.05];
+    const r = computeNca(poInputs(t, c, 2.5), DEFAULT_RULES);
+    expect(r.values.tlag).toBe(0.5);
+  });
+
+  it('Tlag uses BLQ-as-zero, not BLQ-removed, for the lag boundary', () => {
+    // BLQ point at t=0.5 (set-zero) is the last sub-quantifiable sample before
+    // the first measurable at t=1 → Tlag = 0.5. If the BLQ point were dropped
+    // from the series instead of zeroed, Tlag would wrongly collapse to 0.
+    const inputs: ProfileInputs = {
+      ...poInputs([0, 0.5, 1, 2, 4, 8, 12],
+        [0, 0.005, 1.0, 0.8, 0.4, 0.15, 0.05], 2.5),
+      blqMask: new Uint8Array([0, 1, 0, 0, 0, 0, 0]),
+    };
+    const r = computeNca(inputs, DEFAULT_RULES);
+    expect(r.values.tlag).toBe(0.5);
+  });
+
+  it('IV infusion applies the −T_inf/2 MRT correction and Vss', () => {
+    const tInf = 1;
+    const r = computeNca(
+      ivInfusionInputs(ivTimes, ivDecay, 25, tInf), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    // MRT = AUMCinf/AUCinf − T_inf/2 (Perrier & Mayersohn Eq. 8).
+    expect(r.values.mrt).toBeCloseTo(
+      r.values.aumcInf / r.values.aucInf - tInf / 2, 12);
+    // Vss = CL·MRT (Eq. 11) — carries the same correction.
+    expect(r.values.vss).toBeCloseTo(r.values.cl * r.values.mrt, 10);
+    // The correction strictly lowers MRT vs the uncorrected ratio.
+    expect(r.values.mrt).toBeLessThan(r.values.aumcInf / r.values.aucInf);
+    expect(Number.isNaN(r.values.tlag)).toBe(true); // IV → no Tlag
+  });
+
+  it('IV infusion without a duration falls back to T_inf = 0 (no correction)', () => {
+    const r = computeNca(
+      {...ivInfusionInputs(ivTimes, ivDecay, 25, 0), infusionDuration: null},
+      DEFAULT_RULES);
+    expect(r.values.mrt).toBeCloseTo(r.values.aumcInf / r.values.aucInf, 12);
+  });
+
+  it('AUMClast is preserved on partial profiles while AUMCinf is NaN', () => {
+    // 3-point peak, only 1 post-Cmax point → lambda_z unfit (mirrors AUClast).
+    const r = computeNca(poInputs([0, 1, 2], [0, 5, 3], 2.5), DEFAULT_RULES);
+    expect(r.status).toBe('partial');
+    expect(Number.isFinite(r.values.aumcLast)).toBe(true);
+    expect(Number.isNaN(r.values.aumcInf)).toBe(true);
+    expect(Number.isNaN(r.values.mrt)).toBe(true);
+    expect(Number.isNaN(r.values.vss)).toBe(true);
+  });
+
+  it('emits AUMC_EXTRAP_HIGH exactly when %AUMCextrap crosses the threshold', () => {
+    // Exercise the warning path independent of where the % falls: read the
+    // actual %AUMCextrap, then bracket it with the threshold (R1-F7).
+    const base = computeNca(poInputs(times, decay, 2.5), DEFAULT_RULES);
+    const pct = base.values.pctExtrapAumc;
+    expect(pct).toBeGreaterThan(0);
+
+    const fires = computeNca(poInputs(times, decay, 2.5),
+      {...DEFAULT_RULES, extrapWarnPctAumc: pct - 1});
+    const silent = computeNca(poInputs(times, decay, 2.5),
+      {...DEFAULT_RULES, extrapWarnPctAumc: pct + 1});
+    expect(fires.provenance.warnings.some((w) => w.code === 'AUMC_EXTRAP_HIGH'))
+      .toBe(true);
+    expect(silent.provenance.warnings.some((w) => w.code === 'AUMC_EXTRAP_HIGH'))
+      .toBe(false);
+  });
+
+  it('failed profiles report all moment params as NaN', () => {
+    const inputs: ProfileInputs = {
+      ...poInputs([0, 1, 2], [0.005, 0.003, 0.002], 2.5),
+      blqMask: new Uint8Array([1, 1, 1]),
+    };
+    const r = computeNca(inputs, DEFAULT_RULES);
+    expect(r.status).toBe('failed');
+    expect(Number.isNaN(r.values.aumcLast)).toBe(true);
+    expect(Number.isNaN(r.values.aumcInf)).toBe(true);
+    expect(Number.isNaN(r.values.mrt)).toBe(true);
+    expect(Number.isNaN(r.values.vss)).toBe(true);
+    expect(Number.isNaN(r.values.tlag)).toBe(true);
+    expect(Number.isNaN(r.values.pctExtrapAumc)).toBe(true);
   });
 });
 

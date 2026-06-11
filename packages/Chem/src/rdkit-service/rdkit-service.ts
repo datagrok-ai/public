@@ -6,7 +6,7 @@ import {chemBeginCriticalSection, chemEndCriticalSection, Fingerprint, rdKitFing
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
-import {LockedEntity} from '../utils/locked-entitie';
+import {LockedEntity} from '../utils/locked-entity';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {PackageFunctions} from '../package';
 import {SubstructureSearchType} from '../constants';
@@ -67,7 +67,7 @@ export class RdKitService {
    * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} map - splits the data
    * by number of workers and calls function from rdkit service worker client (basicaly action which we need
    * to perform inside worker - getFingerprints, searchSubstructure etc.)
-   * @param {function (_: TMap[]): TReduce} reduce - fucntion which combines results collected from web workers
+   * @param {function (_: TMap[]): TReduce} reduce - function which combines results collected from web workers
    * into single result
    * */
   async _doParallel<TMap, TReduce>(
@@ -95,7 +95,9 @@ export class RdKitService {
     const getTerminateFlag = () => {return terminateFlag;};
     const t = this;
     const dataLength = data.length;
-    const increment = Math.floor(Math.max(500 / this.workerCount, 20));
+    const batchSizeBase = 500; // initial batch budget, split across workers
+    const minBatchSize = 20; // floor per-worker so very small workerCounts don't shrink batches to nothing
+    const increment = Math.floor(Math.max(batchSizeBase / this.workerCount, minBatchSize));
     const incrementMultiplier = 1.05; // each iteration increment is multiplied by this value to increase sub_batch size
     const workingIndexes = new Array<{start: number, increment: number}>(this.workerCount)
       .fill({start: 0, increment});
@@ -188,7 +190,7 @@ export class RdKitService {
         }
       });
       progressFunc(1);
-    });
+    }).catch((err) => console.error('rdkit-service _doParallelBatches tail update failed:', err));
     const getProgress = () => processedMolecules / dataLength;
     return {getProgress, setTerminateFlag, getTerminateFlag, promises};
   }
@@ -286,7 +288,7 @@ export class RdKitService {
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
     searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan,
-    afterBatchCalculated = () => {}) {
+    afterBatchCalculated = () => {}, includeMask: BitArray | null = null) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, PackageFunctions.getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -350,6 +352,13 @@ export class RdKitService {
           searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
           // *********** FILTERING using fingerprints
           patternFpFilterBitArray = this.filterByPatternFps(searchType, batch, fpRdKit, fpResult);
+          // drop rows the parent scaffold already excluded — child matches ⊆ parent matches
+          if (includeMask) {
+            for (let i = 0; i < batch.length; ++i) {
+              if (!includeMask.getBit(batchStartIdx + i))
+                patternFpFilterBitArray.setFast(i, false);
+            }
+          }
           filteredMolecules = this.filterMoleculesByBitArray(patternFpFilterBitArray, batch, fpResult, createSmiles);
         } else
           filteredMolecules = createSmiles ? fpResult.smiles! as string[] : batch;
@@ -628,9 +637,15 @@ export class RdKitService {
           this.restartWorker(workerIndex);
           resolver(); // no point in waiting... its probably stuck
         }, 45000); // if it is running for more than 30s, restart the worker
-        const r = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
-        clearTimeout(t);
-        res[index] = r;
+        try {
+          res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+        } catch (e) {
+          // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
+          console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+          return;
+        } finally {
+          clearTimeout(t);
+        }
       }
       await process(workerIndex, resolver);
     };

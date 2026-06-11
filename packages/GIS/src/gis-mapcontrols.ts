@@ -44,6 +44,7 @@ export class PanelLayersControl extends Control {
       'topLevelDefaultMenu': true,
       'allowDynamicMenus': false,
       'showContextMenu': false,
+      'showReadOnlyNotifications': false,
     };
 
     const df = DG.DataFrame.fromCsv(
@@ -125,6 +126,8 @@ export class PanelLayersControl extends Control {
   cellVisibleClick(gc: DG.GridCell) {
     if (this.refreshing)
       return;
+    if (gc?.gridColumn?.name !== 'vis')
+      return;
     if (gc.tableRowIndex !== null) {
       const col = gc.grid.table.columns.byName('layerid');
       if (col) {
@@ -135,7 +138,7 @@ export class PanelLayersControl extends Control {
         if (!layer)
           return;
 
-        const target = gc.cell.value;
+        const target = gc.grid.table.columns.byName('vis').get(gc.tableRowIndex) === true;
         if (layer.getVisible() === target)
           return;
         layer.setVisible(target);

@@ -47,6 +47,7 @@ category('Timelines', () => {
       markerSize: 6,
       markerPosition: 'main line',
       lineWidth: 3,
+      autoSize: true,
       dateFormat: '{MMM} {d}',
       axisPointer: 'shadow',
       showZoomSliders: true,

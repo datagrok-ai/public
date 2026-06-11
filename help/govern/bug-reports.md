@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Feedback"
 sidebar_position: 5
 ---

@@ -8,9 +8,12 @@ import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
 import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY,
-  getLegendDiv} from './utils';
+  getLegendDiv,
+  waitForElement} from './utils';
 
+// @ts-ignore
 import '../../../../css/tutorial.css';
+// @ts-ignore
 import '../../../../css/ui-describer.css';
 import { DescriptionPage, getRect, runDescriber } from './ui-describer';
 
@@ -35,32 +38,6 @@ enum SIZE_LIMITS {
   TUTORIAL_PANEL_MIN_WIDTH = 190,  
 };
 
-/** Earth's population modeling */
-export const POPULATION_MODEL = `#name: Lotka-Volterra
-#equations: 
-  dx/dt = alpha * x
-  dy/dt = -gamma * y
-
-#argument: t
-  initial = 0 {min: 0; max: 2; caption: Start; category: Time}    [Simulation start.]
-  final = 15  {min: 2; max: 150; caption: Finish; category: Time} [Simulation end.]
-  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}   [Grid step.]
-
-#inits:  
-  x = 20 {min: 2; max: 40; category: Seed; caption: Prey}
-  y = 2  {min: 2; max: 10; category: Seed; caption: Predator}
-
-#parameters:
-  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [Maximum prey growth rate.]
-  beta = 0.4  {min: 0.1; max: 1; category: Parameters}   [Predator impact on prey death rate.]
-  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [Predator mortality rate.]
-  delta = 0.4 {min: 0.1; max: 1; category: Parameters}   [Effect of prey on predator growth.]
-
-#output:
-  t {caption: Time}
-  x {caption: Prey}
-  y {caption: Predator}`;
-
 /** Diff Studio editor info */
 const editorInfo = new Map([  
   ['eqs', `# Equations
@@ -79,15 +56,14 @@ const editorInfo = new Map([
   * \`min\` and \`max\`: Creates a slider control with defined range for quick model adjustments
   * \`caption\`: Adds a descriptive label
   * \`category\`: Groups related arguments together.`],
-  ['hint', `# Hints
-   
-  Additionally, you can add tooltips inside brackets \`[]\`.`],
   ['inits', `# Inits
   
   Define initial values here.`],
   ['params', `# Parameters
   
-  If your model has parameters, specify them here.`],
+  If your model has parameters, specify them here.
+  
+  Specify tooltips in square brackets \`[]\` to provide additional information about each parameter.`],
   ['out', `# Output
 
   The computation output is a dataframe. Customize its columns here.`],
@@ -101,7 +77,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
   get description() {
     return 'Learn how to model processes defined by ordinary differential equations with Diff Studio';
   }
-  get steps() {return 13;}
+  get steps() {return 15;}
 
   get icon() {
     return '📈🧮';
@@ -169,20 +145,40 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Double-click the Diff Studio icon',
     );
 
-    const viewToClose = await getViewWithElement('div.d4-line-chart');
-    if (viewToClose === null) {
+    const diffStudioView = await getViewWithElement('div.ui-div.diff-studio-hub-grid');
+    if (diffStudioView === null) {
       grok.shell.warning('Failed to run Diff Studio');
       return;
     }
-    viewToClose.close();
 
-    const openModelFunc: DG.Func = await grok.functions.eval('DiffStudio:ivpFileHandler');
-    const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
-    await openModelFuncCall.call();
+    // 3. Open model
+    const waitForElementResult = await waitForElement(diffStudioView.root, 'div.ui-div.diff-studio-hub-grid', 2);
+    if (!waitForElementResult) {
+      grok.shell.warning('Diff Studio runs incorrectly: model galleries not found');
+      return;
+    }
+    const galleries = diffStudioView.root.querySelectorAll('div.ui-div.diff-studio-hub-grid');
+
+    const libraryElement = galleries[1];
+    const modelElements = libraryElement.querySelectorAll('div[class="d4-flex-col ui-div diff-studio-hub-card"]');
+
+    if (modelElements.length < 3) {
+      grok.shell.warning('Diff Studio runs incorrectly: models not found');
+      return;
+    }
+
+    const lotkaVolterraElement = modelElements[2] as HTMLElement;
+
+    await this.action(
+      'Run the Lotka-Volterra model',
+      fromEvent(lotkaVolterraElement, 'dblclick'),
+      lotkaVolterraElement,
+      'Double-click the Lotka-Volterra model icon',
+    );
 
     await new Promise((resolve) => setTimeout(resolve, DELAY));
 
-    // 3. Explore elements
+    // 4. Explore elements
     const dsView = grok.shell.v as DG.TableView;
     const dsViewRoot = dsView.root;
     const inputsPanel = dsViewRoot.querySelector('div[class="panel-base splitter-container-horizontal"]') as HTMLElement;
@@ -201,7 +197,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let doneBtn = runDescriber({pages: [
       { // Diff Studio view
         root: dsViewRoot.parentElement ?? dsViewRoot,
-        description: '# App\n\nThis is the main view of Diff Studio.', 
+        description: '# Lotka-Volterra model 🐰🦊\n\nThis is the main view of the model.',
         position: 'left',
         elements: {
           major: dsViewRoot.parentElement ?? dsViewRoot,
@@ -275,18 +271,18 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
 
-    // 7. Complete 1st equation
+    // 7. Complete the predator equation
     this.title('Improving models');
-    this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
+    this.describe('Let\'s extend the model to account for intraspecific competition among predators.');
 
     const tutorialPanelRoot = document.querySelector('div.tutorials-root-description.ui-div');
 
-    let equation = 'dx/dt = alpha * x - beta * x * y';
+    let equation = 'dy/dt = -gamma * y + delta * x * y - eta * y * y';
     let rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
-      ui.label('Update the first equation (🐰) to obtain'),
+      ui.label('Update the predator equation (🦊) to obtain'),
       ui.divH([
-        ui.div(equation, 'tutorials-code-section'),
+        ui.div(equation, 'tutorials-code-section-wide'),
         ui.div(ui.iconFA('copy', () => {
           grok.shell.info('Copied to clipboard');
           navigator.clipboard.writeText(equation);
@@ -297,22 +293,22 @@ export class DifferentialEquationsTutorial extends Tutorial {
     setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
 
     await this.action(
-      'Complete the first equation',
-      interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == rawEquation)),
+      'Complete the predator equation',
+      interval(100).pipe(filter(() => lineRoots[3].textContent?.replaceAll(' ', '') == rawEquation)),
     );
 
     codeDiv.hidden = true;
 
-    // 8. Complete 2nd equation
-    equation = 'dy/dt = -gamma * y + delta * x * y';
-    rawEquation = equation.replaceAll(' ', '');
+    // 8. Add the eta parameter
+    const etaParam = 'eta = 0.01 {min: 0; max: 0.1; category: Parameters} [Crowding effect]';
+    const rawEtaParam = etaParam.replaceAll(' ', '');
     codeDiv = ui.divV([
-      ui.label('Update the second equation (🦊) to obtain'),
+      ui.label('Add the new parameter to the #parameters block'),
       ui.divH([
-        ui.div(equation, 'tutorials-code-section'),
+        ui.div(etaParam, 'tutorials-code-section-narrow'),
         ui.div(ui.iconFA('copy', () => {
           grok.shell.info('Copied to clipboard');
-          navigator.clipboard.writeText(equation);
+          navigator.clipboard.writeText(etaParam);
         }, 'Copy to clipboard'), 'tutorials-copy-icon'),
       ]),
     ]);
@@ -320,8 +316,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
     setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
 
     await this.action(
-      'Complete the second equation',
-      interval(100).pipe(filter(() => lineRoots[2].textContent?.replaceAll(' ', '') == rawEquation)),
+      'Add the eta parameter',
+      interval(100).pipe(filter(() => {
+        const lines = editorRoot.querySelectorAll('div.cm-line');
+        return Array.from(lines).some((l) => l.textContent?.replaceAll(' ', '') === rawEtaParam);
+      })),
     );
 
     codeDiv.hidden = true;
@@ -403,16 +402,15 @@ export class DifferentialEquationsTutorial extends Tutorial {
   } // _run
 
   private getLegend(): HTMLElement {
-    return getLegendDiv('# Graphs\n\nThe model is incomplete, leading to the following effects:', [
-      '🐰 The prey population grows infinitely.',
-      '🦊 The predator population steadily declines.'      
+    return getLegendDiv('# Graphs\n\nThe model takes into account:', [
+      '🦊➠🐰 the effect of the presence of predators on the prey death rate.',
+      '🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate.'      
     ]);
   }
 
   private getUpdatesDescription(): HTMLElement {
-    return getLegendDiv('# Updates\n\nNow, the model takes into account:', [
-      '🦊➠🐰 the effect of the presence of predators on the prey death rate',
-      '🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate'      
+    return getLegendDiv('# Updates\n\nThe model now also accounts for:', [
+      '🦊↔🦊 intraspecific competition among predators.'
     ]);
   }
 
@@ -428,70 +426,60 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     const pages: DescriptionPage[] = [
       { // Equations block
-        root: lineRoots[1],
+        root: lineRoots[2],
         description: editorInfo.get('eqs')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[0], {width: 162, height: 57}) : viewRoot
+          major: isWide ? getRect(lineRoots[1], {width: 275, height: 57}) : viewRoot
         },
       },
       { // Argument block
-        root: lineRoots[4],
+        root: lineRoots[5],
         description: editorInfo.get('arg')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[4], {width: 105, height: 76}) : viewRoot,
+          major: isWide ? getRect(lineRoots[5], {width: 83, height: 76}) : viewRoot,
         },
-      },      
+      },
     ];
-    
+
     if (isWide) {
-      pages.push(...[
-        { // Annotation block
-          root: lineRoots[4],
-          description: editorInfo.get('annot')!,
-          position: 'left',
-          elements: {
-            major: isWide ? getRect(lineRoots[4], {width: 477, height: 76}) : viewRoot
-          },
+      pages.push({ // Annotation block
+        root: lineRoots[5],
+        description: editorInfo.get('annot')!,
+        position: 'left',
+        elements: {
+          major: isWide ? getRect(lineRoots[5], {width: 455, height: 76}) : viewRoot
         },
-        { // Annotation with hint block
-          root: lineRoots[4],
-          description: editorInfo.get('hint')!,
-          position: 'left',
-          elements: {
-            major: isWide ? getRect(lineRoots[4], {width: 627, height: 76}) : viewRoot,
-          },
-        },
-      ]);
+      });
     }
-    
+
     pages.push(...[
       { // Initial conditions block
-        root: lineRoots[9],
+        root: lineRoots[10],
         description: editorInfo.get('inits')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[9], {width: 455, height: 57}) : viewRoot,
+          major: isWide ? getRect(lineRoots[10], {width: 455, height: 57}) : viewRoot,
         },
       },
       { // Parameters block
-        root: lineRoots[13],
+        root: lineRoots[14],
         description: editorInfo.get('params')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[13], {width: 412, height: 95}) : viewRoot,
+          major: isWide ? getRect(lineRoots[14], {width: 705, height: 95}) : viewRoot,
         },
       }
-    ]);  
-    
+    ]);
+
     if (window.innerHeight >= SIZE_LIMITS.WINDOW_MIN_HEIGHT) {
       pages.push({ // Outputs block
-        root: lineRoots[19],
+        root: lineRoots[20],
         description: editorInfo.get('out')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[19], {width: 185, height: 76}) : viewRoot,
+          major: isWide ? getRect(lineRoots[20], {width: 185, height: 76}) : viewRoot,
         },
       });
     }

@@ -152,6 +152,44 @@ export async function pdbInfoPanel(pdbId: string) : Promise<any> {
   return await PackageFunctions.pdbInfoPanel(pdbId);
 }
 
+//input: string molecule 
+//output: bool result
+export function hasNonWaterHetatm(molecule: string) : boolean {
+  return PackageFunctions.hasNonWaterHetatm(molecule);
+}
+
+//name: Protein-Ligand Interactions
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+//meta.role: panel
+//condition: BiostructureViewer:hasNonWaterHetatm(molecule)
+export async function pdbInteractionsWidget(molecule: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.pdbInteractionsWidget(molecule);
+}
+
+//input: string molecule 
+//output: bool result
+export function isAutoDockPose(molecule: string) : boolean {
+  return PackageFunctions.isAutoDockPose(molecule);
+}
+
+//name: Protein-Ligand Interactions
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+//meta.role: panel
+//condition: BiostructureViewer:isAutoDockPose(molecule)
+export async function dockingInteractionsWidget(molecule: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.dockingInteractionsWidget(molecule);
+}
+
+//name: Protein-Ligand Interactions
+//input: string pdbId { semType: PDB_ID }
+//output: widget result
+//meta.role: panel
+export async function pdbIdInteractionsWidget(pdbId: string) : Promise<any> {
+  return await PackageFunctions.pdbIdInteractionsWidget(pdbId);
+}
+
 //description: Example app for NGL drawing in grid cells
 export async function nglForGridTestApp() : Promise<void> {
   await PackageFunctions.nglForGridTestApp();
@@ -374,7 +412,8 @@ export function pdbFileInfoPanel(molecule: DG.SemanticValue) : any {
   return PackageFunctions.pdbFileInfoPanel(molecule);
 }
 
-//input: column mol3DCol 
+//name: Link With Molecule Column
+//input: column mol3DCol { semType: Molecule3D }
 //output: widget result
 export function mol3dAtomPickerLinkWidget(mol3DCol: DG.Column) : any {
   return PackageFunctions.mol3dAtomPickerLinkWidget(mol3DCol);

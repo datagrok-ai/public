@@ -10,6 +10,8 @@ let descriptorsCached: object[];
 async function getContainer() {
   if (!chemContainer)
     chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
+  if (!chemContainer)
+    throw new Error('Chem service is not available: "chem-chem" Docker container not found');
   // if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
   //   await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
   return chemContainer;
@@ -69,6 +71,6 @@ async function gzipPostRequest(data: any, path: string): Promise<any> {
     {method: 'POST', body: body, headers: {'Content-Encoding': 'gzip',  'Content-Type': 'application/json',
         'Content-Length': `${body.length}`}});
   if (response.status !== 200)
-    throw new Error(response.statusText);
+    throw new Error(`chem-chem container request to ${path} failed: ${response.status} ${response.statusText || '(no statusText)'}`);
   return await response.json();
 }

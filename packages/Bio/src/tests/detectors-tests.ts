@@ -203,9 +203,9 @@ CAGUGUCAGUGU
 UUCAACUUCAAC`;
     /** Pure amino acids sequence */
     [csvTests.fastaPt1]: string = `seq
-FWPHEY
-YNRQWYV
-MKPSEYV`;
+FWPHEYWYV
+YNRQWYVWPH
+MKPSEYVQWY`;
     [csvTests.fastaUn]: string = `seq
 [meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]DN
 [meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Aca]

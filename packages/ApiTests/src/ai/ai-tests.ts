@@ -6,6 +6,7 @@ import './utils/string-utils-helpers';
 import './utils/utils-static-helpers';
 
 // Viewer JS API
+import './viewers/annotation-regions-cross-viewer';
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';
 import './viewers/bar-chart-legend-visibility';
@@ -23,6 +24,7 @@ import './viewers/pie-chart-js-api';
 import './viewers/scatter-plot-auto-detect';
 import './viewers/scatter-plot-extras';
 import './viewers/scatter-plot-js-api';
+import './viewers/viewer-layout-backward-compat';
 
 // Reported issues (regression coverage from JIRA tickets and GitHub issues)
 import './reported-issues/gh-3469';

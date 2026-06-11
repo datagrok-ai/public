@@ -133,6 +133,8 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When true, selected points are highlighted using the selected rows color. When false, selected points use their regular color coding. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Show All Categories | boolean | When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments. |
@@ -140,8 +142,6 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Axis Font | string |  |
 | Category Font | string |  |
 | Statistics Font | string |  |
-| Formula Font | string |  |
-| Annotation Font | string |  |
 | Whisker Line Width | number |  |
 | Interquartile Line Width | number | Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow. |
 | Whisker Width Ratio | number |  |
@@ -150,18 +150,19 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list |  |
 | Controls Font | string | Viewer controls elements font. |
-| **Lines** | | |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| **Annotation regions** | | |
-| Show Viewer Annotation Regions | boolean |  |
-| Show Dataframe Annotation Regions | boolean |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls box plot tooltip visibility |
 | Show Labels | visibilitymode |  |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

@@ -7,7 +7,7 @@ import {loadUsers, setupUserIconRenderer} from '../utils';
 
 export class ReportingApp {
   static readonly APP_NAME = 'Reports';
-  view: DG.TableView = DG.TableView.create(DG.DataFrame.create());
+  view: DG.TableView = DG.TableView.create(DG.DataFrame.create(), false);
   parentCall: DG.FuncCall;
   currentFilter?: DG.Viewer;
   isInit: boolean = false;

@@ -490,7 +490,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         progressContext.combosTotal = totalCombos;
 
         configLoop:
-        for (const slots of slotConfigs)
+        for (const slots of slotConfigs) {
           for (const combo of cartesian(slots)) {
             if (isCancelled?.()) break configLoop;
             if (comboCap >= 0 && executed >= comboCap) {
@@ -506,9 +506,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             // elsewhere", so skip the depth-first combo filter (it would reject everything
             // because reagents aren't in the BB or prev-round sets).
             if (!useReagents && config.enumeration.depth_first && round > 1) {
-              // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
-              // round-(R-1) product and reacts it with original BBs only — no merging two
-              // complex products in a single step (that would be convergent/breadth-first).
+            // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
+            // round-(R-1) product and reacts it with original BBs only — no merging two
+            // complex products in a single step (that would be convergent/breadth-first).
               const prevSet = new Set(prevRoundProducts);
               const bbSet = new Set(uniqueBBs);
               let prevCount = 0;
@@ -520,135 +520,146 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
             }
 
-          let molList: MolList | null = null;
-          let result: ReturnType<RDReaction['run_reactants']> | null = null;
-          // Always create fresh mols from SMILES for the MolList — never share with the BB cache.
-          // copy() appears to be shallow at the WASM level: a copy still aliases the original's
-          // managed memory, and molList.delete() reaches into both, corrupting the heap and
-          // surfacing as "null function" errors during dispose. Fresh-parse-per-combo matches the
-          // Chem package's reactions.ts pattern.
-          const inputMols: RDMol[] = [];
-          try {
-            molList = new rdkit.MolList();
-            let allValid = true;
-            for (const smi of combo) {
-              const fresh = tryGetMol(rdkit, smi);
-              if (!fresh) {allValid = false; break;}
-              inputMols.push(fresh);
-              molList.append(fresh);
-            }
-            if (!allValid) continue;
-
+            let molList: MolList | null = null;
+            let result: ReturnType<RDReaction['run_reactants']> | null = null;
+            // Always create fresh mols from SMILES for the MolList — never share with the BB cache.
+            // copy() appears to be shallow at the WASM level: a copy still aliases the original's
+            // managed memory, and molList.delete() reaches into both, corrupting the heap and
+            // surfacing as "null function" errors during dispose. Fresh-parse-per-combo matches the
+            // Chem package's reactions.ts pattern.
+            const inputMols: RDMol[] = [];
             try {
-              result = t.rxn.run_reactants(molList, 1);
-            } catch (e) {
-              warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
-              continue;
-            }
-            if (!result || result.size() === 0) continue;
-
-            // Match the example in rdkit-api.ts exactly: result.get(i).next() once, no reset/at_end.
-            // Calling reset() or at_end() before next() can leave the iterator in a corrupt state.
-            const productSet = result.get(0);
-            try {
-              const productMol = productSet.next();
-              try {
-                if (!productMol || !productMol.is_valid()) continue;
-
-                let productSmiles: string;
-                try {productSmiles = productMol.get_smiles();} catch {continue;}
-                if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
-                  const stripped = stripIsotopesFromSmiles(productSmiles);
-                  const re = canonicalize(rdkit, stripped);
-                  if (!re) continue;
-                  productSmiles = re;
-                }
-
-                // Always evaluate against a fresh mol parsed from the canonical SMILES — never touch
-                // productMol directly (it can be in a fragile post-reaction state, and downstream
-                // ops like get_substruct_match on it appear to corrupt the WASM heap).
-                const evalMol = tryGetMol(rdkit, productSmiles);
-                if (!evalMol) continue;
-                try {
-                  let stats: MolStats;
-                  try {
-                    stats = computeMolStats(evalMol);
-                  } catch (e) {
-                    warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
-                    continue;
-                  }
-                  const fr = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
-                  if (!fr.pass) continue;
-                } finally {
-                  try {evalMol.delete();} catch {/* ignore */}
-                }
-
-                const step: RouteStep = {
-                  reactants: combo.slice(),
-                  product: productSmiles,
-                  templateSmarts: t.smarts,
-                  reactionName: t.reactionName,
-                };
-
-                // Build the base route(s) — the synthesis history that must precede this step.
-                // For each combo component that's a previously-synthesized product (from ANY
-                // earlier round, not just round-(r-1)), splice in its known route. BBs and any
-                // unknown reactant are treated as starting materials with no prior history.
-                //
-                // Looking only at round-(r-1) was the original behavior, but it dropped the
-                // synthesis steps of round-(r-2) (or earlier) products that appear in the combo.
-                // In breadth-first mode (or whenever a step legitimately consumes products from
-                // multiple earlier rounds), the resulting route would look like it started from
-                // pre-formed peptides instead of bare BBs. Now we look across all prior rounds.
-                let baseRoutes: Route[];
-                if (round === 1)
-                  baseRoutes = [[]];
-                else {
-                  const allPrevProducts = new Map<string, ProductRecord>();
-                  for (let r = 1; r < round; r++) {
-                    for (const p of productPools[r]) {
-                      // First occurrence wins (typically the shorter route).
-                      if (!allPrevProducts.has(p.smiles)) allPrevProducts.set(p.smiles, p);
-                    }
-                  }
-                  const prevComponents = combo.filter((c) => allPrevProducts.has(c));
-                  if (prevComponents.length === 0) baseRoutes = [[]];
-                  else {
-                    const prevRouteLists = prevComponents.map((pc) => {
-                      const rec = allPrevProducts.get(pc);
-                      return rec && rec.routes.length > 0 ? rec.routes : [[]];
-                    });
-                    baseRoutes = [];
-                    for (const combo2 of cartesian(prevRouteLists)) {
-                      const merged: Route = [];
-                      for (const r of combo2) for (const s of r) merged.push(s);
-                      baseRoutes.push(merged);
-                    }
-                  }
-                }
-
-                let rec = newPool.get(productSmiles);
-                if (!rec) {
-                  rec = {smiles: productSmiles, routes: [], firstRound: round};
-                  newPool.set(productSmiles, rec);
-                }
-                for (const base of baseRoutes) {
-                  if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
-                  rec.routes.push([...base, step]);
-                }
-              } finally {
-                try {productMol?.delete();} catch {/* ignore */}
+              molList = new rdkit.MolList();
+              let allValid = true;
+              for (const smi of combo) {
+                const fresh = tryGetMol(rdkit, smi);
+                if (!fresh) {allValid = false; break;}
+                inputMols.push(fresh);
+                molList.append(fresh);
               }
+              if (!allValid) continue;
+
+              try {
+              // FIX 1: Changed cap from 1 → 0 (unlimited) so reactions that fire at
+              // multiple sites return all products instead of only the first one.
+                result = t.rxn.run_reactants(molList, 0);
+              } catch (e) {
+                warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
+                continue;
+              }
+              if (!result || result.size() === 0) continue;
+
+              // Match the example in rdkit-api.ts exactly: result.get(i).next() once, no reset/at_end.
+              // Calling reset() or at_end() before next() can leave the iterator in a corrupt state.
+              // FIX 2: Was result.get(0) — only the first product set was ever processed.
+              // Now loop over ALL result sets so every reaction site's product is collected.
+              const producedSmilesSet = new Set<string>();
+              for (let ri = 0; ri < result.size(); ri++) {
+                const productSet = result.get(ri);
+                try {
+                  const productMol = productSet.next();
+                  try {
+                    if (!productMol || !productMol.is_valid()) continue;
+
+                    let productSmiles: string;
+                    try {productSmiles = productMol.get_smiles();} catch {continue;}
+                    if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
+                      const stripped = stripIsotopesFromSmiles(productSmiles);
+                      const re = canonicalize(rdkit, stripped);
+                      if (!re) continue;
+                      productSmiles = re;
+                    }
+                    if (producedSmilesSet.has(productSmiles))
+                      continue;
+                    producedSmilesSet.add(productSmiles);
+
+                    // Always evaluate against a fresh mol parsed from the canonical SMILES — never touch
+                    // productMol directly (it can be in a fragile post-reaction state, and downstream
+                    // ops like get_substruct_match on it appear to corrupt the WASM heap).
+                    const evalMol = tryGetMol(rdkit, productSmiles);
+                    if (!evalMol) continue;
+                    try {
+                      let stats: MolStats;
+                      try {
+                        stats = computeMolStats(evalMol);
+                      } catch (e) {
+                        warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
+                        continue;
+                      }
+                      const fr = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
+                      if (!fr.pass) continue;
+                    } finally {
+                      try {evalMol.delete();} catch {/* ignore */}
+                    }
+
+                    const step: RouteStep = {
+                      reactants: combo.slice(),
+                      product: productSmiles,
+                      templateSmarts: t.smarts,
+                      reactionName: t.reactionName,
+                    };
+
+                    // Build the base route(s) — the synthesis history that must precede this step.
+                    // For each combo component that's a previously-synthesized product (from ANY
+                    // earlier round, not just round-(r-1)), splice in its known route. BBs and any
+                    // unknown reactant are treated as starting materials with no prior history.
+                    //
+                    // Looking only at round-(r-1) was the original behavior, but it dropped the
+                    // synthesis steps of round-(r-2) (or earlier) products that appear in the combo.
+                    // In breadth-first mode (or whenever a step legitimately consumes products from
+                    // multiple earlier rounds), the resulting route would look like it started from
+                    // pre-formed peptides instead of bare BBs. Now we look across all prior rounds.
+                    let baseRoutes: Route[];
+                    if (round === 1)
+                      baseRoutes = [[]];
+                    else {
+                      const allPrevProducts = new Map<string, ProductRecord>();
+                      for (let r = 1; r < round; r++) {
+                        for (const p of productPools[r]) {
+                          // First occurrence wins (typically the shorter route).
+                          if (!allPrevProducts.has(p.smiles)) allPrevProducts.set(p.smiles, p);
+                        }
+                      }
+                      const prevComponents = combo.filter((c) => allPrevProducts.has(c));
+                      if (prevComponents.length === 0) baseRoutes = [[]];
+                      else {
+                        const prevRouteLists = prevComponents.map((pc) => {
+                          const rec = allPrevProducts.get(pc);
+                          return rec && rec.routes.length > 0 ? rec.routes : [[]];
+                        });
+                        baseRoutes = [];
+                        for (const combo2 of cartesian(prevRouteLists)) {
+                          const merged: Route = [];
+                          for (const r of combo2) for (const s of r) merged.push(s);
+                          baseRoutes.push(merged);
+                        }
+                      }
+                    }
+
+                    let rec = newPool.get(productSmiles);
+                    if (!rec) {
+                      rec = {smiles: productSmiles, routes: [], firstRound: round};
+                      newPool.set(productSmiles, rec);
+                    }
+                    for (const base of baseRoutes) {
+                      if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
+                      rec.routes.push([...base, step]);
+                    }
+                  } finally {
+                    try {productMol?.delete();} catch {/* ignore */}
+                  }
+                } finally {
+                  try {productSet.delete();} catch {/* ignore */}
+                }
+              } // end FIX 2: for ri (product sets)
+            } catch (e) {
+              warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
             } finally {
-              try {productSet.delete();} catch {/* ignore */}
+              try {result?.delete();} catch {/* ignore */}
+              try {molList?.delete();} catch {/* ignore */}
+              for (const m of inputMols) try {m.delete();} catch {/* ignore */}
+              inputMols.length = 0;
             }
-          } catch (e) {
-            warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
-          } finally {
-            try {result?.delete();} catch {/* ignore */}
-            try {molList?.delete();} catch {/* ignore */}
-            for (const m of inputMols) try {m.delete();} catch {/* ignore */}
-            inputMols.length = 0;
           }
         }
         if (truncated)

@@ -1,14 +1,13 @@
-// This file may not be used in
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-// The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 
 let alertsDf: DG.DataFrame | null = null;
@@ -24,12 +23,10 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   const alerts: number[] = [];
   let mol: RDMol | null = null;
   try {
-    if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
-      throw new Error('SMILES string longer than 5000 characters not supported');
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+      throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
     mol = rdKitModule.get_mol(molecule);
-    //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
-    // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
-    // lib.add_smiles(smiles);
+    //TODO: Currently throws an error on rule id 221
     const smartsCol = alertsDf!.getCol('smarts');
     for (let i = 0; i < smartsCol.length; i++) {
       const subMol = _smartsMap.get(smartsCol.get(i));
@@ -66,7 +63,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     console.warn(e);
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
-  if (alerts.length == 0)
+  if (alerts.length === 0)
     return new DG.Widget(ui.divText('No alerts'));
 
   const width = 200;
@@ -76,7 +73,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const calcForWholeButton = ui.button('Calculate for whole dataset', async () => {
     const alertsFunc = DG.Func.find({package: 'Chem', name: 'structuralAlertsTopMenu'})[0];
     const alertsFuncCall = alertsFunc.prepare();
-    ui.dialog('Structural alers')
+    ui.dialog('Structural alerts')
       .add(await alertsFuncCall.getEditor())
       .onOK(() => {
         const args: any = {};

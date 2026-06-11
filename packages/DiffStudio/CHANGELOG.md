@@ -1,8 +1,16 @@
 # Diff Studio changelog
 
-## v.next
+## 1.6.1 (2026-05-15)
 
-* DiffStudio: `runDiffStudio` returns the solver view directly instead of using a proxy view + `grok.shell.addView`, letting the platform host place it
+Update info for Bioreactor and PK-PD demos
+
+## 1.6.0 (2026-05-13)
+
+Added:
+
+* Hub - centralized landing view with Templates, Library, and Recent
+* Save to Library - publish models to the personal Library
+* Export to LaTeX and Markdown
 
 ## 1.5.2 (2026-03-14)
 

@@ -46,8 +46,8 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString, fingerprints);
-  const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
-  const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
+  const limit = Math.min(settings.limit ?? len, len);
+  const minScore = settings.minScore ?? 0.0;
   const sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
     const a1 = distances[i1];
     const a2 = distances[i2];
@@ -72,7 +72,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', length).init((i) => sortedMolStringsArr[i]);
   const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', length).init((i) => sortedMolIndArr[i]);
   sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]); ;
+  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]);
   return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
@@ -95,7 +95,8 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
-  const diversities = new Array(limit).fill('');
+  // Pre-allocated to the known length; every slot is written below so no need to .fill('').
+  const diversities = new Array<string>(limit);
 
   for (let i = 0; i < limit; i++)
     diversities[i] = molStringsColumn.get(indexes[diverseIndexes[i]]);
@@ -185,7 +186,7 @@ async function getUint8ArrayFingerprints(
   await chemBeginCriticalSection();
   try {
     const colsArray = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
-    const fgsCheck = colsArray[fingerprintsType]; ;
+    const fgsCheck = colsArray[fingerprintsType];
     if (returnSmiles) {
       const smilesCheck = colsArray[canonicalSmilesColName];
       if (fgsCheck && smilesCheck)
@@ -219,7 +220,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
       _chemGetSimilarities(queryMolString, fingerprints)) : null;
 }
@@ -227,7 +228,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 export async function chemGetDiversities(molStringsColumn: DG.Column, limit: number)
       : Promise<DG.Column | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
-  assure.notNull(limit, 'queryMolString');
+  assure.notNull(limit, 'limit');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
@@ -241,12 +242,12 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
   assure.notNull(queryMolString, 'queryMolString');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
 }
 
 /**
-* Performes substructure search in the given moelcular column by a given substructure
+* Performs substructure search in the given molecular column by a given substructure
 * @async
 * @param {DG.Column} molStringsColumn - column search in
 * @param {string} molString - smiles/molblock to filter by
@@ -255,13 +256,13 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 * @param {boolean} columnIsCanonicalSmiles - if column is canonical smiles itself, than invisible
 canonical smiles column
 will not be created along with pattern fp column
-* @param {boolean} awaitAll - in case of true fucntion will wait for results on a whole table to be received
+* @param {boolean} awaitAll - in case of true function will wait for results on a whole table to be received
 before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, filterType = FILTER_TYPES.substructure,
   columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
-  fp = Fingerprint.Morgan): Promise<BitArray> {
+  fp = Fingerprint.Morgan, includeMask: BitArray | null = null): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
@@ -323,7 +324,7 @@ export async function chemSubstructureSearchLibrary(
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
         molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp,
-        updateNumOfCalculatedFpBatches);
+        updateNumOfCalculatedFpBatches, includeMask);
     const saveProcessedColumns = () => {
       try {
         //save procecced columns only in case at least one fp batch has been calculated.
@@ -367,14 +368,16 @@ export async function chemSubstructureSearchLibrary(
         }
       });
 
-      subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-        _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled, ${currentSearch}`);
-        if (!subFuncs!.getTerminateFlag()) {
-          sub.unsubscribe();
-          _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
-          fireFinishEvents();
-        }
-      }));
+      if (subFuncs?.promises) {
+        Promise.allSettled(subFuncs.promises).then(() => {
+          _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled, ${currentSearch}`);
+          if (!subFuncs!.getTerminateFlag()) {
+            sub.unsubscribe();
+            _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
+            fireFinishEvents();
+          }
+        }).catch((err) => _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs settle failed: ${err}`));
+      }
     }
     return result.bitArray;
   } catch (e: any) {

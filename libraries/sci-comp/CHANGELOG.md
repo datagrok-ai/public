@@ -1,5 +1,22 @@
 # sci-comp changelog
 
+## 0.7.0 (2026-06-09)
+
+Non-Compartmental Analysis — FR-200 derived (moment) parameters:
+
+* AUMClast / AUMCinf — first-moment area, own log-linear moment kernels
+  (3 methods × {naive, Neumaier-compensated}) + two-term extrapolation tail
+* MRT — mean residence time, unified all-route column (−T_inf/2 for IV infusion)
+* Vss — steady-state volume (IV-only route gate)
+* Tlag — absorption lag time (extravascular-only route gate)
+* %AUMCextrap + `AUMC_EXTRAP_HIGH` warning (`NcaRules.extrapWarnPctAumc`)
+* IV-infusion compute branch wires `infusionDuration` (Perrier & Mayersohn 1982)
+* New IV-infusion PKNCA reference fixture; existing fixtures regenerated with
+  moment/lag columns (PKNCA 0.12.1)
+
+Breaking: `NcaRules` gains the required `extrapWarnPctAumc` field;
+`ParameterValues` grows 9 → 15 fields (additive for readers).
+
 ## 0.6.0 (2026-05-08)
 
 Non-Compartmental Analysis:

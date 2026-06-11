@@ -543,7 +543,7 @@ export class TestTrack extends DG.ViewBase {
 
   private addOnReportSubscription() {
     if (this.tableViewReport !== null) {
-      this.reportSelection = this.tableViewReport?.dataFrame.onCurrentRowChanged.subscribe((e: Event) => {
+      this.reportSelection = this.tableViewReport?.dataFrame.onCurrentRowChanged.subscribe(() => {
         this.testTrackSelection?.unsubscribe();
         let selected = this.tableViewReport?.dataFrame?.currentRowIdx;
         if (selected !== undefined)

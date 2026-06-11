@@ -22,12 +22,33 @@ is safe, secure, governed, monitored and measured.
 
 See also [Grokky GitHub issues](https://github.com/datagrok-ai/public/issues/3710). 
 
+## Browser compatibility — the UI must run in Chrome 50 / Dartium
+
+Grokky is regularly tested in **Dartium (≈ Chromium 50)**, so every UI change — Dart-side and this
+plugin's TS/CSS — must work there. Verify before reporting UI work as done.
+
+- **CSS**: no flexbox `gap` — use sibling margins (`.container > * + * { margin-…: … }`). No
+  `scrollbar-gutter`. `filter` and `user-select` need `-webkit-` fallbacks (unprefixed = Chrome 53+/54+);
+  `mask-image` needs `-webkit-mask-image`. CSS variables (`var(--…)`) and `calc()` are fine (Chrome 49+).
+- **JS runtime APIs missing in Chrome 50** — avoid them, or rely on `src/polyfills.ts` (imported first
+  from `package.ts` / `package-test.ts`). Already polyfilled: `crypto.randomUUID`,
+  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`,
+  `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
+  missing API, add it to `polyfills.ts` rather than to call sites.
+- **Clipboard**: use `copyToClipboard()` from `src/utils.ts` — never `navigator.clipboard.writeText`
+  directly (undefined in Chrome 50 and in insecure contexts).
+- **Keyboard**: use `isEnterKey(e)` from `src/utils.ts` — `KeyboardEvent.key` is `undefined` in Chrome 50;
+  use `e.keyCode` fallbacks for other keys too.
+- **Syntax is fine**: the bundle targets `es6` (Chrome 50 supports ES2015), and newer syntax (`?.`, `??`,
+  object spread, `async`/`await`) is transpiled by TypeScript. Only *runtime APIs* need attention.
+
 ## Source Structure
 
 ```
 src/
 ├── package.ts              # Entry point — registers functions, init, search providers
-├── utils.ts                # Shared utilities (viewer/dataframe descriptions, events)
+├── polyfills.ts            # Chrome 50 / Dartium polyfills — imported first from package.ts / package-test.ts
+├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
 │   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI

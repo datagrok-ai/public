@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Release notes policy"
 position: 5 # float position is supported
 ---

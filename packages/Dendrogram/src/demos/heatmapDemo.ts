@@ -38,6 +38,7 @@ export async function heatmapDemo() {
     tv!.grid.props.isGrid = false;
     tv!.grid.props.isHeatmap = true;
     tv!.grid.props.showRowHeader = false;
+    tv!.grid.props.allowEdit = false;
     // this.tv!.grid.props.showAddNewRowIcon = false;
     setTimeout(() => {
       adjustTreeHeight();

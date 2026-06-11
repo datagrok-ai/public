@@ -371,7 +371,7 @@ Subcommands:
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>
     --extract-d42 <dir>          Unpack .d42 sidecar tables into <dir>
-    --extract-actions            Write a sibling <stem>_actions.json
+    --extract-client-log         Write a sibling <stem>_client_log.json
 
 Examples:
   grok report fetch dev 1528             Download report #1528 from the 'dev' instance

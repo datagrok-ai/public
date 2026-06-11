@@ -8,12 +8,17 @@ import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
-import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
+import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
+
+type FenceMode = 'prose' | 'exec' | 'entity' | 'other';
+interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
+const fenceStates = new Map<string, FenceState>();
+const FENCE_RE = /^```([\w-]*)\s*$/;
 
 const BASH_EXEC_PROMPT = `\
 Execute the given shell command using the Bash tool. \
@@ -26,50 +31,49 @@ directory), including the JS API source, API samples, and documentation. This vi
 packages installed on this instance — uninstalled packages are not present.
 
 ALWAYS use paths under \`workspace/\` (e.g. \`workspace/packages/Chem/...\`, \`workspace/js-api/src/...\`).
-NEVER use \`/workspace/...\` as an absolute path — that path is outside your scope and access to it
-is blocked.
+NEVER use \`/workspace/...\` as an absolute path — access is blocked at the hook level.
 
-The "## Available Packages" table below lists the curated knowledge index for packages installed
-on this instance. For those, call get_package_knowledge(name) first — it returns authoritative
-apiRef/docsRef paths and is faster than searching the filesystem. Prefer packages from this table
-when answering requests; do not rely on training memory of packages not listed there, since they
-may not be available on this instance.
+Personal user knowledge files (if any) live in the \`agents/\` directory in your current working
+directory. Use Glob or \`ls agents/\` to discover them when relevant.
 
-## How to find APIs
+## Don't invent names
 
-NEVER guess API methods, property names, or function signatures.
+NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
 
-When a user request maps to a package listed in the "## Available Packages" table below,
-your FIRST action MUST be \`get_package_knowledge(packageName)\`. It returns absolute paths
-to that package's API reference (function signatures) and docs. Then \`Read\` the returned
-apiRef path to find the function you need. Do NOT Glob/Grep package directories or search
-ApiSamples / help/ to discover a package's APIs — the apiRef is authoritative.
-
-Only when no package matches the request should you fall back to searching the codebase:
-workspace/js-api/src/ (core API), workspace/packages/ApiSamples/ (usage examples), workspace/help/ (docs).
-
-## Code Execution
-
-When the user asks you to **do** something (add a viewer, modify data, run a script, etc.):
-1. FIRST resolve the API via \`get_package_knowledge\` (or codebase search if no package matches).
-2. THEN emit the code in a \`\`\`datagrok-exec fenced block — this is the ONLY way code gets executed.
-
-NEVER emit a \`\`\`datagrok-exec block with guessed or unverified API calls.
-Regular \`\`\`javascript blocks are for explanations only and will NOT run.
-
-## Output formats
-
-The Datagrok UI parses \`\`\`datagrok-*\`\`\` fenced blocks specially and renders them
-as interactive elements. Each block has a corresponding skill with the exact JSON shape,
-globals, and edge cases — open the skill before emitting the block.
+For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
 
 ## Clarifying ambiguous requests
 
-You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted
-in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion
-to clarify before acting. NEVER guess when there are multiple valid options.`;
+You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
 
-const MAX_AGENT_FILES_IN_PROMPT = 50;
+// Inlined into the system prompt. Only datagrok-exec is universal (the fenced-block
+// contract is needed for every response that emits code). Everything else is loaded
+// on demand via the Skill tool — skills' description triggers handle routing.
+const INLINED_SKILL_NAMES = [
+  'datagrok-exec',
+];
+
+function loadInlinedSkills(): string {
+  const sections: string[] = [];
+  for (const name of INLINED_SKILL_NAMES) {
+    const skillPath = `/app/plugin/skills/${name}/SKILL.md`;
+    try {
+      const raw = fs.readFileSync(skillPath, 'utf8');
+      const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '').trim();
+      sections.push(`### ${name}\n\n${body}`);
+    } catch {
+    }
+  }
+  return sections.join('\n\n---\n\n');
+}
+
+const INLINED_SKILLS = loadInlinedSkills();
+
+// Build once at module load so the system prompt prefix is byte-stable across every turn and
+// every user — required for Anthropic prompt-cache hits on the ~20-30 KB prefix.
+const DATAGROK_SYSTEM_PROMPT = INLINED_SKILLS
+  ? `${DATAGROK_PROMPT}\n\n## Inlined Skills\n\nThese skills are available in this context — invoke them directly without loading via the Skill tool. Each section gives the canonical signatures, conventions, and examples for one capability.\n\n${INLINED_SKILLS}`
+  : DATAGROK_PROMPT;
 
 const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
 const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
@@ -89,26 +93,10 @@ const blockWorkspaceAccess: HookCallback = async (input) => {
   return {continue: true};
 };
 
-function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
+function buildSystemPrompt(mode?: string): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
   if (mode === 'none') return '';
-  let prompt = DATAGROK_PROMPT;
-  // TODO: consolidate package index, agent files, and other dynamic context
-  // into a generated CLAUDE.md or skills file instead of appending to the system prompt
-  if (packageIndex)
-    prompt += `\n\n## Available Packages\n\n` + packageIndex;
-  if (agentFiles && agentFiles.length > 0) {
-    const shown = agentFiles.slice(0, MAX_AGENT_FILES_IN_PROMPT);
-    const overflow = agentFiles.length - shown.length;
-    prompt += `\n\n## User Knowledge Files\n\n` +
-      `The user has personal knowledge files in the \`agents/\` directory. ` +
-      `These contain domain-specific knowledge, instructions, or reference materials. ` +
-      `When relevant to the user's question, read and use these files.\n\n` +
-      `Available files:\n` + shown.map((f) => `- agents/${f}`).join('\n');
-    if (overflow > 0)
-      prompt += `\n- ... and ${overflow} more file(s). Use Glob to discover them.`;
-  }
-  return prompt;
+  return DATAGROK_SYSTEM_PROMPT;
 }
 
 const sessions = new Map<string, string>();
@@ -173,27 +161,16 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string
     };
   }
 
-  if (process.env['MILVUS_TOKEN']) {
-    const env: Record<string, string> = {MILVUS_TOKEN: process.env['MILVUS_TOKEN']!};
-    if (process.env['OPENAI_API_KEY'])
-      env['OPENAI_API_KEY'] = process.env['OPENAI_API_KEY'];
-    servers['claude-context'] = {
-      command: 'claude-context-mcp',
-      args: [] as string[],
-      env,
-    };
-  }
-
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 
 function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
-  systemPromptMode?: string, userDir?: string, agentFiles?: string[],
-  packageIndex?: string | null, userId?: string,
+  systemPromptMode?: string, userDir?: string,
+  userId?: string,
   model?: ClaudeModel,
 ) {
-  const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
+  const systemPrompt = buildSystemPrompt(systemPromptMode);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
   // Bash and 'none' modes are minimal — don't pull in output-format skills.
   const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
@@ -211,7 +188,9 @@ function buildOptions(
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
-    model: model ?? ClaudeModel.Opus,
+    model: model ?? ClaudeModel.Sonnet,
+    effort: 'low' as const,
+    thinking: {type: 'disabled' as const},
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
@@ -277,6 +256,75 @@ function emit(ws: WsSender, msg: OutgoingMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
+function kindOf(mode: FenceMode): 'exec' | 'entity' | undefined {
+  return mode === 'exec' || mode === 'entity' ? mode : undefined;
+}
+
+function emitChunk(ws: WsSender, sid: string, content: string, mode: FenceMode): void {
+  const kind = kindOf(mode);
+  emit(ws, {type: 'chunk', sessionId: sid, content, ...(kind ? {kind} : {})});
+}
+
+// Streams text from a Claude text_delta. Holds only the partial trailing line when it could
+// still become a fence marker (starts with `` ` `` at line start); everything else is emitted
+// immediately under the current mode. Complete lines are batched per same-mode group so a
+// 50-line delta yields ~3 emits, not 50.
+function emitFiltered(ws: WsSender, sid: string, text: string): void {
+  const st = fenceStates.get(sid) ?? {mode: 'prose' as FenceMode, carry: '', lineInProgress: false};
+  fenceStates.set(sid, st);
+
+  const buf = st.carry + text;
+  st.carry = '';
+  const lastNl = buf.lastIndexOf('\n');
+
+  if (lastNl >= 0) {
+    const lines = buf.slice(0, lastNl).split('\n');
+    let groupStart = 0;
+    let groupMode = st.mode;
+    for (let i = 0; i < lines.length; i++) {
+      const couldBeFence = i > 0 || !st.lineInProgress;
+      const fence = couldBeFence ? FENCE_RE.exec(lines[i]) : null;
+      if (!fence) continue;
+
+      if (i > groupStart)
+        emitChunk(ws, sid, lines.slice(groupStart, i).join('\n') + '\n', groupMode);
+
+      if (st.mode === 'prose') {
+        const lang = fence[1];
+        st.mode = lang === 'datagrok-exec' ? 'exec' :
+          lang === 'datagrok-entities' ? 'entity' :
+          'other';
+        emitChunk(ws, sid, lines[i] + '\n', st.mode);
+      } else {
+        emitChunk(ws, sid, lines[i] + '\n', st.mode);
+        st.mode = 'prose';
+      }
+      groupStart = i + 1;
+      groupMode = st.mode;
+    }
+    if (groupStart < lines.length)
+      emitChunk(ws, sid, lines.slice(groupStart).join('\n') + '\n', groupMode);
+    st.lineInProgress = false;
+  }
+
+  const partial = lastNl < 0 ? buf : buf.slice(lastNl + 1);
+  if (partial.length === 0) return;
+
+  if (!st.lineInProgress && partial.startsWith('`'))
+    st.carry = partial;
+  else {
+    emitChunk(ws, sid, partial, st.mode);
+    st.lineInProgress = true;
+  }
+}
+
+function flushFenceState(ws: WsSender, sid: string): void {
+  const st = fenceStates.get(sid);
+  if (st?.carry)
+    emitChunk(ws, sid, st.carry, st.mode);
+  fenceStates.delete(sid);
+}
+
 function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   const e = event as any;
   switch (event.type) {
@@ -298,7 +346,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   }
   case 'stream_event':
     if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
-      emit(ws, {type: 'chunk', sessionId: sid, content: e.event.delta.text});
+      emitFiltered(ws, sid, e.event.delta.text);
     break;
   case 'tool_progress':
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
@@ -307,6 +355,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
     break;
   case 'result':
+    flushFenceState(ws, sid);
     if (e.subtype === 'success')
       emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
     else
@@ -344,11 +393,13 @@ function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
 
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
-  const message = data.message ?? '';
+  let message = data.message ?? '';
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
 
-  await awaitWorkspaceSync();
+  // Don't block this turn on workspace git pull — it runs every 30 min in the background and
+  // a stale read for one turn is fine.
+  void awaitWorkspaceSync();
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
@@ -358,17 +409,11 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
   const userId = userDir ? path.basename(userDir) : undefined;
 
-  let agentFiles: string[] | undefined;
   const apiUrl = apiUrlFromMcpUrl(mcpUrl);
   if (apiUrl && data.apiKey) {
-    try {
-      console.log('handleMessage: syncing user files...');
-      const result = await syncUserFiles(apiUrl, data.apiKey);
-      agentFiles = result.files;
-      console.log(`handleMessage: user dir=${userDir}, ${agentFiles?.length ?? 0} agent file(s)`);
-    } catch (e: any) {
-      console.warn('handleMessage: failed to sync user files:', e.message);
-    }
+    // Fire-and-forget: file sync writes to disk in userDir; the model reads from disk on demand.
+    syncUserFiles(apiUrl, data.apiKey).catch((e: any) =>
+      console.warn('handleMessage: failed to sync user files:', e.message));
   }
 
   const DB_CLIENT_TOOLS = new Set([
@@ -378,10 +423,10 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   ]);
 
   let gotResult = false;
+  const systemPromptMode = data.systemPromptMode ?? 'datagrok';
   try {
-    const packageIndex = await generatePackageIndex(userId);
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId, data.model);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
@@ -410,6 +455,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
+    fenceStates.delete(sid);
     unregisterActiveQuery(sid);
   }
 }
@@ -423,6 +469,7 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
+  flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
 
@@ -504,4 +551,5 @@ else
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
 startWorkspaceSync();
+
 console.log(`claude-runtime listening on :${PORT}`);

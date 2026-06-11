@@ -1,10 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {TestContext, runTests, tests, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
-import './tests/compute-api/rich-function-view-tests';
 import './tests/utils/expect-tests';
 import './tests/utils/json-serialization-tests';
-import './tests/compute-utils/rich-function-view-tests';
 import './tests/compute-utils/reactive-tree-driver/config-processing';
 import './tests/compute-utils/reactive-tree-driver/instance-init';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
@@ -26,11 +24,13 @@ import './tests/compute-utils/reactive-tree-driver/oninit-hook';
 import './tests/compute-utils/reactive-tree-driver/links-workflow';
 import './tests/compute-utils/reactive-tree-driver/sequence-run';
 import './tests/compute-utils/reactive-tree-driver/links-retention';
-import './tests/compute-utils/reactive-tree-driver/structurecheck-hook';
+import './tests/compute-utils/reactive-tree-driver/pipeline-validators-reactive';
 import './tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations';
 import './tests/compute-utils/reactive-tree-driver/error-handling';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
+import './tests/compute-utils/reactive-tree-driver/links-template-expand';
+import './tests/compute-utils/reactive-tree-driver/links-on-steps';
 import './tests/compute-utils/fitting/nm-pure-math';
 import './tests/compute-utils/fitting/nm-sync-vs-async';
 import './tests/compute-utils/fitting/worker-dg-shim';
@@ -41,6 +41,7 @@ import './tests/compute-utils/fitting/cross-executor-parity';
 import './tests/compute-utils/fitting/can-handle';
 import './tests/compute-utils/fitting/pool-multi-session';
 import './tests/compute-utils/fitting/formula-resolver';
+import './tests/compute-utils/history-file-inputs';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 
