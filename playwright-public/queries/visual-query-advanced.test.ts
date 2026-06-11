@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_NW_DB,
+  PG_NW_LOGIN,
+  PG_NW_PASSWORD,
+  PG_NW_PORT,
+  PG_NW_SERVER,
   POSTGRES_CONNECTION,
   clickMenuItemExact,
   deleteProjectByFriendlyName,
@@ -55,6 +60,7 @@ const PROJECT_NAME = 'test_visual_advanced_playwright';
 
 test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test.beforeAll(async ({ browser }) => {
+    if (!PG_NW_PASSWORD) return; // creds absent → the test self-skips below
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
@@ -63,8 +69,8 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     // ensureVisualQueryFixture() in visual-query-and-params.test.ts — both
     // tests rely on the same parameterised `postgres customers in @country`
     // query published on a `pw_visual_postgres` connection pointing at the
-    // in-network `northwind:5432` demo Postgres).
-    await page.evaluate(async ({ qName, connName }) => {
+    // shared Northwind test DB).
+    await page.evaluate(async ({ qName, connName, pg }) => {
       const grok = (window as any).grok;
       const DG = (window as any).DG;
       let conn = (await grok.dapi.connections
@@ -73,14 +79,15 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
       if (!conn) {
         conn = DG.DataConnection.create(connName, {
           dataSource: 'Postgres',
-          // service_connections.dart createDatagrokConnection-style:
-          // concatenated host:port, explicit port, explicit ssl:false.
-          server: 'northwind:5432',
-          port: 5432,
-          db: 'northwind',
+          // Shared Northwind test DB (customers table), datagrok user — NOT the
+          // postgres superuser (randomised password; see connections/helpers.ts).
+          // Credentials come from env (Jenkins Credentials in CI / .env on dev).
+          server: pg.server,
+          port: pg.port,
+          db: pg.db,
           ssl: false,
-          login: 'postgres',
-          password: 'postgres',
+          login: pg.login,
+          password: pg.password,
         });
         conn = await grok.dapi.connections.save(conn);
       }
@@ -95,7 +102,8 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
         '--input: string country = "France"\nselect * from customers where country = @country');
       q.newId();
       await grok.dapi.queries.save(q);
-    }, { qName: FIXTURE_QUERY_FN, connName: FIXTURE_QUERY_CONN });
+    }, { qName: FIXTURE_QUERY_FN, connName: FIXTURE_QUERY_CONN,
+      pg: { server: PG_NW_SERVER, port: PG_NW_PORT, db: PG_NW_DB, login: PG_NW_LOGIN, password: PG_NW_PASSWORD } });
     await ctx.close();
   });
 
@@ -108,6 +116,8 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
   });
 
   test('Run fixture query, parameter refresh, add result viewer, save project', async ({ page }) => {
+    test.skip(!PG_NW_PASSWORD,
+      'DG_PG_PASSWORD not set — fixture needs the Northwind test DB (datagrok user)');
     test.setTimeout(180_000);
 
     await goHome(page);

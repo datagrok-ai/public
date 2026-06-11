@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   PG_PASSWORD,
-  PG_SERVER,
   applyAutomationSetup,
   closeMenuPopup,
   connectionNodeName,
@@ -72,7 +71,9 @@ test.describe.serial('Connections / Schema (Postgres / Datagrok substitution)', 
     // (Catalogs appears only when the connection enumerates multiple
     // catalog DBs as it does on dev). Same fundamental gap as the whole
     // 10-catalogs scenario — skip on CI here too.
-    test.skip(PG_SERVER === 'northwind',
+    // CI runs against single-DB Northwind (no DG_PG_SERVER override); dev's
+    // playwright-tests/ sets DG_PG_SERVER and exercises a multi-catalog connection.
+    test.skip(!process.env.DG_PG_SERVER,
       'CI Datlas connection has no multi-catalog Postgres; covered by dev playwright-tests/');
 
     await goHome(page);

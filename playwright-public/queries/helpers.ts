@@ -15,6 +15,19 @@ import { Page, expect } from '@playwright/test';
 export const POSTGRES_CONNECTION = 'Datagrok';
 export const MS_SQL_CONNECTION = 'Northwind';
 
+// Shared Northwind test DB for the parameterised-query fixtures (it has the
+// `customers` table the `… customers in @country` fixture queries). Coordinates
+// are non-secret and default in-code; LOGIN/PASSWORD come from env only —
+// Jenkins Credentials in CI, `.env` on dev — and are NEVER hardcoded. The
+// `datagrok` user is used, never the `postgres` superuser (randomised password;
+// see connections/helpers.ts). Tests that need this DB
+// `test.skip(!PG_NW_PASSWORD, …)` when creds are absent.
+export const PG_NW_SERVER = process.env.DG_PG_SERVER ?? 'db.datagrok.ai';
+export const PG_NW_PORT = Number(process.env.DG_PG_PORT ?? '54322');
+export const PG_NW_DB = process.env.DG_PG_DB ?? 'northwind';
+export const PG_NW_LOGIN = process.env.DG_PG_LOGIN ?? '';
+export const PG_NW_PASSWORD = process.env.DG_PG_PASSWORD ?? '';
+
 // Auth state file produced by queries/global-setup.ts (public-env login).
 // Used by beforeAll/afterAll hooks that build their own browser context.
 export const AUTH_STATE = 'e2e/.auth.public.json';

@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_NW_DB,
+  PG_NW_LOGIN,
+  PG_NW_PASSWORD,
+  PG_NW_PORT,
+  PG_NW_SERVER,
   POSTGRES_CONNECTION,
   clickMenuItemExact,
   deleteQueryByFriendlyName,
@@ -69,7 +74,7 @@ const VISUAL_QUERY_NAME = 'new_visual_query_test';
 // connection; the CI Datlas has neither.
 //
 // Bootstrap our own: create a persistent `pw_visual_postgres` connection
-// pointing at the in-network `northwind:5432` demo Postgres (NOT
+// pointing at the shared Northwind test DB as the `datagrok` user (NOT
 // test_postgres — that one gets deleted by connections/05-delete before
 // queries/* run), then save the parameterised query on it.
 const PARAM_QUERY_FRIENDLY_NAME = 'postgres customers in @country';
@@ -78,27 +83,28 @@ const PARAM_QUERY_NODE_NAME =
   `tree-Databases---Postgres---${PARAM_QUERY_CONN.replace(/_/g, '-')}---postgres-customers-in-@country`;
 
 async function ensureVisualQueryFixture(page: import('@playwright/test').Page): Promise<void> {
-  await page.evaluate(async ({ qName, connName }) => {
+  await page.evaluate(async ({ qName, connName, pg }) => {
     const grok = (window as any).grok;
     const DG = (window as any).DG;
-    // Ensure the persistent fixture connection exists (in-CI northwind demo).
+    // Ensure the persistent fixture connection exists (shared Northwind test DB).
     let conn = (await grok.dapi.connections
       .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
       .list())[0];
     if (!conn) {
       conn = DG.DataConnection.create(connName, {
         dataSource: 'Postgres',
-        // Match service_connections.dart's `createDatagrokConnection`
-        // pattern: concatenated `host:port`, explicit `port`, and explicit
-        // `ssl: false` so the Java grok_connect connector doesn't fall
-        // back to its TLS default (which leaves the connection
-        // "Unavailable" against an in-network plaintext-only Postgres).
-        server: 'northwind:5432',
-        port: 5432,
-        db: 'northwind',
+        // Shared Northwind test DB (customers table), authenticating as the
+        // dedicated `datagrok` user. NOT the postgres superuser — the demo
+        // Postgres image randomises that password on init, so postgres/postgres
+        // fails auth (see connections/helpers.ts). Credentials come from env
+        // (Jenkins Credentials in CI / .env on dev). ssl:false: these test DB
+        // ports serve plaintext.
+        server: pg.server,
+        port: pg.port,
+        db: pg.db,
         ssl: false,
-        login: 'postgres',
-        password: 'postgres',
+        login: pg.login,
+        password: pg.password,
       });
       conn = await grok.dapi.connections.save(conn);
     }
@@ -113,7 +119,8 @@ async function ensureVisualQueryFixture(page: import('@playwright/test').Page): 
       '--input: string country = "France"\nselect * from customers where country = @country');
     q.newId();
     await grok.dapi.queries.save(q);
-  }, { qName: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN });
+  }, { qName: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN,
+    pg: { server: PG_NW_SERVER, port: PG_NW_PORT, db: PG_NW_DB, login: PG_NW_LOGIN, password: PG_NW_PASSWORD } });
 }
 
 test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
@@ -122,7 +129,9 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     const page = await ctx.newPage();
     await goHome(page);
     await deleteQueryByFriendlyName(page, VISUAL_QUERY_NAME);
-    await ensureVisualQueryFixture(page);
+    // 11b's parameterised fixture needs the Northwind test DB creds; skip
+    // provisioning it when they're absent (11b self-skips below). 11a needs no creds.
+    if (PG_NW_PASSWORD) await ensureVisualQueryFixture(page);
     await ctx.close();
   });
 
@@ -186,6 +195,8 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
   });
 
   test('11b. Parameterised query runtime — Run opens param dialog, REFRESH re-runs with a new value', async ({ page }) => {
+    test.skip(!PG_NW_PASSWORD,
+      'DG_PG_PASSWORD not set — fixture needs the Northwind test DB (datagrok user)');
     test.setTimeout(120_000);
     await goHome(page);
 

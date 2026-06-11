@@ -3,32 +3,37 @@ import { Page, expect } from '@playwright/test';
 // Auth state file produced by the default `e2e/global-setup.ts` (dev login).
 export const AUTH_STATE = 'e2e/.auth.json';
 
-// Default Postgres credentials for the test_postgres / external-provider scenarios.
+// Postgres targets for the test_postgres / external-provider scenarios.
 //
-// CI: the test compose (deps.docker-compose.ci.yaml) ships demo `northwind` and
-// `world` Postgres containers under aliases `northwind:5432` / `world:5432` in
-// the same docker network as datlas + grok_connect. Defaulting to `northwind`
-// (postgres/postgres) gives the platform a reachable, real Postgres so
-// test_postgres actually connects — which in turn unblocks the schema-walk
-// scenarios in 02-identifiers, 03-edit test 3, 07-schema test 2, etc.
+// These point at the shared Datagrok test databases — the same ones the DBTests
+// package and the Samples:Northwind connection use — reachable from both CI and
+// dev. Connections authenticate as the dedicated `datagrok` user, NEVER the
+// `postgres` superuser: the demo Postgres images randomise the superuser
+// password on init (so `postgres/postgres` fails auth), and hammering the
+// in-network demo containers with `postgres/postgres` forces a DB reinstall.
 //
-// Dev/playwright-tests/: that copy ships its own `.env` with
-// DG_PG_SERVER=db.datagrok.ai + a real password, which overrides these
-// defaults — so this change is CI-only in practice.
-export const PG_SERVER = process.env.DG_PG_SERVER ?? 'northwind';
-export const PG_PORT = process.env.DG_PG_PORT ?? '5432';
+// Server/port/db are non-secret coordinates and default in-code. LOGIN and
+// PASSWORD are NEVER hardcoded — they come from env: Jenkins Credentials in CI
+// (wired in infra/jenkins/test-playwright.groovy via withCredentials) and the
+// local `.env` on dev/playwright-tests/. When unset, the credential-gated tests
+// `test.skip(!PG_PASSWORD, …)` cleanly.
+//
+// test_postgres / schema-walk scenarios (02-identifiers, 03-edit, 07-schema)
+// need the Northwind schema (customers table), so default to the Northwind DB.
+export const PG_SERVER = process.env.DG_PG_SERVER ?? 'db.datagrok.ai';
+export const PG_PORT = process.env.DG_PG_PORT ?? '54322';
 export const PG_DB = process.env.DG_PG_DB ?? 'northwind';
-export const PG_LOGIN = process.env.DG_PG_LOGIN ?? 'postgres';
-export const PG_PASSWORD = process.env.DG_PG_PASSWORD ?? 'postgres';
+export const PG_LOGIN = process.env.DG_PG_LOGIN ?? '';
+export const PG_PASSWORD = process.env.DG_PG_PASSWORD ?? '';
 
-// External-provider Postgres for 09-external-provider. CI defaults target the
-// in-network `world` demo Postgres so the PostgreSQLDBTests2 CRUD cycle has a
-// real, writable DB to operate against.
-export const PG_EXT_SERVER = process.env.DG_PG_EXT_SERVER ?? 'world';
-export const PG_EXT_PORT = process.env.DG_PG_EXT_PORT ?? '5432';
-export const PG_EXT_DB = process.env.DG_PG_EXT_DB ?? 'world';
-export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? 'postgres';
-export const PG_EXT_PASSWORD = process.env.DG_PG_EXT_PASSWORD ?? 'postgres';
+// External-provider Postgres for 09-external-provider — the writable shared
+// `test` DB (PostgreSQLDBTests), so the PostgreSQLDBTests2 CRUD cycle has a real
+// DB to CREATE/INSERT/UPDATE/DROP against. Same `datagrok` user, creds from env.
+export const PG_EXT_SERVER = process.env.DG_PG_EXT_SERVER ?? 'db.datagrok.ai';
+export const PG_EXT_PORT = process.env.DG_PG_EXT_PORT ?? '54327';
+export const PG_EXT_DB = process.env.DG_PG_EXT_DB ?? 'test';
+export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? '';
+export const PG_EXT_PASSWORD = process.env.DG_PG_EXT_PASSWORD ?? '';
 
 // SPARQL test endpoint (public).
 export const SPARQL_ENDPOINT =
