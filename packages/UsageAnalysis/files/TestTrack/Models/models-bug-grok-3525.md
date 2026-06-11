@@ -1,69 +1,4 @@
----
-feature: models
-sub_features_covered:
-  - models.validators.contains-missing
-  - models.preprocessing.ignore-missing
-target_layer: playwright
-coverage_type: regression
-produced_from: atlas-driven
-related_bugs:
-  - GROK-3525
-realized_as:
-  - models-bug-grok-3525-spec.ts
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
-gate_verdicts:
-  f:
-    verdict: PASS
-    cycle_id: 2026-06-05-models-migrate-02
-    timestamp: 2026-06-05T15:00:00Z
-    failure_keys: []
-  e:
-    verdict: PASS
-    cycle_id: 2026-06-09-models-automate-01
-    timestamp: 2026-06-09T15:30:00Z
-    failure_keys: []
-  b:
-    verdict: PASS
-    cycle_id: 2026-06-09-models-automate-01
-    timestamp: 2026-06-09T16:00:00Z
-    spec_runs:
-      - spec: models-bug-grok-3525-spec.ts
-        result: passed
-        attempts: 3
-        duration_seconds: 58
-        failure_keys: []
----
-
 # Models — GROK-3525 regression: target nulls blocked by validation
-
-Regression guard for GROK-3525 ("Models: predict (target) column should
-reject nulls before training"). Before the fix, starting training with
-a Predict (target) column containing nulls slipped past validation; the
-shipped fix extends `containsMissingValuesVerbose` (the feature-column
-validator at
-`core/client/xamgle/lib/src/features/predictive_modeling/predictive_modeling_validators.dart#L115`)
-to also cover the target column, surfacing an informative validation
-balloon at TRAIN time, and lets the `ignoreMissingValues` preprocessing
-action drop affected rows when the operator opts in.
-
-Atlas anchors:
-- `models.validators.contains-missing` (atlas
-  `feature-atlas/models.yaml` sub_feature) — pre-train validator that
-  flags columns with `stats.missingValueCount > 0`.
-- `models.preprocessing.ignore-missing` (atlas sub_feature) — action
-  checkbox that drops rows with missing values in any feature or
-  target before training.
-- `edge_cases[]` entry `bug-library:models.yaml#GROK-3525` in the
-  atlas — declares `coverage_type: regression` for the target-null
-  validation gap; this scenario's frontmatter matches.
-
-Pyramid context: this is a bug-repro scenario authored on the
-coverage-extension cycle (no pyramid-layer slot in the chain
-`dependency_graph[]`; chain-analyzer reslot is downstream of this
-authoring round).
 
 ## Setup
 
@@ -78,11 +13,6 @@ data quirks.
 ## Scenarios
 
 ### Scenario 1: Categorical target with nulls — validation blocks TRAIN (regression for GROK-3525, categorical branch)
-
-Asserts that starting train where the Predict (target) column is
-categorical AND contains missing values surfaces a validation balloon
-at TRAIN time and prevents training from running, rather than slipping
-past validation as it did pre-fix.
 
 Steps:
 
@@ -112,13 +42,6 @@ Expected:
   from its pre-TRAIN state.
 
 ### Scenario 2: Numerical target with nulls + Ignore missing checkbox — rows dropped, training succeeds (regression for GROK-3525, numerical + ignore-missing branch)
-
-Asserts the operator-side recovery path: when the operator enables the
-**Ignore missing** preprocessing action checkbox, rows whose target is
-null are dropped from the train, validation is satisfied, and training
-proceeds to completion. Also exercises the numerical-target leg of the
-bug (atlas edge_case entry covers both numerical and categorical
-targets per `bug-library:models.yaml#GROK-3525` `expected:` clause).
 
 Steps:
 
@@ -153,51 +76,3 @@ Expected:
   (input row count minus the null-target rows). The exact row count
   is asserted from the preview-side metrics widget rather than from
   hidden internal state, so the assertion is DOM-anchored.
-
-## Notes
-
-- **target_layer rationale:** the bug surfaces through the TRAIN
-  workflow UI — the validation balloon is rendered by
-  `PredictiveModelingView` and the **Ignore missing** action
-  checkbox is a UI affordance on the parameters form. A
-  `playwright` target is therefore the right layer for this
-  regression guard (the validator is callable via JS API too, but
-  asserting validator-side correctness alone would not catch a
-  regression where the validator runs correctly but the UI does
-  not surface its result — that is the failure mode of the original
-  bug).
-- **Bug anchor — GROK-3525:** affects
-  `models.validators.contains-missing` and
-  `models.preprocessing.ignore-missing`. Neither sub_feature is on
-  the atlas `manual_only[]` list (the atlas covers MLFlow and the R
-  Caret engine surfaces under `manual_only[]`, not validators or
-  preprocessing). The bug was previously below the
-  per-anchor-scenario threshold per chain
-  `bug_match_attempts_skipped` (only `train.md` Step 4 toggled the
-  Ignore-missing action, with no target-null assertion), surfacing
-  as the lone `bug-uncovered` gap that F-BUG-COVERAGE-01 reports.
-  Authoring this bug-focused `.md` clears branch (ii) of the
-  F-BUG-COVERAGE-01 disposition (a bug-focused `.md` carrying
-  `related_bugs: [GROK-3525]` on disk).
-- **Atlas provenance (citation, not derivation):**
-  `feature-atlas/models.yaml` `edge_cases[]` carries
-  `derived_from: bug-library:models.yaml#GROK-3525` against the
-  pair `[models.validators.contains-missing,
-  models.preprocessing.ignore-missing]` with
-  `coverage_type: regression` — this scenario's frontmatter
-  `coverage_type:` matches.
-- **Sourcing:** scenario steps trace to atlas sub_features (the two
-  `affects` ids) and the validator source line
-  (`predictive_modeling_validators.dart#L115` is the
-  `containsMissingValuesVerbose` definition the GROK-3525 fix
-  extends to the target column). The atlas action-checkbox
-  `models.view.training.actions` ids `ignore-missing` /
-  `impute-missing` are the source for the action-checkbox label
-  strings. Help-doc paths are intentionally NOT cited (per the
-  atlas binding sourcing rule — code-only).
-- **No deferrals.** Both blocks assert in-DOM observable state
-  (validation balloon, preview population, regression metrics).
-  No Lattice Rule 13 / A-MERIT-02 deferral is needed.
-- **Density.** Two scenarios, each combining the two
-  `sub_features_covered` ids — average density 2 per scenario
-  (satisfies `F-STRUCT-DENSITY-01`).
