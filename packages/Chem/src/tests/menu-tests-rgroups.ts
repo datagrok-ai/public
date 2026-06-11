@@ -272,6 +272,9 @@ M  END
     canceled = true;
     await chemCommonRdKit.cancelChemOp(opId, [0]);   // opId IS running → restartWorker(0) rejects the in-flight call
     expect(await opProm === undefined, true, 'killing the running op returns undefined');
+    // the kill's try/finally must have released the section — the next op acquires it (no deadlock).
+    const next = await runCancellableChemOp(newChemOpId(), () => false, async () => 'ok');
+    expect(next, 'ok', 'critical section released after the kill — next op runs');
   }, {timeout: 30000});
 });
 
