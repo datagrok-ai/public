@@ -1,5 +1,20 @@
 # sci-comp changelog
 
+## 0.7.1 (2026-06-11)
+
+Non-Compartmental Analysis — bug fix (GROK-20219 / BUG-05):
+
+* `computeNca` now drops the **trailing run of non-positive (≤ 0) concentrations**
+  from the measurable profile. A trailing `conc = 0` is an unflagged below-LLOQ
+  washout sample (datasets that encode BLQ as `0` with no LLOQ/BLQ-flag column
+  yield an all-zeros `blqMask`). Previously such a point anchored `cLast = 0`,
+  which (a) forced `status = 'partial'` — withholding AUCinf/t½/CL/Vz — even
+  though λz was perfectly well-formed, and (b) inflated `AUClast` with a spurious
+  tail-to-zero trapezoid. Now matches PKNCA 0.12.1 `conc.blq` trailing-exclude
+  behaviour (verified on rat-IV R005/R013). **Embedded** zeros are unchanged
+  (PKNCA set-zero semantics; `lambdaZBestFit` already excludes `conc ≤ 0` from
+  the regression). Profiles without a trailing zero are byte-identical.
+
 ## 0.7.0 (2026-06-09)
 
 Non-Compartmental Analysis — FR-200 derived (moment) parameters:
