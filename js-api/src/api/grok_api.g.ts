@@ -633,6 +633,8 @@ export interface IDartApi {
   grok_InputBase_Set_ReadOnly(input: any, v: Bool): any;
   grok_InputBase_Get_Enabled(input: any): any;
   grok_InputBase_Set_Enabled(input: any, v: Bool): any;
+  grok_InputBase_Get_Visible(input: any): any;
+  grok_InputBase_Set_Visible(input: any, visible: Bool): any;
   grok_InputBase_OnChanged(input: any): any;
   grok_InputBase_OnInput(input: any): any;
   grok_InputBase_Save(input: any): any;
@@ -667,8 +669,8 @@ export interface IDartApi {
   grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_InputForm_OnValidationCompleted(form: any): any;
-  grok_InputBase_Get_Visible(input: any): any;
-  grok_InputBase_Set_Visible(input: any, visible: Bool): any;
+  grok_InputForm_OnFormPropertyChanged(form: any): any;
+  grok_InputForm_ValidateInputs(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
   grok_FontInput_Get_Value(input: any): any;
