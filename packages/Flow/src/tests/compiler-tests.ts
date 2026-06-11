@@ -1,0 +1,170 @@
+import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+
+import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {topologicalSort} from '../compiler/topological-sort';
+import {emitScript} from '../compiler/script-emitter';
+import {validateGraph} from '../compiler/validator';
+import {makeEditor, destroyEditor, addNode} from './test-utils';
+
+const SETTINGS = {name: 'TestFlow', description: 'test', tags: ['funcflow']};
+
+category('Flow: topological sort', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('orders source before target', async () => {
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      const output = await addNode(e.flow, 'Outputs/Table Output');
+      await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
+      const sorted = topologicalSort(e.flow);
+      expect(sorted.length, 2);
+      expect(sorted.indexOf(input.id) < sorted.indexOf(output.id), true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('chained pass-through preserves order', async () => {
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      const t1 = await addNode(e.flow, 'Utilities/ToString');
+      const t2 = await addNode(e.flow, 'Utilities/ToString');
+      await e.flow.addConnectionByKeys(c.id, 'value', t1.id, 'value');
+      await e.flow.addConnectionByKeys(t1.id, 'text', t2.id, 'value');
+      const sorted = topologicalSort(e.flow);
+      expect(sorted.indexOf(c.id) < sorted.indexOf(t1.id), true);
+      expect(sorted.indexOf(t1.id) < sorted.indexOf(t2.id), true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('detects cycles', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/ToString');
+      const b = await addNode(e.flow, 'Utilities/ToString');
+      await e.flow.addConnectionByKeys(a.id, 'text', b.id, 'value');
+      await e.flow.addConnectionByKeys(b.id, 'text', a.id, 'value');
+      let threw = false;
+      try {
+        topologicalSort(e.flow);
+      } catch {
+        threw = true;
+      }
+      expect(threw, true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: script emitter', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('emits input/output headers and pass-through body', async () => {
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      input.properties['paramName'] = 'myTable';
+      const output = await addNode(e.flow, 'Outputs/Table Output');
+      output.properties['paramName'] = 'res';
+      await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('//input: dataframe myTable'), true, 'input header');
+      expect(script.includes('//output: dataframe res'), true, 'output header');
+      expect(script.includes('res = myTable;'), true, 'output assignment');
+      expect(script.includes('//language: javascript'), true, 'language header');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('constant string is inlined into Value Output', async () => {
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      c.properties['value'] = 'hello';
+      // Constant nodes title themselves after their value — emission must
+      // dispatch on the registered type, not the (user-editable) label.
+      c.label = 'const: hello';
+      const out = await addNode(e.flow, 'Outputs/Value Output');
+      out.properties['paramName'] = 'greeting';
+      await e.flow.addConnectionByKeys(c.id, 'value', out.id, 'value');
+
+      const script = emitScript(e.flow, SETTINGS);
+      // The constant is declared as its own variable and the output references it:
+      //   let constHello = "hello";  …  greeting = constHello;
+      expect(script.includes('"hello"'), true, 'string literal present');
+      expect(/greeting\s*=\s*\w+;/.test(script), true, 'output assigned from upstream variable');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('instrumented mode wraps steps with run events', async () => {
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      const output = await addNode(e.flow, 'Outputs/Table Output');
+      await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
+
+      const script = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-123'});
+      expect(script.includes('run-123'), true, 'run id embedded');
+      expect(script.includes('run-complete'), true, 'completion event emitted');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: validator', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('empty graph yields a warning', async () => {
+    const e = makeEditor();
+    try {
+      const results = validateGraph(e.flow);
+      expect(results.length >= 1, true);
+      expect(results[0].severity, 'warning');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('column input without table input is an error', async () => {
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, 'Inputs/Column Input');
+      const results = validateGraph(e.flow);
+      expect(results.some((r) => r.severity === 'error'), true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('valid input → output graph has no errors', async () => {
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      const output = await addNode(e.flow, 'Outputs/Table Output');
+      await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
+      const results = validateGraph(e.flow);
+      expect(results.some((r) => r.severity === 'error'), false);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});

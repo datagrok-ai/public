@@ -38,6 +38,18 @@ export class SelectColumnsNode extends FlowNode {
   }
 }
 
+/** Resolves an open table by name — `grok.shell.tableByName(name)`. Stands in
+ *  for the platform `ResolveTable` function in imported creation scripts. */
+export class SelectTableNode extends FlowNode {
+  constructor() {
+    super('Select Table');
+    this.dgNodeType = 'utility';
+    this.properties = {tableName: ''};
+    (this as unknown as {color: string}).color = COLOR_UTILITY;
+    this.addOutput('table', new ClassicPreset.Output(getSocket('dataframe'), 'table'));
+  }
+}
+
 export class AddTableViewNode extends FlowNode {
   constructor() {
     super('Add Table View');
@@ -120,10 +132,25 @@ export class ConstStringNode extends FlowNode {
 
     const control = new ClassicPreset.InputControl('text', {
       initial: '',
-      change: (v) => {this.properties['value'] = v ?? '';},
+      change: (v) => {
+        this.properties['value'] = v ?? '';
+        // Title mirrors the value (refreshes on the next node re-render —
+        // forcing one here would remount the control and steal focus).
+        this.label = constLabel('String', v);
+      },
     });
     this.addControl('value', control);
   }
+}
+
+/** Constant nodes title themselves after their value; empty values fall back
+ *  to the type name so a freshly added node isn't titled `const: `. Long
+ *  values (e.g. column-name lists) are truncated — the full value lives in
+ *  `properties.value`, the title is just a hint. */
+export function constLabel(kind: string, value: unknown): string {
+  const s = String(value ?? '').trim();
+  if (s === '') return kind;
+  return `const: ${s.length > 28 ? `${s.slice(0, 27)}…` : s}`;
 }
 
 export class ConstIntNode extends FlowNode {

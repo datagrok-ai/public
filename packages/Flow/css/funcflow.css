@@ -452,6 +452,7 @@
   border-top: 1px solid var(--grey-2, #ddd);
   background: var(--grey-1, #f7f8fa);
   min-height: 24px;
+  flex-grow: unset !important;
 }
 
 /* Script preview dialog */

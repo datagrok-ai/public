@@ -19,7 +19,18 @@ export namespace funcs {
     return await grok.functions.call('Flow:FuncflowApp', { path });
   }
 
+  export async function autoS(): Promise<void> {
+    return await grok.functions.call('Flow:AutoS', {});
+  }
+
   export async function viewFuncFlow(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Flow:ViewFuncFlow', { file });
+  }
+
+  /**
+  Builds a flow diagram from a table creation script and opens it in the Flow editor
+  */
+  export async function flowFromCreationScript(script: string ): Promise<DG.View> {
+    return await grok.functions.call('Flow:FlowFromCreationScript', { script });
   }
 }

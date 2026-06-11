@@ -171,6 +171,10 @@ function emitUtilityStep(step: CompiledStep): string | null {
     const exprs = names.map((n) => `${t}.col('${n}')`).join(', ');
     return `let ${step.variableName} = [${exprs}];`;
   }
+  case 'Select Table': {
+    const name = String(step.properties['tableName'] ?? '');
+    return `let ${step.variableName} = grok.shell.tableByName(${JSON.stringify(name)});`;
+  }
   case 'Add Table View': {
     const t = step.inputs.get('table') ?? 'undefined';
     return `let ${step.variableName} = grok.shell.addTableView(${t});`;
