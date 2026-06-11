@@ -22,6 +22,7 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
+  applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
@@ -443,19 +444,13 @@ export const TreeWizard = Vue.defineComponent({
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },
         runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
-          const exports =  Utils.getCustomExports(fc.func);
-          const item = exports.find(x => x.name === exportName);
-          if (!item)
-            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-          const res = await DG.Func.byName(fc.func.nqName).apply({
+          return applyCustomExport(fc, exportName, {
             startDownload: false,
-            funcCall: fc,
             validationState: states.validations?.[uuid],
             consistencyState: states.consistency?.[uuid],
             isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
             runError: states.calls?.[uuid]?.runError,
           });
-          return res;
         },
       };
       return exportData.handler(treeState.value!, utils);

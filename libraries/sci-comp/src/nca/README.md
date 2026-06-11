@@ -47,15 +47,17 @@ const rules: nca.NcaRules = {
   },
   extrapWarnPct:        20,
   extrapErrorPct:       50,
+  extrapWarnPctAumc:    20,
   compensatedSummation: false,
 };
 
 const result = nca.computeNca(inputs, rules);
 
-// result.values.{cmax, tmax, aucLast, aucInf, pctExtrap, lambdaZ, halfLife, cl, vz}
+// result.values.{cmax, tmax, aucLast, aucInf, pctExtrap, lambdaZ, halfLife, cl, vz,
+//                aumcLast, aumcInf, mrt, vss, tlag, pctExtrapAumc}
 // result.provenance.lambdaZ      → LambdaZResult: pointsUsed, R², tStart, tEnd, intercept
 // result.provenance.blqApplied   → which points were modified by BLQ rules
-// result.provenance.warnings     → AUC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS / BLQ_HIGH_FRACTION
+// result.provenance.warnings     → AUC_EXTRAP_HIGH / AUMC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS / BLQ_HIGH_FRACTION
 // result.status                  → 'ok' | 'partial' | 'failed'
 ```
 

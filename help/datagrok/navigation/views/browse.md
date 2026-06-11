@@ -274,8 +274,9 @@ Above the main area, there is a search ribbon for searching anything both within
 ![](../img/home-page.png)
 
 You can choose which widgets to display<!--, arrange their order, and assign custom names-->.
-To do this, hover over the widget's top to access its controls. You can close
-a widget or adjust its settings using the [Context Panel](../panels/panels.md#context-panel). To manage hidden widgets, go to **Sidebar** > **Settings** > **Panels**.
+To hide a widget, hover over it and click the **close** (**✕**) icon in its top-right corner.
+To show or hide any widget — including ones you previously closed — click the
+**Customize widgets...** link below the widgets and toggle them in the **Context Panel**.
 
 :::note developers
 

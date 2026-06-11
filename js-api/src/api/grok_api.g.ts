@@ -1103,6 +1103,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
+  grok_Dapi_RequestMembership(groupId: String, requesterId: String): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
   grok_EntitiesDataSource_GetFavoritesForGroups(s: any, groups: any): Promise<any>;
@@ -1120,6 +1121,7 @@ export interface IDartApi {
   grok_Dapi_UserDataStorage_Delete(name: String, key: String, currentUser: Bool): Promise<any>;
   grok_Dapi_Get_GroupUser(g: any): Promise<any>;
   grok_Dapi_Get_GroupsLookup(name: String): Promise<any>;
+  grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;

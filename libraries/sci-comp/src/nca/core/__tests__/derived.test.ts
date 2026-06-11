@@ -3,6 +3,10 @@ import {
   clearance,
   volumeTerminal,
   pctExtrapolated,
+  meanResidenceTime,
+  volumeSteadyState,
+  pctExtrapolatedAumc,
+  tlag,
 } from '../derived';
 
 describe('halfLifeFromLambdaZ', () => {
@@ -83,5 +87,92 @@ describe('pctExtrapolated', () => {
 
   it('returns NaN for the 0/0 case (AUClast = AUCinf = 0)', () => {
     expect(Number.isNaN(pctExtrapolated(0, 0))).toBe(true);
+  });
+});
+
+describe('meanResidenceTime', () => {
+  it('AUMCinf / AUCinf for bolus/EV (T_inf = 0)', () => {
+    expect(meanResidenceTime(10, 2)).toBe(5);
+  });
+
+  it('subtracts T_inf/2 for an IV infusion', () => {
+    // 10/2 − 2/2 = 5 − 1 = 4
+    expect(meanResidenceTime(10, 2, 2)).toBe(4);
+  });
+
+  it('returns +Infinity when AUCinf = 0 with positive AUMCinf', () => {
+    expect(meanResidenceTime(5, 0)).toBe(Infinity);
+  });
+
+  it('returns NaN for the 0/0 case', () => {
+    expect(Number.isNaN(meanResidenceTime(0, 0))).toBe(true);
+  });
+});
+
+describe('volumeSteadyState', () => {
+  it('Vss = dose·MRT/AUCinf = dose·AUMCinf/AUCinf² for IV bolus', () => {
+    // dose=10, AUMCinf=10, AUCinf=2 → MRT=5 → Vss = 10·5/2 = 25
+    expect(volumeSteadyState(10, 10, 2)).toBe(25);
+    // identity with the closed form dose·AUMC/AUC²
+    expect(volumeSteadyState(10, 10, 2)).toBe(10 * 10 / (2 * 2));
+  });
+
+  it('applies the infusion correction via meanResidenceTime', () => {
+    // T_inf=2 → MRT = 5 − 1 = 4 → Vss = 10·4/2 = 20
+    expect(volumeSteadyState(10, 10, 2, 2)).toBe(20);
+    expect(volumeSteadyState(10, 10, 2, 2))
+      .toBe(10 * meanResidenceTime(10, 2, 2) / 2);
+  });
+
+  it('Indometh subj 1 worked example (bolus, dose = 25)', () => {
+    // AUCinf=2.3257135428; pick AUMCinf so MRT≈8h → Vss = 25·8/2.3257 ≈ 86.0
+    const aucInf = 2.3257135428;
+    const aumcInf = 8 * aucInf; // MRT = 8h by construction
+    expect(volumeSteadyState(25, aumcInf, aucInf))
+      .toBeCloseTo(25 * 8 / aucInf, 8);
+  });
+});
+
+describe('pctExtrapolatedAumc', () => {
+  it('(AUMCinf − AUMClast) / AUMCinf · 100', () => {
+    expect(pctExtrapolatedAumc(8, 10)).toBe(20);
+  });
+
+  it('returns 0 when AUMClast == AUMCinf', () => {
+    expect(pctExtrapolatedAumc(5, 5)).toBe(0);
+  });
+
+  it('returns 100 when AUMClast == 0 and AUMCinf > 0', () => {
+    expect(pctExtrapolatedAumc(0, 5)).toBe(100);
+  });
+
+  it('returns NaN for the 0/0 case', () => {
+    expect(Number.isNaN(pctExtrapolatedAumc(0, 0))).toBe(true);
+  });
+});
+
+describe('tlag', () => {
+  it('time of the last zero before the first positive', () => {
+    const time = new Float64Array([0, 1, 2, 3]);
+    const conc = new Float64Array([0, 0, 5, 3]);
+    expect(tlag(time, conc)).toBe(1);
+  });
+
+  it('returns the first time when the profile is positive from the start', () => {
+    const time = new Float64Array([0, 1, 2]);
+    const conc = new Float64Array([5, 3, 1]);
+    expect(tlag(time, conc)).toBe(0);
+  });
+
+  it('single zero before the rise', () => {
+    const time = new Float64Array([0, 0.5, 1]);
+    const conc = new Float64Array([0, 2, 1]);
+    expect(tlag(time, conc)).toBe(0);
+  });
+
+  it('returns NaN when concentration never rises above zero', () => {
+    const time = new Float64Array([0, 1, 2]);
+    const conc = new Float64Array([0, 0, 0]);
+    expect(Number.isNaN(tlag(time, conc))).toBe(true);
   });
 });

@@ -10,15 +10,17 @@ import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
-import {PipelineConfiguration, CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
-import {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
+import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OptimizerParams, runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
@@ -49,8 +51,15 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   if (view.parentCall?.aux?.view)
     view.parentView = view.parentCall.aux.view;
 
-  if (call?.func?.name)
-    view.basePath = `/${call.func.name}`;
+  if (call?.func?.name) {
+    const pcFunc = view.parentCall?.func;
+    let prefix = '';
+    if (pcFunc?.options?.role === 'app' && pcFunc.package) {
+      const pkgUrl = pcFunc.package.meta?.url ?? `/${pcFunc.package.name}`;
+      prefix = `/apps${pkgUrl}`;
+    }
+    view.basePath = `${prefix}/${call.func.name}`;
+  }
 }
 
 function setVueAppOptions(app: Vue.App<any>) {
@@ -110,7 +119,12 @@ export class PackageFunctions {
     outputs: [{type: 'view', name: 'result'}],
   })
   static modelCatalog() {
-    return startModelCatalog(modelCatalogOptions);
+    const view = startModelCatalog(modelCatalogOptions);
+    if (view && Array.from(grok.shell.views).includes(view)) {
+      grok.shell.v = view;
+      return null;
+    }
+    return view;
   }
 
 
@@ -595,6 +609,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
+    // meta: { role: 'model' },
+    outputs: [{type: 'object', name: 'result'}]
   })
   static async TestCustomView() {
     const view = new MyView();
@@ -693,6 +709,19 @@ export class PackageFunctions {
         },
       },
     });
+  }
+
+  // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
+  @grok.decorators.func({
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+  })
+  static async TestCustomExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
+    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
   }
 
 }

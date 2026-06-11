@@ -118,7 +118,6 @@ export class ClaudeRuntimeClient {
         this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
         break;
       case 'sync_status':
-        console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
         if (data.status === 'done' && Array.isArray(data.files))
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});

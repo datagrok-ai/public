@@ -88,7 +88,7 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestDF1', { df });
   }
 
-  export async function testCustomView(): Promise<void> {
+  export async function testCustomView(): Promise<any> {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 

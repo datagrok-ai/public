@@ -8,7 +8,7 @@ import {Accordion, Dialog, InputBase, TreeViewNode, Widget} from "./widgets";
 import {View} from './views/view';
 import {ViewInfo} from './entities';
 import {Viewer} from "./viewer";
-import {Column, DataFrame} from "./dataframe";
+import {Cell, Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 import {LogMessage} from './logger';
@@ -108,11 +108,11 @@ export class Events {
   }
 
   /** Observes events with the specified eventId.
-   * To see which events are getting fired, use the Inspector tool. 
-   * Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want to 
+   * To see which events are getting fired, use the Inspector tool.
+   * Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want to
    * intercept. In the panel, you will see one or more of the events,
-   *  click on them to inspect event parameters. To simplify the development process, 
-   * we also generate JavaScript code for handling this particular event, 
+   *  click on them to inspect event parameters. To simplify the development process,
+   * we also generate JavaScript code for handling this particular event,
    * copy-paste it from the context panel into your code if needed.
    * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @param {string} eventId - such as 'd4-current-view-changed'
@@ -128,7 +128,7 @@ export class Events {
 
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
-  get onCurrentViewChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
+  get onCurrentViewChanged(): rxjs.Observable<EventData<ViewChangeArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
 
   get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGING); }
 
@@ -401,6 +401,31 @@ export type FileImportArgs = {
 
 export interface ViewArgs {
   view: View;
+}
+
+export interface ViewChangeArgs {
+  previous: View;
+  current: View;
+}
+
+export interface CellRangeArgs {
+  column: Column;
+  indexes: Int32Array | number[];
+}
+
+export interface RowChangeArgs {
+  previousRow: number;
+  currentRow: number;
+}
+
+export interface ColumnChangeArgs {
+  previous: Column;
+  current: Column;
+}
+
+export interface CellChangeArgs {
+  previous: Cell;
+  current: Cell;
 }
 
 export class ColumnsArgs extends EventData {

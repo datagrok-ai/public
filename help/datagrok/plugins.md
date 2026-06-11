@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Plugins"
 sidebar_position: 5 
 ---

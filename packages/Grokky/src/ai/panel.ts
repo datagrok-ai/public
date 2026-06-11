@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
+import {delay} from 'rxjs/operators'
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
@@ -280,7 +281,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     if (this._inline)
       return;
     let wasShown = false;
-    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+    // Defer the dock/undock until after the view switch has settled.
+    const sub = grok.events.onCurrentViewChanged.pipe(delay(150)).subscribe(() => {
       if (grok.shell.v != this.view) {
         wasShown = this.isShown;
         if (wasShown)
