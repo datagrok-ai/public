@@ -1470,7 +1470,7 @@ export class tools {
       let width = 100;
       if (element.classList.contains('ui-input-bool'))
         width = 30;
-      if (element.classList.contains('ui-input-switch'))
+      if (element.classList.contains('ui-input-bool-switch'))
         width = 50;
       if (element.classList.contains('ui-input-table'))
         width = 200;
