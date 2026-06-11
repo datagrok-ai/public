@@ -1,3 +1,66 @@
+---
+feature: sharing
+sub_features_covered:
+  - sharing.share-dialog
+  - sharing.permissions-editor
+  - sharing.advanced-editor
+  - sharing.context-panel-pane
+  - sharing.entity-types.connection
+  - sharing.browse-shared-with-me
+  - sharing.notification
+target_layer: manual-only
+coverage_type: regression
+produced_from: migrated
+original_path: public/packages/UsageAnalysis/files/TestTrack/sharing/share-connection-permissions.md
+migration_date: '2026-06-11'
+source_text_fixes:
+  - stray-asterisk-group-times-object
+  - trailing-whitespace-normalization
+candidate_helpers: []
+unresolved_ambiguities: []
+scope_reductions: []
+related_bugs: []
+gate_verdicts:
+  a:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: 2026-06-11T13:00:00Z
+    failure_keys: []
+    review_round: 1
+    claims:
+      - check: A-STRUCT-MECH-01
+        status: PASS
+      - check: A-STRUCT-MECH-02
+        status: PASS
+      - check: A-STRUCT-MECH-03
+        status: PASS
+      - check: A-STRUCT-MECH-04
+        status: PASS
+      - check: A-STRUCT-MECH-05
+        status: PASS
+      - check: A-STRUCT-MECH-06
+        status: PASS
+      - check: A-STRUCT-03
+        status: PASS
+      - check: A-STRUCT-04
+        status: PASS
+      - check: A-LAYER-ALIGN-01
+        status: PASS
+      - check: A-CONT-01
+        status: PASS
+      - check: A-BUG-01
+        status: PASS
+      - check: A-MERIT-01
+        status: PASS
+      - check: A-MERIT-02
+        status: PASS
+  d:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: 2026-06-11T12:00:00Z
+    failure_keys: []
+---
+
 # Sharing & Permissions — Connection
 
 ## Setup
@@ -7,64 +70,76 @@
 - `Custom group` — a dedicated group containing the recipient, for the group-sharing block
 - **Entity under test** — a new connection created under the `owner` user
 
+> **Manual-only:** Blocks D, E, and F require two independent authenticated browser sessions
+> (owner + non-admin recipient). Atlas `manual_only[]` entry `sharing.entity-types.connection`
+> confirms this constraint — two-actor setup cannot be reduced to deterministic single-session
+> UI automation. `target_layer: manual-only` per chain output plan.
+
 ## Scenarios
 
 ### Block A — Open the Share dialog from the Sharing pane (owner)
 
 1. As **owner**, set the connection as the current object (Browse > Databases, click Postgres, locate and click the connection, so the Context Panel shows it). Expand the **Sharing** pane in the Context Panel.
-   * Expected result: the Sharing pane lists the current grant — **"`owner` can view and use"** and **"You are the owner"** — and shows a **SHARE...** button.
+   - Expected result: the Sharing pane lists the current grant — **"`owner` can view and use"** and **"You are the owner"** — and shows a **SHARE...** button.
 2. Click **SHARE...**.
-   * Expected result: the **Share connection name** dialog opens with: a **"User, group, or email"** autocomplete input, a level dropdown defaulting to **View and use**, the existing owner grant row (with a **×**), an **Advanced editor...** link, and **OK** / **CANCEL**.
+   - Expected result: the **Share connection name** dialog opens with: a **"User, group, or email"** autocomplete input, a level dropdown defaulting to **View and use**, the existing owner grant row (with a **×**), an **Advanced editor...** link, and **OK** / **CANCEL**.
 
 ### Block B — Share-dialog controls (owner)
 
 1. Type a few letters of the recipient name into the **"User, group, or email"** input.
-   * Expected result: an autocomplete list suggests matching users/groups; selecting one adds it as a pill with its own level dropdown and a **×** to remove.
+   - Expected result: an autocomplete list suggests matching users/groups; selecting one adds it as a pill with its own level dropdown and a **×** to remove.
 2. Observe the dependent-entity notice and the notification controls.
-   * Expected result: because a connection has no upstream dependencies, the dialog shows **no** "also be shared" cascade notice. When adding a new recipient, a **Send notifications** checkbox and a message box ("Type in message here") are   available.
+   - Expected result: because a connection has no upstream dependencies, the dialog shows **no** "also be shared" cascade notice. When adding a new recipient, a **Send notifications** checkbox and a message box ("Type in message here") are available.
 3. Click **CANCEL**.
-   * Expected result: the dialog closes; no grant is changed (Sharing pane still shows owner-only).
+   - Expected result: the dialog closes; no grant is changed (Sharing pane still shows owner-only).
 
 ### Block C — Advanced editor per-permission matrix (owner)
 
 1. Open the Share dialog again and click **Advanced editor...**.
-   * Expected result: a permissions view opens (route `/permissions/<id>`) showing a *Group × Object** matrix. Columns are grouped under **Common** — **View**, **Edit**, **Delete**, **Share** — plus the entity-specific **Query**,  **GetSchema**, and **ListFiles** columns for a DataConnection. The owner's existing rows show **View** (and **Query** / **GetSchema** / **ListFiles**) checked.
+   - Expected result: a permissions view opens (route `/permissions/<id>`) showing a **Group × Object** matrix. Columns are grouped under **Common** — **View**, **Edit**, **Delete**, **Share** — plus the entity-specific **Query**, **GetSchema**, and **ListFiles** columns for a DataConnection. The owner's existing rows show **View** (and **Query** / **GetSchema** / **ListFiles**) checked.
 2. Inspect the bottom **"Type in user, role or group to add..."** row.
-   * Expected result: a new group/user can be added and individual permission checkboxes toggled independently, with a **SAVE** action. 
+   - Expected result: a new group/user can be added and individual permission checkboxes toggled independently, with a **SAVE** action.
 3. Close without saving.
 
 ### Block D — Share "View and use" to the recipient; recipient gains read + use (two-actor)
 
-1. As **owner**, open the Share dialog, add the `Recipient` name (or the **`Custom Group`**), leave the level at **View and use**, leave **Send notifications** as desired, and
-   click **OK**.
-   * Expected result: the dialog closes with no error; the Sharing pane now lists the recipient with **"can view and use"** in addition to the owner.
+1. As **owner**, open the Share dialog, add the `Recipient` name (or the **`Custom Group`**), leave the level at **View and use**, leave **Send notifications** as desired, and click **OK**.
+   - Expected result: the dialog closes with no error; the Sharing pane now lists the recipient with **"can view and use"** in addition to the owner.
 2. Log out from the `owner` session and log in as the `recipient`. In the **`recipient`** browser session, open **My stuff > Shared with me**.
-   * Expected result: the shared connection appears under **Shared with me** for the recipient.
+   - Expected result: the shared connection appears under **Shared with me** for the recipient.
 3. As **recipient**, confirm only the connection itself became reachable (no extra entities appeared under **Shared with me** as a side effect of this share).
-   * Expected result: only the shared connection is reachable; no dependent entities were auto-shared, consistent with the absence of the cascade notice.
+   - Expected result: only the shared connection is reachable; no dependent entities were auto-shared, consistent with the absence of the cascade notice.
 4. As **recipient**, open the connection and **use** it — run a query against it, browse its schema, open some tables.
-   * Expected result: the connection is reachable and usable — running a query, browsing the schema, or opening tables succeeds. The **Query** / **GetSchema** / **ListFiles**   use-permissions were granted via **View and use**.
+   - Expected result: the connection is reachable and usable — running a query, browsing the schema, or opening tables succeeds. The **Query** / **GetSchema** / **ListFiles** use-permissions were granted via **View and use**.
 
 ### Block E — Negative: with "View and use", recipient cannot edit, delete, or re-share (two-actor)
 
 1. As **recipient**, attempt to **edit** the connection — open it, change a connection parameter, and try to **save**.
-   * Expected result: editing is **not permitted** — the edit/save controls are disabled or the save is rejected with a permission error; the connection  parameters are unchanged.
+   - Expected result: editing is **not permitted** — the edit/save controls are disabled or the save is rejected with a permission error; the connection parameters are unchanged.
 2. As **recipient**, attempt to **delete** the connection (Delete action / context menu).
-   * Expected result: delete is **not permitted** — the action is absent/disabled or rejected with a permission error; the connection still exists.
+   - Expected result: delete is **not permitted** — the action is absent/disabled or rejected with a permission error; the connection still exists.
 3. As **recipient**, open the connection's **Sharing** pane and attempt to **re-share** it (the way you would as owner).
-   * Expected result: there is **no usable SHARE... affordance** (absent / disabled), or any attempt to grant is **rejected** — "View and use" does not include the **Share** permission. The grant list is unchanged.
+   - Expected result: there is **no usable SHARE... affordance** (absent / disabled), or any attempt to grant is **rejected** — "View and use" does not include the **Share** permission. The grant list is unchanged.
 
 ### Block F — Revoke access from the recipient; access lost (two-actor) — do this LAST
 
-1. Log out from the `recipient` session and log in as the `owner`. 
+1. Log out from the `recipient` session and log in as the `owner`.
 2. As **owner**, open the Share dialog and click the **×** next to the recipient's grant; click **OK**.
-   * Expected result: the recipient grant is removed; the Sharing pane shows owner-only again.
-3. Log out from the `owner` session and log in as the `recipient`. 
-4. In the **recipient** session, refresh and look under **Shared with me** / try to open the connection.
-   * Expected result: the connection no longer appears under Shared with me and the recipient can no longer open or use it (access revoked).
+   - Expected result: the recipient grant is removed; the Sharing pane shows owner-only again.
+3. Log out from the `owner` session and log in as the `recipient`.
+4. In the **`recipient`** session, refresh and look under **Shared with me** / try to open the connection.
+   - Expected result: the connection no longer appears under Shared with me and the recipient can no longer open or use it (access revoked).
+
+## Notes
+
+- Atlas sub-feature `sharing.entity-types.connection`: sharing a DataConnection grants the recipient `DataConnection.Query` and `DataConnection.GetSchema` permissions via "View and use". Source: `core/client/xamgle/lib/src/commands/file/share_dataset.dart#L7`.
+- Block C Advanced editor entity-specific columns: **Query**, **GetSchema**, **ListFiles** — per `sharing.advanced-editor` (source: `core/client/xamgle/lib/src/features/users/permissions_browser.dart#L403`).
+- Block B cascade notice: absent for connections (connection has no upstream shareable dependency). Contrast with query scenarios where the parent DataConnection triggers a cascade notice.
+- Notification controls covered: `sharing.notification` (source: `core/client/xamgle/lib/src/features/users/permissions_browser.dart#L98`).
+- Context Panel Sharing pane covered: `sharing.context-panel-pane` (source: `core/shared/grok_shared/lib/src/http_client/privileges_client.dart#L51`).
+- Shared with me browse node covered: `sharing.browse-shared-with-me` (source: `core/client/xamgle/lib/src/features/browse_panel/browse_panel_tree.dart#L96`).
+- See: `public/help/govern/access-control/access-control.md#Permissions` for the permission model reference.
+- See: `core/docs/ENTITY_PERMISSIONS.md#Privileges (what you can do)` for entity-type permission constants.
 
 ---
-{
-  "order": 2,
-  "datasets": []
-}
+{ "order": 2, "datasets": [] }

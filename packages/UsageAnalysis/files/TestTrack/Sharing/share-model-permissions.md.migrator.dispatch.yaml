@@ -1,0 +1,5 @@
+verdict: PASS
+outputs:
+  scenario_path: D:\work\datagrok\reddata\public\packages\UsageAnalysis\files\TestTrack\sharing\share-model-permissions.md
+  frontmatter_fields_written: []
+  no_op: true

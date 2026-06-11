@@ -1,3 +1,65 @@
+---
+feature: sharing
+sub_features_covered:
+  - sharing.context-panel-pane
+  - sharing.share-dialog
+  - sharing.permissions-editor
+  - sharing.notification
+  - sharing.advanced-editor
+  - sharing.entity-types.script
+  - sharing.browse-shared-with-me
+target_layer: manual-only
+coverage_type: regression
+produced_from: migrated
+original_path: public/packages/UsageAnalysis/files/TestTrack/sharing/share-script-permissions.md
+migration_date: '2026-06-11'
+source_text_fixes:
+  - block-b-step-numbering-gap
+candidate_helpers: []
+unresolved_ambiguities: []
+scope_reductions: []
+related_bugs: []
+gate_verdicts:
+  a:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: '2026-06-11T14:00:00Z'
+    failure_keys: []
+    review_round: 1
+    claims:
+      - check: A-STRUCT-MECH-01
+        status: PASS
+      - check: A-STRUCT-MECH-02
+        status: PASS
+      - check: A-STRUCT-MECH-03
+        status: PASS
+      - check: A-STRUCT-MECH-04
+        status: PASS
+      - check: A-STRUCT-MECH-05
+        status: PASS
+      - check: A-STRUCT-MECH-06
+        status: PASS
+      - check: A-STRUCT-03
+        status: PASS
+      - check: A-STRUCT-04
+        status: PASS
+      - check: A-LAYER-ALIGN-01
+        status: PASS
+      - check: A-CONT-01
+        status: PASS
+      - check: A-BUG-01
+        status: PASS
+      - check: A-MERIT-01
+        status: PASS
+      - check: A-MERIT-02
+        status: PASS
+  d:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: '2026-06-11T12:00:00Z'
+    failure_keys: []
+---
+
 # Sharing & Permissions — Script
 
 ## Setup
@@ -5,16 +67,18 @@
 - `Owner` — the tester's own account, logged into the primary browser session
 - `Recipient` — a second, **non-admin** account
 - `Custom group` — a dedicated group containing the recipient, for the group-sharing block
-- **Entity under test** — a **Script owned by the owner** , e.g. a JS script, created from the Browse > Platform > Functions > Scripts, click New > JS Script script... and insert
+- **Entity under test** — a **Script owned by the owner**, e.g. a JS script, created from Browse > Platform > Functions > Scripts, click New > JS Script, and insert:
+
 ```
 //name: Template
 //description: Hello world script
 //language: javascript
 
 grok.shell.info('hello world')
-``` 
-and click SAVE.
-  
+```
+
+Click SAVE.
+
 ## Scenarios
 
 ### Block A — Open the Share dialog from the Sharing pane (owner)
@@ -29,8 +93,8 @@ and click SAVE.
 1. Type a few letters of the recipient into the **"User, group, or email"** input.
    * Expected result: an autocomplete list suggests matching users/groups; selecting one adds it as a pill with its own level dropdown and a **×** to remove.
 2. Observe the dependent-entity notice and the notification controls.
-   * Expected result: a script with no shareable dependencies shows no such notice. When     adding a new recipient, a **Send notifications** checkbox and a message box ("Type in message here") are available.
-4. Click **CANCEL**.
+   * Expected result: a script with no shareable dependencies shows no such notice. When adding a new recipient, a **Send notifications** checkbox and a message box ("Type in message here") are available.
+3. Click **CANCEL**.
    * Expected result: the dialog closes; no grant is changed (Sharing pane still shows owner-only).
 
 ### Block C — Advanced editor per-permission matrix (owner)
@@ -38,16 +102,16 @@ and click SAVE.
 1. Open the Share dialog again and click **Advanced editor...**.
    * Expected result: a permissions view opens (route `/permissions/<id>`) showing a **Group × Object** matrix. Columns are grouped under **Common** — **View**, **Edit**, **Delete**, **Share** — plus the entity-specific **Execute** column for a Script. The owner's existing rows show **View** (and **Execute**) checked.
 2. Inspect the bottom **"Type in user, role or group to add..."** row.
-   * Expected result: a new group/user can be added and individual permission checkboxes toggled independently, with a **SAVE** action. 
+   * Expected result: a new group/user can be added and individual permission checkboxes toggled independently, with a **SAVE** action.
 3. Close without saving.
 
 ### Block D — Share "View and use" to the recipient; recipient gains read + execute (two-actor)
 
-1. As **owner**, open the Share dialog, add `Recipient` name (or the **`Custom Group`**),    leave the level at **View and use**, leave **Send notifications** as desired, and click **OK**.
+1. As **owner**, open the Share dialog, add `Recipient` name (or the **`Custom Group`**), leave the level at **View and use**, leave **Send notifications** as desired, and click **OK**.
    * Expected result: the dialog closes with no error; the Sharing pane now lists the recipient with **"can view and use"** in addition to the owner.
 2. Log out from the `owner` session and log in as the `recipient`. In the **recipient** browser session, open **My stuff → Shared with me** (or search for the script).
    * Expected result: the shared script appears under **Shared with me** for the recipient.
-3. As **recipient**, open the script and **run/execute** it (context menu > Run ).
+3. As **recipient**, open the script and **run/execute** it (context menu > Run).
    * Expected result: the script runs successfully and returns its output.
 
 ### Block E — Negative: with "View and use", recipient cannot edit, delete, or re-share (two-actor)
@@ -55,18 +119,26 @@ and click SAVE.
 1. As **recipient**, attempt to **edit** the script — change its source code and try to **save**.
    * Expected result: editing is **not permitted**; the script source is unchanged.
 2. As **recipient**, attempt to **delete** the script (Delete action / context menu).
-   * Expected result: delete is **not permitted** ; the script still exists.
+   * Expected result: delete is **not permitted**; the script still exists.
 3. As **recipient**, open the script's **Sharing** pane and attempt to **re-share** it (the way you would as owner).
    * Expected result: there is **no usable SHARE... affordance**. The grant list is unchanged.
 
 ### Block F — Revoke access from the recipient; access lost (two-actor) — do this LAST
 
-1. Log out from the `recipient` session and log in as the `owner`. 
+1. Log out from the `recipient` session and log in as the `owner`.
 2. As **owner**, open the Share dialog and click the **×** next to the recipient's grant; click **OK** (alternatively, use the Advanced editor to uncheck the grants and SAVE).
    * Expected result: the recipient grant is removed; the Sharing pane shows owner-only again.
-3. Log out from the `owner` session and log in as the `recipient`. 
+3. Log out from the `owner` session and log in as the `recipient`.
 4. In the **recipient** session, refresh and look under **Shared with me** / try to run the script.
    * Expected result: the script no longer appears under Shared with me and the recipient can no longer run it (access revoked).
+
+## Notes
+
+- `target_layer: manual-only` — all blocks (D, E, F) require two independent authenticated browser sessions (owner + non-admin recipient). Atlas `manual_only[]` entry for `sharing.entity-types.script` confirms this constraint: two-actor tests cannot be reduced to deterministic single-session UI automation.
+- Atlas `derived_from`: `core/client/xamgle/lib/src/commands/file/share_dataset.dart#L7` (Share command registration site, confirmed by Step 2.5 cross-package grep).
+- Block B step 2: a script entity has no shareable upstream dependencies, so no dependent-entity cascade notice appears in the Share dialog. Compare with `share-query-permissions.md` where the query-connection dependency triggers the cascade notice.
+- Block C: the **Execute** column is entity-specific to Scripts in the Advanced editor permission matrix (per atlas `sharing.advanced-editor` description and `sharing.entity-types.script` interactions).
+- `sharing.browse-shared-with-me` is also listed in `manual_only[]`; its coverage here (Block D step 2) is incidental to the two-actor flow already required for Block D.
 
 ---
 {

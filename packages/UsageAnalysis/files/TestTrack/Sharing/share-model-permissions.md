@@ -1,3 +1,67 @@
+---
+feature: sharing
+sub_features_covered:
+  - sharing.entity-types.model
+  - sharing.context-panel-pane
+  - sharing.share-dialog
+  - sharing.permissions-editor
+  - sharing.advanced-editor
+  - sharing.notification
+  - sharing.browse-shared-with-me
+target_layer: manual-only
+coverage_type: regression
+produced_from: migrated
+original_path: public/packages/UsageAnalysis/files/TestTrack/sharing/share-model-permissions.md
+migration_date: '2026-06-11'
+source_text_fixes:
+  - typo-log-out-form-to-from
+candidate_helpers: []
+unresolved_ambiguities:
+  - execute-column-presence-for-model-in-advanced-editor
+scope_reductions: []
+related_bugs:
+  - GROK-19403
+gate_verdicts:
+  d:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: 2026-06-11T12:00:00Z
+    failure_keys: []
+  a:
+    verdict: PASS
+    cycle_id: 2026-06-11-sharing-migrate-02
+    timestamp: 2026-06-11T13:00:00Z
+    failure_keys: []
+    review_round: 1
+    claims:
+      - check: A-STRUCT-MECH-01
+        status: PASS
+      - check: A-STRUCT-MECH-02
+        status: PASS
+      - check: A-STRUCT-MECH-03
+        status: PASS
+      - check: A-STRUCT-MECH-04
+        status: PASS
+      - check: A-STRUCT-MECH-05
+        status: PASS
+      - check: A-STRUCT-MECH-06
+        status: PASS
+      - check: A-STRUCT-03
+        status: PASS
+      - check: A-STRUCT-04
+        status: PASS
+      - check: A-LAYER-ALIGN-01
+        status: PASS
+      - check: A-CONT-01
+        status: PASS
+      - check: A-BUG-01
+        status: PASS
+      - check: A-MERIT-01
+        status: PASS
+      - check: A-MERIT-02
+        status: PASS
+---
+
 # Sharing & Permissions — Model (predictive model)
 
 ## Setup
@@ -51,7 +115,7 @@
 
 1. As **owner**, open the Share dialog, add the `Recipient` name (or the **`Custom Group`**), leave the level at **View and use**, leave **Send notifications** as desired, and click **OK**.
    * Expected result: the dialog closes with no error; the Sharing pane now lists the recipient with **"can view and use"** in addition to the owner.
-2. Log out form the `owner` session and log in as the `recipient`. In the **recipient** browser session, open **My stuff > Shared with me** (or search for the model in Browse > Platform > Predictive Models view).
+2. Log out from the `owner` session and log in as the `recipient`. In the **recipient** browser session, open **My stuff > Shared with me** (or search for the model in Browse > Platform > Predictive Models view).
    * Expected result: recipient has access to the shared model.
 3. As **recipient**, open the demog dataset, right-click the model and **apply** it to a dataset.
    * Expected result: the model opens and can be **applied** to a dataset.
@@ -77,15 +141,19 @@
 ### Block G — Revoke access from the recipient; access lost (two-actor) — do this LAST
 
 1. Log out from the `recipient` session and log in as the `owner`.
-2. As **owner**, open the Share dialog and click the **×** next to the recipient's  grant; click **OK** .
+2. As **owner**, open the Share dialog and click the **×** next to the recipient's grant; click **OK**.
    * Expected result: the recipient grant is removed; the Sharing pane shows
      owner-only again.
 3. Log out from the `owner` session and log in as the `recipient`.
 4. In the **recipient** session, refresh and look under **Shared with me** / try to locate the model.
    * Expected result: the model no longer appears under Shared with me and the recipient can no longer open or apply it (access revoked).
 
+## Notes
+
+- `target_layer: manual-only` per atlas `manual_only[]` entry for `sharing.entity-types.model`: two-actor test (owner + non-admin recipient) requires two independent browser sessions; cannot be reduced to deterministic single-session UI automation. Atlas source: `core/client/xamgle/lib/src/commands/file/share_dataset.dart#L7`.
+- Block C unresolved: the phrase "unless present" in step 1 is ambiguous — it is unclear under which conditions an Execute column does or does not appear for a PredictiveModel in the Advanced editor. Needs live verification against a fresh model entity. See `unresolved_ambiguities`.
+- Block E verifies the cascade behavior explicitly expected for a standalone model (no cascade); contrast with `GROK-19403` (project dependency cascade failure where project embeds a script). The model `external_deps: [Script]` in the atlas means the training script may be a dependency, but sharing the model entity alone is the design intent for standalone use.
+- GROK-19403 is related as the canonical cascade-failure bug for project entities; this scenario covers the complementary assertion (model does NOT cascade) and is part of the same sharing sub-system.
+
 ---
-{
-  "order": 6,
-  "datasets": []
-}
+{ "order": 6, "datasets": [] }
