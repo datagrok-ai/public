@@ -3,7 +3,7 @@ import {Observable} from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
-import {FileInfo, Package} from './entities';
+import {FileInfo, Package, Property} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode, Widget} from "./widgets";
 import {View} from './views/view';
 import {ViewInfo} from './entities';
@@ -367,6 +367,13 @@ export interface DataFrameArgs {
 
 export interface InputArgs {
   input: InputBase;
+}
+
+export interface PropertyChangeArgs {
+  property: Property;
+  object: any;
+  newValue: any;
+  oldValue: any;
 }
 
 export interface EventArgs {
