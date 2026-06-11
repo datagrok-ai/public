@@ -32,8 +32,9 @@ function chemAvailable(): boolean {
   }
 }
 
-function outputNode(graph: BuiltGraph) {
-  return graph.nodes.find((n) => n.dgNodeType === 'output');
+/** The SetVar node registering the given variable (the terminal per variable). */
+function setVarFor(graph: BuiltGraph, varName: string) {
+  return nodesByFunc(graph, 'SetVar').find((n) => n.inputValues['variableName'] === varName);
 }
 
 category('Flow: creation script import', () => {
@@ -42,40 +43,39 @@ category('Flow: creation script import', () => {
     registerAllFunctions();
   });
 
-  test('simple assignment builds func node + output, sets the variable', async () => {
+  test('simple assignment builds func node + SetVar, no output node', async () => {
     const g = buildCreationScriptGraph('T = OpenFile("System:AppData/x.csv")');
     expect(g.outputVariables.length, 1);
     expect(g.outputVariables[0], 'T');
+    expect(g.nodes.some((n) => n.dgNodeType === 'output'), false, 'no output nodes');
     const open = oneNodeByFunc(g, 'OpenFile');
     expect(open.inputValues['fullPath'], 'System:AppData/x.csv'); // string slot → inputValue
-    const out = outputNode(g);
-    expect(out != null, true, 'output node created');
-    expect(out!.dgTypeName, 'Outputs/Table Output'); // OpenFile yields a dataframe
-    expect(out!.properties['paramName'], 'T');
-    const src = sourceOf(g, out!, Object.keys(out!.inputs)[0]);
-    expect(src?.node, open, 'output wired to OpenFile');
+    const setVar = setVarFor(g, 'T');
+    expect(setVar != null, true, 'SetVar created');
+    expect(setVar!.label, 'set: T');
+    expect(sourceOf(g, setVar!, 'value')?.node, open, 'SetVar wired to OpenFile');
   });
 
-  test('every variable gets its own output node', async () => {
+  test('every variable gets its own SetVar node', async () => {
     const g = buildCreationScriptGraph([
       'A = OpenFile("a.csv")',
       'B = OpenFile("b.csv")',
       'AddNewColumn(B, "1", "x")',
     ].join('\n'));
     expect(g.outputVariables.join(','), 'A,B');
-    const outputs = g.nodes.filter((n) => n.dgNodeType === 'output');
-    expect(outputs.length, 2);
-    const outA = outputs.find((n) => n.properties['paramName'] === 'A');
-    const outB = outputs.find((n) => n.properties['paramName'] === 'B');
-    expect(outA != null && outB != null, true, 'one output per variable');
+    const setVars = nodesByFunc(g, 'SetVar');
+    expect(setVars.length, 2);
+    const setA = setVarFor(g, 'A');
+    const setB = setVarFor(g, 'B');
+    expect(setA != null && setB != null, true, 'one SetVar per variable');
 
     // A is untouched → wired straight to its OpenFile result.
     const opens = nodesByFunc(g, 'OpenFile');
     const openA = opens.find((n) => n.inputValues['fullPath'] === 'a.csv')!;
-    expect(sourceOf(g, outA!, 'table')?.node, openA);
+    expect(sourceOf(g, setA!, 'value')?.node, openA);
     // B was mutated → wired to AddNewColumn's pass-through (final state).
     const add = oneNodeByFunc(g, 'AddNewColumn');
-    const srcB = sourceOf(g, outB!, 'table');
+    const srcB = sourceOf(g, setB!, 'value');
     expect(srcB?.node, add);
     expect(srcB!.key.endsWith(PASSTHROUGH), true);
   });
@@ -108,11 +108,11 @@ category('Flow: creation script import', () => {
     const tableSrc = sourceOf(g, second, 'table');
     expect(tableSrc?.node, first, 'second consumes first');
     expect(tableSrc!.key.endsWith(PASSTHROUGH), true, 'via pass-through');
-    // The output is the final state of the table → second AddNewColumn's pass-through.
-    const out = outputNode(g);
-    const outSrc = sourceOf(g, out!, Object.keys(out!.inputs)[0]);
-    expect(outSrc?.node, second);
-    expect(outSrc!.key.endsWith(PASSTHROUGH), true);
+    // SetVar stores the final state of the table → second AddNewColumn's pass-through.
+    const setVar = setVarFor(g, 'T')!;
+    const setSrc = sourceOf(g, setVar, 'value');
+    expect(setSrc?.node, second);
+    expect(setSrc!.key.endsWith(PASSTHROUGH), true);
   });
 
   test('trailing // metadata comments and blank lines are stripped', async () => {
@@ -181,10 +181,10 @@ category('Flow: creation script import', () => {
     expect(addTableSrc?.node, chem, 'AddNewColumn ordered after chem');
     expect(addTableSrc!.key.endsWith(PASSTHROUGH), true);
 
-    // Output = final Mol1K = AddNewColumn pass-through.
-    const out = outputNode(g);
-    const outSrc = sourceOf(g, out!, Object.keys(out!.inputs)[0]);
-    expect(outSrc?.node, add);
+    // SetVar(Mol1K) stores the final Mol1K = AddNewColumn pass-through.
+    const setVar = setVarFor(g, 'Mol1K')!;
+    const setSrc = sourceOf(g, setVar, 'value');
+    expect(setSrc?.node, add);
     expect(g.outputVariables.join(','), 'Mol1K');
   });
 
@@ -255,15 +255,41 @@ category('Flow: creation script import', () => {
     expect(sourceOf(g, byParam('keys2'), 'table')?.node, table2);
     expect(sourceOf(g, byParam('values2'), 'table')?.node, table2);
 
-    // The variable Result is wired to JoinTables' real output.
-    const out = outputNode(g);
-    expect(out?.properties['paramName'], 'Result');
-    const outSrc = sourceOf(g, out!, Object.keys(out!.inputs)[0]);
-    expect(outSrc?.node, join);
-    expect(outSrc!.key.endsWith(PASSTHROUGH), false, 'output from the real result, not a pass-through');
+    // The variable Result is stored by SetVar from JoinTables' real output.
+    const setVar = setVarFor(g, 'Result')!;
+    const setSrc = sourceOf(g, setVar, 'value');
+    expect(setSrc?.node, join);
+    expect(setSrc!.key.endsWith(PASSTHROUGH), false, 'stored from the real result, not a pass-through');
 
-    // Exact graph size: JoinTables + 2 Select Table + 4 Select Columns + output.
+    // Exact graph size:
+    // JoinTables + 2 Select Table + 4 Select Columns + SetVar (no output node).
     expect(g.nodes.length, 8);
+  });
+
+  test('layout: a producer path sits above the path that consumes its table', async () => {
+    // The Join (defined FIRST) reads "Second" via a Select Table; the Second
+    // producer path is defined LATER. Layout must still place the producer band
+    // above the consumer band (dependency order beats script order), so the
+    // top-first execution order resolves the table before the join uses it.
+    const g = buildCreationScriptGraph([
+      'Joined = JoinTables("First", "Second", ["Id"], ["Id"], ["Id"], ["Id"])',
+      'Second = OpenFile("s.csv")',
+      'AddNewColumn(Second, "1", "x")',
+    ].join('\n'));
+
+    const join = oneNodeByFunc(g, 'JoinTables');
+    const setSecond = setVarFor(g, 'Second')!;
+    const openSecond = nodesByFunc(g, 'OpenFile')[0];
+
+    // Bands are vertically disjoint, so every Second-path node is above the join.
+    expect(openSecond.pos.y < join.pos.y, true, 'producer OpenFile above the join');
+    expect(setSecond.pos.y < join.pos.y, true, 'producer SetVar above the join');
+
+    // Sanity: the Select Table the join reads is named "Second".
+    const tables = nodesByFunc(g, 'JoinTables').length; // ensure exactly one join
+    expect(tables, 1);
+    const t2 = sourceOf(g, join, 'table2')!.node;
+    expect(t2.properties['tableName'], 'Second');
   });
 
   test('layout: edges point right, no node boxes overlap', async () => {

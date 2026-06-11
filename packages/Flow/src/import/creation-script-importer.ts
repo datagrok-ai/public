@@ -174,18 +174,19 @@ class CreationScriptBuilder {
         this.addCall(fc, {advanceConsumedVars: true, contextTable: null});
     }
 
-    // Every variable becomes a script result: each gets its own output node,
-    // connected to the variable's final ref (the last pass-through in its
-    // chain, so the output carries the fully transformed value).
+    // Each variable feeds a real SetVar(variableName, value) call — the only
+    // terminal node per variable — so running the flow registers the value in
+    // the context under its original name (downstream consumers, a Select
+    // Table in a lower disjoint path, or other scripts can resolve it). The
+    // value is the variable's final ref (last pass-through in its chain).
     const outputVariables: string[] = [];
-    const usedParamNames = new Set<string>();
     for (const name of this.variableOrder) {
       if (!this.variables.has(name.toLowerCase())) continue;
-      this.wireOutput(name, usedParamNames);
+      this.wireSetVar(name);
       outputVariables.push(name);
     }
     if (outputVariables.length === 0)
-      this.warnings.push('No variable assignments found — the flow has no output node');
+      this.warnings.push('No variable assignments found in the creation script');
 
     this.layout();
     return {
@@ -524,30 +525,6 @@ class CreationScriptBuilder {
     return {node, outputKey: 'value'};
   }
 
-  /** Wire one script variable to its own Table/Value output node. The
-   *  validator requires unique output param names, so sanitized names are
-   *  deduplicated across outputs. */
-  private wireOutput(varName: string, usedParamNames: Set<string>): void {
-    const ref = this.variables.get(varName.toLowerCase());
-    if (!ref) return;
-    const dgType = this.outputType(ref);
-    const isTable = dgType === 'dataframe';
-    const node = createNode(isTable ? 'Outputs/Table Output' : 'Outputs/Value Output');
-    if (!node) return;
-    let paramName = toParamName(varName);
-    for (let i = 2; usedParamNames.has(paramName.toLowerCase()); i++)
-      paramName = `${toParamName(varName)}_${i}`;
-    usedParamNames.add(paramName.toLowerCase());
-    node.properties['paramName'] = paramName;
-    node.label = isTable ? `Table Output: ${paramName}` : `Output: ${paramName}`;
-    if (!isTable && dgType && dgType !== 'dynamic' && dgType !== 'object')
-      node.properties['outputType'] = dgType;
-    this.addNode(node);
-    const inputKey = Object.keys(node.inputs)[0];
-    this.connect(ref, node, inputKey);
-    this.layer.set(node, (this.layer.get(ref.node) ?? 0) + 1);
-  }
-
   // ---------- low-level graph ops ----------
 
   private addNode(node: FlowNode): void {
@@ -580,34 +557,71 @@ class CreationScriptBuilder {
     return param.propertyType === 'dataframe' || String(param.propertyType) === 'dataframe';
   }
 
-  private outputType(ref: OutputRef): string | null {
-    const slot = ref.node.outputs[ref.outputKey] as {socket: TypedSocket} | undefined;
-    return slot?.socket.dgType ?? null;
+  /** Wire the variable's final ref into a real `SetVar(variableName, value)`
+   *  call so running the flow registers the value in the context under its
+   *  original name. This is the only terminal node per variable. */
+  private wireSetVar(varName: string): void {
+    const ref = this.variables.get(varName.toLowerCase());
+    if (!ref) return;
+    const setVarFunc = this.findSetVarFunc();
+    if (!setVarFunc) {
+      this.warnings.push('SetVar function not found — variables will not be registered at run time');
+      return;
+    }
+    const node = createNode(ensureFuncNodeType(setVarFunc));
+    if (!node) return;
+    node.label = `set: ${varName}`;
+    node.inputValues['variableName'] = varName;
+    this.addNode(node);
+    this.connect(ref, node, 'value');
+    this.layer.set(node, (this.layer.get(ref.node) ?? 0) + 1);
+  }
+
+  private _setVarFunc: DG.Func | null | undefined = undefined;
+  private findSetVarFunc(): DG.Func | null {
+    if (this._setVarFunc === undefined) {
+      try {
+        this._setVarFunc = DG.Func.find({name: 'SetVar'})[0] ?? null;
+      } catch {
+        this._setVarFunc = null;
+      }
+    }
+    return this._setVarFunc;
   }
 
   // ---------- layout ----------
 
-  /** Layered left-to-right layout. Build layers (longest path from the
-   *  sources — every connection's source is created before its target) become
-   *  columns, so every edge points rightward. Within a column, nodes are
-   *  ordered by the average vertical center of their predecessors (barycenter)
-   *  and then *greedily aligned* to it: each node lands at its predecessors'
-   *  center unless that would overlap the node above. Chains read as straight
-   *  horizontal lanes, branches fan out below, nothing overlaps. Column
-   *  positions accumulate from the widest (estimated) node in each column —
-   *  collapsed titles vary a lot (`const: …`, `table: …`). */
+  /** Layered left-to-right layout, one **horizontal band per disjoint path**.
+   *
+   *  Columns are global (shared x per build layer, width = widest node in that
+   *  layer) so every edge points rightward and same-depth nodes line up across
+   *  bands. Each weakly connected component gets its own vertical band, and the
+   *  bands are stacked in **dependency order**: a path that produces a table
+   *  (its `SetVar` variable) sits above the path that reads it through a
+   *  `Select Table` node — so the visual top-to-bottom order matches execution
+   *  (the lower path implicitly consumes the upper one) and disjoint paths stay
+   *  grouped instead of interleaving. Ties break by script (creation) order.
+   *
+   *  Within a band/column, nodes order by predecessor barycenter and greedily
+   *  align to it (chains read as straight lanes, branches fan out, no overlap). */
   private layout(): void {
     const marginX = 40;
     const marginY = 40;
     const columnGap = 60;
     const rowGap = 24;
+    const bandGap = 56;
 
-    const byLayer = new Map<number, FlowNode[]>();
+    // Global column x positions from the widest node per layer.
+    const columnWidth = new Map<number, number>();
     for (const node of this.nodes) {
       const layer = this.layer.get(node) ?? 0;
-      let bucket = byLayer.get(layer);
-      if (!bucket) byLayer.set(layer, bucket = []);
-      bucket.push(node);
+      columnWidth.set(layer, Math.max(columnWidth.get(layer) ?? 0, estimateNodeWidth(node)));
+    }
+    const columnX = new Map<number, number>();
+    let x = marginX;
+    for (const layer of Array.from(columnWidth.keys()).sort((a, b) => a - b)) {
+      columnX.set(layer, x);
+      x += columnWidth.get(layer)! + columnGap;
     }
 
     const predecessors = new Map<FlowNode, FlowNode[]>();
@@ -618,32 +632,130 @@ class CreationScriptBuilder {
     }
 
     const centerY = new Map<FlowNode, number>();
-    let x = marginX;
-    for (const layer of Array.from(byLayer.keys()).sort((a, b) => a - b)) {
-      const keyed = byLayer.get(layer)!.map((node, index) => {
-        const centers = (predecessors.get(node) ?? [])
-          .map((p) => centerY.get(p))
-          .filter((y): y is number => y !== undefined);
-        const barycenter = centers.length > 0 ?
-          centers.reduce((a, b) => a + b, 0) / centers.length :
-          Number.POSITIVE_INFINITY;
-        return {node, index, barycenter};
-      });
-      keyed.sort((a, b) => a.barycenter === b.barycenter ? a.index - b.index : a.barycenter - b.barycenter);
-
-      let nextFreeY = marginY;
-      let columnWidth = 0;
-      for (const {node, barycenter} of keyed) {
-        const height = estimateNodeHeight(node);
-        const desiredTop = Number.isFinite(barycenter) ? barycenter - height / 2 : nextFreeY;
-        const top = Math.max(nextFreeY, desiredTop, marginY);
-        node.pos = {x, y: top};
-        centerY.set(node, top + height / 2);
-        nextFreeY = top + height + rowGap;
-        columnWidth = Math.max(columnWidth, estimateNodeWidth(node));
+    let bandTop = marginY;
+    for (const component of this.orderedComponents()) {
+      const byLayer = new Map<number, FlowNode[]>();
+      for (const node of component) {
+        const layer = this.layer.get(node) ?? 0;
+        let bucket = byLayer.get(layer);
+        if (!bucket) byLayer.set(layer, bucket = []);
+        bucket.push(node);
       }
-      x += columnWidth + columnGap;
+
+      let bandBottom = bandTop;
+      for (const layer of Array.from(byLayer.keys()).sort((a, b) => a - b)) {
+        const keyed = byLayer.get(layer)!.map((node, index) => {
+          const centers = (predecessors.get(node) ?? [])
+            .map((p) => centerY.get(p))
+            .filter((y): y is number => y !== undefined);
+          const barycenter = centers.length > 0 ?
+            centers.reduce((a, b) => a + b, 0) / centers.length :
+            Number.POSITIVE_INFINITY;
+          return {node, index, barycenter};
+        });
+        keyed.sort((a, b) => a.barycenter === b.barycenter ? a.index - b.index : a.barycenter - b.barycenter);
+
+        let nextFreeY = bandTop;
+        for (const {node, barycenter} of keyed) {
+          const height = estimateNodeHeight(node);
+          const desiredTop = Number.isFinite(barycenter) ? barycenter - height / 2 : nextFreeY;
+          const top = Math.max(nextFreeY, desiredTop, bandTop);
+          node.pos = {x: columnX.get(this.layer.get(node) ?? 0)!, y: top};
+          centerY.set(node, top + height / 2);
+          nextFreeY = top + height + rowGap;
+          bandBottom = Math.max(bandBottom, top + height);
+        }
+      }
+      bandTop = bandBottom + bandGap;
     }
+  }
+
+  /** Weakly connected components (disjoint paths), each as a node list in
+   *  creation order, ordered top-to-bottom for layout: a component that
+   *  produces a table (a `SetVar` variable) precedes the component that reads
+   *  it via a `Select Table` node; ties break by earliest creation index. */
+  private orderedComponents(): FlowNode[][] {
+    const indexOf = new Map<FlowNode, number>();
+    this.nodes.forEach((n, i) => indexOf.set(n, i));
+
+    // Undirected adjacency over the graph's connections.
+    const adjacency = new Map<FlowNode, FlowNode[]>();
+    for (const node of this.nodes) adjacency.set(node, []);
+    for (const c of this.connections) {
+      adjacency.get(c.source)!.push(c.target);
+      adjacency.get(c.target)!.push(c.source);
+    }
+
+    const componentOf = new Map<FlowNode, number>();
+    const components: FlowNode[][] = [];
+    for (const start of this.nodes) {
+      if (componentOf.has(start)) continue;
+      const id = components.length;
+      const members: FlowNode[] = [];
+      const stack = [start];
+      componentOf.set(start, id);
+      while (stack.length > 0) {
+        const node = stack.pop()!;
+        members.push(node);
+        for (const next of adjacency.get(node) ?? []) {
+          if (!componentOf.has(next)) {
+            componentOf.set(next, id);
+            stack.push(next);
+          }
+        }
+      }
+      members.sort((a, b) => indexOf.get(a)! - indexOf.get(b)!);
+      components.push(members);
+    }
+
+    // Producer → consumer edges between components, matched by normalized name
+    // (a Select Table's tableName ↔ a SetVar's variableName).
+    const norm = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const producerOf = new Map<string, number>();
+    components.forEach((members, id) => {
+      for (const node of members) {
+        if (node.dgFunc?.name?.toLowerCase() === 'setvar') {
+          const key = norm(node.inputValues['variableName']);
+          if (key !== '' && !producerOf.has(key)) producerOf.set(key, id);
+        }
+      }
+    });
+
+    const inDegree = components.map(() => 0);
+    const downstream = components.map(() => new Set<number>());
+    components.forEach((members, id) => {
+      for (const node of members) {
+        if (node.dgTypeName !== SELECT_TABLE_TYPE) continue;
+        const producer = producerOf.get(norm(node.properties['tableName']));
+        if (producer !== undefined && producer !== id && !downstream[producer].has(id)) {
+          downstream[producer].add(id);
+          inDegree[id]++;
+        }
+      }
+    });
+
+    // Kahn over components; among ready ones, pick the earliest by creation.
+    const earliest = components.map((m) => (m.length > 0 ? indexOf.get(m[0])! : 0));
+    const ready: number[] = [];
+    for (let id = 0; id < components.length; id++)
+      if (inDegree[id] === 0) ready.push(id);
+    const order: number[] = [];
+    const placed = new Set<number>();
+    while (ready.length > 0) {
+      let best = 0;
+      for (let i = 1; i < ready.length; i++)
+        if (earliest[ready[i]] < earliest[ready[best]]) best = i;
+      const id = ready.splice(best, 1)[0];
+      order.push(id);
+      placed.add(id);
+      for (const next of downstream[id])
+        if (--inDegree[next] === 0) ready.push(next);
+    }
+    // Any components left in a dependency cycle: append in creation order.
+    for (let id = 0; id < components.length; id++)
+      if (!placed.has(id)) order.push(id);
+
+    return order.map((id) => components[id]);
   }
 }
 
@@ -673,11 +785,6 @@ export function estimateNodeWidth(node: FlowNode): number {
   return Math.max(node.collapsed ? 160 : 220, labelWidth);
 }
 
-/** The graph validator requires output param names to be JS identifiers. */
-function toParamName(name: string): string {
-  const cleaned = name.replace(/[^A-Za-z0-9_$]/g, '_');
-  return /^[A-Za-z_$]/.test(cleaned) ? cleaned : `_${cleaned}`;
-}
 
 /** Remove a trailing `// …` comment (creation scripts carry `//{"timestamp"}`
  *  metadata), ignoring `//` inside string literals such as URLs. */

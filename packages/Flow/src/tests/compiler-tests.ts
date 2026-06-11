@@ -44,6 +44,47 @@ category('Flow: topological sort', () => {
     }
   });
 
+  test('disjoint subgraphs execute top-first, fully', async () => {
+    const e = makeEditor();
+    try {
+      // Bottom chain created FIRST — canvas position must win over creation order.
+      const bottomIn = await addNode(e.flow, 'Constants/String', 0, 500);
+      const bottomOut = await addNode(e.flow, 'Utilities/ToString', 300, 500);
+      await e.flow.addConnectionByKeys(bottomIn.id, 'value', bottomOut.id, 'value');
+      const topIn = await addNode(e.flow, 'Constants/String', 0, 50);
+      const topOut = await addNode(e.flow, 'Utilities/ToString', 300, 50);
+      await e.flow.addConnectionByKeys(topIn.id, 'value', topOut.id, 'value');
+
+      const sorted = topologicalSort(e.flow);
+      const at = (id: string): number => sorted.indexOf(id);
+      // The whole top component drains before the bottom one starts —
+      // lower disjoint paths may implicitly consume what upper ones produced.
+      expect(Math.max(at(topIn.id), at(topOut.id)) < Math.min(at(bottomIn.id), at(bottomOut.id)), true,
+        'top chain must fully precede the bottom chain');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('within a component, ready nodes process top-to-bottom', async () => {
+    const e = makeEditor();
+    try {
+      // Two independent sources merging into one sink; the lower source was
+      // created first, but the upper one must come first in the order.
+      const lower = await addNode(e.flow, 'Constants/String', 0, 400);
+      const upper = await addNode(e.flow, 'Constants/String', 0, 100);
+      const sink = await addNode(e.flow, 'Comparisons/Equals (==)', 300, 250);
+      await e.flow.addConnectionByKeys(upper.id, 'value', sink.id, 'a');
+      await e.flow.addConnectionByKeys(lower.id, 'value', sink.id, 'b');
+
+      const sorted = topologicalSort(e.flow);
+      expect(sorted.indexOf(upper.id) < sorted.indexOf(lower.id), true, 'upper source first');
+      expect(sorted.indexOf(sink.id), sorted.length - 1, 'sink last');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('detects cycles', async () => {
     const e = makeEditor();
     try {

@@ -14,6 +14,18 @@
   `ResolveColumnList` maps to **Select Columns**. The graph is built by a pure, synchronous
   `buildCreationScriptGraph` (DOM-free) and applied to the editor separately. Imported nodes start
   collapsed and are laid out on a compact wrapping grid (max 4 nodes per row) so the flow fits a view.
+* Script order now respects the canvas: the topological sort drains **disjoint subgraphs one at a
+  time, top path first** (ranked by topmost node), and picks ready nodes top-to-bottom within a
+  component — so a lower path that implicitly consumes an upper path's result runs after it finishes.
+* Creation-script import: **removed Output nodes** — each variable's single terminal is now a real
+  **`SetVar(variableName, value)`** call (labeled `set: <name>`), registering the value at run time
+  under its original name.
+* Creation-script import: auto-layout now places **one band per disjoint path, ordered by
+  dependency** — a path producing a table sits above the path that reads it via `Select Table` (even
+  when defined later in the script), so disjoint paths no longer interleave and the visual top-to-
+  bottom order matches execution.
+* Select Table emits a tolerant resolver: `tableByName(name) ?? getVar(name)` across the exact,
+  no-spaces, and lower-camel name variants.
 * New **Select Table** utility node — resolves an open table by name via
   `grok.shell.tableByName(name)`. The creation-script importer substitutes it for `ResolveTable`
   calls (broken platform-side, like `ResolveColumn`), titled `table: <name>`.

@@ -26,7 +26,7 @@ src/
 │       ├── breakpoint-node.ts    # Debug pause node
 │       └── func-node.ts          # Dynamic node factory per DG.Func, builds pass-through outputs
 ├── compiler/
-│   ├── topological-sort.ts       # Kahn's over editor.getConnections()
+│   ├── topological-sort.ts       # Kahn's, component-by-component (top-y first), y/x-stable
 │   ├── graph-utils.ts            # Thin shim around FlowEditor
 │   ├── graph-compiler.ts         # FlowEditor → CompiledStep[]
 │   ├── script-emitter.ts         # CompiledStep[] → JS source (clean + instrumented modes)
@@ -105,20 +105,31 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   utility-nodes.ts; empty → the type name). Because labels are user-editable, anything semantic must
   NOT read `node.label`: utility emission dispatches on `dgTypeName` (`utilityKind` in
   graph-compiler.ts), and the Value Output auto-typing checks `dgTypeName` too.
-- **Outputs**: *every* script variable (first-assignment order) is wired to its own Table/Value
-  Output node — `BuiltGraph.outputVariables`. Output param names are sanitized and deduplicated;
-  output nodes are labeled `Table Output: <name>` / `Output: <name>`.
+- **Outputs / variables**: there are **no Output nodes**. *Every* script variable
+  (`BuiltGraph.outputVariables`, first-assignment order) feeds a real **`SetVar(variableName, value)`**
+  func node (labeled `set: <name>`) — the single terminal per variable — wired from the variable's
+  final ref. Running the flow registers each value in the context under its original name, so
+  downstream consumers (a Select Table in a lower disjoint path, other scripts) can resolve it.
 - **Ordering**: after a *bare* call consumes a variable (a direct `GetVar`), the variable ref
   advances to that node's `<input>__pt` pass-through output. The next consumer connects there, so the
   topological sort reproduces the script's sequential line order (critical for in-place mutators like
   `addChemPropertiesColumns`), while the compiler still resolves the pass-through to the same
   expression — no spurious variables in the generated script.
 - **Layout**: all imported nodes start **collapsed** (title bar only — expand per node as needed).
-  Layered left-to-right: build layers (longest path, computed incrementally as
-  `max(source layers) + 1`) become columns so every edge points right; within a column, nodes order
-  by predecessor barycenter and greedily align to it (chains read as straight lanes, branches fan
-  out, nothing overlaps); column pitch comes from the widest estimated node
-  (`estimateNodeWidth`/`estimateNodeHeight`, exported for the layout-invariant tests).
+  Layered left-to-right with **one horizontal band per disjoint path** (weakly connected component):
+  - Columns are **global** — shared x per build layer (`max(source layers)+1`, assigned during the
+    build), width = widest estimated node in that layer — so every edge points right and same-depth
+    nodes line up across bands.
+  - Each component is a contiguous band; within a band/column, nodes order by predecessor barycenter
+    and greedily stack (`max(nextFreeY, barycenter-h/2, bandTop)`) so chains read as straight lanes,
+    branches fan out, and nothing overlaps.
+  - Bands are stacked in **dependency order** (`orderedComponents`): a path that produces a table
+    (its `SetVar` variable) is placed **above** the path that reads it through a `Select Table` node
+    (matched by normalized name), with ties broken by script/creation order. Because the execution
+    topological sort ranks components by topmost-node `y`, this band order *is* the execution order —
+    producers run before the consumers that read their tables.
+  - `estimateNodeWidth`/`estimateNodeHeight` are exported for the layout-invariant tests
+    (edges-point-right, no-overlap, producer-above-consumer).
 
 The core is a **pure, synchronous, DOM-free** `buildCreationScriptGraph(script): BuiltGraph` — it
 constructs `FlowNode` instances + connection records but touches no editor, so it is the unit-test
@@ -218,7 +229,7 @@ Become `//output:` annotation lines.
 |------|----------------|
 | Select Column | `let v = df.col('name')` |
 | Select Columns | `let v = [df.col('a'), df.col('b')]` |
-| Select Table | `let v = grok.shell.tableByName('name')` |
+| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants) |
 | Add Table View | `let v = grok.shell.addTableView(df)` |
 | Log | `console.log([label,] value)` |
 | Info | `grok.shell.info(msg)` |
@@ -268,7 +279,12 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 
 Pipeline ([compiler/](src/compiler)):
 
-1. **Topological sort** — Kahn's algorithm over `editor.getConnections()`.
+1. **Topological sort** — Kahn's algorithm over `editor.getConnections()`, made deterministic and
+   layout-aware: **disjoint subgraphs** (weakly connected components) run one after another, ranked by
+   their topmost node's `(y, x)` — a path placed above another finishes completely before the lower
+   one starts (lower paths may implicitly read what upper ones produced, e.g. a Select Table reading
+   a table an upper path opened). **Within** a component, ready nodes are picked top-to-bottom
+   (`y`, then `x`, then insertion order).
 2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix.
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 
