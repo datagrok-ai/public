@@ -133,6 +133,8 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When true, selected points are highlighted using the selected rows color. When false, selected points use their regular color coding. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Show All Categories | boolean | When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments. |
