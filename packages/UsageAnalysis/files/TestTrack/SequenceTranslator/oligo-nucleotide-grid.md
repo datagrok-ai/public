@@ -55,8 +55,10 @@
 ### Block E — Per-cell context actions
 
 1. Right-click a cell in `oligo_helm (oligo)` to open the cell context menu.
-   * Expected result: the menu contains **Edit HELM**, **Copy as HELM**, and **Copy
-     as Image**.
+   * Expected result: the menu contains at least **Edit HELM**, **Copy as HELM**, and
+     **Copy as Image** entries. (Note: the menu also surfaces **Enumerate Oligos** via
+     detectors.js wiring — assert open-set: these three are present, not that the menu
+     is limited to them.)
 2. Click **Copy as HELM**.
    * Expected result: the raw HELM string of the duplex is copied to the clipboard. No
      error balloon.
@@ -72,7 +74,8 @@
 1. Double-click a cell in `oligo_helm (oligo)`.
    * Expected result: a full-screen canvas duplex view opens showing the duplex at
      large scale. No console errors.
-2. Close the full-screen view.
+2. Close the full-screen view (use the dialog's close affordance — title-bar X or
+   Cancel button; the exact affordance is unresolved, see unresolved_ambiguities).
    * Expected result: focus returns to the table; the cell value is unchanged.
 
 ### Block G — Bio | PolyTool top menu
