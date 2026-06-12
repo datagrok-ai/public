@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [sharing.context-panel-pane, sharing.entity-types.files-spaces, sharing.permissions-editor, sharing.share-dialog]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,

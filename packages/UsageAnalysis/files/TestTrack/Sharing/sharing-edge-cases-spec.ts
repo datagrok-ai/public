@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [sharing.advanced-editor, sharing.permission-types, sharing.server.privileges-router, sharing.share-dialog]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
