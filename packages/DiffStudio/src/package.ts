@@ -12,10 +12,6 @@ import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 import {getBallFlightSim} from './demo/ball-flight';
 
 export {Model} from './model';
-import {PK_PD_MODEL_INFO} from './demo/pk-pd';
-import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
-import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
-import {POLLUTION_MODEL_INFO} from './demo/pollution';
 
 import {DF_NAME} from './constants';
 import {PATH, TITLE, UI_TIME} from './ui-constants';
@@ -27,6 +23,18 @@ import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
 
 export const _package = new DG.Package();
+
+/** Default demo layout for `.ivp`-driven demos. */
+const DEMO_UI_OPTS = {inputsTabDockRatio: 0.17, graphsDockRatio: 0.85};
+
+/** Run a model shipped as `files/library/<fileName>` as a Diff Studio demo — equations come
+ *  from the `.ivp` file (single source of truth), help text from its `#description`. */
+async function runIvpDemo(fileName: string): Promise<void> {
+  const equations = await _package.files.readAsText(`library/${fileName}`);
+  const descr = (/^#description:\s*(.+)$/m.exec(equations)?.[1] ?? '').trim();
+  const info = `# Model\n${descr}\n\n# Try\nInteractive results update as you change the inputs.`;
+  await new Model({equations, uiOptions: DEMO_UI_OPTS, info}).runDemo();
+}
 
 //name: info
 export function info() {
@@ -196,7 +204,6 @@ export class PackageFunctions {
     name: 'Ball flight',
     description: 'Ball flight simulation',
     editor: 'Compute2:RichFunctionViewEditor',
-    sidebar: '@compute',
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
@@ -266,16 +273,6 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
-  @grok.decorators.model({
-    name: 'PK-PD',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    icon: 'files/icons/pkpd.png',
-  })
-  static async pkPdNew(): Promise<void> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.run();
-  }
-
   @grok.decorators.demo({
     name: 'PK-PD Simulation Demo',
     description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
@@ -286,19 +283,9 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.runDemo();
+    await runIvpDemo('pk-pd.ivp');
   }
 
-  @grok.decorators.model({
-    name: 'Bioreactor',
-    description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/_bioreactor.png',
-  })
-  static async BioreactorNew(): Promise<void> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.run();
-  }
 
   @grok.decorators.demo({
     name: 'Bioreactor Demo',
@@ -307,29 +294,9 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.runDemo();
+    await runIvpDemo('bioreactor.ivp');
   }
 
-  @grok.decorators.model({
-    name: 'Acid Production',
-    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
-    icon: 'files/icons/ga-production.png',
-  })
-  static async acidProduction(): Promise<void> {
-    const model = new Model(ACID_PRODUCTION_MODEL_INFO);
-    await model.run();
-  }
-
-  @grok.decorators.model({
-    name: 'Pollution',
-    description: 'The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection',
-    icon: 'files/icons/pollution.png',
-  })
-  static async pollution(): Promise<void> {
-    const model = new Model(POLLUTION_MODEL_INFO);
-    await model.run();
-  }
 
   @grok.decorators.func({
     description: 'Run model with Diff Studio UI',
