@@ -362,6 +362,20 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
     }
   }
 
+  // SetVar produces no output, but its `value` input is the stored value —
+  // surface it (labeled by the variable name) so clicking the node previews it
+  // (table → grid, column → sample, …) exactly like any output-bearing node.
+  if (node && node.dgFunc?.name?.toLowerCase() === 'setvar') {
+    const valueExpr = step.inputs.get('value');
+    if (valueExpr && valueExpr !== 'undefined') {
+      const varLabel = JSON.stringify(String(node.inputValues['variableName'] ?? 'value'));
+      const valueInput = (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)['value'];
+      const slotType = valueInput?.socket.dgType;
+      const typeArg = slotType && slotType !== 'dynamic' ? `, '${slotType}'` : '';
+      outputEntries.push(`${varLabel}: __ff_summarize(${valueExpr}${typeArg})`);
+    }
+  }
+
   const outputsObj = outputEntries.length > 0 ? `{${outputEntries.join(', ')}}` : '{}';
   lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs: ${outputsObj}});`);
   lines.push('} catch (__ff_err) {');

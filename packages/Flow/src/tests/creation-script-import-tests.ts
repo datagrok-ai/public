@@ -363,6 +363,21 @@ category('Flow: creation script import', () => {
     }
   });
 
+  test('SetVar surfaces its value for the output preview (instrumented run)', async () => {
+    const e = makeEditor();
+    try {
+      const g = buildCreationScriptGraph('T = OpenFile("System:AppData/x.csv")');
+      await applyGraphToEditor(g, e.flow);
+      const script = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-1'});
+      // SetVar's node-complete event captures the value under the variable name,
+      // so clicking the node opens the docked preview (table → grid, etc.) even
+      // though SetVar declares no output.
+      expect(script.includes('"T": __ff_summarize('), true, 'SetVar value surfaced for preview');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('join script emits grok.shell.tableByName instead of ResolveTable', async () => {
     const e = makeEditor();
     try {

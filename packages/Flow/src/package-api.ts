@@ -19,10 +19,6 @@ export namespace funcs {
     return await grok.functions.call('Flow:FuncflowApp', { path });
   }
 
-  export async function autoS(): Promise<void> {
-    return await grok.functions.call('Flow:AutoS', {});
-  }
-
   export async function viewFuncFlow(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Flow:ViewFuncFlow', { file });
   }
@@ -32,5 +28,9 @@ export namespace funcs {
   */
   export async function flowFromCreationScript(script: string ): Promise<DG.View> {
     return await grok.functions.call('Flow:FlowFromCreationScript', { script });
+  }
+
+  export async function openCreationScriptFlowDialog(script: string ): Promise<any> {
+    return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script });
   }
 }

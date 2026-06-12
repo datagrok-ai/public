@@ -34,39 +34,39 @@ export class PackageFunctions {
     return new FuncFlowView();
   }
 
-  @grok.decorators.autostart({tags: ['autostart']})
-  static autoS(): void {
-    grok.events.onAccordionConstructed.subscribe((acc) => {
-      if (!acc || !(acc.context instanceof DG.DataFrame) || !acc.context.tags[DG.Tags.CreationScript] ||
-      !acc.panes || !acc.panes.length ||
-        !acc.panes.find((p) => p.name === 'Script')
-      )
-        return;
-      const script = acc.context.tags[DG.Tags.CreationScript]! as string;
-      const pane = acc.panes.find((p) => p.name === 'Script')!;
-      const paneHeader = pane.root.querySelector('.d4-accordion-pane-header')! as HTMLDivElement;
-      const button = ui.icons.edit(() => {
-        const view = new FuncFlowView();
-        view.name = `${acc.context.name} Creation script`;
-        view.loadFromCreationScript(script).then(() => {
-          const d = ui.dialog({title: 'Creation Script Flow'})
-            .add(view.root)
-            .addButton('Open In Editor', () => {
-              grok.shell.addView(view);
-              d.close();
-            })
-            .show({resizable: true, width: 800, height: 600});
-        }).catch((e) => {
-          grok.shell.error(`Failed to load flow from creation script`);
-          console.error(e);
-        });
-      }, 'View as Flow');
-      button.style.fontSize = '11px';
-      button.style.color = 'var(--blue-1)';
+  // @grok.decorators.autostart({tags: ['autostart']})
+  // static autoS(): void {
+  //   grok.events.onAccordionConstructed.subscribe((acc) => {
+  //     if (!acc || !(acc.context instanceof DG.DataFrame) || !acc.context.tags[DG.Tags.CreationScript] ||
+  //     !acc.panes || !acc.panes.length ||
+  //       !acc.panes.find((p) => p.name === 'Script')
+  //     )
+  //       return;
+  //     const script = acc.context.tags[DG.Tags.CreationScript]! as string;
+  //     const pane = acc.panes.find((p) => p.name === 'Script')!;
+  //     const paneHeader = pane.root.querySelector('.d4-accordion-pane-header')! as HTMLDivElement;
+  //     const button = ui.icons.edit(() => {
+  //       const view = new FuncFlowView();
+  //       view.name = `${acc.context.name} Creation script`;
+  //       view.loadFromCreationScript(script).then(() => {
+  //         const d = ui.dialog({title: 'Creation Script Flow'})
+  //           .add(view.root)
+  //           .addButton('Open In Editor', () => {
+  //             grok.shell.addView(view);
+  //             d.close();
+  //           })
+  //           .show({resizable: true, width: 800, height: 600});
+  //       }).catch((e) => {
+  //         grok.shell.error(`Failed to load flow from creation script`);
+  //         console.error(e);
+  //       });
+  //     }, 'View as Flow');
+  //     button.style.fontSize = '11px';
+  //     button.style.color = 'var(--blue-1)';
 
-      paneHeader.appendChild(button);
-    });
-  }
+  //     paneHeader.appendChild(button);
+  //   });
+  // }
 
   @grok.decorators.fileViewer({fileViewer: 'ffjson'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
@@ -94,5 +94,29 @@ export class PackageFunctions {
     const view = new FuncFlowView();
     await view.loadFromCreationScript(script);
     return view;
+  }
+
+  @grok.decorators.func({
+    name: 'openCreationScriptFlowDialog',
+    meta: {role: 'creationScriptEditor'},
+  })
+  static async openCreationScriptFlowDialog(script: string, show: boolean = true): Promise<DG.Dialog> {
+    const view = new FuncFlowView();
+    view.name = `Creation Script`;
+    try {
+      await view.loadFromCreationScript(script);
+    } catch (e) {
+      grok.shell.error(`Failed to load flow from creation script`);
+      console.error(e);
+    }
+    const d = ui.dialog({title: 'Creation Script Flow'})
+      .add(view.root)
+      .addButton('Open In Editor', () => {
+        grok.shell.addView(view);
+        d.close();
+      });
+    if (show)
+      d.show({resizable: true, width: 800, height: 600});
+    return d;
   }
 }

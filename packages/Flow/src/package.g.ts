@@ -11,12 +11,6 @@ export function funcflowApp(path?: string) : any {
   return PackageFunctions.funcflowApp(path);
 }
 
-//tags: autostart
-//meta.role: autostart
-export function autoS() : void {
-  PackageFunctions.autoS();
-}
-
 //input: file file 
 //output: view result
 //meta.role: fileViewer
@@ -30,4 +24,12 @@ export function viewFuncFlow(file: DG.FileInfo) : any {
 //output: view result
 export async function flowFromCreationScript(script: string) : Promise<any> {
   return await PackageFunctions.flowFromCreationScript(script);
+}
+
+//input: string script 
+//input: bool show 
+//output: dynamic result
+//meta.role: creationScriptEditor
+export async function openCreationScriptFlowDialog(script: string, show: boolean) : Promise<any> {
+  return await PackageFunctions.openCreationScriptFlowDialog(script, show);
 }

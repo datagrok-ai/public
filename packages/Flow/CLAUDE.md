@@ -325,6 +325,8 @@ Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run
 
 **In-place mutating function support**: when a func node has dataframe input(s) but **zero real outputs**, the wrapper emits a synthetic output entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the modified table is previewable.
 
+**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the docked output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
+
 ## Execution Visualization
 
 KNIME-inspired live feedback. The script runs in the same browser tab and communicates back via custom events.

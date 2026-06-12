@@ -26,6 +26,9 @@
   bottom order matches execution.
 * Select Table emits a tolerant resolver: `tableByName(name) ?? getVar(name)` across the exact,
   no-spaces, and lower-camel name variants.
+* SetVar nodes are now previewable: an instrumented run captures the node's incoming `value`
+  (summarized by type), so clicking a SetVar opens the docked output panel showing the stored value
+  (table → grid, column → sample, …) even though SetVar declares no output.
 * New **Select Table** utility node — resolves an open table by name via
   `grok.shell.tableByName(name)`. The creation-script importer substitutes it for `ResolveTable`
   calls (broken platform-side, like `ResolveColumn`), titled `table: <name>`.
