@@ -506,6 +506,10 @@ export interface IScatterPlotSettings {
 
   showSizeSelector: boolean;
 
+  /// When a *Size* column is set, render rows with empty values using the
+  /// minimum marker size instead of hiding them.
+  showMarkersWithEmptySize: boolean;
+
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
