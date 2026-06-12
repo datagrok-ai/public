@@ -3,6 +3,7 @@
 ## 6.3.1 (WIP)
 
 * `func-gen` webpack plugin — the generated RichFunctionView model output annotation appends the `DiffStudio Facet` viewer (last), alongside Grid and Line chart.
+* `grok stresstest` — run the ApiTests Node test runner directly via tsx (`src/package-test-node.ts`) instead of a compiled `dist-node` bundle; dropped the obsolete `npm run build-node` step and the `tsconfig-paths-bootstrap.js` / `dist-node` invocation.
 
 ## 6.3.0 (2026-06-12)
 
