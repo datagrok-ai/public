@@ -68,8 +68,13 @@ function preparseIvpModel(parser, text) {
   const cols = ivp.outputs ? ivp.outputs.size : ivp.inits.size;
   const multiAxis = cols > MAX_LINE_CHART - 1 ? 'true' : 'false';
   const segments = ivp.updates ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
+  // The 'DiffStudio Facet' viewer (one line chart per variable) is appended last; it resolves
+  // only when the DiffStudio package is installed, so Grid / Line chart remain the always-available
+  // viewers for packages that ship `.ivp` models without depending on DiffStudio.
+  const facetSegment = ivp.updates ? `, segmentColumnName: "${STAGE_COL_NAME}"` : '';
   const viewer = `Grid(block: 100) | Line chart(block: 100, multiAxis: "${multiAxis}",${segments} ` +
-    `multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")`;
+    `multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")` +
+    ` | DiffStudio Facet(block: 100${facetSegment})`;
   const outputAnnotation = `//output: dataframe df {caption: ${ivp.name}; viewer: ${viewer}}`;
 
   const metas = {runOnOpen: 'true', runOnInput: 'true', features: '{"sens-analysis": true, "fitting": true}'};

@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.3.1 (WIP)
+
+* `func-gen` webpack plugin — the generated RichFunctionView model output annotation appends the `DiffStudio Facet` viewer (last), alongside Grid and Line chart.
+
 ## 6.3.0 (2026-06-12)
 
 * `func-gen` webpack plugin — generates RichFunctionView model wrappers from Diff Studio `#meta.role: model` `.ivp` files. Inputs/output are derived from the parsed IVP, `#meta.icon` becomes the model icon, and `#meta.inputs` lookups are emitted as real `propagateChoice: all` inputs (rendered natively by the Rich Function View, unlike `meta.inputs`). Ships a prebuilt, tree-shaken CJS bundle of diff-grok's IVP parser (`plugins/ivp-parser.bundle.cjs`); regenerate with `npm run update:ivp-parser`.

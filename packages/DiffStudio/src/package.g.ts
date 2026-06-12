@@ -1,6 +1,15 @@
 import {PackageFunctions} from './package';
+import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import * as DG from 'datagrok-api/dg';
 import {runDiffStudioModel} from './ivp-runtime';
+//name: DiffStudio Facet
+//description: Faceted grid of line charts, one per output variable, for Diff Studio solutions
+//output: viewer result
+//meta.role: viewer
+export function _DiffStudioFacetViewer() {
+  return new DiffStudioFacetViewer();
+}
+
 
 //meta.role: init
 export async function init() : Promise<void> {
@@ -157,7 +166,7 @@ export async function runModel(model: string, inputsTabDockRatio: number, graphs
 //input: double Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
 //input: double Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
 //input: double Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
-//output: dataframe df {caption: Acid Production; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")}
+//output: dataframe df {caption: Acid Production; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
 export async function ivpModel_Acid_Production(t0: number, t1: number, h: number, X: number, S: number, O: number, P: number, overall: number, muM: number, alpha: number, beta: number, gamma: number, lambda: number, delta: number, phi: number, Ks: number, Ko: number, Kla: number, Cod: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/library/acid-production.ivp', {_t0: t0, _t1: t1, _h: h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod});
 }
@@ -193,7 +202,7 @@ export async function ivpModel_Acid_Production(t0: number, t1: number, h: number
 //input: double T = 300 {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
 //input: double P = 1 {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
 //input: double switchTime = 135 {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
-//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")}
+//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
 export async function ivpModel_Bioreactor(mode: string, t0: number, t1: number, h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, CO2: number, yO2P: number, CYST: number, VL: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/library/bioreactor.ivp', {_t0: t0, _t1: t1, _h: h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL, qin, yO2in, T, P, switchTime});
 }
@@ -224,7 +233,7 @@ export async function ivpModel_Bioreactor(mode: string, t0: number, t1: number, 
 //input: double EC50 = 8 {caption: effect; category: Parameters; min: 1; max: 10}
 //input: double Kin = 0.2 {caption: Kin; category: Parameters; min: 0.1; max: 0.5} [The first-order production constant]
 //input: double Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
-//output: dataframe df {caption: PK-PD; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")}
+//output: dataframe df {caption: PK-PD; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
 export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: number, depot: number, centr: number, peri: number, eff: number, dose: number, KA: number, CL: number, V2: number, Q: number, V3: number, EC50: number, Kin: number, Kout: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/library/pk-pd.ivp', {_count: count, _t0: t0, _t1: t1, _h: h, depot, centr, peri, eff, dose, KA, CL, V2, Q, V3, EC50, Kin, Kout});
 }
@@ -286,7 +295,7 @@ export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: n
 //input: double k23 = 0.0474 {category: Reaction constants} [NO2 + O3 -> NO3]
 //input: double k24 = 1780 {category: Reaction constants} [NO3 + NO2 -> N2O5]
 //input: double k25 = 3.12 {category: Reaction constants} [N2O5 -> NO3 + NO2]
-//output: dataframe df {caption: Pollution; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")}
+//output: dataframe df {caption: Pollution; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
 export async function ivpModel_Pollution(t0: number, t1: number, h: number, y1: number, y2: number, y3: number, y4: number, y5: number, y6: number, y7: number, y8: number, y9: number, y10: number, y11: number, y12: number, y13: number, y14: number, y15: number, y16: number, y17: number, y18: number, y19: number, y20: number, k1: number, k2: number, k3: number, k4: number, k5: number, k6: number, k7: number, k8: number, k9: number, k10: number, k11: number, k12: number, k13: number, k14: number, k15: number, k16: number, k17: number, k18: number, k19: number, k20: number, k21: number, k22: number, k23: number, k24: number, k25: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/library/pollution.ivp', {_t0: t0, _t1: t1, _h: h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25});
 }
