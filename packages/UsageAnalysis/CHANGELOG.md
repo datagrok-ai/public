@@ -3,6 +3,7 @@
 ## v.next
 
 * Metrics: Added Admin Metrics dashboard tab
+* TestTrack: Fixed node-expansion errors after the `Test Track`→`TestTrack` folder rename — the loader now skips `-run.md` run reports and `-spec.ts` files (filtered to `.md`) instead of parsing them as test cases, and guards against a null category node
 
 ## 2.5.1 (2026-05-21)
 
