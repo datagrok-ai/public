@@ -1,20 +1,3 @@
----
-feature: sharing
-sub_features_covered:
-  - sharing.api.grant
-  - sharing.api.get
-  - sharing.api.revoke
-  - sharing.api.check
-  - sharing.server.privileges-router
-target_layer: apitest
-coverage_type: regression
-produced_from: atlas-driven
-related_bugs: []
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
----
 
 # Sharing — API Permissions (JS API Grant / Check / Revoke Lifecycle)
 
@@ -115,21 +98,3 @@ Expected:
   independently.
 
 # atlas entry derived from source: core/server/datlas/lib/src/routers/privileges.dart#L4
-
-## Notes
-
-- target_layer rationale: All four scenarios exercise `grok.dapi.permissions.*` JS API
-  methods directly — no UI surface is needed. The JS API methods map 1:1 to server
-  endpoints (POST/DELETE/GET `/privileges/permissions`); `apitest` is the appropriate
-  layer per the non-UI-surface heuristic. All methods are grok.dapi-callable.
-- Net-new sub_features covered: sharing.api.grant, sharing.api.get, sharing.api.revoke,
-  sharing.api.check — 4 sub_features not present in the live covered union at authoring
-  time. sharing.server.privileges-router is included as a secondary coverage (the JS API
-  calls exercise the router endpoints directly).
-- sharing.server.privileges-client (Dart HTTP client) is implicitly exercised by the
-  apitest calls (grok.dapi.permissions ultimately calls through PrivilegesClient) but is
-  not listed as a primary sub_feature here since it is a Dart-side implementation detail,
-  not a JS-API-assertable surface. Deferred explicit coverage: requires server-side Dart
-  unit test; no JS-callable entry point for PrivilegesClient's Dart surface.
-- See: core/docs/ENTITY_PERMISSIONS.md#Five Core Concepts
-- See: core/docs/PERMISSIONS.md#Permission Types

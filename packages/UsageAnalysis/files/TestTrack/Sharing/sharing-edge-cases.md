@@ -1,19 +1,3 @@
----
-feature: sharing
-sub_features_covered:
-  - sharing.advanced-editor
-  - sharing.server.privileges-router
-  - sharing.permission-types
-  - sharing.share-dialog
-target_layer: manual-only
-coverage_type: edge
-produced_from: atlas-driven
-related_bugs: []
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
----
 
 # Sharing — Edge Cases (Permission Policy Enforcement)
 
@@ -101,31 +85,3 @@ Expected:
 - The dialog still allows the share to proceed after acknowledging the notice.
 
 # atlas entry derived from source: core/client/xamgle/lib/src/features/users/permissions_browser.dart#L5
-
-## Notes
-
-- target_layer rationale: Scenarios 1 and 2 require server-side policy enforcement
-  responses that cannot be mocked in Playwright without a live server. Scenario 1
-  requires a user account that genuinely lacks `ShareWithEveryone` — a real permission
-  state, not simulatable in a single-session environment without multi-account setup.
-  Scenario 2's expected result depends on server behavior at `/privileges/permissions`
-  DELETE endpoint (whether it enforces owner-retention or silently ignores the delete).
-  All three scenarios require live server interaction and, for Scenarios 1-2, a known
-  account permission state — classified manual-only.
-- Atlas manual_only[] note: None of the sub_features_covered here appear in manual_only[].
-  The manual-only classification is driven by the server-side policy enforcement
-  requirement, not the two-actor constraint that governs entity-type scenarios.
-- Scenario 2 directly addresses the unresolved_ambiguity in sharing-all-users-and-owner.md
-  (Block C step 1: "open the Advanced editor and remove every grant — or attempt to").
-  The expected result in this scenario refines that ambiguity: mechanism is either
-  silent-preserve by server OR UI lock — both are acceptable; ownerless entity is not.
-- Deferrals: New-user invitation flow (atlas edge_cases[4], sharing.notification +
-  sharing.share-dialog) deferred — requires a real email address without an existing
-  Datagrok account and control over mailbox delivery; no email-server helper available.
-  Project-dependency cascade edge case (atlas edge_cases[0], GROK-19403) deferred —
-  sharing.entity-types.project is in manual_only[] (two-actor requirement) and the
-  cascade behavior is a project-entity-type test, not a permission-policy test.
-- See: core/docs/ENTITY_PERMISSIONS.md#Five Core Concepts
-- See: core/docs/ENTITY_PERMISSIONS.md#Privileges (what you can do)
-- See: public/help/govern/access-control/access-control.md#Authorization
-- See: public/help/govern/access-control/access-control.md#Global Permissions

@@ -1,25 +1,3 @@
----
-feature: sharing
-sub_features_covered:
-  - sharing.share-dialog
-  - sharing.context-panel-pane
-  - sharing.advanced-editor
-  - sharing.permissions-editor
-target_layer: playwright
-coverage_type: smoke
-produced_from: atlas-driven
-related_bugs: []
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
-ui_coverage_responsibility:
-  - pcmdShare
-  - flow-open-share-dialog
-  - flow-sharing-context-panel
-  - flow-advanced-editor
-pyramid_layer: ui-smoke
----
 
 # Sharing — UI Smoke (Single-Actor)
 
@@ -104,23 +82,3 @@ Expected:
 - Navigating away without clicking SAVE does not alter permissions.
 
 # atlas entry derived from source: core/client/xamgle/lib/src/features/users/permissions_browser.dart#L403
-
-## Notes
-
-- target_layer rationale: All four scenarios drive UI flows through the browser — Share
-  dialog modal, Context Panel pane, and PermissionsView route. Single-actor (owner-only)
-  shape eliminates the two-actor constraint that makes entity-type scenarios manual-only.
-  Playwright can authenticate as one user and assert all dialog and panel states within
-  a single session.
-- UI ownership: This scenario owns `pcmdShare` (the Share... context menu trigger),
-  `flow-open-share-dialog` (Scenarios 1-2), `flow-sharing-context-panel` (Scenario 3),
-  and `flow-advanced-editor` (Scenario 4). These are the four flows surfaced by the
-  UI reference doc consolidation proposal (sharing.yaml ui_consolidation_proposals).
-- Atlas manual_only[] exclusion: sharing.entity-types.* and sharing.browse-shared-with-me
-  are in manual_only[] (two-actor requirement). This scenario deliberately excludes
-  those sub_features and tests only the single-actor-accessible surfaces.
-- Deferrals: Actual grant-and-verify-as-recipient steps deferred — requires two browser
-  sessions authenticated as distinct users; no helper available for multi-actor
-  Playwright orchestration.
-- See: public/help/govern/access-control/access-control.md#Authorization
-- See: public/help/datagrok/navigation/basic-tasks/basic-tasks.md#Share
