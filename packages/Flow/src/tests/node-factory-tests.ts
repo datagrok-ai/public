@@ -57,4 +57,16 @@ category('Flow: node-factory', () => {
     for (const inp of func.inputs)
       expect(`${inp.name}__pt` in node.outputs, true, `pass-through for ${inp.name}`);
   });
+
+  test('per-function color override pins SetVar to red', async () => {
+    const setVar = DG.Func.find({name: 'SetVar'})[0];
+    if (!setVar) return;
+    const node = new FuncNode(setVar);
+    expect((node as unknown as {color?: string}).color, '#EF5350', 'SetVar title is red');
+
+    // A function without an override falls back to role/default coloring.
+    const other = DG.Func.find({name: 'AddNewColumn'})[0];
+    if (other)
+      expect((new FuncNode(other) as unknown as {color?: string}).color !== '#EF5350', true);
+  });
 });

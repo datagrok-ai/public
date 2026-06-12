@@ -26,6 +26,8 @@
   bottom order matches execution.
 * Select Table emits a tolerant resolver: `tableByName(name) ?? getVar(name)` across the exact,
   no-spaces, and lower-camel name variants.
+* Per-function node colors: `FUNC_NAME_COLORS` (type-map.ts) pins a title-bar color by function name,
+  checked before role coloring — `SetVar` is now red, `GetVar` light red. Add an entry to pin any function.
 * SetVar nodes are now previewable: an instrumented run captures the node's incoming `value`
   (summarized by type), so clicking a SetVar opens the docked output panel showing the stored value
   (table → grid, column → sample, …) even though SetVar declares no output.

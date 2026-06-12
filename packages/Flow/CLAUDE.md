@@ -270,6 +270,7 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 ## Type System (`types/type-map.ts`)
 
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
+- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName)` checks this **before** role coloring, so specific functions can be pinned regardless of role (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
