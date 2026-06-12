@@ -671,19 +671,32 @@ export class TestTrack extends DG.ViewBase {
 
   async processFileData(data: string, filepath: string, name: string): Promise<TestCase> {
     const pathL = filepath.replace(/\.[^.]+$/, '').split('/').slice(2);
-    const [textS, jsonS] = data.split('---', 3);
+    // Two metadata formats are supported:
+    //   - YAML front matter: `---\n<yaml>\n---\n<markdown>` (metadata is not consumed by the UI)
+    //   - legacy trailing JSON: `<markdown>\n---\n{json}`
+    const frontMatter = data.match(/^\s*---\r?\n[\s\S]*?\r?\n---\r?\n([\s\S]*)$/);
+    let textS = '';
+    let jsonS: string | undefined = undefined;
+    if (frontMatter)
+      textS = frontMatter[1];
+    else
+      [textS, jsonS] = data.split('---', 3);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
-    
-    let el: TestCase;
-   
-      el = {
-        name, path, text, status: null, history: ui.divH([], 'tt-history'),
-        icon: ui.div(), reason: ui.div('', 'tt-reason'), datasets: [], projects: [], layouts: [],
-      };
-      
-    if (jsonS)
-      el = { ...el, ...JSON.parse(jsonS) };
+
+    let el: TestCase = {
+      name, path, text, status: null, history: ui.divH([], 'tt-history'),
+      icon: ui.div(), reason: ui.div('', 'tt-reason'), datasets: [], projects: [], layouts: [],
+    };
+
+    if (jsonS) {
+      try {
+        el = { ...el, ...JSON.parse(jsonS) };
+      }
+      catch (e) {
+        console.warn(`TestTrack: skipping unparsable metadata in ${filepath}`, e);
+      }
+    }
     this.loadingFiles[path] = el;
     this.map[path] = el;
     return el;
