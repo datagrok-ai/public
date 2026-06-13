@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-19204: Fixed notebook editor losing all cell data when switching tabs
+* jupyter-notebook container: Pinned `datagrok-api==0.0.7` to keep notebook boilerplate working
 
 ## 1.6.0 (2026-06-12)
 

@@ -8,7 +8,7 @@ import yaml
 from utilites import call_process
 
 BASE_DEPENDENCIES = ['ipykernel', 'matplotlib', 'pandas', 'pip', 'requests', 'snappy<1.2', 'pyarrow']
-PIP_DEPENDENCIES = ['datagrok-api']
+PIP_DEPENDENCIES = ['datagrok-api==0.0.7']
 BASE_DEPENDENCIES_SET = frozenset(BASE_DEPENDENCIES)
 CONDA_HOME = os.environ.get('CONDA_HOME', '/home/grok/conda')
 TEMPLATE_ENV_PREFIX = '_base_py'
