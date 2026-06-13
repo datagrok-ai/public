@@ -1,5 +1,9 @@
 # Notebooks changelog
 
+## v.next
+
+* jupyter-notebook container: Migrated to `datagrok-api==0.1.0` (resource-based `api.tables.download`/`upload`); updated "Open as script" parser accordingly
+
 ## 1.6.1 (2026-06-13)
 
 * GROK-19204: Fixed notebook editor losing all cell data when switching tabs

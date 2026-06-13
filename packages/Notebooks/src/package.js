@@ -352,8 +352,8 @@ class NotebookView extends DG.ViewBase {
   }
 
   notebookToCode(jnb) {
-    const inputRegex = /(.*) = download_table/g;
-    const outputRegex = /(.*) = upload_table\((.*)\)/g;
+    const inputRegex = /(.*) = api\.tables\.download/g;
+    const outputRegex = /(.*) = api\.tables\.upload\((.*)\)/g;
     const script = [
       `#name: ${this.notebook.name}\n`,
       `#description: ${this.notebook.description}\n`,
