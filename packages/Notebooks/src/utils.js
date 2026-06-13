@@ -1,12 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 
-export function removeChildren(node) {
-    while (node.firstChild)
-        node.removeChild(node.firstChild);
-}
-
 export async function setupEnvironment(environment, containerId) {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, `/notebook/helper/environments/${environment.name}/exists`,
+    const envUrl = `/notebook/helper/environments/${environment.name}`;
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, `${envUrl}/exists`,
         {method: 'POST', body: environment.environment});
     if (response.status !== 200 && response.status !== 404) {
         const body = await response.text()
@@ -14,7 +10,7 @@ export async function setupEnvironment(environment, containerId) {
     }
     if (response.status === 200)
         return;
-    const createResponse = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, `/notebook/helper/environments/${environment.name}/create`,
+    const createResponse = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, `${envUrl}/create`,
         {method: 'POST', body: environment.environment});
     const createBody = await createResponse.text();
     if (createBody !== 'created')

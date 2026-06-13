@@ -1,5 +1,9 @@
 # Notebooks changelog
 
+## v.next
+
+* GROK-19204: Fixed notebook editor losing all cell data when switching tabs
+
 ## 1.6.0 (2026-06-12)
 
 * jupyter-notebook container: Merged the datagrok/jupyter_notebook base image build into the package Dockerfile, making it self-contained (no dependency on the separately built base image)

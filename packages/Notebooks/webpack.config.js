@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -102,6 +103,7 @@ module.exports = {
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new MiniCssExtractPlugin({ filename: 'styles/jupyter-styles.css'})
+    new MiniCssExtractPlugin({ filename: 'styles/jupyter-styles.css'}),
+    new webpack.DefinePlugin({process: {env: {}}})
   ]
 };
