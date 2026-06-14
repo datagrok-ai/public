@@ -244,7 +244,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
     switch (this.biotype) {
     case 'HELM_BASE':
     case 'HELM_SUGAR':
-    case 'HELM_NUCLETIDE':
+    case HelmTypes.NUCLEOTIDE:
       helmType = HelmTypes.NUCLEOTIDE;
       break;
     case 'HELM_AA':

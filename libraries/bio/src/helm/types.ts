@@ -1,5 +1,9 @@
+// HelmType/PolymerType/MonomerType are owned by `@datagrok-libraries/hwe` and
+// re-exported here. The remaining legacy-editor shapes (R-group / monomer-set
+// maps) still come from js-draw-lite until the legacy editor is removed.
+import type {HelmType, PolymerType, MonomerType} from '@datagrok-libraries/hwe';
 import type {
-  HelmType, PolymerType, MonomerType, WebEditorRGroups, MonomerSetType,
+  WebEditorRGroups, MonomerSetType,
 } from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 import type {Point} from '@datagrok-libraries/js-draw-lite/src/Point';

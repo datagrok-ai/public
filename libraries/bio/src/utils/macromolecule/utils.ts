@@ -80,11 +80,11 @@ export class StringListSeqSplitted implements ISeqSplitted {
  *
  */
 export class HelmSplitted extends StringListSeqSplitted {
-  private polymerTypes: PolymerTypes[];
+  private polymerTypes: PolymerType[];
   constructor(
     protected mListSeparated: string[][], // list of lists of monomers (separated by | in helm notation
     private readonly connections: string, // string part of helm defining connections between monomers
-    polymerTypes: PolymerTypes[], // polymer types for each disjoint sequence part
+    polymerTypes: PolymerType[], // polymer types for each disjoint sequence part
     gapOriginalMonomer: string,
   ) {
     super(mListSeparated.flat(), gapOriginalMonomer);
@@ -119,8 +119,8 @@ export class HelmSplitted extends StringListSeqSplitted {
           continue;
         const seq1 = parseInt(cpParts[0].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
         const seq2 = parseInt(cpParts[1].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
-        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerTypes;
-        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerTypes;
+        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerType;
+        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerType;
         if (seq1 < 0 || seq1 >= this.mListSeparated.length || seq2 < 0 || seq2 >= this.mListSeparated.length)
           continue;
         const conParts = cpParts[2].split('-');
@@ -135,8 +135,8 @@ export class HelmSplitted extends StringListSeqSplitted {
         if (con1 < 0 || con1 >= this.mListSeparated[seq1].length || con2 < 0 || con2 >= this.mListSeparated[seq2].length)
           continue;
         graphInfo.connections.push({
-          seq1Type: seq1Type as PolymerTypes,
-          seq2Type: seq2Type as PolymerTypes,
+          seq1Type: seq1Type as PolymerType,
+          seq2Type: seq2Type as PolymerType,
           seqIndex1: seq1,
           seqIndex2: seq2,
           monomerIndex1: con1,
@@ -375,7 +375,7 @@ export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
   for (let i = 0; i < spList.length - 1; i++)
     spList[i] = spList[i] + '}';
 
-  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
+  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerType[];
   const mListSplit = spList
     .map((sp: string, i) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
       .flatMap((m) => {
