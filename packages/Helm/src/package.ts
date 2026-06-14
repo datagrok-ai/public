@@ -201,8 +201,8 @@ export class PackageFunctions {
     'meta': {role: 'widgets', domain: 'bio'},
     'tags': ['panel', 'widgets', 'bio']
   })
-  static propertiesWidget(
-    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
+  static async propertiesWidget(
+    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) sequence: DG.SemanticValue): Promise<DG.Widget> {
     return getPropertiesWidget(sequence);
   }
 
