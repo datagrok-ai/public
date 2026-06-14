@@ -23,7 +23,6 @@ import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} 
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
 import {HelmInput} from './widgets/helm-input';
 import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
@@ -70,8 +69,16 @@ export class HelmHelper implements IHelmHelper {
     }
   }
 
+  // Phase 6 (hwe migration): the inline view-only editor (used by the
+  // `HelmInput` widget, the Bio HELM substructure-filter, and PolyTool) is now
+  // the standalone `@datagrok-libraries/hwe` editor wrapped in a
+  // `LegacyEditorWrapper` (presents the legacy `editor.div/m/helm/setHelm/
+  // setMol/getHelm/redraw/setSize/getDrawOptions` shape over `HelmService`).
   createHelmWebEditor(host?: HTMLDivElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor {
-    return new HelmWebEditor(host, options);
+    return this.editorAdapter.createHelmWebEditor(host, {
+      ...(options?.width !== undefined ? {width: options.width} : {}),
+      ...(options?.height !== undefined ? {height: options.height} : {}),
+    }) as unknown as IHelmWebEditor;
   }
 
   // -- HWE editor adapter (Phase 3 migration) --
