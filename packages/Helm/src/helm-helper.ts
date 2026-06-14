@@ -343,20 +343,10 @@ export class HelmHelper implements IHelmHelper {
   }
 
   public getMolfiles(helmStrList: string[]): string[] {
-    try {
-      const editor = this.molfilesEditor;
-      const resList = helmStrList.map((helmStr, i) => {
-        //no-draw instruction to avoid time spent on rendering
-        editor.helm && (editor.helm.noDraw = true);
-        editor.setHelm(helmStr);
-        const mol = editor.getMolfile();
-        return mol;
-      });
-      return resList;
-    } finally {
-      // $(host).empty();
-      // host.remove();
-    }
+    // Phase 5 (hwe migration): pseudo-molfiles (monomers as atoms) now come
+    // from the standalone hwe library via the adapter, not the legacy JSDraw2
+    // editor.
+    return this.editorAdapter.getMolfiles(helmStrList);
   }
 
   public parse(helm: string, origin?: Point): HelmMol {
