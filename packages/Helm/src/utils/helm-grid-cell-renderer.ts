@@ -2,16 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import wu from 'wu';
-
-import {HelmType, IHelmBio, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
-import {
-  CellRendererBackAsyncBase, RenderServiceBase
-} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {HelmType, IHelmBio, ISeqMonomer, HelmMol, Mol} from '@datagrok-libraries/bio/src/helm/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
@@ -23,25 +16,48 @@ import {
   MacromoleculeHighlightEntry, MacromoleculeHighlightEventArgs, macromoleculeHighlightColorToCss,
 } from '@datagrok-libraries/bio/src/utils/macromolecule-highlight';
 
+// Phase 4 (hwe migration): the cell renderer paints synchronously straight into
+// the grid canvas via the standalone `@datagrok-libraries/hwe` library — no
+// async SVG→image / ImageData round-trip. `renderToCanvas` fits + centers +
+// clips the molecule into the cell bounds and returns the laid-out mol plus the
+// model/draw boxes used for hover + highlight overlays.
+import {HelmService as HweHelmService, bridgeMonomerLib, buildHelmMolView} from '@datagrok-libraries/hwe';
+import type {CanvasBounds, IMonomerLibBaseLike} from '@datagrok-libraries/hwe';
+
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
-import {_package, getHelmService} from '../package';
+import {_package} from '../package';
 
-export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
-  private _auxList: Map<string, HelmAux | null>;
+/** Per-cell render bookkeeping for hover hit-testing + the highlight overlay. */
+type HelmCellAux = {
+  /** Laid-out molecule as a legacy-shaped view (atoms[].p in model space). */
+  molView: HelmMol;
+  /** Tight model-space bbox of the drawn content. */
+  bBox: DG.Rect;
+  /** Absolute (device-pixel) draw box the mol was painted into. */
+  dBox: DG.Rect;
+  /** Cell height in device pixels (single-atom hover threshold). */
+  cellHDev: number;
+};
+
+export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
+  /**
+   * Compat shim for the `measureCellRenderer` benchmark: hwe renders
+   * synchronously with an internal LRU parse/layout cache, so this is always
+   * `true` (the benchmark then waits on `grid.onAfterDrawContent`).
+   */
+  public readonly cacheEnabled: boolean = true;
 
   private sysMonomerLib: IMonomerLibBase | null = null;
   private helmHelper: IHelmHelper | null = null;
-  private helmRenderService: HelmServiceBase | null = null;
 
-  // eslint-disable-next-line max-len
-  private readonly uuid: string = wu.repeat(1).map(() => Math.floor((Math.random() * 36)).toString(36)).take(4).toArray().join('');
+  /** hwe service per monomer-library source (a cell may carry an overridden lib). */
+  private readonly serviceByLib: Map<string, HweHelmService> = new Map();
+  /** Per-cell-value render bookkeeping (hover + highlight). */
+  private auxList: Map<string, HelmCellAux> = new Map();
 
-  constructor(
-    gridCol: DG.GridColumn | null,
-    tableCol: DG.Column<string>,
-  ) {
-    super(gridCol, tableCol, _package.logger, true);
+  constructor(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>) {
+    super(gridCol, tableCol, _package.logger);
   }
 
   public async init(): Promise<void> {
@@ -53,12 +69,13 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       (async () => {
         this.helmHelper = await getHelmHelper();
       })(),
-      (async () => {
-        this.helmRenderService = await getHelmService();
-      })(),
     ]);
 
     this.subs.push(this.sysMonomerLib!.onChanged.subscribe(() => {
+      // A library change invalidates every cached service + render.
+      for (const svc of this.serviceByLib.values()) svc.destroy();
+      this.serviceByLib.clear();
+      this.auxList.clear();
       this.dirty = true;
       this.invalidateGrid();
     }));
@@ -68,6 +85,13 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
     this.dirty = true;
     this.invalidateGrid();
+  }
+
+  protected override destroy(): void {
+    for (const svc of this.serviceByLib.values()) svc.destroy();
+    this.serviceByLib.clear();
+    this.auxList.clear();
+    super.destroy();
   }
 
   private handleHighlightEvent(args: MacromoleculeHighlightEventArgs): void {
@@ -102,120 +126,87 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     return this.tableCol.temp[MmcrTemps.overriddenLibrary] ?? this.sysMonomerLib;
   }
 
+  /** Get (or lazily build) the hwe service bound to `lib`, keyed by its source. */
+  private getService(lib: IMonomerLibBase): HweHelmService {
+    const key = lib.source;
+    let svc = this.serviceByLib.get(key);
+    if (svc === undefined) {
+      svc = new HweHelmService({monomerLib: bridgeMonomerLib(lib as unknown as IMonomerLibBaseLike)});
+      this.serviceByLib.set(key, svc);
+    }
+    return svc;
+  }
+
   protected override reset(): void {
-    const logPrefix = `${this.toLog()}.reset()`;
-    this.logger.debug(`${logPrefix}, start`);
     super.reset();
-    this._auxList = new Map<string, HelmAux | null>();
+    this.auxList = new Map<string, HelmCellAux>();
     this.invalidateGrid();
-    this.logger.debug(`${logPrefix}, end`);
   }
 
-  protected override getRenderService(): RenderServiceBase<HelmProps, HelmAux> | null {
-    return this.helmRenderService;
-  }
+  /** Synchronous paint straight into the grid canvas via hwe `renderToCanvas`. */
+  public render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle,
+  ): void {
+    const helm = gridCell.cell?.value;
+    if (!helm || this.sysMonomerLib === null) return;
+    if (w < 5 || h < 5) return;
 
-  protected override getRenderTaskProps(
-    gridCell: DG.GridCell, backColor: number, width: number, height: number,
-  ): HelmProps {
-    const monomerLib = this.getMonomerLib();
-    return new HelmProps(gridCell.cell.value, monomerLib, backColor, width, height);
-  }
-
-  protected override storeAux(gridCell: DG.GridCell, aux: HelmAux): void {
-    const logPrefix = `${this.toLog()}.storeAux()`;
-    this.logger.debug(`${logPrefix}, start`);
-    if (!!gridCell.cell?.value)
-      this._auxList.set(gridCell.cell.value, aux);
-  }
-
-  /** Renders cell from image data (cache), returns true to update the cell by service.
-   * @param gridCellBounds {DG.Rect} Grid cell bounds
-   */
-  protected override renderCellImageData(
-    gridCtx: CanvasRenderingContext2D, gridCellBounds: DG.Rect, gridCell: DG.GridCell, cellImageData: ImageData,
-  ): boolean {
-    // super.renderCellImageData(gridCtx, gridCellBounds, gridCell, cellImageData);
-    // return true;
-
-    const gcb = gridCellBounds;
     const dpr = window.devicePixelRatio;
-    if (!gridCell.cell?.value)
-      return false;
-    const aux = this._auxList.get(gridCell.cell.value);
-    if (!aux)
-      return true;
+    const svc = this.getService(this.getMonomerLib());
 
-    const [cellWidth, cellHeight] = [gcb.width * dpr - 2, gcb.height * dpr - 2];
-    const cellDScale = Math.min(0.95 * cellWidth / aux.dBox.width, 0.95 * cellHeight / aux.dBox.height);
-    const [cellDWidth, cellDHeight] = [cellDScale * aux.dBox.width, cellDScale * aux.dBox.height];
-    const cellDBox = new DG.Rect((cellWidth - cellDWidth) / 2, (cellHeight - cellDHeight) / 2, cellDWidth, cellDHeight);
+    g.save();
+    try {
+      // The grid canvas works in device pixels after resetTransform(); use the
+      // cell's own bounds when painting onto the grid's main canvas (robust to
+      // scroll), otherwise the passed x/y (off-screen tooltip canvas, etc.).
+      g.resetTransform();
+      const onGrid = !!(this.gridCol?.dart && this.gridCol.grid?.canvas === g.canvas);
+      const bx = (onGrid ? gridCell.bounds.x : x) * dpr;
+      const by = (onGrid ? gridCell.bounds.y : y) * dpr;
+      const bounds: CanvasBounds = {x: bx, y: by, width: w * dpr, height: h * dpr};
 
+      // No backColor → the grid keeps its own cell background (selection, etc.).
+      const res = svc.renderToCanvas(g, helm, bounds);
 
-    // Draw cell image data to scale it with drawImage() while transform()
-    const cellCanvas = ui.canvas(cellImageData.width, cellImageData.height);
-    const cellCtx = cellCanvas.getContext('2d')!;
-    cellCtx.putImageData(cellImageData, 0, 0);
+      const aux: HelmCellAux = {
+        molView: buildHelmMolView(res.mol) as unknown as HelmMol,
+        bBox: new DG.Rect(res.bbox.x, res.bbox.y, res.bbox.width, res.bbox.height),
+        dBox: new DG.Rect(res.drawBox.x, res.drawBox.y, res.drawBox.width, res.drawBox.height),
+        cellHDev: h * dpr,
+      };
+      this.auxList.set(helm, aux);
 
-    // // Get bbox canvas
-    // const bBoxImageData = cellCtx.getImageData(aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height);
-    // const bBoxCanvas = ui.canvas(aux.bBox.width, aux.bBox.height);
-    // const bBoxCtx = bBoxCanvas.getContext('2d')!;
-    // bBoxCtx.putImageData(bBoxImageData, 0, 0);
-    //
-    const fitCanvasWidth = gridCellBounds.width * dpr - 2;
-    const fitCanvasHeight = gridCellBounds.height * dpr - 2;
-    //
-    // const bBoxRatio = Math.max(aux.bBox.width / aux.cBox.width, aux.bBox.height / aux.cBox.height);
-    // const bBoxFullWidth = aux.bBox.width / bBoxRatio;
-    // const bBoxFullHeight = aux.bBox.height / bBoxRatio;
-    //
-    // const fitScale = Math.min(fitCanvasWidth / bBoxFullWidth, fitCanvasHeight / bBoxFullHeight);
-    //
-    // // Relative shift of bbox center to cbox center
-    // const bBoxShiftHR = (aux.bBox.left + aux.bBox.width / 2 - aux.cBox.width / 2) / aux.cBox.width;
-    // const bBoxShiftVR = (aux.bBox.top + aux.bBox.height / 2 - aux.cBox.height / 2) / aux.cBox.height;
-    //
-    // const bBoxFitLeft = fitCanvasWidth / 2 - bBoxCanvas.width * fitScale * (1 - 2 * bBoxShiftHR) / 2;
-    // const bBoxFitTop = fitCanvasHeight / 2 - bBoxCanvas.height * fitScale * (1 - 2 * bBoxShiftVR) / 2;
-    //
-    const fitCanvas = ui.canvas(fitCanvasWidth, fitCanvasHeight);
-    const fitCtx = fitCanvas.getContext('2d')!;
-    // fitCtx.fillStyle = '#FFFFA0';
-    // fitCtx.fillRect(0, 0, fitCanvasWidth, fitCanvasHeight);
-    // fitCtx.transform(fitScale, 0, 0, fitScale, bBoxFitLeft, bBoxFitTop);
-    // fitCtx.drawImage(bBoxCanvas, 0, 0); // draw with scale transform
-    fitCtx.drawImage(cellCanvas,
-      aux.dBox.x, aux.dBox.y, aux.dBox.width, aux.dBox.height,
-      cellDBox.x, cellDBox.y, cellDBox.width, cellDBox.height);
-
-    this.drawHighlightOverlay(fitCtx, aux, cellDBox, gridCell.tableRowIndex);
-
-    const fitCanvasData = fitCtx.getImageData(0, 0, fitCanvasWidth, fitCanvasHeight);
-    this.renderOnGrid(gridCtx, gridCellBounds, gridCell, fitCanvasData);
-
-    return aux.cBox.width != cellWidth || aux.cBox.height != cellHeight; // request rendering
+      // drawMolToContext restores its own transform, so we are back in
+      // device-pixel space here for the overlay.
+      this.drawHighlightOverlay(g, aux, gridCell.tableRowIndex);
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      this.logger.error(errMsg, undefined, errStack);
+    } finally {
+      g.restore();
+    }
+    this._onRendered.next();
   }
 
-  // Overlays a translucent ring around each highlighted monomer on top of the already-drawn
-  // helm image. Highlight data comes from `tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP]` for the given
-  // row. The ring is sized from the median bond length so it sits just outside the monomer glyph.
+  // Overlays a translucent ring around each highlighted monomer on top of the
+  // already-drawn helm. Highlight data comes from
+  // `tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP]` for the given row. Atom
+  // positions (model space) map to device pixels via dBox / bBox.
   private drawHighlightOverlay(
-    ctx: CanvasRenderingContext2D, aux: HelmAux, cellDBox: DG.Rect, rowIdx: number | null,
+    ctx: CanvasRenderingContext2D, aux: HelmCellAux, rowIdx: number | null,
   ): void {
     const entry = this.getHighlightForRow(rowIdx);
     if (!entry || !entry.monomers || entry.monomers.length === 0) return;
-    const atoms = aux.mol?.atoms;
+    const atoms = aux.molView?.atoms;
     if (!atoms || atoms.length === 0) return;
     if (aux.bBox.width <= 0 || aux.bBox.height <= 0) return;
 
-    const sx = cellDBox.width / aux.bBox.width;
-    const sy = cellDBox.height / aux.bBox.height;
+    const sx = aux.dBox.width / aux.bBox.width;
+    const sy = aux.dBox.height / aux.bBox.height;
     const sAvg = (sx + sy) / 2;
 
-    // Estimate monomer glyph radius in SVG space from bonds, fall back to atom-density heuristic.
-    const svgMonomerR = this.estimateMonomerRadiusSvg(aux);
-    // Draw ring just outside the glyph: ~1.05× glyph radius.
+    const svgMonomerR = this.estimateMonomerRadiusModel(aux);
     const markerR = Math.max(6, svgMonomerR * sAvg * 0.7);
     const lineWidth = Math.max(1.5, markerR * 0.35);
 
@@ -230,9 +221,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       for (const idx of entry.monomers) {
         const a = atoms[idx];
         if (!a || !a.p) continue;
-        const fx = cellDBox.x + (a.p.x - aux.bBox.x) * sx;
-        const fy = cellDBox.y + (a.p.y - aux.bBox.y) * sy;
-        // Stroke ring with translucent fill — ring sits outside monomer, interior tint is subtle.
+        const fx = aux.dBox.x + (a.p.x - aux.bBox.x) * sx;
+        const fy = aux.dBox.y + (a.p.y - aux.bBox.y) * sy;
         ctx.beginPath();
         ctx.arc(fx, fy, markerR, 0, Math.PI * 2);
         ctx.fill();
@@ -243,11 +233,11 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     }
   }
 
-  // Best-effort monomer glyph radius in SVG (bBox) coordinates. Uses the median bond length when
-  // bonds are available (monomer glyph width ≈ bond length), otherwise falls back to an area-
-  // based density estimate from bBox / atom count.
-  private estimateMonomerRadiusSvg(aux: HelmAux): number {
-    const bonds = (aux.mol as any)?.bonds as Array<{a1?: {p?: {x: number, y: number}}, a2?: {p?: {x: number, y: number}}}> | undefined;
+  // Best-effort monomer glyph radius in model (bBox) coordinates from the median
+  // bond length (glyph width ≈ bond length), else an area-density estimate.
+  private estimateMonomerRadiusModel(aux: HelmCellAux): number {
+    const bonds = (aux.molView as any)?.bonds as
+      Array<{a1?: {p?: {x: number, y: number}}, a2?: {p?: {x: number, y: number}}}> | undefined;
     const lens: number[] = [];
     if (bonds && bonds.length > 0) {
       for (const b of bonds) {
@@ -258,18 +248,16 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       }
     }
     if (lens.length > 0) {
-      lens.sort((x, y) => x - y);
-      const median = lens[Math.floor(lens.length / 2)];
-      return median * 0.55; // glyph radius ≈ half the bond length
+      lens.sort((p, q) => p - q);
+      return lens[Math.floor(lens.length / 2)] * 0.55;
     }
-    const n = Math.max(1, aux.mol?.atoms?.length ?? 1);
-    const density = Math.sqrt((aux.bBox.width * aux.bBox.height) / n);
-    return density * 0.45;
+    const n = Math.max(1, aux.molView?.atoms?.length ?? 1);
+    return Math.sqrt((aux.bBox.width * aux.bBox.height) / n) * 0.45;
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell?.value || !this._auxList || !!e.buttons) return;
-    const aux = this._auxList.get(gridCell.cell.value);
+    if (!gridCell.cell?.value || !!e.buttons) return;
+    const aux = this.auxList.get(gridCell.cell.value);
     if (!aux) return;
 
     const logPrefix = `${this.toLog()}.onMouseMove()`;
@@ -279,15 +267,21 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const cX = (e.offsetX - gcb.x) * dpr;
     const cY = (e.offsetY - gcb.y) * dpr;
 
-    const bX = aux.bBox.x + (cX - aux.dBox.x) * aux.bBox.width / aux.dBox.width;
-    const bY = aux.bBox.y + (cY - aux.dBox.y) * aux.bBox.height / aux.dBox.height;
+    // Map the cursor (device px, relative to the cell) into model space using
+    // the absolute draw box. dBox is absolute, so subtract the cell origin.
+    const dboxRelX = aux.dBox.x - gcb.x * dpr;
+    const dboxRelY = aux.dBox.y - gcb.y * dpr;
+    const mX = aux.bBox.x + (cX - dboxRelX) * aux.bBox.width / aux.dBox.width;
+    const mY = aux.bBox.y + (cY - dboxRelY) * aux.bBox.height / aux.dBox.height;
+    // Single-atom hover threshold (0.35·cellHeight in the legacy) mapped to model space.
+    const cellHModel = aux.cellHDev * aux.bBox.height / aux.dBox.height;
 
-    const editorMol: Mol<HelmType, IHelmBio> | null = aux.mol; // in bBox world
+    const editorMol: Mol<HelmType, IHelmBio> | null = aux.molView as unknown as Mol<HelmType, IHelmBio>;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
-      return; // The gridCell is not rendered yet
+      return;
     }
-    const hoveredAtom = getHoveredMonomerFromEditorMol(bX, bY, editorMol, gridCell.bounds.height);
+    const hoveredAtom = getHoveredMonomerFromEditorMol(mX, mY, aux.molView, cellHModel);
 
     let seqMonomer: ISeqMonomer | null = null;
     if (hoveredAtom && this.helmHelper && gridCell.tableRowIndex != null) {
@@ -299,7 +293,6 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, e.x + 16, e.y + 16);
     } else {
-      // Tooltip for missing monomers
       ui.tooltip.hide();
     }
     execMonomerHoverLinks(gridCell, seqMonomer);
@@ -311,14 +304,6 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
     execMonomerHoverLinks(gridCell, null);
   }
-
-  // public override render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-  //   gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
-  // ) {
-  //   super.render(g, x, y, w, h, gridCell, cellStyle);
-  // }
-
-  // -- Handle events --
 
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
     const [gridCol, tableCol, temp] =
@@ -343,7 +328,6 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 100; }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
-    const logPrefix = `Helm: HelmGridCellRenderer.onMouseMove()`;
     try {
       HelmGridCellRendererBack.getOrCreate(gridCell).onMouseMove(gridCell, e);
     } catch (err: any) {
@@ -353,7 +337,6 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
   }
 
   override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
-    const logPrefix = `Helm: HelmGridCellRenderer.onMouseLeave()`;
     try {
       HelmGridCellRendererBack.getOrCreate(gridCell).onMouseLeave(gridCell, e);
     } catch (err: any) {
