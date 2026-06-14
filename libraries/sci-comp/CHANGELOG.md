@@ -1,5 +1,24 @@
 # sci-comp changelog
 
+## Unreleased
+
+Statistics — simple linear regression primitive (NCA dose-proportionality / UC-03):
+
+* `stats.linearFit(x, y, {ciLevel})` — OLS fit of `y = intercept + slope·x` with
+  a Student-t slope confidence interval. Returns `{slope, intercept, slopeSe,
+  slopeCI, rSquared, df, n}`; default `ciLevel = 0.90` (Smith 1−2α). NaN pairs
+  are dropped; degenerate inputs return (not throw): zero x-spread → NaN slope,
+  `n = 2` (df 0) → slope defined but SE/CI NaN. Thin wrapper over the existing
+  OLS engine + `studentTInv` — no new numerical math.
+* `stats.oneWayAnova(values, groups)` — fixed-effects one-way ANOVA F-test
+  (`values ~ C(groups)`), the no-covariate complement to `runAncova`. Returns
+  `{fStatistic, dfBetween, dfWithin, pValue, groups, n}`; `null` on insufficient
+  data (`< 2` groups, `N ≤ k`, or zero within-group variation). NaN responses
+  dropped. Used for the secondary dose-normalized-AUC comparison (FR-412).
+* Internal: the normal-equations `fitOls` is lifted from `tests/ancova.ts` to a
+  shared `stats/internal/ols.ts` so ANCOVA and `linearFit` share one
+  implementation. ANCOVA output is byte-identical (regression suite unchanged).
+
 ## 0.7.1 (2026-06-11)
 
 Non-Compartmental Analysis — bug fix (GROK-20219 / BUG-05):

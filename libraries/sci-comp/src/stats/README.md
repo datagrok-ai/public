@@ -17,7 +17,7 @@ const {
   jonckheere, cochranArmitage, cochranArmitageBasic, thresholdTest,
   fisherExact2x2, boschlooExact, incidenceExactBoth,
   pavaIncreasing, pavaDecreasing, williamsTest,
-  runAncova,
+  runAncova, oneWayAnova, linearFit,
 } = stats;
 ```
 
@@ -41,6 +41,8 @@ const {
 | `pavaIncreasing/Decreasing` | Isotonic regression (PAVA) | [Barlow et al. (1972)](https://en.wikipedia.org/wiki/Isotonic_regression) |
 | `williamsTest` | Step-down dose-response with PAVA | [Williams (1971)](https://doi.org/10.2307/2528930), [Williams (1972)](https://doi.org/10.2307/2556895) |
 | `runAncova` | Covariate-adjusted group comparison (OLS) | Standard ANCOVA |
+| `oneWayAnova` | Fixed-effects one-way ANOVA F-test (no covariate) | Standard one-way ANOVA |
+| `linearFit` | Simple linear regression: OLS slope + Student-t CI | Standard OLS |
 
 All methods accept a flexible numeric input type:
 
@@ -330,6 +332,35 @@ For Lazic-style organ-free covariates (Lazic et al. 2020), set
 `useOrganFreeBw: true` — the covariate becomes `BW − organ_value`.
 
 Returns `null` when there are too few observations (`n < k + 2` or `k < 2`).
+
+## Linear regression (slope + CI)
+
+Simple OLS fit `y = intercept + slope·x` with a Student-t confidence interval
+on the slope. Used by the NCA dose-proportionality (Smith power model) layer
+for `ln(AUC) ~ ln(Dose)`, but it is general-purpose.
+
+```typescript
+const r = linearFit([1, 2, 3, 4, 5], [2.1, 3.9, 6.1, 7.9, 10.2], {ciLevel: 0.90});
+// r.slope ≈ 2.02, r.intercept ≈ -0.02, r.slopeSe ≈ 0.0476,
+// r.slopeCI ≈ [1.908, 2.132], r.rSquared ≈ 0.9983, r.df = 3, r.n = 5
+```
+
+`ciLevel` defaults to `0.90`. NaN pairs are dropped. Degenerate inputs return
+rather than throw: zero x-spread (single distinct x / collinear) → NaN slope;
+`n = 2` (df 0) → slope/intercept defined but `slopeSe`/`slopeCI` NaN.
+
+## One-way ANOVA
+
+Fixed-effects one-way ANOVA F-test of `values ~ C(groups)` — the no-covariate
+complement to `runAncova`.
+
+```typescript
+const r = oneWayAnova([1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 1, 1, 2, 2, 2, 3, 3, 3]);
+// r.fStatistic = 27, r.dfBetween = 2, r.dfWithin = 6, r.groups = 3, r.n = 9
+```
+
+Returns `null` on insufficient data (`< 2` groups, `N ≤ k`, or zero
+within-group variation). NaN responses are dropped pairwise with their group.
 
 ## Running examples
 
