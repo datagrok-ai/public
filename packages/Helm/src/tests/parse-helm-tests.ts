@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/test/src/test';
-import {HelmMol, HelmType, IHelmBio, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -12,14 +11,14 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {JSDraw2Module} from '../types';
 import {initHelmMainPackage} from './utils';
-
-declare const org: OrgType;
-declare const JSDraw2: JSDraw2Module;
 
 type TestTgtType = { atomCount: number, bondCount: number, helm: string };
 
+// hwe migration (Phase 7): `helmHelper.parse` now delegates to the standalone
+// `@datagrok-libraries/hwe` parser (immutable `Mol`, exposed as a legacy
+// `HelmMol`-shaped view). The legacy variants that drove `org.helm.webeditor.IO`
+// / `new JSDraw2.Editor(...)` directly were removed with the forked editor.
 category('parseHelm', () => {
   const testData: { [testName: string]: { src: string, tgt: TestTgtType } } = {
     'PT': {
@@ -82,67 +81,17 @@ category('parseHelm', () => {
   });
 
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
-    test(`Editor-${testName}`, async () => {
-      _testParseHelmWithEditor(src, tgt);
-    });
-  }
-
-  for (const [testName, {src, tgt}] of Object.entries(testData)) {
     test(`HelmHelper-${testName}`, async () => {
       _testParseHelmWithHelmHelper(src, tgt, helmHelper);
     });
   }
-
-  for (const [testName, {src, tgt}] of Object.entries(testData)) {
-    test(`woDOM-${testName}`, async () => {
-      _testParseHelmWithoutDOM(src, tgt);
-    });
-  }
 });
 
-function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
-  const io = org.helm.webeditor.IO;
-
-  const editorHost = ui.div();
-  const editor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(editorHost, {viewonly: true});
-
-  const plugin = new org.helm.webeditor.Plugin(editor);
-  const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, src, origin, undefined);
-
-  const m: HelmMol = plugin.jsd.m;
-  expect(m.atoms.length, tgt.atomCount);
-  expect(m.bonds.length, tgt.bondCount);
-}
-
 function _testParseHelmWithHelmHelper(src: string, tgt: TestTgtType, helmHelper: IHelmHelper): void {
-  const io = org.helm.webeditor.IO;
+  const resMol = helmHelper.parse(src);
 
-  const origin = new JSDraw2.Point(0, 0);
-  const resMol = helmHelper.parse(src, origin);
-
-  const resHelm = io.getHelm(resMol);
   expect(resMol.atoms.length, tgt.atomCount);
   expect(resMol.bonds.length, tgt.bondCount);
-  expect(resHelm, tgt.helm);
   expect(resMol.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
-    'Atoms should not contain square braces.');
-}
-
-function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
-  const io = org.helm.webeditor.IO;
-
-  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
-
-  const plugin = new org.helm.webeditor.Plugin(molHandler);
-  const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, src, origin, undefined);
-
-  const m: HelmMol = plugin.jsd.m;
-  const resHelm = io.getHelm(m);
-  expect(m.atoms.length, tgt.atomCount);
-  expect(m.bonds.length, tgt.bondCount);
-  expect(resHelm, tgt.helm);
-  expect(m.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
     'Atoms should not contain square braces.');
 }

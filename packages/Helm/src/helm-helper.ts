@@ -357,10 +357,11 @@ export class HelmHelper implements IHelmHelper {
   }
 
   public parse(helm: string, origin?: Point): HelmMol {
-    const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
-    const plugin = new org.helm.webeditor.Plugin(molHandler);
-    org.helm.webeditor.IO.parseHelm(plugin, helm, origin ?? new JSDraw2.Point(0, 0));
-    return plugin.jsd.m;
+    // Phase 7 (hwe migration): parse via the standalone hwe parser (immutable
+    // Mol exposed as a legacy HelmMol-shaped view), replacing the legacy
+    // org.helm.webeditor.IO.parseHelm. hwe's atom/bond counts match legacy
+    // (verified by parse-helm-tests).
+    return this.editorAdapter.parse(helm, origin) as unknown as HelmMol;
   }
 
   removeGaps(srcHelm: string): HelmConvertRes {
