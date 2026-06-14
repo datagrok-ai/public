@@ -12,7 +12,7 @@ import {
   Editor,
   IBio,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {HelmTabKeys, HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
@@ -31,6 +31,14 @@ import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 
 import {_package} from './package';
 import {IEditorOptions} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
+
+// Phase 3 (hwe migration): the interactive editor dialog is backed by the
+// standalone `@datagrok-libraries/hwe` library through its Datagrok adapter.
+// Import from the bare entry (the adapter is re-exported there in addition to
+// the `/datagrok` sub-entry) so the Datagrok toolchain — ts-loader with classic
+// `node` moduleResolution — resolves it without `exports`-map subpath support.
+import {HelmHelperAdapter, bridgeMonomerLib, HelmService} from '@datagrok-libraries/hwe';
+import type {IMonomerLibBaseLike} from '@datagrok-libraries/hwe';
 
 declare const dojo: DojoType;
 declare const JSDraw2: JSDraw2ModuleType;
@@ -66,58 +74,35 @@ export class HelmHelper implements IHelmHelper {
     return new HelmWebEditor(host, options);
   }
 
-  createWebEditorApp(host: HTMLDivElement, helm: string): App {
-    org.helm.webeditor.MolViewer.molscale = 0.8;
-    const webEditorApp: App = new org.helm.webeditor.App(host, {
-      showabout: false,
-      mexfontsize: '90%',
-      mexrnapinontab: true,
-      topmargin: 20,
-      mexmonomerstab: true,
-      sequenceviewonly: false,
-      mexfavoritefirst: true,
-      mexfilter: true,
-      currentTabKey: HelmTabKeys.Helm,
-      overrideTabs: (tabs: Partial<TabDescType>[]): Partial<TabDescType>[] => {
-        const res: Partial<TabDescType>[] = [...tabs,
-          {caption: 'Placeholders', tabkey: 'placeholders'},
-        ];
-        return res;
-      },
-      onShowTab: (mex: MonomerExplorer, div: HTMLDivElement, key: string): void => {
-        switch (key) {
-        case 'placeholders': {
-          this.onShowTabPlaceholders(mex, div);
-          break;
-        }
-        case 'placeholders-meta': {
-          this.onShowTabPlaceholdersMeta(mex, div);
-          break;
-        }
-        case 'placeholders-sets': {
-          this.onShowTabPlaceholdersSets(mex, div);
-          break;
-        }
-        }
-        dojo.connect(div, 'onmousedown', function(e: MouseEvent) {
-          mex.select(e);
-        });
-        dojo.connect(div, 'ondblclick', function(e: MouseEvent) {
-          mex.dblclick(e);
-        });
-      }
-    });
-    const sizes = webEditorApp.calculateSizes();
-    webEditorApp.canvas!.resize(sizes.rightwidth - 100, sizes.topheight - 210);
-    let s: Partial<CSSStyleDeclaration> = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-    scil.apply(webEditorApp.sequence.style, s);
-    scil.apply(webEditorApp.notation!.style, s);
-    s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + webEditorApp.toolbarheight) + 'px'};
-    scil.apply(webEditorApp.properties!.parent.style, s);
-    webEditorApp.structureview!.resize(sizes.rightwidth, sizes.bottomheight + webEditorApp.toolbarheight);
-    webEditorApp.mex!.resize(sizes.topheight - 80);
-    webEditorApp.canvas?.setHelm(helm);
-    return webEditorApp;
+  // -- HWE editor adapter (Phase 3 migration) --
+  // The full editor dialog is now the standalone `@datagrok-libraries/hwe`
+  // editor. Its `HelmService` reads Bio's monomer library via `bridgeMonomerLib`
+  // so the editor resolves exactly the same monomers as the rest of the
+  // platform. Built lazily on first `createWebEditorApp` (after `completeInit`
+  // has populated `_package._libHelper`).
+  private _editorAdapter: HelmHelperAdapter | null = null;
+  private get editorAdapter(): HelmHelperAdapter {
+    if (this._editorAdapter === null) {
+      const monomerLib = _package._libHelper!.getMonomerLib() as unknown as IMonomerLibBaseLike;
+      const service = new HelmService({monomerLib: bridgeMonomerLib(monomerLib)});
+      this._editorAdapter = new HelmHelperAdapter({service, seqHelper: this.seqHelper});
+    }
+    return this._editorAdapter;
+  }
+
+  /**
+   * Phase 3 (hwe migration): returns the standalone `@datagrok-libraries/hwe`
+   * editor (palette + toolbar + canvas + Sequence/HELM/Properties/Atomic tabs)
+   * wrapped in a `LegacyAppWrapper` that presents the legacy Pistoia `App`
+   * shape — `canvas.getHelm(true)`, `canvas.helm.jsd.m.atoms[i].selected`,
+   * `sequence` / `notation` / `properties.parent`, `mex`, `toolbarheight`,
+   * `calculateSizes()` — so the existing dialog consumers swap in unchanged.
+   * The hwe app self-lays-out (no manual size dance), and the legacy
+   * Datagrok-only "Placeholders" monomer-explorer tab is dropped (hwe ships
+   * its own palette).
+   */
+  createWebEditorApp(host: HTMLDivElement, helm?: string): App {
+    return this.editorAdapter.createWebEditorApp(host, helm) as unknown as App;
   }
 
   // -- MonomerExplorer.onShowTab --
