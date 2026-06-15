@@ -10,18 +10,15 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
+import {App} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService, HelmPackage} from './package-utils';
+import {HelmPackage} from './package-utils';
 import {HelmHelper} from './helm-helper';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-
-import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 export * from './package.g';
 export const _package = new HelmPackage(/*{debug: true}/**/);
@@ -56,20 +53,6 @@ decorators.forEach((decorator) => {
 
 /** End temporary polyfill */
 
-
-/*
-  Loading modules:
-  Through Helm/package.json/sources section
-    dojo from ajax.googleapis.com
-    HELMWebEditor
-      JSDraw.Lite is embedded into HELMWebEditor bundle (dist/package.js)
- */
-
-declare const window: Window & HweWindow;
-declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2Module;
-declare const org: OrgHelmModule;
-
 let initHelmPromise: Promise<void> | null = null;
 
 async function initHelmInt(): Promise<void> {
@@ -80,7 +63,6 @@ async function initHelmInt(): Promise<void> {
     await getRdKitModule();
     const seqHelper = await getSeqHelper();
     const libHelper = await getMonomerLibHelper();
-    await _package.initHELMWebEditor();
     const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger);
     _package.completeInit(helmHelper, libHelper);
   } catch (err: any) {
@@ -132,14 +114,6 @@ export class PackageFunctions {
     return initHelmPromise;
   }
 
-
-  @grok.decorators.func({
-    'description': 'Helm renderer service',
-    'outputs': [{'type': 'object', 'name': 'result'}]
-  })
-  static async getHelmService(): Promise<HelmServiceBase> {
-    return _getHelmService();
-  }
 
   @grok.decorators.func({
     'meta': {

@@ -7,11 +7,6 @@
     "email": "mdolotova@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
-  "sources-backup": [
-    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js",
-    "helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed.js",
-    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
-  ],
   "sources": [
     "css/helm.css"
   ],

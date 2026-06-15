@@ -10,6 +10,7 @@ import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
 import {initHelmMainPackage} from './utils';
 
@@ -92,6 +93,6 @@ function _testParseHelmWithHelmHelper(src: string, tgt: TestTgtType, helmHelper:
 
   expect(resMol.atoms.length, tgt.atomCount);
   expect(resMol.bonds.length, tgt.bondCount);
-  expect(resMol.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
+  expect(resMol.atoms.every((a: HelmAtom) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
     'Atoms should not contain square braces.');
 }

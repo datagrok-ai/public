@@ -18,27 +18,16 @@ module.exports = {
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
     },
-    dojo: {
-      filename: 'package-dojo.js',
-      library: {type: 'var', name: `${packageName}_dojo`},
-      import: './helm/dojo/package.ts',
-    },
   },
   resolve: {
     fallback: {'url': false},
     extensions: ['.ts', '.tsx', '.js', '.wasm', '.mjs', '.json'],
-    alias: {
-      'vendor/helm-web-editor': mode === 'production' ?
-        path.resolve(__dirname, 'vendor', 'helm-web-editor.production.js') :
-        path.resolve(__dirname, 'vendor', 'helm-web-editor.development.js'),
-    },
   },
   devServer: {
     contentBase: './dist',
   },
   // amd: {toUrlUndefined: true},
   module: {
-    noParse: /vendor/,
     rules: [
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: [/node_modules/]},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: [/node_modules/]},
