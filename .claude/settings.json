@@ -1,20 +1,6 @@
 {
   "permissions": {
-    "defaultMode": "auto",
-    "allow": [
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8082)",
-      "Bash(npx tsc *)",
-      "Bash(echo \"---exit: $?---\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8082)",
-      "Bash(node -e \"const lib = require\\('c:/Users/rizhi/Desktop/GROK/public/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json'\\); const rna = lib.filter\\(m => m.polymerType === 'RNA'\\); const summary = {}; for \\(const m of rna\\) { const key = m.monomerType + '|' + \\(m.naturalAnalog||''\\); \\(summary[key] = summary[key] || []\\).push\\(m.symbol\\); } for \\(const [k,v] of Object.entries\\(summary\\)\\) console.log\\(k, '=>', v.length, ':', v.slice\\(0,15\\).join\\(','\\)\\);\")",
-      "Bash(node -e \"const lib = require\\('c:/Users/rizhi/Desktop/GROK/public/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json'\\); const want = ['fR','mR','Sp','sP','m1A','m6A','5meC','m5C','Rsp','Ssp','dR','RGNA','LR','en','bp']; for \\(const m of lib\\) { if \\(m.polymerType !== 'RNA'\\) continue; if \\(want.includes\\(m.symbol\\) || /^\\(mR|fR|mr|fr\\)$/.test\\(m.symbol\\)\\) { console.log\\(m.symbol, '|', m.monomerType, '|', m.naturalAnalog, '|', m.name\\); }}\")",
-      "Bash(node -e \"const lib = require\\('c:/Users/rizhi/Desktop/GROK/public/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json'\\); for \\(const m of lib\\) { if \\(m.polymerType==='RNA' && m.monomerType==='Backbone' && m.naturalAnalog==='r' && /^\\(fR|mR|fr|mr|aR|m2|fl2|fl|oMe|2|moe|me\\)/.test\\(m.symbol\\)\\) console.log\\(m.symbol, '|', m.name\\); }\")",
-      "Bash(node -e \"const lib = require\\('c:/Users/rizhi/Desktop/GROK/public/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json'\\); for \\(const m of lib\\) { if \\(['Rsp','Ssp','bp','m5C','m6A','fl2r','moe','p','r','d','A','C','G','U','T'].includes\\(m.symbol\\) && m.polymerType==='RNA'\\) { console.log\\(m.symbol, '|', m.monomerType, '|R-groups:', m.rgroups.map\\(r=>r.label\\).join\\(','\\)\\); } }\")",
-      "Bash(echo \"exit: $?\")",
-      "Bash(awk '/merge-table-dialog\\\\.ts|merge-table\\\\.ts|hit-design-app\\\\.ts/{file=$0; print \"===\"; print file; next} /^$/{file=\"\"; next} file && /error|warning/{print}')",
-      "Read(//mnt/c/Users/rizhi/Desktop/GROK/public/packages/Helm/**)"
-    ]
+    "defaultMode": "auto"
   },
   "hooks": {
     "PreToolUse": [
@@ -29,8 +15,5 @@
         ]
       }
     ]
-  },
-  "env": {
-    "CLAUDE_CODE_EXTRA_BODY": "{\"thinking\":{\"type\":\"adaptive\",\"display\":\"summarized\"}}"
   }
 }
