@@ -20,24 +20,24 @@ module.exports = {
       './css/notebooks.css',
       './css/theme-light-extension-index.css',
       './css/ui-components-base.css',
-    ]
+    ],
   },
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    "openchemlib/full.js": "OCL",
-    "rxjs": "rxjs",
-    "rxjs/operators": "rxjs.operators"
+    'openchemlib/full.js': 'OCL',
+    'rxjs': 'rxjs',
+    'rxjs/operators': 'rxjs.operators',
   },
   resolve: {
     fallback: {
       'path': false,
-    }
+    },
   },
   optimization: {
-    minimize: true
+    minimize: true,
   },
   output: {
     filename: '[name].js',
@@ -58,13 +58,13 @@ module.exports = {
             options: {
               import: {
                 filter: (url, media, resourcePath) =>
-                !((resourcePath.endsWith('ui-components/style/index.css') && url.includes('base.css')) ||
+                  !((resourcePath.endsWith('ui-components/style/index.css') && url.includes('base.css')) ||
                   (resourcePath.endsWith('application/style/index.css') && url.includes('base.css')) ||
-                  (url.includes('blueprint.css')))
-              }
-            }
-          }
-        ]
+                  (url.includes('blueprint.css'))),
+              },
+            },
+          },
+        ],
       },
       {
         test: /\.css$/,
@@ -72,7 +72,7 @@ module.exports = {
         use: [
           MiniCssExtractPlugin.loader,
           'css-loader',
-        ]
+        ],
       },
       {test: /\.html$/, use: 'file-loader'},
       {test: /\.md$/, use: 'raw-loader'},
@@ -83,8 +83,8 @@ module.exports = {
         issuer: /\.css$/,
         use: {
           loader: 'svg-url-loader',
-          options: {encoding: 'none', limit: 10000}
-        }
+          options: {encoding: 'none', limit: 10000},
+        },
       },
       {
         // In .ts and .tsx files (both of which compile to .js), svg files
@@ -92,18 +92,18 @@ module.exports = {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.js$/,
         use: {
-          loader: 'raw-loader'
-        }
+          loader: 'raw-loader',
+        },
       },
       {
         test: /\.(png|jpg|gif|ttf|woff|woff2|eot)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-        use: [{loader: 'url-loader', options: {limit: 10000}}]
-      }
-    ]
+        use: [{loader: 'url-loader', options: {limit: 10000}}],
+      },
+    ],
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new MiniCssExtractPlugin({ filename: 'styles/jupyter-styles.css'}),
-    new webpack.DefinePlugin({process: {env: {}}})
-  ]
+    new MiniCssExtractPlugin({filename: 'styles/jupyter-styles.css'}),
+    new webpack.DefinePlugin({process: {env: {}, argv: []}}),
+  ],
 };
