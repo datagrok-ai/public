@@ -65,10 +65,10 @@ async function initHelmInt(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    await getRdKitModule();
+    const rdKitModule = await getRdKitModule();
     const seqHelper = await getSeqHelper();
     const libHelper = await getMonomerLibHelper();
-    const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger);
+    const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger, rdKitModule);
     _package.completeInit(helmHelper, libHelper);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
@@ -84,6 +84,7 @@ async function initHelmInt(): Promise<void> {
 
 function openWebEditor(cell: DG.GridCell, value?: string, units?: string) {
   const view = ui.div();
+  view.style.height = '100%';
   const col = cell.cell.column as DG.Column<string>;
   const sh = _package.seqHelper.getSeqHandler(col);
   const app: App =

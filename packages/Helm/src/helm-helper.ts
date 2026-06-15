@@ -11,6 +11,7 @@ import {
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {HelmInput} from './widgets/helm-input';
 import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
@@ -31,7 +32,11 @@ export class HelmHelper implements IHelmHelper {
 
   constructor(
     public readonly seqHelper: ISeqHelper,
-    private readonly logger: ILogger
+    private readonly logger: ILogger,
+    // Datagrok's RDKit module (from `getRdKitModule()`), forwarded to hwe so the
+    // editor can render monomer structures (atom / palette / RNA-builder tooltips
+    // and the bond-props dialog). hwe consumes only `get_mol(...).get_svg(...)`.
+    private readonly rdKitModule?: RDModule,
   ) {
     // Watchdog for singleton
     if ((++HelmHelper.instanceCount) > 1)
@@ -47,7 +52,7 @@ export class HelmHelper implements IHelmHelper {
   private get editorAdapter(): HelmHelperAdapter {
     if (this._editorAdapter === null) {
       const monomerLib = _package._libHelper!.getMonomerLib() as unknown as IMonomerLibBaseLike;
-      const service = new HelmService({monomerLib: bridgeMonomerLib(monomerLib)});
+      const service = new HelmService({monomerLib: bridgeMonomerLib(monomerLib), rdkitModule: this.rdKitModule});
       this._editorAdapter = new HelmHelperAdapter({service, seqHelper: this.seqHelper});
     }
     return this._editorAdapter;
