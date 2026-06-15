@@ -22,7 +22,6 @@ MolNotation.CxSmiles = 'cxsmiles';
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getMolSafe} from './mol-creation_rdkit';
-import {chemBeginCriticalSection, chemEndCriticalSection} from './chem-common';
 import {getRdKitService} from './chem-common-rdkit';
 
 
@@ -111,11 +110,5 @@ export function molToSmiles(molStr: string, module: RDModule): string {
 }
 
 export async function convertNotationForColumn(molecules: DG.Column<string>, targetNotation: MolNotation, kekulize = false): Promise<string[]> {
-  await chemBeginCriticalSection();
-  try {
-    const res = await (await getRdKitService()).convertMolNotation(molecules.toList(), targetNotation, kekulize);
-    return res;
-  } finally {
-    chemEndCriticalSection();
-  }
+  return (await getRdKitService()).convertMolNotation(molecules.toList(), targetNotation, kekulize);
 }
