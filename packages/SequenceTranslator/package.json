@@ -22,14 +22,15 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.65.4",
+    "@datagrok-libraries/bio": "../../libraries/bio",
     "@datagrok-libraries/chem-meta": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.6.5",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "lodash": "^4.17.21",
+    "@datagrok-libraries/hwe": "file:../../../HELM", 
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
@@ -40,8 +41,6 @@
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.16",
-    "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@datagrok/bio": "^2.26.0",
     "@datagrok/chem": "^1.17.0",
     "@datagrok/helm": "^2.13.0",
