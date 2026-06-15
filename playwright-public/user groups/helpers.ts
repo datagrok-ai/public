@@ -4,7 +4,6 @@ import {
   GALLERY_GRID,
   CONTEXT_MENU,
   NEW_USER_BUTTON,
-  DIALOG,
   DIALOG_TITLE,
   dialogInput,
   dialogButton,
@@ -110,6 +109,26 @@ export async function searchAndWaitCard(
     await page.waitForTimeout(1500);
   }
   throw new Error(`Entity "${matchName}" not found in the ${kind} gallery after refresh retries`);
+}
+
+/**
+ * Inverse of searchAndWaitCard: wait until an entity is GONE from the gallery. A just-deleted
+ * group/role can linger in the server search index for a moment, so this searches + refreshes and
+ * retries until the card disappears (avoids a false "still there" right after a delete).
+ */
+export async function searchAndWaitGone(
+  page: Page, kind: 'users' | 'groups' | 'roles', search: string, matchName: string = search,
+): Promise<void> {
+  for (let i = 0; i < 8; i++) {
+    await searchGallery(page, kind, search);
+    if (!(await galleryCardByName(page, matchName).isVisible().catch(() => false))) return;
+    await clearGallerySearch(page, kind);
+    const refresh = page.locator('.d4-search-bar [name="icon-sync"]').first();
+    if (await refresh.isVisible().catch(() => false)) await refresh.click();
+    await page.waitForTimeout(1500);
+  }
+  await searchGallery(page, kind, search);
+  await expect(galleryCardByName(page, matchName), `"${matchName}" should be gone after delete`).toHaveCount(0);
 }
 
 // A regular user's gallery card label and membership rows show the friendlyName (First Last),
@@ -312,22 +331,27 @@ export async function setMemberRowToggle(page: Page, name: string, on: boolean):
 // "Create new user" dialog; the `ensure*Seeded` helpers re-use that same UI to materialise
 // the targets the other cases act on (idempotent — create only if the gallery has no card).
 
-/** Create a regular user via the Users "NEW" -> "User..." dialog (the Users-05 action). */
+/** Create a regular user via the Users "NEW" -> "User..." dialog (the Users-05 action).
+ *  The dialog OK does NOT persist the user — it opens an (unsaved) User Profile view; the user is
+ *  only saved when the profile's ribbon "Save" button is clicked (cmdUsersAddNew in
+ *  users_browser.dart). All four fields (Email, Login, First/Last Name) are required to enable OK. */
 export async function createUserViaUI(
   page: Page,
-  opts: { email: string; login?: string; firstName?: string; lastName?: string },
+  opts: { email: string; login: string; firstName: string; lastName: string },
 ): Promise<void> {
   await openNewUserOption(page, 'User...');
   await page.locator(DIALOG_TITLE).filter({ hasText: /Create new user/i }).waitFor({ state: 'visible', timeout: 10_000 });
   await dialogInput(page, 'Email').fill(opts.email);
-  // Email may auto-populate Login; set it explicitly so the seeded login is deterministic.
-  if (opts.login) await dialogInput(page, 'Login').fill(opts.login);
-  if (opts.firstName) await dialogInput(page, 'First Name').fill(opts.firstName);
-  if (opts.lastName) await dialogInput(page, 'Last Name').fill(opts.lastName);
+  await dialogInput(page, 'Login').fill(opts.login);
+  await dialogInput(page, 'First Name').fill(opts.firstName);
+  await dialogInput(page, 'Last Name').fill(opts.lastName);
   await page.waitForTimeout(300);
   await dialogButton(page, 'OK').click();
-  await page.locator(DIALOG).first().waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
-  await page.waitForTimeout(1200);
+  // OK closes the dialog and opens the editable User Profile view — persist via the ribbon Save.
+  const save = page.locator('.d4-ribbon .ui-btn, .d4-ribbon button', { hasText: /^Save$/i }).first();
+  await save.waitFor({ state: 'visible', timeout: 15_000 });
+  await save.click();
+  await page.waitForTimeout(2500); // let the save round-trip to the server complete
 }
 
 /** Create a service user via the Users "NEW" -> "Service User..." dialog (the Users-07 action). */
@@ -337,8 +361,11 @@ export async function createServiceUserViaUI(page: Page, login: string): Promise
   await dialogInput(page, 'Login').fill(login);
   await page.waitForTimeout(300);
   await dialogButton(page, 'OK').click();
-  await page.locator(DIALOG).first().waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
-  await page.waitForTimeout(1200);
+  // On success the dialog closes and an "API Token..." dialog for the new service user pops up
+  // (it does NOT switch our admin session — it just shows the token). Dismiss it.
+  await page.waitForTimeout(1500);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
 }
 
 /** True if a card with `name` is currently shown in the gallery after searching for it. */

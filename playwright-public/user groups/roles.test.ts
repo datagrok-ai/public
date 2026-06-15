@@ -24,6 +24,7 @@ import {
   closeMenu,
   createRole,
   deleteEntityViaContextMenu,
+  searchAndWaitGone,
   selectCard,
   openManageFromPane,
   addMembershipBySearch,
@@ -111,8 +112,7 @@ test.describe('Roles View (Roles-*)', () => {
     // Delete.
     await deleteEntityViaContextMenu(page, ROLE_RENAMED);
     await openPlatformView(page, 'Roles');
-    await searchGallery(page, 'roles', ROLE_RENAMED);
-    await expect(galleryCardByName(page, ROLE_RENAMED), 'deleted role should be gone').toHaveCount(0);
+    await searchAndWaitGone(page, 'roles', ROLE_RENAMED);
   });
 
   test('Roles-06 — search by name filters list and updates URL', async ({ page }) => {

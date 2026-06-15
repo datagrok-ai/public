@@ -24,6 +24,7 @@ import {
   closeMenu,
   createGroup,
   deleteEntityViaContextMenu,
+  searchAndWaitGone,
   selectCard,
   openManageFromPane,
   addMembershipBySearch,
@@ -115,8 +116,7 @@ test.describe('Groups View (Groups-*)', () => {
     // Delete.
     await deleteEntityViaContextMenu(page, GROUP_RENAMED);
     await openPlatformView(page, 'Groups');
-    await searchGallery(page, 'groups', GROUP_RENAMED);
-    await expect(galleryCardByName(page, GROUP_RENAMED), 'deleted group should be gone').toHaveCount(0);
+    await searchAndWaitGone(page, 'groups', GROUP_RENAMED);
   });
 
   test('Groups-06 — search by name filters list and updates URL', async ({ page }) => {
