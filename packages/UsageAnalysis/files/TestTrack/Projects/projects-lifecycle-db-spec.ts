@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.api.get-by-id, projects.api.save, projects.shell.share-via-context-menu, projects.upload]
+--- */
 // DB-source lifecycle: provisioned saved query + ad-hoc DB table on System:Datagrok public.groups.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';

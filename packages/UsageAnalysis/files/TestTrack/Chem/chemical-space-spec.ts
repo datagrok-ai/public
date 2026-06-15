@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.analyze.chemical-space, chem.analyze.chemical-space.editor, chem.analyze.chemical-space.embeddings, chem.analyze.chemical-space.top-menu, chem.analyze.chemical-space.transform]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

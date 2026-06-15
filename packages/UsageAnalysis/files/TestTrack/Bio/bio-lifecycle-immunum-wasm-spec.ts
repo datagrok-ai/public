@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.annotate.numbering-scheme, bio.api.get-seq-helper, bio.engines.numbering-immunum, bio.lifecycle.init]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

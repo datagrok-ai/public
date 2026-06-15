@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.manage.libraries-app, bio.manage.libraries-dialog, bio.manage.libraries-view]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

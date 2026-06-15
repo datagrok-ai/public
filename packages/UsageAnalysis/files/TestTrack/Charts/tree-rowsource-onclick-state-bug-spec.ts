@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [charts.tree, charts.tree.color-palette, charts.tree.on-click]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

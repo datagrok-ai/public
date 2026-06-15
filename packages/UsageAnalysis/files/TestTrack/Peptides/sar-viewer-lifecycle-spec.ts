@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.model.add-cluster-max-activity, peptides.model.add-dendrogram, peptides.model.add-logo-summary-table, peptides.model.add-monomer-position, peptides.model.add-most-potent-residues, peptides.model.viewer-type, peptides.widgets.settings-dialog, peptides.workflow.start-analysis]
+--- */
 // SAR viewer lifecycle — top-menu Bio | Analyze | SAR... launch, verify model.add-* surfaces realize,
 // and round-trip the Settings-dialog Viewers-pane toggles (Dendrogram + Active peptide selection).
 // The config dialog exposes only [name="input-Generate-clusters"], so per-viewer surfaces (CMA,

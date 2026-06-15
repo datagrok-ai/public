@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.model.fire-bitset-changed, peptides.rendering.weblogo-header, peptides.util.get-selection-bitset, peptides.util.modify-selection, peptides.widgets.distribution, peptides.widgets.selection]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

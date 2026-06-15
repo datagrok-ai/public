@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [dendrogram.clustering.inject-tree-for-grid, dendrogram.event.selection-changed]
+--- */
 // GROK-13041: a filter alone MUST NOT raise the dendrogram sort-revert overlay (regression
 // guard via filterChangeCounter in inject-tree-for-grid2.ts:313-352); a real sort with no
 // preceding filter MUST raise it (positive contrast). The prompt surface is .dendrogram-overlay

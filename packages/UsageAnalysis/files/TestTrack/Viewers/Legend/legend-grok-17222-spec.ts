@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [legend.column, legend.refresh.on-data-change]
+--- */
 // GROK-17222: legend item count must update under FP, in-viewer, and Pie/Bar click-to-filter.
 
 import {test, expect} from '@playwright/test';

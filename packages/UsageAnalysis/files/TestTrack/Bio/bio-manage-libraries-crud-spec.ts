@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.manage.libraries-app, bio.manage.libraries-app.tree-browser, bio.manage.match-with-library, bio.manage.monomers-view, bio.manage.standardize-library]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

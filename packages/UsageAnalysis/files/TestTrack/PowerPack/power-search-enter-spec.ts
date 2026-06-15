@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.search, powerpack.search.power, powerpack.search.power.dispatch, powerpack.search.power.init, powerpack.welcome.suggestion-nav, powerpack.welcome.view]
+--- */
 // GROK-18656: Power Search must null-safely handle Enter-key dispatch from the Welcome View search input
 // across all 8 dispatch paths; short queries like 'QA' made the dispatcher throw `reported error: null`.
 // Invariant: assert no new pageerror / "reported error: null" console error after each probe.

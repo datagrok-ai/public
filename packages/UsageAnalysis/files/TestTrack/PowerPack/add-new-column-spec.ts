@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
+--- */
 // Add New Column dialog smoke + autofill from Recent Activities (demog).
 //
 // Autocomplete-Enter-fires-OK hazard: the dialog only stops Enter-propagation when CM6's

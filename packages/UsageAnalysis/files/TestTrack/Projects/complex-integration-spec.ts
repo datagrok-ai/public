@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.add-link, projects.add-relation, projects.api.files.sync, projects.api.namespaces, projects.api.save, projects.upload]
+--- */
 // Multi-source integration: file + ad-hoc DB table + saved query + dataframe-output script in one project.
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.analyze.mmp, chem.analyze.mmp.editor, chem.analyze.mmp.top-menu, chem.analyze.mmp.viewer, chem.demos.mmpa]
+--- */
 // GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';

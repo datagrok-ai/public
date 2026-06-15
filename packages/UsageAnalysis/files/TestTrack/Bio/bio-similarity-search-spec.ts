@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.detector, bio.rendering, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.similarity-search]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

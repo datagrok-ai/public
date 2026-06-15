@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.overlay.screenshot, biostructure.overlay.selection-mode, biostructure.overlay.settings-info, biostructure.overlay.toggle-controls]
+--- */
 // Mol* viewport overlay buttons: Screenshot / Toggle Controls / Selection Mode / Settings.
 // Each overlay button only renders when .msp-plugin is mounted, so DOM-click assertions are gated on
 // that precondition (the engine doesn't init reliably in headless CI). Scenario 2 also asserts the

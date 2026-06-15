@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.viewer]
+--- */
 // CLAUDE-33: Molstar onViewRemoved must not throw "reading 'children'" when an unrelated view closes.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.api.viewBiostructure, biostructure.prop.binding-site-whole-residues, biostructure.prop.controls, biostructure.prop.data-json, biostructure.prop.layout, biostructure.prop.pdb, biostructure.prop.pdb-tag, biostructure.prop.show-mouseover-row-ligand, biostructure.prop.show-selected-rows-ligands]
+--- */
 // BiostructureViewer property surface: dataJson / pdb / pdbTag / Behaviour / Binding Site / Layout /
 // Controls. Properties are introspected via v.props.getProperties()/get()/setOptions() regardless of
 // WebGL state; canvas geometry and the "Parsed object is empty" console signature are not strict-

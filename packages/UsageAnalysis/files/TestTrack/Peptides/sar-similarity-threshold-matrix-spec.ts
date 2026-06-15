@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.compute.calculate-monomer-position-statistics, peptides.rendering.weblogo-header, peptides.util.get-selection-bitset, peptides.workflow.sar-dialog, peptides.workflow.start-analysis]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

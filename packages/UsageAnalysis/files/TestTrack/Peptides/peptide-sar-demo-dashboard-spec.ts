@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.app, peptides.demos.macromolecule-sar-fasta, peptides.lifecycle.init, peptides.model.add-sequence-space, peptides.workflow.start-analysis]
+--- */
 // Peptide SAR demo dashboard + Peptides app landing — entry-point smokes.
 // Scenario 1 invokes the FASTA SAR demo (Peptides:macromoleculeSarFastaDemo); Scenario 2 invokes
 // the landing View (Peptides:Peptides) and clicks its three demo buttons via real DOM.

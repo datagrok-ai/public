@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.compute, peptides.compute.calculate-cliffs-statistics, peptides.compute.calculate-cluster-statistics, peptides.compute.find-mutations, peptides.compute.get-summary-stats, peptides.compute.mutation-cliffs-worker, peptides.compute.parallel-mutation-cliffs, peptides.util.extract-col-info, peptides.util.mutation-cliffs-to-mask-info, peptides.viewers.mutation-cliffs]
+--- */
 // Mutation-cliffs compute pipeline: cliffs Map + per-position stats + per-cluster stats survive
 // end-to-end into SVM Mutation-Cliffs mode, SMC viewer, Export TableView, LST grid, Distribution accordion.
 

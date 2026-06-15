@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.search.substructure, chem.search.substructure.filter, chem.search.substructure.top-menu, chem.search.use-as-filter, chem.sketcher]
+--- */
 // SR-DEFERRED:
 //  - Block 2 step 3 (right-click cell + Current Value > Use as filter): canvas-rendered
 //    cell context menu — substituted with fg.updateOrAdd semantic.

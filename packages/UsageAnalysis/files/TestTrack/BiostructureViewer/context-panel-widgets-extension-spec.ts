@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.panel.link-molecule-column, biostructure.panel.pdb-file-info, biostructure.panel.pdb-info, biostructure.panel.prolif, biostructure.panel.structure-3d]
+--- */
 // Context-panel widgets: 3D Structure / PDB Information (Molecule3D + PDB_ID) / ProLIF (3 gated
 // registrations) / Link With Molecule Column. Panes are surfaced via grok.shell.o =
 // SemanticValue.fromTableCell(cell); accordion headers ([name="div-section--..."]) expand on click.

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.db-explorer, powerpack.db-explorer.config-wrapper, powerpack.db-explorer.run-enrichment, powerpack.db-explorer.run-enrichment-from-config, powerpack.db-explorer.setup-global, powerpack.db-explorer.setup-query-cell-handler]
+--- */
 // PowerPack DB-Explorer enrichment create/edit/apply/remove against System:Datagrok (Postgres metadata DB).
 //
 // GROK-20175: enrichment join fails with "operator does not exist: uuid = character varying" — no columns

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [legend.column, legend.show-main-item-icons]
+--- */
 // GROK-19083: legend marker entries must react to deselecting markers on the host viewer.
 
 import {test, expect} from '@playwright/test';

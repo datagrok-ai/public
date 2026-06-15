@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.sketcher, chem.sketcher.backend-switch, chem.sketcher.chemdraw, chem.sketcher.copy-as, chem.sketcher.hamburger-menu, chem.sketcher.ketcher, chem.sketcher.molecular-input, chem.sketcher.ocl, chem.sketcher.roundtrip]
+--- */
 // One persistent sketcher panel, backend switched in-place via the hamburger menu
 // (OpenChemLib → Ketcher → ChemDraw). Each backend runs the shared C1-C8 battery:
 //   C1 SMILES round-trip + no-"undefined" guard (GROK-12685); C2 widget persists (GROK-16340);

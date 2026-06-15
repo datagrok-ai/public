@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.ngl-viewer, biostructure.prop.ligand-column, biostructure.viewer]
+--- */
 // GROK-17967: Mol* (Biostructure) and NGL viewers must agree on multi-ligand state. Asserted via the
 // JS property contract (same wired ligandColumnName + showSelectedRowsLigands + shared selection count
 // on both engines) rather than a canvas pixel-diff. Fixture: dock.csv (multi-row 'ligand' column).

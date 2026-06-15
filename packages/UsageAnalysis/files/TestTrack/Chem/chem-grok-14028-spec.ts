@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.actions.copy-smiles, chem.search.substructure, chem.search.substructure.filter, chem.sketcher]
+--- */
 // GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.api.namespaces, projects.api.save, projects.move.commit, projects.move.move-entity]
+--- */
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

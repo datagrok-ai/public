@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.add-link, projects.add-relation, projects.api.save, projects.shell.open, projects.shell.share-via-context-menu]
+--- */
 // UI-driven Save Project mode chooser: 4 sub-flows (original / copy+link / copy+clone / PVC) + Step 5 re-share.
 // GROK-19750: after Save-Copy-with-Link the original project's table must still re-materialize on reopen.
 import {test, expect} from '@playwright/test';

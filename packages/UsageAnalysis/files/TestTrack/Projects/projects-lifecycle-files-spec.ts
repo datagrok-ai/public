@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.api.files.sync, projects.api.get-by-id, projects.api.save, projects.shell.share-via-context-menu, projects.upload]
+--- */
 // File-source lifecycle: open, save with provenance, reopen-verify, share, rename, delete.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';

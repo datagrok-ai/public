@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.lifecycle.init, bio.rendering, bio.rendering.fasta]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

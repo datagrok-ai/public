@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
+--- */
 // Add New Column functions-panel sorting: by type (column select), by name, sticky-sort.
 //
 // Load-bearing facts:

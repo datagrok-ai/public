@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.filter, chem.analyze.scaffold-tree.viewer, chem.search.substructure, chem.search.substructure.api, chem.sketcher.cell-editor]
+--- */
 // GROK-12758: Scaffold Tree node Edit→CANCEL then per-node filter checkbox must not corrupt substructure-search state.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';

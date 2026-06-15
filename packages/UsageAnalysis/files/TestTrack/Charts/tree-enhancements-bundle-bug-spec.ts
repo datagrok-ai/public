@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [charts.tree, charts.tree.font-size, charts.tree.include-nulls, charts.tree.layout, charts.tree.on-click, charts.tree.orient, charts.tree.show-counts]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

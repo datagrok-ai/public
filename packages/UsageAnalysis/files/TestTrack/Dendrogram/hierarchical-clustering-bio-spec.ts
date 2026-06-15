@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [dendrogram.api.tree-helper.calc-distance-matrix, dendrogram.api.tree-helper.cut-tree-to-grid, dendrogram.clustering.assign-clusters-dialog, dendrogram.clustering.dialog, dendrogram.clustering.inject-tree-for-grid, dendrogram.clustering.menu.bio]
+--- */
 // Bio Hierarchical Clustering on FASTA_PT_activity.csv (99 rows, sequence col = Macromolecule).
 // The bio leaf auto-defaults Features to the sequence column; Levenshtein build path.
 // Clusters→Threshold binary search is inexact, so assert categories.length > 0 (not == requested).

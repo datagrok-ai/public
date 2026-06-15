@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.rendering.draw-logo-in-bounds, peptides.rendering.invariant-map-cell, peptides.rendering.mutation-cliffs-cell, peptides.tooltips, peptides.tooltips.show-tooltip, peptides.tooltips.show-tooltip-at, peptides.util.highlight-monomer-position, peptides.viewers.monomer-position]
+--- */
 // MonomerPosition hover tooltip — GROK-15934 regression: no null-receiver on hover across
 // state mutations (SVM cell hovers + main-grid WebLogo header hovers, then mode switch /
 // weblogo selection sync / Settings round-trip). Hovers use page.mouse.move() (CDP-trusted) —

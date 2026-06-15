@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.analyze.sequence-space.transform, bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.rendering, bio.transform.convert-notation, bio.transform.convert-notation.action]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

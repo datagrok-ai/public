@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [legend.allow-item-coloring, legend.item.color-picker, legend.use-custom-color-coding]
+--- */
 // Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
 
 import {test, expect} from '@playwright/test';

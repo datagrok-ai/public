@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [charts.echart-base, charts.sunburst, charts.sunburst.include-nulls, charts.sunburst.inherit-from-grid, charts.sunburst.title]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

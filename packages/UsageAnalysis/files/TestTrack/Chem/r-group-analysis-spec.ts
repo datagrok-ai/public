@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.decomposition, chem.analyze.r-groups.top-menu, chem.sketcher]
+--- */
 // Paired scenario: r-group-analysis.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';

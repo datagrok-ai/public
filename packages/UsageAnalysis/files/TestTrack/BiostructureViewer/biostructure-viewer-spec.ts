@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [biostructure.data-provider.rcsb-mmcif, biostructure.file-open.importPdb, biostructure.overlay.reset-camera, biostructure.prop.binding-site-radius, biostructure.prop.biostructure-data-provider, biostructure.prop.biostructure-id-column, biostructure.prop.ligand-column, biostructure.prop.representation, biostructure.prop.show-binding-site, biostructure.prop.show-current-row-ligand, biostructure.top-menu.fetch-pdb-sequences, biostructure.viewer, biostructure.viewer.add-via-dropdown, biostructure.viewer.settings-panel, biostructure.viewport-context-menu.download-cif, biostructure.viewport-context-menu.download-pdb]
+--- */
 // BiostructureViewer happy-path smoke. File-handler routing is verified via DG.Func.find registry
 // probes (no Mol* engine init, which surfaces WebGL noise in CI). Mol*-engine-dependent assertions
 // (Reset Camera, viewport context menu) are gated on .msp-plugin / .msp-viewport being present.

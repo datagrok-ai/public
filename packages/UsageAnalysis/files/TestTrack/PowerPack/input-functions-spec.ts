@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
+--- */
 import {test, expect, Page, Locator} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

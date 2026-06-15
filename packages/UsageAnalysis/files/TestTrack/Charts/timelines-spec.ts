@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [charts.timelines, charts.timelines.color-column, charts.timelines.end-column, charts.timelines.legend-visibility, charts.timelines.split-by-column, charts.timelines.start-column]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import * as v from '../helpers/viewers';

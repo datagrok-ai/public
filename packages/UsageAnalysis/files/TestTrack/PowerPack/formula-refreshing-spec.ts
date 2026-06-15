@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [powerpack.dialogs, powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func, powerpack.dialogs.prepare-add-column-call, powerpack.formula.is-formula-column, powerpack.formula.widget]
+--- */
 // GROK-17109: 3-step calc-column chain (Weight2→Weight3→Weight4) + Formula info panel edits +
 // save+reopen persistence of formula tags.
 //

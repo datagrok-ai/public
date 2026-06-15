@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [peptides.viewers.monomer-position, peptides.viewers.sar-base, peptides.viewers.sar-base.export-invariant-map, peptides.workflow.start-analysis]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

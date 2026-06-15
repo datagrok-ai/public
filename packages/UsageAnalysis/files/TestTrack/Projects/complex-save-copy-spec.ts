@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.api.save]
+--- */
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

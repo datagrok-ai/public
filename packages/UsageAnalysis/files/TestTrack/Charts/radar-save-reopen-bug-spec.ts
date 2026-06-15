@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [charts.echart-base.table, charts.radar]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

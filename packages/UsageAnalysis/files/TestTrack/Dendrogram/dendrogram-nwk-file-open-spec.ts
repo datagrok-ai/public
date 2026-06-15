@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [dendrogram.api.tree-helper.newick-to-df, dendrogram.fileviewer.newick, dendrogram.viewer.dendrogram-app]
+--- */
 // The registered fileHandler function is Dendrogram:importNewick (the @fileHandler `name:`
 // importNwk is only the extension key); it returns [] because DendrogramApp opens its own
 // TableView via grok.shell.addTableView. previewNewick needs a server-resident FileInfo from

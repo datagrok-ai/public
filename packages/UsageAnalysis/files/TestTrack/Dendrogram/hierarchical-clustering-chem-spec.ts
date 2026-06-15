@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [dendrogram.clustering.dialog, dendrogram.clustering.inject-tree-for-grid, dendrogram.clustering.menu.chem]
+--- */
 // Chem Hierarchical Clustering on mol1K.csv (molecule col = Molecule); Features defaults to molecule.
 // SR-01: the non-monotonic tree shape is a canvas-pixel property, not Playwright-assertable; full
 // distance × linkage coverage lives in the sibling apitest. SR-03: centroid + molecule features

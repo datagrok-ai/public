@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.search.subsequence, bio.search.subsequence.editor, bio.search.subsequence.filter, bio.search.subsequence.top-menu]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

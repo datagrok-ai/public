@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [sequencetranslator.api.translate-oligonucleotide-sequence, sequencetranslator.api.validate-sequence, sequencetranslator.notation-provider, sequencetranslator.notation-provider.apply-cyclized, sequencetranslator.notation-provider.refine, sequencetranslator.polytool.combine-sequences-top-menu, sequencetranslator.polytool.convert-top-menu]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

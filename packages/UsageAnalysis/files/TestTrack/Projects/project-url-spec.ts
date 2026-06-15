@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.shell.open, projects.url-params.apply, projects.url-params.build-share-link, projects.view.browse]
+--- */
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

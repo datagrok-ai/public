@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.editor, bio.analyze.activity-cliffs.top-menu, bio.analyze.composition, bio.analyze.sequence-space, bio.analyze.sequence-space.editor, bio.analyze.sequence-space.top-menu]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
