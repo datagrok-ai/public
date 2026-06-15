@@ -207,6 +207,39 @@
   justify-content: space-between;
 }
 
+.chem-similarity-action-group {
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.chem-similarity-action-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--grey-4);
+  padding: 0;
+}
+
+.chem-similarity-action-btn:hover {
+  background-color: var(--steel-1);
+}
+
+.chem-similarity-action-btn.active {
+  color: var(--blue-1, #1f74c4);
+  background-color: var(--blue-2, #e9f3fc);
+}
+
+.chem-similarity-action-btn.chem-similarity-action-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .chem-similarity-prop-label {
   width: 75%;
   margin-left: 5px;

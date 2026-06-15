@@ -9,6 +9,8 @@ import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
 
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
+// Shared default cap (kept small — the diversity viewer's selection is O(n^2)). The similarity
+// viewer raises its own `limit` property max to MAX_LIMIT_SIMILARITY in its constructor.
 export const MAX_LIMIT = 50;
 export enum RowSourceTypes {
   All = 'All',
@@ -40,12 +42,18 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   isComputing = false;
   rowSource: string;
   error = '';
+  /** When set, the debounced onFilterChanged handler skips re-rendering.
+   * Used by the similarity filter toggle to avoid a feedback loop when it
+   * applies its own filter via onRowsFiltering (see ChemSimilarityViewer). */
+  protected _suppressFilterRender = false;
 
   constructor(name: string, col?: DG.Column) {
     super();
-    this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
-    this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
-    this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
+    this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0],
+      {choices: this.fingerprintChoices, category: 'Similarity search'});
+    this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT, category: 'Similarity search'});
+    this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0],
+      {choices: CHEM_SIMILARITY_METRICS, category: 'Similarity search'});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.addProperty('moleculeColumnName', DG.TYPE.COLUMN, '', {semType: DG.SEMTYPE.MOLECULE});
@@ -83,8 +91,11 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) =>
           await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
-        .subscribe(async (_: any) =>
-          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
+        .subscribe(async (_: any) => {
+          if (this._suppressFilterRender)
+            return;
+          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected);
+        }));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
@@ -106,8 +117,9 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       const col = this.dataFrame.col(property.get(this));
       this.moleculeColumn = col;
     }
-    if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
-      this.limit = MAX_LIMIT;
+    // limit clamp removed — the property `max` enforces the cap (MAX_LIMIT = 50 for the diversity
+    // viewer; the similarity viewer raises its own to MAX_LIMIT_SIMILARITY), and `cutoff` is the
+    // primary driver for how many similar molecules are shown.
     if (property.name === 'moleculeProperties') {
       this.debouncedRender(false);
       return;
@@ -121,9 +133,13 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         grok.shell.windows.showProperties = true;
       grok.shell.o = object;
     }, 'Distance metric and fingerprint', '');
+    metricsButton.classList.add('chem-similarity-metrics-link');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
-    if (this.metricsDiv!.children.length > 1)
-      this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
+    // Locate the previous link by class (not by child index) so that any action
+    // icons injected into metricsDiv are not clobbered when this is refreshed.
+    const existingLink = this.metricsDiv!.querySelector('.chem-similarity-metrics-link');
+    if (existingLink)
+      this.metricsDiv!.removeChild(existingLink);
     this.metricsDiv!.appendChild(metricsButton);
   }
 
