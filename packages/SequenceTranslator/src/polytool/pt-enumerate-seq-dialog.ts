@@ -549,6 +549,10 @@ async function getPolyToolEnumerateDialog(
 
     inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
     // inputs.macromolecule.root.style.setProperty('max-height', '300px', 'important');
+    // This dialog wants the editor to FILL the flex-allocated pane (the input's
+    // default is now a fixed 250×250 box), so opt the editor host into fill.
+    inputs.macromolecule.getInput().style.setProperty('width', '100%', 'important');
+    inputs.macromolecule.getInput().style.setProperty('height', '100%', 'important');
 
     // === VIEW UPDATE HELPERS ===
 

@@ -68,8 +68,13 @@ category('PolyTool: Enumerate interaction', () => {
     });
     document.body.appendChild(root);
     const host = (input as any).viewer.host as HTMLElement;
-    // Render the HELM, then pin a deterministic surface size (the input's own
-    // ResizeObserver-driven sizing is async and would otherwise race the test).
+    // The input host now defaults to a fixed 250×250 box; pin it to W×H so the
+    // editor (driven by `onSizeChanged` from the host's own box) lays out at the
+    // size this test asserts against. `important` beats the widget's inline
+    // default; the explicit `setSize` paints immediately without waiting on the
+    // async ResizeObserver.
+    host.style.setProperty('width', `${W}px`, 'important');
+    host.style.setProperty('height', `${H}px`, 'important');
     input.stringValue = HELM;
     (input as any).viewer.editor.setSize(W, H);
     return {input, host, root, mol: input.molValue};
