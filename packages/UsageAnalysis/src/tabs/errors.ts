@@ -14,6 +14,27 @@ const filtersStyle = {
   columnNames: ['event_time', 'user', 'error_message', 'is_reported'],
 };
 
+const ERROR_BAR_COLOR = 0xFFD9534F;
+const SOURCE_BAR_COLOR = 0xFF5CB85C;
+
+function createCountBarChart(t: DG.DataFrame, splitColumnName: string, title: string, barColor: number): DG.Viewer {
+  return DG.Viewer.barChart(t, {
+    'valueColumnName': 'count',
+    'valueAggrType': 'sum',
+    'barSortType': 'by value',
+    'barSortOrder': 'desc',
+    'showValueAxis': false,
+    'showValueSelector': false,
+    'splitColumnName': splitColumnName,
+    'showCategoryValues': false,
+    'showCategorySelector': false,
+    'stackColumnName': '',
+    'showStackSelector': false,
+    'title': title,
+    'barColor': barColor,
+  });
+}
+
 export class ErrorsView extends UaView {
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -73,20 +94,7 @@ export class ErrorsView extends UaView {
         name: 'Top Errors',
         queryName: 'TopErrors',
         createViewer: (t: DG.DataFrame) => {
-          const viewer =  DG.Viewer.barChart(t, {
-            'valueColumnName': 'count',
-            'valueAggrType': 'sum',
-            'barSortType': 'by value',
-            'barSortOrder': 'desc',
-            'showValueAxis': false,
-            'showValueSelector': false,
-            'splitColumnName': 'error',
-            'showCategoryValues': false,
-            'showCategorySelector': false,
-            'stackColumnName': '',
-            'showStackSelector': false,
-            'title': 'Top errors'
-          });
+          const viewer = createCountBarChart(t, 'error', 'Top errors', ERROR_BAR_COLOR);
 
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
             const df: DG.DataFrame | undefined = errorViewer.viewer?.dataFrame;
@@ -102,15 +110,47 @@ export class ErrorsView extends UaView {
       }
     );
 
+    const topSources = new UaFilterableQueryViewer(
+      {
+        filterSubscription: this.uaToolbox.filterStream,
+        name: 'Top Source',
+        queryName: 'TopErrorSources',
+        createViewer: (t: DG.DataFrame) =>
+          createCountBarChart(t, 'error_source', 'Top source', SOURCE_BAR_COLOR),
+      }
+    );
+
+    const errorsSummary = new UaFilterableQueryViewer(
+      {
+        filterSubscription: this.uaToolbox.filterStream,
+        name: 'Errors Summary',
+        queryName: 'EventsSources',
+        processDataFrame: (t: DG.DataFrame) =>
+          t.clone(DG.BitSet.create(t.rowCount, (i) => t.getCol('source').get(i) === 'error')),
+        createViewer: (t: DG.DataFrame) => {
+          return DG.Viewer.lineChart(t, {
+            'xColumnName': 'time_start',
+            'yColumnNames': ['count'],
+            'showXSelector': false,
+            'showYSelectors': false,
+            'showAggrSelectors': false,
+            'showSplitSelector': false,
+            'chartTypes': ['Line Chart'],
+            'title': 'Errors Summary'
+          });
+        }
+      }
+    );
+
     errorViewer.root.classList.add('ui-panel');
-    this.viewers.push(errorViewer);
-    this.viewers.push(topErrors);
+    this.viewers.push(errorViewer, errorsSummary, topErrors, topSources);
     this.root.append(ui.splitV([
+      errorsSummary.root,
+      ui.box(ui.splitH([topErrors.root, topSources.root]), {style: {maxHeight: '250px'}}),
       ui.splitH([
         filters,
         errorViewer.root
-      ]),
-      ui.box(topErrors.root, {style: {maxHeight: '250px'}})
+      ])
     ]));
   }
 
