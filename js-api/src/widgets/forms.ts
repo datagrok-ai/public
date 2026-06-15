@@ -5,7 +5,7 @@
 
 import {toDart, toJs} from "../wrappers";
 import {Observable} from "rxjs";
-import {__obs, EventData, InputArgs, observeStream} from "../events";
+import {__obs, EventData, InputArgs, PropertyChangeArgs, observeStream} from "../events";
 import {Completer} from '../utils';
 import {FuncCall} from "../functions";
 import {IDartApi} from "../api/grok_api.g";
@@ -244,4 +244,11 @@ export class InputForm extends DartWrapper {
 
   /** Returns true if all inputs are valid. */
   get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
+
+  /** Runs validation across all inputs in the form. Returns true when every input is valid.
+   *  Also updates {@link isValid} and fires {@link onValidationCompleted}. */
+  validateInputs(): boolean { return api.grok_InputForm_ValidateInputs(this.dart); }
+
+  /** Fires when a property bound to the form via the property-grid path changes. */
+  get onFormPropertyChanged(): Observable<EventData<PropertyChangeArgs>> { return observeStream(api.grok_InputForm_OnFormPropertyChanged(this.dart)); }
 }

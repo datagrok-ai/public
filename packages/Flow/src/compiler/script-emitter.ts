@@ -171,6 +171,21 @@ function emitUtilityStep(step: CompiledStep): string | null {
     const exprs = names.map((n) => `${t}.col('${n}')`).join(', ');
     return `let ${step.variableName} = [${exprs}];`;
   }
+  case 'Select Table': {
+    // Resolve an open table by name, tolerating how it was registered: the
+    // exact name, a no-spaces variant, and a lower-camel variant; for each,
+    // try a shell table (tableByName) then a context variable (getVar). The
+    // first non-null wins.
+    const raw = String(step.properties['tableName'] ?? '');
+    const noSpaces = raw.replace(/ /g, '');
+    const lowerFirst = noSpaces.charAt(0).toLowerCase() + noSpaces.slice(1);
+    const names = Array.from(new Set([raw, noSpaces, lowerFirst]));
+    const expr = names.map((n) => {
+      const q = JSON.stringify(n);
+      return `grok.shell.tableByName(${q}) ?? grok.shell.getVar(${q})`;
+    }).join(' ?? ');
+    return `let ${step.variableName} = ${expr};`;
+  }
   case 'Add Table View': {
     const t = step.inputs.get('table') ?? 'undefined';
     return `let ${step.variableName} = grok.shell.addTableView(${t});`;
@@ -344,6 +359,20 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
         outputEntries.push(`'${inKey} (modified)': __ff_summarize(${inputExpr}, 'dataframe')`);
         break;
       }
+    }
+  }
+
+  // SetVar produces no output, but its `value` input is the stored value —
+  // surface it (labeled by the variable name) so clicking the node previews it
+  // (table → grid, column → sample, …) exactly like any output-bearing node.
+  if (node && node.dgFunc?.name?.toLowerCase() === 'setvar') {
+    const valueExpr = step.inputs.get('value');
+    if (valueExpr && valueExpr !== 'undefined') {
+      const varLabel = JSON.stringify(String(node.inputValues['variableName'] ?? 'value'));
+      const valueInput = (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)['value'];
+      const slotType = valueInput?.socket.dgType;
+      const typeArg = slotType && slotType !== 'dynamic' ? `, '${slotType}'` : '';
+      outputEntries.push(`${varLabel}: __ff_summarize(${valueExpr}${typeArg})`);
     }
   }
 

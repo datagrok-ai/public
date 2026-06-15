@@ -1,5 +1,39 @@
 # sci-comp changelog
 
+## Unreleased
+
+Statistics — simple linear regression primitive (NCA dose-proportionality / UC-03):
+
+* `stats.linearFit(x, y, {ciLevel})` — OLS fit of `y = intercept + slope·x` with
+  a Student-t slope confidence interval. Returns `{slope, intercept, slopeSe,
+  slopeCI, rSquared, df, n}`; default `ciLevel = 0.90` (Smith 1−2α). NaN pairs
+  are dropped; degenerate inputs return (not throw): zero x-spread → NaN slope,
+  `n = 2` (df 0) → slope defined but SE/CI NaN. Thin wrapper over the existing
+  OLS engine + `studentTInv` — no new numerical math.
+* `stats.oneWayAnova(values, groups)` — fixed-effects one-way ANOVA F-test
+  (`values ~ C(groups)`), the no-covariate complement to `runAncova`. Returns
+  `{fStatistic, dfBetween, dfWithin, pValue, groups, n}`; `null` on insufficient
+  data (`< 2` groups, `N ≤ k`, or zero within-group variation). NaN responses
+  dropped. Used for the secondary dose-normalized-AUC comparison (FR-412).
+* Internal: the normal-equations `fitOls` is lifted from `tests/ancova.ts` to a
+  shared `stats/internal/ols.ts` so ANCOVA and `linearFit` share one
+  implementation. ANCOVA output is byte-identical (regression suite unchanged).
+
+## 0.7.1 (2026-06-11)
+
+Non-Compartmental Analysis — bug fix (GROK-20219 / BUG-05):
+
+* `computeNca` now drops the **trailing run of non-positive (≤ 0) concentrations**
+  from the measurable profile. A trailing `conc = 0` is an unflagged below-LLOQ
+  washout sample (datasets that encode BLQ as `0` with no LLOQ/BLQ-flag column
+  yield an all-zeros `blqMask`). Previously such a point anchored `cLast = 0`,
+  which (a) forced `status = 'partial'` — withholding AUCinf/t½/CL/Vz — even
+  though λz was perfectly well-formed, and (b) inflated `AUClast` with a spurious
+  tail-to-zero trapezoid. Now matches PKNCA 0.12.1 `conc.blq` trailing-exclude
+  behaviour (verified on rat-IV R005/R013). **Embedded** zeros are unchanged
+  (PKNCA set-zero semantics; `lambdaZBestFit` already excludes `conc ≤ 0` from
+  the regression). Profiles without a trailing zero are byte-identical.
+
 ## 0.7.0 (2026-06-09)
 
 Non-Compartmental Analysis — FR-200 derived (moment) parameters:

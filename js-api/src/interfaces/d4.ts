@@ -506,6 +506,10 @@ export interface IScatterPlotSettings {
 
   showSizeSelector: boolean;
 
+  /// When a *Size* column is set, render rows with empty values using the
+  /// minimum marker size instead of hiding them.
+  showMarkersWithEmptySize: boolean;
+
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
@@ -1139,6 +1143,10 @@ export interface IBoxPlotSettings {
   showMouseOverPoint: boolean;
 
   showMouseOverRowGroup: boolean;
+
+  /// When true, selected points are highlighted using the selected rows color.
+  /// When false, selected points use their regular color coding.
+  showSelectedRows: boolean;
 
   statistics: Array<string>;
 
@@ -2137,6 +2145,10 @@ export interface ILineChartSettings {
   /// Example: "Split by" = "SEX" and you hover over the "Male" category in the filter.
   showMouseOverCategory: boolean;
 
+  /// When true, selected points and line segments are highlighted using the selected rows color.
+  /// When false, they keep their regular color coding.
+  showSelectedRows: boolean;
+
   overviewAggrType: string;
 
   /// Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/).
@@ -2847,6 +2859,10 @@ export interface IPcPlotSettings {
   /// Either all lines are shown or only current line, mouse over line, selected ones.
   showAllLines: boolean;
 
+  /// When true, selected lines are highlighted using the selected rows color.
+  /// When false, selected lines use their regular color coding.
+  showSelectedRows: boolean;
+
   /// Whether the in-chart filters are visible
   showFilters: boolean;
 
@@ -3323,6 +3339,10 @@ export interface IScatterPlot3dSettings {
   /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
+
+  /// When true, selected markers are highlighted using the selected rows color.
+  /// When false, selected markers use their regular color coding.
+  showSelectedRows: boolean;
 
   markerType: string;
 

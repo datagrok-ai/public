@@ -1,5 +1,15 @@
 import {PackageFunctions} from './package';
+import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import * as DG from 'datagrok-api/dg';
+import {runDiffStudioModel} from './ivp-runtime';
+//name: DiffStudio Facet
+//description: Faceted grid of line charts, one per output variable, for Diff Studio solutions
+//output: viewer result
+//meta.role: viewer
+export function _DiffStudioFacetViewer() {
+  return new DiffStudioFacetViewer();
+}
+
 
 //meta.role: init
 export async function init() : Promise<void> {
@@ -72,7 +82,6 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
 //editor: Compute2:RichFunctionViewEditor
-//sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
@@ -103,14 +112,6 @@ export async function solveODE(problem: string) : Promise<any> {
   return await PackageFunctions.solveODE(problem);
 }
 
-//name: PK-PD
-//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//tags: model
-//meta.icon: files/icons/pkpd.png
-export async function pkPdNew() : Promise<void> {
-  await PackageFunctions.pkPdNew();
-}
-
 //name: PK-PD Simulation Demo
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
 //output: dynamic result
@@ -118,14 +119,6 @@ export async function pkPdNew() : Promise<void> {
 //test: demoSimPKPD() //wait: 100 
 export async function demoSimPKPD() : Promise<any> {
   return await PackageFunctions.demoSimPKPD();
-}
-
-//name: Bioreactor
-//description: Controlled fab-arm exchange mechanism simulation
-//tags: model
-//meta.icon: files/icons/_bioreactor.png
-export async function BioreactorNew() : Promise<void> {
-  await PackageFunctions.BioreactorNew();
 }
 
 //name: Bioreactor Demo
@@ -137,26 +130,172 @@ export async function demoBioreactor() : Promise<any> {
   return await PackageFunctions.demoBioreactor();
 }
 
-//name: Acid Production
-//description: Gluconic acid (GA) production by Aspergillus niger modeling
-//tags: model
-//meta.icon: files/icons/ga-production.png
-export async function acidProduction() : Promise<void> {
-  await PackageFunctions.acidProduction();
-}
-
-//name: Pollution
-//description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
-//tags: model
-//meta.icon: files/icons/pollution.png
-export async function pollution() : Promise<void> {
-  await PackageFunctions.pollution();
-}
-
 //description: Run model with Diff Studio UI
 //input: string model 
 //input: int inputsTabDockRatio 
 //input: int graphsDockRatio 
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   await PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
+}
+
+//name: Acid Production
+//description: Gluconic acid (GA) production by Aspergillus niger modeling
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/ga-production.png
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/library/acid-production.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: double t0 = 0 {units: h; caption: initial; category: Misc} [Start of the process]
+//input: double t1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
+//input: double h = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simulation]
+//input: double X = 5 {units: kg/m³; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
+//input: double S = 150 {units: kg/m³; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
+//input: double O = 7 {units: kg/m³; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
+//input: double P = 0 {units: kg/m³; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
+//input: double overall = 100 {units: h; category: Durations; min: 100; max: 140} [Overall duration]
+//input: double muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
+//input: double alpha = 2.92 {category: Parameters} [Monod type model parameter]
+//input: double beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]
+//input: double gamma = 2.12 {category: Parameters} [Monod type model parameter]
+//input: double lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
+//input: double delta = 0.278 {category: Parameters} [Monod type model parameter]
+//input: double phi = 0.00487 {units: 1/h; category: Parameters} [Monod type model parameter]
+//input: double Ks = 130.9 {units: g/L; category: Parameters} [Monod type model parameter]
+//input: double Ko = 0.000363 {units: g/L; category: Parameters} [Monod type model parameter]
+//input: double Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+//input: double Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
+//output: dataframe df {caption: Acid Production; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
+export async function ivpModel_Acid_Production(t0: number, t1: number, h: number, X: number, S: number, O: number, P: number, overall: number, muM: number, alpha: number, beta: number, gamma: number, lambda: number, delta: number, phi: number, Ks: number, Ko: number, Kla: number, Cod: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/acid-production.ivp', {_t0: t0, _t1: t1, _h: h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod});
+}
+
+//name: Bioreactor
+//description: Bioreactor simulation
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/_bioreactor.png
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/library/bioreactor.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: string mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv"); propagateChoice: all} [Reactions flow mode]
+//input: double t0 = 0 {units: min; caption: Initial; category: Time}                       [Initial time of simulation]
+//input: double t1 = 1000 {units: min; caption: Final;   category: Time; min: 500; max: 1000}  [Final time of simulation]
+//input: double h = 1 {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simulation]
+//input: double FFox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [FF oxidized]
+//input: double KKox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [KK oxidized]
+//input: double FFred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [FF reduced]
+//input: double KKred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [KK reduced]
+//input: double Ffree = 0 {units: mmol/L; category: Initial values}                                    [F free]
+//input: double Kfree = 0 {units: mmol/L; category: Initial values}                                    [K free]
+//input: double FKred = 0 {units: mmol/L; category: Initial values}                                    [FK reduced]
+//input: double FKox = 0 {units: mmol/L; category: Initial values}                                    [FK oxidized]
+//input: double MEAthiol = 15 {units: mmol/L; category: Initial values; min: 10;   max: 16}                [MEAthiol]
+//input: double CO2 = 0.12 {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
+//input: double yO2P = 0.209 {units: atm;    category: Initial values}                                    [Atm headspace]
+//input: double CYST = 0 {units: mmol/L; category: Initial values}                                    [Cystamine]
+//input: double VL = 7.2 {units: L;      category: Initial values}                                    [Liquid volume]
+//input: double qin = 1 {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 1.5}            [Gas to headspace]
+//input: double yO2in = 0.21 {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
+//input: double T = 300 {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
+//input: double P = 1 {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
+//input: double switchTime = 135 {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
+//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
+export async function ivpModel_Bioreactor(mode: string, t0: number, t1: number, h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, CO2: number, yO2P: number, CYST: number, VL: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/bioreactor.ivp', {_t0: t0, _t1: t1, _h: h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL, qin, yO2in, T, P, switchTime});
+}
+
+//name: PK-PD
+//description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/pkpd.png
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/library/pk-pd.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: int count = 10 {caption: count; category: Dosing; min: 1; max: 20} [Number of doses]
+//input: double t0 = 0 {units: h; caption: begin; category: Dosing; min: 0; max: 1} [Begin of dosing interval]
+//input: double t1 = 12 {units: h; caption: end; category: Dosing; min: 5; max: 15} [End of dosing interval]
+//input: double h = 0.1 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simulation]
+//input: double depot = 0 {category: Initial values}
+//input: double centr = 0 {category: Initial values} [Central]
+//input: double peri = 0 {category: Initial values} [Peripheral]
+//input: double eff = 0.2 {category: Initial values} [Effective compartment rate]
+//input: double dose = 10000 {category: Dosing; min: 1E3; max: 2E4; step: 1E3} [Dosage]
+//input: double KA = 0.3 {caption: rate constant; category: Parameters; min: 0.1; max: 1}
+//input: double CL = 2 {caption: clearance; category: Parameters; min: 1; max: 5}
+//input: double V2 = 4 {caption: central volume; category: Parameters; min: 1; max: 10} [Central compartment volume]
+//input: double Q = 1 {caption: inter rate; category: Parameters; min: 0.1; max: 1} [Intercompartmental rate]
+//input: double V3 = 30 {caption: peri volume; category: Parameters; min: 20; max: 40} [Peripheral compartment volume]
+//input: double EC50 = 8 {caption: effect; category: Parameters; min: 1; max: 10}
+//input: double Kin = 0.2 {caption: Kin; category: Parameters; min: 0.1; max: 0.5} [The first-order production constant]
+//input: double Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
+//output: dataframe df {caption: PK-PD; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
+export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: number, depot: number, centr: number, peri: number, eff: number, dose: number, KA: number, CL: number, V2: number, Q: number, V3: number, EC50: number, Kin: number, Kout: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/pk-pd.ivp', {_count: count, _t0: t0, _t1: t1, _h: h, depot, centr, peri, eff, dose, KA, CL, V2, Q, V3, EC50, Kin, Kout});
+}
+
+//name: Pollution
+//description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/pollution.png
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/library/pollution.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: double t0 = 0 {units: min; caption: Initial; category: Time; min: 0; max: 0.9} [Initial time of simulation]
+//input: double t1 = 60 {units: min; caption: Final; category: Time; min: 1; max: 100; step: 1} [Final time of simulation]
+//input: double h = 0.1 {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simulation]
+//input: double y1 = 0 {caption: NO2; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of NO2]
+//input: double y2 = 0.2 {caption: NO; category: Initial concentrations; min: 0; max: 0.4} [Initial concentration of NO]
+//input: double y3 = 0 {caption: O3P; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of O3P]
+//input: double y4 = 0.04 {caption: O3; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of O3]
+//input: double y5 = 0 {caption: HO2; category: Initial concentrations} [Initial concentration of HO2]
+//input: double y6 = 0 {caption: OH; category: Initial concentrations} [Initial concentration of OH]
+//input: double y7 = 0.1 {caption: HCHO; category: Initial concentrations} [Initial concentration of HCHO]
+//input: double y8 = 0.3 {caption: CO; category: Initial concentrations} [Initial concentration of CO]
+//input: double y9 = 0.01 {caption: ALD; category: Initial concentrations} [Initial concentration of ALD]
+//input: double y10 = 0 {caption: MEO2; category: Initial concentrations} [Initial concentration of MEO2]
+//input: double y11 = 0 {caption: C2O3; category: Initial concentrations} [Initial concentration of C2O3]
+//input: double y12 = 0 {caption: CO2; category: Initial concentrations} [Initial concentration of CO2]
+//input: double y13 = 0 {caption: PAN; category: Initial concentrations} [Initial concentration of PAN]
+//input: double y14 = 0 {caption: CH3O; category: Initial concentrations} [Initial concentration of CH3O]
+//input: double y15 = 0 {caption: HNO3; category: Initial concentrations} [Initial concentration of HNO3]
+//input: double y16 = 0 {caption: O1D; category: Initial concentrations} [Initial concentration of O1D]
+//input: double y17 = 0.007 {caption: SO2; category: Initial concentrations} [Initial concentration of SO2]
+//input: double y18 = 0 {caption: SO4; category: Initial concentrations} [Initial concentration of SO4]
+//input: double y19 = 0 {caption: NO3; category: Initial concentrations} [Initial concentration of NO3]
+//input: double y20 = 0 {caption: N2O5; category: Initial concentrations} [Initial concentration of N2O5]
+//input: double k1 = 0.35 {category: Reaction constants} [NO2 -> NO + O3P]
+//input: double k2 = 26.6 {category: Reaction constants} [NO + O3 -> NO2]
+//input: double k3 = 12300 {category: Reaction constants} [HO2 + NO -> NO2 + OH]
+//input: double k4 = 0.00086 {category: Reaction constants} [HCHO -> 2 HO2 + CO]
+//input: double k5 = 0.00082 {category: Reaction constants} [HCHO -> CO]
+//input: double k6 = 15000 {category: Reaction constants} [HCHO + OH -> HO2 + CO]
+//input: double k7 = 0.00013 {category: Reaction constants} [ALD -> MEO2 + HO2 + CO]
+//input: double k8 = 24000 {category: Reaction constants} [ALD + OH -> C2O3]
+//input: double k9 = 16500 {category: Reaction constants} [C2O3 + NO-> NO2 + MEO2 + CO2]
+//input: double k10 = 9000 {category: Reaction constants} [C2O3 + NO2-> PAN]
+//input: double k11 = 0.022 {category: Reaction constants} [PAN-> CH3O + NO2]
+//input: double k12 = 12000 {category: Reaction constants} [MEO2 + NO-> CH3O + NO2]
+//input: double k13 = 1.88 {category: Reaction constants} [CH3O-> HCHO + HO2]
+//input: double k14 = 16300 {category: Reaction constants} [NO2 + OH -> HNO3]
+//input: double k15 = 4800000 {category: Reaction constants} [O3P -> O3]
+//input: double k16 = 0.00035 {category: Reaction constants} [O3 -> O1D]
+//input: double k17 = 0.0175 {category: Reaction constants} [O3 -> O3P]
+//input: double k18 = 100000000 {category: Reaction constants} [O1D -> 2 OH]
+//input: double k19 = 444000000000 {category: Reaction constants} [O1D -> O3P]
+//input: double k20 = 1240 {category: Reaction constants} [SO2 + OH -> SO4 + HO2]
+//input: double k21 = 2.1 {category: Reaction constants} [NO3 -> NO]
+//input: double k22 = 5.78 {category: Reaction constants} [NO3 -> NO2 + O3P]
+//input: double k23 = 0.0474 {category: Reaction constants} [NO2 + O3 -> NO3]
+//input: double k24 = 1780 {category: Reaction constants} [NO3 + NO2 -> N2O5]
+//input: double k25 = 3.12 {category: Reaction constants} [N2O5 -> NO3 + NO2]
+//output: dataframe df {caption: Pollution; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
+export async function ivpModel_Pollution(t0: number, t1: number, h: number, y1: number, y2: number, y3: number, y4: number, y5: number, y6: number, y7: number, y8: number, y9: number, y10: number, y11: number, y12: number, y13: number, y14: number, y15: number, y16: number, y17: number, y18: number, y19: number, y20: number, k1: number, k2: number, k3: number, k4: number, k5: number, k6: number, k7: number, k8: number, k9: number, k10: number, k11: number, k12: number, k13: number, k14: number, k15: number, k16: number, k17: number, k18: number, k19: number, k20: number, k21: number, k22: number, k23: number, k24: number, k25: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/pollution.ivp', {_t0: t0, _t1: t1, _h: h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25});
 }

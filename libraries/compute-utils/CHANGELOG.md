@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RFV: map the `diffstudiofacet` viewer type to the label `DiffStudio Facet` in `viewerTypesMapping`, so the facet viewer tab shows a proper name
 * GROK-14159/GROK-14160: Use grok.dapi.groups.currentUserGroups()/requestMembership() when available, falling back to raw fetch() on older API versions
 
 ## 1.46.2 (2026-06-05)

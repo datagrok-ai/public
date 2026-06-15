@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.6.3 (2026-06-12)
+
+Exposed the facet plot (one line chart per output variable) as a registered **DiffStudio Facet** viewer, so Rich Function View renders it for multi-variable models — previously it existed only inside the Diff Studio app.
+
 ## 1.6.1 (2026-05-15)
 
 Update info for Bioreactor and PK-PD demos
