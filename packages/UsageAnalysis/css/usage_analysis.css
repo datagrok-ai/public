@@ -25,6 +25,14 @@
   margin-left: 7px !important;
 }
 
+.ua-errors-filters {
+  max-width: 250px;
+}
+
+.ua-errors-reports {
+  align-items: center;
+}
+
 .ua-close-button {
   float: right;
   font-weight: 300 !important;

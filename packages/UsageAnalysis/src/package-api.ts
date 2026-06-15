@@ -100,7 +100,7 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:EventErrors', { date });
   }
 
-  export async function reportsCount(date: string , event_id: string ): Promise<number> {
+  export async function reportsCount(date: string , event_id: string ): Promise<{count: number, report_number: number}> {
     return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
   }
 
