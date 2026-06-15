@@ -167,7 +167,9 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       const bounds: CanvasBounds = {x: bx, y: by, width: w * dpr, height: h * dpr};
 
       // No backColor → the grid keeps its own cell background (selection, etc.).
-      const res = svc.renderToCanvas(g, helm, bounds);
+      // maxScale: Infinity → the drawing scales UP to fill the cell (hwe's
+      // default caps at native size, leaving small molecules tiny in big cells).
+      const res = svc.renderToCanvas(g, helm, bounds, {maxScale: Infinity, showIds: true});
 
       const aux: HelmCellAux = {
         molView: buildHelmMolView(res.mol) as unknown as HelmMol,
