@@ -31,19 +31,46 @@ export const defaultLaunchParameters: utils.Indexable = {
 };
 
 export async function getToken(url: string, key: string) {
-  let response;
-  try {
-    response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
-  } catch (error: any) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${url}`);
-    throw error;
+  // Retry transient failures: on a freshly-provisioned CI stack the datlas behind nginx may not
+  // be serving /api as JSON yet, so the dev-key exchange briefly returns an HTML error page
+  // (`Unexpected token '<'` from response.json()) or the node is momentarily unreachable. These
+  // are stack-readiness races, not bad credentials — re-poll for ~45s before giving up. A real
+  // auth failure (valid JSON with isSuccess=false) is returned immediately, no retry.
+  const maxAttempts = 15;
+  const delayMs = 3000;
+  let lastError: any;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+      const text = await response.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // Non-JSON body (HTML error page) => stack not ready yet; retry.
+        lastError = new Error(`non-JSON response from ${url}/users/login/dev (status ${response.status})`);
+        if (attempt < maxAttempts) {
+          color.warn(`Playwright: token exchange not ready (attempt ${attempt}/${maxAttempts}), retrying...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+        throw lastError;
+      }
+      if (json.isSuccess == true)
+        return json.token;
+      // Valid JSON but login rejected => definitive failure, do not retry.
+      throw new Error('Unable to login to server. Check your dev key');
+    } catch (error: any) {
+      if (error?.message === 'Unable to login to server. Check your dev key')
+        throw error;
+      lastError = error;
+      if (utils.isConnectivityError(error))
+        color.warn(`Playwright: server not reachable yet (attempt ${attempt}/${maxAttempts}): ${url}`);
+      if (attempt < maxAttempts)
+        await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
-  const json = await response.json();
-  if (json.isSuccess == true)
-    return json.token;
-  else
-    throw new Error('Unable to login to server. Check your dev key');
+  throw lastError ?? new Error(`Unable to exchange dev key for token at ${url}`);
 }
 
 export async function isPackageOnServer(hostKey: string, packageName: string): Promise<boolean> {

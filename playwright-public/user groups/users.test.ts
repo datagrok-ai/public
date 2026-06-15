@@ -38,6 +38,8 @@ import {
   ensureUserSeeded,
   ensureGroupSeeded,
   ensureRoleSeeded,
+  userDisplay,
+  USER_LAST_NAME,
   watchErrors,
   expectNoErrors,
 } from './helpers';
@@ -47,7 +49,10 @@ import {
 // shared targets through the UI in `beforeAll`. Same case IDs as the dev set.
 const STAMP = Date.now();
 // The user every management case (favorites, memberships, block) acts on. Seeded once, reused.
+// TARGET_USER is the login (used for search + API); TARGET_NAME is the gallery/card display label
+// (friendlyName = "<login> QA"), used wherever a card is matched exactly.
 const TARGET_USER = 'opavlenko45';
+const TARGET_NAME = userDisplay(TARGET_USER);
 // Group + role used by the membership-editing case (Users-18/19); seeded as shared targets.
 const TEST_GROUP = 'QA';
 const TEST_ROLE = 'QA Reviewer';
@@ -145,12 +150,14 @@ test.describe('Users View (Users-*)', () => {
     const login = `ci_user_${STAMP}`;
     const before = await readGalleryCount(page);
 
-    // No first/last name — the gallery card label is then the login, so the search below matches it.
-    await createUserViaUI(page, { email: `${login}@autotest.datagrok.ai`, login });
+    await createUserViaUI(page, {
+      email: `${login}@autotest.datagrok.ai`, login, firstName: login, lastName: USER_LAST_NAME,
+    });
 
     await openPlatformView(page, 'Users');
-    await searchAndWaitCard(page, 'users', login);
-    await expect(galleryCardByName(page, login), 'created user should appear in the gallery').toBeVisible();
+    // Search by login; the card's label is the display name "<login> QA".
+    await searchAndWaitCard(page, 'users', login, userDisplay(login));
+    await expect(galleryCardByName(page, userDisplay(login)), 'created user should appear in the gallery').toBeVisible();
 
     await clearGallerySearch(page, 'users');
     expect((await readGalleryCount(page)).total, 'user count should grow').toBeGreaterThanOrEqual(before.total + 1);
@@ -179,7 +186,7 @@ test.describe('Users View (Users-*)', () => {
   });
 
   test('Users-14 — user context menu items', async ({ page }) => {
-    await openCardContextMenu(page, TARGET_USER);
+    await openCardContextMenu(page, TARGET_NAME);
     for (const name of ['Details', 'Chat', 'Block', 'Groups...', 'Roles...', 'Add to favorites'])
       await expect(contextMenuItemByName(page, name), `menu item "${name}" should be present`)
         .toBeVisible({ timeout: 5_000 });
@@ -189,7 +196,7 @@ test.describe('Users View (Users-*)', () => {
   // Users-15 + Users-17: single-click populates the Context Panel; double-click opens the profile view.
   test('Users-15/17 — user profile and Context Panel info panes', async ({ page }) => {
     const sink = watchErrors(page);
-    const card = galleryCardByName(page, TARGET_USER);
+    const card = galleryCardByName(page, TARGET_NAME);
     await card.waitFor({ state: 'visible', timeout: 15_000 });
 
     await card.click();
@@ -209,17 +216,17 @@ test.describe('Users View (Users-*)', () => {
     const sink = watchErrors(page);
 
     // Pre-clean: if already a favorite, remove it first.
-    await openCardContextMenu(page, TARGET_USER);
+    await openCardContextMenu(page, TARGET_NAME);
     if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
       await contextMenuItem(page, 'Remove from favorites').click();
       await page.waitForTimeout(800);
     } else await closeMenu(page);
 
     // Add, then confirm the menu flips to "Remove from favorites".
-    await openCardContextMenu(page, TARGET_USER);
+    await openCardContextMenu(page, TARGET_NAME);
     await contextMenuItemByName(page, 'Add to favorites').click();
     await page.waitForTimeout(1000);
-    await openCardContextMenu(page, TARGET_USER);
+    await openCardContextMenu(page, TARGET_NAME);
     await expect(contextMenuItem(page, 'Remove from favorites'),
       'after adding, "Remove from favorites" must be present').toBeVisible({ timeout: 5_000 });
 
@@ -233,11 +240,11 @@ test.describe('Users View (Users-*)', () => {
   // MembershipEditor, then revert — net membership unchanged.
   test('Users-18/19 — edit user group memberships and roles (existing user, reverted)', async ({ page }) => {
     // --- Groups ---
-    await openUserMembershipDialog(page, TARGET_USER, 'Groups...');
+    await openUserMembershipDialog(page, TARGET_NAME, 'Groups...');
     await addMembershipBySearch(page, TEST_GROUP);
     await saveDialog(page);
     try {
-      await openUserMembershipDialog(page, TARGET_USER, 'Groups...');
+      await openUserMembershipDialog(page, TARGET_NAME, 'Groups...');
       await expect(page.locator('.d4-dialog .membership-row', { hasText: TEST_GROUP }),
         'added group should persist').toBeVisible({ timeout: 5_000 });
     } finally {
@@ -247,11 +254,11 @@ test.describe('Users View (Users-*)', () => {
     }
 
     // --- Roles ---
-    await openUserMembershipDialog(page, TARGET_USER, 'Roles...');
+    await openUserMembershipDialog(page, TARGET_NAME, 'Roles...');
     await addMembershipBySearch(page, TEST_ROLE);
     await saveDialog(page);
     try {
-      await openUserMembershipDialog(page, TARGET_USER, 'Roles...');
+      await openUserMembershipDialog(page, TARGET_NAME, 'Roles...');
       await expect(page.locator('.d4-dialog .membership-row', { hasText: TEST_ROLE }),
         'added role should persist').toBeVisible({ timeout: 5_000 });
     } finally {
@@ -276,7 +283,7 @@ test.describe('Users View (Users-*)', () => {
     };
     try {
       // Block.
-      await openCardContextMenu(page, TARGET_USER);
+      await openCardContextMenu(page, TARGET_NAME);
       await contextMenuItemByName(page, 'Block').click();
       await page.locator('.d4-dialog button[name="button-YES"]').click();
       expect(await waitForStatus('blocked'), 'user should be blocked').toBe('blocked');
@@ -285,7 +292,7 @@ test.describe('Users View (Users-*)', () => {
       await page.reload();
       await page.locator(GALLERY_GRID).first().waitFor({ state: 'visible', timeout: 20_000 });
       await page.waitForTimeout(800);
-      await openCardContextMenu(page, TARGET_USER);
+      await openCardContextMenu(page, TARGET_NAME);
       await contextMenuItemByName(page, 'Unblock').click();
       await page.locator('.d4-dialog button[name="button-YES"]').click();
       expect(await waitForStatus('active'), 'user should be unblocked via UI').toBe('active');

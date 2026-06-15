@@ -93,10 +93,12 @@ export async function clearGallerySearch(page: Page, kind: 'users' | 'groups' | 
  * group/role can lag the server search index (the card briefly appears from cache, then a server
  * search returns 0 and removes it), so this refreshes the gallery and retries until the card sticks.
  */
-export async function searchAndWaitCard(page: Page, kind: 'users' | 'groups' | 'roles', name: string): Promise<void> {
+export async function searchAndWaitCard(
+  page: Page, kind: 'users' | 'groups' | 'roles', search: string, matchName: string = search,
+): Promise<void> {
   for (let i = 0; i < 8; i++) {
-    await searchGallery(page, kind, name);
-    const card = galleryCardByName(page, name);
+    await searchGallery(page, kind, search);
+    const card = galleryCardByName(page, matchName);
     if (await card.isVisible().catch(() => false)) {
       await page.waitForTimeout(800); // let the server search settle, then confirm it stayed
       if (await card.isVisible().catch(() => false)) return;
@@ -107,8 +109,16 @@ export async function searchAndWaitCard(page: Page, kind: 'users' | 'groups' | '
     if (await refresh.isVisible().catch(() => false)) await refresh.click();
     await page.waitForTimeout(1500);
   }
-  throw new Error(`Entity "${name}" not found in the ${kind} gallery after refresh retries`);
+  throw new Error(`Entity "${matchName}" not found in the ${kind} gallery after refresh retries`);
 }
+
+// A regular user's gallery card label and membership rows show the friendlyName (First Last),
+// not the login (User.friendlyName only falls back to login when BOTH names are empty, but the
+// Create-user dialog requires them). We create every seeded user with firstName = login and a
+// constant last name, so the login is a substring of the display name — searches / membership
+// rows match by login (substring), while the gallery card matches exactly on `userDisplay(login)`.
+export const USER_LAST_NAME = 'QA';
+export const userDisplay = (login: string): string => `${login} ${USER_LAST_NAME}`;
 
 /** Right-click an entity card by name and wait for the context menu to open (retries on detach). */
 export async function openCardContextMenu(page: Page, name: string): Promise<Locator> {
@@ -342,10 +352,14 @@ async function galleryHasCard(page: Page, kind: 'users' | 'groups' | 'roles', na
 /** Ensure a target user exists (create through the UI if the fresh DB has none). */
 export async function ensureUserSeeded(page: Page, login: string): Promise<void> {
   await openPlatformView(page, 'Users');
-  if (await galleryHasCard(page, 'users', login)) return;
-  // No first/last name on purpose — the gallery card label and the membership-editor rows then
-  // both display the login, so `galleryCardByName(login)` and add-by-login searches match.
-  await createUserViaUI(page, { email: `${login}@autotest.datagrok.ai`, login });
+  // Search by login (matches the login + firstName), but confirm by the display label.
+  await searchGallery(page, 'users', login);
+  const present = await galleryCardByName(page, userDisplay(login)).isVisible().catch(() => false);
+  await clearGallerySearch(page, 'users');
+  if (present) return;
+  await createUserViaUI(page, {
+    email: `${login}@autotest.datagrok.ai`, login, firstName: login, lastName: USER_LAST_NAME,
+  });
 }
 
 /** Ensure a target group exists (create through the UI if absent). */
