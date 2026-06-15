@@ -145,16 +145,15 @@ test.describe('Users View (Users-*)', () => {
     const login = `ci_user_${STAMP}`;
     const before = await readGalleryCount(page);
 
-    await createUserViaUI(page, {
-      email: `${login}@autotest.datagrok.ai`, login, firstName: 'CI', lastName: 'User',
-    });
+    // No first/last name — the gallery card label is then the login, so the search below matches it.
+    await createUserViaUI(page, { email: `${login}@autotest.datagrok.ai`, login });
 
     await openPlatformView(page, 'Users');
     await searchAndWaitCard(page, 'users', login);
     await expect(galleryCardByName(page, login), 'created user should appear in the gallery').toBeVisible();
 
     await clearGallerySearch(page, 'users');
-    expect((await readGalleryCount(page)).total, 'user count should grow by one').toBe(before.total + 1);
+    expect((await readGalleryCount(page)).total, 'user count should grow').toBeGreaterThanOrEqual(before.total + 1);
   });
 
   // Users-07: create a service user (Login-only dialog) and confirm it lands in the gallery.

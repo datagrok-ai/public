@@ -110,21 +110,25 @@ export async function searchAndWaitCard(page: Page, kind: 'users' | 'groups' | '
   throw new Error(`Entity "${name}" not found in the ${kind} gallery after refresh retries`);
 }
 
-/** Right-click an entity card by name and wait for the context menu to open (retries once). */
+/** Right-click an entity card by name and wait for the context menu to open (retries on detach). */
 export async function openCardContextMenu(page: Page, name: string): Promise<Locator> {
-  const card = galleryCardByName(page, name);
-  await card.waitFor({ state: 'visible', timeout: 15_000 });
-  await card.scrollIntoViewIfNeeded();
   const menu = page.locator(CONTEXT_MENU);
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let card = galleryCardByName(page, name);
+  await card.waitFor({ state: 'visible', timeout: 15_000 });
+  for (let attempt = 0; attempt < 4; attempt++) {
     // Dismiss any stray popup that could intercept the right-click.
     if (await menu.first().isVisible().catch(() => false)) {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
     }
+    // Re-query each attempt — a settling server search re-renders the gallery and detaches the
+    // card handle (seen on the cold CI client as "Element is not attached to the DOM").
+    card = galleryCardByName(page, name);
+    await card.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    await card.scrollIntoViewIfNeeded().catch(() => {});
     await card.click({ button: 'right' }).catch(() => {});
     if (await menu.first().isVisible({ timeout: 2_500 }).catch(() => false)) return card;
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
   }
   await expect(menu.first(), `Context menu for "${name}" should open`).toBeVisible({ timeout: 3_000 });
   return card;
@@ -224,12 +228,17 @@ export async function openNewUserOption(page: Page, option: string): Promise<voi
   await page.waitForTimeout(600);
 }
 
-/** Select an entity card (single click) so the Context Panel follows it. */
+/** Select an entity card (single click) so the Context Panel follows it. Retries on detach. */
 export async function selectCard(page: Page, name: string): Promise<Locator> {
-  const card = galleryCardByName(page, name);
+  let card = galleryCardByName(page, name);
   await card.waitFor({ state: 'visible', timeout: 15_000 });
-  await card.scrollIntoViewIfNeeded();
-  await card.click();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    card = galleryCardByName(page, name);
+    await card.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    await card.scrollIntoViewIfNeeded().catch(() => {});
+    if (await card.click().then(() => true).catch(() => false)) break;
+    await page.waitForTimeout(400);
+  }
   await page.waitForTimeout(1200);
   return card;
 }
@@ -334,9 +343,9 @@ async function galleryHasCard(page: Page, kind: 'users' | 'groups' | 'roles', na
 export async function ensureUserSeeded(page: Page, login: string): Promise<void> {
   await openPlatformView(page, 'Users');
   if (await galleryHasCard(page, 'users', login)) return;
-  await createUserViaUI(page, {
-    email: `${login}@autotest.datagrok.ai`, login, firstName: 'QA', lastName: login,
-  });
+  // No first/last name on purpose — the gallery card label and the membership-editor rows then
+  // both display the login, so `galleryCardByName(login)` and add-by-login searches match.
+  await createUserViaUI(page, { email: `${login}@autotest.datagrok.ai`, login });
 }
 
 /** Ensure a target group exists (create through the UI if absent). */
