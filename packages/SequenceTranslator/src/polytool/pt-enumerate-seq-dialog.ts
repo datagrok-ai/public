@@ -8,7 +8,8 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {Unsubscribable} from 'rxjs';
 
-import {GetMonomerResType, HelmAtom, MonomerNumberingTypes} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
+import {GetMonomerResType, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
+import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getHelmHelper, HelmInputBase, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -37,7 +38,7 @@ import {tagAsOligoNucleotide} from '../oligo-renderer/converters';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
-import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {CyclizedNotationProvider} from '../utils/cyclized';
 import {INotationProvider, NotationProviderBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
