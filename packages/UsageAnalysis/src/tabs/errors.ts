@@ -45,7 +45,7 @@ export class ErrorsView extends UaView {
     const users = await loadUsers();
 
     const filters = ui.box();
-    filters.classList.add('ua-errors-filters');
+    filters.classList.add('ua-filters');
 
     const errorViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
