@@ -633,6 +633,8 @@ export interface IDartApi {
   grok_InputBase_Set_ReadOnly(input: any, v: Bool): any;
   grok_InputBase_Get_Enabled(input: any): any;
   grok_InputBase_Set_Enabled(input: any, v: Bool): any;
+  grok_InputBase_Get_Visible(input: any): any;
+  grok_InputBase_Set_Visible(input: any, visible: Bool): any;
   grok_InputBase_OnChanged(input: any): any;
   grok_InputBase_OnInput(input: any): any;
   grok_InputBase_Save(input: any): any;
@@ -667,8 +669,8 @@ export interface IDartApi {
   grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_InputForm_OnValidationCompleted(form: any): any;
-  grok_InputBase_Get_Visible(input: any): any;
-  grok_InputBase_Set_Visible(input: any, visible: Bool): any;
+  grok_InputForm_OnFormPropertyChanged(form: any): any;
+  grok_InputForm_ValidateInputs(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
   grok_FontInput_Get_Value(input: any): any;
@@ -1103,6 +1105,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
+  grok_Dapi_RequestMembership(groupId: String, requesterId: String): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
   grok_EntitiesDataSource_GetFavoritesForGroups(s: any, groups: any): Promise<any>;
@@ -1120,6 +1123,7 @@ export interface IDartApi {
   grok_Dapi_UserDataStorage_Delete(name: String, key: String, currentUser: Bool): Promise<any>;
   grok_Dapi_Get_GroupUser(g: any): Promise<any>;
   grok_Dapi_Get_GroupsLookup(name: String): Promise<any>;
+  grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;

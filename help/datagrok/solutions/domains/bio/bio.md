@@ -1,5 +1,6 @@
 ---
-format: mdx
+mdx:
+  format: mdx
 title: "Bioinformatics"
 keywords:
   - bioinformatics

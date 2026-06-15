@@ -156,6 +156,9 @@ export const TreeNode = Vue.defineComponent({
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
+    pipelineValidationState: {
+      type: Object as Vue.PropType<ValidationResult>,
+    },
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
@@ -245,7 +248,7 @@ export const TreeNode = Vue.defineComponent({
 
     const pipelineValidation = Vue.computed(() => {
       if (!isFuncCallState(props.stat.data))
-        return Vue.markRaw({validation: props.stat.data.structureCheckResults});
+        return Vue.markRaw({validation: props.pipelineValidationState});
     });
 
     return () => (

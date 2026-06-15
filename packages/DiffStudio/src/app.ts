@@ -17,7 +17,7 @@ import {USE_CASES} from './use-cases';
 
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT, MODEL_ICON,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
@@ -25,10 +25,11 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS, INCEPTION} from './scripting-tools';
 
 import {CallbackAction} from './solver-tools';
+import {buildFacetGrid} from './facet-grid';
 
 import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
   getCategoryWidget, getReducedTable, closeWindows,
-  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
+  removeTitle, noModels, removeTitleBar, getTryRunOptions,
   prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
   getCachedRecentModelsTableSync, isCachedRecentModelsFailed,
   prefetchMyModelFiles, invalidateMyModelFilesCache,
@@ -68,9 +69,6 @@ async function getCM() {
   }
   return _cm;
 }
-
-const COLORS = DG.Color.categoricalPalette;
-const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
 export enum EDITOR_STATE {
@@ -3375,69 +3373,8 @@ export class DiffStudio {
 
   /** Return div with facet grid plot */
   private getFacetPlot(): HTMLDivElement {
-    const cols = this.solutionTable.columns;
-    const colNames = cols.names();
-
-    const toShowSegments = colNames.includes(STAGE_COL_NAME);
-
-    const colsCount= cols.length - (toShowSegments ? 1 : 0);
-    const colsToShowCount = Math.min(MAX_FACET_GRAPHS_COUNT, colsCount - 1);
-    const maxInRow = getMaxGraphsInFacetGridRow(colsToShowCount);
-
-    const facetColumnPlots = new Array<DG.Viewer[]>(maxInRow);
-
-    this.facetPlots = [];
-
-    for (let i = 0; i < maxInRow; ++i)
-      facetColumnPlots[i] = [];
-
-    let idx = 0;
-    let color = 0;
-
-    for (let i = 1; i <= colsToShowCount; ++i) {
-      color = COLORS[(i - 1) % COLORS_COUNT];
-
-      const plot = DG.Viewer.lineChart(this.solutionTable, {
-        xColumnName: colNames[0],
-        yColumnNames: [colNames[i]],
-        autoLayout: true,
-        showXAxis: true,
-        showYAxis: true,
-        showXSelector: false,
-        showSplitSelector: false,
-        lineWidth: 2,
-        segmentColumnName: toShowSegments ? STAGE_COL_NAME : undefined,
-        lineColoringType: 'Custom',
-        lineColor: color,
-        markerColor: color,
-
-      });
-
-      this.facetPlots.push(plot);
-
-      facetColumnPlots[idx].push(plot);
-
-      ++idx;
-
-      if (idx === maxInRow)
-        idx = 0;
-    }
-
-    facetColumnPlots.forEach((col) => col[col.length - 1].setOptions({showXSelector: true}));
-
-    const rowsCount = facetColumnPlots[0].length;
-
-    const col2Roots = (col: DG.Viewer[]) => {
-      const roots = col.map((plot) => plot.root);
-      if (col.length < rowsCount)
-        roots.push(ui.div(''));
-
-      return roots;
-    };
-
-    const splitCols = facetColumnPlots.map((col) => ui.splitV(col2Roots(col)));
-    const facet = ui.splitH(splitCols);
-
-    return facet;
+    const {root, plots} = buildFacetGrid(this.solutionTable);
+    this.facetPlots = plots;
+    return root;
   } // getFacetPlot
 }; // DiffStudio

@@ -1,6 +1,7 @@
 ---
 title: "Secrets Managers"
-format: mdx
+mdx:
+  format: mdx
 sidebar_position: 2
 ---
 

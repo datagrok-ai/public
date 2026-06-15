@@ -1,5 +1,21 @@
 # Compute2 changelog
 
+## 1.5.3 (2026-06-05)
+
+- Fix navigation tree desync after a drag reorder: clear stranded `dragNode` state in the after-drop handler and treat the driver tree as the single source of truth
+- Repair tree selection when the chosen step is removed: climb to the nearest surviving ancestor instead of leaving a dead uuid selected
+- Stream pipeline-validator results to the navigation tree so the validator icon updates as soon as the validator resolves
+- Pick up compute-utils 1.46.2
+
+## 1.5.2 (2026-06-04)
+
+- Default focus to the Inputs tab when the form is shown as a tab
+- Pick up compute-utils file-input and `pipelineValidator` changes
+
+## 1.5.1 (2026-06-04)
+
+- Fix float-display test for the `#0.###` default mask
+
 ## 1.5.0 (2026-06-03)
 
 ### Features

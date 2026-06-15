@@ -5,7 +5,8 @@ keywords:
   - table
   - viewer
   - excel
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

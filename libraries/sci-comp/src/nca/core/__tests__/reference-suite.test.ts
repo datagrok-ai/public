@@ -20,7 +20,7 @@
 import {readFileSync} from 'fs';
 import {join} from 'path';
 import {computeNca} from '../compute-nca';
-import {ROUTE_IV_BOLUS, ROUTE_PO} from '../types';
+import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
 import type {ProfileInputs, NcaRules, RouteCode} from '../types';
 
 const PKNCA_RULES: NcaRules = {
@@ -40,6 +40,7 @@ const PKNCA_RULES: NcaRules = {
   },
   extrapWarnPct: 20,
   extrapErrorPct: 50,
+  extrapWarnPctAumc: 20,
   compensatedSummation: false,
 };
 
@@ -55,6 +56,13 @@ interface FixtureProfile {
     half_life: number | null;
     cl: number | null;
     vz: number | null;
+    // FR-200 moment / lag params (null = not applicable for the route).
+    aumclast?: number | null;
+    aumcinf_obs?: number | null;
+    mrt?: number | null;
+    vss?: number | null; // present for IV; null for extravascular (gate)
+    tlag?: number | null; // present for extravascular; null for IV (gate)
+    pct_aumcextrap?: number | null;
   };
 }
 
@@ -101,7 +109,7 @@ function loadAndGroup(csvName: string): SubjectRows[] {
 
 function buildInputs(
   rows: Record<string, number>[], timeCol: string,
-  dose: number, route: RouteCode,
+  dose: number, route: RouteCode, infusionDuration: number | null = null,
 ): ProfileInputs {
   return {
     time: Float64Array.from(rows.map((r) => r[timeCol])),
@@ -113,7 +121,7 @@ function buildInputs(
     concentrationUnits: 'mg/L',
     timeUnits: 'h',
     route,
-    infusionDuration: null,
+    infusionDuration,
     bodyWeight: null,
   };
 }
@@ -127,8 +135,20 @@ interface Tolerances {
   cl: number; // relative
   vz: number; // relative
   pctExtrap: number; // absolute (percentage points)
+  aumcLast: number; // relative (area-class, AD-12)
+  aumcInf: number; // relative
+  mrt: number; // relative (derived-class)
+  vss: number; // relative (derived volume)
+  pctExtrapAumc: number; // absolute (percentage points)
 }
 
+// Tolerance classes by dimensional analogy to NFR-04/05 (AD-12), set only
+// after MEASURING the actual core-vs-PKNCA deviation across all four fixtures
+// in both summation modes (see REGEN.md → "Validation output"). The measured
+// max deviations land ~9 orders of magnitude inside these gates — aumcLast
+// 7e-12, aumcInf/mrt/vss ~2e-11 (rel), %AUMCextrap 1e-9 (pp), tlag exact —
+// so the analogy values hold with enormous margin (the core matches PKNCA to
+// floating-point, not merely to the gate).
 const TOL: Tolerances = {
   cmax: 0.001,
   auclast: 0.001,
@@ -138,6 +158,11 @@ const TOL: Tolerances = {
   cl: 0.01,
   vz: 0.01,
   pctExtrap: 0.5,
+  aumcLast: 0.001,
+  aumcInf: 0.001,
+  mrt: 0.01,
+  vss: 0.01,
+  pctExtrapAumc: 0.5,
 };
 
 function relErr(got: number, expected: number): number {
@@ -181,6 +206,36 @@ function assertProfile(
     expect(Math.abs(r.values.pctExtrap - p.pct_aucextrap))
       .toBeLessThan(TOL.pctExtrap);
   }
+
+  // ── FR-200 moment / lag parameters ──────────────────────────────────────
+  if (p.aumclast != null)
+    expect(relErr(r.values.aumcLast, p.aumclast)).toBeLessThan(TOL.aumcLast);
+
+  if (p.aumcinf_obs != null)
+    expect(relErr(r.values.aumcInf, p.aumcinf_obs)).toBeLessThan(TOL.aumcInf);
+
+  if (p.mrt != null)
+    expect(relErr(r.values.mrt, p.mrt)).toBeLessThan(TOL.mrt);
+
+  // Vss: gate-first. null (extravascular) ⇒ assert the route gate (NaN);
+  // a number (IV) ⇒ assert parity. `== null` also covers a missing key.
+  if (p.vss == null)
+    expect(Number.isNaN(r.values.vss)).toBe(true);
+  else
+    expect(relErr(r.values.vss, p.vss)).toBeLessThan(TOL.vss);
+
+  // Tlag: gate-first. null (IV) ⇒ assert the route gate (NaN); a number
+  // (extravascular) ⇒ assert the exact observed time.
+  if (p.tlag == null)
+    expect(Number.isNaN(r.values.tlag)).toBe(true);
+  else
+    expect(r.values.tlag).toBe(p.tlag);
+
+  if (p.pct_aumcextrap != null) {
+    expect(Math.abs(r.values.pctExtrapAumc - p.pct_aumcextrap))
+      .toBeLessThan(TOL.pctExtrapAumc);
+  }
+
   // Quiet helper — used to avoid unused-arg lint
   void tag;
 }
@@ -235,4 +290,25 @@ describe('reference suite (Task 1.9.5) — full computeNca pipeline vs PKNCA', (
         assertProfile(subjectId, '03_rat_simple', inputs, fx!);
       });
   });
+
+  // The only fixture that exercises the −T_inf/2 infusion correction (AC-D3).
+  // Synthetic 1-compartment model (CL=2, V=10, k=0.2, dose=100, T_inf=1h) →
+  // analytic AUCinf=50, MRT_iv=5, Vss=10; PKNCA references validate the wiring.
+  describe('04 IV infusion (1 subject, dose = 100 mg, T_inf = 1 h)', () => {
+    const subjects = loadAndGroup('04_iv_infusion.csv');
+    const fixture = loadFixture('04_iv_infusion.json');
+    const fxBySubject = new Map(
+      fixture.profiles.map((f) => [f.profile_key.subject, f]));
+
+    it.each(subjects.map((s) => [s.subject, s] as const))(
+      'subject %s — all parameters within tolerance (incl. −T_inf/2 MRT/Vss)',
+      (subjectId, group) => {
+        const fx = fxBySubject.get(subjectId);
+        expect(fx).toBeDefined();
+        const inputs = buildInputs(
+          group.rows, 'time', 100, ROUTE_IV_INFUSION, 1);
+        assertProfile(subjectId, '04_iv_infusion', inputs, fx!);
+      });
+  });
 });
+

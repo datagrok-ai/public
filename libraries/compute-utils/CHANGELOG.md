@@ -1,5 +1,22 @@
 # compute-utils changelog
 
+## v.next
+
+* RFV: map the `diffstudiofacet` viewer type to the label `DiffStudio Facet` in `viewerTypesMapping`, so the facet viewer tab shows a proper name
+* GROK-14159/GROK-14160: Use grok.dapi.groups.currentUserGroups()/requestMembership() when available, falling back to raw fetch() on older API versions
+
+## 1.46.2 (2026-06-05)
+
+- Fitting: charge worker-replacement reprime budget only to the session that killed the slot, so a misbehaving fit no longer drains a concurrent fit's budget
+- Hold the tree-mutation lock for the whole mutation by OR-ing `treeMutationsLocked` with `globalROLocked`, fixing a flickering "Locked..." overlay and `isTreeReady` signal
+- Expose pipeline-validator results as a live per-node stream (`currentPipelineValidations$`) instead of only in the serialized snapshot
+
+## 1.46.1 (2026-06-04)
+
+- File-input save accepts a browser `File` as well as `DG.FileInfo`
+- Compute1 run JSON export handles `DG.FileInfo` inputs from loaded runs
+- `pipelineValidator`: `setValidation` takes the output name as first argument (API change), so a single named `to` target can be addressed
+
 ## 1.46.0 (2026-06-03)
 
 ### Features

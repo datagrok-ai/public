@@ -1,5 +1,19 @@
 # Sequence Translator changelog
 
+## 1.10.26 (2026-06-10)
+
+* OligoNucleotide renderer: standalone backbone linkers (`p`, `[sp]`, or any monomer whose natural analog is `p`) — whether a 5'/3' cap, mid-strand, or a consecutive run — now render as linkage arcs (no chip), instead of being mistaken for conjugate pills. Recognized from the monomer library.
+* OligoNucleotide renderer: alignment now accounts for standalone linkers. A run of linkers on one strand that the other lacks opens a gap (bases stay aligned / paired), and the partner strand draws a single wider arc across it.
+* Demo data (`files/samples/sirna-demo.csv`): added a phosphate-capped single strand with mid-strand linkers and a duplex with a sense-only linker bulge.
+
+## 1.10.25 (2026-06-09)
+
+* OligoNucleotide renderer: strand alignment is now driven by the HELM when present — `strandtype` annotations decide the sense/antisense roles (chains are swapped accordingly) and `$connections$` `pair` entries fix the base-pair register.
+* OligoNucleotide renderer: when no explicit info is present, sense/antisense are auto-aligned by sliding the antisense to the column shift with the most complementary base pairs (natural-analog aware), with terminal overhangs on either end rendered true.
+* Oligo context panel: shows the resolved duplex register (blunt vs overhangs, and whether it came from explicit HELM pairs or auto-alignment).
+* Oligo Structures panel: order the Sense / Antisense panes by the parsed strand roles (honoring `strandtype` swaps) rather than raw chain order, so a flipped HELM (sense = RNA2) no longer mislabels the strands.
+* Demo data (`files/samples/sirna-demo.csv`): added rows with 3' overhangs and rows carrying explicit HELM pair / strandtype info.
+
 ## 1.10.24 (2026-05-19)
 
 * Removed redundant demos

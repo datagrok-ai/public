@@ -3,7 +3,8 @@ title: "Style and language"
 sidebar_label: Style
 sidebar_position: 3
 unlisted: false
-format: mdx
+mdx:
+  format: mdx
 keywords:
  - docs
  - wiki

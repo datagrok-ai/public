@@ -76,8 +76,10 @@ export class PackageFunctions {
 
   // Subscribes to platform events that should trigger file sync.
   static subscribeToSyncEvents(): void {
+    // Background sync is best-effort: swallow errors (e.g. runtime container not running) so they
+    // don't surface as unhandled rejections that get auto-reported on every package load.
     const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
-      ClaudeRuntimeClient.getInstance().syncUserFiles(...args);
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args).catch(() => {});
 
     // MyFiles agents: file operations (create, upload, delete, rename, move)
     grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {

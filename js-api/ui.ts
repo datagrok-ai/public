@@ -1131,6 +1131,10 @@ export namespace input {
     return _create(d4.InputType.Files, name, options);
   }
 
+  export function folder(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
+    return _create(d4.InputType.Folder, name, options);
+  }
+
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -1470,7 +1474,7 @@ export class tools {
       let width = 100;
       if (element.classList.contains('ui-input-bool'))
         width = 30;
-      if (element.classList.contains('ui-input-switch'))
+      if (element.classList.contains('ui-input-bool-switch'))
         width = 50;
       if (element.classList.contains('ui-input-table'))
         width = 200;

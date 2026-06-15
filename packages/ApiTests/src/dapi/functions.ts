@@ -28,8 +28,8 @@ category('Dapi: functions calls', async () => {
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     const savedFuncCall = await grok.dapi.functions.calls.include('session.user').save(funcCall);
-    expect(savedFuncCall.author, await grok.dapi.users.current());
-  }, {skipReason: 'GROK-15119'});
+    expect(savedFuncCall.author.id, (await grok.dapi.users.current()).id);
+  });
 
   test('save with DF', async () => {
     const start = Date.now();

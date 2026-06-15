@@ -1,5 +1,9 @@
 # Lib Tests changelog
 
+## 1.9.2 (2026-06-04)
+
+- Tests for funcCall file-input save/load and named `pipelineValidator` outputs
+
 ## 1.8.0 (2025-03-19)
 
 - Release for 1.27.0

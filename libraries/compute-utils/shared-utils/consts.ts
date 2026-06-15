@@ -33,6 +33,7 @@ export const viewerTypesMapping: {[key: string]: string} = {
   ['treemap']: DG.VIEWER.TREE_MAP,
   ['trellisplot']: DG.VIEWER.TRELLIS_PLOT,
   ['wordcloud']: DG.VIEWER.WORD_CLOUD,
+  ['diffstudiofacet']: 'DiffStudio Facet',
 } as const;
 
 export const CARD_VIEW_TYPE = 'JsCardView' as const;

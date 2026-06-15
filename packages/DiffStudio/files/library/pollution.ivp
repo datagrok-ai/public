@@ -1,5 +1,7 @@
 #name: Pollution
 #description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+#meta.role: model
+#meta.icon: files/icons/pollution.png
 #comment: 
   Source: https://archimede.uniba.it/~testset/report/pollu.pdf
 #equations:

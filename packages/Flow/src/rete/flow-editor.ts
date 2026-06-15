@@ -190,7 +190,8 @@ export class FlowEditor {
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
-    if (!targetNode || targetNode.label !== 'Value Output') return;
+    // Match by registered type, not label — titles are user-editable.
+    if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
     const sourceNode = this.editor.getNode(connection.source) as FlowNode | undefined;
     if (!sourceNode) return;
     const sourceOutput = sourceNode.outputs[String(connection.sourceOutput)] as
@@ -200,6 +201,19 @@ export class FlowEditor {
     if (detected && detected !== 'dynamic' && detected !== 'object') {
       targetNode.properties['outputType'] = detected;
       void this.area.update('node', targetNode.id);
+    }
+  }
+
+  /** Collapsed nodes render socket DOM only for *connected* sockets (see
+   *  node-component.tsx). A connection created or removed while an endpoint is
+   *  collapsed changes which sockets must exist, so re-render those nodes.
+   *  Without this, a connection added to an already-collapsed node (creation-
+   *  script import, .ffjson load) has no socket element to attach to and stays
+   *  invisible until the node is expanded and collapsed again. */
+  private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
+    for (const id of [conn.source, conn.target]) {
+      const node = this.editor.getNode(id);
+      if (node?.collapsed) void this.area.update('node', id);
     }
   }
 
@@ -227,6 +241,8 @@ export class FlowEditor {
         this.maybeAutoTypeValueOutput(context.data);
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
+      if (context.type === 'connectioncreated' || context.type === 'connectionremoved')
+        this.refreshCollapsedEndpoints(context.data);
       if (
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||

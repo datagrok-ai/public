@@ -22,10 +22,11 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
+  applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  reportTree,
+  reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -353,25 +354,25 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
+      if (!treeState.value || !chosenStepUuid.value)
         return null;
-
-      if (!chosenStepUuid.value)
-        chosenStepUuid.value = treeState.value.uuid;
-
-      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
-
-      if (step)
-        return step;
-
-      // step with current uuid is removed from the tree, try setting the current step by the route
-      const currentURL = new URL(window.location.href);
-      const currentStep = currentURL.searchParams.get('currentStep');
-      if (currentStep)
-        setCurrentStepByPath(currentStep, treeState.value);
-
-      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) ?? null;
     });
+
+    // Owns chosenStepUuid: defaults it on first load and repairs it when the
+    // selected node disappears (e.g. the selected step was removed). Falls back
+    // along the old positional path to the nearest surviving ancestor, so a
+    // removed last child resolves to its parent instead of dangling.
+    Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
+      if (!treeState)
+        return;
+      const fallbackPath = searchParams.currentStep ?
+        searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
+        undefined;
+      const next = resolveChosenUuid(chosenStepUuid.value, treeState, fallbackPath);
+      if (next !== chosenStepUuid.value)
+        chosenStepUuid.value = next;
+    }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
@@ -443,19 +444,13 @@ export const TreeWizard = Vue.defineComponent({
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },
         runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
-          const exports =  Utils.getCustomExports(fc.func);
-          const item = exports.find(x => x.name === exportName);
-          if (!item)
-            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-          const res = await DG.Func.byName(fc.func.nqName).apply({
+          return applyCustomExport(fc, exportName, {
             startDownload: false,
-            funcCall: fc,
             validationState: states.validations?.[uuid],
             consistencyState: states.consistency?.[uuid],
             isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
             runError: states.calls?.[uuid]?.runError,
           });
-          return res;
         },
       };
       return exportData.handler(treeState.value!, utils);
@@ -599,6 +594,16 @@ export const TreeWizard = Vue.defineComponent({
         if (oldIndex !== newIndex)
           moveStep(draggedStep.data.uuid, newIndex);
       }
+      // he-tree skips inbound modelValue rebuilds while its `dragNode` data is set. A slow
+      // frame or a debugger pause during drag-end can strand `dragNode` truthy, which then
+      // freezes every later structural update (added/removed steps stop rendering). The
+      // library clears it in its own `dragend` handler, but that path is unreliable under
+      // interruption; `after-drop` fires reliably, so clear it here too.
+      const inst = treeInstance.value as any;
+      if (inst) {
+        inst.dragNode = null;
+        inst.dragOvering = false;
+      }
     };
 
     const isDeletable = (stat: AugmentedStat) => {
@@ -731,6 +736,7 @@ export const TreeWizard = Vue.defineComponent({
 
                 rootDroppable={false}
                 treeLine
+                updateBehavior='disabled'
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
                 statHandler={restoreOpenedNodes}
@@ -757,6 +763,7 @@ export const TreeWizard = Vue.defineComponent({
                         stat={stat}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
+                        pipelineValidationState={states.pipelineValidations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{

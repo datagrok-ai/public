@@ -5,7 +5,8 @@ keywords:
  - controls
  - hot keys
 sidebar position: 3
-format: mdx
+mdx:
+  format: mdx
 ---
 
 This article lists key Datagrok controls. Certain tools

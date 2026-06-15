@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: Info panes for chemical data
 ---
 

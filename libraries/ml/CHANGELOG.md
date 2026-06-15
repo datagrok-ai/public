@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.10.13 (2026-01-04)
+
+GROK-20199: Bio | Diversity Search: Fix console errors for datasets that do not contain macromolecules
+
 ## 6.10.11 (2026-03-27)
 
 Dimentionality reduction: pass embeddings and cluster columns names as optional parameters
