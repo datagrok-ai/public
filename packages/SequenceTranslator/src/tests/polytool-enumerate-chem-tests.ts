@@ -9,6 +9,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {
   assembleMolecule,
   ChemEnumModes,
+  copyRGroupList,
   countForCore,
   enumerate,
   extractRNumbers,
@@ -403,6 +404,62 @@ category('PolyTool: ChemEnum: CSV fixtures', () => {
       try {
         expect(m.is_valid(), true, `invalid SMILES: ${r.smiles}`);
       } finally { m.delete(); }
+    }
+  });
+});
+
+// ─── Copy R-group list to another slot ──────────────────────────────────────
+
+category('PolyTool: ChemEnum: copy R-group list', () => {
+  let rdkit: RDModule;
+  before(async () => { rdkit = await getRdKitModule(); });
+
+  const rg = (smi: string, n: number) => makeRGroup(smi, n, '', rdkit);
+
+  test('copyRGroupList re-labels to the target R#, appends/replaces, and no-ops on self-copy', async () => {
+    const m = new Map([[1, [rg('O[*:1]', 1), rg('N', 1)]]]); // a labeled group + a single atom
+    // Append into a new slot R2: the label is remapped [*:1]→[*:2]; the single atom keeps its
+    // token but is re-targeted; the source is left untouched; the new slot is created.
+    expect(copyRGroupList(m, 1, 2, 'append', rdkit), 2);
+    expect(m.get(2)![0].smiles, 'O[*:2]');
+    expect(m.get(2)![1].isSingleAtom, true);
+    expect(m.get(2)![1].smiles, 'N');
+    expect(m.get(2)![1].rNumber, 2);
+    expect(m.get(1)!.length, 2, 'source must be unchanged');
+    // Append again keeps the existing entries (4 total); replace overwrites (back to 2).
+    copyRGroupList(m, 1, 2, 'append', rdkit);
+    expect(m.get(2)!.length, 4);
+    expect(copyRGroupList(m, 1, 2, 'replace', rdkit), 2);
+    expect(m.get(2)!.length, 2);
+    // Copying a slot onto itself does nothing.
+    expect(copyRGroupList(m, 1, 1, 'append', rdkit), 0);
+    expect(m.get(1)!.length, 2);
+  });
+
+  test('end-to-end: copying R1→R2 matches defining R2 natively', async () => {
+    const core = makeCore('C[*:1]N[*:2]', 'c', rdkit);
+    const r1 = [rg('O[*:1]', 1), rg('S[*:1]', 1)];
+    // Copy path: populate R2 from R1 via the production helper.
+    const byNum = new Map([[1, r1]]);
+    copyRGroupList(byNum, 1, 2, 'append', rdkit);
+    const copied = enumerate({cores: [core], rGroups: byNum, mode: ChemEnumModes.Cartesian}, rdkit)!;
+    // Native path: R2 defined directly with [*:2] labels — must produce the same products.
+    const r2Native = [rg('O[*:2]', 2), rg('S[*:2]', 2)];
+    const native = enumerate(
+      {cores: [core], rGroups: new Map([[1, r1], [2, r2Native]]), mode: ChemEnumModes.Cartesian}, rdkit)!;
+
+    expect(copied.length, 4); // 2 × 2
+    const canonSet = (rs: typeof copied) => new Set(rs.map((r) => canon(r.smiles, rdkit)));
+    const copiedSet = canonSet(copied);
+    expect(copiedSet.size, 4, 'copied products should be 4 distinct structures');
+    for (const s of canonSet(native))
+      expect(copiedSet.has(s), true, `copied products missing native product ${s}`);
+    for (const r of copied)
+      expect(r.smiles.includes('[*:'), false, `residual R-label in result: ${r.smiles}`);
+    // The R2 result column shows each group re-labeled to its slot ([*:2]), not its source [*:1].
+    for (const r of copied) {
+      const r2 = r.rGroupSmilesByNum.get(2)!;
+      expect(r2.includes('[*:2]') && !r2.includes('[*:1]'), true, `R2 column not re-labeled: ${r2}`);
     }
   });
 });

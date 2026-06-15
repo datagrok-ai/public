@@ -14,6 +14,7 @@ import {
   ChemEnumMode,
   ChemEnumModes,
   ChemEnumRGroup,
+  copyRGroupList,
   enumerateRaw,
   enumerateSampleRaw,
   extractRNumbers,
@@ -458,6 +459,111 @@ async function openImportWizard(
   });
 }
 
+// ─── Copy R-group list to another slot ──────────────────────────────────────
+
+/**
+ * Default target R# the copy dialog opens on: the lowest core-referenced R# still unpopulated and
+ * ≠ `srcN` (so the dialog opens out of a warning state), else the lowest other populated slot, else `srcN + 1`.
+ */
+function pickDefaultCopyTarget(srcN: number, populated: Set<number>, coreRNumbers: Set<number>): number {
+  const freeCoreR = [...coreRNumbers].sort((a, b) => a - b).find((n) => n !== srcN && !populated.has(n));
+  const lowestOther = [...populated].sort((a, b) => a - b).find((n) => n !== srcN);
+  return freeCoreR ?? lowestOther ?? srcN + 1;
+}
+
+/**
+ * Non-blocking advisory lines for a copy into `targetN`: invalid source entries copied as-is, and a
+ * target R# referenced by no core (ignored at enumeration). Empty array when nothing's worth flagging.
+ */
+function copyTargetWarnings(targetN: number, invalidCount: number, coreRNumbers: Set<number>): string[] {
+  const warnings: string[] = [];
+  if (invalidCount > 0)
+    warnings.push(`${invalidCount} invalid ${invalidCount === 1 ? 'entry' : 'entries'} copied as-is`);
+  if (coreRNumbers.size > 0 && !coreRNumbers.has(targetN))
+    warnings.push(`R${targetN} isn't used by any core, so it'll be ignored when enumerating`);
+  return warnings;
+}
+
+/**
+ * Opens a dialog to copy R`srcN`'s substituent list into another R-slot — core-aware default
+ * target, Append/Replace, advisory warnings. The copy + re-labeling is done by `copyRGroupList`.
+ */
+function openCopyToRGroupDialog(
+  srcN: number,
+  state: ChemEnumDialogState,
+  rdkit: RDModule,
+  refresh: () => void,
+): void {
+  const srcList = state.rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0) {
+    grok.shell.info(`R${srcN} has no substituents to copy.`);
+    return;
+  }
+
+  // Snapshot (the dialog is modal over a static panel): R#s referenced by at least one valid
+  // core, and how many source entries are invalid — both feed the default target and warnings.
+  const coreRNumbers = new Set<number>();
+  for (const c of state.cores) {
+    if (c.error) continue;
+    for (const rn of c.rNumbers) coreRNumbers.add(rn);
+  }
+  const invalidCount = srcList.filter((rg) => rg.error != null).length;
+
+  const defaultTarget = pickDefaultCopyTarget(srcN, new Set(state.rGroupsByNum.keys()), coreRNumbers);
+
+  const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
+  const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
+  ui.tooltip.bind(mergeInput.input,
+    'Append: add the copied substituents after any existing entries in the target slot.\n' +
+    'Replace: clear the target slot first, then populate it with the copies.');
+
+  const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
+  let okBtn: HTMLButtonElement | null = null;
+
+  const fail = (m: string) => {
+    status.innerText = m;
+    status.style.color = 'var(--red-3)';
+    if (okBtn) okBtn.disabled = true;
+  };
+
+  const updateStatus = () => {
+    const t = targetInput.value;
+    if (t == null || !Number.isInteger(t) || t < 1) return fail('Enter a valid R-group number (≥ 1).');
+    if (t === srcN) return fail(`Target R# must differ from the source (R${srcN}).`);
+    const existing = state.rGroupsByNum.get(t)?.length ?? 0;
+    const replace = mergeInput.value === 'Replace';
+    const result = replace ? srcList.length : existing + srcList.length;
+    const noun = srcList.length === 1 ? 'substituent' : 'substituents';
+    const msg = existing > 0 ?
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing). Result: ${result}.` :
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (new slot).`;
+    const warnings = copyTargetWarnings(t, invalidCount, coreRNumbers);
+    if (warnings.length > 0) {
+      status.innerText = `${msg} ⚠ ${warnings.join('; ')}.`;
+      status.style.color = 'var(--orange-2)';
+    } else {
+      status.innerText = msg;
+      status.style.color = 'var(--green-2)';
+    }
+    if (okBtn) okBtn.disabled = false;
+  };
+
+  targetInput.onChanged.subscribe(updateStatus);
+  mergeInput.onChanged.subscribe(updateStatus);
+
+  const dialog = ui.dialog({title: `Copy R${srcN} to…`})
+    .add(ui.divV([targetInput.root, mergeInput.root, status]))
+    .onOK(() => {
+      const t = targetInput.value;
+      if (t == null || !Number.isInteger(t) || t < 1 || t === srcN) return;
+      copyRGroupList(state.rGroupsByNum, srcN, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      refresh();
+    });
+  dialog.show({resizable: false, width: 360});
+  okBtn = dialog.getButton('OK') as HTMLButtonElement;
+  updateStatus();
+}
+
 // ─── Error badge ────────────────────────────────────────────────────────────
 
 function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => void } {
@@ -855,16 +961,18 @@ function buildChemEnumPanel(
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
       const label = ui.divText(`R${n} (${list.length})`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
+      const copyBtn = ui.button('Copy to…', () => openCopyToRGroupDialog(n, state, rdkit, refresh));
+      copyBtn.style.marginLeft = '4px';
+      ui.tooltip.bind(copyBtn, `Copy all R${n} substituents into another R-group slot`);
       const clearBtn = ui.button('Remove all', () => { state.rGroupsByNum.delete(n); refresh(); });
       clearBtn.style.marginLeft = '4px';
       ui.tooltip.bind(clearBtn, `Remove all R${n} groups`);
-      const header = ui.divH([label, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
+      const header = ui.divH([label, copyBtn, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
       const renderer = (i: number): HTMLElement => {
         const rg = list[i];
-        const remap = rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : '';
         const subtitle = rg.error ? 'invalid' :
           rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
-            `r group ${i + 1} · R${rg.rNumber}${remap}`;
+            `r group ${i + 1} · R${rg.rNumber}`;
         return buildCard({
           smiles: rg.error ? '' : rg.smiles,
           subtitle,

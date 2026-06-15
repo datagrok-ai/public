@@ -78,7 +78,7 @@ export interface ChemEnumResult {
   smiles: string;
   /** `originalSmiles` of the core used. */
   coreSmiles: string;
-  /** R-number → `originalSmiles` of the R-group used at that position. */
+  /** R-number → SMILES of the R-group as attached at that position (re-labeled to that R#). */
   rGroupSmilesByNum: Map<number, string>;
 }
 
@@ -215,6 +215,28 @@ export function makeRGroup(
   }
 
   return {smiles: remapped, originalSmiles, rNumber: targetRNumber, id, sourceRNumber};
+}
+
+/**
+ * Copies slot `srcN`'s substituents into slot `targetN`, re-labeling each to the target R# via
+ * {@link makeRGroup}. `'replace'` overwrites the target, `'append'` adds to it; the source is left
+ * untouched. No-op (returns 0) when the source is empty or `targetN === srcN`. Returns the count copied.
+ */
+export function copyRGroupList(
+  rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+  srcN: number, targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
+): number {
+  const srcList = rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0 || targetN === srcN) return 0;
+  const copied = srcList.map((rg) => makeRGroup(rg.originalSmiles, targetN, '', rdkit));
+  if (mode === 'replace') {
+    rGroupsByNum.set(targetN, copied);
+  } else {
+    const target = rGroupsByNum.get(targetN) ?? [];
+    target.push(...copied);
+    rGroupsByNum.set(targetN, target);
+  }
+  return copied.length;
 }
 
 function tryParse(smi: string, rdkit: RDModule): string | null {
@@ -531,11 +553,7 @@ export function enumerate(params: ChemEnumParams, rdkit: RDModule): ChemEnumResu
       rgSmiByNum.set(n, rg.smiles);
     const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment)
-      originalRgs.set(n, rg.originalSmiles);
-    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs});
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
   }
   return out;
 }
@@ -554,10 +572,7 @@ export function enumerateSample(
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs};
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
 
     if (reservoir.length < sampleSize) {
       reservoir.push(item);
@@ -586,10 +601,7 @@ export function enumerateRaw(params: ChemEnumParams): ChemEnumResult[] | null {
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs});
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
   }
   return out;
 }
@@ -605,10 +617,7 @@ export function enumerateSampleRaw(
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs};
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
 
     if (reservoir.length < sampleSize) {
       reservoir.push(item);
