@@ -496,7 +496,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const hoveredAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (hoveredAtom) {
-          const hoveredAtomContIdx = hoveredAtom._parent.atoms.indexOf(hoveredAtom);
+          const hoveredAtomContIdx = mol.atoms.indexOf(hoveredAtom);
           const substitutingMonomers = inputs.placeholders.placeholdersValue
             .find((ph) => ph.position === hoveredAtomContIdx)?.monomers;
 
@@ -521,7 +521,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const clickedAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (clickedAtom) {
-          const clickedAtomContIdx = clickedAtom._parent.atoms.indexOf(clickedAtom);
+          const clickedAtomContIdx = mol.atoms.indexOf(clickedAtom);
           inputs.placeholders.addPosition(clickedAtomContIdx, '');
         }
       } catch (err: any) {

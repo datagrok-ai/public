@@ -7,8 +7,10 @@
 import type {
   HelmType, PolymerType, MonomerType,
   HelmAtomLike, HelmBondLike, HelmMolLike, HelmAtomBioLike,
-  AppLike, JSDraw2EditorLike, MonomerExplorerLike, MonomersFuncsLike, DrawOptionsLike,
+  AppLike, JSDraw2EditorLike, MonomerExplorerLike, MonomersFuncsLike,
+  IWebEditorMonomerLike,
 } from '@datagrok-libraries/hwe';
+import type {MonomerNumberingTypes} from './consts';
 
 export type {HelmType, PolymerType, MonomerType};
 
@@ -73,10 +75,15 @@ export interface IWebEditorMonomer extends IMonomer, Partial<IMonomerColors> {}
 
 export type MonomerSetType = { [symbol: string]: IMonomer };
 
-export type GetMonomerResType = IWebEditorMonomer | null;
+// The editor's monomer lookup returns the hwe web-editor-monomer view (what the
+// hwe `MonomersFuncs` / `bridgeMonomerLib` produce). `IWebEditorMonomer` above
+// is the richer Datagrok-flavored shape used by the monomer library itself.
+export type GetMonomerResType = IWebEditorMonomerLike | null;
 export type GetMonomerFunc = (a: HelmAtom | HelmType, name?: string) => GetMonomerResType;
 
-export interface IHelmDrawOptions extends DrawOptionsLike {
+export interface IHelmDrawOptions {
+  fontsize?: number;
+  monomerNumbering?: MonomerNumberingTypes;
   getMonomer?: GetMonomerFunc;
 }
 
@@ -84,6 +91,7 @@ export interface IHelmEditorOptions {
   width?: number;
   height?: number;
   viewonly?: boolean;
+  drawOptions?: IHelmDrawOptions;
 }
 
 export interface ISeqMonomer {
