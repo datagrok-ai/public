@@ -136,6 +136,9 @@ export class ErrorsView extends UaView {
             'showAggrSelectors': false,
             'showSplitSelector': false,
             'chartTypes': ['Line Chart'],
+            'lineColoringType': 'Custom',
+            'lineColor': ERROR_BAR_COLOR,
+            'markerColor': ERROR_BAR_COLOR,
             'title': 'Errors Summary'
           });
         }
