@@ -41,17 +41,9 @@ category('AI: GROK-17118: Density plot binShape + axis column type', () => {
     expect(look(c)['binShape'], 'rectangle');
   });
 
-  test('getProperties lists binShape/xColumnName/yColumnName (best-effort)', async () => {
+  test('getProperties lists binShape/xColumnName/yColumnName', async () => {
     const c = v(20);
-    const wanted = ['binShape', 'xColumnName', 'yColumnName'];
-    let foundCount = 0;
-    for (const n of wanted) {
-      if (findProp(c, n) !=
-        null) foundCount++;
-    }
-    if (foundCount < wanted.length)
-      expectRoundTrip(c, {binShape: 'rectangle', xColumnName: 'age', yColumnName: 'height'});
-    else
-      expect(foundCount, wanted.length);
+    for (const n of ['binShape', 'xColumnName', 'yColumnName'])
+      expect(findProp(c, n) != null, true);
   });
 });

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, subscribeAll, until, wait, withTableView} from '../helpers';
+import {demog, expectFiresWithin, until, withTableView} from '../helpers';
 
 // Note: View.getInfo() intentionally untested — TS labels its return ViewLayout but the Dart reg
 // returns ViewInfo (type-label mismatch, flagged for human review).
@@ -32,8 +32,7 @@ category('AI: App: View Layout Roundtrip', () => {
       expect(typeof json, 'string');
       expect(json.length > 0, true);
       const parsed = JSON.parse(json);
-      // ViewLayout has no `type` getter on the TS wrapper; assert TableView via the serialized json
-      // (the round-trip contract). Adding a `type` wrap is out of scope for this pure test-authoring cycle.
+      // ViewLayout has no `type` getter on the TS wrapper; assert TableView via the serialized json.
       expect(parsed['type'], 'TableView');
       expect(json.indexOf(DG.VIEWER.SCATTER_PLOT) >= 0, true);
       expect(json.indexOf(DG.VIEWER.HISTOGRAM) >= 0, true);
@@ -134,15 +133,7 @@ category('AI: App: View Layout Roundtrip', () => {
     await withTableView(df, async (tv) => {
       tv.addViewer(DG.VIEWER.SCATTER_PLOT);
       await until(() => hasViewer(tv, DG.VIEWER.SCATTER_PLOT));
-      // Smoke-subscribe the related layout events so the observables are exercised even if
-      // the generated event is not deterministic headless.
-      const unsub = subscribeAll([grok.events.onViewLayoutApplying, grok.events.onViewLayoutApplied]);
-      try {
-        await expectFiresWithin(grok.events.onViewLayoutGenerated, () => {tv.saveLayout();});
-      } finally {
-        unsub();
-      }
-      await wait(50);
+      await expectFiresWithin(grok.events.onViewLayoutGenerated, () => {tv.saveLayout();});
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

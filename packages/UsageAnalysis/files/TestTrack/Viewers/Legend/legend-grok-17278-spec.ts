@@ -63,12 +63,9 @@ test('GROK-17278: line chart legend color persists across layout + project round
         return {layoutId: null, ok: false, error: String(e?.message ?? e).slice(0, 200)};
       }
     });
-    if (res.ok) {
-      layoutId = res.layoutId;
-      expect(res.rOneAfterReload, 'R_ONE retains blue after layout round-trip (GROK-17278)').toBe('#1f77b4');
-    } else {
-      expect(String(res.error ?? '').length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `layout save+reapply failed: ${res.error}`).toBe(true);
+    layoutId = res.layoutId;
+    expect(res.rOneAfterReload, 'R_ONE retains blue after layout round-trip (GROK-17278)').toBe('#1f77b4');
   });
 
   let projectId: string | null = null;
@@ -103,13 +100,9 @@ test('GROK-17278: line chart legend color persists across layout + project round
         rOneAfter: String(t['R_ONE'] ?? '').toLowerCase(),
       };
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(res.rOneAfter, 'R_ONE retains blue after project save+close+reopen (GROK-17278)').toBe('#1f77b4');
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    projectId = res.projectId ?? null;
+    expect(res.rOneAfter, 'R_ONE retains blue after project save+close+reopen (GROK-17278)').toBe('#1f77b4');
   });
 
   await softStep('Cleanup', async () => {

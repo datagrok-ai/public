@@ -2,6 +2,13 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolGetSet, expectNoThrow, until, withTableView} from '../helpers';
 
+function hasViewer(tv: DG.TableView, type: string): boolean {
+  for (const v of tv.viewers)
+    if (v.type === type)
+      return true;
+  return false;
+}
+
 category('AI: App: TableView State', () => {
   test('syncCurrentObject get/set round-trips', async () => {
     await withTableView(demog(), async (tv) => {
@@ -13,7 +20,7 @@ category('AI: App: TableView State', () => {
     await withTableView(demog(), async (tv) => {
       tv.addViewer(DG.VIEWER.SCATTER_PLOT, {x: 'age', y: 'height'});
       tv.addViewer(DG.VIEWER.HISTOGRAM, {value: 'age'});
-      await until(() => tv.viewers.length >= 3);
+      await until(() => hasViewer(tv, DG.VIEWER.SCATTER_PLOT) && hasViewer(tv, DG.VIEWER.HISTOGRAM));
       const beforeReset = tv.viewers.length;
 
       const s = tv.saveState();
@@ -23,14 +30,16 @@ category('AI: App: TableView State', () => {
 
       // resetLayout() drops the added viewers; baseline keeps the grid only.
       tv.resetLayout();
-      await until(() => tv.viewers.length < beforeReset);
-      const afterReset = tv.viewers.length;
+      await until(() => !hasViewer(tv, DG.VIEWER.SCATTER_PLOT) && !hasViewer(tv, DG.VIEWER.HISTOGRAM));
 
-      // Exact counts are headless-nondeterministic; assert the monotonic relation
-      // (load >= reset) rather than a fixed number.
-      expectNoThrow(() => tv.loadState(s));
-      await until(() => tv.viewers.length >= afterReset);
-      expect(tv.viewers.length >= afterReset, true);
+      // loadState must rebuild the exact arrangement: both viewer types return and the total
+      // viewer count is restored to what it was before the reset.
+      tv.loadState(s);
+      await until(() => hasViewer(tv, DG.VIEWER.SCATTER_PLOT) && hasViewer(tv, DG.VIEWER.HISTOGRAM));
+      expect(hasViewer(tv, DG.VIEWER.SCATTER_PLOT), true);
+      expect(hasViewer(tv, DG.VIEWER.HISTOGRAM), true);
+      await until(() => tv.viewers.length === beforeReset);
+      expect(tv.viewers.length, beforeReset);
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

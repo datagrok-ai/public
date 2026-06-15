@@ -327,7 +327,11 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
     await softStep('Scenario 5: open XLSX from Shared with me (or handler-dispatch fallback)', async () => {
       const token2 = process.env.DATAGROK_AUTH_TOKEN_2;
       if (token2 && token2.length > 0) {
-        let realLegDone = false;
+        // Split: cross-user SETUP (login + share-grant) may legitimately fail (System fixture not
+        // shareable) and falls through. But once the second user can READ the file, the GROK-19329
+        // invariants are NOT optional — they run outside the swallow so a real regression fails loudly.
+        let crossUserSetupOk = false;
+        let setupSkipReason = '';
         try {
           // Discover the second user's login via a token2 re-auth round-trip, then restore primary session.
           await loginAsSecondUser(page);
@@ -365,15 +369,17 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
           if (!grant.ok)
             throw new Error(grant.reason ?? 'share setup failed');
 
-          // Re-auth as the second user, prove cross-user READ, open via the same registered handler.
+          // Re-auth as the second user (cross-user read context established for the invariant checks below).
           await loginAsSecondUser(page);
           await ensurePowerPackLoaded(page);
+          crossUserSetupOk = true;
 
+          // Run the cross-user invariants OUTSIDE this try so they cannot be swallowed into the fallback.
           const byteLen = await readXlsxBytes(page, xlsxFullPath);
-          expect(byteLen).toBeGreaterThan(0); // cross-user access proven
+          expect(byteLen, 'cross-user READ returned no bytes — share grant did not take effect').toBeGreaterThan(0);
 
           const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
-          expect(result.error).toBeNull();
+          expect(result.error, `cross-user XlsxFileHandler errored: ${result.error}`).toBeNull();
           expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
           expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
           const v = await verifyXlsxOpenedSuccessfully(page);
@@ -381,17 +387,20 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
           expect(v.rowCount).toBeGreaterThan(0);
           expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
           console.log(`Scenario 5: real cross-user open of shared XLSX as ${secondLogin} succeeded`);
-          realLegDone = true;
         } catch (e: any) {
-          // Sharing a System-owned fixture may not be feasible; fall through to the handler-dispatch path.
-          console.warn(`Scenario 5: real cross-user leg skipped (${String(e?.message ?? e)}); ` +
+          // Once setup succeeded, the failure IS a real regression — rethrow it. Only setup
+          // failures (sharing a System-owned fixture not feasible) are tolerated as a skip.
+          if (crossUserSetupOk)
+            throw e;
+          setupSkipReason = String(e?.message ?? e);
+          console.warn(`Scenario 5: real cross-user leg skipped (${setupSkipReason}); ` +
             'falling back to handler-dispatch on platform fixture.');
         } finally {
           // Always restore the primary session so cleanup runs as the owner.
           await loginToDatagrok(page).catch(() => {});
           await ensurePowerPackLoaded(page).catch(() => {});
         }
-        if (realLegDone)
+        if (crossUserSetupOk)
           return;
       }
 

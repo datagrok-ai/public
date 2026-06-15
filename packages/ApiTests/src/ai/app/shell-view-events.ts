@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until} from '../helpers';
+import {demog, expectFiresWithin, expectNoThrow, until} from '../helpers';
 
 category('AI: App: Shell View Events', () => {
   const tableViewCount = (): number => Array.from(grok.shell.tableViews).length;
@@ -52,20 +52,10 @@ category('AI: App: Shell View Events', () => {
     const a = grok.shell.addTableView(demog());
     const b = grok.shell.addTableView(demog());
     try {
-      await until(() => grok.shell.v != null);
-      let fired = false;
-      const unsub = subscribeAll([grok.events.onCurrentViewChanged]);
-      const sub = grok.events.onCurrentViewChanged.subscribe(() => fired = true);
-      try {
-        grok.shell.v = a;
-        await until(() => fired || grok.shell.v.name === a.name, 3000);
-        // onCurrentViewChanged is not deterministic headless; assert the state
-        // change always, and accept the event as a bonus when it surfaces.
-        expect(grok.shell.v.name, a.name);
-      } finally {
-        sub.unsubscribe();
-        unsub();
-      }
+      // b is current after being added last; switching to a must fire the event.
+      await until(() => grok.shell.v != null && grok.shell.v.name === b.name);
+      await expectFiresWithin(grok.events.onCurrentViewChanged, () => {grok.shell.v = a;}, 3000);
+      expect(grok.shell.v.name, a.name);
     } finally {
       expectNoThrow(() => a.close());
       expectNoThrow(() => b.close());
@@ -90,17 +80,10 @@ category('AI: App: Shell View Events', () => {
     const v = grok.shell.newView('orig-' + Date.now());
     const renamed = 'renamed-' + Date.now();
     try {
-      let fired = false;
-      const sub = grok.events.onViewRenamed.subscribe(() => fired = true);
-      try {
-        // The Dart name setter is guarded (view.dart:143 no-op if same name),
-        // so a distinct value is required to fire VIEW_RENAMED.
-        v.name = renamed;
-        await until(() => fired || v.name === renamed, 3000);
-        expect(v.name, renamed);
-      } finally {
-        sub.unsubscribe();
-      }
+      // The Dart name setter is guarded (view.dart:143 no-op if same name),
+      // so a distinct value is required to fire VIEW_RENAMED.
+      await expectFiresWithin(grok.events.onViewRenamed, () => {v.name = renamed;}, 3000);
+      expect(v.name, renamed);
     } finally {
       expectNoThrow(() => v.close());
     }

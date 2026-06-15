@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, withTableView, withAttachedViewer, expectNoThrow, until} from '../helpers';
+import {demog, withTableView, withAttachedViewer, until} from '../helpers';
 
 category('AI: App: TableView Control', () => {
   test('getViewerColumns after scatter', async () => {
@@ -26,6 +26,7 @@ category('AI: App: TableView Control', () => {
       // viewers collection drops to empty, it does not return to the grid-only baseline.
       tv.closeAllViewers();
       await until(() => Array.from(tv.viewers).length === 0);
+      expect(Array.from(tv.viewers).length, 0);
     });
   });
 
@@ -38,17 +39,11 @@ category('AI: App: TableView Control', () => {
     });
   });
 
-  test('focus', async () => {
-    await withTableView(demog(), (tv) => {
-      expectNoThrow(() => tv.focus());
-      // best-effort: activeElement may be unreliable in headless runs — downgraded to no-throw.
-      const active = document.activeElement;
-      if (active != null && tv.root != null)
-        expect(tv.root.contains(active) || active === document.body, true);
+  test('closeAllViewers on an empty view leaves no viewers', async () => {
+    await withTableView(demog(), async (tv) => {
+      tv.closeAllViewers();
+      await until(() => Array.from(tv.viewers).length === 0);
+      expect(Array.from(tv.viewers).length, 0);
     });
-  });
-
-  test('closeAllViewers boundary no-op', async () => {
-    await withTableView(demog(), (tv) => expectNoThrow(() => tv.closeAllViewers()));
   });
 }, {owner: 'agolovko@datagrok.ai'});

@@ -8,7 +8,9 @@ const CHEMISTRY_PANES = ['Rendering', 'Highlights', 'Descriptors', 'Properties']
 const BIOLOGY_PANES = ['Drug Likeness', 'Structural Alerts', 'Pharmacophore', 'Toxicity'];
 const STRUCTURE_PANES = ['Identifiers', '2D Structure', '3D Structure'];
 
-async function expandAndVerifyPanes(page: Page, label: string, expectedPanes: string[]) {
+async function expandAndVerifyPanes(
+  page: Page, label: string, expectedPanes: string[],
+): Promise<{seen: string[]; found: string[]}> {
   await page.evaluate(async () => {
     const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
     for (const p of panes) {
@@ -25,6 +27,7 @@ async function expandAndVerifyPanes(page: Page, label: string, expectedPanes: st
       .map(h => h.textContent!.trim()));
   const found = expectedPanes.filter(p => seen.some(s => new RegExp(p, 'i').test(s)));
   console.log(`[${label}] panes seen: ${seen.length}, expected matches: ${found.length}/${expectedPanes.length}`);
+  return {seen, found};
 }
 
 test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async ({page}) => {
@@ -71,7 +74,13 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   });
 
   await softStep('Phase A — Step 4: Walk Chemistry/Biology/Structure info panels (column context)', async () => {
-    await expandAndVerifyPanes(page, 'A4 column', [...CHEMISTRY_PANES, ...BIOLOGY_PANES, ...STRUCTURE_PANES]);
+    const {found, seen} = await expandAndVerifyPanes(
+      page, 'A4 column', [...CHEMISTRY_PANES, ...BIOLOGY_PANES, ...STRUCTURE_PANES]);
+    // The named behavior is "walk Chem info panels": at least some of the expected panes must render
+    // (a zero-match pass would mean the Chem info-panel pipeline never produced any pane).
+    expect(found.length,
+      `No expected Chem info panels rendered on the column context. seen=${JSON.stringify(seen)}`)
+      .toBeGreaterThan(0);
   });
 
   await softStep('Phase A — Steps 5-9: Open chembl-scaffolds + apply Rendering scaffold + Highlight', async () => {
@@ -119,10 +128,13 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   });
 
   await softStep('Phase A — Step 12: Expand cell-context panels (Descriptors, Drug Likeness, etc.)', async () => {
-    await expandAndVerifyPanes(page, 'A12 cell', [
+    const {found, seen} = await expandAndVerifyPanes(page, 'A12 cell', [
       'Descriptors', 'Drug Likeness', 'Properties', 'Structural Alerts',
       'Pharmacophore', 'Identifiers', '2D Structure', '3D Structure', 'Toxicity',
     ]);
+    expect(found.length,
+      `No expected Chem cell-context info panels rendered. seen=${JSON.stringify(seen)}`)
+      .toBeGreaterThan(0);
   });
 
   // ===== Phase B — Multi-format coverage =====

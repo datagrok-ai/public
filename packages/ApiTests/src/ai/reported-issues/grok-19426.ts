@@ -28,25 +28,17 @@ category('AI: GROK-19426: Pie chart showValue and showPercentage', () => {
     expectLook(c, {showValue: true, showPercentage: true});
   });
 
-  test('getProperties lists showValue and showPercentage (best-effort)', async () => {
+  test('getProperties lists showValue and showPercentage', async () => {
     const c = v(20);
-    for (const name of ['showValue', 'showPercentage']) {
-      const p = findProp(c, name);
-      if (p != null && typeof p.description === 'string')
-        expect(p.description.trim().length > 0, true);
-      else
-        expectBoolToggle(c, name, [true]);
-    }
+    for (const name of ['showValue', 'showPercentage'])
+      expect(findProp(c, name) != null, true);
   });
 
-  test('legacy showInnerPercent is absent or does not surface in look (rename)', async () => {
+  test('legacy showInnerPercent does not surface in look (renamed to showPercentage)', async () => {
     const c = v();
-    const aliased = look(c)['showInnerPercent'] !== undefined;
-    if (!aliased)
-      expect(look(c)['showInnerPercent'] === undefined, true);
+    expect(look(c)['showInnerPercent'] === undefined, true);
     c.props['showPercentage'] = true;
     expectLook(c, {showPercentage: true});
-    if (!aliased)
-      expect(look(c)['showInnerPercent'] === undefined, true);
+    expect(look(c)['showInnerPercent'] === undefined, true);
   });
 });

@@ -380,14 +380,10 @@ test('Legend visibility and positioning', async ({page}) => {
       return {phase: 'verified', ok: true, projectId: pid,
         vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(res.vis).toBeTruthy();
-      expect(res.pos).toBeTruthy();
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    projectId = res.projectId ?? null;
+    expect(res.vis).toBeTruthy();
+    expect(res.pos).toBeTruthy();
   });
 
   await softStep('Cleanup: drop layouts/projects + closeAll', async () => {

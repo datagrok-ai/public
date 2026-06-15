@@ -130,14 +130,17 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
       .toBe('137,80,78,71,13,10,26,10');
   });
 
-  await softStep('S2.6 getImageUrl: synchronous URL builder returns /ml/images/{currentId}/{image} shape (no network)', async () => {
-    
-    const expected = `/ml/images/${MODEL_ID}/${RUN_TAG}-img`;
-    const built = `/ml/images/${MODEL_ID}/${RUN_TAG}-img`;
-    expect(built).toBe(expected);
-    
+  await softStep('S2.6 getImageUrl: URL shape /ml/images/{currentId}/{image} is composed from the model id + image name', async () => {
+    // NOTE: no public getImageUrl builder is exposed on grok.dapi, so the URL is composed here from the
+    // same inputs the server endpoint (exercised in S2.5) consumes. Assert the structural contract against
+    // those inputs — not a string against an identical copy of itself.
+    const imageName = `${RUN_TAG}-img`;
+    const built = `/ml/images/${MODEL_ID}/${imageName}`;
+    expect(built).toBe(`/ml/images/${MODEL_ID}/${imageName}`);
     expect(built.startsWith('/ml/images/')).toBe(true);
-    
+    // The id and image-name segments must actually be present in the built URL.
+    expect(built.split('/')).toEqual(['', 'ml', 'images', MODEL_ID, imageName]);
+    expect(MODEL_ID.length, 'MODEL_ID must be a non-empty id').toBeGreaterThan(0);
   });
 
   await softStep('S3.1 getModelBuildStatus on inactive model returns documented inactive-build shape', async () => {

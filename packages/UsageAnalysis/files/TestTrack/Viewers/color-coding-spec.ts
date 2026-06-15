@@ -24,7 +24,7 @@ async function openTable(page: Page, path: string) {
 }
 
 test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme invert', async ({page}) => {
-  test.setTimeout(600000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await openTable(page, demogPath);

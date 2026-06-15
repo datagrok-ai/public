@@ -91,12 +91,10 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         return {layoutId: null, ok: false, error: String(e?.message ?? e).slice(0, 200)};
       }
     });
-    if (res.ok) {
-      layoutId = res.layoutId;
-      expect(typeof layoutId).toBe('string');
-    } else {
-      expect(String(res.error ?? '').length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `layout save+reapply failed: ${res.error}`).toBe(true);
+    layoutId = res.layoutId;
+    expect(typeof layoutId).toBe('string');
+    expect((layoutId ?? '').length).toBeGreaterThan(0);
   });
 
   let projectId: string | null = null;
@@ -124,13 +122,9 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       await new Promise((r) => setTimeout(r, 3500));
       return {phase: 'verified', ok: true, projectId: pid};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(projectId).toBeTruthy();
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    projectId = res.projectId ?? null;
+    expect(projectId).toBeTruthy();
   });
 
   await softStep('Sc1 step 10: categorical formula → categorical legend', async () => {
@@ -554,13 +548,9 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       return {phase: 'verified', ok: true, projectId: pid,
         rOneAfter: '0x' + (col.meta.colors.getColor(idxROne) >>> 0).toString(16)};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(res.rOneAfter).not.toBe('0xff808080');
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    projectId = res.projectId ?? null;
+    expect(res.rOneAfter).not.toBe('0xff808080');
   });
 
   await softStep('Cleanup', async () => { await cleanupAll(page, layoutId, projectId); });

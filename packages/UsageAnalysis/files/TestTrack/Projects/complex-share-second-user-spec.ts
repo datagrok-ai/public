@@ -40,7 +40,7 @@ async function deleteProjectByName(page: Page, name: string) {
 }
 
 test('Projects / Complex share-second-user: dual-level grant + recipient open via JS API', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -102,10 +102,9 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
           return { skipped: true, reason: String(e).slice(0, 200) };
         }
       })()`);
-      if (result.skipped) {
-        console.warn('Step 12 (View-and-Use) skipped: ' + result.reason);
-        return;
-      }
+      // The grant must succeed — a thrown error (FK violation, missing project,
+      // permissions API change) is a real regression, not a skip.
+      expect(result.skipped, result.skipped ? `Step 12 grant failed: ${result.reason}` : '').toBe(false);
       expect(result.login).toBeTruthy();
       recipientLogin = result.login;
 
@@ -120,11 +119,9 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
           return { ok: false, err: String(e).slice(0, 200) };
         }
       })()`);
-      if (!listed.ok) {
-        console.warn('Step 12 verification skipped: permissions.get unsupported (' + listed.err + ')');
-        return;
-      }
-      expect(listed.contains).toBe(true);
+      // permissions.get returning an error is a real failure to verify the grant.
+      expect(listed.ok, listed.ok ? '' : `permissions.get failed: ${listed.err}`).toBe(true);
+      expect(listed.contains, 'recipient group must appear in the project granted permissions').toBe(true);
       console.log(`[two-user] Step 12: granted View-and-Use to '${result.login}' (owner-side permissions.get confirms recipient group) — still owner`);
     });
 
@@ -141,10 +138,8 @@ test('Projects / Complex share-second-user: dual-level grant + recipient open vi
           return { skipped: true, reason: String(e).slice(0, 200) };
         }
       })()`);
-      if (result.skipped) {
-        console.warn('Step 12 (Full) skipped: ' + result.reason);
-        return;
-      }
+      // Elevation to Full must succeed — a thrown error is a real regression.
+      expect(result.skipped, result.skipped ? `Step 12 (Full) elevation failed: ${result.reason}` : '').toBe(false);
       expect(result.login).toBeTruthy();
       console.log(`[two-user] Step 12: elevated to Full access for '${result.login}' — share complete, STILL OWNER (no user switch performed yet)`);
     });

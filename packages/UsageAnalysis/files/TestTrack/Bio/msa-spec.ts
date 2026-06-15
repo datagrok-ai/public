@@ -3,7 +3,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio MSA on FASTA', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async () => {
@@ -188,7 +188,7 @@ test('Bio MSA on FASTA', async ({page}) => {
       if (!msa) return false;
       const gridCol = (grok.shell.tv as any).grid?.col?.(msa.name);
       return gridCol?.cellType === 'sequence';
-    }, null, {timeout: 180000});
+    }, null, {timeout: 120_000});
     const result = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));

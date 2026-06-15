@@ -35,7 +35,7 @@ category('AI: GROK-19667: Bar chart axisType log scale stability', () => {
       expect(typeof l['valueMax'] === 'number', true);
   });
 
-  test('getProperties() exposes axisType with non-empty description (best-effort)', async () => {
+  test('getProperties() exposes axisType', async () => {
     const v = demog(20).plot.bar({value: 'age', split: 'race', valueAggrType: 'count'});
     expect(findProp(v, 'axisType') != null, true);
   });

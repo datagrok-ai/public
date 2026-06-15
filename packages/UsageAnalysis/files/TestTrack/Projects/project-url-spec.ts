@@ -64,17 +64,13 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
         return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid};
       }, {pid: expectedId});
       console.log('Project URL load result: ' + JSON.stringify(result));
-      // Soft-warn (not hard-fail) if the strong signal didn't fire but the URL routed (Browse appeared).
-      if (!result.ok) {
-        console.warn(
-          'project-url soft-warn: strong-signal timeout. ' +
-          'URL appeared to route, but project.id and dataFrame.rowCount did not converge to expected within 45s. ' +
-          'See projects-ui-smoke-spec.ts for related dev-SPA save/route quirks.',
-        );
-      }
-      // Passes if the strong signal fired OR shell.project was set (URL routing did something).
-      const minimalSignal = result.ok || (result.projId != null);
-      expect(minimalSignal).toBe(true);
+      // Deep-link contract: navigating to the project URL must open THIS project
+      // (shell.project.id === expected) with its table re-materialized (rowCount > 0).
+      expect(
+        result.ok,
+        result.ok ? '' : `deep-link did not open the expected project within 45s: ` +
+          `got project.id=${result.projId} (expected ${expectedId}), rowCount=${result.rc}`,
+      ).toBe(true);
     });
   } finally {
     if (saved)

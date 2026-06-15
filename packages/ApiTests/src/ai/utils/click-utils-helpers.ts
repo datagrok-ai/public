@@ -20,34 +20,37 @@ category('AI: Utils: ClickUtils', () => {
     }
   }
 
-  test('getFullPath returns a non-empty path for an attached element', async () => {
+  test('getFullPath reconstructs the path from the element name attribute', async () => {
     withElement((el) => {
+      // The button carries name=ai-click-button; the parent div has only an id, which
+      // contributes no logging name, so the path resolves to the button's name.
       const path = DG.ClickUtils.getFullPath(el);
-      expect(typeof path, 'string');
-      expect(path.length > 0, true);
+      expect(path, 'ai-click-button');
     });
   });
 
-  test('getElementLoggingName returns a string', async () => {
+  test('getElementLoggingName returns the element name attribute', async () => {
     withElement((el) => {
-      expect(typeof DG.ClickUtils.getElementLoggingName(el), 'string');
+      expect(DG.ClickUtils.getElementLoggingName(el), 'ai-click-button');
     });
   });
 
-  test('getClickElementDescription returns a string', async () => {
+  test('getClickElementDescription returns the element name attribute', async () => {
     withElement((el) => {
-      expect(typeof DG.ClickUtils.getClickElementDescription(el), 'string');
+      expect(DG.ClickUtils.getClickElementDescription(el), 'ai-click-button');
     });
   });
 
-  test('sanitizeCssAttrValue preserves a plain value and stays a string', async () => {
-    const plain = DG.ClickUtils.sanitizeCssAttrValue('simple-value');
-    expect(typeof plain, 'string');
-    expect(plain.indexOf('simple-value') >= 0, true);
+  test('sanitizeCssAttrValue passes a plain value through unchanged', async () => {
+    expect(DG.ClickUtils.sanitizeCssAttrValue('simple-value'), 'simple-value');
   });
 
-  test('sanitizeCssAttrValue handles special characters without throwing', async () => {
-    for (const v of ['a"b', 'a\'b', 'a\nb', 'a\\b', ''])
-      expect(typeof DG.ClickUtils.sanitizeCssAttrValue(v), 'string');
+  test('sanitizeCssAttrValue strips the known role prefixes', async () => {
+    // button- prefix is dropped and hyphens become spaces.
+    expect(DG.ClickUtils.sanitizeCssAttrValue('button-Save'), 'Save');
+    // dialog- prefix becomes a "Dialog: " label with hyphens turned into spaces.
+    expect(DG.ClickUtils.sanitizeCssAttrValue('dialog-edit-user'), 'Dialog: edit user');
+    // input-host- prefix becomes an "Input: " label.
+    expect(DG.ClickUtils.sanitizeCssAttrValue('input-host-age'), 'Input: age');
   });
 }, {owner: 'agolovko@datagrok.ai'});

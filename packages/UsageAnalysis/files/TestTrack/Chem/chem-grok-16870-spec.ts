@@ -51,7 +51,8 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
     });
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected after 30s settle. cols=${JSON.stringify(result.cols)}`);
-    await page.waitForTimeout(3000);
+    // Wait for the Box Plot viewer to actually attach before the hover sweep queries its rect.
+    await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 30_000, state: 'visible'});
   });
 
   await softStep('Hover over Box Plot at 5 positions and let tooltip render', async () => {

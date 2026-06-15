@@ -151,19 +151,15 @@ test('Legend color consistency', async ({page}) => {
       }
       return {phase: 'verified', ok: true, projectId, colorAfter, viewerColors};
     });
-    if (res.ok) {
-      (globalThis as any).__ccProjectId = res.projectId;
-      expect(res.colorAfter).toBe('#1f77b4');
-      const colors = res.viewerColors as Record<string, string|null>;
-      let checked = 0;
-      for (const [_, color] of Object.entries(colors)) {
-        if (color === 'rgb(31, 119, 180)') checked++;
-      }
-      expect(checked, 'at least 1 viewer reflects R_ONE=blue post-reopen').toBeGreaterThanOrEqual(1);
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.includes('foreign key') || errStr.includes('FK') || errStr.length > 0).toBe(true);
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    (globalThis as any).__ccProjectId = res.projectId;
+    expect(res.colorAfter).toBe('#1f77b4');
+    const colors = res.viewerColors as Record<string, string|null>;
+    let checked = 0;
+    for (const [_, color] of Object.entries(colors)) {
+      if (color === 'rgb(31, 119, 180)') checked++;
     }
+    expect(checked, 'at least 1 viewer reflects R_ONE=blue post-reopen').toBeGreaterThanOrEqual(1);
   });
 
   await softStep('Cleanup', async () => {

@@ -20,17 +20,9 @@ category('AI: GROK-19347: Density plot xMin/xMax/yMin/yMax', () => {
     expectNoThrow(() => v().setOptions({xMin: NaN}));
   });
 
-  test('getProperties lists xMin/xMax/yMin/yMax (best-effort)', async () => {
+  test('getProperties lists xMin/xMax/yMin/yMax', async () => {
     const c = DG.Viewer.densityPlot(demog(20), {x: 'age', y: 'height'});
-    const wanted = ['xMin', 'xMax', 'yMin', 'yMax'];
-    let foundCount = 0;
-    for (const n of wanted) {
-      if (findProp(c, n) !=
-        null) foundCount++;
-    }
-    if (foundCount < wanted.length)
-      expectRoundTrip(c, {xMin: 1, xMax: 99, yMin: 2, yMax: 198});
-    else
-      expect(foundCount, wanted.length);
+    for (const n of ['xMin', 'xMax', 'yMin', 'yMax'])
+      expect(findProp(c, n) != null, true);
   });
 });

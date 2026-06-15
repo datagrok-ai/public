@@ -7,13 +7,9 @@ category('AI: GROK-19421: Histogram showValues bin labels', () => {
     expectBoolToggle(demog().plot.histogram({value: 'age'}), 'showValues');
   });
 
-  test('showValues property is discoverable via getProperties (best-effort)', async () => {
+  test('showValues property is discoverable via getProperties', async () => {
     const v = demog(20).plot.histogram({value: 'age'});
-    const p = findProp(v, 'showValues');
-    if (p != null)
-      expect((p.description ?? '').trim().length > 0, true);
-    else
-      expectBoolToggle(v, 'showValues', [true]);
+    expect(findProp(v, 'showValues') != null, true);
   });
 
   test('showValues survives alongside splitColumnName via setOptions', async () => {

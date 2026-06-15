@@ -28,12 +28,8 @@ category('AI: GROK-17498: Pie chart includeNulls property', () => {
     expectLook(v, {categoryColumnName: 'sex', includeNulls: false});
   });
 
-  test('includeNulls property is discoverable via getProperties (best-effort)', async () => {
+  test('includeNulls property is discoverable via getProperties', async () => {
     const v = DG.Viewer.pieChart(demog(20), {category: 'race'});
-    const p = findProp(v, 'includeNulls');
-    if (p != null && typeof p.description === 'string')
-      expect(p.description.trim().length > 0, true);
-    else
-      expectBoolToggle(v, 'includeNulls', [true]);
+    expect(findProp(v, 'includeNulls') != null, true);
   });
 });

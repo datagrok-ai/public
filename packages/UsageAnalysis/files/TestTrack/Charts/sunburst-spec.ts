@@ -380,11 +380,9 @@ test('Sunburst viewer', async ({page}) => {
       }, projectName);
 
       console.log('[Step 7b saved]', JSON.stringify(saved));
-      // Race-tolerant: project save can flake on dev; log but don't block downstream verification.
-      if (!saved.ok) {
-        console.warn('[Step 7b]', `Project save phase failed: ${(saved as any).reason ?? 'unknown'}; cleanup-only mode`);
-        return;
-      }
+      // The save is the operation under test — assert it succeeded (don't silently pass when it fails).
+      expect((saved as any).ok, (saved as any).ok ? '' : `Project save failed: ${(saved as any).reason ?? 'unknown'}`).toBe(true);
+      expect((saved as any).hierarchy.length, 'Sunburst hierarchy was empty before save').toBeGreaterThan(0);
       if (saved.savedId != null) savedProjectInfo.id = saved.savedId;
 
       const reopened = await page.evaluate(async (name) => {
@@ -429,16 +427,14 @@ test('Sunburst viewer', async ({page}) => {
       }, projectName);
 
       console.log('[Step 7b reopened]', JSON.stringify(reopened));
-      // Assert only on the load-bearing closeAll invariant; Sunburst restoration is best-effort (flaky on dev).
-      if (reopened.ok) {
-        expect(reopened.tableViewsAfterClose).toBe(0);
-        if (reopened.sunburstPresent) {
-          if (reopened.hierarchyAfter != null) expect(reopened.hierarchyAfter.length).toBeGreaterThan(0);
-        } else {
-          console.warn('[Step 7b]', 'Sunburst not restored after reopen — env-flake; project save+reopen surface exercised but full restoration race-failed');
-        }
+      // The reopen (proj.open) is the operation under test — assert it succeeded + the closeAll invariant held.
+      expect(reopened.ok, reopened.ok ? '' : `Project reopen failed: ${(reopened as any).reason ?? 'unknown'}`).toBe(true);
+      expect(reopened.tableViewsAfterClose).toBe(0);
+      // Sunburst restoration (and its hierarchy round-trip) is best-effort — documented dev-flake.
+      if (reopened.sunburstPresent) {
+        if (reopened.hierarchyAfter != null) expect(reopened.hierarchyAfter.length).toBeGreaterThan(0);
       } else {
-        console.warn('[Step 7b]', `Reopen phase failed: ${(reopened as any).reason ?? 'unknown'}; full save+reopen surface partially exercised`);
+        console.warn('[Step 7b]', 'Sunburst not restored after reopen — env-flake; project save+reopen surface exercised but full restoration race-failed');
       }
     });
   } finally {

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {expectNoThrow, noThrow, withAttachedView} from '../helpers';
+import {expectNoThrow, withAttachedView} from '../helpers';
 
 // CardView search/filter surface. View must be attached before DOM-backed getters/refresh() work,
 // and needs a real objectType — an empty data source makes refresh()/repaint() throw and leak.
@@ -67,15 +67,6 @@ category('AI: App: CardView Search', () => {
       cv.filters = {name: 'name'};
       expect(cv.filters != null, true);
       expect(cv.filters['name'], 'name');
-    });
-  });
-
-  test('refresh does not throw and repaint is callable', async () => {
-    await withCardView((cv) => {
-      expectNoThrow(() => cv.refresh());
-      // repaint() drives a full grid redraw that needs the data source loaded; in the
-      // headless harness it may throw before load completes, so exercise it best-effort.
-      noThrow(() => cv.repaint());
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

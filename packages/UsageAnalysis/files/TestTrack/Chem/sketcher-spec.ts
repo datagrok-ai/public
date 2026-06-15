@@ -113,7 +113,17 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
       await new Promise(r => setTimeout(r, 600));
       return {ok: true, copyAsSmilesFound: !!smilesItem, copyAsMolFound: !!molItem};
     });
-    expect((result as any).ok).not.toBe(false);
+    // If the ui.dialog-wrapped sketcher closed after Step 5 (no OK/CANCEL to keep it open), this
+    // leg can't be driven — a documented soft-skip, not a pass-on-broken.
+    if ((result as any).ok === 'soft-skip') {
+      console.log(`[sketcher] Copy-as step skipped: ${JSON.stringify(result)}`);
+    } else {
+      // Dialog still open: the Copy as SMILES / MOLBLOCK menu items must actually be present.
+      expect((result as any).copyAsSmilesFound,
+        `Copy as SMILES menu item not found: ${JSON.stringify(result)}`).toBe(true);
+      expect((result as any).copyAsMolFound,
+        `Copy as MOLBLOCK menu item not found: ${JSON.stringify(result)}`).toBe(true);
+    }
   });
 
   await softStep('Step 10: Close sketcher — no console errors fired', async () => {

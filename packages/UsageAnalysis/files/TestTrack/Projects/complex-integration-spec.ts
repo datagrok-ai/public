@@ -142,7 +142,8 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
           return {children: -1, ok: false};
         }
       })()`);
-      if (r.ok) expect(r.children).toBeGreaterThanOrEqual(4);
+      expect(r.ok, 'failed to fetch saved project children server-side').toBe(true);
+      expect(r.children).toBeGreaterThanOrEqual(4);
     });
 
     await softStep('Step 4: closeAll and reopen — multi-source co-existence assertion', async () => {

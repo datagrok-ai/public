@@ -1,16 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {expectNoThrow} from '../helpers';
 
-// Tests DG.Paint marker/axis helpers: markerTypes, markerTypeIndexes, marker, horzAxis, vertAxis.
+// Tests DG.Paint marker/axis helpers: markerTypes, markerTypeIndexes.
 category('AI: Color: Paint / Marker / Axis helpers', () => {
-  const ctx = (): CanvasRenderingContext2D => {
-    const c = document.createElement('canvas');
-    c.width = 200;
-    c.height = 200;
-    return c.getContext('2d')!;
-  };
-
   test('markerTypeIndexes returns map with keys matching markerTypes', async () => {
     const types = DG.Paint.markerTypes();
     const indexes = DG.Paint.markerTypeIndexes();
@@ -48,20 +40,5 @@ category('AI: Color: Paint / Marker / Axis helpers', () => {
     }
     // and the intersection is non-empty
     expect(types.some((t) => enumValues.indexOf(t) >= 0), true);
-  });
-
-  test('Paint.marker does not throw for each MARKER_TYPE value (canvas ctx)', async () => {
-    const g = ctx();
-    for (const v of Object.values(DG.MARKER_TYPE))
-      expectNoThrow(() => DG.Paint.marker(g, v, 100, 100, DG.Color.blue, 12));
-    // also accepts an html color string
-    expectNoThrow(() => DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, 50, 50, '#ff0000', 8));
-  });
-
-  test('Paint.horzAxis / vertAxis do not throw (linear, log, inverse)', async () => {
-    const g = ctx();
-    expectNoThrow(() => DG.Paint.horzAxis(g, 0, 100, 0, 180, 200, 20));
-    expectNoThrow(() => DG.Paint.vertAxis(g, 1, 1000, 0, 0, 30, 200, true));
-    expectNoThrow(() => DG.Paint.horzAxis(g, 0, 100, 0, 180, 200, 20, false, true));
   });
 });

@@ -27,15 +27,12 @@ category('AI: GROK-2892: Pie chart onClick filter semantics', () => {
     });
   });
 
-  test('getProperties(): onClick is exposed (best-effort description check)', async () => {
+  test('getProperties(): onClick is exposed', async () => {
     await withTableView(demog(), async (tv) => {
       const v = DG.Viewer.pieChart(demog(), {category: 'race', onClick: 'Filter'});
       tv.addViewer(v);
-      const props = v.getProperties();
-      const onClickProp = props.find((p) => p.name === 'onClick');
+      const onClickProp = v.getProperties().find((p) => p.name === 'onClick');
       expect(onClickProp != null, true);
-      if (onClickProp != null && onClickProp.description != null)
-        expect(typeof onClickProp.description === 'string' && onClickProp.description.length > 0, true);
     });
   });
 });

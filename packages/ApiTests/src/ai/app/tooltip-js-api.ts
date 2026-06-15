@@ -22,8 +22,6 @@ category('AI: App: Tooltip', () => {
       ui.tooltip.show('bye', 40, 40);
       await until(() => ui.tooltip.isVisible);
       ui.tooltip.hide();
-      // hide()'s isVisible flip depends on DebugSettings.hideTooltipsOnMouseOut (default true,
-      // settings.dart). DOM-based fallback below if isVisible does not flip on localhost.
       await until(() => !ui.tooltip.isVisible);
       expect(ui.tooltip.isVisible, false);
       expectNoThrow(() => ui.tooltip.hide());
@@ -63,7 +61,7 @@ category('AI: App: Tooltip', () => {
     try {
       ui.tooltip.show('to-be-hidden', 10, 10);
       await until(() => ui.tooltip.isVisible);
-      expectNoThrow(() => ui.tooltip.show(null, 0, 0));
+      ui.tooltip.show(null, 0, 0);
       await until(() => !ui.tooltip.isVisible);
       expect(ui.tooltip.isVisible, false);
     } finally {
@@ -71,29 +69,25 @@ category('AI: App: Tooltip', () => {
     }
   });
 
-  test('bind() returns the element for string/function content and a position arg', async () => {
+  test('bind() returns the same element for string/function content and a position arg', async () => {
     try {
       const el = ui.div();
-      let ret: HTMLElement | null = null;
-      expectNoThrow(() => {ret = ui.tooltip.bind(el, 'tip');});
-      expect(ret === el, true);
+      expect(ui.tooltip.bind(el, 'tip') === el, true);
 
       const el2 = ui.div();
-      expectNoThrow(() => {ret = ui.tooltip.bind(el2, () => ui.div('dyn'));});
-      expect(ret === el2, true);
+      expect(ui.tooltip.bind(el2, () => ui.div('dyn')) === el2, true);
 
       const el3 = ui.div();
-      expectNoThrow(() => {ret = ui.tooltip.bind(el3, 'tip', 'top');});
-      expect(ret === el3, true);
+      expect(ui.tooltip.bind(el3, 'tip', 'top') === el3, true);
     } finally {
       expectNoThrow(() => ui.tooltip.hide());
     }
   });
 
-  test('showRowGroup() does not throw and shows the tooltip', async () => {
+  test('showRowGroup() shows the tooltip', async () => {
     const df: DG.DataFrame = demog(20);
     try {
-      expectNoThrow(() => ui.tooltip.showRowGroup(df, (i) => i % 2 === 0, 30, 30));
+      ui.tooltip.showRowGroup(df, (i) => i % 2 === 0, 30, 30);
       await until(() => ui.tooltip.isVisible);
       expect(ui.tooltip.isVisible, true);
     } finally {

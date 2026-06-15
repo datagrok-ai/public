@@ -135,15 +135,11 @@ test('Line chart legend', async ({page}) => {
         yCols: lc?.props.yColumnNames,
       };
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(res.multiAxis).toBe(true);
-      expect(res.split).toBe('Series');
-      expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    projectId = res.projectId ?? null;
+    expect(res.multiAxis).toBe(true);
+    expect(res.split).toBe('Series');
+    expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
   });
 
   await softStep('Cleanup', async () => {

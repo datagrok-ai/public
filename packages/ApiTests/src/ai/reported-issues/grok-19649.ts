@@ -20,13 +20,9 @@ category('AI: GROK-19649: Bar chart orientation and category width', () => {
     expectBoolToggle(v(), 'showCategoryValues', [true, false]);
   });
 
-  test('getProperties carries orientation/category-width/showCategoryValues (best-effort)', async () => {
+  test('getProperties carries orientation/category-width/showCategoryValues', async () => {
     const c = v();
-    let foundCount = 0;
-    for (const name of ['orientation', 'maxCategoryWidth', 'categoryValueWidth', 'showCategoryValues']) {
-      if (findProp(c, name) !=
-        null) foundCount++;
-    }
-    expect(foundCount > 0, true);
+    for (const name of ['orientation', 'maxCategoryWidth', 'categoryValueWidth', 'showCategoryValues'])
+      expect(findProp(c, name) != null, true);
   });
 });

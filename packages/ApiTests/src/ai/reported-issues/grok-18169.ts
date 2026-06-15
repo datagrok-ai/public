@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectBoolToggle, expectLook, findProp} from '../helpers';
 
-// Regression coverage for GROK-18169: PC plot showMin / showMax flags.
-category('AI: GROK-18169: PC plot showMin and showMax', () => {
+// Regression coverage for GROK-18169: PC plot showMinMax flag.
+category('AI: GROK-18169: PC plot showMinMax', () => {
   const v = (n: number = 30): DG.Viewer => DG.Viewer.pcPlot(demog(n));
 
   test('showMinMax toggles round-trip through props and look', async () => {
@@ -12,14 +12,6 @@ category('AI: GROK-18169: PC plot showMin and showMax', () => {
 
   test('showMinMax is exposed on the property descriptor', async () => {
     expect(findProp(v(20), 'showMinMax') != null, true);
-  });
-
-  test('showMin / showMax schema tripwire (best-effort if exposed)', async () => {
-    const c = v(20);
-    if (findProp(c, 'showMin') !=
-      null) expectBoolToggle(c, 'showMin', [true, false]);
-    if (findProp(c, 'showMax') !=
-      null) expectBoolToggle(c, 'showMax', [true, false]);
   });
 
   test('showLabels and showDensity toggle independently', async () => {

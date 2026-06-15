@@ -126,7 +126,8 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
 
   await softStep('CANCEL the Edit Scaffold dialog (no edits applied)', async () => {
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-    await page.waitForTimeout(2000);
+    // Wait for the dialog to actually detach rather than sleeping a fixed interval before the count.
+    await page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 8000});
     const dialogCount = await page.evaluate(() => document.querySelectorAll('.d4-dialog').length);
     expect(dialogCount, 'Dialog did not close after CANCEL').toBe(0);
   });
@@ -145,7 +146,12 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       return {ok: true, beforeChecked, afterChecked: checkbox.checked};
     });
     expect((clicked as any).ok, `Checkbox click failed: ${JSON.stringify(clicked)}`).toBe(true);
-    await page.waitForTimeout(6000);
+    // Substructure filter applies asynchronously — poll for it to settle (some rows masked, not all)
+    // instead of a blind sleep before the next step reads df.filter.
+    await expect.poll(async () => page.evaluate(() => {
+      const df = (window as any).__df;
+      return df.filter.trueCount > 0 && df.filter.trueCount < df.rowCount;
+    }), {timeout: 12_000, intervals: [250, 500, 1000]}).toBe(true);
   });
 
   await softStep('Assert clean filter state — no searchSubstructure errors, BitSet honored, selection untouched', async () => {

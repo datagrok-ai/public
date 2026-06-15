@@ -126,7 +126,7 @@ async function setupDemogLineChart(page: Page) {
 // -- Test --
 
 test('Line chart tests (Playwright) — UI-first', async ({page}) => {
-  test.setTimeout(600000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await setupDemogLineChart(page);
 

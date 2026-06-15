@@ -51,8 +51,12 @@ Steps:
    `radar.setOptions({table: 'demog'})`. Wait for re-render.
    **Expected:** Radar's `props.get('table')` returns `'demog'` (or the
    read-back races to null — race-tolerant per cycle lessons).
-4. Save the project: construct a `Project` via `grok.dapi.projects` API,
-   save with a unique name like `radar-rebind-${Date.now()}`.
+4. Save the project: save the CURRENT WORKSPACE project
+   (`grok.shell.project`) — it holds the open demog/SPGI views, the Radar,
+   and the rebind layout — via `grok.dapi.projects.save`, after setting a
+   unique name like `radar-rebind-${Date.now()}`. Do NOT construct a fresh
+   `DG.Project.create()`: an empty project carries none of the rebind state,
+   so Steps 6-7 (verify the rebind survived) would have nothing to verify.
    **Expected:** save resolves; project carries non-empty `id`.
 5. Close all views (`grok.shell.closeAll()`).
 6. Reopen the project via `grok.dapi.projects.find(<id>)` + open API.
