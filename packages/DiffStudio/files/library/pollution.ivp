@@ -2,7 +2,8 @@
 #description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
 #meta.role: model
 #meta.icon: files/icons/pollution.png
-#comment: 
+#meta.help: library/pollution.md
+#comment:
   Source: https://archimede.uniba.it/~testset/report/pollu.pdf
 #equations:
   dy1/dt = -(r1 + r10 + r14 + r23 + r24) + (r2 + r3 + r9 + r11 + r12 + r22 + r25)

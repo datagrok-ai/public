@@ -48,8 +48,8 @@ export function testTemplate(name: string, problem: string): void {
   test(name, async () => await checkIvpSolves(problem), {timeout: TIMEOUT});
 };
 
-/** Template for testing a model shipped as an `.ivp` file under `files/library/`. */
-export function testIvpFile(name: string, fileName: string): void {
-  test(name, async () => await checkIvpSolves(await _package.files.readAsText(`library/${fileName}`)),
+/** Template for testing a model shipped as an `.ivp` file under `files/<filePath>`. */
+export function testIvpFile(name: string, filePath: string): void {
+  test(name, async () => await checkIvpSolves(await _package.files.readAsText(filePath)),
     {timeout: TIMEOUT});
 };

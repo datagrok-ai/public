@@ -1,6 +1,5 @@
 #name: Bioreactor
 #description: Bioreactor simulation
-#meta.role: model
 #meta.icon: files/icons/_bioreactor.png
 #comment: 
   Source: https://doi.org/10.1074/jbc.RA117.000303.
