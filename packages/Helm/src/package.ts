@@ -20,6 +20,11 @@ import {HelmPackage} from './package-utils';
 import {HelmHelper} from './helm-helper';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
+// hwe editor stylesheet (`.hw-*` classes). hwe (Phase 28) ships its CSS only as
+// a bundler import — there is no runtime injection — so consumers must import it
+// or the HelmEditorApp renders unstyled. See @datagrok-libraries/hwe editor.css.
+import '@datagrok-libraries/hwe/styles.css';
+
 export * from './package.g';
 export const _package = new HelmPackage(/*{debug: true}/**/);
 
