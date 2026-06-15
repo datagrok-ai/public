@@ -24,7 +24,7 @@
   d(MEAthiol)/dt = 2 * (-E11 + E12 - E21 + E22 + E31 + E41 - E32 - E42 - E62 - ktox * E71 * E72)
 			            - (MEAthiol + MA) * (Fin + Fper) / VL
 
-  d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR	- 0.5 * ktox * E71 * E72
+  d(DO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * DO2) / VL + OTR	- 0.5 * ktox * E71 * E72
 			
   d(yO2P)/dt = -OTR * (VL / (VTV - VL)) * R * T * P + yO2in * qin - yO2P * qout
 
@@ -38,9 +38,9 @@
 
   MA = MEAthiol * pow(10, pH - pKa2MEA)
 
-  qout = qin - KF * (yO2P * H - CO2) * VL * R * T / (P * 1000)
+  qout = qin - KF * (yO2P * H - DO2) * VL * R * T / (P * 1000)
   
-  OTR = KF * (yO2P * H - CO2)
+  OTR = KF * (yO2P * H - DO2)
 
   Fin = t < switchTime ? 0 : 0.025
 
@@ -74,7 +74,7 @@
 
   E62 = k4red * FKox * E0 * E1
 
-  E70 = E0 * CO2
+  E70 = E0 * DO2
 
   E71 = (MEAthiol * E0)**2
 
@@ -95,7 +95,7 @@
   FKred    = 0     {units: mmol/L; category: Initial values}                                    [FK reduced]
   FKox     = 0     {units: mmol/L; category: Initial values}                                    [FK oxidized]
   MEAthiol = 15    {units: mmol/L; category: Initial values; min: 10;   max: 16}                [MEAthiol]
-  CO2      = 0.12  {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
+  DO2      = 0.12  {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
   yO2P     = 0.209 {units: atm;    category: Initial values}                                    [Atm headspace]
   CYST     = 0     {units: mmol/L; category: Initial values}                                    [Cystamine]
   VL       = 7.2   {units: L;      category: Initial values}                                    [Liquid volume]
@@ -111,7 +111,7 @@
   FKred
   FKox
   MEAthiol
-  CO2
+  DO2
   yO2P
   CYST
 
