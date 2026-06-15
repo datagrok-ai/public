@@ -14,7 +14,6 @@ import {ISeqHandler} from './macromolecule/seq-handler';
 import {HelmType} from '../helm/types';
 import {HelmTypes} from '../helm/consts';
 import {buildCompositionTable} from './composition-table';
-import {BioType} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 import {IMonomerLib} from '../types/monomer-library';
 
 

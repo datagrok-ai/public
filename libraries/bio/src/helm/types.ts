@@ -1,50 +1,90 @@
-// HelmType/PolymerType/MonomerType are owned by `@datagrok-libraries/hwe` and
-// re-exported here. The remaining legacy-editor shapes (R-group / monomer-set
-// maps) still come from js-draw-lite until the legacy editor is removed.
-import type {HelmType, PolymerType, MonomerType} from '@datagrok-libraries/hwe';
+// hwe migration: the HELM value vocabulary and the editor graph/view shapes are
+// owned by `@datagrok-libraries/hwe` (the standalone HELM editor). This barrel
+// re-exports them under the legacy type names the platform still uses, and keeps
+// the Datagrok-flavored monomer interfaces defined locally (rebuilt on hwe's
+// value types). As a result `@datagrok-libraries/bio` no longer depends on the
+// legacy `@datagrok-libraries/js-draw-lite` / `@datagrok-libraries/helm-web-editor`.
 import type {
-  WebEditorRGroups, MonomerSetType,
-} from '@datagrok-libraries/js-draw-lite/src/types/org';
+  HelmType, PolymerType, MonomerType,
+  HelmAtomLike, HelmBondLike, HelmMolLike, HelmAtomBioLike,
+  AppLike, JSDraw2EditorLike, MonomerExplorerLike, MonomersFuncsLike, DrawOptionsLike,
+} from '@datagrok-libraries/hwe';
 
-import type {Point} from '@datagrok-libraries/js-draw-lite/src/Point';
-import type {Atom} from '@datagrok-libraries/js-draw-lite/src/Atom';
-import type {IBio, IJsAtom} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
-import type {Bond} from '@datagrok-libraries/js-draw-lite/src/Bond';
-import type {Mol} from '@datagrok-libraries/js-draw-lite/src/Mol';
-import type {IMolHandler} from '@datagrok-libraries/js-draw-lite/src/types/mol-handler';
-import type {Editor} from '@datagrok-libraries/js-draw-lite/src/JSDraw.Editor';
+export type {HelmType, PolymerType, MonomerType};
 
-import type {
-  IHelmBio, HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString,
-  IOrgHelmWebEditor, IOrgHelmMonomers,
-  GetMonomerFunc, GetMonomerResType, MonomersFuncs,
-  IHelmEditorOptions, IHelmDrawOptions, IMonomerColors, IWebEditorMonomer,
-} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
-import type {HweWindow} from '@datagrok-libraries/helm-web-editor/src/types';
-import type {MonomerExplorer} from '@datagrok-libraries/helm-web-editor/helm/MonomerExplorer';
-import type {App} from '@datagrok-libraries/helm-web-editor/helm/App';
+/** 2-D point (the legacy JSDraw2 `Point` shape). */
+export interface Point {
+  x: number;
+  y: number;
+}
 
+// ---- Legacy JSDraw2 / HELM graph shapes → hwe view types -------------------
+// The platform refers to these JSDraw2-era names; at runtime every value is the
+// hwe immutable model exposed through the adapter's legacy-shaped view
+// (`buildHelmMolView`, `LegacyEditorWrapper`, `LegacyAppWrapper`). Phantom
+// generic parameters preserve the legacy call sites (e.g.
+// `Mol<HelmType, IHelmBio>`, `Editor<HelmType, IHelmBio, IHelmEditorOptions>`).
+export type IBio<_TBio = unknown> = HelmAtomBioLike;
+export type IHelmBio = HelmAtomBioLike;
+export type Atom<_T = unknown, _TBio = unknown> = HelmAtomLike;
+export type Bond<_T = unknown, _TBio = unknown> = HelmBondLike;
+export type Mol<_T = unknown, _TBio = unknown> = HelmMolLike;
+export type Editor<_T = unknown, _TBio = unknown, _O = unknown> = JSDraw2EditorLike;
+export type IJsAtom = HelmAtomLike;
 
-import type {TabDescType} from '@datagrok-libraries/js-draw-lite/form/Tab';
-import type {JSDraw2ModuleType, ScilModuleType} from '@datagrok-libraries/js-draw-lite/src/types';
-import type {OrgType} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
-import type {Monomers} from '@datagrok-libraries/helm-web-editor/helm/Monomers';
-import type {DojoType, DojoxType} from '@datagrok-libraries/js-draw-lite/src/types/dojo';
+export type HelmAtom = HelmAtomLike;
+export type HelmBond = HelmBondLike;
+export type HelmMol = HelmMolLike;
+export type HelmEditor = JSDraw2EditorLike;
+export type HelmString = string;
 
-export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
-export {Point, IBio, Atom, IJsAtom, Bond, Mol, Editor, MonomerExplorer};
+export type App = AppLike;
+export type MonomerExplorer = MonomerExplorerLike;
+export type MonomersFuncs = MonomersFuncsLike;
 
-export {IHelmBio, HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString};
+// ---- Datagrok-flavored monomer interfaces (Pistoia HELMmonomer-shaped) ------
+export type WebEditorRGroups = { [group: string]: string };
 
-export {
-  IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers,
-  IMolHandler, IHelmEditorOptions, IHelmDrawOptions, GetMonomerFunc, GetMonomerResType,
-  App, Monomers,
-};
+export interface IMonomerColors {
+  linecolor: string;
+  backgroundcolor: string;
+  textcolor: string;
+  nature?: string;
+}
 
-export {DojoType, DojoxType};
-export {HweWindow, ScilModuleType, JSDraw2ModuleType, OrgType};
+export interface IMonomer {
+  /** symbol */ id?: string;
+  /** name */ n?: string;
+  /** natural analog */ na?: string;
+  /** polymer type */ type?: PolymerType;
+  /** monomer type */ mt?: MonomerType;
+  /** molfile */ m?: string;
+  /** molfile compressed */ mz?: any;
+  /** substituents */ at?: WebEditorRGroups;
+  /** number of substituents */ rs?: number;
+  issmiles?: boolean;
+  smiles?: string;
+  name?: string;
+  oldname?: string;
+  /** Used by Formula */ stats?: any;
+}
 
+export interface IWebEditorMonomer extends IMonomer, Partial<IMonomerColors> {}
+
+export type MonomerSetType = { [symbol: string]: IMonomer };
+
+export type GetMonomerResType = IWebEditorMonomer | null;
+export type GetMonomerFunc = (a: HelmAtom | HelmType, name?: string) => GetMonomerResType;
+
+export interface IHelmDrawOptions extends DrawOptionsLike {
+  getMonomer?: GetMonomerFunc;
+}
+
+export interface IHelmEditorOptions {
+  width?: number;
+  height?: number;
+  viewonly?: boolean;
+}
 
 export interface ISeqMonomer {
   position: number;
@@ -58,5 +98,3 @@ export interface IHelmWebEditor {
 
   resizeEditor(width: number, height: number): void;
 }
-
-export {MonomerSetType, MonomersFuncs, TabDescType};
