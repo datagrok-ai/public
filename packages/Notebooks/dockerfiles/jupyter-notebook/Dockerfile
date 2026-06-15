@@ -170,7 +170,7 @@ COPY entrypoint.sh /etc/nginx/entrypoint.sh
 RUN sed -i 's/\r$//' /etc/nginx/entrypoint.sh && chmod +x /etc/nginx/entrypoint.sh && \
     chown -R grok:grok /etc/nginx /var/lib/nginx /var/log/nginx
 
-EXPOSE 8889 5005 8090
+EXPOSE 8090
 
 USER grok:grok
 WORKDIR '/etc/nginx'
