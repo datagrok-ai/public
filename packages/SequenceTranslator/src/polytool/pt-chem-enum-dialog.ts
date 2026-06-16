@@ -20,11 +20,15 @@ import {
   enumerateRaw,
   enumerateSampleRaw,
   extractRNumbers,
+  BUILTIN_R_GROUP_TEMPLATES,
+  isValidTemplateSmiles,
   makeCore,
   makeRGroup,
   normalizeRLabels,
+  parseRGroupTemplates,
   pickDefaultTargetR,
-  R_GROUP_TEMPLATES,
+  RGroupTemplate,
+  RGroupTemplateItem,
   rGroupTargetWarnings,
   validateParams,
 } from './pt-chem-enum';
@@ -556,11 +560,29 @@ function openCopyToRGroupDialog(
  * Opens a dialog to insert a ready-made R-group template (e.g. the alkyl series) into an R-slot,
  * with a target R# and Append/Replace. The substituents are built + re-labeled by `addRGroupsFromSmiles`.
  */
-function openAddTemplateDialog(state: ChemEnumDialogState, rdkit: RDModule, refresh: () => void): void {
+// Reads files/enumeration/r-group-templates.json once (memoized), dropping invalid SMILES and
+// falling back to BUILTIN_R_GROUP_TEMPLATES if the file is unreadable so the picker is never empty.
+let templatesPromise: Promise<RGroupTemplate[]> | null = null;
+function loadRGroupTemplates(rdkit: RDModule): Promise<RGroupTemplate[]> {
+  return templatesPromise ??= (async () => {
+    let templates: RGroupTemplate[] = [];
+    try {
+      const text = await _package.files.readAsText('enumeration/r-group-templates.json');
+      templates = parseRGroupTemplates(text)
+        .map((t) => ({...t, items: t.items.filter((it) => isValidTemplateSmiles(it.smiles, rdkit))}))
+        .filter((t) => t.items.length > 0);
+    } catch { /* fall back to the built-in set below */ }
+    return templates.length > 0 ? templates : BUILTIN_R_GROUP_TEMPLATES;
+  })();
+}
+
+function openAddTemplateDialog(
+  templates: RGroupTemplate[], state: ChemEnumDialogState, rdkit: RDModule, refresh: () => void,
+): void {
   const coreRNumbers = collectCoreRNumbers(state);
 
   const templateInput = ui.input.choice<string>('Template',
-    {items: R_GROUP_TEMPLATES.map((t) => t.name), value: R_GROUP_TEMPLATES[0].name});
+    {items: templates.map((t) => t.name), value: templates[0].name});
   const defaultTarget = pickDefaultTargetR(new Set(state.rGroupsByNum.keys()), coreRNumbers);
   const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
   const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
@@ -573,10 +595,10 @@ function openAddTemplateDialog(state: ChemEnumDialogState, rdkit: RDModule, refr
 
   // `working` is the curated subset that will be inserted. It starts as the whole template; each
   // preview card has a hover-revealed ✕ that drops its substituent. Switching templates resets it.
-  let working: string[] = [];
+  let working: RGroupTemplateItem[] = [];
   const resetWorking = () => {
-    const tmpl = R_GROUP_TEMPLATES.find((x) => x.name === templateInput.value);
-    working = tmpl ? [...tmpl.smiles] : [];
+    const tmpl = templates.find((x) => x.name === templateInput.value);
+    working = tmpl ? [...tmpl.items] : [];
   };
 
   // Thumbnail grid of the working set; hover a card to enlarge or ✕ to remove it before inserting.
@@ -584,12 +606,12 @@ function openAddTemplateDialog(state: ChemEnumDialogState, rdkit: RDModule, refr
     gap: '4px', padding: '4px 0', maxWidth: '100%', maxHeight: `${CARD_H * 2 + 16}px`, minHeight: `${CARD_H}px`}});
   const renderPreview = () => {
     ui.empty(previewHost);
-    for (const smi of working) {
+    for (const item of working) {
       // Show a generic `*` attachment (not `*:1`) so the preview reads the same for any target R#.
-      const display = smi.replace(/\[\*:\d+\]/g, '[*]');
-      // Remove only this card's node (template SMILES are unique) — no redraw of the survivors.
-      const card = buildCard({smiles: display, subtitle: display, onRemove: () => {
-        const i = working.indexOf(smi);
+      const display = item.smiles.replace(/\[\*:\d+\]/g, '[*]');
+      // Remove only this card's node (template items are unique) — no redraw of the survivors.
+      const card = buildCard({smiles: display, subtitle: item.label ?? display, onRemove: () => {
+        const i = working.indexOf(item);
         if (i >= 0) working.splice(i, 1);
         card.remove();
         updateStatus();
@@ -622,7 +644,8 @@ function openAddTemplateDialog(state: ChemEnumDialogState, rdkit: RDModule, refr
     .onOK(() => {
       const t = targetInput.value;
       if (t == null || !Number.isInteger(t) || t < 1 || working.length === 0) return;
-      addRGroupsFromSmiles(state.rGroupsByNum, working, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      const smiles = working.map((it) => it.smiles);
+      addRGroupsFromSmiles(state.rGroupsByNum, smiles, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
       refresh();
     });
   dialog.show({resizable: true, width: 520});
@@ -1198,7 +1221,8 @@ function buildChemEnumPanel(
     }
     refresh();
   };
-  const addRGroupsFromTemplate = () => openAddTemplateDialog(state, rdkit, refresh);
+  const addRGroupsFromTemplate = () =>
+    loadRGroupTemplates(rdkit).then((templates) => openAddTemplateDialog(templates, state, rdkit, refresh));
 
   // ── CSV export — one combined file: first column "Core", then one column per R# (R1, R2, …).
   // The columns have different lengths (cores vs each R# list), so shorter ones are padded with

@@ -88,7 +88,11 @@
       {"smiles": "[*:1]c1nccs1", "label": "thiazol-2-yl"},
       {"smiles": "[*:1]c1cscn1", "label": "thiazol-4-yl"},
       {"smiles": "[*:1]c1cncs1", "label": "thiazol-5-yl"},
-      {"smiles": "[*:1]n1cncn1", "label": "1,2,4-triazol-1-yl"}
+      {"smiles": "[*:1]n1cncn1", "label": "1,2,4-triazol-1-yl"},
+      {"smiles": "[*:1]c1nc[nH]n1", "label": "1,2,4-triazol-3-yl"},
+      {"smiles": "[*:1]n1ccnn1", "label": "1,2,3-triazol-1-yl"},
+      {"smiles": "[*:1]n1nccn1", "label": "1,2,3-triazol-2-yl"},
+      {"smiles": "[*:1]c1c[nH]nn1", "label": "1,2,3-triazol-4-yl"}
     ]
   },
   {
@@ -135,6 +139,7 @@
     "name": "Aliphatic amines",
     "items": [
       {"smiles": "CN(C)[*:1]", "label": "dimethylamino"},
+      {"smiles": "CN(C)C[*:1]", "label": "(dimethylamino)methyl"},
       {"smiles": "CN(C)CC[*:1]", "label": "2-(dimethylamino)ethyl"},
       {"smiles": "[*:1]N1CCC1", "label": "azetidin-1-yl"},
       {"smiles": "[*:1]C1CNC1", "label": "azetidin-3-yl"},

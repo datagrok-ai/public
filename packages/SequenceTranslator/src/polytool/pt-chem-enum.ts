@@ -223,8 +223,6 @@ export function makeRGroup(
 export interface RGroupTemplate {
   /** Name shown in the template dropdown. */
   name: string;
-  /** Optional one-line note about the set (e.g. where the attachment point sits). */
-  description?: string;
   items: RGroupTemplateItem[];
 }
 
@@ -265,22 +263,21 @@ export function parseRGroupTemplates(text: string): RGroupTemplate[] {
       if (it && typeof it.smiles === 'string' && it.smiles.trim())
         items.push({smiles: it.smiles, label: typeof it.label === 'string' ? it.label : undefined});
     }
-    if (items.length > 0)
-      out.push({name: entry.name, description: typeof entry.description === 'string' ? entry.description : undefined, items});
+    if (items.length > 0) out.push({name: entry.name, items});
   }
   return out;
 }
 
-/** Returns the SMILES in `templates` that fail to parse as an R-group (each tested at R1).
- * Used to drop bad entries at load time and to gate the shipped catalogue in tests. */
+/** Whether `smiles` parses as a valid R-group (tested at R1). Shared by the load-time filter
+ * and {@link invalidTemplateSmiles} so the validity rule lives in one place. */
+export function isValidTemplateSmiles(smiles: string, rdkit: RDModule): boolean {
+  return makeRGroup(smiles, 1, '', rdkit).error == null;
+}
+
+/** Returns the SMILES in `templates` that fail {@link isValidTemplateSmiles}.
+ * Used to gate the shipped catalogue in tests. */
 export function invalidTemplateSmiles(templates: RGroupTemplate[], rdkit: RDModule): string[] {
-  const bad: string[] = [];
-  for (const tmpl of templates) {
-    for (const it of tmpl.items) {
-      if (makeRGroup(it.smiles, 1, '', rdkit).error != null) bad.push(it.smiles);
-    }
-  }
-  return bad;
+  return templates.flatMap((t) => t.items.map((it) => it.smiles)).filter((smi) => !isValidTemplateSmiles(smi, rdkit));
 }
 
 /**
