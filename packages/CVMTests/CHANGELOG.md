@@ -1,5 +1,9 @@
 # CVM Tests changelog
 
+## v.next
+
+* Added datagrok-celery-task integration tests via the python/ celery worker
+
 # 1.4.0 (28-07-2025)
 
 * Dependency: datagarok-api >= 1.26.0*

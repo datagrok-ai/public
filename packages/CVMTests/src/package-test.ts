@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 // import './scripts/scripts';
 import './shell/ml';
 import './scripts/scripts_tests';
+import './celery/celery_tests';
 import './docker/docker';
 import './files/files'
 // import './gui/dialogs'; To fix!
