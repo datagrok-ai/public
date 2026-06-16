@@ -169,7 +169,12 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       // No backColor → the grid keeps its own cell background (selection, etc.).
       // maxScale: Infinity → the drawing scales UP to fill the cell (hwe's
       // default caps at native size, leaving small molecules tiny in big cells).
-      const res = svc.renderToCanvas(g, helm, bounds, {maxScale: Infinity, showIds: false});
+      // showIds:false → no continuous-id numbers (keeps the grid uncluttered).
+      // showAnnotations:true → still draw the 5'/3' direction + ss/as strand-type
+      // markers; those are gated separately from the id numbers.
+      const res = svc.renderToCanvas(g, helm, bounds, {
+        maxScale: Infinity, showIds: false, showAnnotations: true,
+      });
 
       const aux: HelmCellAux = {
         molView: buildHelmMolView(res.mol) as unknown as HelmMol,
