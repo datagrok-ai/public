@@ -1,15 +1,6 @@
 import {PackageFunctions} from './package';
-import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import * as DG from 'datagrok-api/dg';
 import {runDiffStudioModel} from './ivp-runtime';
-//name: DiffStudio Facet
-//description: Faceted grid of line charts, one per output variable, for Diff Studio solutions
-//output: viewer result
-//meta.role: viewer
-export function _DiffStudioFacetViewer() {
-  return new DiffStudioFacetViewer();
-}
-
 
 //meta.role: init
 export async function init() : Promise<void> {
@@ -32,6 +23,15 @@ export function solve(problem: any) : any {
 //output: dataframe result
 export function solveEquations(problem: any, options: any) : any {
   return PackageFunctions.solveEquations(problem, options);
+}
+
+//name: DiffStudio Facet
+//description: Faceted grid of line charts, one per output variable, for Diff Studio solutions
+//output: viewer result
+//meta.showInGallery: false
+//meta.role: viewer
+export function diffStudioFacetViewer() : any {
+  return PackageFunctions.diffStudioFacetViewer();
 }
 
 //name: Diff Studio

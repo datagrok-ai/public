@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
+import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
@@ -91,6 +92,16 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object'}) problem: ODEs,
     @grok.decorators.param({type: 'object'}) options: Partial<SolverOptions>): DG.DataFrame {
     return solveIVP(problem, options);
+  }
+
+  @grok.decorators.func({
+    name: 'DiffStudio Facet',
+    description: 'Faceted grid of line charts, one per output variable, for Diff Studio solutions',
+    meta: {showInGallery: 'false', role: 'viewer'},
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
+  static diffStudioFacetViewer(): DG.JsViewer {
+    return new DiffStudioFacetViewer();
   }
 
   @grok.decorators.app({

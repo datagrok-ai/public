@@ -12,13 +12,6 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Info', {});
   }
 
-  /**
-  Faceted grid of line charts, one per output variable, for Diff Studio solutions
-  */
-  export async function diffStudioFacetViewer(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DiffStudioFacetViewer', {});
-  }
-
   export async function init(): Promise<void> {
     return await grok.functions.call('DiffStudio:Init', {});
   }
@@ -33,6 +26,13 @@ export namespace funcs {
 
   export async function solveEquations(problem: any , options: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveEquations', { problem, options });
+  }
+
+  /**
+  Faceted grid of line charts, one per output variable, for Diff Studio solutions
+  */
+  export async function diffStudioFacetViewer(): Promise<any> {
+    return await grok.functions.call('DiffStudio:DiffStudioFacetViewer', {});
   }
 
   /**
