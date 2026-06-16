@@ -85,14 +85,17 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       }
     }
   } else { // not a molblock
+    const treatAsSmarts = _isSmarts(queryMolString);
     try {
       queryMol = rdKitModule.get_qmol(queryMolString);
     } catch (e) { }
     if (queryMol !== null) {
       const mol = rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
       if (mol !== null) { // check the qmol is proper
-        const match = mol.get_substruct_match(queryMol);
-        if (match === '{}') {
+        // for a plain SMILES use the molecule query: its pattern fingerprint and matching are consistent
+        // with molblock-derived queries (a SMARTS qmol's pattern fp over-filters and drops valid hits).
+        // keep the qmol only for a real SMARTS, or when the qmol fails to match its own molecule
+        if (!treatAsSmarts || mol.get_substruct_match(queryMol) === '{}') {
           queryMol.delete(); //remove mol object previously stored in queryMol
           queryMol = mol;
         } else

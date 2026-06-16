@@ -203,6 +203,7 @@ export async function sketchersWarmUp(funcs: DG.Func[]) {
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 10000);
   }
+  chem.currentSketcherType = 'OpenChemLib';
 }
 
 const exampleSmiles = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';

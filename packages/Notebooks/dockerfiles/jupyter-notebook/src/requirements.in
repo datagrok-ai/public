@@ -13,8 +13,8 @@ nbformat==5.9.1
     # Jupyter Notebook format
 
 # DataGrok API
-datagrok-api==0.0.7
-    # DataGrok API client library (pinned: 0.0.8+ replaced download_table/upload_table with resource clients)
+datagrok-api==0.1.0
+    # DataGrok API client library (pinned)
 
 # NLP features
 # textract

@@ -86,6 +86,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ball.png
+//meta.help: ball-flight.md
 //meta.dockSpawnConfig: {"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}
 export function ballFlight(dB: number, roB: number, v: number, a: number) {
   return PackageFunctions.ballFlight(dB, roB, v, a);
@@ -144,12 +145,13 @@ export async function runModel(model: string, inputsTabDockRatio: number, graphs
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ga-production.png
+//meta.help: library/acid-production.md
 //meta.role: model
 //meta.diffStudioModel: System:AppData/DiffStudio/library/acid-production.ivp
 //editor: Compute2:RichFunctionViewEditor
-//input: double t0 = 0 {units: h; caption: initial; category: Misc} [Start of the process]
-//input: double t1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
-//input: double h = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simulation]
+//input: double _t0 = 0 {units: h; caption: initial; category: Misc} [Start of the process]
+//input: double _t1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
+//input: double _h = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simulation]
 //input: double X = 5 {units: kg/m³; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
 //input: double S = 150 {units: kg/m³; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
 //input: double O = 7 {units: kg/m³; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
@@ -167,75 +169,8 @@ export async function runModel(model: string, inputsTabDockRatio: number, graphs
 //input: double Kla = 0.017 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
 //input: double Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
 //output: dataframe df {caption: Acid Production; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
-export async function ivpModel_Acid_Production(t0: number, t1: number, h: number, X: number, S: number, O: number, P: number, overall: number, muM: number, alpha: number, beta: number, gamma: number, lambda: number, delta: number, phi: number, Ks: number, Ko: number, Kla: number, Cod: number): Promise<DG.DataFrame> {
-  return await runDiffStudioModel('System:AppData/DiffStudio/library/acid-production.ivp', {_t0: t0, _t1: t1, _h: h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod});
-}
-
-//name: Bioreactor
-//description: Bioreactor simulation
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//meta.features: {"sens-analysis": true, "fitting": true}
-//meta.icon: files/icons/_bioreactor.png
-//meta.role: model
-//meta.diffStudioModel: System:AppData/DiffStudio/library/bioreactor.ivp
-//editor: Compute2:RichFunctionViewEditor
-//input: string mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv"); propagateChoice: all} [Reactions flow mode]
-//input: double t0 = 0 {units: min; caption: Initial; category: Time}                       [Initial time of simulation]
-//input: double t1 = 1000 {units: min; caption: Final;   category: Time; min: 500; max: 1000}  [Final time of simulation]
-//input: double h = 1 {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simulation]
-//input: double FFox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [FF oxidized]
-//input: double KKox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [KK oxidized]
-//input: double FFred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [FF reduced]
-//input: double KKred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [KK reduced]
-//input: double Ffree = 0 {units: mmol/L; category: Initial values}                                    [F free]
-//input: double Kfree = 0 {units: mmol/L; category: Initial values}                                    [K free]
-//input: double FKred = 0 {units: mmol/L; category: Initial values}                                    [FK reduced]
-//input: double FKox = 0 {units: mmol/L; category: Initial values}                                    [FK oxidized]
-//input: double MEAthiol = 15 {units: mmol/L; category: Initial values; min: 10;   max: 16}                [MEAthiol]
-//input: double CO2 = 0.12 {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
-//input: double yO2P = 0.209 {units: atm;    category: Initial values}                                    [Atm headspace]
-//input: double CYST = 0 {units: mmol/L; category: Initial values}                                    [Cystamine]
-//input: double VL = 7.2 {units: L;      category: Initial values}                                    [Liquid volume]
-//input: double qin = 1 {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 1.5}            [Gas to headspace]
-//input: double yO2in = 0.21 {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
-//input: double T = 300 {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
-//input: double P = 1 {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
-//input: double switchTime = 135 {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
-//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
-export async function ivpModel_Bioreactor(mode: string, t0: number, t1: number, h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, CO2: number, yO2P: number, CYST: number, VL: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
-  return await runDiffStudioModel('System:AppData/DiffStudio/library/bioreactor.ivp', {_t0: t0, _t1: t1, _h: h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL, qin, yO2in, T, P, switchTime});
-}
-
-//name: PK-PD
-//description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//meta.features: {"sens-analysis": true, "fitting": true}
-//meta.icon: files/icons/pkpd.png
-//meta.role: model
-//meta.diffStudioModel: System:AppData/DiffStudio/library/pk-pd.ivp
-//editor: Compute2:RichFunctionViewEditor
-//input: int count = 10 {caption: count; category: Dosing; min: 1; max: 20} [Number of doses]
-//input: double t0 = 0 {units: h; caption: begin; category: Dosing; min: 0; max: 1} [Begin of dosing interval]
-//input: double t1 = 12 {units: h; caption: end; category: Dosing; min: 5; max: 15} [End of dosing interval]
-//input: double h = 0.1 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simulation]
-//input: double depot = 0 {category: Initial values}
-//input: double centr = 0 {category: Initial values} [Central]
-//input: double peri = 0 {category: Initial values} [Peripheral]
-//input: double eff = 0.2 {category: Initial values} [Effective compartment rate]
-//input: double dose = 10000 {category: Dosing; min: 1E3; max: 2E4; step: 1E3} [Dosage]
-//input: double KA = 0.3 {caption: rate constant; category: Parameters; min: 0.1; max: 1}
-//input: double CL = 2 {caption: clearance; category: Parameters; min: 1; max: 5}
-//input: double V2 = 4 {caption: central volume; category: Parameters; min: 1; max: 10} [Central compartment volume]
-//input: double Q = 1 {caption: inter rate; category: Parameters; min: 0.1; max: 1} [Intercompartmental rate]
-//input: double V3 = 30 {caption: peri volume; category: Parameters; min: 20; max: 40} [Peripheral compartment volume]
-//input: double EC50 = 8 {caption: effect; category: Parameters; min: 1; max: 10}
-//input: double Kin = 0.2 {caption: Kin; category: Parameters; min: 0.1; max: 0.5} [The first-order production constant]
-//input: double Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
-//output: dataframe df {caption: PK-PD; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
-export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: number, depot: number, centr: number, peri: number, eff: number, dose: number, KA: number, CL: number, V2: number, Q: number, V3: number, EC50: number, Kin: number, Kout: number): Promise<DG.DataFrame> {
-  return await runDiffStudioModel('System:AppData/DiffStudio/library/pk-pd.ivp', {_count: count, _t0: t0, _t1: t1, _h: h, depot, centr, peri, eff, dose, KA, CL, V2, Q, V3, EC50, Kin, Kout});
+export async function ivpModel_Acid_Production(_t0: number, _t1: number, _h: number, X: number, S: number, O: number, P: number, overall: number, muM: number, alpha: number, beta: number, gamma: number, lambda: number, delta: number, phi: number, Ks: number, Ko: number, Kla: number, Cod: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/acid-production.ivp', {_t0, _t1, _h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod});
 }
 
 //name: Pollution
@@ -244,12 +179,13 @@ export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: n
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/pollution.png
+//meta.help: library/pollution.md
 //meta.role: model
 //meta.diffStudioModel: System:AppData/DiffStudio/library/pollution.ivp
 //editor: Compute2:RichFunctionViewEditor
-//input: double t0 = 0 {units: min; caption: Initial; category: Time; min: 0; max: 0.9} [Initial time of simulation]
-//input: double t1 = 60 {units: min; caption: Final; category: Time; min: 1; max: 100; step: 1} [Final time of simulation]
-//input: double h = 0.1 {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simulation]
+//input: double _t0 = 0 {units: min; caption: Initial; category: Time; min: 0; max: 0.9} [Initial time of simulation]
+//input: double _t1 = 60 {units: min; caption: Final; category: Time; min: 1; max: 100; step: 1} [Final time of simulation]
+//input: double _h = 0.1 {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simulation]
 //input: double y1 = 0 {caption: NO2; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of NO2]
 //input: double y2 = 0.2 {caption: NO; category: Initial concentrations; min: 0; max: 0.4} [Initial concentration of NO]
 //input: double y3 = 0 {caption: O3P; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of O3P]
@@ -296,6 +232,77 @@ export async function ivpModel_PK_PD(count: number, t0: number, t1: number, h: n
 //input: double k24 = 1780 {category: Reaction constants} [NO3 + NO2 -> N2O5]
 //input: double k25 = 3.12 {category: Reaction constants} [N2O5 -> NO3 + NO2]
 //output: dataframe df {caption: Pollution; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
-export async function ivpModel_Pollution(t0: number, t1: number, h: number, y1: number, y2: number, y3: number, y4: number, y5: number, y6: number, y7: number, y8: number, y9: number, y10: number, y11: number, y12: number, y13: number, y14: number, y15: number, y16: number, y17: number, y18: number, y19: number, y20: number, k1: number, k2: number, k3: number, k4: number, k5: number, k6: number, k7: number, k8: number, k9: number, k10: number, k11: number, k12: number, k13: number, k14: number, k15: number, k16: number, k17: number, k18: number, k19: number, k20: number, k21: number, k22: number, k23: number, k24: number, k25: number): Promise<DG.DataFrame> {
-  return await runDiffStudioModel('System:AppData/DiffStudio/library/pollution.ivp', {_t0: t0, _t1: t1, _h: h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25});
+export async function ivpModel_Pollution(_t0: number, _t1: number, _h: number, y1: number, y2: number, y3: number, y4: number, y5: number, y6: number, y7: number, y8: number, y9: number, y10: number, y11: number, y12: number, y13: number, y14: number, y15: number, y16: number, y17: number, y18: number, y19: number, y20: number, k1: number, k2: number, k3: number, k4: number, k5: number, k6: number, k7: number, k8: number, k9: number, k10: number, k11: number, k12: number, k13: number, k14: number, k15: number, k16: number, k17: number, k18: number, k19: number, k20: number, k21: number, k22: number, k23: number, k24: number, k25: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/library/pollution.ivp', {_t0, _t1, _h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25});
+}
+
+//name: Bioreactor
+//description: Bioreactor simulation demo - multi-stage ODE with UF/DF mode switching. Case study: controlled Fab-arm exchange (cFAE) for bispecific antibody assembly
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/_bioreactor.png
+//meta.help: models/bioreactor.md
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/models/bioreactor.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: string mode {caption: Scenario; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv"); propagateChoice: all} [Load a scenario, then experiment — change MEA dose, temperature, switch time, or any other input]
+//input: double _t0 = 0 {units: min; caption: Initial; category: Misc}                       [Simulation start time]
+//input: double _t1 = 200 {units: min; caption: Reduction;   category: Duration; min: 200; max: 500}  [Duration of the cysteamine reduction stage (cFAE half-Ab exchange)]
+//input: double _h = 0.5 {units: min; caption: Step;    category: Misc; min: 0.1; max: 2}     [ODE solver time step. Smaller = more accurate]
+//input: double FFox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [Parental F405L IgG1 (intact homodimer) — initial concentration]
+//input: double KKox = 0.2 {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [Parental K409R IgG1 (intact homodimer) — initial concentration]
+//input: double FFred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [F405L homodimer with hinge disulfides reduced]
+//input: double KKred = 0.1 {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [K409R homodimer with hinge disulfides reduced]
+//input: double Ffree = 0 {units: mmol/L; category: Initial values}                                    [F405L half-antibody (exchange-competent intermediate)]
+//input: double Kfree = 0 {units: mmol/L; category: Initial values}                                    [K409R half-antibody (exchange-competent intermediate)]
+//input: double FKred = 0 {units: mmol/L; category: Initial values}                                    [Bispecific F/K heterodimer, hinge still reduced]
+//input: double FKox = 0 {units: mmol/L; category: Initial values}                                    [Bispecific product with re-oxidized hinges (final cFAE product)]
+//input: double MEAthiol = 15 {units: mmol/L; category: Initial values; min: 10;   max: 75}                [Cysteamine (2-MEA) dose. Typical cFAE: 25–75 mM]
+//input: double DO2 = 0.12 {units: mmol/L; category: Initial values; min: 0.09; max: 2}                 [Dissolved O₂ concentration]
+//input: double yO2P = 0.209 {units: atm;    category: Initial values}                                    [Headspace O₂ partial pressure. 0.209 ≈ ambient air]
+//input: double CYST = 0 {units: mmol/L; category: Initial values}                                    [Cystamine — oxidized form of 2-MEA, builds up via air oxidation]
+//input: double VL = 7.2 {units: L;      category: Initial values}                                    [Reactor liquid volume]
+//input: double filtration = 300 {caption: Filtration; min: 100; max: 500; units: min; category: Duration} [Duration of UF/DF stage (concentration + diafiltration to remove 2-MEA)]
+//input: double qin = 1 {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 2}              [Headspace gas sweep flow rate]
+//input: double yO2in = 0.21 {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [O₂ mole fraction in inlet gas. 0.21 = air, 1.0 = pure O₂]
+//input: double T = 300 {units: K;     caption: Temperature; category: Parameters;  min: 250; max: 350}            [Reactor temperature (K). 300 K ≈ 27 °C]
+//input: double P = 1 {units: atm;   caption: Pressure;    category: Parameters;  min: 1;   max: 2}              [Total headspace pressure]
+//input: double switchTime = 135 {units: min;   caption: Switch;   category: Duration;        min: 70;  max: 180; step: 10}  [Transition from UF concentration (VL falls) to diafiltration (VL constant)]
+//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
+export async function ivpModel_Bioreactor(mode: string, _t0: number, _t1: number, _h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, DO2: number, yO2P: number, CYST: number, VL: number, filtration: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/models/bioreactor.ivp', {_t0, _t1, _h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, DO2, yO2P, CYST, VL, filtration, qin, yO2in, T, P, switchTime});
+}
+
+//name: PK-PD
+//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/pkpd.png
+//meta.help: models/pk-pd.md
+//meta.role: model
+//meta.diffStudioModel: System:AppData/DiffStudio/models/pk-pd.ivp
+//editor: Compute2:RichFunctionViewEditor
+//input: int _count = 10 {caption: Count; category: Dosing; min: 1; max: 20} [Number of doses delivered in the loop]
+//input: double _t0 = 0 {units: h; caption: Begin;    category: Misc;   min: 0; max: 1}     [Start of the dosing interval]
+//input: double _t1 = 12 {units: h; caption: Interval; category: Dosing; min: 5; max: 15}    [Length of one dosing interval (hours between doses)]
+//input: double _h = 0.2 {units: h; caption: Step;    category: Misc;   min: 0.1; max: 2}   [ODE solver time step]
+//input: double depot = 0 {caption: Depo; category: Misc}                     [Amount in the absorption site at t=0]
+//input: double centr = 0 {caption: Central;     category: Misc}              [Amount in the central compartment at t=0]
+//input: double peri = 0 {caption: Peripheral;  category: Misc}              [Amount in the peripheral compartment at t=0]
+//input: double eff = 0.2 {caption: Init effect; category: Misc}              [Initial effect / biomarker level]
+//input: double C2 = 0 {caption: Central;     category: Initial concentrations}  [Central concentration at t=0]
+//input: double C3 = 0 {caption: Peripheral;  category: Initial concentrations}  [Peripheral concentration at t=0]
+//input: double dose = 10000 {caption: Dose; category: Dosing; min: 1e3; max: 2e4; step: 1e3}             [Amount given at each dose]
+//input: double KA = 0.3 {caption: Rate constant; category: PK parameters; min: 0.1; max: 1}          [Absorption rate constant (1/h)]
+//input: double CL = 2 {caption: Clearance;     category: PK parameters; min: 1;   max: 5}          [Total clearance from central compartment]
+//input: double V2 = 4 {caption: Central volume; category: PK parameters; min: 1;   max: 10}        [Volume of the central compartment]
+//input: double Q = 1 {caption: Inter rate;    category: PK parameters; min: 0.1; max: 1}          [Inter-compartmental clearance between central and peripheral]
+//input: double V3 = 30 {caption: Peri volume;   category: PK parameters; min: 20;  max: 40}         [Volume of the peripheral compartment]
+//input: double EC50 = 8 {caption: Effect;        category: PD parameters; min: 1;   max: 10}         [Drug concentration giving half-maximal effect]
+//input: double Rate = 0.2 {category: PD parameters; min: 0.1; max: 0.5}                                [Turnover rate of the effect variable]
+//output: dataframe df {caption: PK-PD; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100)}
+export async function ivpModel_PK_PD(_count: number, _t0: number, _t1: number, _h: number, depot: number, centr: number, peri: number, eff: number, C2: number, C3: number, dose: number, KA: number, CL: number, V2: number, Q: number, V3: number, EC50: number, Rate: number): Promise<DG.DataFrame> {
+  return await runDiffStudioModel('System:AppData/DiffStudio/models/pk-pd.ivp', {_count, _t0, _t1, _h, depot, centr, peri, eff, C2, C3, dose, KA, CL, V2, Q, V3, EC50, Rate});
 }
