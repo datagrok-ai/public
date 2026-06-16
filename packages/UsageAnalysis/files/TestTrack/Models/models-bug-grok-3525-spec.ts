@@ -7,7 +7,9 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-3525 regression: target nulls surface in validator tip + Ignore missing recovers', async ({page}) => {
-  test.setTimeout(600_000);
+  // Block 2 trains one small EDA model (30-row in-memory Linear Regression) — fast, not chemprop.
+  // 300s covers the train wait (step 2.6 polls SAVE-enable up to 180s) plus the UI driving around it.
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 

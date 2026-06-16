@@ -53,9 +53,10 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 }
 
 test('Sharing & Permissions — Query', async ({page}) => {
-  test.setTimeout(420_000);
+  // UI lifecycle + two-user login switches + permission round-trips; 240s covers the
+  // two re-auths plus the UI pane/dialog/PermissionsView + query run/deny steps.
+  test.setTimeout(240_000);
 
-  
   await loginToDatagrok(page);
   await page.waitForTimeout(2000);
 
@@ -110,8 +111,7 @@ test('Sharing & Permissions — Query', async ({page}) => {
     await input.click();
     await input.fill('');
     await page.keyboard.type(recipientLogin.slice(0, Math.max(3, recipientLogin.length - 2)));
-    await page.waitForTimeout(2000);
-    
+
     
     
     
@@ -142,8 +142,7 @@ test('Sharing & Permissions — Query', async ({page}) => {
     await expect(page.locator('textarea[placeholder="Type in message here"]')).toBeAttached();
     const sendNotifPresent = await page.locator(
       '[name="input-Send-notifications"], .grok-permission-notifications input[type="checkbox"]').count();
-    test.info().annotations.push({type: 'remark',
-      description: `Block B.2 Send-notifications checkbox present: ${sendNotifPresent > 0}`});
+    expect(sendNotifPresent, 'Send-notifications control must be present in the Share dialog').toBeGreaterThan(0);
     
     
     
@@ -201,10 +200,13 @@ test('Sharing & Permissions — Query', async ({page}) => {
       .toBeVisible({timeout: 15_000});
     await expect(page.locator('.d4-grid').first()).toBeVisible({timeout: 15_000});
     await expect(page.locator('[name="button-Save"]')).toBeVisible({timeout: 10_000});
+    // The Calculate-resulting-permissions button is not present for every entity type / permission
+    // state, so record its presence as a remark — the PermissionsView render is already hard-asserted
+    // above via .grok-permissions-self + .d4-grid + the Save button.
     const calcPresent = await page.locator(
       '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
     test.info().annotations.push({type: 'remark',
-      description: `Block C.1 Calculate-permissions button present: ${calcPresent > 0}`});
+      description: `Calculate-resulting-permissions button present: ${calcPresent > 0}`});
     
     
     

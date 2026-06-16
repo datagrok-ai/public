@@ -143,7 +143,9 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 }
 
 test('Sharing & Permissions — Table', async ({page}) => {
-  test.setTimeout(420_000);
+  // UI lifecycle + two-user login switches + permission round-trips; 240s covers the
+  // two re-auths (each waits on dapi-ready) plus the UI pane/dialog/PermissionsView steps.
+  test.setTimeout(240_000);
 
   
   await loginToDatagrok(page);
@@ -232,15 +234,10 @@ test('Sharing & Permissions — Table', async ({page}) => {
     
     
     await expect(page.locator('textarea[placeholder="Type in message here"]')).toBeAttached();
-    
-    
     const sendNotifPresent = await page.locator(
       '[name="input-Send-notifications"], .grok-permission-notifications input[type="checkbox"]').count();
-    test.info().annotations.push({type: 'remark',
-      description: `Block B.2 Send-notifications checkbox present: ${sendNotifPresent > 0}`});
-    
-    
-    
+    expect(sendNotifPresent, 'Send-notifications control must be present in the Share dialog').toBeGreaterThan(0);
+
     const cascadePresent = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog');
       return /will also be shared/i.test(dlg?.textContent ?? '');
@@ -290,15 +287,15 @@ test('Sharing & Permissions — Table', async ({page}) => {
       .toBeVisible({timeout: 15_000});
     await expect(page.locator('.d4-grid').first()).toBeVisible({timeout: 15_000});
     await expect(page.locator('[name="button-Save"]')).toBeVisible({timeout: 10_000});
-    
-    
+    // The Calculate-resulting-permissions button is not present for every entity type / permission
+    // state, so record its presence as a remark — the PermissionsView render is already hard-asserted
+    // above via .grok-permissions-self + .d4-grid + the Save button.
     const calcPresent = await page.locator(
       '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
     test.info().annotations.push({type: 'remark',
-      description: `Block C.1 Calculate-permissions button present: ${calcPresent > 0}`});
-    
-    
-    
+      description: `Calculate-resulting-permissions button present: ${calcPresent > 0}`});
+
+
     test.info().annotations.push({type: 'remark',
       description: 'Table Advanced editor opens the PermissionsView at /permissions/<id> (dialog closes); ' +
         'the Group×Object matrix is a canvas d4-grid — "Common"/"ReadData" headers are canvas-painted ' +

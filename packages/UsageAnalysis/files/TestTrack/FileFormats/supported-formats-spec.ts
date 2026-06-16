@@ -64,18 +64,32 @@ async function openFolderUi(page: Page): Promise<void> {
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = true;
   });
-  await page.waitForTimeout(1000);
-  await page.evaluate(async () => {
-    const sel = '.d4-tree-view-group-label, .d4-tree-view-item-label';
-    const find = (t: string): HTMLElement | undefined =>
-      (Array.from(document.querySelectorAll(sel)) as HTMLElement[]).find((e) => e.textContent?.trim() === t);
-    find('Files')?.click();
-    await new Promise((r) => setTimeout(r, 1200));
-    find('My files')?.click();
-    await new Promise((r) => setTimeout(r, 1400));
-  });
+  await page.waitForFunction(() => document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label').length > 0,
+    null, {timeout: 15_000});
+  // Expand Files, wait for "My files" to appear, expand it, wait for the all_formats label —
+  // poll for each revealed node instead of blind settle sleeps.
+  const treeLabel = (t: string) =>
+    page.waitForFunction((label: string) => {
+      const sel = '.d4-tree-view-group-label, .d4-tree-view-item-label';
+      const el = (Array.from(document.querySelectorAll(sel)) as HTMLElement[])
+        .find((e) => e.textContent?.trim() === label);
+      return el ? true : null;
+    }, t, {timeout: 15_000});
+  const clickTreeLabel = (t: string) =>
+    page.evaluate((label: string) => {
+      const sel = '.d4-tree-view-group-label, .d4-tree-view-item-label';
+      (Array.from(document.querySelectorAll(sel)) as HTMLElement[])
+        .find((e) => e.textContent?.trim() === label)?.click();
+    }, t);
+  // Intermediate node-reveal polls are best-effort (a provisioned env may surface nodes via a
+  // slightly different path); the load-bearing gates are the FOLDER_LABEL dblclick below and the
+  // ">=10 file labels" wait — those fail loudly if the all_formats folder is genuinely unreachable.
+  await treeLabel('Files').catch(() => {});
+  await clickTreeLabel('Files');
+  await treeLabel('My files').catch(() => {});
+  await clickTreeLabel('My files');
+  await treeLabel(FOLDER_LABEL).catch(() => {});
   await page.locator('label').filter({hasText: FOLDER_LABEL}).first().dblclick({timeout: 15_000});
-  await page.waitForTimeout(1500);
   await page.waitForFunction(() =>
     (Array.from(document.querySelectorAll('label')) as HTMLElement[])
       .filter((l) => /\.\w{2,}$/.test(l.textContent?.trim() ?? '') && !l.closest('.grok-prop-panel')).length >= 10,
@@ -105,7 +119,10 @@ async function returnToFolder(page: Page): Promise<void> {
 test('File formats: preview and open from My Files / all_formats', async ({page}) => {
   // Bounded global ceiling. test.setTimeout() as the FIRST body line is the form that
   // overrides the 120s config ceiling here (test.use({timeout}) / the options arg do not).
-  test.setTimeout(900_000);
+  // 30 formats: PHASE 1 each capped at OPEN_TIMEOUT_MS (90s, only a few heavy parsers approach
+  // it; most resolve in seconds) + a best-effort PHASE 2 preview sweep. 480s covers a realistic
+  // full run with margin without the 15m blanket that hid a runaway parse.
+  test.setTimeout(480_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

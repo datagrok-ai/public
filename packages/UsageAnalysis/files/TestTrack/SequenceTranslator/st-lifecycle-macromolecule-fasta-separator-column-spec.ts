@@ -39,7 +39,8 @@ async function clickBioPolyToolItem(page: Page, itemName: string): Promise<void>
 }
 
 test('SequenceTranslator — Macromolecule FASTA/Separator column lifecycle: notation-provider, PolyTool, API', async ({page}) => {
-  test.setTimeout(600_000);
+  // Two CSV loads + a few PolyTool dialogs + JS-API calls; 4 min covers the slowest path.
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
 

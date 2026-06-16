@@ -11,7 +11,10 @@ const MODEL_NAME = `${MODEL_BASE}_${Date.now()}`;
 const NEW_DESCRIPTION = 'CSV-backed lifecycle smoke (round 4)';
 
 test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({page}) => {
-  test.setTimeout(900_000);
+  // Full train→apply→browse→edit→share→delete lifecycle, training one EDA Linear Regression on a CSV
+  // (not chemprop). Several steps each poll a train/save/apply signal up to 180s; 300s covers the
+  // longest realistic chain (train engine-mount + SAVE-enable + apply) with margin.
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 
@@ -531,14 +534,12 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     const search = page.locator('input[placeholder="Search models by name or by #tags"]');
     await search.fill('');
     await search.fill(MODEL_NAME);
-    await page.waitForTimeout(1_500);
-    const remaining = await page.evaluate((wantName: string) => {
+    await expect.poll(async () => await page.evaluate((wantName: string) => {
       const titles = Array.from(document.querySelectorAll(
         '.grok-gallery-grid-item.grok-predictive-model .grok-gallery-grid-item-title'));
       return titles.filter((t) => (t.textContent || '').trim().includes(wantName)).length;
-    }, MODEL_NAME);
-    expect(remaining,
-      `Catalog still shows ${remaining} card(s) titled "${MODEL_NAME}" after delete`).toBe(0);
+    }, MODEL_NAME), {timeout: 15_000, intervals: [250, 500, 1_000],
+      message: `Catalog still shows card(s) titled "${MODEL_NAME}" after delete`}).toBe(0);
   });
 
   

@@ -9,7 +9,9 @@ test.use(specTestOptions);
 const MODEL_NAME = 'OneHotSuffixCollision_test';
 
 test('One-hot suffix collision: namespaced <name>=<category> columns survive train + apply', async ({page}) => {
-  test.setTimeout(600_000);
+  // Trains one small EDA Linear Regression (40-row in-memory) with one-hot encoding, then applies it.
+  // Not chemprop. Step 4 polls SAVE-enable up to 180s; 300s covers train + save + apply with margin.
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 

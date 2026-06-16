@@ -315,7 +315,11 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
   await softStep('Scenario 2 Step 5-6: footer OK → dialog closes; grid cell value updates', async () => {
     await page.locator('.d4-dialog button[name="button-OK"]').first().click();
     await page.locator('.d4-dialog.d4-dialog-full-screen').waitFor({state: 'hidden', timeout: 20_000});
-    await page.waitForTimeout(1000);
+    // Poll the committed cell value instead of a fixed settle: the async setValue
+    // from the OK handler is directly observable on the data frame.
+    await expect.poll(async () => page.evaluate(() =>
+      (window as any).grok.shell.tv.dataFrame.col('HELM').get(0)),
+    {timeout: 15_000, intervals: [250, 500, 1000]}).not.toBe(originalHelmRow0);
     const afterValue = await page.evaluate(() =>
       (window as any).grok.shell.tv.dataFrame.col('HELM').get(0));
     expect(afterValue,

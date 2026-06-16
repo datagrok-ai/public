@@ -8,7 +8,9 @@ const HELM_PEPTIDE_EXPECTED_ATOMS = 9;
 const HELM_RNA_SHORT = 'RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$';
 
 test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHelmHelper / createHelmInput / createHelmWebEditor / getHoveredAtom', async ({page}) => {
-  test.setTimeout(360_000);
+  // Pure JS-API surface spec: getHelmHelper + factory/hit-test calls, no full-screen
+  // editor dialog open. 180s covers a cold getHelmHelper warmup with margin.
+  test.setTimeout(180_000);
   stepErrors.length = 0;
 
   const consoleErrors: string[] = [];

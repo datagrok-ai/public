@@ -4,7 +4,9 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Models — MLClient REST surface (zip / blobs / images / build) — apitest', async ({page}) => {
-  test.setTimeout(300_000);
+  // Pure REST round-trips (list + zip/blob/image GET/POST + build status) against an existing
+  // trained model — no training happens here. 120s is ample.
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

@@ -72,7 +72,8 @@ Steps:
 5. Confirm (click Run / OK).
 
 Expected:
-- The operation produces a clear error message indicating the units mismatch
-  (both columns must be `units=helm` for the combine to succeed).
-- No malformed OligoNucleotide column is produced.
-- The duplex renderer is NOT activated on partial / invalid output.
+- The operation does NOT throw on mismatched units (helm + fasta) — the
+  non-HELM antisense is silently skipped per `converters.ts#L57`.
+- A sense-only OligoNucleotide column is produced (the documented graceful
+  behavior); it does NOT contain an `RNA2` antisense chain.
+- No error balloon is shown.

@@ -91,7 +91,11 @@ async function clickFileNode(page: Page, name: string): Promise<boolean> {
 }
 
 test('File formats: preview every file by clicking through the Browse tree', async ({page}) => {
-  test.setTimeout(900_000);
+  // ~42 files in all_formats, each: <=20s preview-wait + DWELL_MS (default 7s) settle + a few
+  // short waits => ~30s worst-case/file. 360s covers the full sweep with margin; the dominant
+  // cost is the deliberate per-file DWELL (human-watchable, override via PREVIEW_DWELL_MS), not
+  // model training. Overridable via PREVIEW_DWELL_MS for faster runs.
+  test.setTimeout(360_000);
   stepErrors.length = 0;
 
   await openBrowseDirect(page);
@@ -129,7 +133,10 @@ test('File formats: preview every file by clicking through the Browse tree', asy
   for (const name of files) {
     await softStep(`Preview ${name}: open its preview from the tree`, async () => {
       await closeToHome();
-      await page.waitForTimeout(300);
+      // Poll until the non-Home views are actually gone, instead of a blind settle.
+      await page.waitForFunction(() => Array.from((window as any).grok.shell.views)
+        .every((v: any) => v?.type === 'datagrok' || (v?.name ?? '') === 'Home'),
+      undefined, {timeout: 10_000}).catch(() => {});
       const clicked = await clickFileNode(page, name);
       expect(clicked, `Tree node not found for ${name}`).toBe(true);
 

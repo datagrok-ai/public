@@ -38,7 +38,9 @@ async function pollRecipientView(page: Page, projId: string, want: boolean) {
 }
 
 test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-actor)', async ({page}) => {
-  test.setTimeout(600_000);
+  // Two-actor: project save + All-users grant/revoke + remove-all-grants, plus 3 login
+  // switches (recipient/owner) each waiting on dapi-ready. 300s covers the re-auths.
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -141,10 +143,10 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         await expect(shareBtn).toBeAttached({timeout: 10_000});
         console.log('[two-actor] Block A (UI): Sharing pane present; SHARE... button attached (DOM-driven, class-1)');
       } else {
-        
-        
+        // Tolerated environmental skip: the context-panel Sharing pane is not always
+        // surfaced for the project object headless. The All-users grant under test was
+        // already asserted via the API in Block A; this UI render is a non-blocking extra.
         console.warn('[two-actor] Block A (UI): Sharing context-panel pane not visible; grant state already verified via API');
-        expect(stepErrors.length, 'context-panel pane absence is non-blocking').toBeGreaterThanOrEqual(0);
       }
     });
 

@@ -21,7 +21,9 @@ async function setupSession(page: Page) {
 }
 
 test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, dependent-entity notice)', async ({page}) => {
-  test.setTimeout(300_000);
+  // Single-actor: setup save + global-permission gate + remove-all-grants + Share dialog
+  // UI render. No login switches; 180s is ample.
+  test.setTimeout(180_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

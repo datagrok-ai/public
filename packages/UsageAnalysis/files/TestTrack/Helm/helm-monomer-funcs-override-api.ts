@@ -4,7 +4,9 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Helm monomer-dict swap path — overrideMonomersFuncs / revertOriginalMonomersFuncs / buildMonomersFuncsFromLib / rewriteLibraries (contract)', async ({page}) => {
-  test.setTimeout(360_000);
+  // Pure JS-API/contract spec: no Web Editor dialog open, no cold JSDraw2 init —
+  // only getHelmHelper + dict-swap / buildMonomersFuncsFromLib calls. 180s is ample.
+  test.setTimeout(180_000);
   stepErrors.length = 0;
 
   const consoleErrors: string[] = [];

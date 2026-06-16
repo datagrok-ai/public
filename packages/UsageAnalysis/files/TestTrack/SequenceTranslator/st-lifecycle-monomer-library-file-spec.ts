@@ -37,8 +37,6 @@ test('SequenceTranslator monomer_library_file source-class lifecycle: createMono
       expect(result.err, `getTranslationHelper error: ${result.err}`).toBeNull();
       expect(result.helperNonNull, 'getTranslationHelper must return a non-null ITranslationHelper').toBe(true);
 
-      await page.waitForTimeout(4000);
-
       const browseLocator = page.locator('[name="Browse"]');
       await browseLocator.waitFor({state: 'visible', timeout: 20_000});
       expect(await browseLocator.isVisible()).toBe(true);
@@ -222,10 +220,7 @@ test('SequenceTranslator monomer_library_file source-class lifecycle: createMono
           if (!fileInfo) {
 
             return {
-              err: null,
-              skipped: true,
-              skipReason: 'No accessible CSV monomer-library file found at candidate paths',
-              downloadTriggered: false,
+              err: `No accessible CSV monomer-library file found at candidate paths`,
               fileFound: false,
               capturedFileName: null,
               capturedContent: null,
@@ -246,8 +241,6 @@ test('SequenceTranslator monomer_library_file source-class lifecycle: createMono
 
         return {
           err,
-          skipped: false,
-          skipReason: null,
           fileFound,
           capturedFileName,
           capturedContent,
@@ -261,13 +254,8 @@ test('SequenceTranslator monomer_library_file source-class lifecycle: createMono
         };
       });
 
-      if (result.skipped) {
-
-        console.warn(`[S1.1 SKIPPED] ${result.skipReason}`);
-        return;
-      }
-
-      expect(result.fileFound, 'a candidate CSV must be reachable on the server').toBe(true);
+      expect(result.fileFound,
+        `a candidate CSV (axolabs1.csv / bulk-translation-axolabs.csv) must be reachable on the server: ${result.err}`).toBe(true);
       if (result.err) {
         expect(result.err,
           `createMonomerLibraryForPolyTool must reject a non-monomer-lib CSV with a clear "Invalid format" error; got: ${result.err}`)

@@ -691,7 +691,11 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
 
   await softStep('Block G Step 3: footer OK → dialog closes; cell value changes', async () => {
     await clickDialogButton('button-OK');
-    await page.waitForTimeout(1000);
+    // Poll the committed cell value instead of a fixed settle: cell.setValue from
+    // the OK handler is async, but the value change is directly observable.
+    await expect.poll(async () => page.evaluate(() =>
+      (window as any).grok.shell.tv.dataFrame.col('HELM').get(0)),
+    {timeout: 15_000, intervals: [250, 500, 1000]}).not.toBe(originalHelmRow0);
     const afterValue = await page.evaluate(() =>
       (window as any).grok.shell.tv.dataFrame.col('HELM').get(0));
     expect(afterValue,

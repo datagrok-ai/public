@@ -27,7 +27,9 @@ async function setupSession(page: Page) {
 }
 
 test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives / revoke)', async ({page}) => {
-  test.setTimeout(600_000);
+  // Two-actor: owner setup (Space save) + 4 login switches (recipient/owner) each waiting
+  // on dapi-ready, plus permission grant/revoke round-trips. 300s covers the re-auths.
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -170,10 +172,10 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         await expect(shareBtn).toBeAttached({timeout: 10_000});
         console.log('[two-actor] Block A (UI): Sharing pane expanded; SHARE... button attached (DOM-driven, class-1)');
       } else {
-        
-        
+        // Tolerated environmental skip: the context-panel Sharing pane is not always
+        // surfaced for a file-share connection object headless. The grant under test was
+        // already asserted via the API in Block A; this UI render is a non-blocking extra.
         console.warn('[two-actor] Block A (UI): Sharing context-panel pane not visible for connection object; state already verified via API');
-        expect(stepErrors.length, 'context-panel pane absence is non-blocking').toBeGreaterThanOrEqual(0);
       }
     });
 

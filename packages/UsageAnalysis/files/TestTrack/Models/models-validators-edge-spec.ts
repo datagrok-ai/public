@@ -216,7 +216,9 @@ async function openInMemoryDataFrame(page: Page, builder: () => unknown) {
 }
 
 test('Models validators — pre-train edge surfaces (class-imbalance, string-features, too-many-unique, highly-correlated)', async ({page}) => {
-  test.setTimeout(600_000);
+  // Pure pre-train validator spec: NO model is trained (each block stops at the Insights & Tips
+  // widget). Four blocks, each opening the train view + polling a tip up to 30s. 240s is ample.
+  test.setTimeout(240_000);
 
   await loginToDatagrok(page);
 

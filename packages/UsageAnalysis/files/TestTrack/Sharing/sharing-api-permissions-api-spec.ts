@@ -7,7 +7,8 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Sharing — API permissions (grant / get / check / revoke lifecycle via grok.dapi.permissions)', async ({page}) => {
-  test.setTimeout(300_000);
+  // Pure JS-API grant/get/check/revoke round-trips, single actor, no UI lifecycle.
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

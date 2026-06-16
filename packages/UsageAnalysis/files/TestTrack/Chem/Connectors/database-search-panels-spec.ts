@@ -4,7 +4,11 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec
 test.use(specTestOptions);
 
 test('Chem | Context Panel — External Database Search Panels', async ({page}) => {
-  test.setTimeout(420_000);
+  // Six scenarios driving live proxied searches against ChEMBL / Chemspace / PubChem (async
+  // listkey polling) / DrugBank. The cost is external-API latency, not model training; each
+  // slow search is now bounded by an explicit result-poll. 300s covers the full sweep with
+  // margin for network variance.
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 
@@ -75,17 +79,30 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       const chembl = await w.__expand(w.__dbContent(), 'ChEMBL', 2500);
       const subTitles = Array.from(chembl.querySelectorAll('.d4-accordion-pane'))
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
-      const sim = await w.__expand(chembl, 'Similarity Search API', 9000);
+      const sim = await w.__expand(chembl, 'Similarity Search API', 0);
       const simC = sim.querySelector('.d4-accordion-pane-content');
+      // Poll the proxied ChEMBL similarity search until cards render, not a fixed 9s wait.
+      for (let i = 0; i < 40; i++) {
+        if (simC.querySelectorAll('canvas').length > 0 || /Score:\s*1\.00/.test(simC.innerText)) break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
       const simCards = simC.querySelectorAll('canvas').length;
       const simHasScore = /Score:\s*1\.00/.test(simC.innerText);
       const openIcon = !!simC.querySelector('i.fa-arrow-square-down');
-      const ss = await w.__expand(chembl, 'Substructure Search API', 10000);
+      const ss = await w.__expand(chembl, 'Substructure Search API', 0);
       const ssC = ss.querySelector('.d4-accordion-pane-content');
+      for (let i = 0; i < 40; i++) {
+        if (ssC.querySelectorAll('canvas').length > 0 || /No matches/.test(ssC.innerText)) break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
       const ssOk = ssC.querySelectorAll('canvas').length > 0 || /No matches/.test(ssC.innerText) || ssC.innerText.trim() === '';
       const viewsBefore = Array.from(w.grok.shell.views).length;
       simC.querySelector('i.fa-arrow-square-down').click();
-      await new Promise((r) => setTimeout(r, 3000));
+      // Poll until the results table view opens, not a fixed 3s wait.
+      for (let i = 0; i < 20; i++) {
+        if (Array.from(w.grok.shell.views).length > viewsBefore) break;
+        await new Promise((r) => setTimeout(r, 250));
+      }
       const viewNames = Array.from(w.grok.shell.views).map((v: any) => v.name);
       return {subTitles, simCards, simHasScore, openIcon, ssOk, viewsBefore, viewsAfter: viewNames.length,
         opened: viewNames.some((n: string) => /ChEMBL/i.test(n))};
@@ -143,16 +160,24 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       const pcC = pc.querySelector('.d4-accordion-pane-content');
       const nested = Array.from(pcC.querySelectorAll('.d4-accordion-pane'))
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
-      for (const p of Array.from(pcC.querySelectorAll('.d4-accordion-pane'))) {
+      const panes = Array.from(pcC.querySelectorAll('.d4-accordion-pane'));
+      for (const p of panes) {
         const h = (p as Element).querySelector('.d4-accordion-pane-header') as HTMLElement;
         if (!h.classList.contains('expanded')) h.click();
       }
-      await new Promise((r) => setTimeout(r, 30000));
-      const report = Array.from(pcC.querySelectorAll('.d4-accordion-pane')).map((p: any) => {
-        const c = p.querySelector('.d4-accordion-pane-content');
-        const resolved = c.querySelectorAll('canvas').length > 0 || /No matches|Score|Compound/i.test(c.innerText);
-        return {title: p.getAttribute('d4-title'), resolved};
-      });
+      // PubChem uses async listkey polling — poll until every expanded sub-panel resolves
+      // (cards / "No matches" / "Compound" / "Score") instead of a 30s blind wait. Cap ~60s.
+      const paneResolved = (p: Element) => {
+        const c = p.querySelector('.d4-accordion-pane-content') as HTMLElement;
+        return c.querySelectorAll('canvas').length > 0 || /No matches|Score|Compound/i.test(c.innerText);
+      };
+      for (let i = 0; i < 120; i++) {
+        if (panes.every(paneResolved)) break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      const report = panes.map((p: any) => ({
+        title: p.getAttribute('d4-title'), resolved: paneResolved(p),
+      }));
       return {nested, report};
     });
     expect(res.nested.some((t: string) => t.includes('Substructure Search'))).toBe(true);

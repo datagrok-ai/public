@@ -28,7 +28,8 @@ async function validateViaHelper(page: Page, sequence: string): Promise<{error: 
 }
 
 test('SequenceTranslator — Edge: validateSequence false-branch + combineSenseAntisense mismatched units', async ({page}) => {
-  test.setTimeout(600_000);
+  // JS-API-driven edge spec: one CSV load + a handful of function calls; 3 min is ample.
+  test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
 
