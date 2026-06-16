@@ -8,6 +8,8 @@ import * as DG from 'datagrok-api/dg';
 import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/eda-api';
 import {getPlsAnalysis} from './pls/pls-tools';
 
+export const TOLERANCE = 1e-7;
+
 // Default PLS components count
 const PLS_COMPONENTS_COUNT = 10;
 
@@ -17,8 +19,8 @@ enum LIN_REG_LIMITS {
   MAX_FEATURES = 1000,
   MAX_FEATURES_X_SAMPLES = 1e7,
   // isInteractive: independent memory and time budgets
-  INTERACTIVE_MEMORY_BUDGET = 5e6,    // Float32 elements (≈ 20 MB)
-  INTERACTIVE_TIME_BUDGET = 2.5e8,    // flops (≈ 500 ms on a typical machine)
+  INTERACTIVE_MEMORY_BUDGET = 5e6, // Float32 elements (≈ 20 MB)
+  INTERACTIVE_TIME_BUDGET = 2.5e8, // flops (≈ 500 ms on a typical machine)
 }
 
 /** Check whether linear regression can be applied to the given data */

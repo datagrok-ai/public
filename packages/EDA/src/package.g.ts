@@ -366,16 +366,15 @@ export async function kNNImputationForTable(table: DG.DataFrame) : Promise<void>
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate = 0.1 { caption: Rate; min: 0; description: Gradient descent learning rate. }
-//input: int iterations = 1000 { caption: Iterations; min: 1; description: Largest number of training steps before training stops. }
-//input: double tolerance = 0.0000001 { caption: Tolerance; min: 0; description: Smallest improvement worth continuing training for. }
+//input: double rate = 0.1 { caption: Rate; min: 0; max: 10; step: 0.01; description: Gradient descent learning rate. }
+//input: int iterations = 1000 { caption: Iterations; min: 1; step: 50; max: 10000; description: Largest number of training steps before training stops. }
 //input: double alpha = 0 { caption: L1; min: 0; max: 100; description: L1 (Lasso) regularization term. 0 means plain ordinary least squares. }
 //input: double lambda = 0 { caption: L2; min: 0; max: 100; description: L2 (Ridge) regularization term. 0 means plain ordinary least squares. }
 //output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
-export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, tolerance: number, alpha: number, lambda: number) : Promise<Uint8Array> {
-  return await PackageFunctions.trainLinearRegression(df, predictColumn, rate, iterations, tolerance, alpha, lambda);
+export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, alpha: number, lambda: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainLinearRegression(df, predictColumn, rate, iterations, alpha, lambda);
 }
 
 //input: dataframe df 

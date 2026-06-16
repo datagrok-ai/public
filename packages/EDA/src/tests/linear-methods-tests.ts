@@ -147,7 +147,7 @@ category('Linear regression', () => {
     const prediction = getPredictionByLinearRegression(features, unpackedParams);
 
     // Evaluate model
-    const error = madError(prediction, prediction);
+    const error = madError(target, prediction);
     expect(
       error < ERROR,
       true,

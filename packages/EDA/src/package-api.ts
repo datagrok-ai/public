@@ -193,8 +193,8 @@ export namespace funcs {
     return await grok.functions.call('EDA:KNNImputationForTable', { table });
   }
 
-  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , tolerance: number , alpha: number , lambda: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, rate, iterations, tolerance, alpha, lambda });
+  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , alpha: number , lambda: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, rate, iterations, alpha, lambda });
   }
 
   export async function applyLinearRegression(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {

@@ -31,7 +31,8 @@ import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression,
-  isLinearRegressionApplicable, isLinearRegressionInteractive} from './regression';
+  isLinearRegressionApplicable, isLinearRegressionInteractive,
+  TOLERANCE} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
@@ -688,13 +689,12 @@ export class PackageFunctions {
   static async trainLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'description': 'Gradient descent learning rate.'}}) rate: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Tolerance', 'min': '0', 'initialValue': '0.0000001', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'max': '10', 'step': '0.01', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
     const features = df.columns;
-    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, tolerance);
+    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
 
     return new Uint8Array(params.buffer);
   }
