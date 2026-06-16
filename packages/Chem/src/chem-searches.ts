@@ -237,6 +237,9 @@ async function getUint8ArrayFingerprints(
   returnSmiles = false): Promise<IFpResult> {
   await chemBeginCriticalSection();
   try {
+    if (molCol.semType !== DG.SEMTYPE.MOLECULE && molCol.dataFrame)
+      await molCol.dataFrame.meta.detectSemanticTypes();
+
     const {cols, changedRows} = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
     const noChanges = changedRows === null;
     const fgsCheck = cols[fingerprintsType] ?? null;
