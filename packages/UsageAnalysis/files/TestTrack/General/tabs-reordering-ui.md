@@ -1,3 +1,23 @@
+---
+feature: general
+target_layer: manual-only
+coverage_type: regression
+produced_from: split
+original_path: public/packages/UsageAnalysis/files/TestTrack/General/tabs-reordering.md
+split_date: 2026-06-16
+related_bugs: []
+manual_only_reason: |
+  The core of this scenario is drag-and-drop reordering of table tabs, which is
+  implemented by the custom dock_spawn docking layer (core/client/libs/dock_spawn).
+  Playwright dragTo / mouse-drag against dock_spawn tab headers is unreliable
+  (no stable DOM drop target; the reorder is driven by pixel-level pointer-move
+  events on a canvas-backed tab strip). Step 3 (order persistence after
+  project save/reopen) cannot be automated independently either: verifying that
+  a *modified* order survives a reload requires first establishing that order
+  via the manual drag in steps 1-2. Distinct from Viewers/grid-ui.md, which
+  covers column reordering on the grid canvas — this is tab reordering.
+---
+
 ### Tabs Ordering and Persistence
 
 1. Open multiple datasets.

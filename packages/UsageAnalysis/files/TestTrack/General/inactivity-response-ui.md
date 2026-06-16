@@ -1,3 +1,22 @@
+---
+feature: general
+target_layer: manual-only
+coverage_type: regression
+produced_from: split
+original_path: public/packages/UsageAnalysis/files/TestTrack/General/inactivity-response.md
+split_date: 2026-06-16
+related_bugs: []
+manual_only_reason: |
+  The premise is a real 20-minute idle period before resuming interaction. A
+  literal 20-minute wait is impractical in CI, and faking the server-side
+  session/idle timeout (token refresh, websocket reconnect, auth expiry) cannot
+  be reliably reproduced from the client without exercising the exact wall-clock
+  path the scenario is meant to validate. The post-idle interaction steps
+  (navigate, open file, run query/script, watch console) are themselves
+  automatable, but are meaningless without the genuine idle precondition. Keep
+  as manual (or a long nightly soak), not a standard Playwright spec.
+---
+
 ### Platform Behavior After 20 Minutes of Inactivity
 Verify that the platform functions correctly after a period of 20 minutes of inactivity.
 
