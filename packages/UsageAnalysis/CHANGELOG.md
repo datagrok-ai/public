@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)
 * GROK-12108: Usage Analysis: Errors tab
 * GROK-19820: Jira swagger: Removed three unused endpoints, keeping only `Jira Create Issue`
 * Metrics: Added Admin Metrics dashboard tab

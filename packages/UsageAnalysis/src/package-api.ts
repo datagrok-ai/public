@@ -256,6 +256,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogTail', { date, groups, packages });
   }
 
+  export async function logEventParameters(eventId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
+  }
+
   export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
   }
