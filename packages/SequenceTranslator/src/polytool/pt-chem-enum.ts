@@ -217,104 +217,71 @@ export function makeRGroup(
   return {smiles: remapped, originalSmiles, rNumber: targetRNumber, id, sourceRNumber};
 }
 
-/** Ready-made R-group substituent sets offered by the "Templates…" picker. Each entry is a
- * `[*:1]`-labeled fragment (or a bare single atom) that gets re-labeled to the chosen R# on insert.
- * Add more sets ((hetero)aryl, amine solubilizers, …) by appending entries here. */
-export const R_GROUP_TEMPLATES: {name: string, smiles: string[]}[] = [
-  {
-    name: 'Alkyl (C1–C8)',
-    smiles: [
-      'C[*:1]', 'CC[*:1]', 'CCC[*:1]', 'CCCC[*:1]',
-      'CCCCC[*:1]', 'CCCCCC[*:1]', 'CCCCCCC[*:1]', 'CCCCCCCC[*:1]',
-    ],
-  },
-  {
-    name: 'Branched & cyclic alkyl',
-    smiles: [
-      'CC(C)[*:1]', 'CC(C)C[*:1]', 'CCC(C)[*:1]', 'CC(C)(C)[*:1]', // iPr, iBu, sBu, tBu
-      '[*:1]C1CC1', '[*:1]C1CCC1', '[*:1]C1CCCC1', '[*:1]C1CCCCC1', // cyclo C3–C6
-    ],
-  },
-  {
-    name: 'Halogens & fluorines',
-    smiles: [
-      'F', 'Cl', 'Br', 'I', // bare halogens
-      'FC(F)(F)[*:1]', 'FC(F)[*:1]', 'FC[*:1]', // CF3, CHF2, CH2F
-      'FC(F)(F)O[*:1]', 'FC(F)O[*:1]', // OCF3, OCHF2
-    ],
-  },
-  {
-    name: 'Polar / H-bonding',
-    smiles: [
-      'O[*:1]', 'N[*:1]', 'CO[*:1]', 'N#C[*:1]', 'O=[N+]([O-])[*:1]', // OH, NH2, OMe, CN, NO2
-      'OC(=O)[*:1]', 'NC(=O)[*:1]', 'CS(=O)(=O)[*:1]', 'NS(=O)(=O)[*:1]', // COOH, CONH2, SO2Me, SO2NH2
-    ],
-  },
-  {
-    name: '(Hetero)aryl',
-    smiles: [
-      '[*:1]c1ccccc1', '[*:1]Cc1ccccc1', // phenyl, benzyl
-      '[*:1]c1ccccn1', '[*:1]c1cccnc1', '[*:1]c1ccncc1', // 2-/3-/4-pyridyl
-      '[*:1]c1ccco1', '[*:1]c1cccs1', // furan-2-yl, thiophen-2-yl
-      '[*:1]n1cccn1', '[*:1]n1ccnc1', // pyrazol-1-yl, imidazol-1-yl
-    ],
-  },
-  {
-    name: 'Amine solubilizers',
-    smiles: [
-      'CN(C)[*:1]', 'CN(C)CC[*:1]', // NMe2, 2-(dimethylamino)ethyl
-      '[*:1]N1CCOCC1', '[*:1]N1CCCCC1', '[*:1]N1CCNCC1', 'CN1CCN([*:1])CC1', // morpholine, piperidine, piperazine, N-Me-piperazine
-      'OCC[*:1]', 'COCC[*:1]', // 2-hydroxyethyl, 2-methoxyethyl
-    ],
-  },
-  {
-    // Capping groups for an amine; `[*:1]` sits where the N would attach.
-    name: 'Protecting groups (amine)',
-    smiles: [
-      '[*:1]C(=O)OC(C)(C)C', '[*:1]C(=O)OCc1ccccc1', '[*:1]C(=O)OCC1c2ccccc2-c2ccccc21', // Boc, Cbz, Fmoc
-      '[*:1]C(=O)OCC=C', '[*:1]C(=O)OCC(Cl)(Cl)Cl', // Alloc, Troc
-      '[*:1]C(=O)C', '[*:1]C(=O)C(F)(F)F', '[*:1]C(=O)c1ccccc1', // Acetyl, Trifluoroacetyl, Benzoyl
-      '[*:1]S(=O)(=O)c1ccc(C)cc1', '[*:1]S(=O)(=O)C', // Tosyl, Mesyl
-      '[*:1]Cc1ccccc1', '[*:1]C(c1ccccc1)(c1ccccc1)c1ccccc1', // Benzyl, Trityl
-    ],
-  },
-  {
-    // Capping groups for an alcohol/acid; `[*:1]` sits where the O would attach.
-    name: 'Protecting groups (alcohol)',
-    smiles: [
-      '[*:1][Si](C)(C)C', '[*:1][Si](C)(C)C(C)(C)C', '[*:1][Si](CC)(CC)CC', // TMS, TBS, TES
-      '[*:1][Si](c1ccccc1)(c1ccccc1)C(C)(C)C', '[*:1][Si](C(C)C)(C(C)C)C(C)C', // TBDPS, TIPS
-      '[*:1]Cc1ccccc1', '[*:1]Cc1ccc(OC)cc1', // Benzyl, PMB
-      '[*:1]COC', '[*:1]COCCOC', '[*:1]COCC[Si](C)(C)C', '[*:1]C1CCCCO1', // MOM, MEM, SEM, THP
-      '[*:1]C(=O)C', '[*:1]C(=O)c1ccccc1', '[*:1]C(=O)C(C)(C)C', // Acetyl, Benzoyl, Pivaloyl
-    ],
-  },
-  {
-    // Carboxylic-acid ester caps; `[*:1]` sits where the carboxyl O attaches.
-    name: 'Protecting groups (acid ester)',
-    smiles: [
-      '[*:1]C', '[*:1]CC', '[*:1]C(C)(C)C', // methyl, ethyl, tert-butyl ester
-      '[*:1]Cc1ccccc1', '[*:1]CC=C', // benzyl, allyl ester
-    ],
-  },
-  {
-    // Thiol caps; `[*:1]` sits where the S attaches.
-    name: 'Protecting groups (thiol)',
-    smiles: [
-      '[*:1]C(c1ccccc1)(c1ccccc1)c1ccccc1', '[*:1]CNC(=O)C', // Trityl, Acetamidomethyl (Acm)
-      '[*:1]Cc1ccccc1', '[*:1]C(C)(C)C', // Benzyl, tert-butyl
-      '[*:1]C(=O)C', '[*:1]SC(C)(C)C', // Acetyl (thioester), tert-butyldisulfanyl
-    ],
-  },
-  {
-    name: 'Saturated (hetero)cycles',
-    smiles: [
-      '[*:1]C1COC1', '[*:1]C1CNC1', // oxetan-3-yl, azetidin-3-yl
-      '[*:1]C1CCOC1', '[*:1]C1CCOCC1', // tetrahydrofuran-3-yl, oxan-4-yl (THP-4-yl)
-      '[*:1]C1CCNC1', '[*:1]C1CCNCC1', // pyrrolidin-3-yl, piperidin-4-yl
-    ],
-  },
+/** A ready-made R-group substituent set offered by the "Templates…" picker. The full
+ * catalogue ships as `files/enumeration/r-group-templates.json` (editable without a rebuild);
+ * {@link BUILTIN_R_GROUP_TEMPLATES} is the in-code fallback for when that file is unreadable. */
+export interface RGroupTemplate {
+  /** Name shown in the template dropdown. */
+  name: string;
+  /** Optional one-line note about the set (e.g. where the attachment point sits). */
+  description?: string;
+  items: RGroupTemplateItem[];
+}
+
+/** One substituent in a template: a `[*:1]`-labeled fragment (or bare single atom) re-labeled
+ * to the chosen R# on insert, plus an optional chemical name shown under the preview thumbnail. */
+export interface RGroupTemplateItem {
+  smiles: string;
+  label?: string;
+}
+
+/** In-code fallback used when `files/enumeration/r-group-templates.json` is missing or
+ * unreadable, so the picker is never empty. The shipped JSON carries the full catalogue. */
+export const BUILTIN_R_GROUP_TEMPLATES: RGroupTemplate[] = [
+  {name: 'Alkyl (C1–C8)', items: [
+    {smiles: 'C[*:1]', label: 'methyl'}, {smiles: 'CC[*:1]', label: 'ethyl'},
+    {smiles: 'CCC[*:1]', label: 'propyl'}, {smiles: 'CCCC[*:1]', label: 'butyl'},
+    {smiles: 'CCCCC[*:1]', label: 'pentyl'}, {smiles: 'CCCCCC[*:1]', label: 'hexyl'},
+    {smiles: 'CCCCCCC[*:1]', label: 'heptyl'}, {smiles: 'CCCCCCCC[*:1]', label: 'octyl'},
+  ]},
 ];
+
+/** Parses the templates JSON (an array of {@link RGroupTemplate}). Returns `[]` on anything
+ * malformed — callers fall back to {@link BUILTIN_R_GROUP_TEMPLATES}. This only enforces the
+ * shape; SMILES validity is checked separately by {@link invalidTemplateSmiles}. */
+export function parseRGroupTemplates(text: string): RGroupTemplate[] {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw)) return [];
+  const out: RGroupTemplate[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry.name !== 'string' || !Array.isArray(entry.items)) continue;
+    const items: RGroupTemplateItem[] = [];
+    for (const it of entry.items) {
+      if (it && typeof it.smiles === 'string' && it.smiles.trim())
+        items.push({smiles: it.smiles, label: typeof it.label === 'string' ? it.label : undefined});
+    }
+    if (items.length > 0)
+      out.push({name: entry.name, description: typeof entry.description === 'string' ? entry.description : undefined, items});
+  }
+  return out;
+}
+
+/** Returns the SMILES in `templates` that fail to parse as an R-group (each tested at R1).
+ * Used to drop bad entries at load time and to gate the shipped catalogue in tests. */
+export function invalidTemplateSmiles(templates: RGroupTemplate[], rdkit: RDModule): string[] {
+  const bad: string[] = [];
+  for (const tmpl of templates) {
+    for (const it of tmpl.items) {
+      if (makeRGroup(it.smiles, 1, '', rdkit).error != null) bad.push(it.smiles);
+    }
+  }
+  return bad;
+}
 
 /**
  * Builds R-groups from `smilesList` (each re-labeled to `targetN` via {@link makeRGroup}) and adds

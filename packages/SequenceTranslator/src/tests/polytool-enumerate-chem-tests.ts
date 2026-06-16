@@ -9,19 +9,21 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {
   addRGroupsFromSmiles,
   assembleMolecule,
+  BUILTIN_R_GROUP_TEMPLATES,
   buildExportColumns,
   ChemEnumModes,
   copyRGroupList,
   countForCore,
   enumerate,
   extractRNumbers,
+  invalidTemplateSmiles,
   makeCore,
   makeRGroup,
   moveStartRLabelToBranch,
   normalizeRLabels,
+  parseRGroupTemplates,
   pickDefaultTargetR,
   pickFreeRingDigits,
-  R_GROUP_TEMPLATES,
   remapSingleRLabel,
   rGroupTargetWarnings,
   substituteRLabelWithRingDigit,
@@ -441,18 +443,21 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
     expect(m.get(1)!.length, 2);
   });
 
-  test('R_GROUP_TEMPLATES are valid; addRGroupsFromSmiles inserts re-labeled to the target R#', async () => {
-    // Every shipped template SMILES must be a valid R-group.
-    for (const tmpl of R_GROUP_TEMPLATES) {
-      for (const smi of tmpl.smiles)
-        expect(rg(smi, 1).error == null, true, `invalid template SMILES ${smi}`);
-    }
+  test('shipped r-group-templates.json parses, every SMILES is valid, and inserts re-labeled', async () => {
+    // The catalogue ships as a data file; parse it and check every SMILES is a valid R-group.
+    const text = await _package.files.readAsText('enumeration/r-group-templates.json');
+    const templates = parseRGroupTemplates(text);
+    expect(templates.length > 0, true, 'no templates parsed from r-group-templates.json');
+    const bad = invalidTemplateSmiles(templates, rdkit);
+    expect(bad.length, 0, `invalid template SMILES: ${bad.join(', ')}`);
+    // The in-code fallback must be valid too (it's used when the file is unreadable).
+    expect(invalidTemplateSmiles(BUILTIN_R_GROUP_TEMPLATES, rdkit).length, 0);
     // Insert the first template (alkyl C1–C8) into R2 — each lands re-labeled to [*:2].
-    const tmpl = R_GROUP_TEMPLATES[0];
+    const smiles = templates[0].items.map((it) => it.smiles);
     const m = new Map<number, ReturnType<typeof makeRGroup>[]>();
-    const n = addRGroupsFromSmiles(m, tmpl.smiles, 2, 'append', rdkit);
-    expect(n, tmpl.smiles.length);
-    expect(m.get(2)!.length, tmpl.smiles.length);
+    const n = addRGroupsFromSmiles(m, smiles, 2, 'append', rdkit);
+    expect(n, smiles.length);
+    expect(m.get(2)!.length, smiles.length);
     expect(m.get(2)!.every((g) => g.rNumber === 2 && g.error == null), true);
     expect(m.get(2)![0].smiles, 'C[*:2]'); // methyl, re-labeled
   });
