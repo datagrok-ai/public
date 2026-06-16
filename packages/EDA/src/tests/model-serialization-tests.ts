@@ -7,7 +7,7 @@
 // so a broken `fit` is also caught, not only a broken serialization).
 //
 // Datasets are loaded through the platform exactly like
-// control-comparisons-tests.ts: `grok.dapi.files.readCsv("System:DemoFiles/...")`.
+// control-comparisons-tests.ts `grok.dapi.files.readCsv("System:DemoFiles/...")`.
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';

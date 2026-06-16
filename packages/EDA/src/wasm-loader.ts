@@ -25,12 +25,15 @@ const bundleUrl: string =
 
 let initPromise: Promise<unknown> | undefined;
 
+/** Absolute URL of the wasm binary in `dist/`, resolved from the bundle URL. */
+export function edaMlWasmUrl(): string {
+  return new URL('sci_comp_ml_bg.wasm', bundleUrl).href;
+}
+
 /** Ensure the sci-comp-ml wasm is instantiated; safe to call repeatedly. */
 export function ensureEdaMlInit(): Promise<unknown> {
-  if (initPromise === undefined) {
-    const wasmUrl = new URL('sci_comp_ml_bg.wasm', bundleUrl);
-    initPromise = initEdaMl(wasmUrl);
-  }
+  if (initPromise === undefined)
+    initPromise = initEdaMl(edaMlWasmUrl());
 
   return initPromise;
 }

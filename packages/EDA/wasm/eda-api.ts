@@ -15,8 +15,30 @@
 
 import * as DG from 'datagrok-api/dg';
 
-import {WasmElasticNet, WasmPca, WasmPls, WasmSoftmax} from './sci_comp_ml.js';
-import {ensureEdaMlInit} from '../src/wasm-loader';
+// PCA and PLS run their heavy fit in a web worker (see eda-ml-worker.ts);
+// softmax and linreg stay on the main thread, as they did with the C++
+// backend, so they use the wasm classes directly.
+import {WasmElasticNet, WasmSoftmax} from './sci_comp_ml.js';
+import {ensureEdaMlInit, edaMlWasmUrl} from '../src/wasm-loader';
+
+/** Run one sci-comp-ml fit in a fresh worker; resolves with its result message. */
+function runEdaMlWorker(message: Record<string, unknown>, transfer: Transferable[]): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../src/workers/eda-ml-worker.ts', import.meta.url));
+    worker.onmessage = (e: MessageEvent) => {
+      worker.terminate();
+      if (e.data && e.data.error)
+        reject(new Error(e.data.error));
+      else
+        resolve(e.data);
+    };
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(new Error(err.message));
+    };
+    worker.postMessage({wasmUrl: edaMlWasmUrl(), ...message}, transfer);
+  });
+}
 
 // Convergence controls of the retired C++ NIPALS (PCA.h: TOL, MAX_ITER).
 // Reproduced here so the Rust kernel iterates identically.
@@ -44,22 +66,17 @@ const OLS_TOL = 1e-7;
  * The C++ NIPALS standardised each column to `(x - mean) / sigma_pop`
  * internally (`X - means`, then `colwise().normalized() * sqrt(n)`); the
  * Rust kernel does not standardise, so we do it here with the population
- * standard deviation, trimming each raw array to the real row count.
- *
- * (The name keeps the `InWebWorker` suffix for contract compatibility;
- * this first cut runs on the main thread. A worker can be reintroduced
- * later without changing the signature.)
+ * standard deviation, trimming each raw array to the real row count. The
+ * fit itself runs in a web worker (off the UI thread), as the C++ did.
  */
 export async function _principalComponentAnalysisNipalsInWebWorker(
   table: DG.DataFrame, columns: DG.ColumnList, componentsCount: number): Promise<DG.DataFrame> {
-  await ensureEdaMlInit();
-
   const cols = columns.toList();
   const m = cols.length;
   const nRows = table.rowCount;
 
   // Standardise (population) into the flat [col0, col1, ...] boundary form.
-  const flat = new Float64Array(m * nRows);
+  const flatX = new Float64Array(m * nRows);
   for (let j = 0; j < m; ++j) {
     const raw = cols[j].getRawData(); // capacity may exceed nRows
     let sum = 0;
@@ -78,33 +95,28 @@ export async function _principalComponentAnalysisNipalsInWebWorker(
 
     const base = j * nRows;
     for (let i = 0; i < nRows; ++i)
-      flat[base + i] = (raw[i] - mean) / sigma;
+      flatX[base + i] = (raw[i] - mean) / sigma;
   }
 
-  const pca = new WasmPca(componentsCount, PCA_TOL, PCA_MAX_ITER);
-  try {
-    pca.fit(flat, nRows);
+  const {nComponents, scores} = await runEdaMlWorker(
+    {method: 'pca', flatX, nRows, componentsCount, tol: PCA_TOL, maxIter: PCA_MAX_ITER},
+    [flatX.buffer],
+  ); // scores: Float64Array, nComponents x nRows
 
-    const k = pca.nComponents();
-    const scores = pca.scores(); // flat k x nRows, row-major (component by component)
-
-    const outCols: DG.Column[] = [];
-    for (let a = 0; a < componentsCount; ++a) {
-      const data = new Float32Array(nRows);
-      // Components beyond the extracted rank stay zero (C++ returned all
-      // componentsCount columns; the exhausted ones are ~0 anyway).
-      if (a < k) {
-        const base = a * nRows;
-        for (let i = 0; i < nRows; ++i)
-          data[i] = scores[base + i];
-      }
-      outCols.push(DG.Column.fromFloat32Array((a + 1).toString(), data));
+  const outCols: DG.Column[] = [];
+  for (let a = 0; a < componentsCount; ++a) {
+    const data = new Float32Array(nRows);
+    // Components beyond the extracted rank stay zero (C++ returned all
+    // componentsCount columns; the exhausted ones are ~0 anyway).
+    if (a < nComponents) {
+      const base = a * nRows;
+      for (let i = 0; i < nRows; ++i)
+        data[i] = scores[base + i];
     }
-
-    return DG.DataFrame.fromColumns(outCols);
-  } finally {
-    pca.free();
+    outCols.push(DG.Column.fromFloat32Array((a + 1).toString(), data));
   }
+
+  return DG.DataFrame.fromColumns(outCols);
 }
 
 /**
@@ -129,8 +141,6 @@ export async function _principalComponentAnalysisNipalsInWebWorker(
 export async function _partialLeastSquareRegressionInWebWorker(
   table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, componentsCount: number,
 ): Promise<[DG.Column, DG.Column, DG.Column[], DG.Column[], DG.Column[], DG.Column]> {
-  await ensureEdaMlInit();
-
   const cols = features.toList();
   const m = cols.length;
   const nRows = table.rowCount;
@@ -182,59 +192,50 @@ export async function _partialLeastSquareRegressionInWebWorker(
   for (let i = 0; i < nRows; ++i)
     stdY[i] = (ry[i] - yMean) / yStd;
 
-  const pls = new WasmPls(componentsCount);
-  try {
-    pls.setFeatureStats(xMeans, xStds, yMean, yStd);
-    pls.fit(flatX, nRows, stdY);
+  // Fit in the worker; xMeans/xStds are small (length m) so left untransferred.
+  const {b, t, u, p, q} = await runEdaMlWorker(
+    {method: 'pls', flatX, nRows, stdY, xMeans, xStds, yMean, yStd, componentsCount},
+    [flatX.buffer, stdY.buffer],
+  ); // b: raw coeffs (m); t,u: A x nRows; p: A x m; q: A
 
-    const b = pls.regressionCoefficients(); // raw space, length m
-
-    // prediction = D · b on raw predictors, no intercept (C++ parity).
-    const predData = new Float32Array(nRows);
-    for (let i = 0; i < nRows; ++i) {
-      let s = 0;
-      for (let j = 0; j < m; ++j)
-        s += b[j] * raw[j][i];
-      predData[i] = s;
-    }
-
-    const tFlat = pls.tScores(); // A x nRows
-    const uFlat = pls.uScores(); // A x nRows
-    const pFlat = pls.xLoadings(); // A x m
-    const qArr = pls.yLoadings(); // length A
-    const a = qArr.length;
-
-    const tScores: DG.Column[] = [];
-    const uScores: DG.Column[] = [];
-    for (let k = 0; k < a; ++k) {
-      const tcol = new Float32Array(nRows);
-      const ucol = new Float32Array(nRows);
-      const base = k * nRows;
-      for (let i = 0; i < nRows; ++i) {
-        tcol[i] = tFlat[base + i];
-        ucol[i] = uFlat[base + i];
-      }
-      tScores.push(DG.Column.fromFloat32Array((k + 1).toString(), tcol));
-      uScores.push(DG.Column.fromFloat32Array((k + 1).toString(), ucol));
-    }
-
-    const xLoadings: DG.Column[] = [];
-    for (let k = 0; k < a; ++k) {
-      const pcol = new Float32Array(m);
-      const base = k * m;
-      for (let j = 0; j < m; ++j)
-        pcol[j] = pFlat[base + j];
-      xLoadings.push(DG.Column.fromFloat32Array((k + 1).toString(), pcol));
-    }
-
-    const prediction = DG.Column.fromFloat32Array('0', predData);
-    const regrCoeffs = DG.Column.fromFloat32Array('0', Float32Array.from(b));
-    const yLoadings = DG.Column.fromFloat32Array('0', Float32Array.from(qArr));
-
-    return [prediction, regrCoeffs, tScores, uScores, xLoadings, yLoadings];
-  } finally {
-    pls.free();
+  // prediction = D · b on raw predictors, no intercept (C++ parity).
+  const predData = new Float32Array(nRows);
+  for (let i = 0; i < nRows; ++i) {
+    let s = 0;
+    for (let j = 0; j < m; ++j)
+      s += b[j] * raw[j][i];
+    predData[i] = s;
   }
+
+  const a = q.length;
+  const tScores: DG.Column[] = [];
+  const uScores: DG.Column[] = [];
+  for (let k = 0; k < a; ++k) {
+    const tcol = new Float32Array(nRows);
+    const ucol = new Float32Array(nRows);
+    const base = k * nRows;
+    for (let i = 0; i < nRows; ++i) {
+      tcol[i] = t[base + i];
+      ucol[i] = u[base + i];
+    }
+    tScores.push(DG.Column.fromFloat32Array((k + 1).toString(), tcol));
+    uScores.push(DG.Column.fromFloat32Array((k + 1).toString(), ucol));
+  }
+
+  const xLoadings: DG.Column[] = [];
+  for (let k = 0; k < a; ++k) {
+    const pcol = new Float32Array(m);
+    const base = k * m;
+    for (let j = 0; j < m; ++j)
+      pcol[j] = p[base + j];
+    xLoadings.push(DG.Column.fromFloat32Array((k + 1).toString(), pcol));
+  }
+
+  const prediction = DG.Column.fromFloat32Array('0', predData);
+  const regrCoeffs = DG.Column.fromFloat32Array('0', Float32Array.from(b));
+  const yLoadings = DG.Column.fromFloat32Array('0', Float32Array.from(q));
+
+  return [prediction, regrCoeffs, tScores, uScores, xLoadings, yLoadings];
 }
 
 /**
