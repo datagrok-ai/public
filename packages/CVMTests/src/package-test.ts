@@ -5,10 +5,10 @@ import './shell/ml';
 import './scripts/scripts_tests';
 import './celery/celery_tests';
 import './docker/docker';
-import './files/files'
+import './files/files';
 // import './gui/dialogs'; To fix!
 
-import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 export const _package = new DG.Package();
 export {tests};

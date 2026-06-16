@@ -56,7 +56,7 @@ for (const lang of languages) {
 
     test('Dataframe input/output', async () => {
       function getSample(): DG.DataFrame {
-        return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
+        return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
       }
       const sample1 = getSample();
       const sample2 = getSample();
@@ -105,8 +105,8 @@ for (const lang of languages) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
-              'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
+          {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
+            'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
       }, {stressTest: serverSideLanguages.includes(lang), timeout: 90000});
@@ -147,7 +147,7 @@ for (const lang of languages) {
       test('String list input', async () => {
         const stringList = ['apple', 'banana', 'cherry', 'date'];
         const result = await grok.functions.call(`CVMTests:${lang}ListStringTest`,
-            {'string_list': stringList});
+          {'string_list': stringList});
         expect(result, 'date');
       }, {stressTest: serverSideLanguages.includes(lang)});
     }
