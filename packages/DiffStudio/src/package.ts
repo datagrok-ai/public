@@ -232,7 +232,7 @@ export class PackageFunctions {
     icon: 'files/icons/ball.png',
     // @ts-expect-error
     help: 'ball-flight.md',
-    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Help": {"dock-spawn-dock-ratio": 0.2, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Grid"}}',
     outputs: [
       {
         name: 'maxDist',

@@ -87,7 +87,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ball.png
 //meta.help: ball-flight.md
-//meta.dockSpawnConfig: {"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}
+//meta.dockSpawnConfig: {"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Help": {"dock-spawn-dock-ratio": 0.2, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Grid"}}
 export function ballFlight(dB: number, roB: number, v: number, a: number) {
   return PackageFunctions.ballFlight(dB, roB, v, a);
 }
