@@ -7,7 +7,9 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {
+  addRGroupsFromSmiles,
   assembleMolecule,
+  buildExportColumns,
   ChemEnumModes,
   copyRGroupList,
   countForCore,
@@ -17,8 +19,11 @@ import {
   makeRGroup,
   moveStartRLabelToBranch,
   normalizeRLabels,
+  pickDefaultTargetR,
   pickFreeRingDigits,
+  R_GROUP_TEMPLATES,
   remapSingleRLabel,
+  rGroupTargetWarnings,
   substituteRLabelWithRingDigit,
   validateParams,
 } from '../polytool/pt-chem-enum';
@@ -434,6 +439,64 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
     // Copying a slot onto itself does nothing.
     expect(copyRGroupList(m, 1, 1, 'append', rdkit), 0);
     expect(m.get(1)!.length, 2);
+  });
+
+  test('R_GROUP_TEMPLATES are valid; addRGroupsFromSmiles inserts re-labeled to the target R#', async () => {
+    // Every shipped template SMILES must be a valid R-group.
+    for (const tmpl of R_GROUP_TEMPLATES) {
+      for (const smi of tmpl.smiles)
+        expect(rg(smi, 1).error == null, true, `invalid template SMILES ${smi}`);
+    }
+    // Insert the first template (alkyl C1–C8) into R2 — each lands re-labeled to [*:2].
+    const tmpl = R_GROUP_TEMPLATES[0];
+    const m = new Map<number, ReturnType<typeof makeRGroup>[]>();
+    const n = addRGroupsFromSmiles(m, tmpl.smiles, 2, 'append', rdkit);
+    expect(n, tmpl.smiles.length);
+    expect(m.get(2)!.length, tmpl.smiles.length);
+    expect(m.get(2)!.every((g) => g.rNumber === 2 && g.error == null), true);
+    expect(m.get(2)![0].smiles, 'C[*:2]'); // methyl, re-labeled
+  });
+
+  test('addRGroupsFromSmiles: replace with an empty list clears the slot; append no-ops', async () => {
+    const m = new Map([[2, [rg('O[*:2]', 2)]]]);
+    expect(addRGroupsFromSmiles(m, [], 2, 'replace', rdkit), 0);
+    expect(m.has(2), false, 'replacing with nothing must delete the slot');
+    expect(addRGroupsFromSmiles(m, [], 5, 'append', rdkit), 0);
+    expect(m.has(5), false, 'appending nothing must not create an empty slot');
+  });
+
+  test('pickDefaultTargetR: free core slot, else lowest other, else exclude+1', async () => {
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 2]), 1), 2); // free core R# wins
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 3]), 1), 3); // non-contiguous core R#s
+    expect(pickDefaultTargetR(new Set([1, 2]), new Set([1, 2]), 1), 2); // no free slot → lowest other
+    expect(pickDefaultTargetR(new Set([1]), new Set(), 1), 2); // no cores → exclude + 1
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 2])), 2); // template form (no exclude)
+    expect(pickDefaultTargetR(new Set(), new Set()), 1); // empty → R1
+  });
+
+  test('rGroupTargetWarnings: flags invalid entries and an orphan target R#', async () => {
+    expectArray(rGroupTargetWarnings(2, 0, new Set([1, 2])), []); // clean copy into a used slot
+    expect(rGroupTargetWarnings(2, 3, new Set([1, 2])).length, 1); // invalid entries only
+    expect(rGroupTargetWarnings(5, 0, new Set([1, 2])).length, 1); // orphan target only
+    expect(rGroupTargetWarnings(5, 1, new Set([1, 2])).length, 2); // both
+    expectArray(rGroupTargetWarnings(5, 0, new Set()), []); // no cores → suppress orphan warning
+  });
+
+  test('buildExportColumns: Core + R# columns, errored entries filtered, padded equally', async () => {
+    const cores = [makeCore('C[*:1]N[*:2]', 'c', rdkit), makeCore('bad', 'e', rdkit)]; // 2nd errors
+    expect(cores[1].error != null, true);
+    const m = new Map([
+      [1, [rg('O[*:1]', 1), rg('C1CC[*:1]', 1)]], // 2nd is unparseable → filtered out
+      [2, [rg('N[*:2]', 2)]],
+    ]);
+    const cols = buildExportColumns(cores, m);
+    expectArray(cols.map((c) => c.name), ['Core', 'R1', 'R2']);
+    const valid = (name: string) => cols.find((c) => c.name === name)!.values.filter((v) => v !== '');
+    expect(valid('Core').length, 1, 'errored core dropped'); // only C[*:1]N[*:2]
+    expect(valid('R1').length, 1, 'invalid R1 entry dropped');
+    expect(valid('R1')[0], 'O[*:1]');
+    const len = cols[0].values.length;
+    expect(cols.every((c) => c.values.length === len), true, 'all columns padded to equal length');
   });
 
   test('end-to-end: copying R1→R2 matches defining R2 natively', async () => {
