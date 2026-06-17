@@ -98,7 +98,7 @@ Do not modify generated `.js`/`.wasm` files directly. The Rust source lives in t
 
 ### Function Registration
 
-Functions are registered via JSDoc-style metadata comments (not TypeScript decorators):
+Functions are registered with `@grok.decorators.func()` / `@grok.decorators.param()` decorators:
 
 ```typescript
 @grok.decorators.func({
@@ -122,11 +122,11 @@ Key library integrations:
 - **@datagrok-libraries/math**: DBSCAN, mathematical utilities
 - **@datagrok-libraries/test**: Test framework
 
-External packages (must be in webpack externals):
-- `mathjs`: Matrix operations and numerical computation
-- `jstat`: Statistical distributions
-- `umap-js`: UMAP implementation
-- `@keckelt/tsne`: t-SNE implementation
+Provided by the platform host (webpack `externals`, not bundled):
+- `datagrok-api` (`dg`/`grok`/`ui`), `openchemlib/full.js`, `rxjs`, `cash-dom`, `dayjs`, `wu`, `exceljs`
+
+Bundled into the artifact (not external):
+- `mathjs` (matrix ops), `jstat` (statistical distributions), `umap-js`, `@keckelt/tsne`, and the `sci_comp_ml` wasm. See `CREDITS.md` for attribution.
 
 ## Testing
 
@@ -161,7 +161,7 @@ category('Feature Name', () => {
 
 ### Adding a New ML Method
 
-1. Implement the algorithm in TypeScript (or C++ for WASM)
+1. Implement the algorithm in TypeScript (or Rust in the `sci-comp-rust` repo for a WASM backend; XGBoost is the only remaining C++/Emscripten kernel)
 2. Add function registration with `@grok.decorators.func()`
 3. Create tests in appropriate test file
 4. Run `grok api` to generate wrappers
