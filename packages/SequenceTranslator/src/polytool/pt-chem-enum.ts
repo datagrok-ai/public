@@ -244,16 +244,12 @@ export const BUILTIN_R_GROUP_TEMPLATES: RGroupTemplate[] = [
   ]},
 ];
 
-/** Parses the templates JSON (an array of {@link RGroupTemplate}). Returns `[]` on anything
- * malformed — callers fall back to {@link BUILTIN_R_GROUP_TEMPLATES}. This only enforces the
- * shape; SMILES validity is checked separately by {@link invalidTemplateSmiles}. */
+/** Parses the templates JSON (an array of {@link RGroupTemplate}). Throws on invalid JSON so the
+ * loader can warn and skip the offending file instead of silently dropping it; returns `[]` for
+ * valid JSON that just isn't a template array. Only enforces the shape — SMILES validity is checked
+ * separately by {@link invalidTemplateSmiles}. */
 export function parseRGroupTemplates(text: string): RGroupTemplate[] {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    return [];
-  }
+  const raw: unknown = JSON.parse(text); // let malformed JSON throw — the loader catches it and logs the file name
   if (!Array.isArray(raw)) return [];
   const out: RGroupTemplate[] = [];
   for (const entry of raw) {
