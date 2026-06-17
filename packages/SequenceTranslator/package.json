@@ -30,7 +30,7 @@
     "cash-dom": "^8.1.0",
     "datagrok-api": "../../js-api",
     "lodash": "^4.17.21",
-    "@datagrok-libraries/hwe": "file:../../../HELM", 
+    "@datagrok-libraries/hwe": "^1.0.0", 
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
