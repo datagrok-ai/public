@@ -534,6 +534,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
+                    skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }

@@ -28,6 +28,10 @@ export const InputForm = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
+    skipTableAutoFill: {
+      type: Boolean,
+      default: false,
+    },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
@@ -58,6 +62,7 @@ export const InputForm = Vue.defineComponent({
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
     const skipInit = Vue.computed(() => props.skipInit);
+    const skipTableAutoFill = Vue.computed(() => props.skipTableAutoFill);
     const formRef = Vue.shallowRef<InputFormT | undefined>(undefined);
 
     const states = Vue.reactive({
@@ -142,6 +147,7 @@ export const InputForm = Vue.defineComponent({
     return () =>
       <dg-input-form
         skipInit={skipInit.value}
+        skipTableAutoFill={skipTableAutoFill.value}
         funcCall={currentCall.value}
         onFormReplaced={formReplacedCb}
         onInputChanged={(ev: CustomEvent<DG.EventData<DG.InputArgs>>) => emit('inputChanged', ev.detail)}
