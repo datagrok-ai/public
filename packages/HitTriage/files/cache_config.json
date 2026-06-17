@@ -20,6 +20,16 @@
     "preflight": true
   },
   {
+    "path": "/PeptiHit/campaigns",
+    "invalidateOn": "0 * * * *",
+    "preflight": true
+  },
+  {
+    "path": "/PepTriage/campaigns",
+    "invalidateOn": "0 * * * *",
+    "preflight": true
+  },
+  {
     "path": "/",
     "invalidateOn": "0 * * * *",
     "preflight": true
