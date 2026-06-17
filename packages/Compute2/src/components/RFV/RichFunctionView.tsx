@@ -713,6 +713,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
+                    skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
