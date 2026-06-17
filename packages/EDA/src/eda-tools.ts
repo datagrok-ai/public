@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
 // PCA migrated to Rust + WASM (sci-comp-ml); always NIPALS now.
 import {_principalComponentAnalysisNipalsInWebWorker} from '../wasm/eda-api';
 
