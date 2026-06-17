@@ -1264,22 +1264,21 @@ function buildChemEnumPanel(
       ui.tooltip.bind(importBtn, `${label}: pick a table + column`);
       parts.push(importBtn);
     }
+    if (onTemplate) {
+      // Icon + label, matching "+ Draw" / "↓ Import…": leading swatchbook glyph at the same size as the +/↓.
+      const tmplIcon = ui.iconFA('swatchbook');
+      tmplIcon.style.fontSize = 'inherit';
+      tmplIcon.style.marginRight = '4px';
+      const templateBtn = ui.button([tmplIcon, 'Templates'], onTemplate, `${label}: insert a ready-made set`);
+      templateBtn.style.marginLeft = '4px';
+      parts.push(templateBtn);
+    }
     let clearBtn: HTMLButtonElement | undefined;
     if (onClear) {
       clearBtn = ui.button('Remove all', onClear) as HTMLButtonElement;
-      // When a templates icon follows, right-align this trailing cluster (Remove all + the icon).
-      clearBtn.style.marginLeft = onTemplate ? 'auto' : '4px';
+      clearBtn.style.marginLeft = '4px';
       ui.tooltip.bind(clearBtn, `Remove all ${label.toLowerCase()}`);
       parts.push(clearBtn);
-    }
-    if (onTemplate) {
-      // Icon + label, matching the "+ Draw" / "↓ Import…" buttons: a small leading swatchbook glyph.
-      const tmplIcon = ui.iconFA('swatchbook');
-      tmplIcon.style.fontSize = '12px';
-      tmplIcon.style.marginRight = '4px';
-      const templateBtn = ui.button([tmplIcon, 'Templates'], onTemplate, `${label}: insert a ready-made set`);
-      templateBtn.style.marginLeft = onClear ? '4px' : 'auto'; // sit just right of Remove all (or push right on its own)
-      parts.push(templateBtn);
     }
     const root = ui.divH(parts, {style: {
       alignItems: 'center', justifyContent: 'flex-start',
@@ -1300,8 +1299,8 @@ function buildChemEnumPanel(
   );
   coresClearBtn = coresHeader.clearBtn;
 
-  // Single combined-export icon — placed in the Run/footer controls of whichever layout runs.
-  const exportBtn = ui.iconFA('download', exportAllCsv, 'Download cores + R-groups as one CSV');
+  // Single combined-export icon — `arrow-to-bottom`, the same glyph the grid's download button uses.
+  const exportBtn = ui.iconFA('arrow-to-bottom', exportAllCsv, 'Download cores + R-groups as one CSV');
 
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
