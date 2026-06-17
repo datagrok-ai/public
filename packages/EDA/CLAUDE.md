@@ -162,9 +162,8 @@ category('Feature Name', () => {
 });
 ```
 
-## Scripts and Files
+## Files
 
-- **`scripts/`**: Python scripts for exporting TypeScript constants from Python implementations
 - **`files/`**: Demo/test data for pMPO (drugs-props-train.csv, drugs-props-test.csv, scores)
 - **`css/`**: Custom stylesheets (pmpo.css for pMPO UI)
 
