@@ -78,7 +78,7 @@ export interface ChemEnumResult {
   smiles: string;
   /** `originalSmiles` of the core used. */
   coreSmiles: string;
-  /** R-number → `originalSmiles` of the R-group used at that position. */
+  /** R-number → SMILES of the R-group as attached at that position (re-labeled to that R#). */
   rGroupSmilesByNum: Map<number, string>;
 }
 
@@ -215,6 +215,154 @@ export function makeRGroup(
   }
 
   return {smiles: remapped, originalSmiles, rNumber: targetRNumber, id, sourceRNumber};
+}
+
+/** A ready-made R-group substituent set offered by the "Templates…" picker. The full
+ * catalogue ships as `files/enumeration/r-group-templates.json` (editable without a rebuild);
+ * {@link BUILTIN_R_GROUP_TEMPLATES} is the in-code fallback for when that file is unreadable. */
+export interface RGroupTemplate {
+  /** Name shown in the template dropdown. */
+  name: string;
+  items: RGroupTemplateItem[];
+}
+
+/** One substituent in a template: a `[*:1]`-labeled fragment (or bare single atom) re-labeled
+ * to the chosen R# on insert, plus an optional chemical name shown under the preview thumbnail. */
+export interface RGroupTemplateItem {
+  smiles: string;
+  label?: string;
+}
+
+/** In-code fallback used when `files/enumeration/r-group-templates.json` is missing or
+ * unreadable, so the picker is never empty. The shipped JSON carries the full catalogue. */
+export const BUILTIN_R_GROUP_TEMPLATES: RGroupTemplate[] = [
+  {name: 'Alkyl (C1–C8)', items: [
+    {smiles: 'C[*:1]', label: 'methyl'}, {smiles: 'CC[*:1]', label: 'ethyl'},
+    {smiles: 'CCC[*:1]', label: 'propyl'}, {smiles: 'CCCC[*:1]', label: 'butyl'},
+    {smiles: 'CCCCC[*:1]', label: 'pentyl'}, {smiles: 'CCCCCC[*:1]', label: 'hexyl'},
+    {smiles: 'CCCCCCC[*:1]', label: 'heptyl'}, {smiles: 'CCCCCCCC[*:1]', label: 'octyl'},
+  ]},
+];
+
+/** Parses the templates JSON (an array of {@link RGroupTemplate}). Throws on invalid JSON so the
+ * loader can warn and skip the offending file instead of silently dropping it; returns `[]` for
+ * valid JSON that just isn't a template array. Only enforces the shape — SMILES validity is checked
+ * separately by {@link invalidTemplateSmiles}. */
+export function parseRGroupTemplates(text: string): RGroupTemplate[] {
+  const raw: unknown = JSON.parse(text); // let malformed JSON throw — the loader catches it and logs the file name
+  if (!Array.isArray(raw)) return [];
+  const out: RGroupTemplate[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry.name !== 'string' || !Array.isArray(entry.items)) continue;
+    const items: RGroupTemplateItem[] = [];
+    for (const it of entry.items) {
+      if (it && typeof it.smiles === 'string' && it.smiles.trim())
+        items.push({smiles: it.smiles, label: typeof it.label === 'string' ? it.label : undefined});
+    }
+    if (items.length > 0) out.push({name: entry.name, items});
+  }
+  return out;
+}
+
+/** Whether `smiles` parses as a valid R-group (tested at R1). Shared by the load-time filter
+ * and {@link invalidTemplateSmiles} so the validity rule lives in one place. */
+export function isValidTemplateSmiles(smiles: string, rdkit: RDModule): boolean {
+  return makeRGroup(smiles, 1, '', rdkit).error == null;
+}
+
+/** Returns the SMILES in `templates` that fail {@link isValidTemplateSmiles}.
+ * Used to gate the shipped catalogue in tests. */
+export function invalidTemplateSmiles(templates: RGroupTemplate[], rdkit: RDModule): string[] {
+  return templates.flatMap((t) => t.items.map((it) => it.smiles)).filter((smi) => !isValidTemplateSmiles(smi, rdkit));
+}
+
+/**
+ * Builds R-groups from `smilesList` (each re-labeled to `targetN` via {@link makeRGroup}) and adds
+ * them to slot `targetN`, de-duplicating by the re-labeled SMILES so a slot never holds the same
+ * substituent twice. `'replace'` overwrites the slot (an empty list clears it); `'append'` adds only
+ * substituents not already present (an empty or all-duplicate list is a no-op). Returns the number
+ * actually added.
+ */
+export function addRGroupsFromSmiles(
+  rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+  smilesList: string[], targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
+): number {
+  const made = smilesList.map((smi) => makeRGroup(smi, targetN, '', rdkit));
+  // Seed the seen-set from existing entries on append (so we skip ones already there); on replace
+  // start empty, since the slot is overwritten. This also drops duplicates within `made` itself.
+  const existing = mode === 'append' ? (rGroupsByNum.get(targetN) ?? []) : [];
+  const seen = new Set(existing.map((rg) => rg.smiles));
+  const added: ChemEnumRGroup[] = [];
+  for (const rg of made) {
+    if (seen.has(rg.smiles)) continue;
+    seen.add(rg.smiles);
+    added.push(rg);
+  }
+  if (mode === 'replace') {
+    if (added.length > 0) rGroupsByNum.set(targetN, added);
+    else rGroupsByNum.delete(targetN); // replacing with nothing clears the slot
+  } else if (added.length > 0) {
+    existing.push(...added);
+    rGroupsByNum.set(targetN, existing);
+  }
+  return added.length;
+}
+
+/**
+ * Copies slot `srcN`'s substituents into slot `targetN`, re-labeling each to the target R#.
+ * No-op (returns 0) when the source is empty or `targetN === srcN`. Returns the number added
+ * (after de-duplication against the target slot).
+ */
+export function copyRGroupList(
+  rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+  srcN: number, targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
+): number {
+  const srcList = rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0 || targetN === srcN) return 0;
+  return addRGroupsFromSmiles(rGroupsByNum, srcList.map((rg) => rg.originalSmiles), targetN, mode, rdkit);
+}
+
+/**
+ * Default target R# a copy/template dialog opens on: the lowest core-referenced R# still unpopulated
+ * and ≠ `exclude` (so it opens out of a warning state), else the lowest other populated slot, else
+ * `(exclude ?? 0) + 1`. `exclude` is the source slot for a copy; omit it for templates.
+ */
+export function pickDefaultTargetR(populated: Set<number>, coreRNumbers: Set<number>, exclude?: number): number {
+  const freeCoreR = [...coreRNumbers].sort((a, b) => a - b).find((n) => n !== exclude && !populated.has(n));
+  const lowestOther = [...populated].sort((a, b) => a - b).find((n) => n !== exclude);
+  return freeCoreR ?? lowestOther ?? (exclude ?? 0) + 1;
+}
+
+/**
+ * Non-blocking advisory lines for adding/copying into slot `targetN`: invalid source entries carried
+ * as-is, and a target R# referenced by no core (ignored at enumeration). Empty when nothing's worth
+ * flagging (`invalidCount` is 0 for templates).
+ */
+export function rGroupTargetWarnings(targetN: number, invalidCount: number, coreRNumbers: Set<number>): string[] {
+  const warnings: string[] = [];
+  if (invalidCount > 0)
+    warnings.push(`${invalidCount} invalid ${invalidCount === 1 ? 'entry' : 'entries'} copied as-is`);
+  if (coreRNumbers.size > 0 && !coreRNumbers.has(targetN))
+    warnings.push(`R${targetN} isn't used by any core, so it'll be ignored when enumerating`);
+  return warnings;
+}
+
+/**
+ * Shapes cores + R-groups into named columns for CSV export: a `Core` column then one `R{n}` column
+ * per populated R#, valid (non-errored) entries only. Columns have different lengths, so shorter ones
+ * are padded with '' to a shared row count; columns that end up empty are dropped. Returns `[]` when
+ * there's nothing to export. Pure — the caller turns these into a DataFrame.
+ */
+export function buildExportColumns(
+  cores: ChemEnumCore[], rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+): {name: string, values: string[]}[] {
+  const coreCol = {name: 'Core', values: cores.filter((c) => !c.error).map((c) => c.smiles)};
+  const rCols = [...rGroupsByNum.keys()].sort((a, b) => a - b)
+    .map((n) => ({name: `R${n}`, values: rGroupsByNum.get(n)!.filter((rg) => !rg.error).map((rg) => rg.smiles)}));
+  const all = [coreCol, ...rCols].filter((col) => col.values.length > 0);
+  if (all.length === 0) return [];
+  const maxLen = Math.max(...all.map((col) => col.values.length));
+  return all.map((col) => ({name: col.name, values: Array.from({length: maxLen}, (_, i) => col.values[i] ?? '')}));
 }
 
 function tryParse(smi: string, rdkit: RDModule): string | null {
@@ -531,11 +679,7 @@ export function enumerate(params: ChemEnumParams, rdkit: RDModule): ChemEnumResu
       rgSmiByNum.set(n, rg.smiles);
     const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment)
-      originalRgs.set(n, rg.originalSmiles);
-    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs});
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
   }
   return out;
 }
@@ -554,10 +698,7 @@ export function enumerateSample(
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs};
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
 
     if (reservoir.length < sampleSize) {
       reservoir.push(item);
@@ -586,10 +727,7 @@ export function enumerateRaw(params: ChemEnumParams): ChemEnumResult[] | null {
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs});
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
   }
   return out;
 }
@@ -605,10 +743,7 @@ export function enumerateSampleRaw(
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
     if (!smi) continue;
-
-    const originalRgs = new Map<number, string>();
-    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
-    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs};
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
 
     if (reservoir.length < sampleSize) {
       reservoir.push(item);
