@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (SVM, linear regression, softmax, PLS, gradient boosting via XGBoost), ANOVA, missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
+EDA (Exploratory Data Analysis) is a Datagrok package providing statistical analysis and machine learning tools. It includes dimensionality reduction (PCA, UMAP, t-SNE, SPE), supervised learning (linear regression, softmax, PLS, gradient boosting via XGBoost), ANOVA, missing data imputation, Pareto optimization, and probabilistic multi-parameter optimization (pMPO).
 
 ## Build Commands
 
@@ -33,26 +33,21 @@ grok test --gui            # Run with visible browser
 
 The package combines TypeScript, WASM modules, and web workers for performance-critical computations:
 
-- **WASM Modules** (`wasm/`): C++ implementations compiled to WebAssembly for PCA, PLS, SVM, softmax regression, and XGBoost. These provide high-performance numerical computation.
-- **Web Workers** (`src/workers/`): JavaScript workers for t-SNE, UMAP, and softmax training to avoid blocking the UI thread.
-- **TypeScript API** (`src/`): High-level interfaces, UI components, and integration with Datagrok platform.
+- **WASM modules** (`wasm/`): PCA, PLS, softmax and linear regression run on the Rust + WebAssembly `sci-comp-ml` backend (`wasm/sci_comp_ml.js` glue + `sci_comp_ml_bg.wasm`), wrapped by `wasm/eda-api.ts` and loaded lazily via `src/wasm-loader.ts`. XGBoost remains a C++/Emscripten module.
+- **Web workers** (`src/workers/`): t-SNE and UMAP (manifold learning), plus PCA and PLS fits (`eda-ml-worker.ts`) — kept off the UI thread.
+- **TypeScript API** (`src/`): High-level interfaces, UI components, and integration with the Datagrok platform. Input standardisation happens here (the kernels never standardise — "variant B").
 
 ### Core Modules
 
 #### Dimensionality Reduction
-- **PCA** (`eda-tools.ts`, `wasm/PCA/`): Principal Component Analysis via WASM
+- **PCA** (`eda-tools.ts` → `wasm/eda-api.ts` → `workers/eda-ml-worker.ts`): NIPALS Principal Component Analysis on the Rust+WASM backend, fit in a web worker
 - **UMAP/t-SNE** (`workers/umap-worker.ts`, `workers/tsne-worker.ts`): Manifold learning in workers
 - Uses `@datagrok-libraries/ml` for multi-column dimensionality reduction with custom distance metrics
 
 #### Partial Least Squares (`pls/`)
 - **PLS regression and analysis** (`pls-tools.ts`, `pls-ml.ts`): Multivariate analysis for high-dimensional data
-- **WASM backend** (`wasm/PLS/`): Performance-critical PLS computations
+- **Rust+WASM backend** (`wasm/eda-api.ts` → `workers/eda-ml-worker.ts`): PLS1 fit off the UI thread
 - Supports both linear and quadratic PLS models
-
-#### Support Vector Machines (`svm.ts`)
-- **LS-SVM** implementation with multiple kernels (linear, RBF, polynomial, sigmoid)
-- Training/prediction via WASM (`wasm/svm.h`, `wasm/svmApi.cpp`)
-- Interactive model training with progress tracking
 
 #### XGBoost (`xgbooster.ts`)
 - **XGBoost** integration via WASM (`wasm/XGBoostAPI.wasm`)
@@ -61,9 +56,8 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 
 #### Other Supervised Machine Techniques
 - **Softmax Classifier** (`softmax-classifier.ts`): Multinomial logistic regression
-  - Training in web worker for non-blocking UI
-  - WASM backend for prediction
-- **Linear Regression** (`regression.ts`): Ordinary least squares
+  - Training on the Rust+WASM backend (`_fitSoftmax` in `eda-api.ts`, main thread); prediction in TypeScript
+- **Linear Regression** (`regression.ts`): Elastic Net (L1/L2) on the Rust+WASM backend; defaults to ordinary least squares and exposes gradient-descent hyperparameters
 
 #### Missing Values Imputation (`missing-values-imputation/`)
 - **K-Nearest Neighbors** imputation (`knn-imputer.ts`)
@@ -97,11 +91,10 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 
 ### WASM Integration
 
-WASM modules are initialized asynchronously in `PackageFunctions.init()`:
-- `_initEDAAPI()` from `wasm/EDAAPI.js`
-- `initXgboost()` from `wasm/xgbooster.js`
+- **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
+- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.*`), initialised via `initXgboost()` in `PackageFunctions.init()`.
 
-WASM source files (`wasm/*.cpp`, `wasm/*.h`) are C++ implementations compiled to WebAssembly. Do not modify generated `.js` and `.wasm` files directly.
+Do not modify generated `.js`/`.wasm` files directly. The Rust source lives in the separate `sci-comp-rust` repo; refresh the artefact by rebuilding there and re-copying into `wasm/`.
 
 ### Function Registration
 
@@ -140,7 +133,8 @@ External packages (must be in webpack externals):
 Tests are organized by feature in `src/tests/`:
 - `dim-reduction-tests.ts`: PCA, UMAP, t-SNE, SPE
 - `linear-methods-tests.ts`: Linear regression, PLS
-- `classifiers-tests.ts`: SVM, softmax, XGBoost
+- `classifiers-tests.ts`: softmax, XGBoost
+- `model-serialization-tests.ts`: model pack/unpack round-trip (softmax, linear regression, PLS) on iris/cars/winequality
 - `mis-vals-imputation-tests.ts`: KNN imputation
 - `anova-tests.ts`: One-way ANOVA
 - `pmpo-tests.ts`: Probabilistic scoring
@@ -175,10 +169,9 @@ category('Feature Name', () => {
 
 ### Working with WASM
 
-- WASM sources in `wasm/*.cpp` and `wasm/*.h`
-- Generated files: `wasm/*.js`, `wasm/*.wasm`
-- Initialization required in `PackageFunctions.init()`
-- Web workers have separate WASM entry points (e.g., `EDAForWebWorker.js`)
+- **sci-comp-ml** (PCA/PLS/softmax/linreg): Rust source lives in the separate `sci-comp-rust` repo; the built `sci_comp_ml.js` + `sci_comp_ml_bg.wasm` are committed in `wasm/`. Loaded via `src/wasm-loader.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts` (the worker `init`s the wasm from a URL passed by the main thread).
+- **XGBoost**: C++/Emscripten (`wasm/XGBoostAPI.*`), initialised in `PackageFunctions.init()`.
+- The `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js` emit `sci_comp_ml_bg.wasm` to `dist/` with its original name.
 
 ### pMPO Model Development
 

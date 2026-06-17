@@ -1,3 +1,17 @@
+THIRD-PARTY LICENSES — @datagrok/eda
+
+The @datagrok/eda package itself is licensed under the MIT License (see the
+repository-root LICENSE.md). This file is NOT the package license; it
+reproduces the license text required by third-party components that are
+bundled into the published artifact.
+
+The Apache License 2.0 reproduced below applies to the bundled Apache-2.0
+components: XGBoost (wasm/XGBoostAPI.wasm), math.js and umap-js. None of
+these ship a NOTICE file. Per-component attributions (including the
+MIT-licensed components) are in CREDITS.md.
+
+================================================================================
+
 
                                  Apache License
                            Version 2.0, January 2004

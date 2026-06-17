@@ -1,5 +1,18 @@
 # EDA changelog
 
+## 1.6.0 (2026-06-17)
+
+Migrate ML kernels to Rust + WebAssembly; remove LS-SVM
+
+* PCA, PLS, softmax and linear regression now run on the Rust + WASM
+  `sci-comp-ml` backend, replacing the C++/Emscripten module. PCA and PLS
+  fits run in a web worker; softmax and linear regression on the main thread.
+* Linear regression exposes Elastic Net (L1/L2) and gradient-descent
+  hyperparameters; defaults remain ordinary least squares.
+* Added model pack/unpack round-trip tests on iris/cars/winequality.
+* Removed LS-SVM and the legacy C++/Emscripten backend (`EDA.*`, `EDAAPI`,
+  related C++ sources and workers). XGBoost is unchanged.
+
 ## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA
