@@ -1,7 +1,12 @@
 # Sticky Meta — manual test docs
 
-Manual test scenarios for the **Sticky Meta** feature (Browse > Platform > Sticky Meta),
-plus the **Database meta** context-panel surface for database tables and columns.
+Manual test scenarios for the **Sticky Meta** feature (Browse > Platform > Sticky Meta).
+
+> **Database meta** (the context-panel surface for DB tables and columns) is **not part of
+> this CI suite**: it needs a pre-existing Postgres connection (`NorthwindTest`) that does not
+> exist on the ephemeral CI stack, so it failed there and was dropped. The full
+> `04-database-meta` scenario still lives in the dev set under
+> `reddata/playwright-tests/e2e/stickymeta`, where that connection is available.
 
 Sticky Meta lets you attach custom metadata ("sticky meta") to any object in Datagrok.
 Metadata is stored in Postgres and shared instantly across all contexts. The feature is
@@ -27,7 +32,9 @@ reads, cleanup).
 | 1 | `01-schema-and-type.md` | Create / edit / delete entity type + metadata schema | Yes |
 | 2 | `02-add-and-edit.md` | Add metadata to a cell, sticky columns, batch edit | Yes |
 | 3 | `03-persistence-copy-delete.md` | Metadata survives clone / project / refresh / relogin; delete values | Mostly (project/space/export are JS-API) |
-| 4 | `04-database-meta.md` | Database meta on a DB table and column | Yes |
+
+The `04-database-meta` scenario (Database meta on a DB table and column) is dev-only — see the
+note at the top of this file — and is not present in this CI folder.
 
 ## Fixtures and naming
 
