@@ -433,9 +433,9 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
     expect(m.get(2)![1].smiles, 'N');
     expect(m.get(2)![1].rNumber, 2);
     expect(m.get(1)!.length, 2, 'source must be unchanged');
-    // Append again keeps the existing entries (4 total); replace overwrites (back to 2).
-    copyRGroupList(m, 1, 2, 'append', rdkit);
-    expect(m.get(2)!.length, 4);
+    // Appending the same substituents again de-dupes (nothing new to add); replace overwrites.
+    expect(copyRGroupList(m, 1, 2, 'append', rdkit), 0);
+    expect(m.get(2)!.length, 2);
     expect(copyRGroupList(m, 1, 2, 'replace', rdkit), 2);
     expect(m.get(2)!.length, 2);
     // Copying a slot onto itself does nothing.
@@ -445,7 +445,7 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
 
   test('shipped r-group-templates.json parses, every SMILES is valid, and inserts re-labeled', async () => {
     // The catalogue ships as a data file; parse it and check every SMILES is a valid R-group.
-    const text = await _package.files.readAsText('enumeration/r-group-templates.json');
+    const text = await _package.files.readAsText('enumeration/r-group-templates/r-group-templates.json');
     const templates = parseRGroupTemplates(text);
     expect(templates.length > 0, true, 'no templates parsed from r-group-templates.json');
     const bad = invalidTemplateSmiles(templates, rdkit);

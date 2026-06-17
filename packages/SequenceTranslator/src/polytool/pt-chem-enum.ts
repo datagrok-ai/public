@@ -282,28 +282,40 @@ export function invalidTemplateSmiles(templates: RGroupTemplate[], rdkit: RDModu
 
 /**
  * Builds R-groups from `smilesList` (each re-labeled to `targetN` via {@link makeRGroup}) and adds
- * them to slot `targetN`: `'replace'` overwrites it (an empty list clears the slot), `'append'` adds
- * after existing entries (an empty list is a no-op). Returns the number added.
+ * them to slot `targetN`, de-duplicating by the re-labeled SMILES so a slot never holds the same
+ * substituent twice. `'replace'` overwrites the slot (an empty list clears it); `'append'` adds only
+ * substituents not already present (an empty or all-duplicate list is a no-op). Returns the number
+ * actually added.
  */
 export function addRGroupsFromSmiles(
   rGroupsByNum: Map<number, ChemEnumRGroup[]>,
   smilesList: string[], targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
 ): number {
   const made = smilesList.map((smi) => makeRGroup(smi, targetN, '', rdkit));
-  if (mode === 'replace') {
-    if (made.length > 0) rGroupsByNum.set(targetN, made);
-    else rGroupsByNum.delete(targetN); // replacing with nothing clears the slot
-  } else if (made.length > 0) {
-    const target = rGroupsByNum.get(targetN) ?? [];
-    target.push(...made);
-    rGroupsByNum.set(targetN, target);
+  // Seed the seen-set from existing entries on append (so we skip ones already there); on replace
+  // start empty, since the slot is overwritten. This also drops duplicates within `made` itself.
+  const existing = mode === 'append' ? (rGroupsByNum.get(targetN) ?? []) : [];
+  const seen = new Set(existing.map((rg) => rg.smiles));
+  const added: ChemEnumRGroup[] = [];
+  for (const rg of made) {
+    if (seen.has(rg.smiles)) continue;
+    seen.add(rg.smiles);
+    added.push(rg);
   }
-  return made.length;
+  if (mode === 'replace') {
+    if (added.length > 0) rGroupsByNum.set(targetN, added);
+    else rGroupsByNum.delete(targetN); // replacing with nothing clears the slot
+  } else if (added.length > 0) {
+    existing.push(...added);
+    rGroupsByNum.set(targetN, existing);
+  }
+  return added.length;
 }
 
 /**
  * Copies slot `srcN`'s substituents into slot `targetN`, re-labeling each to the target R#.
- * No-op (returns 0) when the source is empty or `targetN === srcN`. Returns the count copied.
+ * No-op (returns 0) when the source is empty or `targetN === srcN`. Returns the number added
+ * (after de-duplication against the target slot).
  */
 export function copyRGroupList(
   rGroupsByNum: Map<number, ChemEnumRGroup[]>,

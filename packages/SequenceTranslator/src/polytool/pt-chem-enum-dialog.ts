@@ -524,10 +524,9 @@ function openCopyToRGroupDialog(
     if (t === srcN) return fail(`Target R# must differ from the source (R${srcN}).`);
     const existing = state.rGroupsByNum.get(t)?.length ?? 0;
     const replace = mergeInput.value === 'Replace';
-    const result = replace ? srcList.length : existing + srcList.length;
     const noun = srcList.length === 1 ? 'substituent' : 'substituents';
     const msg = existing > 0 ?
-      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing). Result: ${result}.` :
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing).` :
       `Copy ${srcList.length} ${noun} R${srcN} → R${t} (new slot).`;
     const warnings = rGroupTargetWarnings(t, invalidCount, coreRNumbers);
     if (warnings.length > 0) {
@@ -560,19 +559,31 @@ function openCopyToRGroupDialog(
  * Opens a dialog to insert a ready-made R-group template (e.g. the alkyl series) into an R-slot,
  * with a target R# and Append/Replace. The substituents are built + re-labeled by `addRGroupsFromSmiles`.
  */
-// Reads files/enumeration/r-group-templates.json once (memoized), dropping invalid SMILES and
-// falling back to BUILTIN_R_GROUP_TEMPLATES if the file is unreadable so the picker is never empty.
+// Loads every *.json in files/enumeration/r-group-templates/ once (memoized) and merges them, so the
+// shipped catalogue and any client-dropped template files all show up in the picker. Client files are
+// listed first and our default (DEFAULT_TEMPLATES_FILE) last, so the built-in sets sit at the bottom.
+// A malformed file is skipped, not fatal; if nothing loads, falls back to BUILTIN (never empty).
+const TEMPLATES_DIR = 'enumeration/r-group-templates';
+const DEFAULT_TEMPLATES_FILE = 'r-group-templates.json';
 let templatesPromise: Promise<RGroupTemplate[]> | null = null;
 function loadRGroupTemplates(rdkit: RDModule): Promise<RGroupTemplate[]> {
   return templatesPromise ??= (async () => {
-    let templates: RGroupTemplate[] = [];
+    const all: RGroupTemplate[] = [];
     try {
-      const text = await _package.files.readAsText('enumeration/r-group-templates.json');
-      templates = parseRGroupTemplates(text)
-        .map((t) => ({...t, items: t.items.filter((it) => isValidTemplateSmiles(it.smiles, rdkit))}))
-        .filter((t) => t.items.length > 0);
+      const files = (await _package.files.list(TEMPLATES_DIR)).filter((f) => f.extension.toLowerCase() === 'json');
+      files.sort((a, b) =>
+        (a.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) - (b.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) ||
+        a.fileName.localeCompare(b.fileName));
+      for (const f of files) {
+        try {
+          for (const t of parseRGroupTemplates(await _package.files.readAsText(f))) {
+            const items = t.items.filter((it) => isValidTemplateSmiles(it.smiles, rdkit));
+            if (items.length > 0) all.push({...t, items});
+          }
+        } catch (e) { _package.logger.warning(`Skipped R-group template file ${f.fileName}: ${e}`); }
+      }
     } catch { /* fall back to the built-in set below */ }
-    return templates.length > 0 ? templates : BUILTIN_R_GROUP_TEMPLATES;
+    return all.length > 0 ? all : BUILTIN_R_GROUP_TEMPLATES;
   })();
 }
 
@@ -1224,7 +1235,7 @@ function buildChemEnumPanel(
   const addRGroupsFromTemplate = () =>
     loadRGroupTemplates(rdkit).then((templates) => openAddTemplateDialog(templates, state, rdkit, refresh));
 
-  // ── CSV export — one combined file: first column "Core", then one column per R# (R1, R2, …).
+  // ── CSV export — one combined file. First column "Core", then one column per R# (R1, R2, …).
   // The columns have different lengths (cores vs each R# list), so shorter ones are padded with
   // empty cells. Not the tidiest table, but it carries the whole setup in a single CSV.
   const exportAllCsv = () => {
@@ -1253,18 +1264,22 @@ function buildChemEnumPanel(
       ui.tooltip.bind(importBtn, `${label}: pick a table + column`);
       parts.push(importBtn);
     }
-    if (onTemplate) {
-      const templateBtn = ui.button('Templates…', onTemplate);
-      templateBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(templateBtn, `${label}: insert a ready-made set`);
-      parts.push(templateBtn);
-    }
     let clearBtn: HTMLButtonElement | undefined;
     if (onClear) {
       clearBtn = ui.button('Remove all', onClear) as HTMLButtonElement;
-      clearBtn.style.marginLeft = '4px';
+      // When a templates icon follows, right-align this trailing cluster (Remove all + the icon).
+      clearBtn.style.marginLeft = onTemplate ? 'auto' : '4px';
       ui.tooltip.bind(clearBtn, `Remove all ${label.toLowerCase()}`);
       parts.push(clearBtn);
+    }
+    if (onTemplate) {
+      // Icon + label, matching the "+ Draw" / "↓ Import…" buttons: a small leading swatchbook glyph.
+      const tmplIcon = ui.iconFA('swatchbook');
+      tmplIcon.style.fontSize = '12px';
+      tmplIcon.style.marginRight = '4px';
+      const templateBtn = ui.button([tmplIcon, 'Templates'], onTemplate, `${label}: insert a ready-made set`);
+      templateBtn.style.marginLeft = onClear ? '4px' : 'auto'; // sit just right of Remove all (or push right on its own)
+      parts.push(templateBtn);
     }
     const root = ui.divH(parts, {style: {
       alignItems: 'center', justifyContent: 'flex-start',
@@ -1285,9 +1300,8 @@ function buildChemEnumPanel(
   );
   coresClearBtn = coresHeader.clearBtn;
 
-  // Single combined-export button — placed in the Run/footer controls of whichever layout runs.
-  const exportBtn = ui.button('↑ Export', exportAllCsv);
-  ui.tooltip.bind(exportBtn, 'Download cores + R-groups as one CSV');
+  // Single combined-export icon — placed in the Run/footer controls of whichever layout runs.
+  const exportBtn = ui.iconFA('download', exportAllCsv, 'Download cores + R-groups as one CSV');
 
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
