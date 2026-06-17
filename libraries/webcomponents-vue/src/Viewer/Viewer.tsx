@@ -25,10 +25,6 @@ export const Viewer = Vue.defineComponent({
     viewerDataFrameChanged: (_v: DG.Viewer<any> | undefined) => true,
   },
   setup(props, {emit}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('Viewer onRenderTriggered', event);
-    });
-
     const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
     const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
     const type = Vue.computed(() => props.type);

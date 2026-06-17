@@ -63,6 +63,7 @@ export class InputForm extends HTMLElement {
     else {
       this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
       this.formInst.root.style.overflowY = 'hidden';
+      this.formInst.root.style.paddingBottom = '10px';
       this.appendChild(this.formInst.root);
     }
     this.formChanges$.next(this.formInst);
