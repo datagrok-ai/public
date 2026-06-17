@@ -378,6 +378,26 @@ category('Flow: creation script import', () => {
     }
   });
 
+  test('SetVar emits a runtime-guarded registration under the dataframe name', async () => {
+    const e = makeEditor();
+    try {
+      const g = buildCreationScriptGraph('T = OpenFile("System:AppData/x.csv")');
+      await applyGraphToEditor(g, e.flow);
+
+      // The value slot can be `dynamic`, so the dataframe check is done at
+      // runtime: when the value is a DataFrame, SetVar also registers it under
+      // the table's runtime .name, so GetVars that use the actual table name
+      // resolve (single node on the canvas, two assignments in the output).
+      const script = emitScript(e.flow, SETTINGS);
+      expect(/if \(\w+ instanceof DG\.DataFrame\) await grok\.functions\.call\('SetVar', \{variableName: \w+\.name/.test(script),
+        true, 'runtime-guarded second SetVar keyed by the dataframe name');
+      // The variable-name registration is still present (single node, two assigns).
+      expect(script.includes(`variableName: "T"`), true, 'primary SetVar by variable name');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('join script emits grok.shell.tableByName instead of ResolveTable', async () => {
     const e = makeEditor();
     try {
