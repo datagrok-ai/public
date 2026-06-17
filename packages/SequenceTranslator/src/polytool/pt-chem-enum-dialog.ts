@@ -30,12 +30,21 @@ import {
   RGroupTemplate,
   RGroupTemplateItem,
   rGroupTargetWarnings,
+  uniqueKeepMask,
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
 import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
+
+const DEFAULT_TABLE_NAME = 'Markush enumeration';
+const DEFAULT_REMOVE_DUPLICATES = true;
+
+/** Single source of truth for the result-table name: a trimmed user value, or the default when blank/missing. */
+function resolveTableName(raw: string | undefined): string {
+  return raw?.trim() || DEFAULT_TABLE_NAME;
+}
 
 const MODE_TOOLTIPS: Record<ChemEnumMode, string> = {
   [ChemEnumModes.Zip]: 'Zip: every R-group list must have the same length N. The i-th result uses the i-th entry from every list. Produces N results per core.',
@@ -693,6 +702,8 @@ interface ChemEnumDialogState {
   rGroupsByNum: Map<number, ChemEnumRGroup[]>;
   mode: ChemEnumMode;
   appendToTable: DG.DataFrame | null;
+  removeDuplicates: boolean;
+  tableName: string;
 }
 
 // ─── History (localStorage-backed, shared by dialog + app) ──────────────────
@@ -710,6 +721,10 @@ interface ChemEnumHistoryEntry {
   cores: string[];
   /** R-number → list of original R-group SMILES. JSON object so we can round-trip. */
   rGroups: { [rNumber: string]: string[] };
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  removeDuplicates?: boolean;
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  tableName?: string;
 }
 
 function readHistory(): ChemEnumHistoryEntry[] {
@@ -749,6 +764,8 @@ function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
     mode: state.mode,
     cores: state.cores.map((c) => c.originalSmiles),
     rGroups,
+    removeDuplicates: state.removeDuplicates,
+    tableName: resolveTableName(state.tableName),
   };
 }
 
@@ -770,6 +787,8 @@ function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogSta
   }
   if (entry.mode === ChemEnumModes.Zip || entry.mode === ChemEnumModes.Cartesian)
     state.mode = entry.mode;
+  state.removeDuplicates = entry.removeDuplicates ?? DEFAULT_REMOVE_DUPLICATES;
+  state.tableName = resolveTableName(entry.tableName);
 }
 
 function formatHistoryDate(iso: string): string {
@@ -963,6 +982,8 @@ function buildChemEnumPanel(
     rGroupsByNum: new Map(),
     mode: ChemEnumModes.Cartesian,
     appendToTable: null,
+    removeDuplicates: DEFAULT_REMOVE_DUPLICATES,
+    tableName: DEFAULT_TABLE_NAME,
   };
 
   // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
@@ -1163,6 +1184,21 @@ function buildChemEnumPanel(
     onValueChanged: (v) => { state.appendToTable = v; },
   });
 
+  const removeDuplicatesInput = ui.input.bool('Remove duplicates', {
+    value: state.removeDuplicates,
+    onValueChanged: (v) => { state.removeDuplicates = !!v; },
+  });
+  ui.tooltip.bind(removeDuplicatesInput.input,
+    'Removes duplicate molecules from the final enumerated output (compared by canonical SMILES). ' +
+    'This is distinct from the import wizard\'s dedup, which collapses identical input cores/R-groups.');
+
+  const tableNameInput = ui.input.string('Table name', {
+    value: state.tableName,
+    onValueChanged: (v) => { state.tableName = v ?? ''; },
+  });
+  ui.tooltip.bind(tableNameInput.input,
+    'Name of the result table created by the enumeration (ignored when appending to an existing table).');
+
   let okButton: HTMLButtonElement | null = null;
 
   /** Collects positional error messages (no reference to internal ids). */
@@ -1198,10 +1234,16 @@ function buildChemEnumPanel(
     if (okButton) okButton.disabled = !v.ok;
     if (coresClearBtn) coresClearBtn.disabled = state.cores.length === 0;
     if (rGroupsClearBtn) rGroupsClearBtn.disabled = state.rGroupsByNum.size === 0;
+    // Re-sync the option inputs after external state mutation (e.g. applying a history entry).
+    // Their onValueChanged only writes state (no refresh()), so this can't re-enter; modeInput is
+    // left untouched on purpose — setting its value would re-enter refresh() and loop.
+    removeDuplicatesInput.value = state.removeDuplicates;
+    tableNameInput.value = state.tableName;
     redrawPreview();
   };
 
-  // ── Add/import handlers (dedup now lives in the import wizard, gated by its checkbox) ──
+  // ── Add/import handlers. Input dedup (identical cores/R-groups) is gated by the import
+  //    wizard's checkbox; output dedup (identical products) is the "Remove duplicates" option. ──
   const addCoreFromSketcher = async () => {
     const c = await openCoreSketchDialog(rdkit);
     if (!c) return;
@@ -1382,6 +1424,8 @@ function buildChemEnumPanel(
       runHeader,
       modeInput.root,
       appendToTableInput.root,
+      removeDuplicatesInput.root,
+      tableNameInput.root,
       ui.divH([clearAllBtn, exportBtn], {style: {gap: '8px', alignItems: 'center'}}),
       actionRow,
     ], {style: {
@@ -1450,8 +1494,12 @@ function buildChemEnumPanel(
       errorBadge.root,
     ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
 
-    const footer = ui.divH([appendToTableInput.root, exportBtn],
-      {style: {padding: '2px 0', alignItems: 'center', gap: '8px'}});
+    const footer = ui.divV([
+      ui.divH([appendToTableInput.root, exportBtn],
+        {style: {alignItems: 'center', gap: '8px'}}),
+      removeDuplicatesInput.root,
+      tableNameInput.root,
+    ], {style: {padding: '2px 0'}});
 
     body = ui.divV([
       split, statusLine, footer,
@@ -1499,11 +1547,11 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       DG.Column.fromStrings(`R${n}`, results.map((r) => r.rGroupSmilesByNum.get(n) ?? '')));
     for (const c of rCols) c.semType = DG.SEMTYPE.MOLECULE;
 
-    const df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
-    df.name = 'Chem Enumeration';
+    let df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
 
     // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
     pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
+    let canonical: string[] | null = null;
     try {
       const res: DG.Column = await grok.functions.call('Chem:convertNotation', {
         data: df,
@@ -1517,9 +1565,22 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       const resArr = res.toList();
       smilesCol.init((i) => resArr[i]);
       smilesCol.meta.units = DG.chem.Notation.Smiles;
+      canonical = resArr;
     } catch (err: any) {
       // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
       _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);
+    }
+
+    // Dedup by canonical SMILES — reuse the array materialized during canonicalization
+    // (falling back to the column only when canonicalization was skipped).
+    if (state.removeDuplicates) {
+      const mask = uniqueKeepMask(canonical ?? smilesCol.toList());
+      const keep = DG.BitSet.create(df.rowCount, (i) => mask[i]);
+      const removed = df.rowCount - keep.trueCount;
+      if (removed > 0) {
+        df = df.clone(keep);
+        grok.shell.info(`Removed ${removed} duplicate molecule${removed === 1 ? '' : 's'}.`);
+      }
     }
 
     pi.update(90, 'Finalizing...');
@@ -1529,6 +1590,9 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       state.appendToTable.append(df, true);
       await state.appendToTable.meta.detectSemanticTypes();
     } else {
+      // Set name on the final frame: `df` may have been reassigned by `clone()` above,
+      // and `name` is a dedicated Dart property that `clone(saveTags)` does not carry.
+      df.name = resolveTableName(state.tableName);
       grok.shell.addTableView(df);
     }
   } catch (err: any) {

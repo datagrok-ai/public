@@ -755,3 +755,21 @@ export function enumerateSampleRaw(
   }
   return reservoir;
 }
+
+/**
+ * First-occurrence keep-mask for `values`: `mask[i]` is `true` when `values[i]` is the
+ * first time that value is seen, `false` for a later duplicate. Nullish/empty entries are
+ * always kept — they stand for blank or unparseable rows that must not be collapsed together.
+ */
+export function uniqueKeepMask(values: ReadonlyArray<string | null | undefined>): boolean[] {
+  const seen = new Set<string>();
+  const mask = new Array<boolean>(values.length);
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null || v === '') { mask[i] = true; continue; }
+    if (seen.has(v)) { mask[i] = false; continue; }
+    seen.add(v);
+    mask[i] = true;
+  }
+  return mask;
+}
