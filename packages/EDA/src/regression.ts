@@ -13,14 +13,22 @@ export const TOLERANCE = 1e-7;
 // Default PLS components count
 const PLS_COMPONENTS_COUNT = 10;
 
-/** Applicability and interactivity thresholds for linear regression */
+/** Default OLS epochs (OLS_EPOCHS in eda-api); worst case, loss tol may early-stop sooner. */
+const GD_EPOCHS = 1000;
+
+/** Applicability and interactivity thresholds for linear regression.
+ * OLS now fits via full-batch gradient descent on the Rust+WASM backend (no closed-form
+ * normal equations), so the cost model is GD: time ≈ epochs·N·M, memory ≈ N·M Float64
+ * (no M×M term). The fit runs synchronously on the UI thread, so the time budget is a
+ * UI-freeze duration — sized off a conservative ~5e8 units/s (≈2× margin over the raw
+ * ~1e9 units/s measured on 100K×100×1000). */
 enum LIN_REG_LIMITS {
-  // isApplicable: hard memory bounds for the WASM solver
+  // isApplicable: hard bounds — fit must complete without exhausting browser memory
   MAX_FEATURES = 1000,
-  MAX_FEATURES_X_SAMPLES = 1e7,
-  // isInteractive: independent memory and time budgets
-  INTERACTIVE_MEMORY_BUDGET = 5e6, // Float32 elements (≈ 20 MB)
-  INTERACTIVE_TIME_BUDGET = 2.5e8, // flops (≈ 500 ms on a typical machine)
+  MAX_FEATURES_X_SAMPLES = 1e7,      // ≈80 MB Float64 flatX (~160 MB peak); ~10 s synchronous at 1000 GD epochs
+  // isInteractive: responsive (~0.5 s) full-batch GD budgets
+  INTERACTIVE_MEMORY_BUDGET = 2.5e6, // Float64 flatX elements (≈20 MB TS-side, ~40 MB peak)
+  INTERACTIVE_TIME_BUDGET = 2.5e8,   // N·M·epochs work units (≈0.5 s at conservative 5e8 units/s)
 }
 
 /** Check whether linear regression can be applied to the given data */
@@ -49,13 +57,13 @@ export function isLinearRegressionInteractive(features: DG.ColumnList, target: D
   const M = features.length;
   const N = target.length;
 
-  // Design matrix N×M plus normal-equation matrix M×M (Float32 elements)
-  const memory = N * M + M * M;
+  // Standardised design matrix N×M (Float64, TS flatX); GD forms no M×M normal matrix. Real peak ~2×.
+  const memory = N * M;
   if (memory > LIN_REG_LIMITS.INTERACTIVE_MEMORY_BUDGET)
     return false;
 
-  // N·M² to form X^T·X plus M³ to solve the system
-  const time = N * M * M + M * M * M;
+  // Full-batch GD: ~N·M work per epoch × epochs; budget = main-thread freeze duration
+  const time = GD_EPOCHS * N * M;
   if (time > LIN_REG_LIMITS.INTERACTIVE_TIME_BUDGET)
     return false;
 

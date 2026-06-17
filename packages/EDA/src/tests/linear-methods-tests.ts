@@ -20,6 +20,9 @@ const TIMEOUT = 9000;
 const INDEP_COLS = 2;
 const DEP_COLS = 5;
 const ERROR = 0.1;
+// OLS now fits via gradient descent; cap epochs so the large-sample
+// performance run stays within TIMEOUT (the default 1000 epochs overruns).
+const PERF_EPOCHS = 100;
 
 category('Principal component analysis', () => {
   test(`Performance: ${ROWS_K}K rows, ${COLS} cols, ${COMPONENTS} components`, async () => {
@@ -123,8 +126,8 @@ category('Linear regression', () => {
     const features = df.columns;
     const target = features.byIndex(COLS);
 
-    // Train & pack model
-    const params = await getLinearRegressionParams(features, target);
+    // Train & pack model (cap GD epochs to stay within TIMEOUT)
+    const params = await getLinearRegressionParams(features, target, 0, 0, undefined, PERF_EPOCHS);
     const packed = new Uint8Array(params.buffer);
 
     // Unpack & apply model
