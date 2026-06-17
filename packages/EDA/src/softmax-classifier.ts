@@ -18,6 +18,8 @@ const DEFAULT_ITER_COUNT = 100;
 const DEFAULT_PENALTY = 0.1;
 const DEFAULT_TOLERANCE = 0.001;
 const BYTES_PER_MODEL_SIZE = 4;
+/** String label of a boolean target's true category after conversion to string */
+const BOOL_TRUE = 'true';
 
 /** Train data sizes */
 type DataSpecification = {
@@ -46,7 +48,8 @@ export class SoftmaxClassifier {
         return false;
     }
 
-    return (predictColumn.type === DG.COLUMN_TYPE.STRING);
+    return (predictColumn.type === DG.COLUMN_TYPE.STRING) ||
+      (predictColumn.type === DG.COLUMN_TYPE.BOOL);
   }
 
   /** Check interactivity */
@@ -61,6 +64,8 @@ export class SoftmaxClassifier {
   private params: Float32Array[] | undefined = undefined;
   private classesCount = 1;
   private featuresCount = 1;
+  /** True if the original target was a boolean column (trained as a 2-class string target) */
+  private targetIsBool = false;
 
   constructor(specification?: DataSpecification, packedModel?: Uint8Array) {
     if (specification !== undefined) { // Create empty model
@@ -131,6 +136,12 @@ export class SoftmaxClassifier {
         if (stdevsCol.type !== DG.COLUMN_TYPE.FLOAT)
           throw new Error('incorrect standard deviations column type');
         this.stdevs = stdevsCol.getRawData() as Float32Array;
+
+        // Optional trailing bool flag (absent in models packed before bool-target support).
+        // Read by index, not via a new typed-array view, so byteOffset is respected.
+        const flagIdx = BYTES_PER_MODEL_SIZE + bytesCount;
+        if (packedModel.byteLength > flagIdx)
+          this.targetIsBool = (packedModel[flagIdx] === 1);
       } catch (e) {
         throw new Error(`Failed to load model: ${(e instanceof Error ? e.message : 'the platform issue')}`);
       }
@@ -161,8 +172,9 @@ export class SoftmaxClassifier {
     const modelBytes = modelDf.toByteArray();
     const bytesCount = modelBytes.length;
 
-    // Packed model bytes, including bytes count
-    const packedModel = new Uint8Array(bytesCount + BYTES_PER_MODEL_SIZE);
+    // Packed model bytes: model size, model bytes, and a trailing bool flag byte.
+    // Older models lack the trailing byte; the constructor treats its absence as false.
+    const packedModel = new Uint8Array(bytesCount + BYTES_PER_MODEL_SIZE + 1);
 
     // 4 bytes for storing model's bytes count
     const sizeArr = new Uint32Array(packedModel.buffer, 0, 1);
@@ -170,6 +182,9 @@ export class SoftmaxClassifier {
 
     // Store model's bytes
     packedModel.set(modelBytes, BYTES_PER_MODEL_SIZE);
+
+    // Trailing bool flag
+    packedModel[BYTES_PER_MODEL_SIZE + bytesCount] = this.targetIsBool ? 1 : 0;
 
     return packedModel;
   } // toBytes
@@ -183,13 +198,22 @@ export class SoftmaxClassifier {
     if ((rate <= 0) || (iterations < 1) || (penalty <= 0) || (tolerance <= 0))
       throw new Error('Training failes - incorrect fitting hyperparameters');
 
+    // A boolean target is converted to a 2-class string target ('true'/'false') and
+    // trained as such; the bool flag lets predict() reconstruct a BOOL column.
+    this.targetIsBool = (target.type === DG.COLUMN_TYPE.BOOL);
+    const tgt = this.targetIsBool ? target.convertTo(DG.COLUMN_TYPE.STRING) : target;
+
     // Extract statistics & categories
     this.extractStats(features);
-    const rowsCount = target.length;
-    const classesCount = target.categories.length;
-    const cats = target.categories;
+    const rowsCount = tgt.length;
+    const classesCount = tgt.categories.length;
+    const cats = tgt.categories;
     for (let i = 0; i < classesCount; ++i)
       this.categories[i] = cats[i];
+
+    // Reconcile the field with the actual class count: toBytes() iterates over the field,
+    // while params below are sized by the local count (they diverge on a one-class target).
+    this.classesCount = classesCount;
 
     try {
       // call wasm-computations
@@ -197,7 +221,7 @@ export class SoftmaxClassifier {
         features,
         DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
         DG.Column.fromFloat32Array('stdevs', this.stdevs, this.featuresCount),
-        DG.Column.fromInt32Array('targets', target.getRawData() as Int32Array, rowsCount),
+        DG.Column.fromInt32Array('targets', tgt.getRawData() as Int32Array, rowsCount),
         classesCount,
         iterations, rate, penalty, tolerance,
         this.featuresCount + 1, classesCount,
@@ -210,7 +234,7 @@ export class SoftmaxClassifier {
       try { // call fitting TS-computations (if wasm failed)
         this.params = await this.fitSoftmaxParams(
           features,
-          target,
+          tgt,
           iterations,
           rate,
           penalty,
@@ -352,7 +376,13 @@ export class SoftmaxClassifier {
     let sum: number;
     let max: number;
     let argMax: number;
-    const predClass = new Array<string>(m);
+
+    // A bool target was trained as a 2-class string target. Emit booleans directly,
+    // without touching strings on the prediction path. Index of the 'true' category is
+    // resolved once (no assumption about category order).
+    const predClass = this.targetIsBool ? null : new Array<string>(m);
+    const predBool = this.targetIsBool ? new Array<boolean>(m) : null;
+    const trueIdx = this.targetIsBool ? this.categories.indexOf(BOOL_TRUE) : -1;
 
     // get prediction for each sample
     for (let j = 0; j < m; ++j) {
@@ -379,10 +409,15 @@ export class SoftmaxClassifier {
         }
       }
 
-      predClass[j] = this.categories[argMax];
+      if (this.targetIsBool)
+        predBool![j] = (argMax === trueIdx);
+      else
+        predClass![j] = this.categories[argMax];
     }
 
-    return DG.Column.fromStrings(PRED_NAME, predClass);
+    return this.targetIsBool ?
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, PRED_NAME, predBool!) :
+      DG.Column.fromStrings(PRED_NAME, predClass!);
   }
 
   /** Fit params in the webworker */

@@ -760,7 +760,7 @@ export class PackageFunctions {
     const features = df.columns;
 
     const model = new SoftmaxClassifier({
-      classesCount: predictColumn.categories.length,
+      classesCount: predictColumn.type === DG.COLUMN_TYPE.BOOL ? 2 : predictColumn.categories.length,
       featuresCount: features.length,
     });
 
