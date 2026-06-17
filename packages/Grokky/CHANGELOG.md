@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20054: Report: Error: Claude runtime container is not running
 * AI: Fixed query/script view going blank (tab unselected) on first click when switching back to it with the AI panel open — defer the panel dock/undock until after the view switch settles
 * AI: Replaced the 15-min skill/agent sync poll with an on-demand, TTL-gated refresh of packages + shared connections — idle sessions no longer sync
 * AI: Fixed shared-connection files that fail to download (e.g. invalid JSON) re-downloading on every sync

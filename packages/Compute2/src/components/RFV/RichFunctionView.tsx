@@ -779,9 +779,10 @@ export const RichFunctionView = Vue.defineComponent({
           }
           { !helpHidden.value ?
             <div
-              dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
+              {...(dockSpawnConfig.value['Help'] ?? {})}
+              dock-spawn-title='Help'
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
               key="__HELP__"
               ref={helpRef}

@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
-import {chemBeginCriticalSection, chemEndCriticalSection, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
+import {Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
@@ -440,13 +440,12 @@ export class RdKitService {
     return filteredMolecules;
   }
 
-  getCoordGenCoords(molecules: string[]) {
-    const res = this._initParallelWorkers(molecules, (i, segment) => {
+  async getCoordGenCoords(molecules: string[]) {
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i, segment) => {
       return this.parallelWorkers[i].getCoordGenCoords(segment);
     }, (data) => {
       return ([] as string[]).concat(...data);
-    });
-    return res;
+    }));
   }
 
   /**
@@ -484,19 +483,13 @@ export class RdKitService {
   }
 
   async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation, kekulize = false): Promise<string[]> {
-    const t = this;
-    const res =
-      await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
-      (data: string[][]) => {
-        return ([] as string[]).concat(...data);
-      });
-    return res;
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
+    (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]):
     Promise<[RuleId, boolean[]][]> {
-    const t = this;
     const fooGather = (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
       const result: {[rule in RuleId]?: boolean[]} = {};
       for (let k = 0; k < data.length; ++k) {
@@ -508,11 +501,12 @@ export class RdKitService {
       }
       return Object.entries(result) as [RuleId, boolean[]][];
     };
-    return molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
-      this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
+    return withChemCriticalSection(() => molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
+      this._doParallel((i: number, _nWorkers: number) => this.parallelWorkers[i].getStructuralAlerts(alerts), fooGather));
   }
 
+  // Internal: worker 0 only, caller MUST hold the critical section (don't call bare). Use rGroupsMinilib instead.
   async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
     Promise<IRGroupAnalysisResult> {
     /* const t = this;
@@ -527,10 +521,7 @@ export class RdKitService {
       }
       return {colNames: colNames, smiles: cols};
     }); */
-
-    // R group analysis does not support parallelization, so we will use the first worker
-    const res = await this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
-    return res;
+    return this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
   }
 
   async invalidateCache(): Promise<void> {
@@ -556,57 +547,43 @@ export class RdKitService {
   }
 
   async mmpGetFragments(molecules: string[]): Promise<IMmpFragmentsResult> {
-    const t = this;
-
     const getResult = (data: IMmpFragmentsResult[]): IMmpFragmentsResult => {
       return {
         frags: ([] as [string, string][][]).concat(...data.map(((it) => it.frags))),
         smiles: ([] as Array<string>).concat(...data.map(((it) => it.smiles))),
       };
     };
-
-    const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      t.parallelWorkers[i].mmpGetFragments(segment),
-    (data: IMmpFragmentsResult[]) => {
-      return getResult(data);
-    });
-
-    return res;
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].mmpGetFragments(segment), (data: IMmpFragmentsResult[]) => getResult(data)));
   }
 
   async mmpLinkFragments(cores: string [], fragments: string []): Promise<string[]> {
-    const t = this;
-    const res = await this._initParallelWorkersArray([cores, fragments], (i: number, segment: string[][]) =>
-      t.parallelWorkers[i].mmpLinkFragments(segment[0], segment[1]),
-    (data: string[][]): string[] => {
-      return ([] as string[]).concat(...data);
-    });
-
-    return res;
+    return withChemCriticalSection(() => this._initParallelWorkersArray([cores, fragments], (i: number, segment: string[][]) =>
+      this.parallelWorkers[i].mmpLinkFragments(segment[0], segment[1]),
+    (data: string[][]): string[] => ([] as string[]).concat(...data)));
   }
 
   async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
-    const t = this;
-
-    const res = await this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
-      t.parallelWorkers[i].mmpGetMcs(segment),
-    (data: string[][]): string[] => {
-      return ([] as string[]).concat(...data);
-    });
-    return res;
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
+      this.parallelWorkers[i].mmpGetMcs(segment),
+    (data: string[][]): string[] => ([] as string[]).concat(...data)));
   }
 
   async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
     // MCS does not support parallelization, so we will use the first worker
-    return await this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch);
+    return withChemCriticalSection(() => this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch));
   }
 
-  private async restartWorker(workerIndex: number) {
+  // Kills + reloads a worker (e.g. to cancel its in-flight call).
+  async restartWorker(workerIndex: number) {
+    if (!this.webRoot)
+      throw new Error('Chem | cannot restart worker before the service is initialized (webRoot not set)');
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
-    await workerClient.moduleInit(this.webRoot ?? '');
+    await workerClient.moduleInit(this.webRoot);
   }
+
   /**
    * gets MCS for every cluster of molecules
    * @param clusteredMolecules array of arrays of molecules per cluster
@@ -614,48 +591,47 @@ export class RdKitService {
    * @param exactBondSearch
    */
   async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
-    await chemBeginCriticalSection();
-    const nWorkers = this.parallelWorkers.length;
     const res = new Array<string>(clusteredMolecules.length).fill('');
-    const lock = new LockedEntity(0);
-    const process = async (workerIndex: number, resolver: Function) => {
-      await lock.unlockPromise();
-      lock.lock();
-      const index = lock.value;
-      lock.value = index + 1;
-      lock.release();
-      if (index >= clusteredMolecules.length) {
-        console.log(index);
-        return;
-      }
-      const mols = clusteredMolecules[index];
-      if (mols.length < 2)
-        res[index] = mols.length === 1 ? mols[0] : '';
-      else {
-        const t = setTimeout(async () => {
-          console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
-          this.restartWorker(workerIndex);
-          resolver(); // no point in waiting... its probably stuck
-        }, 45000); // if it is running for more than 30s, restart the worker
-        try {
-          res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
-        } catch (e) {
-          // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
-          console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+    await withChemCriticalSection(async () => {
+      const nWorkers = this.parallelWorkers.length;
+      const lock = new LockedEntity(0);
+      const process = async (workerIndex: number, resolver: Function) => {
+        await lock.unlockPromise();
+        lock.lock();
+        const index = lock.value;
+        lock.value = index + 1;
+        lock.release();
+        if (index >= clusteredMolecules.length)
           return;
-        } finally {
-          clearTimeout(t);
+        const mols = clusteredMolecules[index];
+        if (mols.length < 2)
+          res[index] = mols.length === 1 ? mols[0] : '';
+        else {
+          const t = setTimeout(() => {
+            console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
+            this.restartWorker(workerIndex).catch((e) =>
+              console.warn(`RDKit worker ${workerIndex} restart failed: ${e instanceof Error ? e.message : e}`));
+            resolver(); // no point in waiting... its probably stuck
+          }, 45000); // if it is running for more than 30s, restart the worker
+          try {
+            res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+          } catch (e) {
+            // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
+            console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+            return;
+          } finally {
+            clearTimeout(t);
+          }
         }
-      }
-      await process(workerIndex, resolver);
-    };
+        await process(workerIndex, resolver);
+      };
 
-    const promises = new Array(nWorkers).fill(null).map((_, i) => {
-      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
+      const promises = new Array(nWorkers).fill(null).map((_, i) => {
+        return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
+      });
+
+      await Promise.all(promises);
     });
-
-    await Promise.all(promises);
-    chemEndCriticalSection();
     return res.map((it) => {
       if (!it)
         return '';
@@ -670,17 +646,14 @@ export class RdKitService {
   }
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
-    await chemBeginCriticalSection();
     const segmentLength = Math.ceil(molfiles.length / this.workerCount);
-    const res = await this._doParallel(
+    return withChemCriticalSection(() => this._doParallel(
       (i: number, _: number) => {
         return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
       },
       (data) => {
         return data.flat();
       },
-    );
-    chemEndCriticalSection();
-    return res;
+    ));
   }
 }

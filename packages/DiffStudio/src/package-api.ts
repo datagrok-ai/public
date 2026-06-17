@@ -12,13 +12,6 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Info', {});
   }
 
-  /**
-  Faceted grid of line charts, one per output variable, for Diff Studio solutions
-  */
-  export async function diffStudioFacetViewer(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DiffStudioFacetViewer', {});
-  }
-
   export async function init(): Promise<void> {
     return await grok.functions.call('DiffStudio:Init', {});
   }
@@ -36,15 +29,22 @@ export namespace funcs {
   }
 
   /**
-  Solver of ordinary differential equations systems
-  */
+   * Faceted grid of line charts, one per output variable, for Diff Studio solutions
+   */
+  export async function diffStudioFacetViewer(): Promise<any> {
+    return await grok.functions.call('DiffStudio:DiffStudioFacetViewer', {});
+  }
+
+  /**
+   * Solver of ordinary differential equations systems
+   */
   export async function runDiffStudio(): Promise<DG.View> {
     return await grok.functions.call('DiffStudio:RunDiffStudio', {});
   }
 
   /**
-  Interactive solver of ordinary differential equations (ODE)
-  */
+   * Interactive solver of ordinary differential equations (ODE)
+   */
   export async function runDiffStudioDemo(): Promise<void> {
     return await grok.functions.call('DiffStudio:RunDiffStudioDemo', {});
   }
@@ -62,79 +62,82 @@ export namespace funcs {
   }
 
   /**
-  Ball flight simulation
-  */
+   * Ball flight simulation
+   * @param {number} roB - Material density
+   */
   export async function ballFlight(dB: number , roB: number , v: number , a: number ): Promise<{maxDist: number, maxHeight: number, df: DG.DataFrame}> {
     return await grok.functions.call('DiffStudio:BallFlight', { dB, roB, v, a });
   }
 
   /**
-  Return serialized initial value problem for ordinary differential equations
-  */
+   * Return serialized initial value problem for ordinary differential equations
+   */
   export async function serializeEquations(problem: string ): Promise<any> {
     return await grok.functions.call('DiffStudio:SerializeEquations', { problem });
   }
 
   /**
-  Perform ODEs serialization to JS-code
-  */
+   * Perform ODEs serialization to JS-code
+   */
   export async function odesToCode(serialization: any ): Promise<string> {
     return await grok.functions.call('DiffStudio:OdesToCode', { serialization });
   }
 
   /**
-  Solve initial value problem for ordinary differential equations
-  */
+   * Solve initial value problem for ordinary differential equations
+   */
   export async function solveODE(problem: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveODE', { problem });
   }
 
   /**
-  In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  */
+   * In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
+   */
   export async function demoSimPKPD(): Promise<any> {
     return await grok.functions.call('DiffStudio:DemoSimPKPD', {});
   }
 
   /**
-  In-browser simulation of controlled fab-arm exchange mechanism
-  */
+   * In-browser simulation of controlled fab-arm exchange mechanism
+   */
   export async function demoBioreactor(): Promise<any> {
     return await grok.functions.call('DiffStudio:DemoBioreactor', {});
   }
 
   /**
-  Run model with Diff Studio UI
-  */
+   * Run model with Diff Studio UI
+   */
   export async function runModel(model: string , inputsTabDockRatio: number , graphsDockRatio: number ): Promise<void> {
     return await grok.functions.call('DiffStudio:RunModel', { model, inputsTabDockRatio, graphsDockRatio });
   }
 
   /**
-  Gluconic acid (GA) production by Aspergillus niger modeling
-  */
-  export async function ivpModelAcidProduction(t0: number , t1: number , h: number , X: number , S: number , O: number , P: number , overall: number , muM: number , alpha: number , beta: number , gamma: number , lambda: number , delta: number , phi: number , Ks: number , Ko: number , Kla: number , Cod: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DiffStudio:IvpModelAcidProduction', { t0, t1, h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod });
+   * Gluconic acid (GA) production by Aspergillus niger modeling
+   */
+  export async function ivpModelAcidProduction(_t0: number , _t1: number , _h: number , X: number , S: number , O: number , P: number , overall: number , muM: number , alpha: number , beta: number , gamma: number , lambda: number , delta: number , phi: number , Ks: number , Ko: number , Kla: number , Cod: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DiffStudio:IvpModelAcidProduction', { _t0, _t1, _h, X, S, O, P, overall, muM, alpha, beta, gamma, lambda, delta, phi, Ks, Ko, Kla, Cod });
   }
 
   /**
-  Bioreactor simulation
-  */
-  export async function ivpModelBioreactor(mode: string , t0: number , t1: number , h: number , FFox: number , KKox: number , FFred: number , KKred: number , Ffree: number , Kfree: number , FKred: number , FKox: number , MEAthiol: number , CO2: number , yO2P: number , CYST: number , VL: number , qin: number , yO2in: number , T: number , P: number , switchTime: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DiffStudio:IvpModelBioreactor', { mode, t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST, VL, qin, yO2in, T, P, switchTime });
+   * The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+   */
+  export async function ivpModelPollution(_t0: number , _t1: number , _h: number , y1: number , y2: number , y3: number , y4: number , y5: number , y6: number , y7: number , y8: number , y9: number , y10: number , y11: number , y12: number , y13: number , y14: number , y15: number , y16: number , y17: number , y18: number , y19: number , y20: number , k1: number , k2: number , k3: number , k4: number , k5: number , k6: number , k7: number , k8: number , k9: number , k10: number , k11: number , k12: number , k13: number , k14: number , k15: number , k16: number , k17: number , k18: number , k19: number , k20: number , k21: number , k22: number , k23: number , k24: number , k25: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DiffStudio:IvpModelPollution', { _t0, _t1, _h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25 });
   }
 
   /**
-  Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
-  */
-  export async function ivpModelPKPD(count: number , t0: number , t1: number , h: number , depot: number , centr: number , peri: number , eff: number , dose: number , KA: number , CL: number , V2: number , Q: number , V3: number , EC50: number , Kin: number , Kout: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DiffStudio:IvpModelPKPD', { count, t0, t1, h, depot, centr, peri, eff, dose, KA, CL, V2, Q, V3, EC50, Kin, Kout });
+   * Bioreactor simulation demo - multi-stage ODE with UF/DF mode switching. Case study: controlled Fab-arm exchange (cFAE) for bispecific antibody assembly
+   * @param {string} mode
+   *   choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")
+   */
+  export async function ivpModelBioreactor(mode: string , _t0: number , _t1: number , _h: number , FFox: number , KKox: number , FFred: number , KKred: number , Ffree: number , Kfree: number , FKred: number , FKox: number , MEAthiol: number , DO2: number , yO2P: number , CYST: number , VL: number , filtration: number , qin: number , yO2in: number , T: number , P: number , switchTime: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DiffStudio:IvpModelBioreactor', { mode, _t0, _t1, _h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, DO2, yO2P, CYST, VL, filtration, qin, yO2in, T, P, switchTime });
   }
 
   /**
-  The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
-  */
-  export async function ivpModelPollution(t0: number , t1: number , h: number , y1: number , y2: number , y3: number , y4: number , y5: number , y6: number , y7: number , y8: number , y9: number , y10: number , y11: number , y12: number , y13: number , y14: number , y15: number , y16: number , y17: number , y18: number , y19: number , y20: number , k1: number , k2: number , k3: number , k4: number , k5: number , k6: number , k7: number , k8: number , k9: number , k10: number , k11: number , k12: number , k13: number , k14: number , k15: number , k16: number , k17: number , k18: number , k19: number , k20: number , k21: number , k22: number , k23: number , k24: number , k25: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DiffStudio:IvpModelPollution', { t0, t1, h, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15, y16, y17, y18, y19, y20, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25 });
+   * In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
+   */
+  export async function ivpModelPKPD(_count: number , _t0: number , _t1: number , _h: number , depot: number , centr: number , peri: number , eff: number , C2: number , C3: number , dose: number , KA: number , CL: number , V2: number , Q: number , V3: number , EC50: number , Rate: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DiffStudio:IvpModelPKPD', { _count, _t0, _t1, _h, depot, centr, peri, eff, C2, C3, dose, KA, CL, V2, Q, V3, EC50, Rate });
   }
 }

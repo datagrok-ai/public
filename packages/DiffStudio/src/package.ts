@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
+import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
@@ -27,12 +28,23 @@ export const _package = new DG.Package();
 /** Default demo layout for `.ivp`-driven demos. */
 const DEMO_UI_OPTS = {inputsTabDockRatio: 0.17, graphsDockRatio: 0.85};
 
-/** Run a model shipped as `files/library/<fileName>` as a Diff Studio demo — equations come
- *  from the `.ivp` file (single source of truth), help text from its `#description`. */
-async function runIvpDemo(fileName: string): Promise<void> {
-  const equations = await _package.files.readAsText(`library/${fileName}`);
-  const descr = (/^#description:\s*(.+)$/m.exec(equations)?.[1] ?? '').trim();
-  const info = `# Model\n${descr}\n\n# Try\nInteractive results update as you change the inputs.`;
+/** Run a model shipped under `files/<modelFile>` as a Diff Studio demo — equations come from the
+ *  `.ivp` file (single source of truth). Help text is the companion `<helpFile>` readme when given,
+ *  otherwise it falls back to text derived from the model's `#description`. */
+async function runIvpDemo(modelFile: string, helpFile?: string): Promise<void> {
+  const equations = await _package.files.readAsText(modelFile);
+  let info = '';
+  if (helpFile) {
+    try {
+      info = await _package.files.readAsText(helpFile);
+    } catch {
+      // readme missing — fall back to #description below
+    }
+  }
+  if (!info) {
+    const descr = (/^#description:\s*(.+)$/m.exec(equations)?.[1] ?? '').trim();
+    info = `# Model\n${descr}\n\n# Try\nInteractive results update as you change the inputs.`;
+  }
   await new Model({equations, uiOptions: DEMO_UI_OPTS, info}).runDemo();
 }
 
@@ -80,6 +92,16 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object'}) problem: ODEs,
     @grok.decorators.param({type: 'object'}) options: Partial<SolverOptions>): DG.DataFrame {
     return solveIVP(problem, options);
+  }
+
+  @grok.decorators.func({
+    name: 'DiffStudio Facet',
+    description: 'Faceted grid of line charts, one per output variable, for Diff Studio solutions',
+    meta: {showInGallery: 'false', role: 'viewer'},
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
+  static diffStudioFacetViewer(): DG.JsViewer {
+    return new DiffStudioFacetViewer();
   }
 
   @grok.decorators.app({
@@ -209,7 +231,8 @@ export class PackageFunctions {
     features: '{"sens-analysis": true, "fitting": true}',
     icon: 'files/icons/ball.png',
     // @ts-expect-error
-    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
+    help: 'ball-flight.md',
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Help": {"dock-spawn-dock-ratio": 0.2, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Grid"}}',
     outputs: [
       {
         name: 'maxDist',
@@ -283,7 +306,7 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    await runIvpDemo('pk-pd.ivp');
+    await runIvpDemo('models/pk-pd.ivp', 'models/pk-pd.md');
   }
 
 
@@ -294,7 +317,7 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    await runIvpDemo('bioreactor.ivp');
+    await runIvpDemo('models/bioreactor.ivp', 'models/bioreactor.md');
   }
 
 
