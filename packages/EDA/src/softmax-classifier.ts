@@ -231,6 +231,11 @@ export class SoftmaxClassifier {
       for (let i = 0; i < classesCount; ++i)
         this.params[i] = paramCols.byIndex(i).getRawData() as Float32Array;
     } catch (error) {
+      // The WASM softmax fit failed; fall back to the TS worker. Do not swallow
+      // the cause silently — a recurring fallback hides a real kernel bug
+      // (e.g. under-convergence / panic on small samples) behind a slower path.
+      console.warn(`Softmax: WASM fit failed, falling back to TS worker: ${
+        error instanceof Error ? error.message : String(error)}`);
       try { // call fitting TS-computations (if wasm failed)
         this.params = await this.fitSoftmaxParams(
           features,
