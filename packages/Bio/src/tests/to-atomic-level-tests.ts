@@ -345,6 +345,37 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     await _testToAtomicLevelWithCustomMonomer(srcHelm, expectedSmiles);
   });
 
+  // Explicit/inline SMILES monomers (e.g. `[*N(C)[C@H](C(=O)*)CCC |$_R1;...$|]`)
+  // must round-trip through HELM → atomic level. They are resolved on-spot by
+  // Datagrok's monomer functions (assigned `#P{N}` symbols) so the pseudo-molfile
+  // carries a clean, space-free, resolvable symbol. Regression: post-migration
+  // the raw SMILES (with its CXSMILES space) leaked into the pseudo-molfile and
+  // got truncated, so the converter could not resolve the monomer.
+  test('explicitSmilesMonomers', async () => {
+    const cases: {name: string, helm: string, expected: string}[] = [
+      {
+        name: 'single-chain macrocycle',
+        helm: `PEPTIDE1{[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$`,
+        expected: `CCC[C@H]1C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@H](C)C(=O)N(C)[C@@H](CCC)C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@@H](C)C(=O)N1C`,
+      },
+      {
+        name: 'two-chain (named + inline SMILES monomers)',
+        helm: `PEPTIDE1{[meL].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[meL].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}|PEPTIDE2{E.[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].E.[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE2,PEPTIDE2,8:R2-1:R1|PEPTIDE1,PEPTIDE2,1:R1-3:R3|PEPTIDE2,PEPTIDE1,1:R3-8:R2$$$V2.0`,
+        expected: `CCC[C@H]1C(=O)O[C@H](Cc2ccccc2)C(=O)N[C@H]2CCC(=O)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CCC)N(C)C(=O)[C@H](C)OC(=O)[C@H](CCC)N(C)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CC(C)C)N(C)C(=O)[C@@H](C)OC(=O)[C@H](CC(C)C)N(C)C(=O)CC[C@H](NC(=O)[C@@H](C)OC2=O)C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@@H](C)C(=O)N1C`,
+      },
+    ];
+    const canonical = (smiles: string): string => {
+      const mol = rdKitModule.get_mol(smiles);
+      try { return mol.get_smiles(); } finally { mol.delete(); }
+    };
+    const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
+    for (const {name, helm, expected} of cases) {
+      const resMolFile = seqHelper.helmToAtomicLevelSingle(helm, converter, true, true);
+      const resSmiles = grok.chem.convert(resMolFile.molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+      expect(canonical(resSmiles), canonical(expected), `${name}: SMILES mismatch`);
+    }
+  });
+
   async function _testToAtomicLevel(
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {

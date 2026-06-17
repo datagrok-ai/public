@@ -7,12 +7,6 @@ export async function initHelm() : Promise<void> {
   await PackageFunctions.initHelm();
 }
 
-//description: Helm renderer service
-//output: object result
-export async function getHelmService() : Promise<any> {
-  return await PackageFunctions.getHelmService();
-}
-
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.columnTags: quality=Macromolecule, units=helm
@@ -45,8 +39,8 @@ export function openEditor(mol: DG.SemanticValue) : void {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: bio
-export function propertiesWidget(sequence: DG.SemanticValue) : any {
-  return PackageFunctions.propertiesWidget(sequence);
+export async function propertiesWidget(sequence: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.propertiesWidget(sequence);
 }
 
 //input: column col { semType: Macromolecule }

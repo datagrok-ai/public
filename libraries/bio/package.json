@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.65.4",
+  "version": "6.0.0",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.7",
@@ -25,18 +25,17 @@
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
     "uuid": "^9.0.1",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/hwe": "^1.0.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.16",
-    "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^6.3.3",
     "eslint": "8.57.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-deprecation": "^3.0.0",

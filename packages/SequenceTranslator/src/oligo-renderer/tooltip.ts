@@ -23,7 +23,7 @@ import {
   canonicalPhosphateSymbol, canonicalSugarSymbol,
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
-import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 
 const STRUCT_W = 110;
 const STRUCT_H = 90;

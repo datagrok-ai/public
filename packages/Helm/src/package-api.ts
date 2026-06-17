@@ -12,13 +12,6 @@ export namespace funcs {
     return await grok.functions.call('Helm:InitHelm', {});
   }
 
-  /**
-   * Helm renderer service
-   */
-  export async function getHelmService(): Promise<any> {
-    return await grok.functions.call('Helm:GetHelmService', {});
-  }
-
   export async function helmCellRenderer(): Promise<any> {
     return await grok.functions.call('Helm:HelmCellRenderer', {});
   }
