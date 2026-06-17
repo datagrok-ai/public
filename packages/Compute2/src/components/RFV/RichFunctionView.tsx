@@ -713,6 +713,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
+                    skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
@@ -779,9 +780,10 @@ export const RichFunctionView = Vue.defineComponent({
           }
           { !helpHidden.value ?
             <div
-              dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
+              {...(dockSpawnConfig.value['Help'] ?? {})}
+              dock-spawn-title='Help'
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
               key="__HELP__"
               ref={helpRef}

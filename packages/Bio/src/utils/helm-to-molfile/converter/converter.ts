@@ -161,7 +161,7 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
     const woGapsMolfile: MolfileWithMap = woGapsPolymer.compileToMolfile();
     const orgMonomerMap = new MonomerMap();
     for (const [woGapsPosIdx, m] of woGapsMolfile.monomers.entries()) {
-      const orgPosIdx = woGapsReverseMap.get(woGapsPosIdx)!;
+      const orgPosIdx = woGapsReverseMap.get(woGapsPosIdx) ?? woGapsPosIdx;
       orgMonomerMap.set(orgPosIdx, m);
     }
 

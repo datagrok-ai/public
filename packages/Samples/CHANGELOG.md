@@ -1,5 +1,9 @@
 # Samples changelog
 
+## v.next
+
+* GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
+
 ## 1.4.2 (2025-09-22)
 
 * GROK-18923: Northwind: order details by @quantity, @productname, @Country: error

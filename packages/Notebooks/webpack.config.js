@@ -51,20 +51,7 @@ module.exports = {
         test: /\.css$/,
         exclude: /@jupyterlab.*\.css$/,
         include: /notebooks\.css$/,
-        use: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              import: {
-                filter: (url, media, resourcePath) =>
-                  !((resourcePath.endsWith('ui-components/style/index.css') && url.includes('base.css')) ||
-                  (resourcePath.endsWith('application/style/index.css') && url.includes('base.css')) ||
-                  (url.includes('blueprint.css'))),
-              },
-            },
-          },
-        ],
+        use: ['style-loader', 'css-loader'],
       },
       {
         test: /\.css$/,

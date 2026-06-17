@@ -3,6 +3,9 @@
 ## v.next
 
 * jupyter-notebook container: Migrated to `datagrok-api==0.1.0` (resource-based `api.tables.download`/`upload`); updated "Open as script" parser accordingly
+
+## 1.6.2 (2026-06-16)
+
 * GROK-20225: Fixed HTML preview 404 by exposing only the nginx port (8090) so the proxy reaches `grok_helper`
 
 ## 1.6.1 (2026-06-13)

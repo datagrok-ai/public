@@ -107,7 +107,9 @@ export function getMonomerHandleArgs(
   let elem: string;
   const aa = a as HelmAtom;
   if (aa.T === 'ATOM') {
-    biotype = aa.biotype()!;
+    // Legacy HelmAtom.biotype() returns the js-draw-lite HelmType union (which
+    // still carries the `HELM_NUCLETIDE` typo); cast to the hwe-owned HelmType.
+    biotype = aa.biotype()! as HelmType;
     elem = aa.elem;
   } else {
     biotype = a as HelmType;

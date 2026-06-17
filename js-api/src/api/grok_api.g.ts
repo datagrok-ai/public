@@ -660,7 +660,7 @@ export interface IDartApi {
   grok_CodeEditor_Set_Value(editor: any, x: String): any;
   grok_CodeEditor_OnValueChanged(editor: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
-  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool): Promise<any>;
+  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool, skipTableAutoFill: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
   grok_InputForm_GetInputs(form: any): any;
@@ -1105,7 +1105,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
-  grok_Dapi_RequestMembership(groupId: String, requesterId: String): Promise<any>;
+  grok_GroupsDataSource_RequestMembership(groupId: String, requesterId: String): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
   grok_EntitiesDataSource_GetFavoritesForGroups(s: any, groups: any): Promise<any>;

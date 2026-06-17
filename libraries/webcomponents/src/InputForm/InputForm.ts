@@ -8,6 +8,7 @@ import {distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
   private skipDefaultInit = true;
+  skipTableAutoFill = false;
   private formChanges$ = new Subject<DG.InputForm>();
 
   private destroyed$ = new Subject<boolean>();
@@ -60,8 +61,9 @@ export class InputForm extends HTMLElement {
     if (!funcCall)
       this.formInst = undefined;
     else {
-      this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit} as any);
+      this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
       this.formInst.root.style.overflowY = 'hidden';
+      this.formInst.root.style.paddingBottom = '10px';
       this.appendChild(this.formInst.root);
     }
     this.formChanges$.next(this.formInst);

@@ -18,6 +18,17 @@ import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from '../util
 
 import {_package} from '../package';
 
+/**
+ * Default editor size (px). The editor canvas AND the host element both default
+ * to this so `ui.input.helmAsync` renders a compact, predictable box instead of
+ * stretching to the (often wide) form row or falling back to hwe's 400×100
+ * editor default. Override per-input via `editorOptions.{width,height}`, or — for
+ * a fill layout — set `width/height` directly on `getInput()` (e.g. `'100%'`),
+ * which wins over these defaults; `onSizeChanged` then re-fits the canvas.
+ */
+const DEFAULT_HELM_INPUT_HEIGHT = 250;
+const DEFAULT_HELM_INPUT_WIDTH = 250;
+
 export class HelmInput extends HelmInputBase {
   /** Input type identifier (such as "Slider" for the slider input). See {@link InputType}. */
   get inputType(): string {
@@ -91,11 +102,31 @@ export class HelmInput extends HelmInputBase {
 
     if (name) this.captionLabel.innerText = name;
 
+    // The host defaults to a fixed DEFAULT_HELM_INPUT_{WIDTH,HEIGHT} box (NOT
+    // `width:100%`, which would stretch to the wide form row and surface the
+    // hwe 400×100 editor default). A consumer that wants a fill layout sets
+    // `width/height` on `getInput()` directly (those inline overrides win); the
+    // `min-*` floor keeps it visible if they set `width:100%` in a 0-size
+    // parent. The editor canvas is created at the SAME default so the very first
+    // paint is already the right size (no 400-wide flash), and `onSizeChanged`
+    // below re-fits it from the host's own box whenever the host is resized.
+    const defaultHeight = options?.editorOptions?.height ?? DEFAULT_HELM_INPUT_HEIGHT;
+    const defaultWidth = options?.editorOptions?.width ?? DEFAULT_HELM_INPUT_WIDTH;
     this.viewerHost = ui.div([], {
       classes: 'ui-input-editor',
-      style: {width: '100%', height: '100%', overflow: 'hidden'},
+      style: {
+        width: `${defaultWidth}px`,
+        height: `${defaultHeight}px`,
+        minWidth: `${defaultWidth}px`,
+        minHeight: `${defaultHeight}px`,
+        overflow: 'hidden',
+      },
     });
-    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, options?.editorOptions);
+    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, {
+      ...options?.editorOptions,
+      width: defaultWidth,
+      height: defaultHeight,
+    });
 
     this.editHintDiv = ui.divH([
       ui.link('Click to edit', () => { this.viewer.host.click(); }, undefined, {}),
@@ -115,18 +146,16 @@ export class HelmInput extends HelmInputBase {
       .subscribe(this.viewerOnClick.bind(this));
     /* eslint-enable rxjs/no-ignored-subscription */
 
-    this.subs.push(ui.onSizeChanged(this.root).subscribe(() => {
-      const rootStyle = window.getComputedStyle(this.root);
-      const h = this.root.clientHeight - parseFloat(rootStyle.paddingTop) - parseFloat(rootStyle.paddingBottom);
-      this.input.style.height = `${h}px`;
-    }));
-
+    // Drive the editor canvas from the host element's OWN measured box so it
+    // works no matter how the consumer mounts the input — via `root` (form
+    // layout) or by lifting `getInput()` (the host) into a custom container.
+    // (The old code read `this.root.clientHeight`, which is 0 whenever only
+    // `getInput()` is in the DOM — producing the reported 0-height editor.)
     this.subs.push(ui.onSizeChanged(this.input).subscribe(() => {
-      const rootStyle = window.getComputedStyle(this.root);
-      const h = this.root.clientHeight - parseFloat(rootStyle.paddingTop) - parseFloat(rootStyle.paddingBottom);
-      this.input.style.height = `{h}px`;
       const w = this.input.clientWidth;
-      this.viewer.editor.setSize(w, h);
+      const h = this.input.clientHeight;
+      if (w > 0 && h > 0)
+        this.viewer.editor.setSize(w, h);
     }));
 
     this.root.classList.add('ui-input-helm');
@@ -222,6 +251,7 @@ export class HelmInput extends HelmInputBase {
 
   showEditorDialog(): void {
     const webEditorHost = ui.div();
+    webEditorHost.style.height = '100%';
     const webEditorApp = this.helmHelper.createWebEditorApp(webEditorHost, this.viewer.editor.getHelm());
 
     const destroyEditorDialog = () => {

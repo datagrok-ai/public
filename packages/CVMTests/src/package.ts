@@ -17,6 +17,6 @@ export class PackageFunctions {
 //input: string columnName
 //output: column col
 export function getColumn(table: DG.DataFrame, columnName: string): DG.Column {
-    const col = table.getCol(columnName);
-    return col;
+  const col = table.getCol(columnName);
+  return col;
 }

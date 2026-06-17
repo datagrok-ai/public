@@ -1,7 +1,12 @@
 # Datagrok-tools changelog
 
-## 6.3.1 (WIP)
+## 6.3.3 (2026-06-16)
 
+* Fixed Celery Docker image generation — the image wasn't built locally on publish.
+
+## 6.3.2 (2026-06-15)
+
+* `func-gen` webpack plugin — generated RichFunctionView model inputs now use the script-form names (argument bounds/step `_t0`/`_t1`/`_h`, loop count `_count`) instead of the deprefixed forms, so the run, fitting, and sensitivity-analysis paths share one set of input names with diff-grok's pipeline. Fixes `Inconsistent inputs: "_t0" is missing` when starting fitting/SA from a Rich Function View.
 * `func-gen` webpack plugin — the generated RichFunctionView model output annotation appends the `DiffStudio Facet` viewer (last), alongside Grid and Line chart.
 * `grok stresstest` — run the ApiTests Node test runner directly via tsx (`src/package-test-node.ts`) instead of a compiled `dist-node` bundle; dropped the obsolete `npm run build-node` step and the `tsconfig-paths-bootstrap.js` / `dist-node` invocation.
 

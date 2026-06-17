@@ -103,6 +103,14 @@ export function emitScript(
     if (inst) lines.push(...emitFuncStepInstrumented(step, options!, flow));
     else lines.push(emitFuncStep(step));
 
+    // A SetVar whose value is a dataframe at runtime also registers it under
+    // the table's runtime name, so creation-script GetVars that reference the
+    // table by its actual name resolve (the platform resolver registers both).
+    // The dataframe check is emitted into the script (runtime instanceof), since
+    // the value slot is often `dynamic` even when it carries a dataframe.
+    const setVarValue = setVarValueExpr(step, flow);
+    if (setVarValue) lines.push(emitSetVarByDataframeName(setVarValue));
+
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
   }
@@ -386,6 +394,29 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   }
   lines.push('}');
   return lines;
+}
+
+/** The `value` input expression of a SetVar func step, or null when the step
+ *  isn't a SetVar or has no value. The slot type may be `dynamic` even when the
+ *  value is a dataframe at runtime, so we can't decide at emit time whether the
+ *  extra dataframe-name registration applies — the emitted code checks it at
+ *  runtime (see emitSetVarByDataframeName). */
+function setVarValueExpr(step: CompiledStep, flow: FlowEditor): string | null {
+  const node = flow.getNodeById(step.nodeId);
+  if (!node || node.dgFunc?.name?.toLowerCase() !== 'setvar') return null;
+  const valueExpr = step.inputs.get('value');
+  if (!valueExpr || valueExpr === 'undefined') return null;
+  return valueExpr;
+}
+
+/** Runtime-guarded second `SetVar` registration: when the value is a dataframe,
+ *  also register it keyed by the dataframe's runtime `.name`, so creation-script
+ *  `GetVar`s that reference the table by its actual name resolve (the platform
+ *  resolver registers both). The `instanceof` check is at runtime because the
+ *  value slot is often `dynamic` even when it carries a dataframe. */
+function emitSetVarByDataframeName(valueExpr: string): string {
+  return `if (${valueExpr} instanceof DG.DataFrame) ` +
+    `await grok.functions.call('SetVar', {variableName: ${valueExpr}.name, value: ${valueExpr}});`;
 }
 
 /** For each non-pass-through dataframe output, emit

@@ -1,6 +1,34 @@
 # sci-comp changelog
 
-## Unreleased
+## 0.9.0 (2026-06-15)
+
+Non-Compartmental Analysis — sparse / destructive-sampling NCA (UC-04 / FR-301..306):
+
+* `nca.sparseAuc(input, options)` — design-aware closed-form composite AUClast
+  with an honest standard error and degrees of freedom. Holder 2001 eq (A1)
+  covariance variance + eq (A3) **unbiased** estimator, with the Nedelman-Jia
+  1998 **correlated Satterthwaite df** (matrix form; reduces to the scalar
+  independence df, i.e. Bailer, when no animal is sampled at two timepoints).
+  Sampling topology (destructive / batch / serial) is derived from the animal ×
+  nominal-time overlap matrix and cross-checked against a declared label. Honesty
+  guards: linear-trapezoidal-only SE with a `SPARSE_TERMINAL_OVEREST` flag
+  (Jia-Nedelman 1996), Nedelman variance-borrowing for n=1 timepoints
+  (`SPARSE_VARIANCE_MODELED`), and an explicit destructive-on-absent-animal-ID
+  warning. Validated against PKNCA 0.12.1 `pk.calc.sparse_auclast` to
+  floating-point round-off (destructive) and a hand-derived Holder oracle (batch,
+  where PKNCA returns `df = NA`). Fixture: `__tests__/fixtures/05_mouse_sparse.json`
+  (generator `regen-sparse-fixture.R`).
+* `nca.buildCompositeProfile(input, blqRule)` — arithmetic mean / SD / %CV / n /
+  %BLQ per nominal timepoint, BLQ imputed **before** averaging, with PKNCA's
+  `arithmetic mean, <=50% BLQ` rule for the AUClast endpoint.
+* `nca.summarizeBootstrap(input, statistic, options)` — stratified-by-timepoint
+  bootstrap with a **BCa** interval for nonlinear parameters that have no
+  closed-form sparse variance. Min-n gated: an unconditional hard floor at ≤ 360
+  distinct stratified resamples (Bonate 1998 eq 8 — e.g. a 5×2 destructive
+  design) plus a calibrated per-timepoint minimum. Deterministic at a fixed
+  master seed (`mulberry32`).
+
+## 0.8.0 (2026-06-11)
 
 Statistics — simple linear regression primitive (NCA dose-proportionality / UC-03):
 

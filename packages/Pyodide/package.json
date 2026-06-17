@@ -4,8 +4,8 @@
   "version": "1.4.0",
   "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)",
   "author": {
-    "name": "Pavlo Polovyi",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/test": "^1.1.0",

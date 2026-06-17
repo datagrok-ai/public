@@ -756,7 +756,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   summary: string;
   title: string;
   showLabels: boolean;
-  scaffoldTreeId: number = scaffoldTreeId;
+  scaffoldTreeId: number;
   fragmentsColumn: DG.Column | null = null;
   labelsColumn: DG.Column | null = null;
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
@@ -820,6 +820,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       userEditable: false,
     });
 
+    this.scaffoldTreeId = this.int('scaffoldTreeId', ++scaffoldTreeId, {userEditable: false});
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
@@ -1773,7 +1774,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private resolveColumnName(suffix: string): string {
     const baseName = `${this.molColumn?.name} ${suffix}`;
-    return this.getPeerViewers().length > 0 ? `${this.title} ${baseName}` : baseName;
+    return this.getPeerViewers().length > 0 ? `${baseName} (${this.scaffoldTreeId})` : baseName;
   }
 
   private ensureColumn(
@@ -2370,9 +2371,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       updateVisibleMols(this);
       this.updateUI();
-    } else if (p.name === 'title')
-      this.renameOwnColumns();
-    else if (p.name === 'showLabels') {
+    } else if (p.name === 'showLabels') {
       for (const item of this.tree.items) {
         const labelEl = value(item).labelElement;
         if (labelEl)
@@ -2529,7 +2528,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateTitle() {
-    const title = `${this.title}_${++scaffoldTreeId}`;
+    const suffix = `_${this.scaffoldTreeId}`;
+    if (this.title.endsWith(suffix))
+      return;
+    const title = `${this.title}${suffix}`;
     this.title = this.getProperty('title')!.defaultValue = title;
   }
 

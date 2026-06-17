@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -9,11 +8,8 @@ import '../css/app-styles.css';
 
 /** Faceted line-chart grid for Diff Studio multi-variable solutions: one chart per output
  *  variable, sharing the argument (X) column. Hosts platform line charts so rendering matches
- *  the standalone Diff Studio app 1:1. Exposed as a viewer so RFV can render it by name. */
-@grok.decorators.viewer({
-  name: 'DiffStudio Facet',
-  description: 'Faceted grid of line charts, one per output variable, for Diff Studio solutions',
-})
+ *  the standalone Diff Studio app 1:1. Registered as a viewer (via PackageFunctions) so RFV can
+ *  render it by name; `meta.showInGallery: false` keeps it out of the Add-viewer gallery. */
 export class DiffStudioFacetViewer extends DG.JsViewer {
   xColumnName: string;
   segmentColumnName: string;

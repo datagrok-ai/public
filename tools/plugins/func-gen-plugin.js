@@ -48,20 +48,19 @@ function preparseIvpModel(parser, text) {
   }
   if (!ivp || !ivp.name) return null;
 
-  // User-facing input names carry no `_` prefix, so that `propagateChoice` lookups can map their
-  // dataframe columns to inputs by exact name. `scriptKey` is the name the generated DiffStudio
-  // script expects (arg bounds/step and the loop count are `_`-prefixed there) and is used only
-  // when forwarding values to `runDiffStudioModel`.
+  // Input names use the script-form names (arg bounds/step `_`-prefixed, loop count `_count`) so the
+  // run path, the diff-grok fitting/SA pipeline, and `propagateChoice` lookups all agree on one set
+  // of names. `scriptKey` mirrors `name`; it is kept only for the value-forwarding map below.
   const mk = (type, name, scriptKey, input) =>
     ({tsType: 'number', name, scriptKey,
       annotation: `//input: ${type} ${name} = ${input.value} ${input.annot ?? ''}`.trim()});
 
   const inputs = [];
   const a = ivp.arg.name;
-  if (ivp.loop) inputs.push(mk('int', 'count', '_count', ivp.loop.count));
-  inputs.push(mk('double', `${a}0`, `_${a}0`, ivp.arg.initial));
-  inputs.push(mk('double', `${a}1`, `_${a}1`, ivp.arg.final));
-  inputs.push(mk('double', 'h', '_h', ivp.arg.step));
+  if (ivp.loop) inputs.push(mk('int', '_count', '_count', ivp.loop.count));
+  inputs.push(mk('double', `_${a}0`, `_${a}0`, ivp.arg.initial));
+  inputs.push(mk('double', `_${a}1`, `_${a}1`, ivp.arg.final));
+  inputs.push(mk('double', '_h', '_h', ivp.arg.step));
   for (const [k, v] of ivp.inits) inputs.push(mk('double', k, k, v));
   if (ivp.params) for (const [k, v] of ivp.params) inputs.push(mk('double', k, k, v));
 

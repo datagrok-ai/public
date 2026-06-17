@@ -61,6 +61,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       // TODO: Unsubscribe 'click' and 'sizeChanged'
       this.viewSubs.push(fromEvent(this._filterPanel, 'click').subscribe(() => {
         webEditorHost = ui.div();
+        webEditorHost.style.height = '100%';
         webEditorApp = helmHelper.createWebEditorApp(webEditorHost, this.props.substructure);
         const dlg = ui.dialog({showHeader: false, showFooter: true})
           .add(webEditorHost!)
@@ -133,6 +134,12 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       updateDivInnerHTML(this._filterPanel, this.helmEditor.host);
       this.helmEditor.editor.setHelm(helmString);
       this.helmEditor.resizeEditor(width, height);
+      const innerDiv = this._filterPanel.firstChild;
+      if (innerDiv instanceof HTMLDivElement) {
+        innerDiv.style.width = `${width}px`;
+        innerDiv.style.height = `${height}px`;
+        innerDiv.style.removeProperty('position');
+      }
     }
   }
 
