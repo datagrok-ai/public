@@ -72,7 +72,7 @@
     "@datagrok/chem": "^1.17.1",
     "@datagrok/dendrogram": "^1.4.11",
     "@datagrok/eda": "^1.4.13",
-    "@datagrok/helm": "^2.13.1",
+    "@datagrok/helm": "^3.0.0",
     "@datagrok/peptides": "^1.27.4",
     "@types/node": "^17.0.24",
     "@types/wu": "^2.1.44",
