@@ -22,6 +22,7 @@ export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
+  public currentPipelineValidations$ = new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
@@ -93,6 +94,11 @@ export class Driver {
       map((state) => state ? state.getValidations() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentValidations$);
+
+    stateUpdates$.pipe(
+      map((state) => state ? state.getPipelineValidations() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentPipelineValidations$);
 
     stateUpdates$.pipe(
       map((state) => state ? state.getFuncCallStates() : {}),

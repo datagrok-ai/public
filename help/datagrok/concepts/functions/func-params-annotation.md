@@ -124,6 +124,9 @@ Datagrok supports the following types in all scripting languages:
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
+For the native equivalent of each type in Python, R, Octave, Julia, and JavaScript,
+see [Data types](../../../compute/scripting/scripting-features/data-types.md).
+
 Some of the options apply to all parameters, while other are type-specific. 
 
 <details> 

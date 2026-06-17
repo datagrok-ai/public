@@ -22,4 +22,15 @@ export namespace funcs {
   export async function viewFuncFlow(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Flow:ViewFuncFlow', { file });
   }
+
+  /**
+  Builds a flow diagram from a table creation script and opens it in the Flow editor
+  */
+  export async function flowFromCreationScript(script: string ): Promise<DG.View> {
+    return await grok.functions.call('Flow:FlowFromCreationScript', { script });
+  }
+
+  export async function openCreationScriptFlowDialog(script: string , show: boolean ): Promise<any> {
+    return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script, show });
+  }
 }

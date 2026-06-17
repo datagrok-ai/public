@@ -6,8 +6,38 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 export const defaultMorganFpRadius = 2;
 export const defaultMorganFpLength = 2048;
 
-const lockPromiseForKey: any = {};
-const unlockFunctionForKey: any = {};
+/**
+ * Per-key promise-chain mutex (adapted from https://github.com/mistval/locko).
+ * `begin(key)` returns a promise that resolves when the previous holder of `key`
+ * calls `end(key)`; `end(key)` hands the lock to the next waiter. State is
+ * confined to the class so callers can't reach into it from anywhere in the file.
+ */
+class LockManager {
+  private lockPromiseForKey = new Map<string, Promise<void>>();
+  private unlockFunctionForKey = new Map<string, () => void>();
+
+  async begin(key: string): Promise<void> {
+    const takeLockPromise = this.lockPromiseForKey.get(key) ?? Promise.resolve();
+    this.lockPromiseForKey.set(key, takeLockPromise.then(() => new Promise<void>((fulfill) => {
+      this.unlockFunctionForKey.set(key, fulfill);
+    })));
+    return takeLockPromise;
+  }
+
+  end(key: string): void {
+    const unlock = this.unlockFunctionForKey.get(key);
+    if (unlock) {
+      unlock();
+      this.unlockFunctionForKey.delete(key);
+    }
+  }
+
+  has(key: string): boolean {
+    return this.unlockFunctionForKey.has(key);
+  }
+}
+
+const chemLockManager = new LockManager();
 
 export enum Fingerprint {
   Morgan = 'Morgan',
@@ -19,40 +49,77 @@ export enum Fingerprint {
   TopologicalTorsion = 'TopologicalTorsion'
 }
 
-/* By https://github.com/mistval/locko */
-
-export async function criticalSectionBegin(key: string): Promise<any> {
-  if (!lockPromiseForKey[key])
-    lockPromiseForKey[key] = Promise.resolve();
-  const takeLockPromise = lockPromiseForKey[key];
-  lockPromiseForKey[key] = takeLockPromise.then(() => new Promise((fulfill) => {
-    unlockFunctionForKey[key] = fulfill;
-  }));
-  return takeLockPromise;
+export async function criticalSectionBegin(key: string): Promise<void> {
+  return chemLockManager.begin(key);
 }
 
 export function criticalSectionEnd(key: string): void {
-  if (unlockFunctionForKey[key]) {
-    unlockFunctionForKey[key]();
-    delete unlockFunctionForKey[key];
-  }
+  chemLockManager.end(key);
 }
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemBeginCriticalSection(token = CHEM_TOKEN): Promise<void> {
+// opId of the operation currently holding the section, or null.
+let runningOpId: string | null = null;
+
+// Monotonic counter → unique operation ids.
+let chemOpCounter = 0;
+
+export function newChemOpId(prefix = 'op'): string {
+  return `${prefix}-${++chemOpCounter}`;
+}
+
+// True for the op holding the section, not ones merely queued.
+export function isChemOpRunning(opId: string): boolean {
+  return runningOpId === opId;
+}
+
+export async function chemBeginCriticalSection(opId?: string, token = CHEM_TOKEN): Promise<void> {
   let warned = false;
-  if (unlockFunctionForKey[token]) {
+  if (chemLockManager.has(token)) {
     console.warn('Chem | Is already in a critical section, waiting...');
     warned = true;
   }
   await criticalSectionBegin(token);
+  // Mark this operation as the section holder so a cancel can tell it apart from queued operations.
+  if (opId)
+    runningOpId = opId;
   if (warned)
     console.warn('Chem | Left the critical section');
 }
 
-export function chemEndCriticalSection(token = CHEM_TOKEN): void {
+export function chemEndCriticalSection(opId?: string, token = CHEM_TOKEN): void {
+  // Clear only if this op is the registered holder, so a non-cancellable / different op can't wipe a running op's id.
+  if (opId && runningOpId === opId)
+    runningOpId = null;
   criticalSectionEnd(token);
+}
+
+// Runs `work` inside the Chem critical section, always releasing it — so a concurrent cancel (which restarts
+// a worker) can't kill the operation mid-flight. Pass `opId` for a cancellable operation (see runCancellableChemOp).
+export async function withChemCriticalSection<T>(work: () => Promise<T>, opId?: string): Promise<T> {
+  await chemBeginCriticalSection(opId);
+  try {
+    return await work();
+  } finally {
+    chemEndCriticalSection(opId);
+  }
+}
+
+// Cancellable wrapper: undefined if cancelled, else the result.
+export async function runCancellableChemOp<T>(
+  opId: string, isCanceled: () => boolean, work: () => Promise<T>): Promise<T | undefined> {
+  return withChemCriticalSection(async (): Promise<T | undefined> => {
+    if (isCanceled())
+      return undefined;
+    try {
+      return await work();
+    } catch (e) {
+      if (isCanceled())
+        return undefined;
+      throw e;
+    }
+  }, opId);
 }
 
 export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray | null {

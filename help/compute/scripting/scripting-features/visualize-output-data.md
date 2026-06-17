@@ -1,7 +1,8 @@
 ---
 title: "Visualize output data"
 sidebar_position: 2
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

@@ -1,0 +1,73 @@
+{
+  "name": "DMT-1",
+  "friendlyName": "Demo 1",
+  "templateName": "Demo Template",
+  "filters": {},
+  "ingest": {
+    "type": "File",
+    "query": "System:AppData/HitTriage/PepTriage/campaigns/DMT-1/enriched_table.csv",
+    "molColName": "molfile(Helm)"
+  },
+  "status": "In Progress",
+  "createDate": "2026/6/17",
+  "campaignFields": { "Chemist": "Davit", "Supervisor": "Andrew" },
+  "columnSemTypes": {
+    "Helm": "Macromolecule",
+    "molfile(Helm)": "Molecule",
+    "~molfile(Helm).canonicalSmiles": "Molecule"
+  },
+  "rowCount": 20,
+  "filteredRowCount": 20,
+  "template": {
+    "name": "Demo Template",
+    "key": "DMT",
+    "sequenceColumnName": "Helm",
+    "campaignFields": [
+      { "name": "Chemist", "type": "String", "required": true },
+      { "name": "Supervisor", "type": "String", "required": true }
+    ],
+    "dataSourceType": "Query",
+    "compute": {
+      "descriptors": { "enabled": true, "args": ["MolWt", "HeavyAtomMolWt"] },
+      "functions": [
+        {
+          "name": "addChemPropertiesColumns",
+          "package": "Chem",
+          "args": {
+            "MW": false,
+            "HBA": true,
+            "HBD": true,
+            "logP": false,
+            "logS": false,
+            "PSA": false,
+            "rotatableBonds": false,
+            "stereoCenters": false,
+            "moleculeCharge": false
+          }
+        }
+      ],
+      "scripts": [],
+      "queries": []
+    },
+    "submit": { "fName": "demoFileSubmit", "package": "HitTriage" },
+    "queryFunctionName": "Demo Peptide Sequences"
+  },
+  "columnTypes": {
+    "Helm": "string",
+    "molfile(Helm)": "string",
+    "~molfile(Helm).canonicalSmiles": "string",
+    "HBA": "int",
+    "HBD": "int",
+    "MolWt": "double",
+    "HeavyAtomMolWt": "double",
+    "Selected hits": "bool"
+  },
+  "authorUserId": "9e9f6b50-6280-11ee-9466-b1c86e676b97",
+  "authorUserFriendlyName": "Davit Rizhinashvili",
+  "lastModifiedUserName": "Davit Rizhinashvili",
+  "permissions": {
+    "view": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"],
+    "edit": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"]
+  },
+  "layout": "{\"containerType\":\"fill\",\"state\":{\"width\":1361,\"height\":796,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":1361,\"height\":796,\"element\":{\"id\":\"ab8d3a90-48b0-11f1-bcb4-fb3cd531cdbc\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":36,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":400,\"columnName\":\"Helm\",\"cellType\":\"helm\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":200,\"columnName\":\"molfile(Helm)\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"visible\":false,\"width\":200,\"columnName\":\"~molfile(Helm).canonicalSmiles\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":53,\"columnName\":\"HBA\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":53,\"columnName\":\"HBD\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":63,\"columnName\":\"MolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":131,\"columnName\":\"HeavyAtomMolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":101,\"columnName\":\"Selected hits\",\"cellType\":\"bool\",\"headerCellStyle\":{\"textWrap\":\"words\"}}]},\"title\":\"Demo Peptide Sequences\",\"default\":true}},\"children\":[]}],\"floating\":[],\"tableId\":\"ab4f2020-48b0-11f1-8f91-8b4d73b49797\",\"tableName\":\"Demo Peptide Sequences\"}"
+}

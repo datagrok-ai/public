@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as color from './color-utils';
+import {removeScope} from './utils';
 
 // Header tags recognized in Python function metadata comments (ported from ScriptParser.headerTags)
 const headerTags = [
@@ -162,8 +163,7 @@ function scanPythonFunctions(pythonDir: string, root: string): TaskEntry[] {
         if (!isHeader)
           isHeader = true;
         header.push(line);
-      }
-      else {
+      } else {
         if (isHeader && defRegex.test(line)) {
           const match = defRegex.exec(line);
           const name = match![1];
@@ -177,8 +177,7 @@ function scanPythonFunctions(pythonDir: string, root: string): TaskEntry[] {
           tasks.push({name, module});
           isHeader = false;
           header = [];
-        }
-        else if (isHeader) {
+        } else if (isHeader) {
           isHeader = false;
           header = [];
         }
@@ -196,8 +195,7 @@ function copyDirContents(src: string, dest: string): void {
     if (entry.isDirectory()) {
       fs.mkdirSync(destPath, {recursive: true});
       copyDirContents(srcPath, destPath);
-    }
-    else
+    } else
       fs.copyFileSync(srcPath, destPath);
   }
 }
@@ -207,14 +205,16 @@ function useConda(dir: string): boolean {
     fs.existsSync(path.join(dir, 'environment.yml'));
 }
 
-function deployFolder(packageDir: string, folderPath: string, dirName: string): boolean {
+// `dockerSubfolder` is the dockerfiles/ subdirectory name; the published image is
+// `<base>-<dockerSubfolder>` (see publish.discoverDockerfiles).
+function deployFolder(packageDir: string, folderPath: string, dockerSubfolder: string, base: string): boolean {
   const tasks = scanPythonFunctions(folderPath, folderPath);
   if (tasks.length === 0) {
-    color.log(`No annotated Python functions found in ${dirName}`);
+    color.log(`No annotated Python functions found in ${dockerSubfolder}`);
     return false;
   }
 
-  const dockerfilesDir = path.join(packageDir, 'dockerfiles', dirName);
+  const dockerfilesDir = path.join(packageDir, 'dockerfiles', dockerSubfolder);
   fs.mkdirSync(dockerfilesDir, {recursive: true});
 
   // Generate Dockerfile
@@ -224,8 +224,9 @@ function deployFolder(packageDir: string, folderPath: string, dirName: string): 
   // Generate tasks.yaml (JSON-encoded, matching server behavior)
   fs.writeFileSync(path.join(dockerfilesDir, TASKS_FILE), JSON.stringify({tasks}, null, 2));
 
-  // Generate Celery entry point
-  const celeryName = dirName.replace(/-/g, '_');
+  // Entry point file name must equal $DATAGROK_CELERY_NAME (the image name, '-' -> '_'),
+  // so `celery -A $DATAGROK_CELERY_NAME` resolves it.
+  const celeryName = `${base}-${dockerSubfolder}`.replace(/-/g, '_');
   fs.writeFileSync(path.join(dockerfilesDir, celeryName + '.py'), TEMPLATE_PYTHON_ENTRY);
 
   // Copy Python source files
@@ -237,7 +238,7 @@ function deployFolder(packageDir: string, folderPath: string, dirName: string): 
   if (fs.existsSync(containerJsonSrc) && !fs.existsSync(containerJsonDest))
     fs.copyFileSync(containerJsonSrc, containerJsonDest);
 
-  color.log(`Generated Celery Docker artifacts in dockerfiles/${dirName}/`);
+  color.log(`Generated Celery Docker artifacts in dockerfiles/${dockerSubfolder}/`);
   return true;
 }
 
@@ -246,8 +247,11 @@ export function generateCeleryArtifacts(packageDir: string): boolean {
   if (!fs.existsSync(pythonDir))
     return false;
 
+  const packageJson = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'));
+  const base = removeScope(packageJson.name).toLowerCase();
+
   const entries = fs.readdirSync(pythonDir, {withFileTypes: true});
-  const isNested = entries.length > 0 && entries.every((e) => e.isDirectory);
+  const isNested = entries.length > 0 && entries.every((e) => e.isDirectory());
   let generated = false;
 
   if (isNested) {
@@ -255,13 +259,11 @@ export function generateCeleryArtifacts(packageDir: string): boolean {
       if (!entry.isDirectory())
         continue;
       const folderPath = path.join(pythonDir, entry.name);
-      if (deployFolder(packageDir, folderPath, entry.name))
+      if (deployFolder(packageDir, folderPath, `${entry.name.toLowerCase()}-celery`, base))
         generated = true;
     }
-  }
-  else {
-    const dirName = path.basename(packageDir).toLowerCase();
-    if (deployFolder(packageDir, pythonDir, dirName))
+  } else {
+    if (deployFolder(packageDir, pythonDir, 'celery', base))
       generated = true;
   }
 

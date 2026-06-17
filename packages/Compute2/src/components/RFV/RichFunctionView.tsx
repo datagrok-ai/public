@@ -17,6 +17,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
 import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarsSection, ScalarState} from './ScalarsPanel';
@@ -371,6 +372,45 @@ export const RichFunctionView = Vue.defineComponent({
       ];
     };
 
+    // Per-function preferred tab, tracked separately for the input and output sides and pushed
+    // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
+    // (see the watcher below); a user click sets it directly so the click is respected until
+    // the next restore.
+    const inputKey = () => `opened_input_tab_${currentCall.value?.func?.nqName}`;
+    const outputKey = () => `opened_output_tab_${currentCall.value?.func?.nqName}`;
+    const preferredTab = Vue.ref<string | null>(null);
+
+    const sideTabs = (side: 'inputs' | 'outputs') =>
+      visibleTabLabels.value.filter((l) => tabToPropertiesMap.value[side].has(l));
+
+    // Saved tab if still visible, else the default for the side (not persisted): the last output
+    // tab (typically the final result) but the first input tab.
+    const resolveSide = (side: 'inputs' | 'outputs', key: string) => {
+      const tabs = sideTabs(side);
+      const saved = sessionStorage.getItem(key);
+      if (saved && tabs.includes(saved))
+        return saved;
+      return (side === 'outputs' ? tabs[tabs.length - 1] : tabs[0]) ?? null;
+    };
+
+    // formAsTab forces the 'Inputs' tab; otherwise input vs output side by run state.
+    const resolvePreferredTab = () =>
+      formAsTab.value ? 'Inputs' :
+        (isOutputOutdated.value ?
+          resolveSide('inputs', inputKey()) :
+          resolveSide('outputs', outputKey()));
+
+    const handleTabClicked = (title: string | null) => {
+      if (!title)
+        return;
+      preferredTab.value = title;
+      // 'Inputs' (form tab or side-panel) is not persisted: forced by formAsTab or a sticky panel.
+      if (tabToPropertiesMap.value.inputs.has(title))
+        sessionStorage.setItem(inputKey(), title);
+      else if (tabToPropertiesMap.value.outputs.has(title))
+        sessionStorage.setItem(outputKey(), title);
+    };
+
     Vue.watch(currentCall, (call) => {
       rebuildTabs(call);
       userClosed.value = new Set();
@@ -402,6 +442,14 @@ export const RichFunctionView = Vue.defineComponent({
           tabContent: map.inputs.get(tabLabel) ?? map.outputs.get(tabLabel)!,
           isInput: !!map.inputs.has(tabLabel),
         }));
+
+      // Restore the preferred tab on function switch (incl. initial mount) and on run completion
+      // (isOutputOutdated true->false). A plain visibleTabLabels change touches neither, so a
+      // mid-step tab show/hide leaves focus untouched.
+      const switched = prevCall !== call;
+      const justRan = !switched && !!prevCallState?.isOutputOutdated && !!callState && !callState.isOutputOutdated;
+      if (switched || justRan)
+        preferredTab.value = resolvePreferredTab();
     }, {immediate: true});
 
     Vue.watch(currentCall, async (call) => {
@@ -457,49 +505,6 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    let rebuildInFlight = false;
-    let rebuildTimeoutId: ReturnType<typeof setTimeout> | undefined;
-    const clearRebuildFlag = () => {
-      rebuildInFlight = false;
-      if (rebuildTimeoutId !== undefined) {
-        clearTimeout(rebuildTimeoutId);
-        rebuildTimeoutId = undefined;
-      }
-    };
-    Vue.watch(tabLabels, () => {
-      rebuildInFlight = true;
-      if (rebuildTimeoutId !== undefined) clearTimeout(rebuildTimeoutId);
-      rebuildTimeoutId = setTimeout(clearRebuildFlag, 50);
-    });
-    Vue.onUnmounted(clearRebuildFlag);
-
-    // 'Inputs' is the form side-panel unless formAsTab is on. Don't persist or
-    // restore it as an active tab — it's a sticky panel, not a tab the user switches to.
-    const isInputsSidePanel = (n: string | null) => n === 'Inputs' && !formAsTab.value;
-
-    const handlePanelChanged = (name: string | null, oldName: string | null) => {
-      // Restore on initial mount OR when an inflight rebuild auto-focused away from
-      // the user's saved tab — push the saved tab back if it's still visible.
-      // When formAsTab is on, 'Inputs' is a valid tab even though it's not in tabLabels
-      // (its title is hardcoded on the form panel, not derived from input params).
-      if (oldName == null || rebuildInFlight) {
-        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value?.func?.nqName}`);
-        const isInputsTab = (n: string) => n === 'Inputs' && formAsTab.value && !formHidden.value;
-        const canRestore = !!savedName && (
-          isInputsTab(savedName) ||
-          (visibleTabLabels.value.includes(savedName) && !isInputsSidePanel(savedName))
-        );
-        if (canRestore)
-          setTimeout(() => dockSpawnRef.value?.setActivePanel(savedName!));
-        else if (formAsTab.value && !formHidden.value)
-          setTimeout(() => dockSpawnRef.value?.setActivePanel('Inputs'));
-      }
-      if (name && currentCall.value && !rebuildInFlight && !isInputsSidePanel(name)) {
-        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name);
-        clearRebuildFlag();
-      }
-    };
-
     ////
     // Intergrations related
     ////
@@ -537,9 +542,10 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const runSA = () => {
+    const runSA = async () => {
       const ranges = getRanges('rangeSA');
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges});
+      const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok});
     };
 
     const runFitting = async () => {
@@ -550,7 +556,8 @@ export const RichFunctionView = Vue.defineComponent({
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
         const targets = getTargets();
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true});
+        const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
@@ -649,7 +656,8 @@ export const RichFunctionView = Vue.defineComponent({
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}
-          onUpdate:activePanelTitle={handlePanelChanged}
+          preferredPanelTitle={preferredTab.value ?? undefined}
+          onTabClicked={handleTabClicked}
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
@@ -771,9 +779,10 @@ export const RichFunctionView = Vue.defineComponent({
           }
           { !helpHidden.value ?
             <div
-              dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
+              {...(dockSpawnConfig.value['Help'] ?? {})}
+              dock-spawn-title='Help'
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
               key="__HELP__"
               ref={helpRef}

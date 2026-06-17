@@ -44,7 +44,7 @@ export class Func extends Entity {
 
   set helpUrl(url: string) { api.grok_Func_Set_HelpUrl(this.dart, url); }
 
-  /** A package this function belongs to. */
+  /** A package this function belongs to, or `null` for core functions (e.g. `Sin`). */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
   /** Indicates that the function (or script) is already vector, meaning it

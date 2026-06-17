@@ -1,6 +1,6 @@
 {
   "#type": "ViewLayout",
-  "type": "JupyterNotebook",
+  "type": "Notebook",
   "friendlyName": "Chemical Space Using tSNE",
   "viewStateMap": {
     "notebookId": "107c9a50-3260-11e9-c59a-ada830f0f28c"

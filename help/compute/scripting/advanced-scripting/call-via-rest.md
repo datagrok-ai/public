@@ -1,7 +1,8 @@
 ---
 title: "Call via REST"
 sidebar_position: 9
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

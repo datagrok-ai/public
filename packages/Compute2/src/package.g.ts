@@ -139,9 +139,10 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 }
 
 //name: Custom View (Compute 2 Test)
+//output: object result
 //editor: Compute2:CustomFunctionViewEditor
-export async function TestCustomView() : Promise<void> {
-  await PackageFunctions.TestCustomView();
+export async function TestCustomView() {
+  return await PackageFunctions.TestCustomView();
 }
 
 //description: Test for optimization: multiple scalars output
@@ -165,4 +166,18 @@ export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boole
 //description: Test for optimization: multiple scalars output
 export async function testFittingOutputs() : Promise<void> {
   await PackageFunctions.testFittingOutputs();
+}
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestCustomExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestCustomExportModel(a);
+}
+
+//input: funccall funcCall 
+//input: bool startDownload 
+//output: string result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
 }

@@ -1,7 +1,8 @@
 ---
 title: "Docking"
 sidebar_position: 4
-format: mdx
+mdx:
+  format: mdx
 unlisted: true
 ---
 

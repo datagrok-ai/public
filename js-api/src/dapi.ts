@@ -77,7 +77,7 @@ export class Dapi {
     return new FuncsDataSource(api.grok_Dapi_Functions());
   }
 
-  /** Data Connections API (finding, saving, sharing data connections 
+  /** Data Connections API (finding, saving, sharing data connections
    * and folders, getting database schemas) */
   get connections(): DataConnectionsDataSource {
     return new DataConnectionsDataSource(api.grok_Dapi_Connections());
@@ -563,6 +563,17 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   /** Looking for groups with similar name */
   async getGroupsLookup(name: string): Promise<Group[]> {
     return toJs(await api.grok_Dapi_Get_GroupsLookup(name));
+  }
+
+  /** Returns all groups the current user belongs to, including transitive parent groups. */
+  async currentUserGroups(): Promise<Group[]> {
+    return toJs(await api.grok_Dapi_Get_CurrentUserGroups());
+  }
+
+  /** Requests that `requester` be added as a member of `group`.
+   *  An admin of `group` must approve before the membership takes effect. */
+  async requestMembership(group: Group, requester: Group): Promise<void> {
+    return api.grok_GroupsDataSource_RequestMembership(group.id, requester.id);
   }
 }
 

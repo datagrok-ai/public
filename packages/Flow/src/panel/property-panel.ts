@@ -9,6 +9,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
+import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 
@@ -32,6 +33,7 @@ const PROP_TOOLTIPS: Record<string, string> = {
 const UTILITY_PROP_TOOLTIPS: Record<string, Record<string, string>> = {
   'Select Column': {columnName: 'Column name to extract from the table'},
   'Select Columns': {columnNames: 'Comma-separated column names to extract'},
+  'Select Table': {tableName: 'Name of an open table (resolved via grok.shell.tableByName)'},
   'Log': {label: 'Optional label prefix for the log message'},
   'String': {value: 'The constant string value to output'},
   'Int': {value: 'The constant integer value to output'},
@@ -76,8 +78,11 @@ export class PropertyPanel {
   showNode(node: FlowNode, execState?: NodeExecState): void {
     this.contentDiv.innerHTML = '';
 
-    const titleInput = this.createTextarea('Title', node.label, (v) => {
-      node.label = v;
+    // Coerce: labels can be derived from non-string values (constant nodes
+    // title themselves after their value) and DG string inputs throw on
+    // anything but a string.
+    const titleInput = this.createTextarea('Title', String(node.label ?? ''), (v) => {
+      node.label = String(v ?? '');
       void this.flow.updateNode(node.id);
     });
     const typeBadge = ui.div([], 'funcflow-type-badge');
@@ -247,20 +252,39 @@ export class PropertyPanel {
     const props = Object.entries(node.properties).filter(([k]) => !k.startsWith('_'));
     if (props.length === 0) return;
 
+    // Stable kind from the registered type — labels are user-editable.
+    const kind = node.dgTypeName?.split('/').pop() ?? node.label;
+    const isConstant = node.dgTypeName?.startsWith('Constants/') === true;
+    const retitle = (value: unknown): void => {
+      node.label = constLabel(kind, value);
+      void this.flow.updateNode(node.id);
+    };
+
     acc.addPane('Configuration', () => {
       const content = ui.div([], 'funcflow-accordion-content');
-      const nodeTips = UTILITY_PROP_TOOLTIPS[node.label] ?? {};
+      const nodeTips = UTILITY_PROP_TOOLTIPS[kind] ?? {};
       for (const [key, val] of props) {
         const tip = nodeTips[key];
-        if (typeof val === 'boolean')
-          content.appendChild(this.createToggle(key, val, (v) => {node.properties[key] = v;}, tip));
-        else if (typeof val === 'number') {
+        const isConstValue = isConstant && key === 'value';
+        if (typeof val === 'boolean') {
+          content.appendChild(this.createToggle(key, val, (v) => {
+            node.properties[key] = v;
+            if (isConstValue) retitle(v);
+          }, tip));
+        } else if (typeof val === 'number') {
           const isInt = Number.isInteger(val);
           content.appendChild(this.createNumberInput(key, val,
-            (v) => {node.properties[key] = isInt ? Math.round(v) : v;},
+            (v) => {
+              node.properties[key] = isInt ? Math.round(v) : v;
+              if (isConstValue) retitle(node.properties[key]);
+            },
             isInt ? 0 : 3, isInt ? 1 : 0.1, tip));
-        } else
-          content.appendChild(this.createTextarea(key, String(val ?? ''), (v) => {node.properties[key] = v;}, tip));
+        } else {
+          content.appendChild(this.createTextarea(key, String(val ?? ''), (v) => {
+            node.properties[key] = v;
+            if (isConstValue) retitle(v);
+          }, tip));
+        }
       }
       return content;
     }, true);

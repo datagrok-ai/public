@@ -7,11 +7,12 @@ import {Chem} from '../scripts-api';
 import {PackageFunctions} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
-import {getRdKitService} from '../utils/chem-common-rdkit';
+import {cancelChemOp, getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
-import {hasNewLines, hexToPercentRgb} from '../utils/chem-common';
+import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp, withChemCriticalSection} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -43,12 +44,6 @@ export type RGroupDecompRes = {
   yAxisColName: string,
   highlightColName?: string,
 }
-
-// const enum RGroupAlignment {
-//   None = 'None',
-//   NoAlignment = 'NoAlignment',
-//   MCS = 'MCS'
-// };
 
 type RGroupsRes = {
   rGroups: DG.Column<string>[];
@@ -211,6 +206,10 @@ export function rGroupAnalysis(col: DG.Column): void {
 
 
 export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promise<RGroupDecompRes | undefined> {
+  if (!col.dataFrame) {
+    grok.shell.error('R-group analysis requires a column that belongs to a table');
+    return;
+  }
   const getPrefixIdx = (colPrefix: string) => {
     let prefixIdx = 0;
     col = col.dataFrame.columns.byName(params.molColName);
@@ -245,6 +244,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
   let progressBar: DG.TaskBarProgressIndicator | undefined;
   let cancelSub: Subscription | undefined;
+  let canceled = false;
   try {
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
@@ -257,10 +257,15 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
     if (coreIsQMol)
       core = coreSmarts;
+    const opId = newChemOpId('rgroup');
     progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
-    cancelSub = progressBar.onCanceled.subscribe(async () => {
-      const svc = await getRdKitService();
-      await svc.setTerminateFlag(true);
+    // Close the bar at once on cancel so it disappears immediately — even if this operation is queued behind
+    // another one that's still holding the worker. cancelChemOp restarts the worker only if THIS operation is
+    // the one actually running there; the operation then unwinds on its own in the background.
+    cancelSub = progressBar.onCanceled.subscribe(() => {
+      canceled = true;
+      cancelChemOp(opId, [0]).catch(() => {});
+      progressBar?.close();
     });
 
     const rGroupOptions = {
@@ -269,12 +274,11 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       onlyMatchAtRGroups: params.onlyMatchAtRGroups,
     };
 
-    if (progressBar.canceled) return;
-
-    const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
-
-    if (progressBar.canceled) return;
-    (await getRdKitService()).setTerminateFlag(false);
+    // Run the R-Group call as a cancellable operation (undefined => cancelled).
+    const rgRes = await runCancellableChemOp(opId, () => canceled,
+      () => rGroupsMinilibRaw(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions));
+    if (rgRes === undefined) return;
+    const {rGroups, highlightCol} = rgRes;
 
     const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
@@ -282,10 +286,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
       latestAnalysisCols[col.dataFrame.name] = [];
       for (const resCol of rGroups) {
-        if (progressBar.canceled) return;
+        if (canceled) return;
         const molsArray = new Array<string>(resCol.length);
         for (let i = 0; i < resCol.length; i++) {
-          if (i % 256 === 0 && progressBar.canceled) return;
+          if (canceled) return;
           const molStr = resCol.get(i);
           if (resCol.name !== 'Core') { //R Group columns
             if (!molStr)
@@ -296,7 +300,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             let mol: RDMol | null = null;
             if (molStr) {
               try {
-                if (!hasNewLines(molStr) && molStr.length > 5000)
+                if (!hasNewLines(molStr) && molStr.length > MAX_SMILES_LENGTH)
                   continue; // do not attempt to parse very long SMILES, will cause MOB.
                 mol = rdkit.get_mol(molStr); //try to get mol. In case fail - try to get qmol
                 if (!mol)
@@ -311,7 +315,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             }
           }
         }
-        if (progressBar.canceled) return;
+        if (canceled) return;
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
@@ -327,7 +331,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         col.dataFrame.columns.add(rCol);
         latestAnalysisCols[col.dataFrame.name].push(rColName);
       }
-      if (progressBar.canceled) return;
+      if (canceled) return;
       //create column for r groups highlight
       if (highlightCol) {
         col.dataFrame.columns.add(highlightCol);
@@ -353,17 +357,25 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
   } catch (e: any) {
-    if (!progressBar?.canceled)
+    if (!canceled)
       grok.shell.error(e);
   } finally {
     cancelSub?.unsubscribe();
     progressBar?.close();
-    getRdKitService().then((svc) => svc.setTerminateFlag(false)).catch(() => {});
   }
 }
 
 
+// Section-protected entry — safe for any caller.
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
+  coreIsQMol: boolean, rGroupPrefixIdx: number,
+  options?: { [key: string]: string | boolean }): Promise<RGroupsRes> {
+  return withChemCriticalSection(() =>
+    rGroupsMinilibRaw(molecules, coreMolecule, coreIsQMol, rGroupPrefixIdx, options));
+}
+
+// Raw — caller must already hold the Chem critical section (runCancellableChemOp does).
+async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
     { [key: string]: string | boolean }): Promise<RGroupsRes> {
   if (!coreMolecule)
@@ -420,7 +432,7 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       for (let i = 0; i < resCol.length; i++) {
         const molStr = resCol.get(i);
         try {
-          if (molStr && !hasNewLines(molStr) && molStr.length > 5000)
+          if (molStr && !hasNewLines(molStr) && molStr.length > MAX_SMILES_LENGTH)
             continue; // do not attempt to parse very long SMILES, will cause MOB.
           const mol = module.get_mol(molStr);
           molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');

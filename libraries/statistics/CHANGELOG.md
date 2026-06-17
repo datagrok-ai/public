@@ -1,5 +1,9 @@
 # statistics changelog
 
+## 1.12.7 (2026-06-04)
+
+* MPO: Optimized score calculation for large datasets
+
 ## 1.12.6 (2026-04-30)
 
 * GROK-20056: MPO: Prevent rerendering on column input hover and wheel scroll

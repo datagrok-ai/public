@@ -107,13 +107,13 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         return;
       }
       let progressBar: DG.TaskBarProgressIndicator | null = null;
-      this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+      this.curIdx = this.dataFrame.currentRowIdx === -1 ? 0 : this.dataFrame.currentRowIdx;
       if (computeData && (!this.gridSelect && this.followCurrentRow || this.isEditedFromSketcher)) {
         progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
         this.isComputing = true;
         this.error = '';
         this.root.classList.remove(`chem-malformed-molecule-error`);
-        this.targetMoleculeIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+        this.targetMoleculeIdx = this.dataFrame.currentRowIdx === -1 ? 0 : this.dataFrame.currentRowIdx;
         if (DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
           this.closeWithError(`Empty molecule cannot be used for similarity search`, progressBar);
           return;
@@ -173,17 +173,17 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             label,
             molProps], { style: { position: 'relative' } });
           let divClass = 'd4-flex-col';
-          if (idx == this.curIdx) {
+          if (idx === this.curIdx) {
             divClass += ' d4-current';
             grid.style.backgroundColor = '#ddffd9';
           }
-          if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
+          if (idx === this.targetMoleculeIdx && !this.isEditedFromSketcher) {
             divClass += ' d4-current';
             grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
           if (this.dataFrame?.selection.get(idx)) {
             divClass += ' d4-selected';
-            if (divClass == 'd4-flex-col d4-selected')
+            if (divClass === 'd4-flex-col d4-selected')
               grid.style.backgroundColor = '#f8f8df';
             else
               grid.style.backgroundColor = '#d3f8bd';

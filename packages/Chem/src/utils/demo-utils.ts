@@ -44,10 +44,12 @@ export async function openSketcher(parent: HTMLElement, className: string) {
 
 
 export function getAccordionPane(name: string, parent: Element) {
-  const paneHeader = Array.from(parent!.getElementsByClassName('d4-accordion-pane-header'))
-    .find((el) => el.textContent === name) as HTMLElement;
-  if (!paneHeader!.classList.contains('expanded'))
-        paneHeader!.click();
+  const paneHeader = Array.from(parent.getElementsByClassName('d4-accordion-pane-header'))
+    .find((el) => el.textContent === name) as HTMLElement | undefined;
+  if (!paneHeader)
+    throw new Error(`Accordion pane '${name}' not found`);
+  if (!paneHeader.classList.contains('expanded'))
+    paneHeader.click();
   return paneHeader.parentElement?.children[1];
 }
 

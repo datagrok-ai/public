@@ -10,6 +10,11 @@ Migrate ML kernels to Rust + WebAssembly; remove LS-SVM
   hyperparameters; defaults remain ordinary least squares.
 * Removed LS-SVM and the legacy C++/Emscripten backend.
 
+## 1.5.6 (2026-06-01)
+
+* Add two-sample t-test (Welch and Student)
+* Add Control comparisons (Dunnett's test and Holm-corrected Welch's t-tests)
+
 ## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA

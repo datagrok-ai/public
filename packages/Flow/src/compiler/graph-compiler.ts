@@ -92,7 +92,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
 
     if (kind === 'utility') {
       // Breakpoint: pure pass-through — output slot resolves to its input expr.
-      if (node.label === 'Breakpoint') {
+      if (utilityKind(node) === 'Breakpoint') {
         const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap);
         for (const key of Object.keys(node.outputs))
           outputVarMap.set(`${nodeId}:${key}`, inputExpr);
@@ -188,13 +188,22 @@ function compileUtilityNode(
 
   const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
   return {
-    nodeId: node.id, nodeType: 'utility', funcName: node.label,
+    nodeId: node.id, nodeType: 'utility', funcName: utilityKind(node),
     variableName: varName,
     inputs: inputMap,
     outputs: new Map([[firstOutKey, varName]]),
     properties: {...node.properties},
     inputValues: {...node.inputValues},
   };
+}
+
+/** Stable utility node kind — the trailing segment of the registered type name
+ *  (`Constants/String` → `String`). Labels are user-editable (constant nodes
+ *  title themselves `const: <value>`), so emission dispatch must not read
+ *  `node.label`; it stays only a fallback for nodes created outside the
+ *  factory (tests). */
+function utilityKind(node: FlowNode): string {
+  return node.dgTypeName?.split('/').pop() ?? node.label;
 }
 
 function resolveInputExpr(

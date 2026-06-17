@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/usage-analysis",
   "author": {
-    "name": "Pavlo Polovyi",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
   "version": "2.5.1",
@@ -65,7 +65,7 @@
     "Administrators"
   ],
   "canView": [
-    "All users"
+    "Administrators"
   ],
   "category": "General",
   "meta": {

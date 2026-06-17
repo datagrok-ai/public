@@ -200,7 +200,6 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
 }
 
 export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimePipelineValidatorController {
-  public output: ValidationResult | undefined;
   public outline: PipelineOutline;
 
   constructor(args: PipelineValidatorControllerArgs) {
@@ -208,9 +207,10 @@ export class PipelineValidatorController extends ControllerBase<ValidationResult
     this.outline = args.outline;
   }
 
-  setValidation(validation?: ValidationResult) {
+  setValidation(name: string, validation?: ValidationResult) {
     this.checkIsClosed();
-    this.output = validation;
+    this.checkOutput(name);
+    this.outputs[name] = validation;
   }
 
   getOutline(): PipelineOutline {

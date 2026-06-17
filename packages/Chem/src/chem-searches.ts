@@ -17,17 +17,19 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {getMolSafe} from './utils/mol-creation_rdkit';
 import {_package} from './package';
 import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
-import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
+import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName,
+  getValuesChangedEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { filter } from 'rxjs/operators';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {filter} from 'rxjs/operators';
 
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
 }
 
-const DATA_CHANGED_TAG = 'dataChanged'
+const DATA_CHANGED_TAG = 'dataChanged';
+const DATA_CHANGED_SUBSCRIBED_TAG = 'dataChangedSubscribed';
 
 export const enum FILTER_TYPES {
   scaffold = 'scaffold',
@@ -39,15 +41,15 @@ const canonicalSmilesColName = 'canonicalSmiles';
 
 const currentSearchSmiles: {[key: string]: {[key: string]: string}} = {
   [FILTER_TYPES.scaffold]: {},
-  [FILTER_TYPES.substructure]: {}
+  [FILTER_TYPES.substructure]: {},
 };
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString, fingerprints);
-  const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
-  const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
+  const limit = Math.min(settings.limit ?? len, len);
+  const minScore = settings.minScore ?? 0.0;
   const sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
     const a1 = distances[i1];
     const a2 = distances[i2];
@@ -95,7 +97,8 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
-  const diversities = new Array(limit).fill('');
+  // Pre-allocated to the known length; every slot is written below so no need to .fill('').
+  const diversities = new Array<string>(limit);
 
   for (let i = 0; i < limit; i++)
     diversities[i] = molStringsColumn.get(indexes[diverseIndexes[i]]);
@@ -108,33 +111,57 @@ function invalidatedColumnKey(col: DG.Column): string {
   return col.dataFrame?.name + '.' + col.name;
 }
 
-function checkForSavedColumns(col: DG.Column, colTags: (Fingerprint | string) []): {[key: string | Fingerprint] : DG.Column<any>} {
+/**
+ * Subscribes (once per column) to value changes so that the set of edited row indexes is tracked
+ * in col.temp[DATA_CHANGED_TAG] and a per-column event is fired for interested consumers (e.g. the
+ * substructure filter).
+ */
+export function subscribeToColumnChanges(col: DG.Column): void {
+  if (col.temp[DATA_CHANGED_SUBSCRIBED_TAG])
+    return;
+  col.temp[DATA_CHANGED_SUBSCRIBED_TAG] = true;
+  col.temp[DATA_CHANGED_TAG] = null; // null = nothing changed
+  const valuesChangedEventName = getValuesChangedEventName(col.dataFrame?.name ?? '', col.name);
+  col.dataFrame?.onValuesChanged.pipe(filter((args: any) =>
+    args?.args?.column?.name === col.name && args?.args?.indexes?.length)).subscribe((args: any) => {
+    // accumulate edited row indexes into a sparse Set (cheap for large columns)
+    const changed: Set<number> = col.temp[DATA_CHANGED_TAG] ?? new Set<number>();
+    const indexes = args.args.indexes;
+    for (let i = 0; i < indexes.length; i++) {
+      if (indexes[i] < col.length)
+        changed.add(indexes[i]);
+    }
+    col.temp[DATA_CHANGED_TAG] = changed;
+    grok.events.fireCustomEvent(valuesChangedEventName, {indexes: Array.from(indexes as ArrayLike<number>)});
+  });
+}
 
-  //in case column has not been subsribed to onDataChange, then do it and set column value change counter to 0
-  if (col.temp[DATA_CHANGED_TAG] == null) {
-    col.temp[DATA_CHANGED_TAG] = 0;
-    col.dataFrame?.onDataChanged.pipe(filter((args: any) => {
-      return args?.args?.column?.name === col.name && args?.args?.indexes?.length
-    })).subscribe((e) => {
-      // every time values in column have been changed - increment counter. Counter > 0 means that we need to recalculate fps
-      col.temp[DATA_CHANGED_TAG]++;
-    });
-  }
+interface ISavedColumnsResult {
+  cols: {[key: string | Fingerprint]: DG.Column<any>};
+  changedRows: number[] | null; // null = nothing changed; otherwise the indexes of edited rows
+}
 
-  const colsArray: {[key: string | Fingerprint] : DG.Column<any>} = {};
+/**
+ * Returns the saved (cached) columns that exist for the given tags, together with the indexes of the
+ * rows edited since the last call (or null if none). The change set is consumed (reset) on return, so
+ * the caller is responsible for recomputing the affected rows. Subscribes to the column on first use.
+ */
+function checkForSavedColumns(col: DG.Column, colTags: (Fingerprint | string) []): ISavedColumnsResult {
+  subscribeToColumnChanges(col);
 
+  const changed: Set<number> | null = col.temp[DATA_CHANGED_TAG] ?? null;
+  col.temp[DATA_CHANGED_TAG] = null;
+
+  const cols: {[key: string | Fingerprint]: DG.Column<any>} = {};
   for (const colTag of colTags) {
     const savedColName = '~' + col.name + '.' + colTag;
-    if (col.dataFrame && col.dataFrame?.col(savedColName) && col.temp[DATA_CHANGED_TAG] === 0) {
-      const savedCol = col.dataFrame.columns.byName(savedColName);
-      colsArray[colTag] = savedCol;
-    }
+    if (col.dataFrame?.col(savedColName))
+      cols[colTag] = col.dataFrame.columns.byName(savedColName);
   }
 
-  // reset the data change flag
-  col.temp[DATA_CHANGED_TAG] = 0;
-
-  return colsArray;
+  // keep only in-range indexes; treat an empty result as "nothing changed" (null)
+  const inRange = changed ? Array.from(changed).filter((i) => i < col.length) : [];
+  return {cols, changedRows: inRange.length > 0 ? inRange : null};
 }
 
 function saveColumns(col: DG.Column, data: (Uint8Array | string | null)[][],
@@ -142,7 +169,6 @@ function saveColumns(col: DG.Column, data: (Uint8Array | string | null)[][],
   if (col.dataFrame) {
     for (let i = 0; i < data.length; i++)
       saveColumn(col, data[i], tags[i], colTypes[i]);
-
   }
 }
 
@@ -161,22 +187,49 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
 }
 
 /**
-* Creates columns with fingerprints and canonical smiles (if required) if haven't been created previously or
-*  molecular column has been changed
+* (Re)computes and saves fingerprint (and optionally canonical smiles) columns. When saved columns exist they
+* are reused, recomputing only the given changed rows; when there are no saved columns to reuse the whole
+* column is computed.
 * @async
 * @param {DG.Column} molCol - column to count fps for
 * @param {Fingerprint} fingerprintsType - Morgan or Pattern
-* @param {boolean} returnSmiles - optional parameter, if passed column with canonical smiles is returned
-additionally to fps
+* @param {boolean} returnSmiles - if true, canonical smiles are computed/saved alongside fps
+* @param {DG.Column | null} savedFpCol - existing saved fp column to reuse (null -> nothing to reuse -> full recompute)
+* @param {DG.Column | null} savedSmilesCol - existing saved canonical smiles column to reuse
+* @param {number[] | null} changedRows - rows to recompute when reusing saved columns (null -> nothing changed)
 * */
-async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint,
-  returnSmiles?: boolean): Promise<IFpResult> {
-  const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType, molCol.toList(), returnSmiles);
+async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint, returnSmiles: boolean,
+  savedFpCol: DG.Column | null, savedSmilesCol: DG.Column | null, changedRows: number[] | null): Promise<IFpResult> {
+  const rdKitService = await getRdKitService();
+  const canReuse = !!savedFpCol && (!returnSmiles || !!savedSmilesCol);
+
+  let fps: (Uint8Array | null)[];
+  let smiles: (string | null)[] | null;
+  if (!canReuse) {
+    // no saved columns to reuse -> compute the whole column
+    const fpRes = await rdKitService.getFingerprints(fingerprintsType, molCol.toList(), returnSmiles);
+    fps = fpRes.fps;
+    smiles = fpRes.smiles;
+  } else {
+    // reuse saved fps/canonical smiles, recompute only the changed rows (none -> pure reuse)
+    fps = savedFpCol!.toList();
+    smiles = returnSmiles ? savedSmilesCol!.toList() : null;
+    if (changedRows) {
+      const changedMols = changedRows.map((i) => molCol.get(i));
+      const recomputed = await rdKitService.getFingerprints(fingerprintsType, changedMols, returnSmiles);
+      for (let k = 0; k < changedRows.length; k++) {
+        fps[changedRows[k]] = recomputed.fps[k];
+        if (returnSmiles && recomputed.smiles)
+          smiles![changedRows[k]] = recomputed.smiles[k];
+      }
+    }
+  }
+
   returnSmiles ?
-    saveColumns(molCol, [fpRes.fps, fpRes.smiles!], [fingerprintsType, canonicalSmilesColName],
+    saveColumns(molCol, [fps, smiles!], [fingerprintsType, canonicalSmilesColName],
       [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-    saveColumns(molCol, [fpRes.fps], [fingerprintsType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
-  return fpRes;
+    saveColumns(molCol, [fps], [fingerprintsType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+  return {fps, smiles};
 }
 
 async function getUint8ArrayFingerprints(
@@ -184,21 +237,26 @@ async function getUint8ArrayFingerprints(
   returnSmiles = false): Promise<IFpResult> {
   await chemBeginCriticalSection();
   try {
-    const colsArray = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
-    const fgsCheck = colsArray[fingerprintsType];
+    if (molCol.semType !== DG.SEMTYPE.MOLECULE && molCol.dataFrame)
+      await molCol.dataFrame.meta.detectSemanticTypes();
+
+    const {cols, changedRows} = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
+    const noChanges = changedRows === null;
+    const fgsCheck = cols[fingerprintsType] ?? null;
     if (returnSmiles) {
-      const smilesCheck = colsArray[canonicalSmilesColName];
-      if (fgsCheck && smilesCheck)
+      const smilesCheck = cols[canonicalSmilesColName] ?? null;
+      if (fgsCheck && smilesCheck && noChanges)
         return {fps: fgsCheck.toList(), smiles: smilesCheck.toList()};
       else {
-        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, returnSmiles);
+        const fpResult = await invalidateAndSaveColumns(
+          molCol, fingerprintsType, true, fgsCheck, smilesCheck, changedRows);
         return {fps: fpResult.fps, smiles: fpResult.smiles};
       }
     } else {
-      if (fgsCheck)
+      if (fgsCheck && noChanges)
         return {fps: fgsCheck.toList(), smiles: null};
       else {
-        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType);
+        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, false, fgsCheck, null, changedRows);
         return {fps: fpResult.fps, smiles: null};
       }
     }
@@ -219,7 +277,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
       _chemGetSimilarities(queryMolString, fingerprints)) : null;
 }
@@ -241,7 +299,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
   assure.notNull(queryMolString, 'queryMolString');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
-  return queryMolString.length != 0 ?
+  return queryMolString.length !== 0 ?
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
 }
 
@@ -298,15 +356,38 @@ export async function chemSubstructureSearchLibrary(
     };
 
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
-    const savedColsArray = checkForSavedColumns(molStringsColumn, [canonicalSmilesColName, fpType]);
-    invalidateCacheFlag = !savedColsArray[canonicalSmilesColName] || !savedColsArray[fpType];
+    const {cols: savedCols, changedRows} = checkForSavedColumns(molStringsColumn, [canonicalSmilesColName, fpType]);
+    const savedFpCol = savedCols[fpType] ?? null;
+    const savedSmilesCol = savedCols[canonicalSmilesColName] ?? null;
+    const hasSaved = !!savedFpCol && (columnIsCanonicalSmiles || !!savedSmilesCol);
 
-    const canonicalSmilesList = savedColsArray[canonicalSmilesColName]?.toList() ??
-      new Array<string | null>(molStringsColumn.length).fill(null);
-    const fgsList = savedColsArray[fpType]?.toList() ??
-      new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+    // in case there are no saved columns -> recompute all
+    const recomputeAll = !hasSaved;
+    // fps/canonical smiles are recomputed ONLY for changed rows. includeMask is unrelated to changes
+    // (e.g. the scaffold tree passes the parent scaffold's matches to limit the search) and must not
+    // trigger fp recompute — it only affects the substructure search itself.
+    const rowsToRecompute: number[] = !recomputeAll && changedRows ? changedRows : [];
 
-    if (invalidateCacheFlag) //invalidating cache in case column has been changed
+    let canonicalSmilesList: (string | null)[];
+    let fgsList: (Uint8Array | null)[];
+    if (recomputeAll) {
+      // no saved columns: pass empty lists; searchSubstructureWithFps computes fps lazily during the search
+      canonicalSmilesList = new Array<string | null>(molStringsColumn.length).fill(null);
+      fgsList = new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+    } else if (rowsToRecompute.length > 0) {
+      // reuse saved fps/canonical smiles, recompute only the changed rows (persisted by invalidateAndSaveColumns)
+      const res = await invalidateAndSaveColumns(molStringsColumn, fpType, !columnIsCanonicalSmiles,
+        savedFpCol, savedSmilesCol, rowsToRecompute);
+      fgsList = res.fps;
+      canonicalSmilesList = res.smiles ?? new Array<string | null>(molStringsColumn.length).fill(null);
+    } else {
+      // nothing changed: reuse saved fps/canonical smiles as-is
+      fgsList = savedFpCol!.toList();
+      canonicalSmilesList = savedSmilesCol?.toList() ??
+        new Array<string | null>(molStringsColumn.length).fill(null);
+    }
+
+    if (recomputeAll || invalidateCacheFlag) //invalidating whole cache on column switch or full recompute
       await rdKitService.invalidateCache();
 
     const result: SubstructureSearchWithFpResult = {
@@ -327,7 +408,7 @@ export async function chemSubstructureSearchLibrary(
     const saveProcessedColumns = () => {
       try {
         //save procecced columns only in case at least one fp batch has been calculated.
-        // Otherwise, we just used existing data and do not need to save
+        // (rows recomputed for individual edits are already persisted by invalidateAndSaveColumns)
         if (numOfCalculatedFpBatches) {
           !columnIsCanonicalSmiles ?
             saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
@@ -415,7 +496,7 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, 
   try {
     mol = getMolSafe(molString, {}, getRdKitModule()).mol;
     if (mol) {
-      let fp = getRDKitFpAsUint8Array(mol, fingerprint);
+      const fp = getRDKitFpAsUint8Array(mol, fingerprint);
       return rdKitFingerprintToBitArray(fp) as BitArray;
     } else
       throw new Error(`Chem | Possibly a malformed molString: ${molString}`);

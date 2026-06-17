@@ -1,7 +1,8 @@
 ---
 title: FAQ
 sidebar_position: 2
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ## Quick reference

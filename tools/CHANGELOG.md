@@ -1,5 +1,19 @@
 # Datagrok-tools changelog
 
+## 6.3.3 (2026-06-16)
+
+* Fixed Celery Docker image generation — the image wasn't built locally on publish.
+
+## 6.3.2 (2026-06-15)
+
+* `func-gen` webpack plugin — generated RichFunctionView model inputs now use the script-form names (argument bounds/step `_t0`/`_t1`/`_h`, loop count `_count`) instead of the deprefixed forms, so the run, fitting, and sensitivity-analysis paths share one set of input names with diff-grok's pipeline. Fixes `Inconsistent inputs: "_t0" is missing` when starting fitting/SA from a Rich Function View.
+* `func-gen` webpack plugin — the generated RichFunctionView model output annotation appends the `DiffStudio Facet` viewer (last), alongside Grid and Line chart.
+* `grok stresstest` — run the ApiTests Node test runner directly via tsx (`src/package-test-node.ts`) instead of a compiled `dist-node` bundle; dropped the obsolete `npm run build-node` step and the `tsconfig-paths-bootstrap.js` / `dist-node` invocation.
+
+## 6.3.0 (2026-06-12)
+
+* `func-gen` webpack plugin — generates RichFunctionView model wrappers from Diff Studio `#meta.role: model` `.ivp` files. Inputs/output are derived from the parsed IVP, `#meta.icon` becomes the model icon, and `#meta.inputs` lookups are emitted as real `propagateChoice: all` inputs (rendered natively by the Rich Function View, unlike `meta.inputs`). Ships a prebuilt, tree-shaken CJS bundle of diff-grok's IVP parser (`plugins/ivp-parser.bundle.cjs`); regenerate with `npm run update:ivp-parser`.
+
 ## 6.2.6 (2026-05-26)
 
 * `grok s tables upload` — accepts `.d42` binary blobs in addition to `.csv`. Content-Type is auto-detected from the file extension (`application/octet-stream` for d42, `text/csv` otherwise); server content-negotiates and persists either form against the same `/public/v1/tables/{name}` endpoint.

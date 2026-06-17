@@ -4,6 +4,7 @@ import {PackageFunctions} from '../package';
 import {RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getFirstNSymbols, isMolBlock} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 export async function drawMoleculeLabels(
   table: DG.DataFrame, molCol: DG.Column, sp: DG.ScatterPlotViewer, maxPoints: number, smallMarkerSize: number = -1,
@@ -89,7 +90,7 @@ export async function drawMoleculeLabels(
         const canvasHeight = canvasWidth * 0.7;
         const imageHost = ui.canvas(canvasWidth, canvasHeight);
         const mStr = molCol.get(pointsOnScreenIdxs[i]);
-        if (mStr && !isMolBlock(mStr) && mStr.length > 5000) {
+        if (mStr && !isMolBlock(mStr) && mStr.length > MAX_SMILES_LENGTH) {
           // throw new Error('SMILES string longer than 5000 characters not supported')
           ctxMain.closePath();
           continue;

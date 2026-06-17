@@ -4,7 +4,7 @@
 [![Docs: Dimensionality Reduction](https://img.shields.io/badge/docs-Dimensionality%20Reduction-green.svg)](https://datagrok.ai/help/explore/dim-reduction)
 [![Docs: Cluster Data](https://img.shields.io/badge/docs-Cluster%20Data-yellow.svg)](https://datagrok.ai/help/explore/cluster-data)
 [![Docs: Multivariate Analysis](https://img.shields.io/badge/docs-Multivariate%20Analysis-red.svg)](https://datagrok.ai/help/explore/multivariate-analysis)
-[![Docs: ANOVA](https://img.shields.io/badge/docs-ANOVA-purple.svg)](https://datagrok.ai/help/explore/anova)
+[![Docs: Group Comparison](https://img.shields.io/badge/docs-Group%20Comparison-purple.svg)](https://datagrok.ai/help/explore/group-comparison)
 [![Tutorial: Multivariate Analysis](https://img.shields.io/badge/tutorial-Multivariate%20Analysis-olive.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/MultivariateAnalysis)
 
 EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides the following exploratory data analysis and machine learning tools:
@@ -22,8 +22,10 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * [Softmax](https://en.wikipedia.org/wiki/Multinomial_logistic_regression) classifier
   * [PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression) regression
   * [Gradient Boosting](https://en.wikipedia.org/wiki/Gradient_boosting)
-* Analysis of variances (ANOVA)
-  * One-way ANOVA ([link](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
+* Group comparison
+  * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
+  * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
+  * Control comparisons against a single control ([Dunnett's test](https://en.wikipedia.org/wiki/Dunnett%27s_test) and Holm-corrected Welch's t-tests)
 * Missing data imputation
   * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))
 * Multi-objective optimization

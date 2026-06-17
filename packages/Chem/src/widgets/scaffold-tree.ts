@@ -18,6 +18,7 @@ import {SCAFFOLD_TREE_HIGHLIGHT, SubstructureSearchType} from '../constants';
 import {Fingerprint} from '../utils/chem-common';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 let attached = false;
 let scaffoldTreeId = 0;
@@ -259,12 +260,13 @@ function getVisibleNodes(thisViewer: ScaffoldTreeViewer, includeExpanded: boolea
 
 function ensureNodeBitset(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, forceRecalc: boolean): Promise<DG.BitSet | null> {
   const v = value(group);
+  const fresh = v.bitsetCalculated && v.bitset != null && !thisViewer.isBitsetStale(group);
 
   if (forceRecalc)
     v.bitsetCalculated = false;
   else {
-    if (v.bitsetCalculated)
-      return Promise.resolve(v.bitset ?? null);
+    if (fresh)
+      return Promise.resolve(v.bitset);
     if (v.bitsetPromise)
       return v.bitsetPromise;
   }
@@ -495,7 +497,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     visibleNodes.forEach((group) => {
       if (isOrphans(group))
         return;
-      updateLabel(thisViewer, group, thisViewer.updateBitset(group));
+      updateLabel(thisViewer, group, thisViewer.isBitsetStale(group));
     });
   }
 
@@ -1466,11 +1468,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   selectTableRows(group: TreeViewGroup, flag: boolean): void {
-    const bitset = value(group).bitset!;
+    if (this.molColumn === null)
+      return;
+    const bitset = value(group).bitset;
+    if (!bitset || bitset.length !== this.molColumn.dataFrame.rowCount) {
+      ensureNodeBitset(this, group, false).then(() => this.selectTableRows(group, flag));
+      return;
+    }
+    const selection = this.molColumn.dataFrame.selection;
     if (flag)
-      this.molColumn?.dataFrame.selection.or(bitset);
+      selection.or(bitset);
     else
-      this.molColumn?.dataFrame.selection.andNot(bitset);
+      selection.andNot(bitset);
   }
 
   updateFilters(triggerRequestFilter = true): void {
@@ -1483,13 +1492,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.bitset === null || this.bitset.length !== this.molColumn.length) {
-      if (this.bitsetUpdateInProgress) {
-        grok.shell.warning('Filtering starts after the bitset is updated.');
-        return;
-      }
-      this.bitset = DG.BitSet.create(this.molColumn.length);
+    const staleNodes = checkedNodes.filter((node) => {
+      const bs = value(node).bitset;
+      return !bs || bs.length !== this.molColumn!.length;
+    });
+    if (staleNodes.length > 0) {
+      Promise.all(staleNodes.map((node) => ensureNodeBitset(this, node as TreeViewGroup, false)))
+        .then(() => this.updateFilters(triggerRequestFilter));
+      return;
     }
+
+    if (this.bitset === null || this.bitset.length !== this.molColumn.length)
+      this.bitset = DG.BitSet.create(this.molColumn.length);
 
     this.bitset.setAll(this.bitOperation === BitwiseOp.AND, false);
 
@@ -1896,7 +1910,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
-  updateBitset(node: DG.TreeViewNode | null): boolean {
+  isBitsetStale(node: DG.TreeViewNode | null): boolean {
     if (!node || !this.dataFrame)
       return false;
 
@@ -2265,7 +2279,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   waitForLoaderToRemove(node: DG.TreeViewNode): Promise<void> {
     return new Promise((resolve) => {
       const interval = setInterval(() => {
-        if (!value(node).labelDiv?.querySelector('.chem-scaffold-tree-loader') && !this.updateBitset(node)) {
+        if (!value(node).labelDiv?.querySelector('.chem-scaffold-tree-loader') && !this.isBitsetStale(node)) {
           clearInterval(interval);
           resolve();
         }
@@ -2462,8 +2476,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
 
-      const updateBitset = this.updateBitset(this.tree.currentItem ?? this.tree.items[0]);
-      await updateVisibleNodes(thisViewer, {updateBitset: updateBitset, includeExpanded: true, includeChecked: true});
+      const stale = this.isBitsetStale(this.tree.currentItem ?? this.tree.items[0]);
+      await updateVisibleNodes(thisViewer, {updateBitset: stale, includeExpanded: true, includeChecked: true});
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
     }));
@@ -2842,8 +2856,8 @@ class SketcherDialogWrapper {
   normalizeMolStr(molStr: string): string {
     let mol;
     try {
-      if (!grok.chem.isMolBlock(molStr) && molStr?.length > 5000)
-        throw new Error('SMILES string longer than 5000 characters not supported');
+      if (!grok.chem.isMolBlock(molStr) && molStr?.length > MAX_SMILES_LENGTH)
+        throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
       mol = _rdKitModule.get_mol(molStr);
       if (mol.has_coords() === 2) {
         mol.normalize_depiction(0);

@@ -28,7 +28,7 @@ const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
 export class FuncNode extends FlowNode {
   constructor(func: DG.Func) {
     const role = getRole(func);
-    const colors = getNodeColors(role);
+    const colors = getNodeColors(role, func.name);
     const qualifiedName = getFuncQualifiedName(func);
     const displayName = getFuncDisplayName(func) || func.name;
 

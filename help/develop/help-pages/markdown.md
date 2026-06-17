@@ -3,7 +3,8 @@ title: Markdown writing guide
 sidebar_label: Markdown
 unlisted: false
 sidebar_position: 2
-format: mdx
+mdx:
+  format: mdx
 keywords:
  - markdown
  - wiki

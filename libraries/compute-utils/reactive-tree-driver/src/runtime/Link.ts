@@ -385,11 +385,11 @@ export class Link {
       return;
     }
     if (controller instanceof PipelineValidatorController) {
-      for (const matched of Object.values(this.matchInfo.outputs)) {
-        for (const target of matched) {
-          const item = state.getNode([...this.prefix, ...target.path]).getItem();
+      for (const [outputAlias, nodesData] of outputsEntries) {
+        for (const [, , node] of nodesData) {
+          const item = node.getItem();
           if (item instanceof PipelineNodeBase)
-            item.setPipelineValidation(this.uuid, controller.output);
+            item.setPipelineValidation(this.uuid, controller.outputs[outputAlias]);
           else
             reportError('warning', `link:${this.matchInfo.spec.id}`, `pipelineValidator \`to\` target ${item.uuid} is not a pipeline node — skipped`, this.logger, [this.matchInfo.spec.id]);
         }

@@ -11,6 +11,8 @@ import {addPrefixToEachColumnName} from './eda-ui';
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
+import {runTwoSampleTTest} from './ttest/ttest-ui';
+import {runControlComparisons} from './control-comparisons/control-comparisons-ui';
 
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
@@ -354,12 +356,32 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'ML | Analyze | ANOVA...',
+    'top-menu': 'ML | Analyze | Group Comparison | T-test...',
+    'name': 'T-test',
+    'description': 'Two-sample t-test (Welch or Student) compares the means of a feature between two groups.',
+  })
+  static tTest(): void {
+    runTwoSampleTTest();
+  }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Group Comparison | ANOVA...',
     'name': 'ANOVA',
     'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
   })
   static anova(): void {
     runOneWayAnova();
+  }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Group Comparison | Control Comparisons...',
+    'name': 'Control comparisons',
+    'description': 'Compare several groups against a single control (Dunnett\'s test or Holm-corrected Welch\'s t-tests).',
+  })
+  static controlComparisons(): void {
+    runControlComparisons();
   }
 
 

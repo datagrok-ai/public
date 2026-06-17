@@ -3,7 +3,8 @@ title: "Supported info panes"
 keywords:
  - info panel
  - info pane
-format: mdx
+mdx:
+  format: mdx
 sidebar_position: 2
 toc_max_heading_level: 4
 unlisted: false

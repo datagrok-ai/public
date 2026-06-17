@@ -144,46 +144,72 @@ function pickRnaAlphabetFromHelm(seqCol: DG.Column<string>, seqHelper: ISeqHelpe
   for (let rowI = 0; rowI < seqCol.length; ++rowI) {
     const seqSS = sh.getSplitted(rowI);
     for (let i = 0; i < seqSS.length; ++i) {
-      // Sugars sit at index i % 3 === 0 in the HELM RNA triples layout.
-      if (i % 3 !== 0) continue;
-      const sym = seqSS.getCanonical(i);
-      if (sym === C.DEOXYRIBOSE.symbol) return ALPHABET.DNA;
+      // Any deoxyribose sugar anywhere in the column → DNA. Don't rely on a
+      // fixed triple index (i % 3 === 0): a leading phosphate, repeated
+      // phosphates, or mid-chain linkers shift every monomer position, so the
+      // sugar is no longer guaranteed to sit at index 0 modulo 3.
+      if (seqSS.getCanonical(i) === C.DEOXYRIBOSE.symbol) return ALPHABET.DNA;
     }
   }
   return ALPHABET.RNA;
 }
 
-// Returns 'r1-only' if the lib monomer has a single R-group labeled R1
-// (i.e. a 3'-end terminal modifier like GalNAc), 'r2-only' if it has only
-// R2 (a 5'-end terminal modifier like Chol), and null otherwise.
+// Structural role of a single HELM RNA monomer, derived from its library
+// definition rather than its position. The caller resolves 'terminal' to
+// TERMINAL_5P / TERMINAL_3P from the monomer's position in the row.
+type RnaRoleClass =
+  NucleotideRole.SUGAR | NucleotideRole.BASE | NucleotideRole.PHOSPHATE | 'terminal' | null;
+
+// Classify a HELM RNA monomer by its library properties (monomer type +
+// R-groups), NOT by its position in the sequence:
+//   - Branch monomers (A/C/G/U/T and modified bases) → BASE. They carry a
+//     single R1 that attaches to the preceding sugar's R3 branch point.
+//   - Backbone monomers carrying a branch R-group (R3) → SUGAR (ribose,
+//     deoxyribose, and modified sugars such as fl2r / lna / m all expose
+//     R1/R2/R3).
+//   - Backbone monomers with two chain-extending R-groups and no branch →
+//     PHOSPHATE / linker (p, sp, Rsp, …). This is what makes a leading
+//     phosphate, several phosphates in a row, or a linker in the middle of
+//     the chain just work: each is recognised as a chain-extending unit,
+//     never mistaken for a sugar.
+//   - Single-R-group non-Branch monomers (Chol / GalNAc / Bio, which the
+//     library marks monomerType='Undefined') → 'terminal' chain-end
+//     modifiers. The caller decides 5' vs 3' from the boundary.
+//   - Unknown symbol (absent from lib) → null.
 //
-// IMPORTANT: nucleobases (A/C/G/U/T and their modified forms) are
-// monomerType='Branch' with a single R1, but they are NOT terminal
-// modifiers — they're branch attachments to the sugar's R3. We exclude
-// Branch monomers explicitly so the splitter's i-th-base position keeps
-// its BASE role.
-function classifyTerminal(
+// Returning roles from chemistry instead of index removes the rigid
+// "[sugar, base, phosphate] repeated" assumption that produced NaN
+// coordinates whenever a phosphate did not sit where the triple index
+// expected it.
+function classifyRnaRole(
   monomerLib: IMonomerLibBase, polymerType: PolymerType, symbol: string
-): 'r1-only' | 'r2-only' | null {
+): RnaRoleClass {
   const m = monomerLib.getMonomer(polymerType, symbol);
-  if (!m || !m.rgroups || m.rgroups.length !== 1) return null;
-  if (m[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH) return null;
-  const lbl = m.rgroups[0].label;
-  if (lbl === 'R1') return 'r1-only';
-  if (lbl === 'R2') return 'r2-only';
-  return null;
+  if (!m) return null;
+  if (m[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH)
+    return NucleotideRole.BASE;
+  const rgroups = m.rgroups ?? [];
+  // A chain-end modifier exposes exactly one attachment point.
+  if (rgroups.length <= 1) return 'terminal';
+  // A sugar exposes a branch attachment (R3) for the nucleobase; a
+  // phosphate / linker only has chain-extending R-groups.
+  const hasBranchR = rgroups.some((rg) => rg.label === 'R3') || rgroups.length >= 3;
+  return hasBranchR ? NucleotideRole.SUGAR : NucleotideRole.PHOSPHATE;
 }
 
-// For HELM RNA rows, the splitter emits sugar/base/phosphate triples in
-// that fixed order (per `RNA_HELM_TRIPLET_MONOMER_REG`). Tag each entry
-// with its role from its index, then promote first / last entries to
-// TERMINAL_5P / TERMINAL_3P when the lib says they are single-R-group
-// terminal modifiers (Chol / GalNAc-style monomers).
+// Assign a NucleotideRole to every monomer of every HELM RNA row by
+// classifying each monomer from the library (see `classifyRnaRole`), then
+// resolving single-R-group terminal modifiers to TERMINAL_5P / TERMINAL_3P
+// based on the boundary they sit at.
 //
-// Validation: after stripping the terminal positions the remaining "core"
-// length must be 0, 3K, or 3K+2 (the no-trailing-P variant). Rows that
-// don't fit fall back to bases-only mode by returning undefined for that
-// row.
+// This is intentionally position-agnostic for the backbone: sugars, bases
+// and phosphates are tagged by what they ARE, so an arbitrary number of
+// phosphates / linkers may appear at the 5' end, between nucleotides, or
+// anywhere else, and still be assembled as a connected chain.
+//
+// A row falls back to bases-only mode (undefined) only when it cannot be
+// laid out as a linear chain: an unknown monomer, or a single-R-group
+// terminal modifier appearing mid-chain (it has nothing to extend to).
 function buildRolesForHelmRna(
   monomerSequencesArray: ISeqMonomer[][],
   monomerLib: IMonomerLibBase,
@@ -194,33 +220,29 @@ function buildRolesForHelmRna(
     const row = monomerSequencesArray[rowI];
     if (row.length === 0) { out[rowI] = undefined; continue; }
 
-    // Detect terminals at row boundaries. Conventionally the start would
-    // require r2-only (Chol-style) and the end would require r1-only
-    // (GalNAc/Bio-style), but HELM authors sometimes put the "wrong" one
-    // at either end. We accept ANY single-R-group non-Branch monomer at
-    // each boundary; getMolGraph then swaps the rNodes so the real R
-    // ends up where the role expects it.
-    const startTerm = row.length >= 1 &&
-      classifyTerminal(monomerLib, polymerType, row[0].symbol) !== null;
-    // Don't double-count when row.length === 1 and the single monomer
-    // already became a 5'-terminal: it doesn't ALSO get treated as a 3'.
-    const endTerm = row.length >= 1 && !(startTerm && row.length === 1) &&
-      classifyTerminal(monomerLib, polymerType, row[row.length - 1].symbol) !== null;
-
-    const coreLen = row.length - (startTerm ? 1 : 0) - (endTerm ? 1 : 0);
-    if (coreLen < 0 || !(coreLen % 3 === 0 || coreLen % 3 === 2)) {
-      out[rowI] = undefined; continue;
+    const classes: RnaRoleClass[] = new Array(row.length);
+    let classifiable = true;
+    for (let i = 0; i < row.length; ++i) {
+      classes[i] = classifyRnaRole(monomerLib, polymerType, row[i].symbol);
+      if (classes[i] === null) { classifiable = false; break; }
     }
+    if (!classifiable) { out[rowI] = undefined; continue; }
 
     const roles: NucleotideRole[] = new Array(row.length);
-    let coreI = 0;
+    let fellBack = false;
     for (let i = 0; i < row.length; ++i) {
-      if (i === 0 && startTerm) { roles[i] = NucleotideRole.TERMINAL_5P; continue; }
-      if (i === row.length - 1 && endTerm) { roles[i] = NucleotideRole.TERMINAL_3P; continue; }
-      roles[i] = (coreI % 3) as NucleotideRole;
-      coreI++;
+      if (classes[i] === 'terminal') {
+        // A single-R-group modifier can only cap a chain end. HELM authors
+        // sometimes put the "wrong" one at either boundary (e.g. GalNAc with
+        // only R1 at the 5' end); getMolGraph swaps the rNodes so the real
+        // R lands where the role expects it.
+        if (i === 0) roles[i] = NucleotideRole.TERMINAL_5P;
+        else if (i === row.length - 1) roles[i] = NucleotideRole.TERMINAL_3P;
+        else { fellBack = true; break; }
+      } else
+        roles[i] = classes[i] as NucleotideRole;
     }
-    out[rowI] = roles;
+    out[rowI] = fellBack ? undefined : roles;
   }
   return out;
 }

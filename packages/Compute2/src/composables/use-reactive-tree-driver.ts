@@ -62,6 +62,7 @@ export function useReactiveTreeDriver(
   const states = Vue.reactive({
     calls: {} as Record<string, FuncCallStateInfo | undefined>,
     validations: {} as Record<string, Record<string, ValidationResult> | undefined>,
+    pipelineValidations: {} as Record<string, ValidationResult | undefined>,
     consistency: {} as Record<string, Record<string, ConsistencyInfo> | undefined>,
     meta: {} as Record<string, Record<string, BehaviorSubject<any>> | undefined>,
     descriptions: {} as Record<string, Record<string, string | string[]> | undefined>,
@@ -95,6 +96,16 @@ export function useReactiveTreeDriver(
     bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.validations[k] = val ? Vue.markRaw(val) : undefined;
+  }));
+
+  useSubscription(driver.currentPipelineValidations$.pipe(
+    switchMap((data) => {
+      states.pipelineValidations = {};
+      return makeMergedItems(data);
+    }),
+    bufferKeysDuringLock(globalLock$),
+  ).subscribe(([k, val]) => {
+    states.pipelineValidations[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentConsistency$.pipe(

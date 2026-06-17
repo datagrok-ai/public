@@ -39,14 +39,14 @@ export class SearchBaseViewer extends DG.JsViewer {
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
         .subscribe((_: any) => {
           if (!this.gridSelect)
-            this.render(compute)
+            this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
-      this.targetColumnName ??= this.dataFrame.columns.bySemType(this.semType)!.name;
-      this.targetColumn = this.dataFrame.col(this.targetColumnName)!;
+      this.targetColumnName ??= this.dataFrame.columns.bySemType(this.semType)?.name ?? '';
+      this.targetColumn = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) ?? undefined : undefined;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
     }
     this.render();
@@ -65,7 +65,7 @@ export class SearchBaseViewer extends DG.JsViewer {
   }
 
   private debounceTimer: any = null;
-  private debouncedRender (computeData = true) {
+  private debouncedRender(computeData = true) {
     if (this.debounceTimer)
       clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
@@ -79,6 +79,11 @@ export class SearchBaseViewer extends DG.JsViewer {
 
   protected render(computeData = true): void {
     this.renderPromise = this.renderPromise.then(async () => {
+      if (this.dataFrame && !this.targetColumn) {
+        ui.empty(this.root);
+        this.root.appendChild(ui.divText(`No ${this.semType} column available in the table.`, 'd4-viewer-error'));
+        return;
+      }
       this.computeRequested = this.computeRequested || computeData;
       await this.renderInt(computeData);
     });

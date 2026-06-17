@@ -154,7 +154,13 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.newId();
         await historyUtils.saveRun(currentFuncCall.value);
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
-        Vue.triggerRef(currentFuncCall);
+        // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
+        // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
+        // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
+        const fc = currentFuncCall.value;
+        const modelName = fc.func?.friendlyName ?? fc.func?.name;
+        setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
+        searchParams.id = fc.id;
       });
       dialog.show({center: true, width: 500});
     };

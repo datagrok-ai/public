@@ -13,6 +13,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
+import {getCustomExports} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
@@ -66,6 +67,27 @@ export function findTreeNodeByPath(pathSegments: number[], state: PipelineState)
     pathSegments,
   }: undefined;
 };
+
+// Returns a uuid guaranteed to exist in `tree`. Keeps the current selection if
+// it is still alive; otherwise climbs the old positional path to the nearest
+// surviving ancestor (handles a removed last child resolving out of bounds);
+// otherwise falls back to root. Never returns a dead uuid.
+export function resolveChosenUuid(
+  currentUuid: string | undefined,
+  tree: PipelineState,
+  fallbackPath?: number[],
+): string {
+  if (currentUuid && findNodeWithPathByUuid(currentUuid, tree))
+    return currentUuid;
+  let path = fallbackPath ? [...fallbackPath] : [];
+  while (path.length > 1) {
+    const byPath = findTreeNodeByPath(path, tree);
+    if (byPath)
+      return byPath.state.uuid;
+    path = path.slice(0, -1);
+  }
+  return tree.uuid;
+}
 
 export function findTreeNodeParrent(uuid: string, state: PipelineState): PipelineState | undefined {
   const notVisitedStates = [state];
@@ -297,6 +319,19 @@ function getExportName(
 
 export function setDifference<T>(a: Set<T>, b: Set<T>) {
   return new Set(Array.from(a).filter((item) => !b.has(item)));
+}
+
+/** Resolves the custom export named `exportName` declared on the funcCall's function
+ *  (via `meta.customExports`) and applies it, passing the funcCall through. */
+export async function applyCustomExport(
+  fc: DG.FuncCall,
+  exportName: string,
+  args: Record<string, unknown> = {},
+): Promise<unknown> {
+  const item = getCustomExports(fc.func).find((x) => x.name === exportName);
+  if (!item)
+    throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+  return DG.Func.byName(item.function).apply({funcCall: fc, ...args});
 }
 
 export function applyDefaultGridFloatFormat(viewer: DG.Viewer | undefined, type: string) {

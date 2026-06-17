@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "6.2.6",
+  "version": "6.3.3",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -32,6 +32,7 @@
     "prepublishOnly": "babel bin --extensions .ts -d bin",
     "babel": "babel bin --extensions .ts -d bin",
     "build": "babel bin --extensions .ts -d bin",
+    "update:ivp-parser": "esbuild plugins/ivp-parser.entry.mjs --bundle --format=cjs --platform=node --alias:diff-grok=../libraries/compute-utils/node_modules/diff-grok --outfile=plugins/ivp-parser.bundle.cjs",
     "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
@@ -66,6 +67,7 @@
     "@babel/cli": "^7.23.4",
     "@babel/core": "^7.23.7",
     "@babel/plugin-proposal-decorators": "^7.23.7",
+    "esbuild": "^0.27.7",
     "@babel/plugin-transform-runtime": "^7.23.7",
     "@babel/preset-env": "^7.23.8",
     "@babel/preset-typescript": "7.15.0",

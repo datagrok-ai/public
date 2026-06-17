@@ -6,7 +6,8 @@ keywords:
  - Console
  - Variables
  - Macros
-format: mdx
+mdx:
+  format: mdx
 sidebar_position: 1
 unlisted: true
 ---
