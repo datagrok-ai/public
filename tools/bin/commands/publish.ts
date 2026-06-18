@@ -1,5 +1,4 @@
-// @ts-ignore
-import archiver from 'archiver-promise';
+import archiver from 'archiver';
 import crypto from 'crypto';
 import fs from 'fs';
 // @ts-ignore

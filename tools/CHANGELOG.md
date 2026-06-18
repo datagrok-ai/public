@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 6.4.0 (2026-06-18)
+
+* Dependencies: sanitized and updated all dependencies; `npm install` is now warning-free and `npm audit` reports 0 vulnerabilities (was 24).
+* Dependencies: migrated linting to ESLint 9 flat config (`eslint.config.mjs` + `typescript-eslint` + `@stylistic`), dropping the archived `eslint-config-google`.
+* Dependencies: upgraded Puppeteer to v24 and migrated to its native `page.screencast()` for `--record`, removing `puppeteer-screen-recorder` and the deprecated `fluent-ffmpeg`.
+* Dependencies: replaced `archiver-promise` with `archiver` directly, and replaced `@babel/cli` with a small `@babel/core` build script (`build.js`) to drop deprecated transitive packages (glob@7, inflight).
+
 ## 6.3.3 (2026-06-16)
 
 * Fixed Celery Docker image generation — the image wasn't built locally on publish.
