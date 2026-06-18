@@ -5,172 +5,268 @@
   "viewStateMap": {
     "containerType": "fill",
     "state": {
-      "width": 896,
-      "height": 642,
+      "width": 840,
+      "height": 737,
       "documentManager": true
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 896,
-          "height": 642,
+          "width": 840,
+          "height": 737,
           "element": {
-            "id": "d6ab18c0-5970-11e9-dcf2-45fc8bd20892",
+            "id": "48f6a9e0-48b0-11f1-847f-2b171a6233ad",
             "type": "Grid",
             "look": {
-              "#type": "HeatMapLook",
+              "#type": "GridLook",
               "rowHeight": 100,
-              "allowColumnMenu": true,
               "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
               "columns": [
+                {
+                  "width": 36,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
                 {
                   "width": 200,
                   "columnName": "smiles",
-                  "cellType": "string"
+                  "cellType": "Molecule",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 60,
                   "columnName": "ID",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "Mol Wt.",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.00000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 66,
                   "columnName": "Plate #",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 50,
                   "columnName": "Row",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "Column",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 64,
                   "columnName": "LC/MS",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 65,
                   "columnName": "LD(50)",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 112,
                   "columnName": "In-vivo Activity",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 115,
                   "columnName": "Assay #1(IC50)",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 119,
                   "columnName": "Assay #2 (IC50)",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 71,
                   "columnName": "Efficacy",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 67,
                   "columnName": "Kd #1",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 75,
                   "columnName": "Kd #2",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 105,
                   "columnName": "Half life (min)",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 107,
                   "columnName": "Bioavailability",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 62,
                   "columnName": "cLogP",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 53,
                   "columnName": "Pka",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "R1 fmla",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "R2 fmla",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "R3 fmla",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 70,
                   "columnName": "R4 fmla",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 49,
                   "columnName": "2Ka",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 49,
                   "columnName": "S5",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 49,
                   "columnName": "T1",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 49,
                   "columnName": "1Cv",
-                  "cellType": "number"
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 },
                 {
                   "width": 92,
                   "columnName": "Core_id",
-                  "cellType": "string"
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
                 }
               ]
-            }
+            },
+            "title": "Grid",
+            "default": true
           }
         },
-        "children": [
-
-        ]
+        "children": []
       }
     ],
-    "tableId": "295154f0-3260-11e9-8102-71a1f74ba434"
+    "floating": [],
+    "tableId": "295154f0-3260-11e9-8102-71a1f74ba434",
+    "tableName": "sar_small"
   },
-  "createdOn": "2019-05-07T13:26:29.484698Z",
-  "updatedOn": "2019-05-07T13:26:29.484698Z",
   "name": "SarSmall"
 }
