@@ -181,6 +181,12 @@ category('converters', () => {
     expect(chartData.series !== undefined && chartData.series.length === 0, true);
   });
 
+  test('parseCellValue.malformedJson', async () => {
+    // Unquoted-key value that passes the substring-based fit detection but is not valid JSON.
+    const chartData = parseCellValue('{series: [{name: "A", points: [{x:0,y:50}]}]}', null);
+    expect(chartData.series !== undefined && chartData.series.length === 0, true);
+  });
+
   test('converterCaching', async () => {
     registerCurveConverter('compact-dr', convertCompactDrToJson);
 

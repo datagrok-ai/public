@@ -69,7 +69,14 @@ export function parseCellValue(cellValue: string, column?: DG.Column | null): IF
     return {series: []};
 
   const jsonStr = column ? convertCellValue(cellValue, column) : cellValue;
-  return JSON.parse(jsonStr ?? '{}') ?? {};
+  try {
+    return JSON.parse(jsonStr ?? '{}') ?? {};
+  } catch (_e) {
+    // Cell value is not valid fit JSON (e.g. a column mis-detected as 'fit' via a substring match).
+    // Degrade to an empty chart so the renderer hits the existing 'No series to show' path and draws the
+    // incorrect-fit marker, instead of throwing a SyntaxError on every grid redraw.
+    return {series: []};
+  }
 }
 
 /** Returns true if the column uses a non-native format (has a converter). */
