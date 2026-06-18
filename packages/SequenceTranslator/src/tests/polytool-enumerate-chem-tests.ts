@@ -42,6 +42,11 @@ function canon(smi: string, rdkit: RDModule): string {
   } finally { mol.delete(); }
 }
 
+/** Materializes a BitSet keep-mask into a plain boolean[] for element-wise comparison. */
+function maskBools(bs: DG.BitSet): boolean[] {
+  return Array.from({length: bs.length}, (_, i) => bs.get(i));
+}
+
 // ─── Regex / normalization / remap — no RDKit required ──────────────────────
 
 category('PolyTool: ChemEnum: R-labels', () => {
@@ -240,12 +245,12 @@ category('PolyTool: ChemEnum: count & validate', () => {
 
 category('PolyTool: ChemEnum: dedup', () => {
   test('keeps first occurrence, drops later duplicates', async () => {
-    expectArray(uniqueKeepMask(['A', 'B', 'A', 'C', 'B']), [true, true, false, true, false]);
+    expectArray(maskBools(uniqueKeepMask(['A', 'B', 'A', 'C', 'B'])), [true, true, false, true, false]);
   });
 
   test('blank and nullish entries are never collapsed', async () => {
     // Empty/invalid rows (e.g. failed canonicalization) must each be kept, not merged into one.
-    expectArray(uniqueKeepMask(['', '', 'A', null, 'A', undefined]), [true, true, true, true, false, true]);
+    expectArray(maskBools(uniqueKeepMask(['', '', 'A', null, 'A', undefined])), [true, true, true, true, false, true]);
   });
 });
 
@@ -257,7 +262,7 @@ function enumeratedVsUnique(
 ): {raw: number, unique: number} {
   const results = enumerate({cores, rGroups, mode: ChemEnumModes.Cartesian}, rdkit)!;
   const canonical = results.map((r) => canon(r.smiles, rdkit));
-  const unique = uniqueKeepMask(canonical).filter(Boolean).length;
+  const unique = uniqueKeepMask(canonical).trueCount;
   return {raw: results.length, unique};
 }
 

@@ -1576,8 +1576,7 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
     // Dedup by canonical SMILES — reuse the array materialized during canonicalization
     // (falling back to the column only when canonicalization was skipped).
     if (state.removeDuplicates) {
-      const mask = uniqueKeepMask(canonical ?? smilesCol.toList());
-      const keep = DG.BitSet.create(df.rowCount, (i) => mask[i]);
+      const keep = uniqueKeepMask(canonical ?? smilesCol.toList());
       const removed = df.rowCount - keep.trueCount;
       if (removed > 0) {
         df = df.clone(keep);
