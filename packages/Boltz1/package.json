@@ -8,15 +8,6 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Integrates Datagrok with Boltz-1",
-  "properties": [
-    {
-      "name": "apiKey",
-      "propertyType": "string",
-      "defaultValue": "",
-      "description": "Boltz API key for the hosted prediction service (https://api.boltz.bio)",
-      "nullable": false
-    }
-  ],
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "boltz-api": "0.46.2",

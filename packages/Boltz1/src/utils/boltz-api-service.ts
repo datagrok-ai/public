@@ -13,11 +13,14 @@ import type {
   LibraryScreenStartParams as ProteinLibraryScreenStartParams,
 } from 'boltz-api/resources/protein/library-screen';
 
-import {BOLTZ_API_BASE_URL, BOLTZ_API_KEY_SETTING, BoltzJob, TERMINAL_STATUSES} from './boltz-api-constants';
-import { _package } from '../package';
+import {BOLTZ_API_BASE_URL, BoltzJob, TERMINAL_STATUSES} from './boltz-api-constants';
 
-const proxyFetch: Fetch = (input, init) =>
-  grok.dapi.fetchProxy(input instanceof Request ? input.url : input.toString(), init);
+const proxyFetch: Fetch = (input, init) => {
+  const url = input instanceof Request ? input.url : input.toString();
+  const headers: Record<string, string> = {};
+  new Headers(init?.headers).forEach((value, key) => headers[key] = value);
+  return grok.dapi.fetchProxy(url, {...init, headers});
+};
 
 /** Singleton over the Boltz hosted API: caches the authenticated client and runs each task end-to-end. */
 export class BoltzService {
@@ -31,13 +34,19 @@ export class BoltzService {
     return BoltzService._instance ??= new BoltzService();
   }
 
-  private get client(): Boltz {
+  async init(apiKey: string): Promise<void> {
     if (this.boltzClient)
-      return this.boltzClient;
-    this.apiKey = _package.settings[BOLTZ_API_KEY_SETTING];
-    if (!this.apiKey)
-      throw new Error('Boltz API key is not set in the Boltz1 package settings.');
-    return this.boltzClient = new Boltz({apiKey: this.apiKey, baseURL: BOLTZ_API_BASE_URL, fetch: proxyFetch});
+      return;
+    if (!apiKey)
+      throw new Error('Boltz API key is not set in the Boltz1 package credentials.');
+    this.apiKey = apiKey;
+    this.boltzClient = new Boltz({apiKey, baseURL: BOLTZ_API_BASE_URL, fetch: proxyFetch});
+  }
+
+  private get client(): Boltz {
+    if (!this.boltzClient)
+      throw new Error('BoltzService is not initialized; call init() first.');
+    return this.boltzClient;
   }
 
   /** Single predictions (structure & binding, ADME): start, then poll until the inline output is ready. */

@@ -1,6 +1,8 @@
 import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 
+import {_package} from '../package-test';
 import {BoltzService} from '../utils/boltz-api-service';
+import {BOLTZ_API_KEY_PARAM} from '../utils/boltz-api-constants';
 import {
   structureAndBindingRequest, admeRequest,
   smallMoleculeDesignRequest, smallMoleculeLibraryScreenRequest,
@@ -14,6 +16,8 @@ category('Hosted API', () => {
 
   before(async () => {
     boltz = BoltzService.getInstance();
+    const apiKey = (await _package.getCredentials())?.parameters?.[BOLTZ_API_KEY_PARAM];
+    await boltz.init(apiKey);
   });
 
   test('structureAndBinding', async () => {

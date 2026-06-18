@@ -1,5 +1,5 @@
 export const BOLTZ_API_BASE_URL = 'https://api.boltz.bio';
-export const BOLTZ_API_KEY_SETTING = 'apiKey';
+export const BOLTZ_API_KEY_PARAM = 'apiKey';
 
 export const STRUCTURE_AND_BINDING_MODEL = 'boltz-2.1';
 export const ADME_MODEL = 'adme-v1';
