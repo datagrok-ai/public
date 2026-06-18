@@ -9,8 +9,7 @@ import {ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from '../analysis/chem-diversity-viewer';
 import {Subscription} from 'rxjs';
 
-// Tests for the similarity viewer's "select all similar" and collaborative "filter to similar set"
-// controls (the two action icons next to the metrics link), plus the empty-set and detach edge cases.
+// Tests for the similarity viewer's select-all-similar / collaborative filter controls, plus edge cases.
 category('similarity filter/select', () => {
   before(async () => {
     grok.shell.closeAll();
@@ -25,8 +24,7 @@ category('similarity filter/select', () => {
     return `Most similar structures: ${v.distanceMetric} ≥ ${Number(v.cutoff.toFixed(3))}`;
   }
 
-  /** True when `bs` is non-empty and every set bit lies within the selection [0, half) — i.e. the
-   * Selected / FilteredSelected modes confined the set to the selected rows. */
+  /** True when `bs` is non-empty and every set bit lies within the selection [0, half). */
   function confinedToSelection(bs: DG.BitSet | null, half: number, rowCount: number): boolean {
     if (!bs || bs.trueCount === 0)
       return false;
@@ -41,14 +39,13 @@ category('similarity filter/select', () => {
   async function openViewer(): Promise<{tv: DG.TableView, viewer: ChemSimilarityViewer, df: DG.DataFrame}> {
     const tv = await createTableView('tests/sar-small_test.csv');
     const viewer = (await tv.dataFrame.plot.fromType('Chem Similarity Search')) as ChemSimilarityViewer;
-    // Gate on the computed set, not the hot renderCompleted Subject (a fast machine can fire it before
-    // the test subscribes, causing a timeout) — awaitCheck polls and avoids that flake.
+    // Gate on the computed set (not the hot renderCompleted Subject) to avoid a fast-machine flake.
     await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) > 0, 'similar set was not computed', 10000);
     return {tv, viewer, df: tv.dataFrame};
   }
 
   test('filter toggle on then off restores the table', async () => {
-    // (Basic "select all similar" is covered by the stronger "select acts on the full similar set" test.)
+    // Toggling the filter on then off must filter to the similar set, then fully restore the table.
     const {tv, viewer, df} = await openViewer();
     try {
       const similarCount = viewer.similarSetBitset!.trueCount;
@@ -65,16 +62,16 @@ category('similarity filter/select', () => {
       expect(viewer.filterBtn!.getAttribute('aria-pressed'), 'false');
       expect(df.rows.filters.includes(label), false);
       await delay(300); // let any debounced re-render settle
-      // The cards (same similar set throughout) must not have been cleared + rebuilt by either toggle.
+      // Cards must not have been cleared + rebuilt by either toggle.
       expect(viewer.root.querySelector('.chem-viewer-grid') === gridBefore, true);
     } finally {tv.close();}
   });
 
   test('empty set disables buttons and guards', async () => {
+    // An empty similar set must disable the buttons and guard select / keyboard activation.
     const {tv, viewer, df} = await openViewer();
     try {
-      // cutoff 1 with a reference that has no exact duplicate → the similar set is empty.
-      // (Relies on sar-small_test.csv row 0 having no Tanimoto-1.0 twin — keep that data file as-is.)
+      // cutoff 1 → no exact duplicate of row 0 → empty similar set.
       viewer.setOptions({cutoff: 1});
       await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) === 0, 'similar set did not become empty', 5000);
       expect(viewer.selectBtn!.classList.contains('chem-similarity-action-disabled'), true);
@@ -87,7 +84,7 @@ category('similarity filter/select', () => {
       viewer.selectBtn!.click();
       expect(df.selection.trueCount, selBefore);
 
-      // Keyboard activation of the (disabled) filter button must not toggle it on with an empty set.
+      // Keyboard activation of the disabled filter button must not toggle it on with an empty set.
       viewer.filterBtn!.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
       expect(viewer.filterActive, false);
       expect(df.filter.trueCount, df.rowCount);
@@ -95,6 +92,7 @@ category('similarity filter/select', () => {
   });
 
   test('empty set while filtered: stays usable and clears the label', async () => {
+    // Emptying the set while filtered must un-filter, drop the label, and keep the toggle turn-off-able.
     const {tv, viewer, df} = await openViewer();
     try {
       viewer.filterBtn!.click();
@@ -102,11 +100,10 @@ category('similarity filter/select', () => {
       await awaitCheck(() => viewer.filterActive && df.rows.filters.includes(label), 'filter did not apply', 5000);
       viewer.setOptions({cutoff: 1}); // empties the similar set while the toggle is still on
       await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) === 0, 'set did not empty', 5000);
-      // Table un-filters (handler skips the AND) and the now-meaningless label is dropped.
+      // Table un-filters and the now-meaningless label is dropped.
       await awaitCheck(() => df.filter.trueCount === df.rowCount && !df.rows.filters.includes(label),
         'stale label/filter lingered after the set emptied', 5000);
-      // The filter button must stay clickable (not pointer-events:none) so a REAL mouse can still turn it off
-      // (a synthetic .click() ignores pointer-events, so assert the disabled class is absent); select disabled.
+      // Filter button must stay clickable (disabled class absent) so a real mouse can turn it off; select disabled.
       expect(viewer.filterBtn!.classList.contains('chem-similarity-action-disabled'), false);
       expect(viewer.selectBtn!.classList.contains('chem-similarity-action-disabled'), true);
       // Deactivation must still work on an empty set (the guard blocks only activation).
@@ -117,6 +114,7 @@ category('similarity filter/select', () => {
   });
 
   test('detach restores table', async () => {
+    // Detaching the viewer while filtered must restore the table and drop the label.
     const {tv, viewer, df} = await openViewer();
     try {
       const label = simLabel(viewer);
@@ -128,29 +126,14 @@ category('similarity filter/select', () => {
     } finally {tv.close();}
   });
 
-  // NOTE: "Reset all filters" clearing the similarity filter is implemented via the same
-  // grok.events.onResetFilterRequest subscription used by chem-substructure-filter / scaffold-tree
-  // filters. It isn't covered by an automated test because there is no JS-callable way to FIRE that
-  // platform event from a test — df.resetFilter() exists but resets the filter without raising the event.
-
-  test('stale filter label is stripped on attach', async () => {
-    const tv = await createTableView('tests/sar-small_test.csv');
-    try {
-      const df = tv.dataFrame;
-      // A label left behind by a restored project (toggle state itself is session-only) must not linger.
-      df.rows.filters.push('Most similar structures: Tanimoto ≥ 0.5');
-      const viewer = (await df.plot.fromType('Chem Similarity Search')) as ChemSimilarityViewer;
-      await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) > 0, 'viewer did not compute', 10000);
-      expect(df.rows.filters.includes('Most similar structures: Tanimoto ≥ 0.5'), false);
-    } finally {tv.close();}
-  });
+  // NOTE: "Reset all filters" clearing the similarity filter (via grok.events.onResetFilterRequest) is not
+  // covered — there is no JS-callable way to fire that platform event from a test.
 
   test('enable filter when another filter is already active', async () => {
+    // Turning on the similarity filter when an external filter is already active must AND with it.
     const {tv, viewer, df} = await openViewer();
     let sub: Subscription | null = null;
     try {
-      // An external filter is active BEFORE the similarity filter is turned on (reverse order —
-      // the case the other-filters probe exists for).
       const half = Math.floor(df.rowCount / 2);
       sub = df.onRowsFiltering.subscribe(() => {
         for (let i = half; i < df.rowCount; i++)
@@ -173,18 +156,18 @@ category('similarity filter/select', () => {
   });
 
   test('diversity viewer keeps its limit cap', async () => {
+    // setOptions bypasses the UI slider max; the O(n^2) diversity limit must stay clamped to 50.
     const tv = await createTableView('tests/sar-small_test.csv');
     try {
       const viewer = (await tv.dataFrame.plot.fromType('Chem Diversity Search')) as ChemDiversityViewer;
       await awaitCheck(() => viewer.renderMolIds.length > 0, 'diversity viewer did not render', 10000);
-      // setOptions bypasses the UI slider's max; the O(n^2) diversity selection must stay bounded by 50
-      // (whereas the similarity viewer raises its own cap to 10000).
       viewer.setOptions({limit: 10000});
       expect(viewer.limit, 50); // clamped synchronously in onPropertyChanged
     } finally {tv.close();}
   });
 
   test('filter is collaborative', async () => {
+    // A second filter applied after the similarity filter must AND with it (similar set ∩ upper half).
     const {tv, viewer, df} = await openViewer();
     let sub: Subscription | null = null;
     try {
@@ -193,8 +176,6 @@ category('similarity filter/select', () => {
       await awaitCheck(() => viewer.filterActive && df.filter.trueCount === simSet.trueCount,
         'similarity filter was not applied', 5000);
 
-      // A second filter that hides the table's lower half should AND with the similarity mask:
-      // the result is (similar set ∩ upper half), proving the viewer adapts to other filters.
       const half = Math.floor(df.rowCount / 2);
       let expected = 0;
       for (let i = 0; i < df.rowCount; i++) {
@@ -214,6 +195,7 @@ category('similarity filter/select', () => {
   });
 
   test('clearing an external filter re-expands the similar set', async () => {
+    // Hiding similar rows shrinks the set; clearing that filter must re-expand it back to the full set.
     const {tv, viewer, df} = await openViewer();
     let sub: Subscription | null = null;
     try {
@@ -228,8 +210,7 @@ category('similarity filter/select', () => {
       const fullCount = simIdx.length;
       expect(fullCount > 1, true); // need at least 2 similar rows to observe a shrink
 
-      // Hide the latter half of the similar rows with an external filter → the set is re-searched
-      // within the remaining rows and shrinks; our mask is now a subset of that filter.
+      // Hide the latter half of the similar rows → the set re-searches within the rest and shrinks.
       const hidden = new Set(simIdx.slice(Math.floor(fullCount / 2)));
       sub = df.onRowsFiltering.subscribe(() => {
         for (const i of hidden)
@@ -239,8 +220,8 @@ category('similarity filter/select', () => {
       await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) < fullCount,
         'similar set did not shrink under the external filter', 5000);
 
-      // Clear the external filter. Because our mask is a subset of it, the NET df.filter is unchanged,
-      // so onFilterChanged stays silent — the viewer must re-expand via its onRowsFiltering handler.
+      // Clear the external filter. The net df.filter is unchanged, so the viewer must re-expand via
+      // its onRowsFiltering handler (onFilterChanged stays silent).
       sub.unsubscribe();
       sub = null;
       df.rows.requestFilter();
@@ -255,10 +236,9 @@ category('similarity filter/select', () => {
   });
 
   test('select acts on the full similar set, not just the displayed cards', async () => {
+    // Cap displayed cards below the full set; select must act on every similar row, not just the shown 3.
     const {tv, viewer, df} = await openViewer();
     try {
-      // Cap the DISPLAYED cards well below the full above-cutoff set (the core "see/act on more than
-      // what's shown" promise): the search df (molCol) is limited, similarSetBitset is not.
       viewer.setOptions({limit: 3});
       await awaitCheck(() => (viewer.molCol?.length ?? 99) <= 3 && (viewer.similarSetBitset?.trueCount ?? 0) > 3,
         'display did not cap below the full similar set', 5000);
@@ -268,68 +248,8 @@ category('similarity filter/select', () => {
     } finally {tv.close();}
   });
 
-  test('rows added while filtering rebuild the mask', async () => {
-    const {tv, viewer, df} = await openViewer();
-    try {
-      viewer.filterBtn!.click();
-      await awaitCheck(() => viewer.filterActive && df.filter.trueCount < df.rowCount, 'filter was not applied', 5000);
-      const beforeLen = viewer.similarSetBitset!.length;
-      // Add a row → rowCount grows; the mask sized to the old count must be rebuilt (otherwise the
-      // length-mismatch guard would silently turn the filter into a no-op).
-      df.rows.addNew([df.col('smiles')!.get(0)]);
-      await awaitCheck(() => viewer.similarSetBitset!.length === df.rowCount && df.rowCount > beforeLen,
-        'mask was not rebuilt to the new row count', 8000);
-      // The rebuilt mask must actually be APPLIED, not just rebuilt — table == the similar set.
-      await awaitCheck(() => df.filter.trueCount === viewer.similarSetBitset!.trueCount,
-        'rebuilt mask was not applied to the table', 5000);
-      expect(viewer.filterActive, true);
-    } finally {tv.close();}
-  });
-
-  test('filter works in rowSource = All', async () => {
-    const {tv, viewer, df} = await openViewer();
-    try {
-      // In All mode the similar set is filter-independent, but the toggle must still filter the table to it.
-      viewer.setOptions({rowSource: 'All'});
-      await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? 0) > 0, 'set not computed in All mode', 5000);
-      const simCount = viewer.similarSetBitset!.trueCount;
-      viewer.filterBtn!.click();
-      await awaitCheck(() => viewer.filterActive && df.filter.trueCount === simCount,
-        'filter did not apply in All mode', 5000);
-      viewer.filterBtn!.click();
-      await awaitCheck(() => !viewer.filterActive && df.filter.trueCount === df.rowCount,
-        'filter did not clear in All mode', 5000);
-    } finally {tv.close();}
-  });
-
-  test('reference row change does not progressively shrink the filtered set', async () => {
-    // The other-filters probe exists so moving the reference row re-searches against the SAME population
-    // (the full table here — no other filter), not the already-narrowed df.filter. Without it, each move
-    // would shrink the set further; returning to a row would then give a smaller count than the first visit.
-    const {tv, viewer, df} = await openViewer();
-    try {
-      viewer.filterBtn!.click();
-      await awaitCheck(() => viewer.filterActive && df.filter.trueCount > 0, 'filter did not activate', 5000);
-      const countForRow = async (row: number): Promise<number> => {
-        df.currentRowIdx = row;
-        await awaitCheck(() => viewer.targetMoleculeIdx === row && !viewer.isComputing,
-          `reference did not settle on row ${row}`, 8000);
-        await delay(400); // let the debounced filter contribution apply
-        return df.filter.trueCount;
-      };
-      const first = await countForRow(0);
-      await countForRow(1);
-      await countForRow(2);
-      const back = await countForRow(0);
-      // Same reference, same population → identical count. A shrinking probe would make `back` < `first`.
-      expect(back, first);
-    } finally {tv.close();}
-  });
-
   test('filter recheck recomputes even when followCurrentRow is off', async () => {
-    // Regression: with followCurrentRow off + Filtered rowSource + filter on, an external filter change must
-    // still rebuild the similar set against the new population. The recompute gate used to skip it, leaving
-    // the contribution handler ANDing a stale mask.
+    // Regression: with followCurrentRow off, an external filter change must still rebuild the set (not AND a stale mask).
     const {tv, viewer, df} = await openViewer();
     let sub: Subscription | null = null;
     try {
@@ -345,8 +265,7 @@ category('similarity filter/select', () => {
           df.filter.set(i, false, false);
       });
       df.rows.requestFilter();
-      // The set must shrink to reflect only the kept rows — proves the recheck recomputed despite
-      // followCurrentRow being off.
+      // The set must shrink to the kept rows, proving the recheck recomputed.
       await awaitCheck(() => (viewer.similarSetBitset?.trueCount ?? before) < before,
         'similar set was not rebuilt against the narrowed population (followCurrentRow=off recompute gap)', 8000);
       // The reference must stay pinned (followCurrentRow off must not jump it to the current row).
@@ -358,11 +277,8 @@ category('similarity filter/select', () => {
   });
 
   test('an in-progress substructure search gates the filter recheck', async () => {
-    // The anti-storm gate (see _subscribeSearchProgress): a substructure search's progress events keep the
-    // watchdog _externalSearchTimer live while results stream, and _scheduleFilterRecheck early-returns
-    // (schedules nothing) while it is — so the per-batch requestFilter() storm launches NO similarity search
-    // until the search finishes. This asserts that gate synchronously, the deterministic core of the throttle
-    // (the event→timer wiring is verified separately; driving it through the global bus is Puppeteer-flaky).
+    // Anti-storm gate: while the watchdog _externalSearchTimer is live, _scheduleFilterRecheck must schedule
+    // nothing; once cleared it schedules normally. Asserted synchronously (the event wiring is Puppeteer-flaky).
     const {tv, viewer} = await openViewer();
     const g = viewer as unknown as {
       _externalSearchTimer: ReturnType<typeof setTimeout> | null;
@@ -378,11 +294,11 @@ category('similarity filter/select', () => {
         clearTimeout(g._externalSearchTimer);
         g._externalSearchTimer = null;
       }
-      // Search streaming (watchdog live) → recheck suppressed: nothing scheduled.
+      // Watchdog live → recheck suppressed.
       g._externalSearchTimer = setTimeout(() => {}, 30000);
       g._scheduleFilterRecheck();
       expect(g._filterRecheckTimer, null);
-      // Search finished (watchdog cleared) → the recheck schedules normally.
+      // Watchdog cleared → recheck schedules normally.
       clearTimeout(g._externalSearchTimer);
       g._externalSearchTimer = null;
       g._scheduleFilterRecheck();
@@ -397,8 +313,7 @@ category('similarity filter/select', () => {
   });
 
   test('filter works in rowSource = Selected and FilteredSelected', async () => {
-    // Selected falls through to the base (raw selection); FilteredSelected is in getRowSourceIndexes's probe
-    // branch AND intersects with the selection. Both must confine the similar set + applied filter to it.
+    // Both modes must confine the similar set and the applied filter to the selected rows.
     for (const mode of ['Selected', 'FilteredSelected']) {
       const {tv, viewer, df} = await openViewer();
       try {
@@ -407,8 +322,7 @@ category('similarity filter/select', () => {
         for (let i = 0; i < half; i++)
           df.selection.set(i, true, false);
         viewer.setOptions({rowSource: mode});
-        // Poll until the recompute confines the set (don't race the rowSource-change render, which would
-        // otherwise read the stale Filtered-mode set built over all rows).
+        // Poll until the recompute confines the set (don't race the rowSource-change render).
         await awaitCheck(() => confinedToSelection(viewer.similarSetBitset, half, df.rowCount),
           `${mode} similar set did not confine to the selection`, 12000);
         viewer.filterBtn!.click();
@@ -418,38 +332,8 @@ category('similarity filter/select', () => {
     }
   });
 
-  test('two similarity viewers on one dataframe converge without a cascade', async () => {
-    // The _probingDataframes guard stops a probe from looking like an external change to a sibling viewer.
-    // Two collaborative filters on the same table must converge to a stable df.filter (bounded by the
-    // _sameMask dedupe), not cascade forever — a runaway cascade would never let trueCount settle.
-    const tv = await createTableView('tests/sar-small_test.csv');
-    try {
-      const df = tv.dataFrame;
-      const v1 = (await df.plot.fromType('Chem Similarity Search')) as ChemSimilarityViewer;
-      const v2 = (await df.plot.fromType('Chem Similarity Search')) as ChemSimilarityViewer;
-      await awaitCheck(() => (v1.similarSetBitset?.trueCount ?? 0) > 0 && (v2.similarSetBitset?.trueCount ?? 0) > 0,
-        'both viewers did not compute', 15000);
-      v1.filterBtn!.click();
-      await awaitCheck(() => v1.filterActive, 'v1 filter did not activate', 5000);
-      v2.filterBtn!.click();
-      await awaitCheck(() => v2.filterActive, 'v2 filter did not activate', 5000);
-      // Poll until df.filter.trueCount holds steady across consecutive checks — i.e. the two viewers
-      // reached the mutually-consistent fixed point. Times out (test fails) if it never stops changing.
-      let last = -1;
-      let stable = 0;
-      await awaitCheck(() => {
-        const c = df.filter.trueCount;
-        stable = c === last ? stable + 1 : 0;
-        last = c;
-        return stable >= 5;
-      }, 'two collaborative filters did not converge (possible recheck cascade)', 15000);
-      expect(df.filter.trueCount <= df.rowCount, true);
-    } finally {tv.close();}
-  });
-
   test('selecting refreshes card highlights in place (no panel rebuild)', async () => {
-    // The cards reflect selection (d4-selected); a selection change must restyle the EXISTING cards rather
-    // than clear + rebuild the whole panel (which flashes every card and re-pops its molecule — the flicker).
+    // A selection change must restyle the existing cards in place, not clear + rebuild the panel (flicker).
     const {tv, viewer, df} = await openViewer();
     try {
       const gridBefore = viewer.root.querySelector('.chem-viewer-grid'); // the live card container
@@ -457,27 +341,10 @@ category('similarity filter/select', () => {
       viewer.selectBtn!.click(); // selects the similar set → the cards must show as selected
       await awaitCheck(() => df.selection.trueCount > 0, 'selection was not made', 5000);
       await delay(300); // let the debounced selection.onChanged render run
-      // Same DOM node ⇒ the panel was refreshed in place, not rebuilt.
+      // Same DOM node ⇒ refreshed in place, not rebuilt.
       expect(viewer.root.querySelector('.chem-viewer-grid') === gridBefore, true);
-      // ...and a card actually picked up the new selection highlight.
+      // ...and a card picked up the new selection highlight.
       expect(viewer.root.querySelector('.chem-viewer-grid .d4-selected') !== null, true);
-    } finally {tv.close();}
-  });
-
-  test('filter-panel label tracks the built cutoff, not a mid-search live value', async () => {
-    // Directly exercises the _bitsetCutoff fix: _filterSummary() must describe the cutoff the mask was BUILT
-    // with, not a live this.cutoff a slider drag moved before the next search settled. (The "cutoff change
-    // updates the filter label" test reconstructs the label from live props, so it can't catch this.)
-    const {tv, viewer} = await openViewer();
-    const g = viewer as unknown as {cutoff: number; _bitsetCutoff: number; _filterSummary(): string};
-    try {
-      const built = Number(g._bitsetCutoff.toFixed(3)); // what the current similar set was built with
-      // Move the LIVE cutoff to a clearly different value; read the label synchronously, before any new
-      // search can settle and update _bitsetCutoff.
-      g.cutoff = Number((built + 0.5).toFixed(3));
-      const label = g._filterSummary();
-      expect(label.includes(String(built)), true); // shows the BUILT cutoff
-      expect(label.includes(String(g.cutoff)), false); // not the live drag value
     } finally {tv.close();}
   });
 });

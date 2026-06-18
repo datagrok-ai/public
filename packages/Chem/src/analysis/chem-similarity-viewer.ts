@@ -13,36 +13,23 @@ import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Subscription} from 'rxjs';
 
-/** Similarity can display up to this many results; the shared base default (and the diversity
- * viewer, whose selection is O(n^2)) keep a much smaller cap. */
+/** Display cap; the shared base default and diversity viewer (O(n^2) selection) keep a smaller cap. */
 const MAX_LIMIT_SIMILARITY = 10000;
-/** Hard cap on how many cards are built into the DOM at once, independent of `limit`. Select &
- * filter act on the full above-cutoff set, so capping the display loses nothing functionally. */
+/** Hard cap on cards built into the DOM, independent of `limit` (Select/filter still act on the full set). */
 const DISPLAY_CAP = 200;
-/** Default number of similar molecules shown (the base viewer's default of 12 is too small here —
- * the similarity viewer is cutoff-driven and shows up to the display cap). */
+/** Default similar molecules shown (base's 12 is too small — this viewer is cutoff-driven). */
 const DEFAULT_LIMIT_SIMILARITY = 200;
 /** Prefix of the filter-panel label this viewer pushes; used to find/remove its own label. */
 const FILTER_LABEL_PREFIX = 'Most similar structures:';
-/** Suppress-window duration: our own requestFilter cycles shouldn't trigger a re-render. Must
- * comfortably exceed the base's 50 ms onFilterChanged debounce. */
+/** Suppress window for our own requestFilter cycles; must exceed the base's 50 ms debounce. */
 const SUPPRESS_WINDOW_MS = 300;
-/** Debounce before re-running the similarity search once filter activity settles — coalesces a burst
- * of filter cycles into a single search. */
+/** Debounce coalescing a burst of filter cycles into a single re-search once activity settles. */
 const FILTER_RECHECK_DEBOUNCE_MS = 300;
-/** Watchdog: if a substructure search is terminated before emitting 100%, un-block the recheck after
- * this quiet period so it isn't suppressed forever. */
+/** Watchdog: un-block the recheck after this quiet period if a substructure search dies before 100%. */
 const EXTERNAL_SEARCH_WATCHDOG_MS = 2000;
-/** Dataframes a similarity viewer is currently probing (the probe's requestFilter fires every viewer's
- * handler). Shared so a SECOND similarity viewer on the same dataframe doesn't mistake a sibling's probe
- * for an external filter change and trigger a mutual recheck cascade.
- * KNOWN LIMITATION (two active similarity filters on one dataframe): this guards only the PROBE; a
- * viewer's _reapplyFilter() still fires the sibling's onRowsFiltering, so each re-search triggers the
- * other's. That is correct, not a bug — when viewer A's contribution changes the filtered population,
- * viewer B (searching "similar within the filtered set") genuinely must re-search. The _sameMask dedupe
- * makes it converge in ~1–2 debounced rounds to the mutually-consistent fixed point; the only visible
- * cost is a brief card reflash. Suppressing the cross-viewer recheck would be WRONG (B would show stale
- * results), so this rare config is left to converge rather than guarded. */
+/** Dataframes a viewer is currently probing, so a SECOND viewer doesn't mistake a sibling's probe for an
+ * external change. Guards only the PROBE: with two active similarity filters a _reapplyFilter() still
+ * fires the sibling's onRowsFiltering, which is correct — _sameMask dedupe converges in ~1–2 rounds. */
 const _probingDataframes = new WeakSet<DG.DataFrame>();
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
@@ -59,9 +46,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   targetMoleculeIdx: number = 0;
   // --- select / filter controls ---
   similarSetBitset: DG.BitSet | null = null;
-  /** The cutoff/metric the current similarSetBitset was built with — the filter-panel label reads these
-   * (not the live this.cutoff/this.distanceMetric) so a fast slider drag can't show a threshold that
-   * disagrees with the mask actually being applied until the next search settles. */
+  /** Cutoff/metric the current similarSetBitset was built with — the label reads these (not live values)
+   * so a fast slider drag can't show a threshold the mask doesn't match. */
   private _bitsetCutoff: number = 0;
   private _bitsetMetric: string = '';
   filterActive: boolean = false;
@@ -69,9 +55,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   filterBtn!: HTMLElement;
   private _filterSub: Subscription | null = null;
   private _molObserver: IntersectionObserver | null = null;
-  // Snapshot of the last full card render, so a non-recompute render (selection / current-row / metadata
-  // change) can refresh the per-card highlights IN PLACE instead of clearing + rebuilding the whole panel
-  // (which flashes every card and re-pops its lazily-rendered molecule — the "flicker" on Select/Filter).
+  // Snapshot of the last full card render, so a non-recompute render (selection/current-row/metadata)
+  // refreshes per-card highlights IN PLACE instead of rebuilding the panel (which flickers every card).
   private _renderedCards: {grid: HTMLElement; idx: number}[] = [];
   private _renderedLazyHosts: {host: HTMLElement; molStr: string}[] = [];
   private _renderedGridDiv: HTMLElement | null = null;
@@ -80,27 +65,24 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   private _pushedSummary: string | null = null;
   /** Subscription to the chem substructure-search progress event for our molecule column. */
   private _searchProgressSub: Subscription | null = null;
-  /** Live (non-null) while a substructure search is streaming results on our molecule column. The
-   * substructure filter calls requestFilter() per progress batch, so without this we'd launch one
-   * similarity search per batch; instead we defer and run a single search when it reaches 100%. Doubles
-   * as a watchdog so a search terminated before 100% can't block the recheck forever. */
+  /** Live while a substructure search streams on our column (it calls requestFilter() per batch). We
+   * defer and run a single search at 100% instead of one per batch; also a watchdog if it dies early. */
   private _externalSearchTimer: ReturnType<typeof setTimeout> | null = null;
   private _skipContribution: boolean = false;
-  /** True only during the viewer's OWN synchronous requestFilter calls (probe/reapply). Lets the
-   * onRowsFiltering handler tell its own cycles apart from an external filter change precisely, so a
-   * user clearing a filter mid-processing is never mistaken for our own cycle and dropped. */
+  /** True only during the viewer's OWN synchronous requestFilter calls (probe/reapply), so the handler
+   * tells its cycles from an external change precisely (a clear mid-processing isn't dropped as ours). */
   private _ownFilterCycle: boolean = false;
-  /** Open while our OWN requestFilter cycles run, so onExternalFilterChanged skips them (avoids a feedback
-   * loop when we apply our own mask). Time-windowed via _suppressTimer; see _holdSuppress. */
+  /** Open while our OWN requestFilter cycles run so onExternalFilterChanged skips them (no feedback
+   * loop). Time-windowed via _suppressTimer; see _holdSuppress. */
   private _suppressFilterRender: boolean = false;
   private _suppressTimer: ReturnType<typeof setTimeout> | null = null;
   private _searchGen: number = 0;
-  /** The row-source (other-filters result) the current similarSetBitset was last searched against.
-   * Lets a filter change be detected even when the net df.filter is unchanged (e.g. clearing a filter). */
+  /** Row source the current similarSetBitset was last searched against — lets a filter change be detected
+   * even when net df.filter is unchanged (e.g. clearing a filter). */
   private _builtAgainstFilter: DG.BitSet | null = null;
   private _filterRecheckTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Hand-off of the row source the recheck just probed, so the render it triggers reuses it instead
-   * of probing again. Valid only for the immediately following render (see _scheduleFilterRecheck). */
+  /** Hand-off of the mask the recheck just probed, so the render it triggers reuses it instead of
+   * probing again. Valid only for the immediately following render (see _scheduleFilterRecheck). */
   private _recheckRowSource: DG.BitSet | null = null;
 
   get targetMolecule(): string {
@@ -111,10 +93,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
 
   constructor() {
     super(SIMILARITY);
-    // Per-viewer property overrides (kept in the subclass, not the base): raise the limit cap, and default
-    // the row source to 'Filtered' so cards respect the active filter. Setting them here (not in
-    // onTableAttached) means a restored value is never clamped against a stale max, and 'Reset to default'
-    // honours the similarity-specific defaults.
+    // Per-viewer property overrides: raise the limit cap, default row source to 'Filtered'. Done here (not
+    // onTableAttached) so a restored value isn't clamped against a stale max.
     const limitProp = this.getProperty('limit');
     if (limitProp) {
       limitProp.max = MAX_LIMIT_SIMILARITY;
@@ -178,19 +158,18 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.sketchButton.classList.add('chem-similarity-search-edit');
     this.sketchButton.classList.add('chem-mol-view-icon');
 
-    // Select all shown (the similar set, i.e. rows with score >= cutoff). Deselect = Escape (platform built-in).
-    // Reuse the platform's grid "select all" icon (svg sprite) so it matches the table's own select-all control.
+    // Select all shown (score >= cutoff); deselect = Escape. Reuse the grid "select all" icon to match.
     this.selectBtn = ui.iconSvg('select-all', () => {
-      // Guard against an empty set and a length mismatch (BitSet.and requires equal length).
+      // Guard empty set + length mismatch (BitSet.and requires equal length).
       if (!this.dataFrame || this.similarCount === 0 || this.similarSetBitset!.length !== this.dataFrame.filter.length)
         return;
-      // Select only similar rows that pass the active filter (similar set ∩ table filter).
+      // Select only similar rows passing the active filter (similar set ∩ table filter).
       const sel = this.similarSetBitset!.clone().and(this.dataFrame.filter, false);
       if (sel.trueCount === 0)
         return; // every similar row is hidden by another filter — don't wipe the existing selection
       const changed = !this._sameMask(sel, this.dataFrame.selection); // skip the toast on a repeat click
       this.dataFrame.selection.copyFrom(sel);
-      // Confirm the off-panel action — the selection happens in the grid, away from where the user clicked.
+      // Confirm the off-panel action — the selection happens in the grid, away from the click.
       if (changed)
         grok.shell.info(`${sel.trueCount} similar ${sel.trueCount === 1 ? 'row' : 'rows'} selected`);
     }, 'Select all similar');
@@ -201,10 +180,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       'Filter table to similar set (toggle)');
     this.filterBtn.classList.add('chem-similarity-action-btn');
 
-    // Accessibility: give each icon an explicit aria-label up front (renderInternal later refines the
-    // select label with a count, _toggleFilter the filter label with on/off state) — don't rely on the
-    // ui.icons.* helpers to set it, or a screen reader sees an unlabelled button before the first
-    // render/toggle. Then make the <i> elements behave as buttons (focusable + keyboard-activatable).
+    // Accessibility: explicit aria-label up front (renderInternal later adds the count, _toggleFilter the
+    // on/off state) so a screen reader never sees an unlabelled button; then make the <i> behave as buttons.
     this.selectBtn.setAttribute('aria-label', 'Select all similar');
     this.filterBtn.setAttribute('aria-label', 'Filter table to similar set');
     for (const b of [this.selectBtn, this.filterBtn]) {
@@ -230,8 +207,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   override onPropertyChanged(property: DG.Property): void {
-    // setOptions bypasses the slider's [0, 1] bounds; clamp so a stray cutoff can't mark every molecule
-    // similar (cutoff 0) or nothing (cutoff 1) from out-of-range input. (limit is clamped in the base.)
+    // setOptions bypasses the slider's [0, 1] bounds; clamp so a stray cutoff can't mark every (0) or
+    // nothing (1) similar. (limit is clamped in the base.)
     if (property?.name === 'cutoff')
       this.cutoff = Math.max(0, Math.min(1, this.cutoff));
     super.onPropertyChanged(property);
@@ -250,22 +227,21 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   private _filterSummary(): string {
-    // Read the cutoff/metric the mask was BUILT with (not the live values) so a mid-drag label can't show
-    // a threshold the applied mask doesn't match. Round so a slider value like 0.3 doesn't render as
-    // 0.30000000000000004.
+    // Read the cutoff/metric the mask was BUILT with (not live) so a mid-drag label matches the applied
+    // mask. Round so 0.3 doesn't render as 0.30000000000000004.
     const cutoff = Number(this._bitsetCutoff.toFixed(3));
     return `${FILTER_LABEL_PREFIX} ${this._bitsetMetric} ≥ ${cutoff}`;
   }
 
-  /** Builds the "similar set": rows within the current row source whose similarity
-   * score meets the cutoff. Malformed rows carry a 100.0 sentinel and are excluded. */
+  /** Builds the "similar set": rows in the row source whose score meets the cutoff (malformed rows carry
+   * a 100.0 sentinel and are excluded). */
   private _buildSimilarSetBitset(allDistances: number[], rowSourceIdxs: DG.BitSet, cutoff: number): DG.BitSet {
-    // A sketched query is not a table row, so it excludes nothing; otherwise exclude the reference row.
+    // A sketched query isn't a table row (excludes nothing); otherwise exclude the reference row.
     const refIdx = this.isEditedFromSketcher ? -1 : this.targetMoleculeIdx;
-    // Read the row source as a packed buffer once and test bits in JS — avoids one get(i) interop per row.
+    // Read the row source as a packed buffer once and test bits in JS — avoids a get(i) interop per row.
     const srcBuf = rowSourceIdxs.getBuffer();
-    // Bound by the number of scored rows: if rows were added during a fast (cached) search, rowCount can
-    // exceed allDistances.length; those new rows have no score yet and must be excluded (don't read OOB).
+    // Bound by scored rows: a row added during a fast (cached) search has no score yet — exclude it
+    // (rowCount can exceed allDistances.length; don't read OOB).
     const scored = allDistances.length;
     return DG.BitSet.create(this.dataFrame!.rowCount, (i) =>
       i < scored && i !== refIdx && ((srcBuf[i >>> 5] & (1 << (i & 31))) !== 0) &&
@@ -273,8 +249,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   /** Open/extend a single suppress window so our own requestFilter cycles don't trigger a re-render.
-   * One shared, cancellable timer means the probe and re-apply never race to clear each other's window.
-   * 300 ms comfortably covers the 50 ms onFilterChanged debounce. */
+   * One shared cancellable timer means probe and re-apply never race to clear each other's window. */
   private _holdSuppress(): void {
     this._suppressFilterRender = true;
     if (this._suppressTimer)
@@ -285,8 +260,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }, SUPPRESS_WINDOW_MS);
   }
 
-  /** Re-runs the filter cycle while suppressing the viewer's own onFilterChanged re-render,
-   * so applying our own mask does not trigger a recompute loop. */
+  /** Re-run the filter cycle while suppressing our own re-render, so applying our mask doesn't loop. */
   private _reapplyFilter(): void {
     if (!this.dataFrame)
       return;
@@ -305,16 +279,15 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this._pushedSummary = null;
   }
 
-  /** Drop the similar set and its filter-panel label together — a failed/empty search must leave neither a
-   * stale mask (which onRowsFiltering would keep ANDing) nor a label that contradicts the error state. */
+  /** Drop the similar set and its label together — a failed/empty search must leave neither a stale mask
+   * (which onRowsFiltering would keep ANDing) nor a label contradicting the error state. */
   private _clearSimilarSet(): void {
     this.similarSetBitset = null;
     this._removePushedSummary();
   }
 
   private _toggleFilter(): void {
-    // Block activation on an empty set, but always allow deactivation (e.g. Reset all filters, or
-    // turning it off after the cutoff emptied the set) so the toggle can never get stuck on.
+    // Block activation on an empty set, but always allow deactivation so the toggle can't get stuck on.
     if (!this.dataFrame || (!this.filterActive && this.similarCount === 0))
       return;
     const df = this.dataFrame;
@@ -329,20 +302,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         // Skip our contribution during a probe cycle (reads the other filters' result without ours).
         if (this._skipContribution)
           return;
-        // An external filter cycle (NOT one of our own probe/reapply cycles) may have changed the
-        // filtered population — schedule a single debounced recheck rather than searching inline.
-        // Essential for CLEARING a filter (our mask is a subset of the other filters, so removing one
-        // leaves the net df.filter unchanged and onFilterChanged never fires); the debounce + dedupe also
-        // collapses a live substructure search into ONE similarity search after it settles. Gate on the
-        // precise _ownFilterCycle flag (not the time-windowed suppress) so a user clearing a filter while
-        // we're still processing a prior change is honoured instead of dropped. Also skip while ANY
-        // similarity viewer is probing this dataframe, so two viewers don't trigger a mutual recheck cascade.
+        // An external cycle (not our probe/reapply) may have changed the population — schedule one recheck.
+        // Essential for CLEARING a filter (our subset mask leaves net df.filter unchanged, so onFilterChanged
+        // never fires). Gate on _ownFilterCycle (not the suppress window) so a clear isn't dropped; skip
+        // while any viewer is probing.
         if (!this._ownFilterCycle && !_probingDataframes.has(df))
           this._scheduleFilterRecheck();
         // Only AND a non-empty mask, so an empty similar set never hides every row.
         if (this.similarCount > 0 && this.similarSetBitset!.length === df.filter.length) {
           df.filter.and(this.similarSetBitset!, false);
-          // Surface the filter in the filter panel (replace a stale summary when the cutoff changes).
+          // Surface the filter in the panel (replace a stale summary when the cutoff changes).
           const s = this._filterSummary();
           if (this._pushedSummary !== s)
             this._removePushedSummary();
@@ -350,8 +319,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             df.rows.filters.push(s);
           this._pushedSummary = s;
         } else {
-          // Not contributing this cycle (empty set, or a length mismatch right after a row add/remove
-          // before the mask is rebuilt) — drop the label so the panel never shows a filter that isn't applied.
+          // Not contributing (empty set, or length mismatch right after a row add/remove before rebuild)
+          // — drop the label so the panel never shows a filter that isn't applied.
           this._removePushedSummary();
         }
       });
@@ -359,9 +328,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     } else {
       this._filterSub?.unsubscribe();
       this._filterSub = null;
-      // Drop any pending filter-driven recheck (and the substructure-search watchdog): they're self-guarding
-      // on `filterActive` when they fire, but cancelling here avoids a spurious search if the user rapidly
-      // toggles back on while a substructure search is still streaming.
+      // Drop any pending recheck + watchdog: they self-guard on `filterActive`, but cancelling here
+      // avoids a spurious search if the user rapidly toggles back on mid-stream.
       if (this._filterRecheckTimer) {
         clearTimeout(this._filterRecheckTimer);
         this._filterRecheckTimer = null;
@@ -371,26 +339,24 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this._externalSearchTimer = null;
       }
       this._removePushedSummary();
-      // Un-filter the TABLE, but suppress the viewer's re-render: the similar set is built against the OTHER
-      // filters (the probe excludes our own contribution), so removing our toggle doesn't change which cards
-      // are shown — recomputing + rebuilding them would just flicker the panel for no visible change.
+      // Un-filter the TABLE but suppress the re-render: the similar set is built against the OTHER filters
+      // (probe excludes our contribution), so removing our toggle doesn't change which cards show —
+      // rebuilding them would just flicker the panel.
       this._holdSuppress();
       df.rows.requestFilter();
     }
   }
 
-  /** Result of all OTHER filters, excluding this viewer's own contribution. requestFilter runs the
-   * onRowsFiltering handlers synchronously, so we probe with our contribution skipped, snapshot
-   * df.filter, then restore — all in one tick, so the grid never repaints the intermediate state.
-   * Order-independent, unlike snapshotting before our own AND inside the handler. */
+  /** Result of all OTHER filters, excluding this viewer's contribution. requestFilter runs onRowsFiltering
+   * synchronously, so we probe with our contribution skipped, snapshot df.filter, then restore — all in
+   * one tick (no intermediate repaint). Order-independent, unlike snapshotting before our own AND. */
   private _computeOtherFiltersMask(): DG.BitSet {
     const df = this.dataFrame;
-    // ASSUMES requestFilter() fires ALL onRowsFiltering handlers synchronously (true for every
-    // DG.Filter today). If a future filter does async work in its handler, the probe would snapshot the
-    // all-true reset state and we'd search the full table while believing we respect the other filters.
+    // ASSUMES requestFilter() fires ALL onRowsFiltering handlers synchronously (true for every DG.Filter
+    // today). An async future filter would let the probe snapshot the all-true reset state — wrong result.
     this._holdSuppress();
     this._ownFilterCycle = true; // both requestFilter cycles below are ours, not external
-    _probingDataframes.add(df!); // tell any sibling similarity viewer these cycles are a probe, not a change
+    _probingDataframes.add(df!); // tell any sibling viewer these cycles are a probe, not a change
     let others: DG.BitSet;
     this._skipContribution = true;
     try {
@@ -400,19 +366,14 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this._skipContribution = false;
       try {
         df.rows.requestFilter(); // restore df.filter = others AND ours
-        this._holdSuppress(); // reschedule the single window to also cover the restore cycle
+        this._holdSuppress(); // reschedule the window to also cover the restore cycle
       } finally {
-        // Reset the cycle flags FIRST so that even if the defensive re-AND below throws, the viewer never
-        // stays deaf to external changes (the AND uses notify=false, so nothing observes the flags between
-        // here and it — a zero-risk reorder that lets the unreachable "AND throws" case self-recover).
+        // Reset the cycle flags FIRST so a throwing re-AND below can't leave the viewer deaf to external
+        // changes (the AND uses notify=false — nothing observes the flags in between).
         this._ownFilterCycle = false;
         _probingDataframes.delete(df!);
-        // Defensively re-apply our mask. On the happy path the restore cycle already ANDed it (this is a
-        // harmless idempotent re-AND); but if a third-party onRowsFiltering handler THREW during the
-        // restore, df.filter would otherwise be left without our contribution — this recovers it instead
-        // of stranding the table on the others-only mask until the next filter cycle. (If the restore
-        // throws after the probe also threw, the restore's error supersedes the probe's — a finally-throw
-        // replaces the original; acceptable for that narrow double-throw case.)
+        // Defensively re-apply our mask: idempotent on the happy path, but recovers our contribution if a
+        // third-party handler THREW during the restore (else the table strands on the others-only mask).
         if (this.filterActive && this.similarSetBitset && this.similarSetBitset.length === df!.filter.length)
           df!.filter.and(this.similarSetBitset, false);
       }
@@ -420,8 +381,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return others;
   }
 
-  /** Nearest scrollable ancestor, used as the IntersectionObserver root for lazy molecule rendering
-   * (the viewer scrolls inside the context panel, not the document viewport). */
+  /** Nearest scrollable ancestor — the IntersectionObserver root for lazy rendering (the viewer scrolls
+   * inside the context panel, not the document viewport). */
   private _findScrollParent(el: HTMLElement): HTMLElement | null {
     let p: HTMLElement | null = el.parentElement;
     while (p) {
@@ -433,8 +394,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return null;
   }
 
-  /** Set a result card's current-row / selected highlight (class + background) from the live selection and
-   * reference row. Used both when building cards and when refreshing them in place (see renderInternal). */
+  /** Set a card's current-row/selected highlight (class + background) from the live selection and
+   * reference row. Used both when building cards and refreshing them in place (see renderInternal). */
   private _applyCardStyle(grid: HTMLElement, idx: number): void {
     const isCurRow = idx === this.curIdx;
     const isRef = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
@@ -446,16 +407,15 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       ((isCurRow || isRef) ? '#d3f8bd' : '#f8f8df') : (isCurRow ? '#ddffd9' : '');
   }
 
-  /** (Re)arm the lazy-render observer over `lazyHosts`, rooted at the viewer's scroll container with a 300px
-   * prefetch margin (100px against the viewport when there's no scrollable ancestor — enough to prefetch
-   * just-off-screen cards without marking every card as intersecting). Already-rendered hosts are skipped,
-   * so this is safe to call again on an in-place refresh to cover cards not yet scrolled into view. */
+  /** (Re)arm the lazy-render observer over `lazyHosts`, rooted at the scroll container with a 300px
+   * prefetch margin (100px against the viewport with no scrollable ancestor). Already-rendered hosts are
+   * skipped, so safe to call again on an in-place refresh. */
   private _observeLazyHosts(gridDiv: HTMLElement, lazyHosts: {host: HTMLElement; molStr: string}[]): void {
     const {width, height} = this.sizesMap[this.size];
     const scrollRoot = this._findScrollParent(gridDiv);
     this._molObserver?.disconnect();
     // Close over the local `observer`, not this._molObserver (which the next render reassigns) — so a late
-    // callback from this render unobserves on its OWN observer and never touches a newer instance.
+    // callback unobserves on its OWN observer and never touches a newer instance.
     const observer = new IntersectionObserver((entries) => {
       for (const e of entries) {
         if (!e.isIntersecting)
@@ -463,7 +423,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         const host = e.target as HTMLElement & {_molStr?: string; _rendered?: boolean};
         observer.unobserve(host);
         if (host._rendered || !host.isConnected)
-          continue; // skip detached/already-drawn hosts — don't waste RDKit work after a fast scroll-then-close
+          continue; // skip detached/already-drawn hosts — no wasted RDKit work after a fast scroll-then-close
         host._rendered = true;
         host.appendChild(renderMolecule(host._molStr!, {width, height}));
       }
@@ -475,8 +435,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  /** True when two row-source masks are equal — compares the packed word buffers directly (no clone),
-   * bailing on the first differing word. */
+  /** True when two masks are equal — compares packed word buffers directly (no clone), bailing early. */
   private _sameMask(a: DG.BitSet | null, b: DG.BitSet | null): boolean {
     if (!a || !b || a.length !== b.length)
       return false;
@@ -488,14 +447,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return true;
   }
 
-  /** Coalesce filter-driven re-searches: after filter activity settles, re-run the similarity search at
-   * most once, and only if the other-filters result actually changed since the current set was built.
-   * Keeps a live substructure (or any) filter from launching a similarity search on every cycle. */
+  /** Coalesce filter-driven re-searches: after activity settles, re-run the search at most once, and only
+   * if the other-filters result actually changed. Keeps any live filter from re-searching every cycle. */
   private _scheduleFilterRecheck(): void {
-    // A substructure search is streaming results (calling requestFilter per batch) — don't re-search on
-    // every batch; the progress handler will trigger a single recheck once the search reaches 100%. The
-    // watchdog timer is live exactly while such a search is mid-stream (set on progress < 100, cleared on
-    // completion/quiesce), so its presence is the "in progress" flag.
+    // A substructure search is streaming (requestFilter per batch) — its progress handler triggers a
+    // single recheck at 100%. The watchdog timer is live only mid-stream, so its presence = "in progress".
     if (this._externalSearchTimer)
       return;
     if (this._filterRecheckTimer)
@@ -507,31 +463,27 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         return;
       const filterBased = this.rowSource === RowSourceTypes.Filtered ||
         this.rowSource === RowSourceTypes.FilteredSelected;
-      // In filter-based modes the similar set depends on the other filters — skip the (expensive) search
-      // when they are unchanged. In other modes a filter change can't alter the set, so just re-render.
+      // Filter-based modes depend on the other filters — skip the expensive search when unchanged. Other
+      // modes can't be altered by a filter change, so just re-render.
       if (filterBased) {
         const current = this.getRowSourceIndexes(); // runs the probe ONCE
         if (this._sameMask(current, this._builtAgainstFilter))
           return;
-        // Hand the just-probed mask to the render so it doesn't probe again (halves the filter cycles).
-        // render()'s synchronous prefix consumes it before its first await; the post-clear below drops
-        // it if the render took a no-recompute path, so it can never leak to an unrelated caller.
+        // Hand the just-probed mask to the render so it doesn't probe again (consumed before render's
+        // first await; the post-clear drops it on a no-recompute path so it can't leak).
         this._recheckRowSource = current;
         this.render(true);
         this._recheckRowSource = null;
       } else {
-        // All/Selected: the similar set is filter-independent, so re-render (refresh highlights) WITHOUT
-        // an O(N) similarity search.
+        // All/Selected: filter-independent set — re-render (refresh highlights) WITHOUT an O(N) search.
         this.render(false);
       }
     }, FILTER_RECHECK_DEBOUNCE_MS);
   }
 
-  /** Subscribe to the chem substructure-search progress event for the current molecule column. A
-   * substructure (or "is similar") filter on that column calls requestFilter() on every progress batch;
-   * while that stream is running we hold off the recheck (see _scheduleFilterRecheck) and fire exactly
-   * one similarity search when the search reaches 100% (or after a quiet period, if it was terminated
-   * before completing). */
+  /** Subscribe to the substructure-search progress event for the current molecule column. Such a filter
+   * calls requestFilter() per batch; while streaming we hold off the recheck and fire exactly one search
+   * at 100% (or after a quiet period if it was terminated early). */
   private _subscribeSearchProgress(): void {
     this._searchProgressSub?.unsubscribe();
     this._searchProgressSub = null;
@@ -553,28 +505,25 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           clearTimeout(this._filterRecheckTimer);
           this._filterRecheckTimer = null;
         }
-        // Watchdog: if the search is terminated before 100% (no further progress), recover after a quiet
-        // period so the recheck isn't blocked forever. While it is set, _scheduleFilterRecheck stays gated.
+        // Watchdog: if terminated before 100%, recover after a quiet period so the recheck isn't blocked
+        // forever. While set, _scheduleFilterRecheck stays gated.
         this._externalSearchTimer = setTimeout(() => {
           this._externalSearchTimer = null;
           if (this.filterActive)
             this._scheduleFilterRecheck();
         }, EXTERNAL_SEARCH_WATCHDOG_MS);
       } else {
-        // Search complete (timer already cleared above): run one similarity search against the settled set.
+        // Search complete (timer cleared above): run one similarity search against the settled set.
         if (this.filterActive)
           this._scheduleFilterRecheck();
       }
     });
   }
 
-  /** While our filter is active, route filter-change re-renders through the debounced, deduped recheck
-   * so a burst of filter cycles produces at most one similarity search after the filter settles.
-   * NOTE: this is one of TWO paths that schedule the recheck — the onRowsFiltering handler is the other
-   * (and the only one that fires when net df.filter is unchanged, e.g. clearing a filter). The
-   * redundancy is intentional and load-bearing: the 300ms _suppressFilterRender window can swallow this
-   * onFilterChanged path for a genuine external change, and the onRowsFiltering path covers that case.
-   * Don't remove either without re-checking the clear-and-re-expand behaviour. */
+  /** Route filter-change re-renders through the debounced, deduped recheck. One of TWO paths that schedule
+   * it — onRowsFiltering is the other (and the only one that fires when net df.filter is unchanged, e.g.
+   * clearing). Load-bearing redundancy: the suppress window can swallow this path for a genuine external
+   * change, and onRowsFiltering covers that. Don't remove either without re-checking clear-and-re-expand. */
   override async onExternalFilterChanged(): Promise<void> {
     // Our own requestFilter cycles open a short suppress window so they don't loop back as a re-render.
     if (this._suppressFilterRender)
@@ -586,22 +535,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   override getRowSourceIndexes(): DG.BitSet {
-    // PLATFORM CONTRACT: the filter-active branch below probes via _computeOtherFiltersMask, which assumes
-    // requestFilter() runs every onRowsFiltering subscriber SYNCHRONOUSLY (true for all current DG filters,
-    // but undocumented). If a future filter ever contributes asynchronously, the probe would snapshot the
-    // reset (all-true) state and this viewer would silently search the whole table believing it respects the
-    // other filters — a wrong-result, not a crash. Revisit here if DG filters ever go async.
-    // Reuse the mask the pending recheck just probed (see _scheduleFilterRecheck) instead of probing again.
+    // PLATFORM CONTRACT: _computeOtherFiltersMask assumes requestFilter() runs every onRowsFiltering
+    // subscriber SYNCHRONOUSLY (true for all current DG filters). An async future filter would snapshot
+    // the reset state → wrong result. Reuse the mask the pending recheck just probed instead of re-probing.
     if (this._recheckRowSource) {
       const m = this._recheckRowSource;
       this._recheckRowSource = null;
       return m;
     }
-    // While our own filter is active, search against the OTHER filters' result so changing the
-    // reference row does not progressively shrink the set (order-independent probe, not a snapshot).
-    // Covers both filter-based row sources; FilteredSelected also intersects the selection. In All/
-    // Selected modes the similar set is filter-independent, so no probe — the handler still ANDs our
-    // mask into df.filter, but an external filter change can't change which molecules ARE similar.
+    // Search against the OTHER filters' result so changing the reference row doesn't progressively shrink
+    // the set. Covers both filter-based sources; FilteredSelected also intersects the selection.
     if (this.filterActive &&
       (this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)) {
       const others = this._computeOtherFiltersMask();
@@ -611,18 +554,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return super.getRowSourceIndexes();
   }
 
-  /** Reset all per-table filter-runtime state, including the three timers that gate the recheck. Shared by
-   * detach() and onTableAttached()'s re-attach guard so a field added to one path can't be silently
-   * forgotten in the other. Callers handle their own extras (detach: progress/observer subs + requestFilter
-   * restore; onTableAttached: limit clamp / label strip). */
+  /** Reset all per-table filter-runtime state (incl. the three recheck-gating timers). Shared by detach()
+   * and onTableAttached()'s re-attach guard so a field added to one path isn't forgotten in the other.
+   * Callers handle their own extras (progress/observer subs, requestFilter restore, limit clamp, etc.). */
   private _resetFilterState(): void {
     this._searchGen++; // abandon any in-flight search so it can't write state after the reset
     this._filterSub?.unsubscribe();
     this._filterSub = null;
     this.filterActive = false;
-    // Drop the previous table's similar set: a stale non-zero trueCount would otherwise slip past the
-    // toggle's activation guard during the async attach-render, briefly showing an "active" filter that
-    // ANDs nothing (the length guard skips it) until the render rebuilds the mask.
+    // Drop the previous table's similar set: a stale trueCount could slip past the toggle's activation
+    // guard during the async attach-render, briefly showing an "active" filter that ANDs nothing.
     this.similarSetBitset = null;
     // Drop the cached card snapshot so the next render full-rebuilds (and we don't hold detached DOM refs).
     this._renderedCards = [];
@@ -643,8 +584,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       clearTimeout(this._filterRecheckTimer);
       this._filterRecheckTimer = null;
     }
-    // The substructure-search watchdog also gates _scheduleFilterRecheck, so clear it here too (the progress
-    // SUBSCRIPTION that drives it is torn down separately, by detach / _subscribeSearchProgress).
+    // The watchdog also gates _scheduleFilterRecheck, so clear it too (its progress SUBSCRIPTION is torn
+    // down separately, by detach / _subscribeSearchProgress).
     if (this._externalSearchTimer) {
       clearTimeout(this._externalSearchTimer);
       this._externalSearchTimer = null;
@@ -652,47 +593,42 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this._removePushedSummary();
     this.filterBtn.classList.remove('active');
     this.filterBtn.setAttribute('aria-pressed', 'false');
-    // Reset the label too, so a screen reader doesn't announce "Deactivate…" on a now-off button after a
-    // detach-while-active.
+    // Reset the label too, so a screen reader doesn't announce "Deactivate…" on a now-off button.
     this.filterBtn.setAttribute('aria-label', 'Filter table to similar set');
   }
 
   override async onTableAttached(): Promise<void> {
     // Idempotent re-attach guard: if the platform reused this instance WITHOUT a detach, drop any stale
-    // filter subscription/state bound to the previous dataframe so we neither double-subscribe nor carry
-    // the toggle over. (In the normal detach-then-attach path this is all already reset — a no-op.)
+    // filter sub/state from the previous dataframe (no double-subscribe, no carried-over toggle). A no-op
+    // in the normal detach-then-attach path.
     this._resetFilterState();
-    // Keep the modest default limit (select & filter act on the full above-cutoff set regardless of
-    // how many cards show); only clamp a too-large restored value down to the table size.
+    // Keep the modest default limit (select/filter act on the full above-cutoff set); only clamp a
+    // too-large restored value down to the table size.
     if (this.dataFrame && this.limit > this.dataFrame.rowCount)
       this.limit = Math.max(1, this.dataFrame.rowCount);
-    // The toggle is session-only (off on a fresh attach) — strip any of our labels left in the filter
-    // panel by a restored project so it never lingers without a live filter behind it.
+    // The toggle is session-only — strip any of our labels left in the filter panel by a restored project
+    // so it never lingers without a live filter behind it.
     if (this.dataFrame) {
       for (const s of [...this.dataFrame.rows.filters]) {
         if (s.startsWith(FILTER_LABEL_PREFIX))
           this.dataFrame.rows.filters.remove(s);
       }
     }
-    // Match the other Chem filters: the filter panel's "Reset all filters" must clear ours too. Register
-    // AFTER super (super's first act is `this.subs = []`, which would otherwise drop a sub pushed before
-    // it), and in a `finally` so a throwing first render still can't skip it. The base's subs-reset already
-    // prevents accumulation on re-attach, so this single registration is safe.
+    // Match the other Chem filters: "Reset all filters" must clear ours too. Register AFTER super (its
+    // first act is `this.subs = []`, which would drop a sub pushed before it), and in `finally` so a
+    // throwing first render can't skip it. The base's subs-reset prevents accumulation on re-attach.
     try {
       await super.onTableAttached();
     } finally {
       this.subs.push(grok.events.onResetFilterRequest.subscribe(() => {
-        // onResetFilterRequest is GLOBAL (no dataframe payload), so with several tables open it also fires
-        // for other tables' "Reset all filters". Only honour it when our table is the one in view, so
-        // resetting filters on table B doesn't silently switch our filter off on table A.
+        // onResetFilterRequest is GLOBAL (no df payload), so it also fires for other tables' "Reset all
+        // filters". Only honour it when our table is in view, so resetting table B doesn't switch off A.
         if (this.filterActive && this.dataFrame === grok.shell.tv?.dataFrame)
           this._toggleFilter();
       }));
-      // Re-render on row add (similarity only — kept out of the base so it doesn't force an O(n^2) diversity
-      // recompute on every addition): a mask sized to the old row count would otherwise silently turn the
-      // filter into a no-op while its label lingers in the filter panel. While the toggle is on, route
-      // through the recheck (which rebuilds the mask to the new length even when followCurrentRow is off,
-      // avoiding a ~300ms zombie-filter flicker); otherwise a plain re-render suffices.
+      // Re-render on row add (similarity only — out of the base to avoid an O(n^2) diversity recompute):
+      // a mask sized to the old row count would silently turn the filter into a no-op. Toggle on → route
+      // through the recheck (rebuilds the mask to the new length); else a plain re-render.
       if (this.dataFrame) {
         this.subs.push(DG.debounce(this.dataFrame.onRowsAdded, 50).subscribe(async () => {
           if (this.filterActive)
@@ -701,33 +637,31 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             await this.render();
         }));
       }
-      // Watch substructure-search progress on our molecule column so a streaming search doesn't trigger
-      // one similarity search per batch (super has detected this.moleculeColumn by now).
+      // Watch substructure-search progress so a streaming search doesn't trigger one search per batch
+      // (super has detected this.moleculeColumn by now).
       this._subscribeSearchProgress();
     }
   }
 
   override detach(): void {
     const wasFiltering = this.filterActive; // capture before _resetFilterState clears it
-    // Teardown beyond the shared filter state: the lazy-render observer and the progress subscription
-    // (its watchdog timer is cleared by _resetFilterState).
+    // Teardown beyond the shared filter state: lazy-render observer + progress sub (watchdog timer is
+    // cleared by _resetFilterState).
     this._molObserver?.disconnect();
     this._molObserver = null;
     this._searchProgressSub?.unsubscribe();
     this._searchProgressSub = null;
     this._resetFilterState();
-    // If we were filtering, re-run the filter cycle (our listener is gone now) so the table is restored
-    // instead of being left filtered with no viewer or label to explain why.
+    // If we were filtering, re-run the filter cycle (our listener is gone) so the table is restored
+    // instead of left filtered with no viewer or label to explain why.
     if (wasFiltering && this.dataFrame)
       this.dataFrame.rows.requestFilter();
     super.detach();
   }
 
   async renderInternal(computeData: boolean): Promise<void> {
-    // Tear down the previous render's lazy-render observer up front: the early-exit paths below (no/invalid
-    // column, empty table, malformed query) never reach the success-path disconnect, so without this an
-    // observer from a prior populated render would keep its (now-detached) card hosts alive until the next
-    // successful render. The success path creates a fresh observer.
+    // Tear down the previous render's lazy observer up front: the early-exit paths below never reach the
+    // success-path disconnect, so a prior observer would otherwise keep its detached card hosts alive.
     this._molObserver?.disconnect();
     this._molObserver = null;
     if (!this.beforeRender())
@@ -738,22 +672,21 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         return;
       }
       if (this.dataFrame.rowCount === 0) {
-        this.closeWithError('No rows to search'); // clearer than "Empty molecule cannot be used…"
+        this.closeWithError('No rows to search'); // clearer than "Empty molecule…"
         return;
       }
       let progressBar: DG.TaskBarProgressIndicator | null = null;
       this.curIdx = this.dataFrame.currentRowIdx === -1 ? 0 : this.dataFrame.currentRowIdx;
-      // _recheckRowSource is set ONLY by a filter-driven recheck (see _scheduleFilterRecheck). Force the
-      // recompute in that case even when followCurrentRow is off — otherwise the similar set stays built
-      // against the old filtered population and the contribution handler keeps ANDing a stale mask.
+      // _recheckRowSource is set ONLY by a filter-driven recheck. Force the recompute even when
+      // followCurrentRow is off, else the set stays built against the old population (stale mask ANDed).
       const filterRecheck = this._recheckRowSource != null;
       if (computeData && (filterRecheck || (!this.gridSelect && this.followCurrentRow) || this.isEditedFromSketcher)) {
         progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
         this.isComputing = true;
         this.error = '';
         this.root.classList.remove(`chem-malformed-molecule-error`);
-        // Move the reference to the current row only when actually tracking it; a filter-driven recheck must
-        // keep the existing (pinned) reference, not jump it to the current row when followCurrentRow is off.
+        // Move the reference to the current row only when tracking it; a filter-driven recheck must keep
+        // the pinned reference, not jump to the current row when followCurrentRow is off.
         if (!filterRecheck || this.followCurrentRow)
           this.targetMoleculeIdx = this.curIdx;
         if (DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
@@ -761,17 +694,15 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           return;
         }
         const searchGen = ++this._searchGen;
-        // Capture cutoff AND metric once: the search and the mask must use the SAME values even if a slider
-        // drag or metric switch changes this.cutoff / this.distanceMetric during the await (otherwise the
-        // displayed set, the mask, and the filter-panel label could disagree).
+        // Capture cutoff AND metric once: search and mask must use the SAME values even if a slider drag
+        // or metric switch changes them during the await (else set, mask, and label could disagree).
         const cutoff = this.cutoff;
         const distanceMetric = this.distanceMetric;
         try {
           const rowSourceIdxs = this.getRowSourceIndexes();
-          // Snapshot the row source (other-filters result) this search runs against, so a later filter
-          // change is detected even when net df.filter is unchanged — but only while the toggle is on, since
-          // _builtAgainstFilter is read solely by the (filter-active) recheck dedupe. Cloning a full-width
-          // bitset on every search when the toggle is off is pure waste.
+          // Snapshot the row source this search runs against, so a later filter change is detected even
+          // when net df.filter is unchanged — only while the toggle is on (the recheck dedupe is its sole
+          // reader; cloning otherwise is waste).
           this._builtAgainstFilter = this.filterActive ? rowSourceIdxs.clone() : null;
           rowSourceIdxs.set(this.targetMoleculeIdx, true);
           const result = await chemSimilaritySearchEx(this.dataFrame!, this.moleculeColumn!,
@@ -780,8 +711,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           if (searchGen !== this._searchGen)
             return; // a newer search started while this one ran — let it own the result/render
           if (!result) {
-            // Clear the stale set + label so the table/panel don't contradict the error state (a later
-            // filter cycle then un-narrows; no requestFilter here, which could re-trigger the failing search).
+            // Clear the stale set + label so table/panel don't contradict the error state (no requestFilter
+            // here — it could re-trigger the failing search; a later filter cycle un-narrows).
             this._clearSimilarSet();
             this.closeWithError(`Malformed molecule cannot be used for similarity search`);
             return;
@@ -790,16 +721,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           this.idxs = result.df.getCol('indexes');
           this.scores = result.df.getCol('score');
           this.similarSetBitset = this._buildSimilarSetBitset(result.allDistances, rowSourceIdxs, cutoff);
-          // Record the captured cutoff/metric this mask was built with, so the filter-panel label stays in
-          // sync with the applied mask rather than a mid-drag this.cutoff / this.distanceMetric.
+          // Record the captured cutoff/metric this mask was built with, so the label stays in sync with
+          // the applied mask rather than a mid-drag live value.
           this._bitsetCutoff = cutoff;
           this._bitsetMetric = distanceMetric;
           if (this.filterActive)
             this._reapplyFilter();
         } catch (e: unknown) {
-          this._clearSimilarSet(); // clear the stale set + label so neither contradicts the error state
-          this.clearResults(); // don't leave the previous render's cards stranded under the error toast
-          grok.shell.error(e instanceof Error ? e.message : String(e)); // a non-Error throw → readable text
+          this._clearSimilarSet(); // clear stale set + label so neither contradicts the error state
+          this.clearResults(); // don't strand the previous render's cards under the error toast
+          grok.shell.error(e instanceof Error ? e.message : String(e)); // non-Error throw → readable text
           return;
         } finally {
           progressBar?.close();
@@ -810,10 +741,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.closeWithError(this.error, progressBar);
         return;
       }
-      // Displayed set unchanged (a non-recompute render: selection / current-row / metadata change produces
-      // the SAME molCol). Refresh the per-card highlights in place and re-arm the lazy observer instead of
-      // clearing + rebuilding the whole panel — which would flash every card and re-pop its molecule. A
-      // recompute yields a NEW molCol, so it falls through to the full rebuild below.
+      // Displayed set unchanged (non-recompute render → SAME molCol): refresh highlights in place and
+      // re-arm the observer instead of rebuilding (which flashes every card). A recompute yields a NEW
+      // molCol → full rebuild below.
       if (this.molCol === this._renderedMolCol && this.size === this._renderedSize && this._renderedCards.length) {
         for (const {grid, idx} of this._renderedCards)
           this._applyCardStyle(grid, idx);
@@ -823,10 +753,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         return;
       }
       this.clearResults();
-      // Grey out the action icons when there is nothing to act on. Select is disabled on an empty set.
-      // The Filter toggle is disabled only when it's OFF — if it's already ON and the set just emptied,
-      // it MUST stay clickable so the user can turn it back off (the CSS sets pointer-events:none on the
-      // disabled class, which would otherwise trap a stuck-on toggle that _toggleFilter is happy to clear).
+      // Grey out the action icons when there's nothing to act on. The Filter toggle stays clickable while
+      // ON even on an empty set (the disabled CSS sets pointer-events:none, which would trap it on).
       const noSimilar = this.similarCount === 0;
       const setDisabled = (b: HTMLElement, disabled: boolean) => {
         b.classList.toggle('chem-similarity-action-disabled', disabled);
@@ -835,12 +763,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       };
       setDisabled(this.selectBtn, noSimilar);
       setDisabled(this.filterBtn, noSimilar && !this.filterActive);
-      // If the set empties while the toggle is on, the handler stops ANDing (table un-filters) — drop
-      // the now-meaningless label too, so it doesn't linger until the user toggles off.
+      // Set empties while toggle on → handler stops ANDing; drop the now-meaningless label.
       if (noSimilar && this.filterActive)
         this._removePushedSummary();
-      // Surface the full similar-set size: Select/Filter act on ALL of it, which can far exceed the
-      // shown cards (this is the "see more than 50" ask — make the real count visible).
+      // Surface the full similar-set size: Select/Filter act on ALL of it, which can far exceed the shown
+      // cards (the "see more than 50" ask).
       const selectMsg = noSimilar ? 'Select all similar' : `Select all ${this.similarCount} similar`;
       ui.tooltip.bind(this.selectBtn, selectMsg);
       this.selectBtn.setAttribute('aria-label', selectMsg);
@@ -848,7 +775,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const panel = [];
       const grids = [];
       const lazyHosts: {host: HTMLElement; molStr: string}[] = [];
-      const renderedCards: {grid: HTMLElement; idx: number}[] = []; // idx cards, for later in-place restyle
+      const renderedCards: {grid: HTMLElement; idx: number}[] = []; // for later in-place restyle
       let cnt = 0; let cnt2 = 0;
       panel[cnt++] = this.metricsDiv;
       if (this.molCol && this.idxs && this.scores) {
@@ -879,7 +806,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             label,
             molProps], { style: { position: 'relative' } });
           grid.classList.add('d4-flex-col');
-          this._applyCardStyle(grid, idx); // current-row / selected highlight (also reused by the in-place path)
+          this._applyCardStyle(grid, idx); // current-row/selected highlight (also reused by in-place path)
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
               if (event.shiftKey || event.altKey)
@@ -896,10 +823,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grids[cnt2++] = grid;
           renderedCards.push({grid, idx});
         }
-        // The full similar set can exceed the shown cards (which are capped at `limit` and DISPLAY_CAP) —
-        // tell the user, and that Select / Filter act on the whole set, not just what is rendered. Count
-        // displayed cards that are actually in the similar set (the reference card occupies a slot but is
-        // excluded from similarCount) so the "more" delta is exact whether or not the reference is shown.
+        // The full set can exceed the shown cards (capped at `limit`/DISPLAY_CAP). Count displayed cards
+        // actually in the set (the reference card occupies a slot but isn't in similarCount) so the "more"
+        // delta is exact either way.
         let shownSimilar = 0;
         for (let i = 0; i < displayCount; i++) {
           if (this.similarSetBitset?.get(this.idxs.get(i)))
@@ -916,7 +842,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       panel[cnt++] = gridDiv;
       this.root.appendChild(ui.panel([ui.divV(panel)]));
       this._observeLazyHosts(gridDiv, lazyHosts);
-      // Snapshot this render so a later non-recompute render can refresh highlights in place (see above).
+      // Snapshot this render so a later non-recompute render can refresh highlights in place.
       this._renderedCards = renderedCards;
       this._renderedLazyHosts = lazyHosts;
       this._renderedGridDiv = gridDiv;
