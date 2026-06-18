@@ -64,6 +64,33 @@ export async function loginToDatagrok(page: Page) {
   await injectToken(page, token);
 }
 
+// Build the direct file-browse URL for the configured instance (DATAGROK_URL —
+// dev/public/release/local). `relPath` is dot-namespaced, e.g.
+// 'System.AppData/Helm/samples/helm-showcase.csv'.
+export function fileBrowseUrl(relPath: string): string {
+  return `${baseUrl}/file/${relPath}?browse=files`;
+}
+
+// Authenticate, then navigate DIRECTLY to the dataset's file-browse URL so the
+// platform and the dataset open in a SINGLE navigation — no open-platform-then-
+// readCsv round-trip. The URL is derived from the configured instance, so the
+// same spec opens the right dataset on dev / public / release without changes.
+// Waits for the preloader to clear and the grid viewer to attach.
+export async function loginAndOpenFile(page: Page, relPath: string) {
+  const token = process.env.DATAGROK_AUTH_TOKEN;
+  if (!token || token.length === 0)
+    throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
+  // Set the auth cookie/localStorage at the origin first…
+  await page.goto(baseUrl + '/oauth/');
+  const u = new URL(baseUrl);
+  await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
+  await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
+  // …then go straight to the dataset URL (platform + dataset in one navigation).
+  await page.goto(fileBrowseUrl(relPath));
+  await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60_000});
+}
+
 // Read a second-user dev key (`key2:`) from ~/.grok/config.yaml for the server
 // whose url matches the current DATAGROK_URL (falling back to the configured
 // default server). This makes the second-user login work under a plain
