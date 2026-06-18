@@ -50,6 +50,9 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   get onChanged(): Observable<any> { return this._onChanged; }
 
+  fireChanged(value?: any) {
+    this._onChanged.next(value);
+  }
 
   constructor(
     protected _monomers: MonomerLibData,
