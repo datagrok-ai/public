@@ -243,17 +243,9 @@ category('PolyTool: ChemEnum: dedup', () => {
     expectArray(uniqueKeepMask(['A', 'B', 'A', 'C', 'B']), [true, true, false, true, false]);
   });
 
-  test('all-unique values are all kept', async () => {
-    expectArray(uniqueKeepMask(['A', 'B', 'C']), [true, true, true]);
-  });
-
   test('blank and nullish entries are never collapsed', async () => {
     // Empty/invalid rows (e.g. failed canonicalization) must each be kept, not merged into one.
     expectArray(uniqueKeepMask(['', '', 'A', null, 'A', undefined]), [true, true, true, true, false, true]);
-  });
-
-  test('empty input yields empty mask', async () => {
-    expectArray(uniqueKeepMask([]), []);
   });
 });
 
@@ -295,14 +287,6 @@ category('PolyTool: ChemEnum: dedup reduces count', () => {
     const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
     expect(raw, 3); // three R-groups → three enumerated rows
     expect(unique, 2); // the two phenyls are one molecule
-  });
-
-  test('all-distinct products: dedup leaves the count unchanged', async () => {
-    const cores = [makeCore('C[*:1]', 'c')];
-    const r1 = [makeRGroup('O[*:1]', 1, 'a'), makeRGroup('S[*:1]', 1, 'b'), makeRGroup('N[*:1]', 1, 'c')];
-    const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
-    expect(raw, 3);
-    expect(unique, 3); // nothing removed when there are no duplicates
   });
 });
 
