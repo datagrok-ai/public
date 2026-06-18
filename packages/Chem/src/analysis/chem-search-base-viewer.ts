@@ -42,10 +42,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   isComputing = false;
   rowSource: string;
   error = '';
-  /** When set, the debounced onFilterChanged handler skips re-rendering.
-   * Used by the similarity filter toggle to avoid a feedback loop when it
-   * applies its own filter via onRowsFiltering (see ChemSimilarityViewer). */
-  protected _suppressFilterRender = false;
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -55,6 +51,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0],
       {choices: CHEM_SIMILARITY_METRICS, category: 'Similarity search'});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
+    // Per-viewer default (e.g. the similarity viewer raises it to 'Filtered' in its own constructor).
     this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.addProperty('moleculeColumnName', DG.TYPE.COLUMN, '', {semType: DG.SEMTYPE.MOLECULE});
     this.name = name;
@@ -73,10 +70,25 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    if (this._debRenderTimeout)
+      clearTimeout(this._debRenderTimeout);
     this.subs.forEach((sub) => sub.unsubscribe());
+    // Clear the array too: onTableAttached pushes fresh subscriptions, so without this a re-attach would
+    // accumulate dead subs (and a second live onResetFilterRequest would toggle the filter twice).
+    this.subs = [];
   }
 
   async onTableAttached(): Promise<void> {
+    // Drop any prior subscriptions before re-subscribing (mirrors detach), so a re-attach WITHOUT a
+    // preceding detach can't accumulate duplicate subs — e.g. a second onResetFilterRequest that would
+    // make "Reset all filters" toggle the similarity filter twice.
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
+    // Clamp a restored/over-set limit to this viewer's own property max (project restore writes the
+    // field directly, bypassing onPropertyChanged) — 50 for diversity, MAX_LIMIT_SIMILARITY for similarity.
+    const limitMax = this.getProperty('limit')?.max;
+    if (limitMax != null && this.limit > limitMax)
+      this.limit = limitMax;
     this.init();
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
@@ -91,11 +103,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) =>
           await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
-        .subscribe(async (_: any) => {
-          if (this._suppressFilterRender)
-            return;
-          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected);
-        }));
+        .subscribe(async (_: any) => await this.onExternalFilterChanged()));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
@@ -117,9 +125,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       const col = this.dataFrame.col(property.get(this));
       this.moleculeColumn = col;
     }
-    // limit clamp removed — the property `max` enforces the cap (MAX_LIMIT = 50 for the diversity
-    // viewer; the similarity viewer raises its own to MAX_LIMIT_SIMILARITY), and `cutoff` is the
-    // primary driver for how many similar molecules are shown.
+    // Clamp `limit` to the property's own (per-viewer) max — 50 for diversity, MAX_LIMIT_SIMILARITY for
+    // similarity — so a value written via setOptions (which bypasses the UI slider's max) stays bounded.
+    if (property?.name === 'limit' && this.limit > property.max)
+      this.limit = property.max;
     if (property.name === 'moleculeProperties') {
       this.debouncedRender(false);
       return;
@@ -156,7 +165,9 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }, 200);
   }
 
+  private _renderEpoch = 0;
   async render(computeData = true): Promise<void> {
+    const epoch = ++this._renderEpoch;
     try {
       if (!this.moleculeColumn) {
         ui.empty(this.root);
@@ -166,11 +177,19 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       }
       await this.renderInternal(computeData);
     } finally {
-      if (this.isComputing) {
+      // Only the LATEST render emits completion, so renderCompleted reflects the winning render — not a
+      // stale one that bailed mid-flight (a fast row-navigation can otherwise fire it before the winner).
+      if (this.isComputing && epoch === this._renderEpoch) {
         this.isComputing = false;
         this.renderCompleted.next();
       }
     }
+  }
+
+  /** Called (debounced) when the dataframe's filter changes. Subclasses may override to coalesce or
+   * defer the re-render; the base simply re-renders, recomputing only in filter-driven row sources. */
+  protected async onExternalFilterChanged(): Promise<void> {
+    await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected);
   }
 
   async renderInternal(compute = true) {
