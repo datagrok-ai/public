@@ -264,7 +264,7 @@ export const RichFunctionView = Vue.defineComponent({
       type: Function as Vue.PropType<ViewersHook>,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
   },
@@ -542,7 +542,13 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
+    const pinView = () => {
+      if (props.view && !props.view.isPinned)
+        props.view.pin();
+    };
+
     const runSA = async () => {
+      pinView();
       const ranges = getRanges('rangeSA');
       const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
       SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok});
@@ -551,6 +557,7 @@ export const RichFunctionView = Vue.defineComponent({
     const runFitting = async () => {
       if (isFittingActive.value)
         return;
+      pinView();
       isFittingActive.value = true;
       try {
         const currentView = grok.shell.v;
