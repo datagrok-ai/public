@@ -1,5 +1,10 @@
 # Datagrok-tools changelog
 
+## 6.4.1 (2026-06-18)
+
+* Fixed `grok` failing with `Cannot find module './commands/build'` — the `.npmignore` `build.js` rule was unanchored and excluded the compiled `bin/commands/build.js` from the published package; anchored it to `/build.js`.
+* Pinned `ignore-walk` to ^6.0.5 so the package still supports Node 18 (9.x requires Node 22+).
+
 ## 6.4.0 (2026-06-18)
 
 * Dependencies: sanitized and updated all dependencies; `npm install` is now warning-free and `npm audit` reports 0 vulnerabilities (was 24).

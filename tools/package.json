@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "6.4.0",
+  "version": "6.4.1",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -14,7 +14,7 @@
     "datagrok-api": "^1.27.6",
     "estraverse": "^5.3.0",
     "glob": "^13.0.6",
-    "ignore-walk": "^9.0.0",
+    "ignore-walk": "^6.0.5",
     "inquirer": "^8.2.7",
     "js-yaml": "^4.2.0",
     "minimist": "^1.2.8",
