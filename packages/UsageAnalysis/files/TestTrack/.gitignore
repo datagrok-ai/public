@@ -7,3 +7,8 @@ test-report-playwright.csv
 e2e/.auth.json
 auth-dev.json
 *.log
+
+# Local env files (credentials/config — never commit)
+.env
+.env.test
+.env.local
