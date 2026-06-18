@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.4.2 (2026-06-18)
+
+* `grok publish` — registry-aware Docker fallback: when a package's image isn't built locally and the target server has no compatible record, `grok publish` now checks the configured registry and Docker Hub (`docker manifest inspect`) for the expected `datagrok/<name>:<version>` (and content-hashed) tag and uses it, instead of reporting "No fallback available" and failing. Fixes dependency publishes (e.g. Bio → @datagrok/chem) on CI runners where the image exists in the registry but not locally.
+
 ## 6.4.1 (2026-06-18)
 
 * Fixed `grok` failing with `Cannot find module './commands/build'` — the `.npmignore` `build.js` rule was unanchored and excluded the compiled `bin/commands/build.js` from the published package; anchored it to `/build.js`.
