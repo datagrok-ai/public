@@ -1198,6 +1198,8 @@ function buildChemEnumPanel(
   });
   ui.tooltip.bind(tableNameInput.input,
     'Name of the result table created by the enumeration (ignored when appending to an existing table).');
+  // Wider field so longer table names stay fully visible.
+  tableNameInput.input.style.width = '250px';
 
   let okButton: HTMLButtonElement | null = null;
 
