@@ -25,6 +25,19 @@ const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   bool: false,
 };
 
+/** Pick the dataframe input a column/column-list param defaults to: the one
+ *  sharing its numeric suffix (JoinTables: `keys2` → `table2`), else the first
+ *  dataframe input. Used to seed the `columnTables` association on a fresh node
+ *  and as the compiler's fallback for graphs that pre-date the association. */
+export function defaultTableParam(columnParam: string, dataframeParams: string[]): string {
+  const suffix = /(\d+)$/.exec(columnParam)?.[1];
+  if (suffix !== undefined) {
+    const matched = dataframeParams.find((d) => d.endsWith(suffix));
+    if (matched) return matched;
+  }
+  return dataframeParams[0];
+}
+
 export class FuncNode extends FlowNode {
   constructor(func: DG.Func) {
     const role = getRole(func);
@@ -43,6 +56,12 @@ export class FuncNode extends FlowNode {
     const funcInputs = func.inputs;
     const funcOutputs = func.outputs;
 
+    // Dataframe input param names — column/column-list inputs resolve their
+    // `table.col(...)` against one of these (see `columnTables` below).
+    const dataframeParams = funcInputs
+      .filter((p) => String(p.propertyType) === 'dataframe')
+      .map((p) => p.name);
+
     // 1. Inputs.
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
@@ -51,6 +70,18 @@ export class FuncNode extends FlowNode {
       if (inp.propertyType in PRIMITIVE_DEFAULTS) {
         const def = (inp as unknown as {defaultValue?: unknown}).defaultValue ?? PRIMITIVE_DEFAULTS[inp.propertyType];
         this.inputValues[inp.name] = def;
+      } else if ((inp.propertyType === 'column' || inp.propertyType === 'column_list') &&
+                 dataframeParams.length > 0) {
+        // Column / column-list inputs are editable in the property panel as a
+        // column name (or comma-separated list). When unconnected, the compiler
+        // turns the value into `table.col(...)` against the associated dataframe
+        // input — so users don't need a separate Select Column(s) node. We only
+        // enable this when the func has a dataframe input to resolve against;
+        // the table-less case stays connection-only (a marginal scenario).
+        this.inputValues[inp.name] = '';
+        if (!this.properties['columnTables']) this.properties['columnTables'] = {};
+        (this.properties['columnTables'] as Record<string, string>)[inp.name] =
+          defaultTableParam(inp.name, dataframeParams);
       }
     }
 

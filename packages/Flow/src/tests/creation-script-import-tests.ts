@@ -144,7 +144,7 @@ category('Flow: creation script import', () => {
 
   // ---------- the exact reported bug (Chem) ----------
 
-  test('column argument becomes a Select Column utility wired to the table', async () => {
+  test('column argument becomes an inline column input value, no Select Column node', async () => {
     if (!chemAvailable()) return; // Chem not on this server — skip gracefully
     const g = buildCreationScriptGraph(CHEM_SCRIPT);
     expect(g.warnings.length, 0, `unexpected warnings: ${g.warnings.join(' | ')}`);
@@ -152,20 +152,18 @@ category('Flow: creation script import', () => {
     const open = oneNodeByFunc(g, 'OpenFile');
     const chem = oneNodeByFunc(g, 'addChemPropertiesColumns');
 
-    // ResolveColumn (broken on the platform) is replaced by a Select Column utility.
+    // ResolveColumn (broken on the platform) is no longer wired through a
+    // Select Column node — the column name is stored on the input instead.
     expect(nodesByFunc(g, 'ResolveColumn').length, 0, 'no ResolveColumn node');
-    const selects = nodesByLabel(g, 'Select Column');
-    expect(selects.length, 1, 'one Select Column node');
-    const select = selects[0];
-    expect(select.dgNodeType, 'utility');
-    expect(select.properties['columnName'], 'molecule');
+    expect(nodesByLabel(g, 'Select Column').length, 0, 'no Select Column node');
+    expect(chem.inputValues['molecules'], 'molecule', 'column name stored as input value');
+    expect(sourceOf(g, chem, 'molecules'), null, 'molecules input is not connected');
 
-    // Its table is the enclosing call's table (the OpenFile output).
-    expect(sourceOf(g, select, 'table')?.node, open, 'Select Column.table ← OpenFile');
+    // The column resolves against the chem call's own table input.
+    expect((chem.properties['columnTables'] as Record<string, string>)['molecules'], 'table');
 
     // The chem call's own inputs.
     expect(sourceOf(g, chem, 'table')?.node, open);
-    expect(sourceOf(g, chem, 'molecules')?.node, select, 'chem.molecules ← Select Column');
     expect(chem.inputValues['MW'], true); // boolean slot → inputValue
     expect(chem.inputValues['logS'], false);
   });
@@ -216,9 +214,10 @@ category('Flow: creation script import', () => {
     }
   });
 
-  test('column_list arguments map to Select Columns wired to the right table', async () => {
-    // Each column_list parses to an array of ResolveColumn calls; numbered
-    // params pair with the matching table (keys2/values2 → table2).
+  test('column_list arguments become inline comma-separated input values', async () => {
+    // Each column_list parses to an array of ResolveColumn calls; the names are
+    // joined into the input value, and the column→table association pairs by the
+    // numeric suffix (keys2/values2 → table2).
     const g = buildCreationScriptGraph(
       'Result = JoinTables("demog", "demog (2)", ["USUBJID"], ["USUBJID"], ' +
       '["USUBJID", "AGE", "SEX"], ["USUBJID", "AGE"], "inner", true)');
@@ -236,24 +235,21 @@ category('Flow: creation script import', () => {
     expect(table1.dgTypeName, 'Utilities/Select Table');
     expect(table2.dgTypeName, 'Utilities/Select Table');
     expect(table1.properties['tableName'], 'demog');
-    expect(table1.label, 'table: demog');
     expect(table2.properties['tableName'], 'demog (2)');
-    expect(table2.label, 'table: demog (2)');
 
-    // Four Select Columns utilities, one per column_list param.
-    const selects = nodesByLabel(g, 'Select Columns');
-    expect(selects.length, 4);
-    const byParam = (key: string) => sourceOf(g, join, key)!.node;
-    expect(byParam('keys1').properties['columnNames'], 'USUBJID');
-    expect(byParam('keys2').properties['columnNames'], 'USUBJID');
-    expect(byParam('values1').properties['columnNames'], 'USUBJID, AGE, SEX');
-    expect(byParam('values2').properties['columnNames'], 'USUBJID, AGE');
+    // Column lists are inlined as comma-separated input values — no Select Columns nodes.
+    expect(nodesByLabel(g, 'Select Columns').length, 0, 'no Select Columns nodes');
+    expect(join.inputValues['keys1'], 'USUBJID');
+    expect(join.inputValues['keys2'], 'USUBJID');
+    expect(join.inputValues['values1'], 'USUBJID, AGE, SEX');
+    expect(join.inputValues['values2'], 'USUBJID, AGE');
 
-    // Numbered pairing: *1 lists read from table1, *2 lists from table2.
-    expect(sourceOf(g, byParam('keys1'), 'table')?.node, table1);
-    expect(sourceOf(g, byParam('values1'), 'table')?.node, table1);
-    expect(sourceOf(g, byParam('keys2'), 'table')?.node, table2);
-    expect(sourceOf(g, byParam('values2'), 'table')?.node, table2);
+    // Numbered pairing recorded in the association: *1 lists → table1, *2 → table2.
+    const assoc = join.properties['columnTables'] as Record<string, string>;
+    expect(assoc['keys1'], 'table1');
+    expect(assoc['values1'], 'table1');
+    expect(assoc['keys2'], 'table2');
+    expect(assoc['values2'], 'table2');
 
     // The variable Result is stored by SetVar from JoinTables' real output.
     const setVar = setVarFor(g, 'Result')!;
@@ -261,9 +257,8 @@ category('Flow: creation script import', () => {
     expect(setSrc?.node, join);
     expect(setSrc!.key.endsWith(PASSTHROUGH), false, 'stored from the real result, not a pass-through');
 
-    // Exact graph size:
-    // JoinTables + 2 Select Table + 4 Select Columns + SetVar (no output node).
-    expect(g.nodes.length, 8);
+    // Exact graph size: JoinTables + 2 Select Table + SetVar (no output, no Select Columns).
+    expect(g.nodes.length, 4);
   });
 
   test('layout: a producer path sits above the path that consumes its table', async () => {
@@ -389,10 +384,51 @@ category('Flow: creation script import', () => {
       // the table's runtime .name, so GetVars that use the actual table name
       // resolve (single node on the canvas, two assignments in the output).
       const script = emitScript(e.flow, SETTINGS);
-      expect(/if \(\w+ instanceof DG\.DataFrame\) await grok\.functions\.call\('SetVar', \{variableName: \w+\.name/.test(script),
-        true, 'runtime-guarded second SetVar keyed by the dataframe name');
+      expect(script.includes('instanceof DG.DataFrame'), true, 'runtime dataframe guard emitted');
+      expect(/variableName: \w+\.name\b/.test(script), true, 'second SetVar keyed by the dataframe runtime name');
       // The variable-name registration is still present (single node, two assigns).
       expect(script.includes(`variableName: "T"`), true, 'primary SetVar by variable name');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('mixed local/connected script: columns inlined, no Select Column(s) nodes, compiles', async () => {
+    if (!chemAvailable()) return;
+    const e = makeEditor();
+    try {
+      const FULL_SCRIPT = [
+        'Mol1KLocal = OpenTable("65d4d9d0-48b0-11f1-e424-4b91b3dfc6ce")',
+        'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") // {"timestamp": 1781796656926}',
+        'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false)',
+        'AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth", subscribeOnChanges = true)',
+        'Result = JoinTables("mol1K", "mol1K local", ["prID"], ["prID"], ' +
+          '["molecule", "prID", "IDDB", "MW", "HBA", "HBD", "LogP", "LogS", "smth"], ' +
+          '["molecule", "prID", "IDDB"])',
+        'Chem:addChemPropertiesColumns(Result, "molecule", false, false, false, false, ' +
+          'false, false, false, true, false)',
+        'Chem:addChemPropertiesColumns(Result, "mol1K local.molecule", false, false, ' +
+          'false, false, false, false, true, false, false)',
+      ].join('\n');
+
+      const g = buildCreationScriptGraph(FULL_SCRIPT);
+      await applyGraphToEditor(g, e.flow);
+
+      // The whole point: no Select Column / Select Columns clutter.
+      expect(nodesByLabel(g, 'Select Column').length, 0, 'no Select Column nodes');
+      expect(nodesByLabel(g, 'Select Columns').length, 0, 'no Select Columns nodes');
+
+      const errors = validateGraph(e.flow).filter((r) => r.severity === 'error');
+      expect(errors.length, 0, `validation errors: ${errors.map((x) => x.message).join('; ')}`);
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('ResolveColumn'), false, 'no ResolveColumn in generated script');
+      // Single-column args inlined as table.col(...), incl. the qualified name.
+      expect(script.includes(`.col('molecule')`), true, 'molecule column selected via .col()');
+      expect(script.includes(`.col('mol1K local.molecule')`), true, 'qualified column name preserved');
+      // column_list args inlined as arrays of table.col(...).
+      expect(script.includes(`.col('prID')`), true, 'join key column via .col()');
+      expect(script.includes(`.col('smth')`), true, 'join value column via .col()');
     } finally {
       destroyEditor(e);
     }

@@ -86,18 +86,22 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   `dynamic` `value` of `ResolveColumn` (a column name) — gets a **Constant node** wired in, because
   those slots aren't editable in the panel and need an explicit producer. `FuncCall` inputs connect
   recursively; `GetVar` inputs resolve through the variable table.
-- **Column arguments** parse to `ResolveColumn(value:dynamic, parentTable:dataframe)` where
-  `parentTable` is often `null`. The platform `ResolveColumn` function misbehaves at runtime, so the
-  importer substitutes the built-in **Select Column** utility (emits `table.col('name')`): the column
-  name goes into the node's `columnName` property and the `table` input is wired to the explicit
-  `parentTable` when present, else the **enclosing call's resolved table** (so the chain is
-  self-contained). `ResolveColumnList` → **Select Columns** (`columnNames`). These resolver calls
-  never advance variables.
-- **column_list arguments** (e.g. `JoinTables` keys/values) parse to a **JS array of `ResolveColumn`
-  calls** — the whole array maps to one **Select Columns** utility whose `columnNames` joins the
-  names. Table attribution pairs **numbered params by suffix** (`keys2`/`values2` → `table2`),
-  falling back to the call's first table, then the outer context. Arrays of plain primitives become
-  a **List** constant.
+- **Column arguments** parse to `ResolveColumn(value:dynamic, parentTable:dataframe)`. The platform
+  `ResolveColumn` misbehaves at runtime, *and* a Select Column node per column argument clutters the
+  graph — so the importer **inlines the column name into `node.inputValues[paramName]`** (the
+  `column`/`column_list` slot is editable in the panel, seeded by `FuncNode`). `ResolveColumnList` →
+  a **comma-separated** value string. At compile time the value becomes `table.col('name')` /
+  `[table.col('a'), …]` (see the compiler note below). These never advance variables.
+  - **Which table** a column resolves against is stored explicitly in the func node's
+    `properties['columnTables']` (`{columnParam → dataframeParam}`), seeded by `FuncNode` to the
+    dataframe input sharing the param's numeric suffix (`keys2`→`table2`) else the first dataframe
+    input (`defaultTableParam`). The panel shows a table-choice combo when the func has **≥2**
+    dataframe inputs (unambiguous for one). The compiler reads this association (falling back to the
+    same suffix/first heuristic for older saves).
+  - **Marginal case**: a column input on a func with **no** dataframe input can't resolve a table —
+    `FuncNode` doesn't seed it (stays connection-only) and the importer falls back to a real
+    **Select Column / Select Columns** node (the older behavior, still wired by `parentTable` / the
+    enclosing call's table). Arrays of plain primitives still become a **List** constant.
 - **Table-name strings** parse to `ResolveTable(value)` calls — substituted with the **Select Table**
   utility (`grok.shell.tableByName(name)`, also broken platform-side), titled `table: <name>` so
   collapsed nodes stay readable.
@@ -286,7 +290,7 @@ Pipeline ([compiler/](src/compiler)):
    one starts (lower paths may implicitly read what upper ones produced, e.g. a Select Table reading
    a table an upper path opened). **Within** a component, ready nodes are picked top-to-bottom
    (`y`, then `x`, then insertion order).
-2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix.
+2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix. Func input resolution runs in two passes: ordinary inputs (connections, primitive `inputValues`) first, then unconnected **`column`/`column_list`** `inputValues` — these inline to `table.col('name')` / `[table.col(…), …]`, where the table comes from the node's `properties['columnTables']` association (so column args need no Select Column node; `tableExprForColumnParam`/`columnSelectionExpr`).
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 
 ### Validation ([compiler/validator.ts](src/compiler/validator.ts))
@@ -402,7 +406,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 - Title row at top (editable label) + node-type badge.
 - Accordion with type-specific panes:
-  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; "connected only" label otherwise).
+  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; `column` → a column-name text field, `column_list` → a comma-separated field, laid out side by side (≈70%/30%, `createColumnRow`) with a table-choice combo when the func has ≥2 dataframe inputs writing `properties['columnTables']`; "connected only" label otherwise).
   - Input nodes: **Input Configuration** (paramName, description, defaultValue, nullable, caption, type/semType filters, choices, min/max, showSlider).
   - Output nodes: **Output Configuration** (paramName + outputType combo for ValueOutput).
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).

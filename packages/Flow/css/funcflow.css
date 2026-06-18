@@ -403,6 +403,30 @@
   box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.12);
 }
 
+/* Column input + table picker laid out side by side (≈70% / 30%). The column
+   field flexes to fill remaining space; the table chooser is a fixed share. */
+.funcflow-col-grid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.funcflow-col-input-cell {
+  flex: 1 1 70%;
+  min-width: 0;
+}
+
+.funcflow-col-table-cell {
+  flex: 0 0 30%;
+  min-width: 0;
+}
+
+.funcflow-col-input-cell .funcflow-prop-textarea,
+.funcflow-col-table-cell .funcflow-prop-input {
+  width: 100%;
+}
+
 .funcflow-prop-toggle-row {
   flex-direction: row !important;
   align-items: center;

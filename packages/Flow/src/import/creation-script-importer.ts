@@ -379,6 +379,19 @@ class CreationScriptBuilder {
       if (!(param.name in node.inputs)) continue;
       const value = this.safeInput(fc, param.name);
       const slotType = this.slotType(node, param.name);
+
+      // Column / column-list args: inline the name(s) as an editable input value
+      // (the compiler turns it into `table.col(...)` against the func's dataframe
+      // input — see the seeded `columnTables` association) instead of adding a
+      // Select Column(s) node. `param.name in node.inputValues` is true only when
+      // FuncNode seeded the slot, i.e. the func has a dataframe input to resolve
+      // against; the table-less case falls through to a Select Column node.
+      if ((slotType === 'column' || slotType === 'column_list') && param.name in node.inputValues) {
+        const names = this.extractColumnNames(value);
+        node.inputValues[param.name] = slotType === 'column' ? (names[0] ?? '') : names.join(', ');
+        continue;
+      }
+
       const res = this.resolveValue(
         value, {advanceConsumedVars: false, contextTable: tableCtxFor(param.name)},
         `input "${param.name}" of ${func.name}`);
@@ -472,6 +485,17 @@ class CreationScriptBuilder {
       if (res.kind === 'ref') return res.ref;
     }
     return null;
+  }
+
+  /** Column name(s) from a column / column-list argument, however it parsed:
+   *  a `ResolveColumn` / `ResolveColumnList` call, an array of them, a plain
+   *  string, or null. Used to inline columns as editable input values. */
+  private extractColumnNames(value: unknown): string[] {
+    if (value === null || value === undefined) return [];
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap((v) => this.extractColumnNames(v));
+    if (value instanceof DG.FuncCall) return this.columnNames(value);
+    return [String(value)];
   }
 
   /** Column name(s) from a resolver's `value` input (string or list). */
