@@ -1,180 +1,117 @@
-# Helm — Pistoia monomer-dict swap path (overrideMonomersFuncs + buildMonomersFuncsFromLib + rewriteLibraries)
+# Helm — monomer-funcs swap path (overrideMonomersFuncs + buildMonomersFuncsFromLib)
+
+> **2026-06 editor rewrite.** Pistoia removed. The override path no longer
+> operates on a `window.org.helm.webeditor.Monomers` global — it delegates to an
+> internal `editorAdapter`. Verify via the helper's own observable state
+> (`hh.originalMonomersFuncs`), NOT a global. The old double-apply / pre-revert
+> guards were removed (no longer throw), and `buildMonomersFuncsFromLib` no longer
+> strips outer `[...]` brackets. The old `rewriteLibraries` /
+> `Monomers.addOneMonomer` / `Monomers.clear` mechanism is gone. See grok-browser
+> `references/helm.md` § "Monomer-override contract (CHANGED)".
 
 ## Setup
 
 1. Authenticate to Datagrok as the test user.
-2. Helm package `@init` (`initHelm`) has completed: bundled
-   Dojo 1.10.10 + JSDraw2 + Pistoia HELM Web Editor are loaded,
-   `_package.completeInit` has rewritten the Pistoia monomer
-   dictionary from the platform monomer library, and the RDKit
-   module is loaded from Chem. After `completeInit` the swap
-   path's "original" reference state is the Datagrok-rewritten
-   dictionary, NOT the unmodified Pistoia defaults.
+2. Helm package `@init` (`initHelm`) has completed: the new SVG HELM editor is
+   loaded, the monomer library is wired through Bio, and the RDKit module is
+   loaded from Chem.
 3. Acquire the `IHelmHelper` singleton:
    `const hh = await grok.functions.call('Helm:getHelmHelper');`
-   The singleton invariant (every call returns the same reference)
-   is exercised by sibling scenario `helm-api-helm-helper.md`; this
-   scenario consumes the singleton as a precondition.
 4. Acquire a Datagrok `IMonomerLib` reference:
-   `const lib = grok.functions.call('Bio:getMonomerLibHelper').then(h => h.getMonomerLib())`
-   resolves to the active platform monomer library (the same one
-   `completeInit` already loaded into Pistoia's dictionary). The
-   library carries at least one peptide monomer (`A`, `meI`,
-   `hHis`, ...) and at least one RNA monomer (`r(A)`, `r(C)`, ...)
+   `const lib = await grok.functions.call('Bio:getMonomerLibHelper')
+   .then(h => h.getMonomerLib());`
+   The library carries at least one peptide monomer (`A`, `meI`, `hHis`, …)
    when the default library is loaded.
-5. Test fixture HELM strings for the symbol-lookup assertions:
-   - `PEPTIDE1{A.G.S}$$$$` — three canonical peptide monomers
-     present in the default lib.
-   - `PEPTIDE1{[meI].[hHis]}$$$$` — bracketed multi-char monomer
-     symbols (the bracket-stripping path of
-     `buildMonomersFuncsFromLib`).
+5. Baseline hygiene: if `hh.originalMonomersFuncs != null` at start, call
+   `hh.revertOriginalMonomersFuncs()` once so the swap state is clean.
 
 ## Scenarios
 
-### Scenario 1: overrideMonomersFuncs swaps the Pistoia dictionary and revert restores it; double-apply and pre-revert throw
+### Scenario 1: overrideMonomersFuncs swaps the adapter funcs and revert restores them (state-machine contract)
 
 Steps:
-1. Capture the pre-swap dictionary references:
-   `const preMonomers = (window as any).org.helm.webeditor.Monomers;`
-   `const preGetMonomer = preMonomers.getMonomer;`
-   `const preGetMonomerSet = preMonomers.getMonomerSet;`.
-2. Build a sentinel `MonomersFuncs` whose handlers are recognisable
-   stubs (return distinct sentinel values for any input). This
-   isolates the swap from the production monomer-lib lookup.
-3. Call `const original = hh.overrideMonomersFuncs(sentinelFuncs);`.
-   Confirm `original` is non-null and carries `getMonomer` /
-   `getMonomerSet` properties whose values are
-   `=== preGetMonomer` / `=== preGetMonomerSet` (i.e. the pre-
-   swap dictionary handlers, captured for restoration).
-4. Confirm the live dictionary has been replaced:
-   `(window as any).org.helm.webeditor.Monomers.getMonomer === sentinelFuncs.getMonomer`
-   and the same for `getMonomerSet`.
-5. Negative path — double-apply: call
-   `hh.overrideMonomersFuncs(anotherSentinelFuncs)` while the
-   first override is still in effect. Confirm the call throws
-   with message containing `originalGetMonomer is overridden
-   already` (per `helm-helper.ts#L249`). Confirm the dictionary
-   is unchanged — `getMonomer` still references the first
-   sentinel.
-6. Restore: `const overridden = hh.revertOriginalMonomersFuncs();`.
-   Confirm `overridden` is non-null and its `getMonomer` /
-   `getMonomerSet` are the first sentinel handlers (the return is
-   the SECOND override candidate of the swap — what was just
-   removed, not what was restored).
-7. Confirm the live dictionary is restored:
-   `(window as any).org.helm.webeditor.Monomers.getMonomer === preGetMonomer`
-   and the same for `getMonomerSet`.
-8. Negative path — pre-revert: call
-   `hh.revertOriginalMonomersFuncs()` again. Confirm the call
-   throws with message containing `Unable to revert original
-   getMonomer` (per `helm-helper.ts#L230`).
+1. Confirm the clean baseline: `hh.originalMonomersFuncs === null`.
+2. Build a sentinel `MonomersFuncs` whose handlers are recognisable stubs:
+   `const sentinel = { getMonomer: (a, name) => ({id: 'S1'}), getMonomerSet: (a) => null };`.
+3. Call `const previous = hh.overrideMonomersFuncs(sentinel);`. Confirm
+   `previous != null` and that `hh.originalMonomersFuncs` is now **non-null**
+   (the override is recorded).
+4. Double-apply: call `hh.overrideMonomersFuncs(anotherSentinel)` while the
+   first override is still in effect.
+   * **Behaviour change:** this **no longer throws** (the old
+     `originalGetMonomer is overridden already` guard was removed). Record
+     that it returns without throwing.
+5. Restore: `const outgoing = hh.revertOriginalMonomersFuncs();`. Confirm
+   `outgoing != null` and that `hh.originalMonomersFuncs` is back to `null`.
+6. Pre-revert (no override in effect): call `hh.revertOriginalMonomersFuncs()`
+   again.
+   * **Behaviour change:** this **no longer throws** (the old `Unable to
+     revert original getMonomer` guard was removed). Record that it returns
+     without throwing.
 
 Expected:
-- `overrideMonomersFuncs` returns the previous dictionary handlers
-  by reference (not a clone); the live
-  `org.helm.webeditor.Monomers` slots are replaced by the supplied
-  `monomersFuncs.getMonomer` / `getMonomerSet`.
-- Double-apply throws synchronously; the dictionary is NOT
-  mutated by the failed call.
-- `revertOriginalMonomersFuncs` restores the live dictionary slots
-  to the references captured at override time and returns the
-  outgoing (sentinel) handlers.
-- Calling revert with no override in effect throws synchronously.
-- The teardown (revert called once) leaves the platform dictionary
-  in the same state subsequent scenarios expect — the renderer /
-  helm input / properties panel will keep looking up monomers
-  against the production lib.
+- `overrideMonomersFuncs` returns the previous funcs (non-null) and flips
+  `hh.originalMonomersFuncs` from `null` to non-null.
+- Double-apply does NOT throw (changed behaviour).
+- `revertOriginalMonomersFuncs` returns the outgoing funcs (non-null) and
+  flips `hh.originalMonomersFuncs` back to `null`.
+- Pre-revert does NOT throw (changed behaviour).
+- No error balloon; the teardown leaves `hh.originalMonomersFuncs === null`
+  so subsequent scenarios run cleanly.
 
-### Scenario 2: buildMonomersFuncsFromLib reads symbols from the Datagrok IMonomerLib and strips outer square brackets
+> NOTE: there is no `window.org.helm.webeditor.Monomers` to assert against in
+> the new build. The override's effect on monomer lookups is internal to the
+> `editorAdapter`; the durable, observable contract is the
+> `originalMonomersFuncs` null↔non-null state machine plus the non-null
+> return values above.
+
+### Scenario 2: buildMonomersFuncsFromLib reads symbols from the Datagrok IMonomerLib
 
 Steps:
 1. Build the `MonomersFuncs` from the Datagrok lib:
    `const funcs = hh.buildMonomersFuncsFromLib(lib);`.
-2. Assert `funcs != null`; assert it carries `getMonomer` and
-   `getMonomerSet` as functions.
-3. Plain-symbol lookup — pass a symbol that the default Datagrok
-   lib resolves (e.g. peptide `A`):
-   `const m = funcs.getMonomer(null, 'A');`. Confirm `m != null`
-   and that the returned object matches the shape
-   `lib.getWebEditorMonomer('PEPTIDE', 'A')` returns directly
-   (same `id` / `symbol` / molfile-like fields, depending on the
-   `IMonomerLib` shape — assert at least one stable identifier
-   field is present and equal).
-4. Bracketed-symbol lookup — pass a bracketed symbol:
-   `const mBracketed = funcs.getMonomer(null, '[meI]');`. Confirm
-   the call returns the same monomer record as
-   `funcs.getMonomer(null, 'meI')` (i.e. the outer brackets are
-   stripped before the lib lookup, per `helm-helper.ts#L269`).
-5. Unknown-symbol lookup — pass a symbol the lib does NOT carry:
-   `const mUnknown = funcs.getMonomer(null, 'Xz_NotInLib');`.
-   Confirm the result is null / undefined (the lib's
-   `getWebEditorMonomer` returns null for unknown symbols and
-   the wrapper passes that through unchanged).
-6. `getMonomerSet` fall-through — call
-   `funcs.getMonomerSet(null, 'PEPTIDE')` and confirm it does
-   NOT throw. The atlas notes `getMonomerSet` falls through to
-   the original Pistoia implementation; the test asserts the
-   call shape works regardless of the production lib's
-   contents.
+2. Assert `funcs != null`; assert it carries `getMonomer` and `getMonomerSet`
+   as functions.
+3. Plain-symbol lookup — pass a symbol the default lib resolves:
+   `const m = funcs.getMonomer('PEPTIDE', 'A');`. Confirm `m != null`,
+   `m.id === 'A'`, and `m` matches `lib.getWebEditorMonomer('PEPTIDE', 'A')`
+   (same `id`; e.g. `n === 'Alanine'`).
+4. Unknown-symbol lookup — pass a symbol the lib does NOT carry:
+   `const mUnknown = funcs.getMonomer('PEPTIDE', 'Xz_NotInLib');`. Confirm
+   it returns a `missing` placeholder: `{ id: 'Xz_NotInLib', n: 'missing' }`.
+5. Bracketed-symbol lookup — pass a bracketed symbol:
+   `const mBracketed = funcs.getMonomer('PEPTIDE', '[meI]');`.
+   * **Behaviour change:** the outer brackets are **no longer stripped** at
+     this layer — the lookup returns the `missing` placeholder
+     (`{ id: '[meI]', n: 'missing' }`), NOT the unbracketed `meI` record.
+     (Bracket handling now happens upstream in the notation parser.)
+6. `getMonomerSet` smoke — call `funcs.getMonomerSet('PEPTIDE')` and confirm
+   it does NOT throw.
 
 Expected:
 - Plain-symbol lookups resolve against the Datagrok lib's
-  `getWebEditorMonomer` and return a monomer record whose stable
-  identifier (id/symbol) matches the lib's record for the same
-  symbol.
-- Bracketed symbols (e.g. `[meI]`) resolve identically to their
-  unbracketed equivalents (`meI`) — the wrapper strips a single
-  outer pair of `[]` before lookup.
-- Unknown symbols resolve to null / undefined; the wrapper does
-  not throw.
-- `getMonomerSet` is callable and does not throw on a polymer-
-  type argument the lib doesn't enumerate (it delegates to the
-  original Pistoia implementation, which is the production
-  fall-through path).
+  `getWebEditorMonomer` and return a record whose `id`/`n` match the lib's
+  record for the same symbol.
+- Unknown symbols resolve to a `missing` placeholder (`{id, n:'missing'}`);
+  the wrapper does not throw.
+- Bracketed symbols return the `missing` placeholder (brackets NOT stripped —
+  changed behaviour).
+- `getMonomerSet` is callable and does not throw.
 
-### Scenario 3: rewriteLibraries syncs the Datagrok IMonomerLib into the Pistoia dictionary
+### Scenario 3 (REMOVED in the new build): rewriteLibraries
 
-Steps:
-1. Import the `rewriteLibraries` export from the package:
-   `const { rewriteLibraries } = await import('@datagrok/helm/utils/get-monomer');`
-   (or invoke via the package's exposed surface; the atlas
-   `source:` for `helm.utils.rewrite-libraries` is
-   `public/packages/Helm/src/utils/get-monomer.ts#L1` and the
-   function is public per `CLAUDE.md#Package Utilities`).
-2. Capture a "before" snapshot of the Pistoia dictionary
-   contents: for each fixture monomer symbol (`A`, `meI`,
-   `r(A)`), read
-   `(window as any).org.helm.webeditor.Monomers.getMonomer(null, sym)`
-   and record presence + identifier.
-3. Build a modified `IMonomerLib` view that removes one known
-   monomer symbol (e.g. omit `meI`) and adds a new sentinel
-   symbol (e.g. `TestSentinelMonomer`) with a stable molfile.
-   Use the platform's monomer-lib helper to create the modified
-   view; do NOT mutate the global lib reference.
-4. Call `rewriteLibraries(modifiedLib);` and wait for any
-   library-rewrite promise the function returns to settle.
-5. Re-snapshot the Pistoia dictionary: read
-   `Monomers.getMonomer(null, 'meI')`,
-   `Monomers.getMonomer(null, 'TestSentinelMonomer')`, and
-   `Monomers.getMonomer(null, 'A')`.
-6. Teardown — call `rewriteLibraries(lib)` (the original library
-   from Setup) so subsequent scenarios run against the canonical
-   monomer dictionary again.
+The previous Scenario 3 verified `rewriteLibraries(monomerLib)` by reading and
+mutating the Pistoia dictionary via
+`org.helm.webeditor.Monomers.getMonomer / addOneMonomer / clear`. In the new
+build:
 
-Expected:
-- After `rewriteLibraries(modifiedLib)`, `meI` is no longer
-  resolvable from the Pistoia dictionary (the post-rewrite
-  lookup returns null / undefined or yields the
-  Pistoia-default placeholder, depending on Pistoia's
-  unknown-symbol behaviour — the assertion is that the previous
-  Datagrok-rewritten `meI` record is gone).
-- The new `TestSentinelMonomer` IS resolvable post-rewrite; its
-  molfile field matches the sentinel value supplied in the
-  modified lib.
-- Unaffected symbols (e.g. `A`) remain resolvable across the
-  rewrite — `rewriteLibraries` replaces the dictionary contents
-  in-place against the new lib, not against a diff.
-- Teardown restores the original lib's reach into the Pistoia
-  dictionary; the renderer / helm input / properties panel
-  continue to resolve their fixture monomers in later
-  scenarios.
+- `rewriteLibraries` is not a method on `IHelmHelper` and the bundled module is
+  not import()-able from the apitest layer.
+- `org.helm.webeditor.Monomers` (and `addOneMonomer` / `clear`) no longer exist.
+
+There is therefore **no automatable surface** for a direct rewrite-libraries
+test. The lib→editor sync is exercised indirectly by Scenario 2
+(`buildMonomersFuncsFromLib`) and by the cross-feature interaction
+`helm-input-bio-monomer-lib` (monomer-lib reload re-renders the renderer /
+input / properties surfaces). This scenario is intentionally a no-op placeholder
+documenting the removal.

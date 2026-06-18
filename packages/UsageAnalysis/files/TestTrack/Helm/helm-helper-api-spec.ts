@@ -110,9 +110,14 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
       expect(out.errBalloons, 'error balloon count after S2').toBe(0);
     });
 
-    await softStep('S3: HelmHelper.createHelmWebEditor returns a view-only IHelmWebEditor; host-by-reference; no-host fallback ok', async () => {
-      const out = await page.evaluate(async () => {
-        const result: any = {weResolved: false, weKind: null, hostMatches: false, editorPresent: false, editorViewonly: null, weNoHostResolved: false, weNoHostHost: null, errBalloons: 0, errWithHost: null, errNoHost: null};
+    await softStep('S3: HelmHelper.createHelmWebEditor returns an IHelmWebEditor; host-by-reference; editor adapter object; no-host fallback ok', async () => {
+      // 2026-06 rewrite: the new SVG editor is NOT JSDraw2 — we.editor is a plain
+      // adapter object exposing setHelm/getHelm/getMolfile/getFormula/getMolWeight/…
+      // and does NOT carry a `viewonly` flag (it is null). Assert the adapter method
+      // surface instead of the removed JSDraw2 viewonly flag.
+      const ADAPTER_METHODS = ['setHelm', 'getHelm', 'getMolfile', 'getFormula', 'getMolWeight'];
+      const out = await page.evaluate(async (adapterMethods: string[]) => {
+        const result: any = {weResolved: false, weKind: null, hostMatches: false, editorPresent: false, editorMethods: [], weNoHostResolved: false, weNoHostHost: null, errBalloons: 0, errWithHost: null, errNoHost: null};
         try {
           const hh = (window as any).__hh;
           if (!hh) throw new Error('Scenario 1 prelude missing: window.__hh is undefined');
@@ -126,7 +131,7 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
             result.hostMatches = we?.host === host;
             result.editorPresent = we?.editor != null;
             const ed = we?.editor;
-            result.editorViewonly = ed?.options?.viewonly ?? ed?.viewonly ?? null;
+            result.editorMethods = ed ? adapterMethods.filter((m) => typeof ed[m] === 'function') : [];
           } catch (e) {
             result.errWithHost = String(e).slice(0, 400);
           }
@@ -143,14 +148,14 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
         }
         result.errBalloons = document.querySelectorAll('.d4-balloon.error').length;
         return result;
-      });
+      }, ADAPTER_METHODS);
       expect(out.weResolved, `createHelmWebEditor(host) err: ${out.errWithHost ?? ''}`).toBe(true);
       expect(out.hostMatches, `we.host !== passed host; kind: ${out.weKind}`).toBe(true);
       expect(out.editorPresent, 'we.editor is non-null').toBe(true);
       expect(
-        out.editorViewonly,
-        `we.editor viewonly flag (probed options.viewonly + direct); observed: ${out.editorViewonly}`,
-      ).toBe(true);
+        out.editorMethods,
+        `we.editor adapter MUST expose the editor methods; observed: ${JSON.stringify(out.editorMethods)}`,
+      ).toEqual(ADAPTER_METHODS);
       expect(out.weNoHostResolved, `createHelmWebEditor(undefined) err: ${out.errNoHost ?? ''}`).toBe(true);
       expect(
         out.weNoHostHost,
