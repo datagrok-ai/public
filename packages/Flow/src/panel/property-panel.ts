@@ -53,6 +53,32 @@ const OUTPUT_TYPE_VALUES = [
   'map', 'datetime', 'blob', 'funccall',
 ];
 
+/** A property's `choices` as a non-empty string list, or `[]` when it has none
+ *  (or the Dart proxy access fails). Empty entries are dropped — the nullable
+ *  empty option is added separately by `stringChoiceOptions`. */
+export function propertyChoices(param: DG.Property): string[] {
+  try {
+    const choices = (param as unknown as {choices?: unknown}).choices;
+    if (!Array.isArray(choices)) return [];
+    return choices.map((c) => String(c)).filter((c) => c.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Build the option list for a string input that declares `choices`, or `null`
+ *  when there are none (caller renders a free-text field instead). A nullable
+ *  property gets a leading empty option; the current value is preserved as an
+ *  option even when it isn't among the declared choices, so imported values are
+ *  never silently dropped. */
+export function stringChoiceOptions(choices: string[], nullable: boolean, current: string): string[] | null {
+  if (choices.length === 0) return null;
+  let options = [...choices];
+  if (nullable) options = ['', ...options];
+  if (current !== '' && !options.includes(current)) options = [current, ...options];
+  return options;
+}
+
 function buildFuncInputTooltip(param: DG.Property): string {
   const parts: string[] = [];
   const desc = param.description;
@@ -160,10 +186,20 @@ export class PropertyPanel {
             continue;
           }
           switch (inp.propertyType) {
-          case 'string':
-            content.appendChild(this.createTextarea(inp.name, String(node.inputValues[inp.name] ?? ''),
-              (v) => {node.inputValues[inp.name] = v;}, tip));
+          case 'string': {
+            // When the property declares `choices`, render a combo (with a
+            // leading empty option when nullable) instead of a free-text field.
+            const current = String(node.inputValues[inp.name] ?? '');
+            const options = stringChoiceOptions(propertyChoices(inp), Boolean(inp.nullable), current);
+            if (options) {
+              content.appendChild(this.createCombo(inp.name, current, options,
+                (v) => {node.inputValues[inp.name] = v;}, tip));
+            } else {
+              content.appendChild(this.createTextarea(inp.name, current,
+                (v) => {node.inputValues[inp.name] = v;}, tip));
+            }
             break;
+          }
           case 'int':
             content.appendChild(this.createNumberInput(inp.name, Number(node.inputValues[inp.name] ?? 0),
               (v) => {node.inputValues[inp.name] = Math.round(v);}, 0, 1, tip));

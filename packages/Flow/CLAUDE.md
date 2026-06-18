@@ -156,6 +156,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
+| `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 
 ## Rete Pipeline
@@ -406,7 +407,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 - Title row at top (editable label) + node-type badge.
 - Accordion with type-specific panes:
-  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; `column` → a column-name text field, `column_list` → a comma-separated field, laid out side by side (≈70%/30%, `createColumnRow`) with a table-choice combo when the func has ≥2 dataframe inputs writing `properties['columnTables']`; "connected only" label otherwise).
+  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; a `string` input that declares `.choices` renders a **combo** instead of a text field — with a leading empty option when the property is `nullable` — via `propertyChoices`/`stringChoiceOptions`; `column` → a column-name text field, `column_list` → a comma-separated field, laid out side by side (≈70%/30%, `createColumnRow`) with a table-choice combo when the func has ≥2 dataframe inputs writing `properties['columnTables']`; "connected only" label otherwise).
   - Input nodes: **Input Configuration** (paramName, description, defaultValue, nullable, caption, type/semType filters, choices, min/max, showSlider).
   - Output nodes: **Output Configuration** (paramName + outputType combo for ValueOutput).
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).
