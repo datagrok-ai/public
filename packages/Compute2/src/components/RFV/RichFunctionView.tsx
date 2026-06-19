@@ -802,7 +802,7 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isFittingActive.value]])
+      </div>, [[ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters']])
     );
   },
 });

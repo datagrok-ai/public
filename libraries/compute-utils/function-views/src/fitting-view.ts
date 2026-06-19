@@ -621,7 +621,7 @@ export class FittingView {
     let chosenItem = 1;
     const input = ui.input.choice('Select fitting', {items: choiceItems, value: chosenItem, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
-      ui.dialog({title: 'Accept fitting'})
+      ui.dialog({title: 'Select fitted parameters'})
         .add(ui.div([input]))
         .onOK(() => resolve(true))
         .onCancel(() => resolve(false))
@@ -635,7 +635,7 @@ export class FittingView {
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
     this.baseView.close();
-  }, 'Accept');
+  }, 'Apply fitted parameters to the model');
 
   private helpIcon = getHelpIcon();
 
