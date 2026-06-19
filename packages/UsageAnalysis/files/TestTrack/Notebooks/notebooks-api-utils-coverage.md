@@ -11,7 +11,7 @@ target_layer: apitest
 coverage_type: regression
 produced_from: atlas-driven
 realized_as:
-  - notebooks-api-utils-coverage-api.ts
+  - notebooks-api-utils-coverage-api-spec.ts
 related_bugs: []
 source_text_fixes: []
 candidate_helpers: []
@@ -39,7 +39,7 @@ gate_verdicts:
     cycle_id: 2026-06-17-notebooks-migrate-01
     timestamp: 2026-06-18T00:26:30Z
     spec_runs:
-      - spec: notebooks-api-utils-coverage-api.ts
+      - spec: notebooks-api-utils-coverage-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 53

@@ -1,120 +1,29 @@
 /* ---
 sub_features_covered: [notebooks.browser, notebooks.browser.render-card, notebooks.browser.commands, notebooks.browser.sortable-by, notebooks.menu.browse-notebooks, notebooks.menu.new-notebook, notebooks.menu.apply-notebook, notebooks.meta.render-accordion, notebooks.entity.get-applicable-cases]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: integration (per notebooks chain analysis; coverage_type: regression)
-//   sub_features_covered: [notebooks.browser, notebooks.browser.render-card,
-//     notebooks.browser.commands, notebooks.browser.sortable-by, notebooks.menu.browse-notebooks,
-//     notebooks.menu.new-notebook, notebooks.menu.apply-notebook, notebooks.meta.render-accordion,
-//     notebooks.entity.get-applicable-cases]
-//   ui_coverage_responsibility: [] (none declared)
-//   related_bugs: [GROK-11693]
+// Integration regression across the Notebooks browser surface — navigate, filter, context-panel
+// accordion (incl. the GROK-11693 Sharing-tab guard), Apply-to applicability, back-nav, and New
+// Notebook from the ribbon. The editor/JupyterLab surface (manual_only per atlas) is not driven here.
 //
-// Atlas provenance (derived_from):
-//   notebooks.menu.browse-notebooks    derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L151
-//   notebooks.browser.render-card      derived_from: core/client/xamgle/lib/src/views/notebooks_view.dart#L28
-//   notebooks.meta.render-accordion    derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L39
-//   notebooks.menu.apply-notebook      derived_from: core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L46
-//   notebooks.entity.get-applicable-cases derived_from: core/shared/grok_shared/lib/src/notebook.dart#L55
-//   notebooks.menu.new-notebook        derived_from: core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L7
+// Bug context: GROK-11693 — the Sharing pane can throw a notebook.dart NullError. The deterministic
+// invariant asserted against a persisted Demog notebook is: expanding Sharing renders non-empty
+// content AND does not surface a notebook.dart NullError. A fully-clean console is NOT asserted (an
+// unrelated 404 is logged on dev — same known-bug-tolerance pattern as create-spec.ts).
 //
-// Scope: integration regression across the Notebooks browser surface — navigate, filter, context
-// panel accordion (incl. GROK-11693 Sharing-tab regression guard), Apply-to applicability, back-nav,
-// and New Notebook from the ribbon. The editor/JupyterLab surface (manual_only per atlas) is NOT
-// driven here; only the platform-selector-reachable browser affordances are.
-//
-// Bug context: GROK-11693 (status: regression-risk) — the Sharing pane throws a notebook.dart
-// NullError ONLY for a notebook created via Open-in-Notebook, then shared, then reopened from the
-// browser. Live MCP recon (2026-06-17, dev) confirmed a *pre-existing* Demog notebook's Sharing
-// pane renders "You are the owner / Share..." with NO NullError. The deterministic regression
-// invariant we can assert against any persisted demog notebook is: expanding Sharing renders
-// non-empty content AND does not surface a notebook.dart NullError. Asserting a fully-clean console
-// is unsafe (an unrelated 404 is logged on dev — same known-bug-tolerance pattern as create-spec.ts).
-//
-// Selector recon-notes (class-2: live-MCP-observed, not yet in grok-browser/references/notebooks.md):
-//   DG.Func.find({name:'CmdBrowseNotebooks'})[0].apply() — view-INDEPENDENT navigation to the
-//     Notebooks browser, used as the opener (S1) AND for back-navigation (S5). Observed live 2026-06-17
-//     (Gate-B hypothesis retry) via chrome-devtools MCP on https://dev.datagrok.ai: from a TableView,
-//     apply() flips grok.shell.v.type to 'notebooks' and renders 50 grid items + 50 notebook card
-//     links + the .grok-gallery-search-bar within ~900ms. This REPLACES the prior ML-top-menu-hover
-//     opener, which was the proven root cause of the B-RUN-PASS / B-STAB-01 cold FAIL (see next note).
-//     CmdBrowseNotebooks is the registered command function that backs the
-//     [name="div-ML---Notebooks---Browse-Notebooks"] menu leaf (atlas notebooks.menu.browse-notebooks;
-//     notebooks.md Ownership map: cmdBrowseNotebooks @ notebook_meta.dart:151). The scenario is
-//     pyramid_layer: integration with ui_coverage_responsibility: [] (NO owned ui-smoke flow), so
-//     driving navigation via its command function is a SANCTIONED JS-API substitution per the
-//     paradigm decision matrix (integration permits JS API for state setup / navigation), NOT a pivot.
-//   [name="div-ML"] / [name="div-ML---Notebooks"] / [name="div-ML---Notebooks---Browse-Notebooks"] —
-//     ML top-menu header / Notebooks group / Browse-Notebooks leaf. REFUTED as a reliable opener path,
-//     observed live 2026-06-17 (Gate-B hypothesis retry) on https://dev.datagrok.ai: a TRUSTED click on
-//     [name="div-ML"] makes [name="div-ML---Notebooks"] visible (198x24, offsetParent set), but the
-//     nested Browse-Notebooks leaf stays HIDDEN (offsetParent null, 0x0) and does NOT become visible
-//     under EITHER a synthetic mouseover/mouseenter/mousemove dispatch on the group (leaf stays 0x0
-//     after a 3s poll) OR a trusted MCP-tool hover on the group (leaf still 0x0 after 3s). No
-//     .d4-menu-popup is created (items render inline). This non-determinism in the Dart submenu
-//     expansion is the proven cause of the prior FAIL: the old opener `waitFor({state:'visible'})` on
-//     the leaf timed out, FAILing S1 and cascading every downstream step. notebooks.md lists these
-//     selectors but does not document that the leaf is not reliably revealable by hover automation.
-//   .grok-gallery-search-bar input[placeholder*="notebook"] — Notebooks browser search field
-//     (placeholder "Search notebooks by name or by #tags"). Observed 2026-06-17: typing "Demog" +
-//     input event narrowed the gallery count from 57 to 5 (URL gained ?q=Demog); the
-//     [name="icon-times"] clear icon restored the full 57. THIS is the realistic notebook-list filter
-//     — there is NO distinct "Filter templates" picker icon on the dev build (only [name="icon-filter"]
-//     "Toggle filters", which opens no addressable template-picker). Resolves the scenario ambiguity
-//     filter-templates-icon-selector-unclear. Not previously in notebooks.md as a filter driver.
-//     SUBSTRING-MATCH (re-confirmed 2026-06-17 hypothesis retry): "Demog" matches BOTH "Demog" and
-//     "Demog-100" — the filtered list was [Demog, Demog, Demog, Demog, Demog-100]. S2 therefore asserts
-//     case-insensitive substring containment of the query, NOT exact-equality to "Demog".
-//   .grok-gallery-grid-item / .grok-items-view-counts — gallery card load is ASYNC after the browser
-//     view opens. Observed 2026-06-17 (hypothesis retry): immediately after CmdBrowseNotebooks /
-//     Browse-Notebooks the view type is already 'notebooks' and .grok-gallery-search-bar is mounted,
-//     but .grok-gallery-grid-item count is 0 and .grok-items-view-counts reads "... / ..."; a moment
-//     later it populates to 50/57 (50 cards/page). Both openers now poll for a non-zero card count
-//     before asserting card presence — this closed the B-RUN-PASS/B-STAB-01 cold flake (S1/S3/S4 card
-//     lookups had been racing the empty gallery).
-//   [name="div-Apply-to---Table"] — Apply-to context-menu sub-leaf on a notebook card. Observed
-//     2026-06-17: right-clicking a Demog card WITH demog.csv open (active table named "Table",
-//     11 cols matching the notebook's linked TableInfo) surfaced [name="div-Apply-to"] with the
-//     sub-leaf named after the OPEN TABLE VIEW ("Table"), NOT the notebook ("demog"). The leaf is
-//     present + clickable, but clicking it did NOT open an HTML output view within ~50s (the
-//     convertNotebook → live Jupyter container path is non-deterministic; notebooks.entity.apply is
-//     atlas manual_only). notebooks.md documents [name="div-Apply-to"] as a sub-menu but not the
-//     table-named leaf string.
-//   [name="button-New-Notebook..."] — NEW NOTEBOOK ribbon button in the Notebooks browser search
-//     bar. Observed 2026-06-17: clicking it opened a Notebook editor view ("Notebook_2") and the
-//     entity persisted (grok.dapi.notebooks.find(o.id) resolved). (notebooks.md documents this
-//     selector; re-confirmed for the cold-boot poll.)
-//   (CmdBrowseNotebooks also backs S5 back-navigation — same call as the S1 opener above. The ML
-//     top-menu header [name="div-ML"] is additionally ABSENT in the Notebook editor/HTML view
-//     (mlPresent:false observed 2026-06-17), so the command-function route is the only reliable
-//     navigation after S4/S6 too.)
+// Navigation: open the browser via the CmdBrowseNotebooks command function (a sanctioned JS-API
+// substitution for an integration spec with no owned ui-smoke flow; the ML top-menu Browse-Notebooks
+// leaf is not reliably revealable by hover automation, and the ML header is absent in the editor view,
+// so it cannot back-navigate after S4/S6). Cards load async after the view flips, so both the opener
+// and the search-filter poll for a non-zero card count before asserting. The search query matches by
+// case-insensitive substring ("Demog" matches both "Demog" and "Demog-100").
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-// Open the Notebooks browser via the CmdBrowseNotebooks command function. Returns once the gallery
-// search bar AND the notebook cards have mounted. Used by S1 (opener) and S5 (back-navigation).
-//
-// Root cause of the prior B-RUN-PASS/B-STAB-01 FAIL (proven by live MCP recon 2026-06-17 on dev,
-// Gate-B hypothesis retry): the prior opener drove the ML top menu —
-// click [name="div-ML"] -> hover [name="div-ML---Notebooks"] group -> click the Browse-Notebooks
-// leaf. Recon refuted that path as a reliable opener: a TRUSTED click on [name="div-ML"] makes the
-// Notebooks group visible (198x24, offsetParent set) but the nested Browse-Notebooks leaf stays
-// HIDDEN (offsetParent null, 0x0) and does NOT become visible under EITHER a synthetic
-// mouseover/mouseenter/mousemove dispatch on the group OR a trusted tool-hover on the group (leaf
-// still 0x0 after a 3s poll in both cases; no .d4-menu-popup is created — items render inline). The
-// old opener's `leaf.waitFor({state:'visible'})` therefore timed out, FAILing S1 and cascading every
-// downstream step.
-//
-// Fix (same paradigm, NOT a pivot): open via DG.Func CmdBrowseNotebooks — the registered command
-// function that the menu leaf itself dispatches (atlas notebooks.menu.browse-notebooks;
-// cmdBrowseNotebooks @ notebook_meta.dart:151). Recon: apply() flips grok.shell.v.type to
-// 'notebooks' and renders 50 grid items + 50 card links + the search bar within ~900ms. This is a
-// SANCTIONED JS-API substitution: the scenario is pyramid_layer: integration with
-// ui_coverage_responsibility: [] (NO owned ui-smoke flow), so the paradigm decision matrix permits
-// JS API for navigation. The spec already trusted this exact call for S5 back-navigation.
+// Open the Notebooks browser via the CmdBrowseNotebooks command function. Cards load async, so this
+// returns only once the gallery search bar AND at least one notebook card have mounted. Used by S1
+// (opener) and S5 (back-navigation).
 async function openNotebooksBrowser(page: import('@playwright/test').Page) {
   await page.evaluate(async () => {
     const f = (window as any).DG.Func.find({name: 'CmdBrowseNotebooks'})[0];
@@ -124,11 +33,8 @@ async function openNotebooksBrowser(page: import('@playwright/test').Page) {
     try { return (window as any).grok.shell.v?.type === 'notebooks'; } catch (e) { return false; }
   }, null, {timeout: 60_000, polling: 250});
   await page.locator('.grok-gallery-search-bar').waitFor({timeout: 30_000});
-  // The gallery cards populate ASYNCHRONOUSLY after the search bar mounts — the view type flips and
-  // the search bar appears while the item count still reads "50 / ..." (total still resolving) and
-  // zero grid items are in the DOM (observed live 2026-06-17). Returning on search-bar-mount alone
-  // races the load: S1's demogCount>0 (and S3/S4 card lookups) can run against an empty gallery.
-  // Poll until at least one notebook card has rendered before returning.
+  // Cards populate async after the search bar mounts; returning on search-bar-mount alone races the
+  // load (S1/S3/S4 card lookups against an empty gallery). Poll until a notebook card has rendered.
   await page.waitForFunction(() => {
     return document.querySelectorAll('.grok-gallery-grid-item').length > 0 &&
       document.querySelectorAll('.d4-link-label[data-link^="/notebook/"]').length > 0;
@@ -137,7 +43,9 @@ async function openNotebooksBrowser(page: import('@playwright/test').Page) {
 
 // scenario: Notebook Browser — S1..S6 (navigate, filter, context panel, apply-to, back-nav, new)
 test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-to, back, new', async ({page}) => {
-  test.setTimeout(300_000);
+  // Cold `grok test` boot: login + setup, then six UI flows incl. async notebook editor creation (S6
+  // polls up to 90s) and Jupyter-dependent Apply-to observation.
+  test.setTimeout(240_000);
   stepErrors.length = 0;
 
   let newNotebookId: string | null = null;
@@ -148,7 +56,10 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
   });
-  await page.waitForTimeout(1000);
+  // Wait for the shell to settle to an empty/non-notebook view rather than a fixed delay after closeAll.
+  await page.waitForFunction(() => {
+    try { return (window as any).grok.shell.v?.type !== 'notebooks'; } catch (e) { return false; }
+  }, null, {timeout: 30_000, polling: 100});
 
   // ---- Setup: open demog.csv as the active table (Apply-to applicability prerequisite) ----
   // Per the scenario's apply-to-demog-requires-demog-table-open-in-fixture ambiguity, the demog
@@ -267,9 +178,13 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     for (const section of ['div-section--Details', 'div-section--Actions', 'div-section--Activity', 'div-section--Sharing', 'div-section--Chats'])
       await expect(page.locator(`[name="${section}"]`).first()).toBeVisible();
 
-    // Details pane renders its Created/Modified content (notebooks.meta.render-details).
+    // Details pane renders its Created/Modified content (notebooks.meta.render-details). The pane body
+    // loads async after the section expands; poll on the rendered text rather than reading after a delay.
     await page.locator('[name="div-section--Details"]').first().click();
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => {
+      const sec = document.querySelector('[name="div-section--Details"]');
+      return (sec?.closest('.d4-accordion-pane')?.textContent ?? '').includes('Created');
+    }, null, {timeout: 30_000, polling: 250});
     const detailsText = await page.evaluate(() => {
       const sec = document.querySelector('[name="div-section--Details"]');
       return sec?.closest('.d4-accordion-pane')?.textContent ?? '';

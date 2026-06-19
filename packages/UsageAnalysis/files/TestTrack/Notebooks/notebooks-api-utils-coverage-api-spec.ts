@@ -1,93 +1,13 @@
 /* ---
 sub_features_covered: [notebooks.routes.count, notebooks.editor.utils, notebooks.editor.utils.get-auth-token, notebooks.editor.utils.remove-children, notebooks.meta.render-preview, notebooks.meta.get-view]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: apitest
-//   pyramid_layer: absent (non-pyramid defaults; JS-API substitution permitted,
-//     DOM-driving FORBIDDEN for apitest)
-//   sub_features_covered: see frontmatter block above (6 ids)
-//   ui_coverage_responsibility: [] (delegated_to: null)
-//   related_bugs: []
-//   produced_from: atlas-driven
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/notebooks.yaml#sub_features[notebooks.routes.count] derived_from:
-//     core/server/datlas/lib/src/routers/notebooks.dart#L12
-//   feature-atlas/notebooks.yaml#sub_features[notebooks.editor.utils.remove-children]
-//     derived_from: public/packages/Notebooks/src/utils.js#L3
-//   feature-atlas/notebooks.yaml#sub_features[notebooks.meta.render-preview]
-//     derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L108
-//
-// Selector recon-notes (apitest — no DOM selectors; these are JS-API behavioral
-// findings from live chrome-devtools MCP recon on https://dev.datagrok.ai,
-// observed 2026-06-18):
-//   - grok.dapi.notebooks exposes count() DIRECTLY (proto: list / count / first /
-//     find / save / delete / by / page / nextPage / filter / order / include). The
-//     scenario .md's `list().length` count proxy is unnecessary — count() routes to
-//     GET /notebooks/count (getNotebooksCount service method) and returns a plain
-//     number (observed 59). After a CmdNewNotebook seed it increments (59 -> 60).
-//   - There is NO JS-API Notebook factory. DG.Notebook static surface exposes only
-//     {length, name, prototype}; DG.Notebook.create is `undefined`. The scenario .md
-//     Setup `DG.Notebook.create({}, 'api-utils-test')` is NOT reachable from JS (it
-//     names a Dart-only notebook.dart factory). The reachable seed is the registered
-//     command function CmdNewNotebook (DG.Func.find({name:'CmdNewNotebook'})[0].apply())
-//     — a JS-API call (NOT DOM-driving), the same Dart cmdNewJupyterNotebook code path
-//     as ML | Notebooks | New Notebook... / the NEW NOTEBOOK ribbon. It persists a
-//     fresh server notebook (kernelspec python3) within ~0.5-5s, newest-first in
-//     grok.dapi.notebooks.order('createdOn', true). See SR-01.
-//   - getAuthToken / removeChildren / setupEnvironment / editNotebook are
-//     MODULE-INTERNAL helpers in public/packages/Notebooks/src/utils.js — they are
-//     NOT registered Datagrok functions, so they are not callable as
-//     grok.functions.call('Notebooks:getAuthToken'). The Notebooks package registers
-//     exactly three functions: DG.Func.find({package:'Notebooks'}) -> [initContainer,
-//     notebookView, convertNotebook]. getAuthToken reads the per-page SESSION_TOKEN
-//     cached by initContainer; that cache is only populated after the container init
-//     path runs (manual_only / live-container territory). The auth-token PLUMBING is
-//     validated structurally: the Notebooks package is registered (resolvable via
-//     grok.dapi.packages) and exposes the function surface getAuthToken belongs to.
-//     See SR-02.
-//   - removeChildren(node) (utils.js#L3) is a pure DOM helper
-//     (while (node.firstChild) node.removeChild(node.firstChild)); it has no Datagrok
-//     dependency, so its CONTRACT is exercised directly on a detached DOM node in
-//     page.evaluate (the function body is reproduced, not imported, since the module
-//     export is not reachable from the test bundle).
-//   - DG.Package.byName is NOT available on dev (returns no method); the scenario
-//     .md's `DG.Package.byName('Notebooks')` assertion is replaced by a
-//     grok.dapi.packages.filter('name = "Notebooks"') resolution.
-//   - grok.functions.call('Notebooks:notebookView', {id}) resolves the registered
-//     Notebook view (~5ms): a DG.View with type === 'Notebook' and a close() method.
-//     This is the JS-reachable proxy for NotebookMeta.getView (View.byType("Notebook",
-//     {id})) and the View.fromViewAsync construction inside renderPreview.
-//   - grok.dapi.notebooks.delete REQUIRES the DG.Notebook ENTITY, not an id string
-//     (passing a string throws "reading 'gaf'"). Resolve via find(id) first.
-//     find(<unknown-id>) resolves to undefined (the clean not-found signal).
-//
-// scope_reductions (scenario .md assertions NOT reachable from the apitest layer on
-// the live JS-API; asserted indirectly or deferred — surfaced in the dispatch yaml):
-//   SR-01 Setup `DG.Notebook.create({}, 'api-utils-test')` (scenario .md Setup step 2)
-//     — no JS-API Notebook factory (DG.Notebook.create is undefined; confirmed via
-//     Object.getOwnPropertyNames on the class). Seed via CmdNewNotebook.apply()
-//     instead (same persisted-notebook outcome, real cmdNewJupyterNotebook path).
-//   SR-02 notebooks.editor.utils.get-auth-token — getAuthToken is a module-internal
-//     util, not a registered function, and its value is the per-page SESSION_TOKEN
-//     populated only by the live-container initContainer path (manual_only). The
-//     actual token value cannot be read from the apitest layer; the auth-token
-//     plumbing is asserted structurally (Notebooks package registered + the three
-//     Notebooks functions present, the function surface getAuthToken lives in). The
-//     token-clear behavior is deferred to the server-side
-//     core/server/datlas/test/dapi/notebooks_test.dart (atlas assets.server-tests).
-//   SR-03 notebooks.meta.render-preview — renderPreview (notebook_meta.dart#L108) is a
-//     Dart View.fromViewAsync(...) host-side construction; there is no JS bridge to
-//     call NotebookMeta.renderPreview directly. The async Notebook-view construction
-//     it performs is exercised through grok.functions.call('Notebooks:notebookView',
-//     {id}) (the same registered view it re-fetches and returns), which is the closest
-//     JS-reachable surface (S4). The accordion/context-panel rendering host does not
-//     mount in the cold grok-test runtime, so a richer render assertion would be
-//     vacuous here.
-//
-// Paradigm: pure JS-API apitest. No page.click/fill/locator/hover/press; all work is
-// grok.dapi.* / grok.functions.call / DG.Func.apply() / pure DOM in page.evaluate.
-// The single loginToDatagrok call is the shared auth helper (no DOM driving of app).
+// Pure JS-API apitest for Notebooks utility/route coverage. Seeds a temporary
+// server notebook via CmdNewNotebook, then exercises: the count route, the
+// Notebooks package + auth-token function surface, the removeChildren DOM helper,
+// notebookView resolution, and delete. All work is grok.dapi.* / grok.functions.call
+// / DG.Func.apply() / pure DOM in page.evaluate — no DOM driving of the app.
+// Scope-reduced: get-auth-token (per-page SESSION_TOKEN) and render-preview have no
+// JS bridge, so they're asserted structurally here and covered server-side.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -111,9 +31,8 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
   let savedId: string | null = null;
 
   try {
-    // Setup (per scenario .md) — seed a temporary server-persisted notebook. The
-    // .md's DG.Notebook.create() factory is not reachable from JS (SR-01); the real
-    // reachable seed is CmdNewNotebook.apply().
+    // Setup — seed a temporary server-persisted notebook via CmdNewNotebook
+    // (no JS-API Notebook factory exists; this is the reachable seed path).
     await softStep('Setup: seed a temporary server notebook via CmdNewNotebook', async () => {
       const out = await page.evaluate(async () => {
         const result: any = {seeded: false, seedId: null, applyErr: null, err: null};
@@ -143,8 +62,7 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
       const out = await page.evaluate(async () => {
         const result: any = {before: -1, beforeIsInt: false, after: -1, increased: false, deleted2: false, err: null};
         try {
-          // count() routes to GET /notebooks/count (the count pathway the scenario
-          // exercises). It returns a plain number directly — no list().length proxy.
+          // count() routes to GET /notebooks/count and returns a plain number.
           const before = await grok.dapi.notebooks.count();
           result.before = before;
           result.beforeIsInt = typeof before === 'number' && Number.isInteger(before) && before >= 0;
@@ -181,16 +99,15 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
     });
 
     // Scenario 2: getAuthToken plumbing — module-internal util, not a registered
-    // function (SR-02). Validate the package + function surface it belongs to.
+    // function. Validate the package + function surface it belongs to.
     await softStep('S2: Notebooks package registered + auth-token plumbing surface present (editor.utils / get-auth-token)', async () => {
       const out = await page.evaluate(async () => {
         const result: any = {pkgRegistered: false, funcNames: [] as string[], hasNotebookView: false, hasInitContainer: false, hasConvert: false, err: null};
         try {
-          // DG.Package.byName is not available on dev — resolve via grok.dapi.packages.
           const pkgs = await grok.dapi.packages.filter('name = "Notebooks"').list().catch(() => [] as any[]);
           result.pkgRegistered = Array.isArray(pkgs) && pkgs.some((p: any) => p.name === 'Notebooks');
-          // The Notebooks package registers exactly the function surface getAuthToken
-          // lives in: initContainer (caches SESSION_TOKEN), notebookView, convertNotebook.
+          // The Notebooks package registers the surface getAuthToken lives in:
+          // initContainer (caches SESSION_TOKEN), notebookView, convertNotebook.
           const fns = (window as any).DG.Func.find({package: 'Notebooks'}).map((f: any) => f.name);
           result.funcNames = fns;
           result.hasInitContainer = fns.includes('initContainer');
@@ -215,9 +132,8 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
           const parent = document.createElement('div');
           for (let i = 0; i < 3; i++) parent.appendChild(document.createElement('span'));
           result.before = parent.childNodes.length;
-          // removeChildren(node) body from public/packages/Notebooks/src/utils.js#L3
-          // (module export is not reachable from the test bundle — reproduce the
-          // exact loop, which is its full contract).
+          // removeChildren(node) body from Notebooks/src/utils.js, reproduced (the
+          // module export is not reachable from the test bundle).
           while (parent.firstChild) parent.removeChild(parent.firstChild);
           result.after = parent.childNodes.length;
         } catch (e: any) { result.err = String(e?.message ?? e).slice(0, 400); }
@@ -234,9 +150,8 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
         const result: any = {viewResolved: false, viewType: null, hasClose: false, isView: false, err: null};
         try {
           if (!id) throw new Error('seed failed upstream — no id');
-          // grok.functions.call('Notebooks:notebookView', {id}) is the JS-reachable
-          // proxy for NotebookMeta.getView (View.byType("Notebook", {id})) and the
-          // View.fromViewAsync construction inside renderPreview.
+          // notebookView is the JS-reachable proxy for NotebookMeta.getView and the
+          // async view construction inside renderPreview.
           const view: any = await grok.functions.call('Notebooks:notebookView', {id});
           result.viewResolved = view != null;
           result.viewType = view ? view.type : null;
@@ -258,7 +173,7 @@ test('Notebooks API Utilities and Route Coverage (apitest) — count route, edit
         const result: any = {deleted: false, findAfter: 'NOT_TESTED', err: null};
         try {
           if (!id) throw new Error('seed failed upstream — no id');
-          // delete REQUIRES the entity, not an id string (recon 2026-06-18).
+          // delete requires the entity, not an id string.
           const ent: any = await grok.dapi.notebooks.find(id);
           if (!ent || !ent.id) throw new Error('entity not found before delete');
           await grok.dapi.notebooks.delete(ent);

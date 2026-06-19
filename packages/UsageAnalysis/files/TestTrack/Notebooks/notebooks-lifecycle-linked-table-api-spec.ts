@@ -1,90 +1,16 @@
 /* ---
 sub_features_covered: [notebooks.entity.link, notebooks.entity.is-applicable, notebooks.entity.get-applicable-cases, notebooks.entity.from-json, notebooks.entity.generate-file-name, notebooks.api.find, notebooks.api.list, notebooks.api.save, notebooks.api.filter, notebooks.repository.save, notebooks.repository.find, notebooks.repository.delete, notebooks.repository.delete-tables-relations, notebooks.repository.by-tag, notebooks.repository.audit-hooks, notebooks.routes.save, notebooks.routes.get, notebooks.routes.delete, notebooks.routes.list, notebooks.service.save-notebook, notebooks.service.get-notebook, notebooks.service.delete-notebook, notebooks.service.get-notebooks-filtered, notebooks.service.get-notebooks-count, notebooks.meta.open-tables-in-notebook, notebooks.meta.new-notebook]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: apitest
-//   pyramid_layer: absent (non-pyramid defaults; JS-API substitution permitted,
-//     DOM-driving FORBIDDEN for apitest)
-//   sub_features_covered: see frontmatter block above (25 ids)
-//   ui_coverage_responsibility: [] (delegated_to: null)
-//   related_bugs: []
-//   produced_from: atlas-driven
-//
-// Atlas provenance (derived_from):
-//   feature-atlas/notebooks.yaml#critical_paths[new-blank-notebook] derived_from:
-//     core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L7
-//   feature-atlas/notebooks.yaml#critical_paths[delete-notebook] derived_from:
-//     core/client/xamgle/lib/src/meta/notebook_meta.dart#L128
-//   feature-atlas/notebooks.yaml#critical_paths[rename-notebook] derived_from:
-//     core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L26
-//
-// Selector recon-notes (apitest — no DOM selectors; these are JS-API behavioral
-// findings from live chrome-devtools MCP recon on https://dev.datagrok.ai,
-// observed 2026-06-18):
-//   - NO JS-API Notebook factory. DG.Notebook static surface exposes none of
-//     template / create / fromJson / link / isApplicable / getApplicableCases /
-//     generateFileName. DG.Notebook.prototype exposes only the instance accessors
-//     environment / description / notebook. `new DG.Notebook()` constructs a husk
-//     but every mutating accessor throws a Dart-interop error (set notebook ->
-//     "reading 'gaf'"; set friendlyName -> "reading 'sak'") and save() throws
-//     NoSuchMethodError: []("description") on null. There is therefore NO pure-JS
-//     path to create a notebook from scratch. The reachable seed is the registered
-//     command function CmdNewNotebook (DG.Func.find({name:'CmdNewNotebook'})[0].apply())
-//     — a JS-API call (NOT DOM-driving), which is the same Dart cmdNewJupyterNotebook
-//     code path that ML | Notebooks | New Notebook... / the NEW NOTEBOOK ribbon
-//     dispatch. It persists a fresh server notebook (kernelspec python3) within
-//     ~0.5-5s and surfaces newest-first in grok.dapi.notebooks.order('createdOn',true).
-//   - grok.dapi.notebooks.delete REQUIRES the DG.Notebook ENTITY, not an id string
-//     (passing a string/the husk throws). Resolve via find(id) first.
-//   - find(id) returns the entity with .notebook (raw .ipynb JSON) populated;
-//     find(<unknown-id>) resolves to `undefined` (the clean not-found signal).
-//   - The JS entity surface does NOT expose `tables` (undefined) or `tags`
-//     (undefined; no setTag/getTags) — the notebooks_tables join and entity tags
-//     are server-side only and not enumerable through the JS-typed Notebook. See
-//     scope_reductions SR-01..SR-03 below.
-//   - grok.dapi.notebooks.filter({...}) throws from JS for every shape tried
-//     ({tags:[...]}, {tags:'x'}, {}) with "'replace' is not a function" — the
-//     where() helper is not callable through the JS client. count() / list() /
-//     order(field, desc) / first() all work. See SR-04.
-//   - S4 rename-persist latency (STAB note, measured live via MCP recon
-//     2026-06-18): on a WARM dev server `ent.friendlyName = x; save(ent)` then
-//     find(id) reflects the new value on the FIRST poll (saveMs ~79ms, persistMs
-//     ~77ms). The Gate-B FLAKY attempt-1 (S4 timed out reporting the default
-//     friendlyName "Notebook") was a COLD-START commit lag on the first save after
-//     the CmdNewNotebook seed, exceeding the prior 5s retry budget. Fix is a
-//     same-paradigm stabilization (raise budget to 30s + idempotent re-save at the
-//     10s/20s marks) — NOT a paradigm change.
-//
-// scope_reductions (sub_features in frontmatter that are NOT reachable from the
-// apitest layer on the live JS-API; asserted indirectly or deferred — documented
-// here and surfaced in the dispatch yaml):
-//   SR-01 notebooks.entity.link / .is-applicable / .get-applicable-cases /
-//     .from-json / .generate-file-name — no JS-API surface (DG.Notebook exposes no
-//     such static/instance methods; confirmed via Object.getOwnPropertyNames on the
-//     class + prototype). The atlas anchors them to notebook.dart Dart methods with
-//     no JS bridge. Applicability + table-link semantics are exercised server-side
-//     by core/server/datlas/test/dapi/notebooks_test.dart (atlas
-//     assets.server-tests), not reproducible from apitest. ASSERTED INDIRECTLY where
-//     possible: the notebooks_tables relation lifecycle is exercised by the
-//     create -> find -> delete round-trip (S1/S2/S6) at the repository.save /
-//     repository.delete / delete-tables-relations layer; the JS surface cannot read
-//     the join rows back.
-//   SR-02 tables-based assertions (scenario .md S1.5/S2.3 "saved.tables.length===1")
-//     — `tables` is undefined on the JS entity; cannot assert join cardinality from
-//     JS. Round-trip integrity asserted on the notebook (.ipynb) body + name instead.
-//   SR-03 notebooks.repository.by-tag + tag round-trip (scenario .md S3 tag filter)
-//     — no JS tag surface (tags undefined; no setTag). Listing/count covered via the
-//     untagged list()/count()/order() path (api.list / routes.list /
-//     service.get-notebooks-filtered / service.get-notebooks-count) instead.
-//   SR-04 notebooks.api.filter — filter() throws from the JS client for all shapes;
-//     covered structurally by the order()+list() path which routes through the same
-//     getNotebooksFiltered service method.
-//   SR-05 notebooks.entity.apply / convert-notebook — atlas manual_only[] (live
-//     Docker container, non-deterministic). Out of scope per scenario .md Notes.
-//
-// Paradigm: pure JS-API apitest. No page.click/fill/locator/hover/press; all work
-// is grok.dapi.notebooks / DG.Func.apply() in page.evaluate. The single
-// loginToDatagrok call is the shared auth helper (no DOM driving of the app).
+// Pure JS-API apitest for the Notebooks CRUD lifecycle via grok.dapi.notebooks.
+// Seeds a server notebook with CmdNewNotebook (no JS-API Notebook factory exists),
+// then round-trips it: find (name + .ipynb body intact), list/count/order, rename
+// via friendlyName + save, and delete (verifying removal and that a new notebook
+// can still be created). All work is grok.dapi.notebooks / DG.Func.apply() in
+// page.evaluate — no DOM driving of the app.
+// Scope-reduced: table-link / tag / filter semantics have no enumerable JS surface,
+// so they're covered via the create→find→delete round-trip and the order()+list()
+// path here, and asserted directly server-side. delete requires the entity (not an
+// id string), so steps resolve via find(id) first.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -212,14 +138,9 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
           ent.friendlyName = args.name;
           await grok.dapi.notebooks.save(ent);
           result.saveOk = true;
-          // Re-fetch and confirm the rename persisted. On a WARM server this lands
-          // within the first poll (~80ms, measured via MCP recon 2026-06-18). On a
-          // COLD server the first save after a CmdNewNotebook seed can lag beyond the
-          // prior 5s budget (the FLAKY attempt-1 root cause) — the server still
-          // reports the default friendlyName "Notebook" for several seconds. Budget
-          // raised to 30s (30x1000ms) to absorb cold-commit lag, with an idempotent
-          // re-save every ~10s as belt-and-suspenders in case the first save was
-          // dropped during cold init rather than merely lagging.
+          // Re-fetch and confirm the rename persisted. A cold server can lag the
+          // first save after a CmdNewNotebook seed, so poll up to 30s with an
+          // idempotent re-save at the 10s/20s marks in case the save was dropped.
           const tPoll = Date.now();
           for (let i = 0; i < 30 && !result.persisted; i++) {
             const re: any = await grok.dapi.notebooks.find(args.id).catch(() => null);
@@ -245,7 +166,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
         const result: any = {deleted: false, findAfter: 'NOT_TESTED', recreatable: false, err: null};
         try {
           if (!id) throw new Error('seed failed upstream — no id');
-          // delete REQUIRES the entity, not an id string (recon 2026-06-18).
+          // delete requires the entity, not an id string.
           const ent: any = await grok.dapi.notebooks.find(id);
           if (!ent || !ent.id) throw new Error('entity not found before delete');
           await grok.dapi.notebooks.delete(ent);

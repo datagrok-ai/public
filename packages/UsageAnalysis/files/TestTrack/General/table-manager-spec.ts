@@ -25,15 +25,14 @@ test('Table Manager lists open tables', async ({page}) => {
   await loginToDatagrok(page);
 
   // Precondition: load several datasets (scenario asks for 3-4).
-  const opened = await page.evaluate(async (names) => {
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
+  await page.waitForFunction(() => (window as any).grok.shell.tables.length === 0, null, {timeout: 15_000});
+  const opened = await page.evaluate((names) => {
     const grok = (window as any).grok;
-    grok.shell.closeAll();
-    await new Promise((r) => setTimeout(r, 400));
     for (const n of names) {
       const t = grok.data.testData('demog', 40);
       t.name = n;
       grok.shell.addTableView(t);
-      await new Promise((r) => setTimeout(r, 150));
     }
     return {count: grok.shell.tables.length, names: grok.shell.tableNames};
   }, TABLE_NAMES);
@@ -42,10 +41,10 @@ test('Table Manager lists open tables', async ({page}) => {
   for (const n of TABLE_NAMES) expect(opened.names).toContain(n);
 
   // Open the Table Manager (View | Tables / Alt+T).
-  const manager = await page.evaluate(async (names) => {
+  await page.evaluate(() => (window as any).grok.shell.windows.showTables = true);
+  await page.locator('[name="Tables"]').waitFor({state: 'attached', timeout: 15_000});
+  const manager = await page.evaluate((names) => {
     const grok = (window as any).grok;
-    grok.shell.windows.showTables = true;
-    await new Promise((r) => setTimeout(r, 800));
     const textVisible = (txt: string) =>
       [...document.querySelectorAll('div,span,td')]
         .some((e) => e.textContent === txt && (e as HTMLElement).offsetParent !== null);
@@ -65,13 +64,9 @@ test('Table Manager lists open tables', async ({page}) => {
 
   // Toggling View | Tables off hides the pane (the command is a simple toggle).
   await softStep('View | Tables toggles the manager off', async () => {
-    const closed = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      grok.shell.windows.showTables = false;
-      await new Promise((r) => setTimeout(r, 500));
-      return grok.shell.windows.showTables;
-    });
-    if (closed !== false) throw new Error('showTables did not toggle off');
+    await page.evaluate(() => (window as any).grok.shell.windows.showTables = false);
+    await page.waitForFunction(() => (window as any).grok.shell.windows.showTables === false,
+      null, {timeout: 15_000});
   });
 
   // Cleanup.

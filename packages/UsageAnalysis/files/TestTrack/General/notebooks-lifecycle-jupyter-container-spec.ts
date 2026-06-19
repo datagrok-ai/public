@@ -1,160 +1,41 @@
 /* ---
 sub_features_covered: [notebooks.lifecycle.init-container, notebooks.lifecycle.notebooks-enabled, notebooks.lifecycle.init-plugin-dart, notebooks.lifecycle.init-meta, notebooks.plugin.notebook-view-func, notebooks.plugin.init-container-func, notebooks.browser.requires-capabilities, notebooks.editor.init-notebook, notebooks.editor.save-state-map, notebooks.editor.to-html, notebooks.assets.fleet-capability, notebooks.routes.save-file, notebooks.service.save-notebook-file]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: absent (non-pyramid defaults; JS-API substitution permitted,
-//     >=1 DOM-driving call still REQUIRED per E-LAYER-COMPLIANCE-01)
-//   sub_features_covered: see frontmatter block above (13 ids)
-//   ui_coverage_responsibility: [] (delegated_to: null) — no owned ui-smoke flow
-//   related_bugs: []
-//   produced_from: atlas-driven
+// Verifies the jupyter_container source-class lifecycle at the PLATFORM level across 6
+// scenarios: capability gate (Sc 6), container init + DOM-driven New Notebook seed (Sc 1),
+// notebook-view URL routing (Sc 2), save-file reachability / clean .ipynb round-trip (Sc 4),
+// state-map persistence (Sc 5), HTML-mode render path (Sc 3). The JupyterLab iframe interior
+// (kernel, cell DOM) is atlas manual_only and is NOT touched. The notebook is self-seeded with
+// a unique name (no JS-API Notebook factory exists) and deleted in cleanup so the shared
+// Demog/Cars notebooks on dev are never mutated.
 //
-// Atlas provenance (derived_from):
-//   feature-atlas/notebooks.yaml#critical_paths[new-blank-notebook] derived_from:
-//     core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L7
-//   feature-atlas/notebooks.yaml#edge_cases[save-notebook-file token clear] derived_from:
-//     core/server/datlas/lib/src/services/notebooks_service.dart#L25
-//   feature-atlas/notebooks.yaml#edge_cases[container cold start] derived_from:
-//     public/packages/Notebooks/src/package.js#L512
+// DOM-driving: Scenario 1 clicks the real "New Notebook..." ribbon button
+// ([name="button-New-Notebook..."]) — the genuine UI entry point that triggers the
+// initContainer lifecycle; Scenario 6 drives the browser-view gallery DOM.
 //
-// Scope: the jupyter_container source-class lifecycle at the PLATFORM level —
-// container init gate, capability gate, notebook-view URL routing, the save-file
-// token-clear invariant, and the HTML-render/state-map best-effort. The JupyterLab
-// iframe interior (kernel, cell DOM) is atlas manual_only and is NOT touched. The
-// notebook is SELF-SEEDED with a unique name (no JS-API Notebook factory exists; see
-// recon-notes) and deleted in cleanup so the shared Demog/Cars notebooks on dev are
-// never mutated.
-//
-// DOM-driving (E-LAYER-COMPLIANCE-01): Scenario 1 drives the real "New Notebook..."
-// ribbon button in the Notebooks browser ([name="button-New-Notebook..."], class-1 in
-// grok-browser/references/notebooks.md) — the genuine UI entry point that triggers the
-// initContainer lifecycle. Scenario 6 drives the browser-view gallery DOM. The
-// remaining lifecycle / routing / save-file assertions are JS-API (permitted broadly
-// for absent-pyramid_layer playwright specs).
-//
-// Selector recon-notes (live chrome-devtools MCP recon on https://dev.datagrok.ai,
-// observed 2026-06-18). The two DOM selectors used below are class-1 (present verbatim
-// in grok-browser/references/notebooks.md); these notes record the behavioral findings
-// and the surface gaps that drove the scope-reductions:
-//   - [name="button-New-Notebook..."] — the NEW NOTEBOOK... ribbon button in the
-//     Notebooks browser gallery search bar (class-1, notebooks.md "New Notebook..."
-//     section). Clicking it runs cmdNewJupyterNotebook (the notebooksEnabled-gated Dart
-//     command), which triggers initContainer, persists a fresh server notebook
-//     (kernelspec python3), and opens the editor (grok.shell.v.type === 'Notebook').
-//     Confirmed live 2026-06-18.
-//   - The NEW NOTEBOOK... ribbon button is present and HITTABLE (visible 118x22 bounding box)
-//     the instant the gallery search bar mounts (~0-1ms after the view flip), while the gallery
-//     cards are still rendering (cardsAtButtonReady === 0). Re-confirmed live 2026-06-18: the
-//     button click + editor flip succeeds with zero rendered cards. The Scenario-1 DOM-driving
-//     click is therefore gated on the BUTTON mount (openNotebooksBrowserForButton), not the slow
-//     card-render (openNotebooksBrowserWithCards, used only by Scenario 6 whose assertion IS the
-//     cards). Coupling Scenario 1 to the 45s card gate was the cold B-RUN-PASS/B-STAB-01 root
-//     cause — cards render warm in <1s but lag/never under cold headless `grok test`, so the
-//     click never fired before the card wait expired even though the button was hittable.
-//   - The Notebooks browser is opened via DG.Func.find({name:'CmdBrowseNotebooks'})[0]
-//     .apply() — the registered command the [name="div-ML---Notebooks---Browse-Notebooks"]
-//     leaf dispatches (notebook_meta.dart:151). View-independent; flips grok.shell.v.type
-//     to 'notebooks' and renders ~50 cards in ~900-1400ms. The ML top-menu hover path is
-//     REFUTED as a reliable opener (the Browse-Notebooks leaf stays 0x0 / offsetParent
-//     null under synthetic AND trusted hover — the proven cold-flake root cause on sibling
-//     specs). Navigation is not an owned ui-smoke flow, so routing it through the command
-//     function is a sanctioned substitution.
-//   - Notebooks:initContainer (DG.Func.find({name:'initContainer'})[0]) resolves in
-//     ~220ms and returns undefined; on dev the Notebooks-jupyter-notebook Docker
-//     container reports status 'started' (grok.dapi.docker.dockerContainers). Observed
-//     2026-06-18.
-//   - grok.shell.route('/notebook/<id>') opens the registered Notebook view
-//     (grok.shell.v.type === 'Notebook'); the address-bar pathname stays '/' in this
-//     build (routing does not rewrite location.pathname), so the route is asserted via
-//     the view-type flip, not the URL string.
-//   - Token-clear invariant: NOT reproducible on the JS-API surface. ent.notebook is a
-//     per-access JSON-deserialized getter (sameRef === false), so a nested-property mutation
-//     never sticks; planting a token requires reassigning the whole object via the setter
-//     (ent.notebook = nb). Even when correctly planted, grok.dapi.notebooks.save(ent) does
-//     NOT clear metadata.datagrok.session_token — a re-fetch still returns the planted value
-//     (observed live 2026-06-18). The dedicated POST /notebooks/file/<id> route
-//     (NotebooksService.saveNotebookFile) is REST-only — grok.dapi.notebooks exposes only
-//     HttpDataSource CRUD (list/count/first/find/save/delete/by/page/filter/order/include);
-//     no saveFile/saveNotebookFile JS method. Token-clear is deferred to the server-side
-//     dapi test; the reachable JS invariant (clean entity round-trip + no client saveFile
-//     leak path) is asserted instead. See SR-02 and SR-07.
-//
-// scope_reductions (scenario .md steps NOT reproducible on the live JS-API surface;
-// asserted indirectly or deferred — surfaced in the dispatch yaml):
-//   SR-01 Scenario 4 DG.Notebook.template({}) seed — DG.Notebook static surface exposes
-//     NO factory (template / create / fromJson all absent; new DG.Notebook() throws on
-//     save). Confirmed via the sibling apitest recon (notebooks-lifecycle-linked-table-api.ts)
-//     and re-confirmed 2026-06-18. The fake-token seed is built on a CmdNewNotebook-seeded
-//     real server notebook instead.
-//   SR-02 Scenario 4 token-clear invariant (POST /notebooks/file/<id>, saveNotebookFile) —
-//     REST-only route; no JS bridge on grok.dapi.notebooks (the data source exposes only
-//     list/count/first/find/save/delete/by/page/filter/order/include — no saveFile). The
-//     token-clear is NOT reproducible on the JS-API surface: re-confirmed live 2026-06-18,
-//     grok.dapi.notebooks.save(ent) with a planted metadata.datagrok.session_token does NOT
-//     clear it (re-fetch still returns the planted value). The token-clear is therefore
-//     DEFERRED to the server-side test (core/server/datlas/test/dapi/notebooks_test.dart,
-//     atlas assets.server-tests) — the only layer that drives saveNotebookFile. The
-//     reachable JS-side invariant asserted instead: the notebook entity round-trips through
-//     save/find cleanly and grok.dapi.notebooks exposes NO client-side saveFile leak path.
-//     (Earlier cycles' "token cleared via entity-save" claim was a false positive caused by
-//     the getter-copy bug below — see SR-07 — masking already-empty server state.)
-//   SR-07 Scenario 4 in-memory token plant — ent.notebook is a per-access JSON-deserialized
-//     getter (each `ent.notebook` read returns a FRESH object; sameRef === false, observed
-//     2026-06-18), so mutating a nested property (ent.notebook.metadata.datagrok.session_token
-//     = X) writes to a throwaway copy and never sticks. To actually plant a value you must
-//     mutate a captured copy and reassign the WHOLE object back through the setter
-//     (const nb = ent.notebook; ...mutate nb...; ent.notebook = nb). The spec uses the
-//     setter-reassign pattern.
-//   SR-03 Scenario 5 saveStateMap() === {id} + View.byType restore — on the live editor
-//     view saveStateMap() returns null/undefined (not {id:<id>}), and DG.View.byType is
-//     undefined JS-side, so the state-map round-trip cannot be asserted as the .md
-//     describes. Asserted weakly: the view exposes a callable saveStateMap() and a stable
-//     view id; the restore-from-state-map is deferred.
-//   SR-04 Scenario 6 grok.shell.startupData.fleetCapabilities / DG.ServerCapabilities.NOTEBOOKS
-//     — grok.shell.startupData is absent and DG.ServerCapabilities is not exposed JS-side,
-//     so the capability flag cannot be read directly. The capability gate is asserted via
-//     its OBSERVABLE consequences (the proxy the atlas edge-case names): the Notebooks
-//     Docker container is 'started', the CmdNewNotebook / CmdBrowseNotebooks commands are
-//     registered, and the NotebooksView browser loads — all of which only hold when the
-//     fleet advertises ServerCapabilities.NOTEBOOKS.
-//   SR-05 Scenario 3 HTML-mode ribbon (Download combo / EDIT button) — source-derived
-//     only; the content area stayed empty with a 404 logged during recon (GROK-13999), so
-//     the ribbon buttons are not DOM-confirmed. Best-effort per scenario .md Notes: the
-//     view-transition to a Notebook view + a callable toHtml-backed render path are
-//     asserted; the ribbon buttons are not hard-gated.
-//   SR-06 notebooks.editor.edit-mode / kernel / cells — atlas manual_only[] (live Docker
-//     container + Python kernel, non-deterministic). Out of scope per scenario .md Notes.
+// Documented scope-reductions (steps not reproducible on the live JS-API surface; asserted
+// indirectly or deferred):
+//   Sc 4 token-clear (POST /notebooks/file/<id>, saveNotebookFile) is REST-only with no JS
+//     bridge — deferred to the server-side dapi test. Asserted here instead: no client
+//     saveFile leak path + the .ipynb body round-trips through save/find cleanly. ent.notebook
+//     is a per-access getter copy, so the probe is planted by reassigning the whole object via
+//     the setter (ent.notebook = nb), not a nested mutation.
+//   Sc 5 saveStateMap() returns null and DG.View.byType is JS-absent; asserted weakly as a
+//     callable saveStateMap() + a stable view id (restore deferred).
+//   Sc 6 capability flag (ServerCapabilities.NOTEBOOKS) is not readable JS-side; asserted via
+//     its observable consequences (container running, commands registered, browser loads).
+//   Sc 3 HTML-mode ribbon (Download / EDIT) is source-derived only (404 during recon,
+//     GROK-13999); asserted as the view transition + a non-throwing open, not the ribbon.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-// Open the Notebooks browser and return only once at least one notebook card has actually
-// rendered — not merely when the gallery container mounted (cards load asynchronously).
-//
-// Stabilization (NOT a paradigm pivot — same command/route opener, wrapped in a retry loop):
-// a single fire-once `await f.apply()` followed by a passive waitForFunction is the proven cold
-// B-RUN-PASS/B-STAB-01 root cause shared by EVERY notebooks browser spec (browser / delete /
-// context-menu / this one — Gate B 2026-06-18, all timed out at 45s here despite resolving
-// warm in <1s via live MCP recon). Under the cold headless `grok test` runtime the opener's
-// view-flip is occasionally dropped and there is no re-trigger. Fix: drive the opener INSIDE
-// the poll loop and re-issue it each round, alternating the two opener paths both confirmed
-// live (2026-06-18) to flip grok.shell.v.type to 'notebooks' in ~500ms warm:
-//   round even -> DG.Func.find({name:'CmdBrowseNotebooks'})[0].apply()  (notebook_meta.dart:151)
-//   round odd  -> grok.shell.route('/notebooks')                         (registered NotebooksView route)
-// Both are view-independent; navigation is not an owned ui-smoke flow (ui_coverage_responsibility
-// is []), so routing it through a command/route is a sanctioned JS-API substitution.
-// Flip the shell to the NotebooksView (grok.shell.v.type === 'notebooks') and wait only for
-// the ribbon/search-bar + the NEW NOTEBOOK... button to mount. This is the LIGHT opener: it
-// does NOT block on the asynchronous gallery cards, because the New Notebook... ribbon button
-// is present and clickable (visible 118x22 bounding box) the instant the search bar mounts —
-// `cardsAtButtonReady === 0` while the button is already hittable (live MCP recon 2026-06-18).
-// Coupling the Scenario-1 DOM-driving click to the slow card-render gate was the cold
-// B-RUN-PASS/B-STAB-01 root cause: the cards render warm in <1s but lag/never under the cold
-// headless `grok test` runtime, so the click never fired before the 45s card wait expired even
-// though the button was hittable the entire time. Same paradigm (CmdBrowseNotebooks command /
-// route opener, real button click) — only the readiness gate is corrected from cards → button.
+// Light opener: flip the shell to the NotebooksView and return once the search bar + the
+// NEW NOTEBOOK... button mount (the button is hittable while the gallery cards are still 0).
+// The opener is re-issued INSIDE the poll loop (alternating CmdBrowseNotebooks.apply() and
+// route('/notebooks')) because a fire-once view-flip is occasionally dropped under the cold
+// headless runtime with no re-trigger — the proven cold-flake root cause on every notebooks spec.
 async function openNotebooksBrowserForButton(page: import('@playwright/test').Page) {
   const flipped = await page.evaluate(async () => {
     const g = (window as any).grok;
@@ -194,6 +75,7 @@ async function openNotebooksBrowserWithCards(page: import('@playwright/test').Pa
 }
 
 test('Notebooks Lifecycle — Jupyter container source class (init / capability gate / view routing / save-file token clear)', async ({page}) => {
+  // 7 min: real cold Jupyter container warm-up across 6 scenarios; the opener alone budgets 80s.
   test.setTimeout(420_000);
   stepErrors.length = 0;
 
@@ -319,7 +201,9 @@ test('Notebooks Lifecycle — Jupyter container source class (init / capability 
           const ent: any = await grok.dapi.notebooks.find(id);
           r.friendlyName = ent?.friendlyName ?? ent?.name ?? null;
           grok.shell.closeAll();
-          await new Promise((res) => setTimeout(res, 500));
+          // Wait for the prior view to be torn down before routing (bounded, no fixed pad).
+          for (let i = 0; i < 20 && grok.shell.v?.type === 'Notebook'; i++)
+            await new Promise((res) => setTimeout(res, 100));
           // grok.shell.route('/notebook/<id>') is caught by NotebookView.handlePath /
           // acceptsPath and opens the registered notebookView func. (location.pathname stays
           // '/' in this build — assert via the view-type flip, not the URL string.)
@@ -425,7 +309,9 @@ test('Notebooks Lifecycle — Jupyter container source class (init / capability 
         try {
           if (!id) throw new Error('seed failed upstream — no id');
           grok.shell.closeAll();
-          await new Promise((res) => setTimeout(res, 500));
+          // Wait for the prior view to be torn down before routing (bounded, no fixed pad).
+          for (let i = 0; i < 20 && grok.shell.v?.type === 'Notebook'; i++)
+            await new Promise((res) => setTimeout(res, 100));
           // Route opens HTML mode for /notebook/<id> (handlePath default mode is HTML).
           grok.shell.route('/notebook/' + id);
           r.openCallOk = true;

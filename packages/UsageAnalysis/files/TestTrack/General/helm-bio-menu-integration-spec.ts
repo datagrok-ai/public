@@ -3,12 +3,10 @@ import {loginAndOpenFile, specTestOptions, softStep, stepErrors} from '../spec-l
 import {finishSpec} from '../helpers/viewers';
 
 // Paired scenario: helm-bio-menu-integration.md (cross-feature smoke).
-// Selector sources (grok-browser/references):
-//   - .claude/skills/grok-browser/references/bio.md   (§ "Top-menu Bio entries" — div-Bio--- vectors)
-//   - .claude/skills/grok-browser/references/helm.md   (HELM column tags / renderer)
+// Selector sources: grok-browser references bio.md (top-menu div-Bio--- vectors)
+// and helm.md (HELM column tags / renderer).
 
 test.use(specTestOptions);
-test.use({timeout: 600_000});
 
 // Dot-namespaced for the direct file-browse URL (see loginAndOpenFile).
 const DATASET_PATH = 'System.AppData/Helm/samples/helm-showcase.csv';
@@ -49,7 +47,9 @@ const BIO_FUNCS: BioFn[] = [
 ];
 
 test('Helm — Bio menu cross-feature integration on a HELM column', async ({page}) => {
-  test.setTimeout(600_000);
+  // Sweeps 16 Bio functions, each opening a menu leaf and polling its outcome on
+  // long HELM sequences; 300s covers the full loop with margin.
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   // Open the showcase DIRECTLY via its instance-derived file URL.
@@ -65,7 +65,8 @@ test('Helm — Bio menu cross-feature integration on a HELM column', async ({pag
     return df?.col('HELM')?.semType === 'Macromolecule';
   }, null, {timeout: 45_000});
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-  await page.waitForTimeout(1500);
+  // Wait for the HELM cells to actually paint before driving the Bio menu.
+  await page.locator('[name="viewer-Grid"] canvas').first().waitFor({timeout: 30_000});
 
   // Baseline + capture the showcase view so we can return to it after a leaf
   // (MSA) opens its own result table. Make HELM the current column so the Bio
@@ -86,15 +87,20 @@ test('Helm — Bio menu cross-feature integration on a HELM column', async ({pag
   expect(bioPresent, 'Bio top menu MUST attach for a Macromolecule HELM column').toBe(true);
 
   // Open a Bio leaf via the dispatchEvent vector (per bio.md; works in overflow).
+  // Each step waits for the next menu level to appear before driving it.
   const openBioLeaf = async (leaf: string): Promise<boolean> => {
+    const submenu = leaf.split('---').slice(0, 2).join('---'); // e.g. div-Bio---Analyze
     await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', {bubbles: true})));
-    await page.waitForTimeout(150);
     await page.evaluate(() => document.querySelector('[name="div-Bio"]')
       ?.dispatchEvent(new MouseEvent('click', {bubbles: true})));
-    await page.waitForTimeout(400);
-    await page.evaluate((l) => document.querySelector(`[name="${l.split('---').slice(0, 2).join('---')}"]`)
-      ?.dispatchEvent(new MouseEvent('mouseover', {bubbles: true})), leaf);
-    await page.waitForTimeout(400);
+    // The submenu header must materialize in the DOM before we can hover it
+    // (menu groups are dispatch-driven and stay CSS-hidden until hovered).
+    await page.locator(`[name="${submenu}"]`).first().waitFor({state: 'attached', timeout: 15_000});
+    await page.evaluate((s) => document.querySelector(`[name="${s}"]`)
+      ?.dispatchEvent(new MouseEvent('mouseover', {bubbles: true})), submenu);
+    // The leaf appears in the DOM once the submenu expands from the hover.
+    await page.locator(`[name="${leaf}"]`).first().waitFor({state: 'attached', timeout: 15_000})
+      .catch(() => {/* leaf may be absent; the click vector below reports locatability */});
     return page.evaluate((l) => {
       const el = document.querySelector(`[name="${l}"]`);
       if (!el) return false;
@@ -132,14 +138,21 @@ test('Helm — Bio menu cross-feature integration on a HELM column', async ({pag
           if (v.type !== 'Grid' && !baseViewers.includes(v.type)) { try { v.close(); } catch (_) {/* */} }
       }
     }, base.viewers);
-    await page.waitForTimeout(300);
+    // Wait for the active view to be back on the showcase before dropping columns.
+    await page.waitForFunction(() => {
+      const g = (window as any).grok;
+      return !(window as any).__sc || g.shell.v === (window as any).__sc;
+    }, null, {timeout: 15_000}).catch(() => {/* best-effort restore; column reset below is still applied */});
     await page.evaluate((baseCols: number) => {
       const g = (window as any).grok;
       const df = g.shell.tv?.dataFrame;
       if (df) { while (df.columns.length > baseCols) df.columns.remove(df.columns.byIndex(df.columns.length - 1).name); }
       if (df?.col('HELM')) df.currentCol = df.col('HELM');
     }, base.cols);
-    await page.waitForTimeout(200);
+    // Confirm the frame is back to baseline width before the next leaf runs.
+    await page.waitForFunction((baseCols: number) =>
+      ((window as any).grok.shell.tv?.dataFrame?.columns?.length ?? baseCols) <= baseCols,
+    base.cols, {timeout: 15_000}).catch(() => {/* next iteration re-reads state defensively */});
   };
 
   for (const fn of BIO_FUNCS) {
@@ -149,7 +162,10 @@ test('Helm — Bio menu cross-feature integration on a HELM column', async ({pag
     await softStep(`Bio | ${fn.label}: ${expectDesc}; no Helm-related error`, async () => {
       const opened = await openBioLeaf(fn.leaf);
       expect(opened, `Bio leaf "${fn.leaf}" MUST be locatable in the menu`).toBe(true);
-      await page.waitForTimeout(2000);
+      // Give the click a chance to surface a dialog before deciding; leaves that
+      // run directly won't open one, so this resolves as soon as a dialog shows.
+      await page.locator('.d4-dialog').first().waitFor({state: 'visible', timeout: 2_000})
+        .catch(() => {/* leaf runs without a dialog — proceed to outcome polling */});
 
       // Accept defaults if a dialog with an enabled OK appeared.
       if (await page.locator('.d4-dialog').count() > 0) {

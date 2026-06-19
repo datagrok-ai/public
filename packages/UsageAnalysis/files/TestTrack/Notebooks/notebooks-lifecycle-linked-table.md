@@ -35,7 +35,7 @@ source_text_fixes: []
 candidate_helpers: []
 unresolved_ambiguities: []
 realized_as:
-  - notebooks-lifecycle-linked-table-api.ts
+  - notebooks-lifecycle-linked-table-api-spec.ts
 scope_reductions:
   - id: SR-01
     summary: |
@@ -88,7 +88,7 @@ gate_verdicts:
     cycle_id: 2026-06-17-notebooks-migrate-01
     timestamp: 2026-06-18T23:30:00Z
     spec_runs:
-      - spec: notebooks-lifecycle-linked-table-api.ts
+      - spec: notebooks-lifecycle-linked-table-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 59

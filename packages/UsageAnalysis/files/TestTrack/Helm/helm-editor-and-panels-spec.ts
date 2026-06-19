@@ -3,16 +3,16 @@ import {loginAndOpenFile, specTestOptions, softStep, stepErrors} from '../spec-l
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
-test.use({timeout: 600_000});
 
 // Dot-namespaced for the direct file-browse URL (see loginAndOpenFile). This
 // spec uses the curated 55-row showcase (peptide/RNA/duplex/conjugate cases).
 const DATASET_PATH = 'System.AppData/Helm/samples/helm-showcase.csv';
 
 test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) => {
-  // 600s ceiling: cold Block B open (~300s lazy init) + login (~15s) +
-  // setup (~17s) + blocks A-G warm (~35s) = ~367s worst-case; 233s headroom.
-  test.setTimeout(600_000);
+  // Single-user spec: login (~15s) + setup (~17s) + warm blocks A-H (~35s) plus a
+  // possible cold Block B editor init (~180s lazy JSDraw2 load). 300s covers the
+  // worst case with margin.
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   // Open the dataset DIRECTLY via its instance-derived file URL (platform +
@@ -35,8 +35,15 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     return df?.col('HELM')?.semType === 'Macromolecule';
   }, null, {timeout: 45_000});
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-  // Brief settle for the Helm cell renderer's first paint.
-  await page.waitForTimeout(1500);
+  // Wait for the grid's main render canvas (width+height > 100) to paint rather
+  // than a blind settle — Block A reads this canvas next.
+  await page.waitForFunction(() => {
+    const canvases = Array.from(document.querySelectorAll('[name="viewer-Grid"] canvas')) as HTMLCanvasElement[];
+    return canvases.some((c) => {
+      const r = c.getBoundingClientRect();
+      return r.width > 100 && r.height > 100;
+    });
+  }, null, {timeout: 30_000});
 
   // Pre-flight invariants — Bio detector tagged the column AND it has enough
   // rows so the Block A / Block F per-cell flows have non-degenerate input.
@@ -96,19 +103,12 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       () => document.querySelectorAll('.d4-dialog.d4-dialog-full-screen').length === 0,
       {timeout: 8_000}
     ).catch(() => {/* ignore timeout — proceed and let next waitFor surface the real error */});
-    await page.waitForTimeout(300);
   };
 
-  // Helper: click the CANCEL or OK button via JS evaluate() to bypass
-  // Playwright's hit-test. Playwright's pointer-based click() fails for these
-  // buttons because the full-screen dialog container intercepts the synthetic
-  // pointer event (position:fixed, z-index:3005 overlay). JS .click()
-  // bypasses the hit-test entirely and fires the native click handler.
-  // Round-13: click button in ALL open full-screen dialogs. The Block B
-  // fire-and-forget fallback + delayed dblclick race can open two dialogs
-  // simultaneously; clicking only the first leaves the second open and the
-  // waitForFunction(length===0) times out. Iterating over all is idempotent
-  // for the normal single-dialog case.
+  // Helper: click CANCEL/OK via JS .click() to bypass Playwright's hit-test (the
+  // full-screen dialog overlay intercepts synthetic pointer events). Clicks the
+  // button in ALL open full-screen dialogs — idempotent for the single-dialog
+  // case, and covers the rare two-stacked-dialogs race from the Block B fallback.
   const clickDialogButton = async (buttonName: 'button-CANCEL' | 'button-OK') => {
     await page.evaluate((name) => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog.d4-dialog-full-screen'));
@@ -123,14 +123,10 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     );
   };
 
-  // Helper: open the Web Editor via JS-API. Permitted for Blocks D/E/G as
-  // SETUP (the owned UI flow helm.open-editor.cell-editor is exercised in
-  // Block B; helm.open-editor.edit-helm-action is exercised in Block C).
-  // Always closes any stale dialogs first to avoid strict-mode violations.
-  // Round-12: fire-and-forget pattern (no await inside evaluate). The blocking
-  // `await grok.functions.call(...)` inside evaluate can hold the browser for
-  // minutes when JsDraw2 needs re-init (same root cause as Block B fallback
-  // Round-11). Dialog visibility detected via outer Playwright waitFor instead.
+  // Helper: open the Web Editor via JS-API as SETUP for Blocks D/E/G (the owned
+  // UI flows are exercised in Block B/C). Closes stale dialogs first. Uses a
+  // fire-and-forget call (no await inside evaluate) so a cold JSDraw2 re-init
+  // does not block the browser; dialog readiness is detected via outer waitFor.
   const openEditorViaJsApi = async () => {
     await closeAllEditorDialogs();
     await page.evaluate(() => {
@@ -145,7 +141,9 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       .waitFor({state: 'attached', timeout: 12_000});
     await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="editor-svg"]').first()
       .waitFor({state: 'attached', timeout: 12_000});
-    await page.waitForTimeout(600);
+    // Wait for the structure to paint at least one atom rather than a blind settle.
+    await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid^="canvas-atom-"]').first()
+      .waitFor({state: 'attached', timeout: 12_000});
   };
 
   await softStep('Block A Step 1: HELM column auto-renders via HelmGridCellRenderer (structural-proxy)', async () => {
@@ -173,9 +171,9 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     const hx = coords!.x - 170; // left-edge offset within the 400px-wide cell
     const hy = coords!.y;
     await page.mouse.move(hx - 30, hy - 30);
-    await page.waitForTimeout(120);
     await page.mouse.move(hx, hy, {steps: 6});
-    await page.waitForTimeout(1200);
+    // Poll for the tooltip singleton to attach rather than a fixed hover settle.
+    await page.locator('.d4-tooltip').waitFor({state: 'attached', timeout: 5_000}).catch(() => {});
     const tooltipInfo = await page.evaluate(() => {
       const tt = document.querySelector('.d4-tooltip');
       return {
@@ -187,7 +185,7 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     expect(tooltipInfo.exists,
       'helm.rendering.cell-renderer wiring: .d4-tooltip singleton MUST be present in the DOM (HelmGridCellRendererBack subscribed)').toBe(true);
     if (tooltipInfo.textLen === 0) {
-      console.warn('Block A hover tooltip: .d4-tooltip element present but text empty under Playwright headless (per helm.md Pitfall #11 caveat). Element-presence assertion stands as the structural-proxy guard.');
+      console.warn('Block A hover tooltip: .d4-tooltip present but text empty under headless. Element-presence assertion stands as the structural-proxy guard.');
     }
     const balloonErrors = await page.locator('.d4-balloon.error').count();
     expect(balloonErrors, 'hover MUST NOT raise an error balloon').toBe(0);
@@ -202,24 +200,20 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     await page.mouse.dblclick(coords!.x, coords!.y);
     let dialogOpened = false;
     try {
-      // Round-5: reduced from 20s to 12s. Bio cold-open on warm sessions
-      // completes in <5s; 12s accounts for first-session JSDraw2 load on
-      // a warm pre-loaded Helm package (monomer dict already cached in memory
-      // after setup's 2s settle). True cold-open (first open in the browser
-      // session) is handled by the openEditorViaJsApi fallback below.
+      // 12s covers a warm first-session JSDraw2 load; true cold-open is handled
+      // by the fire-and-forget fallback below.
       await page.locator('.d4-dialog.d4-dialog-full-screen').first()
         .waitFor({state: 'visible', timeout: 12_000});
       dialogOpened = true;
     } catch (_) { /* fall back below */ }
     if (!dialogOpened) {
       dialogOpenUsedFallback = true;
-      console.warn('Block B dblclick did not open editor in 12s — cold Helm package init in progress; firing editMoleculeCell (fire-and-forget) and waiting up to 360s.');
+      console.warn('Block B dblclick did not open editor in 12s — cold Helm init in progress; firing editMoleculeCell (fire-and-forget).');
       // Close any late-arriving dialog from the dblclick before re-firing.
       await closeAllEditorDialogs();
-      // Fire-and-forget: intentionally NOT awaited inside evaluate so the
-      // page.evaluate returns immediately instead of blocking for ~5min of
-      // cold Helm init. The dialog appearance is detected via the Playwright
-      // waitFor below, which is interruptible by the test-level timeout.
+      // Fire-and-forget (no await inside evaluate) so the call does not block the
+      // browser through cold Helm init; the outer waitFor detects the dialog and
+      // is interruptible by the test-level timeout.
       await page.evaluate(() => {
         const g = (window as any).grok;
         const DG = (window as any).DG;
@@ -227,16 +221,16 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
         g.functions.call('Helm:editMoleculeCell', {cell}); // intentional non-await
       });
       await page.locator('.d4-dialog.d4-dialog-full-screen').first()
-        .waitFor({state: 'visible', timeout: 360_000});
+        .waitFor({state: 'visible', timeout: 180_000});
       await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="editor-svg"]').first()
         .waitFor({state: 'attached', timeout: 30_000});
-      await page.waitForTimeout(800);
     } else {
       await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="editor-svg"]').first()
         .waitFor({state: 'attached', timeout: 12_000});
-      // New SVG editor paints synchronously with the dialog (no JSDraw2 cold-load).
-      await page.waitForTimeout(800);
     }
+    // Wait for the structure to paint at least one atom (next step reads atoms).
+    await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid^="canvas-atom-"]').first()
+      .waitFor({state: 'attached', timeout: 12_000});
   });
 
   await softStep('Block B Step 1: dialog structure — SVG editor + toolbar + palette + bottom tabs + footer OK/CANCEL', async () => {
@@ -249,10 +243,8 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       'helm.editor: footer OK button[name="button-OK"] MUST exist').toBeGreaterThan(0);
     expect(cancelCount,
       'helm.editor: footer CANCEL button[name="button-CANCEL"] MUST exist').toBeGreaterThan(0);
-    // 2026-06 rewrite: the editor is Datagrok-native SVG instrumented with
-    // data-testid. Palette tabs = Favorites / PEPTIDE / RNA; bottom tabs =
-    // Sequence / HELM / Properties (no Structure View; no Monomers/Rules/
-    // Placeholders rows). Toolbar = data-testid="toolbar-*".
+    // Datagrok-native SVG editor: palette tabs Favorites/PEPTIDE/RNA, bottom tabs
+    // Sequence/HELM/Properties (no Structure View), toolbar data-testid="toolbar-*".
     const structure = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const has = (sel: string) => !!dlg?.querySelector(sel);
@@ -302,16 +294,16 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     // item [name="div-Current-Value"] must be hovered first to expand the submenu
     // and make [name="div-Current-Value---Edit-Helm..."] visible.
     await page.locator('[name="div-Current-Value"]').hover({timeout: 5_000});
-    await page.waitForTimeout(300);
     const editHelm = page.locator('[name="div-Current-Value---Edit-Helm..."]');
     await editHelm.waitFor({state: 'visible', timeout: 5_000});
     await editHelm.click();
-    // Round-5: reduced open timeouts 20s→12s; editor is warm after Block B.
+    // Editor is warm after Block B.
     await page.locator('.d4-dialog.d4-dialog-full-screen').first()
       .waitFor({state: 'visible', timeout: 12_000});
     await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="editor-svg"]').first()
       .waitFor({state: 'attached', timeout: 12_000});
-    await page.waitForTimeout(600);
+    await page.locator('.d4-dialog button[name="button-OK"]').first()
+      .waitFor({state: 'attached', timeout: 12_000});
     const okCount = await page.locator('.d4-dialog button[name="button-OK"]').count();
     const cancelCount = await page.locator('.d4-dialog button[name="button-CANCEL"]').count();
     expect(okCount,
@@ -344,7 +336,10 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     expect(helmTabClicked,
       'helm.editor HELM tab: bottom HELM tab MUST be locatable as [data-testid="tab-helm"]').toBe(true);
-    await page.waitForTimeout(600);
+    // Poll for the notation pane to surface its raw-HELM content.
+    await expect.poll(async () => page.evaluate(() =>
+      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="notation-pane-content"]')?.textContent ?? '').length),
+    {timeout: 8_000, intervals: [200, 400, 600]}).toBeGreaterThan(0);
     const rawHelmText = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const ce = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
@@ -356,8 +351,8 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       'helm.editor HELM tab: raw HELM begins with PEPTIDE1{ (row 0 of HELM.csv)').toMatch(/^PEPTIDE1\{/);
     expect(rawHelmText!,
       'helm.editor HELM tab: raw HELM ends with V2.0 marker').toMatch(/V2\.0$/);
-    // 2026-06 rewrite: no Validate button — the notation pane validates inline
-    // and surfaces parse errors in [data-testid="notation-pane-error"].
+    // No Validate button — the notation pane validates inline and surfaces parse
+    // errors in [data-testid="notation-pane-error"].
     const errInfo = await page.evaluate((validText: string) => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const ce = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
@@ -371,13 +366,13 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       ce!.blur();
       return {errOnValid, validText};
     }, rawHelmText!);
-    await page.waitForTimeout(800);
-    const errAfterInvalid = await page.evaluate(() =>
-      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="notation-pane-error"]')?.textContent ?? '').trim());
     expect(errInfo.errOnValid,
       'helm.editor HELM tab: a valid HELM string MUST leave the notation-pane-error slot empty').toBe('');
-    expect(errAfterInvalid.length,
-      'helm.editor HELM tab: an invalid HELM edit MUST populate [data-testid="notation-pane-error"]').toBeGreaterThan(0);
+    // Poll the error slot until the invalid edit populates it (this IS the assertion).
+    await expect.poll(async () => page.evaluate(() =>
+      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="notation-pane-error"]')?.textContent ?? '').trim().length),
+    {timeout: 8_000, intervals: [200, 400, 600],
+      message: 'helm.editor HELM tab: an invalid HELM edit MUST populate [data-testid="notation-pane-error"]'}).toBeGreaterThan(0);
     // Restore the valid HELM so the dialog is clean for CANCEL.
     await page.evaluate((validText: string) => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
@@ -389,7 +384,10 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
         ce.blur();
       }
     }, rawHelmText!);
-    await page.waitForTimeout(400);
+    // Poll until the error slot clears back to empty before the balloon check.
+    await expect.poll(async () => page.evaluate(() =>
+      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="notation-pane-error"]')?.textContent ?? '').trim().length),
+    {timeout: 5_000, intervals: [200, 400]}).toBe(0);
     const balloonErrors = await page.locator('.d4-balloon.error').count();
     expect(balloonErrors,
       'helm.editor HELM tab: inline validation MUST NOT raise an error balloon (errors render in the pane)').toBe(0);
@@ -405,7 +403,10 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     expect(propInfo.clicked,
       'helm.editor: Properties tab MUST be locatable as [data-testid="tab-properties"]').toBe(true);
-    await page.waitForTimeout(800);
+    // Poll for the formula to compute and render before reading the values.
+    await expect.poll(async () => page.evaluate(() =>
+      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="properties-formula"]')?.textContent ?? '').trim().length),
+    {timeout: 10_000, intervals: [250, 500, 1000]}).toBeGreaterThan(0);
     const propVals = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const txt = (sel: string) => (dlg?.querySelector(sel)?.textContent ?? '').trim();
@@ -448,11 +449,11 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     expect(clicked,
       'helm.editor: palette Peptides tab MUST be locatable as [data-testid="palette-tab-PEPTIDE"]').toBe(true);
-    await page.waitForTimeout(500);
-    const tileCount = await page.evaluate(() =>
-      document.querySelectorAll('.d4-dialog.d4-dialog-full-screen [data-testid^="palette-tile-"]').length);
-    expect(tileCount,
-      'helm.editor: Peptides palette MUST render monomer tiles (palette-tile-*)').toBeGreaterThan(0);
+    // Poll for the peptide monomer tiles to render (this IS the assertion).
+    await expect.poll(async () => page.evaluate(() =>
+      document.querySelectorAll('.d4-dialog.d4-dialog-full-screen [data-testid^="palette-tile-"]').length),
+    {timeout: 8_000, intervals: [200, 400, 600],
+      message: 'helm.editor: Peptides palette MUST render monomer tiles (palette-tile-*)'}).toBeGreaterThan(0);
     const balloonErrors = await page.locator('.d4-balloon.error').count();
     expect(balloonErrors,
       'Peptides palette tab switch MUST NOT raise an error balloon').toBe(0);
@@ -469,20 +470,17 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     expect(focused,
       'helm.editor: palette search input MUST be locatable as [data-testid="palette-search"]').toBe(true);
     await page.keyboard.type('A', {delay: 60});
-    await page.waitForTimeout(500);
-    const searchValue = await page.evaluate(() => {
+    // Poll until the search input reflects the typed character (this IS the assertion).
+    await expect.poll(async () => page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
-      const inp = dlg?.querySelector('[data-testid="palette-search"]') as HTMLInputElement | null;
-      return inp?.value ?? null;
-    });
-    expect(searchValue,
-      'helm.editor: palette search input MUST receive the typed character').toBe('A');
+      return (dlg?.querySelector('[data-testid="palette-search"]') as HTMLInputElement | null)?.value ?? null;
+    }), {timeout: 5_000, intervals: [150, 300],
+      message: 'helm.editor: palette search input MUST receive the typed character'}).toBe('A');
     await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const inp = dlg?.querySelector('[data-testid="palette-search"]') as HTMLInputElement | null;
       if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input', {bubbles: true})); }
     });
-    await page.waitForTimeout(200);
   });
 
   await softStep('Block E Step 4: RNA then Favorites palette tab switches without error', async () => {
@@ -496,7 +494,11 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       }, testid);
       expect(clicked,
         `helm.editor: palette tab "${testid}" MUST be locatable`).toBe(true);
-      await page.waitForTimeout(400);
+      // Wait for the switched palette to repaint its content (tiles/triplets/builder).
+      await expect.poll(async () => page.evaluate(() => {
+        const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
+        return (dlg?.querySelectorAll('[data-testid^="palette-tile-"], [data-testid^="palette-triplet-"], [data-testid="rna-builder"]')?.length) ?? 0;
+      }), {timeout: 6_000, intervals: [200, 400]}).toBeGreaterThan(0);
     }
     const balloonErrors = await page.locator('.d4-balloon.error').count();
     expect(balloonErrors,
@@ -523,9 +525,6 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       const cell = df.cell(0, 'HELM');
       g.shell.o = DG.SemanticValue.fromTableCell(cell);
     });
-    // Round-5: reduced 2500→1500ms; Properties widget renders quickly on warm
-    // sessions where the Bio/Helm packages are fully initialized.
-    await page.waitForTimeout(1500);
     await page.locator('[name="pane-Properties"]').waitFor({state: 'attached', timeout: 15_000});
     await page.evaluate(() => {
       const pane = document.querySelector('[name="pane-Properties"]');
@@ -548,9 +547,8 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     const byLabel: Record<string, string | null> = {};
     for (const r of rows) if (r.label) byLabel[r.label] = r.value;
-    // helm-showcase row 0 = PEPTIDE1{A.C}$$$$ (dipeptide). Live recon: formula
-    // C6H12N2O3S, MW 192.23, extinction 0.06. Formula is stable; MW kept ballpark
-    // to tolerate monomer-weight recompute drift.
+    // helm-showcase row 0 = PEPTIDE1{A.C}$$$$ (dipeptide): formula C6H12N2O3S,
+    // MW ~192.2x, extinction 0.06. MW kept as a pattern to tolerate recompute drift.
     expect(byLabel['formula'],
       'helm.widgets.properties-panel: formula row MUST surface for showcase row 0 (expected C6H12N2O3S)').toBe('C6H12N2O3S');
     expect(byLabel['molecular weight'],
@@ -563,40 +561,25 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
   });
 
   await softStep('Block F Step 3: select a different HELM cell → Properties panel updates', async () => {
-    // Strategy: call Helm:Properties directly via grok.functions.call() for row 1.
-    // The @panel subscription path (grok.shell.o =) is unreliable in headless
-    // Playwright (the widget host swaps DOM nodes, but the new table's
-    // data-source= attribute may not yet be stamped when we read it, and the
-    // subscription timing differs from the persistent MCP browser context).
-    // Calling the function directly bypasses the subscription and asserts that
-    // the Helm:Properties computation itself is correct for row 1 — which is
-    // the atomic claim of atlas helm.widgets.properties-panel. The context-panel
-    // subscription (that g.shell.o causes the panel to show up) is already
-    // verified by Block F Step 1-2; Step 3's claim is that the FORMULA/MW/EC
-    // values are row-specific (not hard-coded). Direct function call is the
-    // correct proxy for that claim.
+    // Call Helm:Properties directly for row 1. The @panel subscription path
+    // (grok.shell.o =) is verified in Step 1-2; Step 3's claim is that the
+    // FORMULA/MW/EC values are row-specific (not hard-coded). The direct call
+    // bypasses the headless-flaky DOM-swap timing and proves that claim atomically.
     const row1Props = await page.evaluate(async () => {
       const g = (window as any).grok;
       const DG = (window as any).DG;
       const df = g.shell.tv.dataFrame;
-      // Build the SemanticValue for row 1
       const cell = df.cell(1, 'HELM');
       const sv = DG.SemanticValue.fromTableCell(cell);
-      // Call Helm:Properties directly. The function is registered as a @panel
-      // with semType=Macromolecule. Call it directly to get the DG.Widget.
-      // nqName is Helm:propertiesWidget (registered name is propertiesWidget, not Properties)
+      // Registered nqName is Helm:propertiesWidget; returns a DG.Widget.
       const widget = await g.functions.call('Helm:propertiesWidget', {sequence: sv});
-      // The widget root is ui.tableFromMap(propDict, true) — a <table> element.
-      // ui.tableFromMap returns a <table> directly (class d4-table-map) whose
-      // <tr> rows have: td.d4-table-map-key (label) + td.d4-table-map-value (value).
+      // Root is ui.tableFromMap(...) — a <table> (or a wrapper around one).
       const root = widget?.root ?? widget;
       if (!root) return {ok: false, reason: 'no-widget-root', rows: []};
-      // Find the table node (root may be the table directly, or a wrapper div)
       const table = (root.tagName === 'TABLE') ? root :
         root.querySelector('table');
       if (!table) return {ok: false, reason: 'no-table-in-widget', rootTag: root.tagName, rows: []};
       const rows = Array.from(table.querySelectorAll('tr')).map((tr: Element) => {
-        // Key in first td (span or direct text), value in last td
         const label = (tr.querySelector('td:first-child span')?.textContent ??
           tr.querySelector('td:first-child')?.textContent ?? '').trim();
         const value = (tr.querySelector('td:last-child .d4-table-map-value span:first-child')?.textContent ??
@@ -610,9 +593,8 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       `helm.widgets.properties-panel Step 3: Helm:Properties direct call MUST return a widget with a table (debug=${JSON.stringify(row1Props)})`).toBe(true);
     const byLabel: Record<string, string | null> = {};
     for (const r of row1Props.rows) if (r.label) byLabel[r.label] = r.value;
-    // helm-showcase row 1 = PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$ (10-mer). Live recon:
-    // formula C50H77N13O15S, MW 1132.30, extinction 0.06 — distinct from row 0,
-    // proving row-specific computation (not hard-coded).
+    // helm-showcase row 1 = PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$ (10-mer): formula
+    // C50H77N13O15S, MW ~1132.3x — distinct from row 0 (proves row-specific compute).
     expect(byLabel['formula'],
       'helm.widgets.properties-panel: row 1 Helm:Properties formula MUST equal C50H77N13O15S').toBe('C50H77N13O15S');
     expect(byLabel['molecular weight'],
@@ -639,8 +621,11 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       return true;
     });
     expect(tabClicked, 'Block G: bottom HELM tab MUST be locatable as [data-testid="tab-helm"]').toBe(true);
-    await page.waitForTimeout(800);
-    // 2026-06 rewrite: no Apply button — edit the notation pane and commit inline.
+    // Poll for the notation pane to surface its content before editing it.
+    await expect.poll(async () => page.evaluate(() =>
+      (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="notation-pane-content"]')?.textContent ?? '').length),
+    {timeout: 8_000, intervals: [200, 400, 600]}).toBeGreaterThan(4);
+    // No Apply button — edit the notation pane and commit inline.
     const editApplied = await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const ed = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
@@ -657,11 +642,13 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     expect(editApplied.ok,
       `Block G: raw HELM text edit MUST land (last-monomer trim regex applied). debug=${JSON.stringify(editApplied)}`).toBe(true);
+    // Semantic settle: give any (incorrect) async auto-commit a window to surface
+    // before asserting the inline edit did NOT write back to the cell.
     await page.waitForTimeout(1000);
     const valueAfterApply = await page.evaluate(() =>
       (window as any).grok.shell.tv.dataFrame.col('HELM').get(0));
     expect(valueAfterApply,
-      'Block G: notation-pane edit MUST NOT commit (helm.md Pitfall #3) — cell value still equals original until OK').toBe(originalHelmRow0);
+      'Block G: notation-pane edit MUST NOT commit — cell value still equals original until OK').toBe(originalHelmRow0);
   });
 
   await softStep('Block G Step 3: footer OK → dialog closes; cell value changes', async () => {
@@ -682,14 +669,11 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       'helm.editor.cell-editor commit: OK on a valid raw HELM MUST NOT raise an error balloon').toBe(0);
   });
 
-  // ── Block H — interactive editing (new SVG editor) ──────────────────────
-  // Grounded in live recon on the deployed editor (2026-06): clicking a
-  // palette tile ARMS the "Next add: <sym>×" status (it does NOT append a
-  // monomer by itself — placement needs a subsequent canvas click); undo/redo
-  // are deterministic inverses on the loaded structure; Clean layout is
-  // non-destructive; the RNA palette tab exposes the triplet builder. Actual
-  // canvas placement is best-effort (coords/gesture are fragile) — logged, not
-  // asserted.
+  // ── Block H — interactive editing (SVG editor) ──────────────────────────
+  // Clicking a palette tile ARMS "Next add: <sym>×" (placement needs a follow-up
+  // canvas click); undo/redo are deterministic inverses; Clean layout is
+  // non-destructive; RNA tab exposes the triplet builder. Canvas placement is
+  // gesture/coord-fragile under headless — logged best-effort, not asserted.
 
   await softStep('Block H Step 1: re-open Web Editor for interactive-editing checks', async () => {
     await openEditorViaJsApi();
@@ -697,18 +681,20 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
 
   await softStep('Block H Step 2: peptide palette exposes monomer tiles; clicking a tile arms "Next add" (best-effort)', async () => {
     const dlg = page.locator('.d4-dialog.d4-dialog-full-screen');
-    await dlg.locator('[data-testid="palette-tab-PEPTIDE"]').click({timeout: 8_000}).catch(() => {/* tab may already be active */});
-    await page.waitForTimeout(500);
-    // HARD: the peptide palette MUST render its monomer tiles.
-    const tileCount = await dlg.locator('[data-testid="palette-tile-G"]').count();
-    expect(tileCount,
-      'helm.editor: peptide palette tile [data-testid="palette-tile-G"] MUST be present').toBeGreaterThan(0);
-    // BEST-EFFORT: clicking a tile arms "Next add: G×" in the status bar. The arm
-    // (and canvas placement, Step 2b) depend on real pointer-event sequences that
-    // headless synthetic clicks don't reliably reproduce — same family as the
-    // hover-tooltip caveat. Log the outcome rather than hard-fail.
+    // JS .click() (not Playwright pointer) to bypass the dialog-overlay hit-test,
+    // matching Block E's reliable palette-tab switch.
+    await page.evaluate(() => (document.querySelector(
+      '.d4-dialog.d4-dialog-full-screen [data-testid="palette-tab-PEPTIDE"]') as HTMLElement | null)?.click());
+    // HARD: poll for the peptide palette to render its monomer tiles.
+    await expect.poll(async () => dlg.locator('[data-testid="palette-tile-G"]').count(),
+      {timeout: 8_000, intervals: [200, 400, 600],
+        message: 'helm.editor: peptide palette tile [data-testid="palette-tile-G"] MUST be present'}).toBeGreaterThan(0);
+    // BEST-EFFORT: clicking a tile arms "Next add: G×". Arming (and Step 2b
+    // placement) need real pointer events that headless synthetic clicks don't
+    // reliably reproduce — log the outcome rather than hard-fail.
     await dlg.locator('[data-testid="palette-tile-G"]').first().click({timeout: 8_000}).catch(() => {});
     let armText = '';
+    // Bounded poll loop: re-check the status bar for the "Next add" arm signal.
     for (let i = 0; i < 12; i++) {
       armText = await page.evaluate(() => {
         const d = document.querySelector('.d4-dialog.d4-dialog-full-screen');
@@ -737,6 +723,7 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
     });
     if (before.rect && before.rect.w > 20) {
       await page.mouse.click(before.rect.x + before.rect.w * 0.6, before.rect.y + before.rect.h * 0.5);
+      // Best-effort placement window — outcome is only logged, not asserted.
       await page.waitForTimeout(700);
       const after = await page.evaluate(() => {
         const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
@@ -752,24 +739,22 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       (dlg?.querySelector('[data-testid="toolbar-select"]') as HTMLElement | null)?.click();
     });
+    // Short bounded settle: select-mode reset has no DOM observable to poll on.
     await page.waitForTimeout(300);
   });
 
   await softStep('Block H Step 3: Undo / Redo are deterministic inverses on the structure', async () => {
-    const base = await page.evaluate(() =>
+    const atomCount = () => page.evaluate(() =>
       document.querySelector('.d4-dialog.d4-dialog-full-screen')?.querySelectorAll('[data-testid^="canvas-atom-"]').length ?? 0);
+    const base = await atomCount();
     await page.evaluate(() => (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="toolbar-undo"]') as HTMLElement | null)?.click());
-    await page.waitForTimeout(600);
-    const afterUndo = await page.evaluate(() =>
-      document.querySelector('.d4-dialog.d4-dialog-full-screen')?.querySelectorAll('[data-testid^="canvas-atom-"]').length ?? 0);
+    // Poll for undo to change the drawn structure (this IS the assertion).
+    await expect.poll(atomCount, {timeout: 8_000, intervals: [200, 400, 600],
+      message: `helm.editor: toolbar-undo MUST change the drawn structure (base=${base})`}).not.toBe(base);
     await page.evaluate(() => (document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="toolbar-redo"]') as HTMLElement | null)?.click());
-    await page.waitForTimeout(600);
-    const afterRedo = await page.evaluate(() =>
-      document.querySelector('.d4-dialog.d4-dialog-full-screen')?.querySelectorAll('[data-testid^="canvas-atom-"]').length ?? 0);
-    expect(afterUndo,
-      `helm.editor: toolbar-undo MUST change the drawn structure (base=${base}, afterUndo=${afterUndo})`).not.toBe(base);
-    expect(afterRedo,
-      `helm.editor: toolbar-redo MUST restore the structure to the pre-undo state (base=${base}, afterRedo=${afterRedo})`).toBe(base);
+    // Poll for redo to restore the structure to the pre-undo state (this IS the assertion).
+    await expect.poll(atomCount, {timeout: 8_000, intervals: [200, 400, 600],
+      message: `helm.editor: toolbar-redo MUST restore the structure to the pre-undo state (base=${base})`}).toBe(base);
     const errs = await page.locator('.d4-balloon.error').count();
     expect(errs, 'helm.editor: undo/redo MUST NOT raise an error balloon').toBe(0);
   });
@@ -784,6 +769,8 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
       return true;
     });
     expect(clicked, 'helm.editor: [data-testid="toolbar-clean"] MUST be present').toBe(true);
+    // Semantic settle: let Clean re-run auto-layout, then assert it preserved the
+    // atom count (a non-destructive op — there is no changed state to poll toward).
     await page.waitForTimeout(800);
     const after = await page.evaluate(() =>
       document.querySelector('.d4-dialog.d4-dialog-full-screen')?.querySelectorAll('[data-testid^="canvas-atom-"]').length ?? 0);
@@ -794,19 +781,18 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
   });
 
   await softStep('Block H Step 5: RNA palette tab exposes the triplet builder', async () => {
-    const rna = await page.evaluate(() => {
+    await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       (dlg?.querySelector('[data-testid="palette-tab-RNA"]') as HTMLElement | null)?.click();
-      return new Promise<{builder: boolean, triplets: number}>((resolve) => setTimeout(() => {
-        resolve({
-          builder: !!dlg?.querySelector('[data-testid="rna-builder"]'),
-          triplets: dlg?.querySelectorAll('[data-testid^="palette-triplet-"]').length ?? 0,
-        });
-      }, 500));
     });
-    expect(rna.builder,
-      'helm.editor: RNA palette tab MUST expose [data-testid="rna-builder"]').toBe(true);
-    expect(rna.triplets,
+    // Poll for the RNA builder to render rather than a fixed settle (this IS the assertion).
+    await expect.poll(async () => page.evaluate(() =>
+      !!document.querySelector('.d4-dialog.d4-dialog-full-screen [data-testid="rna-builder"]')),
+    {timeout: 8_000, intervals: [200, 400, 600],
+      message: 'helm.editor: RNA palette tab MUST expose [data-testid="rna-builder"]'}).toBe(true);
+    const triplets = await page.evaluate(() =>
+      document.querySelectorAll('.d4-dialog.d4-dialog-full-screen [data-testid^="palette-triplet-"]').length);
+    expect(triplets,
       'helm.editor: RNA palette MUST list default triplets ([data-testid^="palette-triplet-"])').toBeGreaterThan(0);
   });
 
@@ -822,10 +808,7 @@ test('Helm — cell rendering, Web Editor & Properties panel', async ({page}) =>
 
   await page.evaluate(() => (window as any).grok.shell.closeAll());
 
-  if (dialogOpenUsedFallback) {
-    console.warn('Block B Editor open: dblclick path required Helm:editMoleculeCell fallback during this run. ' +
-      'This is sanctioned per scenario Notes line 99-104, but a persistent fallback need is a signal to ' +
-      'inspect canvas dblclick wiring in the env.');
-  }
+  if (dialogOpenUsedFallback)
+    console.warn('Block B Editor open: dblclick path required the editMoleculeCell fallback — a persistent need signals canvas dblclick wiring to inspect in the env.');
   finishSpec();
 });

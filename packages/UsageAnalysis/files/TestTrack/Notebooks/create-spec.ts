@@ -1,58 +1,13 @@
 /* ---
 sub_features_covered: [notebooks.menu.open-in-notebook, notebooks.meta.open-tables-in-notebook, notebooks.entity.template, notebooks.api.save, notebooks.editor.html-mode, notebooks.editor.ribbon.html-mode, notebooks.entity.create, notebooks.editor.handle-path, notebooks.menu.delete, notebooks.meta.delete, notebooks.api.delete]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: ui-smoke (per notebooks chain analysis)
-//   sub_features_covered: [notebooks.menu.open-in-notebook, notebooks.meta.open-tables-in-notebook,
-//     notebooks.entity.template, notebooks.api.save, notebooks.editor.html-mode,
-//     notebooks.editor.ribbon.html-mode, notebooks.entity.create, notebooks.editor.handle-path,
-//     notebooks.menu.delete, notebooks.meta.delete, notebooks.api.delete]
-//   note: deletion (Scenario 3) folded in from the former standalone delete scenario — that gallery context-menu delete
-//     is environmentally flaky on public (server search-index lag + gallery re-render race); the
-//     Context-Panel Actions > Delete on the just-created notebook covers the same delete flow reliably.
-//   ui_coverage_responsibility: [] (none declared; ui_companion: create-ui.md)
-//   related_bugs: [GROK-16296, GROK-13999]
+// Notebooks / Create — UI smoke covering Open in Notebook (Scenario 1), View as HTML
+// (Scenario 2), and Delete via the Context Panel Actions (Scenario 3). Scenarios 4-5
+// (Download formats, .ipynb drag-drop import) live in the create-ui.md manual companion.
 //
-// Atlas provenance (derived_from):
-//   notebooks.menu.open-in-notebook  derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L157
-//   notebooks.meta.open-tables-in-notebook derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L164
-//   notebooks.entity.template derived_from: core/shared/grok_shared/lib/src/notebook.dart#L119
-//   notebooks.editor.html-mode derived_from: public/packages/Notebooks/src/package.js#L135
-//   notebooks.editor.ribbon.html-mode derived_from: public/packages/Notebooks/src/package.js#L153
-//   notebooks.entity.create derived_from: core/shared/grok_shared/lib/src/notebook.dart#L36
-//   notebooks.editor.handle-path derived_from: public/packages/Notebooks/src/package.js#L117
-//
-// Scope: this spec covers Scenarios 1-2 (Open in Notebook, View as HTML) — the deterministic,
-// platform-selector-drivable portion of create.md. Scenarios 3-4 (Download formats, drag-drop
-// .ipynb import) were split into the create-ui.md manual-only companion because the HTML-mode
-// Download combo never mounts when the HTML render fails (live GROK-13999 on dev) and the
-// .ipynb drop target is not documented (see create.md unresolved_ambiguities).
-//
-// Bug context (both unfixed, status: regression-risk in bug-library/notebooks.yaml):
+// Known open bugs (both unfixed; asserted as today's invariant, broken behavior only observed):
 //   GROK-16296 — Open in Notebook logs a console error during init (findProjectByView type cast).
 //   GROK-13999 — clicking HTML throws a localStorage DOMException / 404 from a data: URL context.
-// Because both bugs are OPEN, this spec asserts the *invariant that holds today* (the view opens,
-// the entity persists, the HTML mode is reachable) and records the still-broken behavior as a
-// console.warn observation rather than a hard expectation — codifying "no console errors" would
-// assert a passing state against a known-broken build.
-//
-// Selector recon-notes (live-MCP-observed; re-confirmed on https://public.datagrok.ai 2026-06-18):
-//   [name="button-HTML"] — Notebook editor ribbon (edit-mode); switches the notebook view to
-//     HTML mode. The editor ribbon exposes BUTTON [name="button-HTML"] (text "HTML"); clicking it
-//     toggles to HTML mode and the button becomes [name="button-EDIT"]. Timing on public (cold
-//     `grok test`, 2026-06-18): grok.shell.o.id appears ~9.1s after the leaf click, the view-type
-//     flips to 'Notebook' ~11.4s, and button-HTML mounts+becomes visible ~12.7s (the Notebooks
-//     package finishes booting the editor ribbon asynchronously). Hence the generous
-//     attached-then-visible wait in Scenario 2 and the v.type+o.id dual gate in Scenario 1.
-//     notebooks.md documents the inverse [name="button-EDIT"] (HTML-mode -> edit); the edit->HTML
-//     button-HTML is now documented there too.
-//   [name="div-ML---Notebooks---Open-in-Notebook"] — ML top-menu leaf under the Notebooks group.
-//     Reached by: click [name="div-ML"] -> hover the group [name="div-ML---Notebooks"] (this lays
-//     out the flyout) -> click the leaf. A raw div-ML click alone leaves the leaf zero-size /
-//     offsetParent-null (the prior "resolved to hidden" timeout). With demog.csv active, opening
-//     it yields a Notebook view that persists (grok.dapi.notebooks.find(o.id) resolved). Confirmed
-//     on public 2026-06-18; now documented in notebooks.md.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -60,7 +15,9 @@ test.use(specTestOptions);
 
 // scenario: Create Notebook — Scenarios 1 (Open demog table in Notebook) + 2 (View notebook as HTML)
 test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', async ({page}) => {
-  test.setTimeout(300_000);
+  // 240s: cold `grok test` boots the Notebooks editor ribbon asynchronously (~10-13s post-click)
+  // and the spec drives three sequential server round-trips (save, HTML-mode, delete).
+  test.setTimeout(240_000);
   stepErrors.length = 0;
 
   let notebookId: string | null = null;
@@ -71,7 +28,11 @@ test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', as
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
   });
-  await page.waitForTimeout(1000);
+  // Wait for closeAll to settle (no open table views) instead of a blind sleep.
+  await page.waitForFunction(() => {
+    try { return ((window as any).grok.shell.tableViews?.length ?? 0) === 0; }
+    catch (e) { return false; }
+  }, null, {timeout: 15_000}).catch(() => {});
 
   // ---- Setup: open demog.csv as the active table ----
   // The scenario opens via the demo-files panel; readCsv reaches the same TableView state the
@@ -102,8 +63,10 @@ test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', as
     // simpleMode true/false; the prior raw-click-only opener was the cause of the 15s "resolved to
     // hidden" timeout.)
     await page.locator('[name="div-ML"]').first().click({timeout: 10_000});
-    await page.waitForTimeout(400);
-    await page.locator('[name="div-ML---Notebooks"]').first().hover({timeout: 8_000});
+    // Wait for the submenu DOM to build before hovering the group (was a blind 400ms sleep).
+    const nbGroup = page.locator('[name="div-ML---Notebooks"]').first();
+    await nbGroup.waitFor({state: 'attached', timeout: 8_000});
+    await nbGroup.hover({timeout: 8_000});
     const leaf = page.locator('[name="div-ML---Notebooks---Open-in-Notebook"]').first();
     await leaf.waitFor({state: 'visible', timeout: 15_000});
     await leaf.click();
@@ -173,18 +136,18 @@ test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', as
     await htmlBtn.waitFor({timeout: 60_000, state: 'attached'});
     await htmlBtn.waitFor({timeout: 60_000, state: 'visible'});
     await htmlBtn.click();
-    await page.waitForTimeout(3000);
 
     // Invariant: the view stayed a Notebook view and the mode switch actually happened. Clicking
     // [name="button-HTML"] toggles the editor into HTML mode, and the ribbon button flips to its
     // inverse [name="button-EDIT"] (HTML-mode -> edit) — confirmed live on public 2026-06-18.
     // Asserting button-HTML is *still* present after the click is wrong (it has become button-EDIT);
-    // asserting button-EDIT is the positive evidence the HTML mode switch was driveable. We do NOT
+    // asserting button-EDIT is the positive evidence the HTML mode switch was driveable. The
+    // auto-retrying toBeVisible below waits for the switch — no fixed sleep needed. We do NOT
     // assert the rendered HTML content loaded: GROK-13999 (localStorage DOMException / 404 in the
     // data: URL render context) is unfixed, so the content area may stay empty.
+    await expect(page.locator('[name="button-EDIT"]').first()).toBeVisible();
     const viewType = await page.evaluate(() => (window as any).grok.shell.v?.type);
     expect(viewType).toBe('Notebook');
-    await expect(page.locator('[name="button-EDIT"]').first()).toBeVisible();
 
     // Behavioral remark (NOT a hard gate): GROK-13999 — HTML render fails on dev with a 404 /
     // DOMException; the Download combo therefore never mounts. Recorded as an observation.
@@ -214,7 +177,14 @@ test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', as
     // is [name="div-section--Actions"] (there is no [name="pane-Actions"] on public — see notebooks.md).
     await page.locator('[name="div-section--Actions"]').first().waitFor({state: 'attached', timeout: 30_000});
     await page.locator('[name="div-section--Actions"]').first().click().catch(() => {});
-    await page.waitForTimeout(800);
+    // Poll for the Delete link to render inside the Actions pane (was a blind 800ms sleep).
+    await page.waitForFunction(() => {
+      const sec = document.querySelector('[name="div-section--Actions"]');
+      const pane = sec?.closest('.d4-accordion-pane');
+      if (!pane) return false;
+      return Array.from(pane.querySelectorAll('.d4-link-action'))
+        .some((e) => (e.textContent ?? '').trim() === 'Delete');
+    }, null, {timeout: 30_000}).catch(() => {});
     const clickedDelete = await page.evaluate(() => {
       const sec = document.querySelector('[name="div-section--Actions"]');
       const pane = sec?.closest('.d4-accordion-pane');

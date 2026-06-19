@@ -3,7 +3,9 @@ import {loginAndOpenFile, specTestOptions, softStep, stepErrors} from '../spec-l
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
-test.use({timeout: 600_000});
+// Single-user spec: cold Helm init (RDKit + monomer-lib, ~300s worst) dominates;
+// 300s ceiling covers login + setup + Scenarios 1-6.
+test.use({timeout: 300_000});
 
 // Dot-namespaced for the direct file-browse URL (see loginAndOpenFile). This
 // spec keeps the canonical 540-row HELM.csv (with the numeric Activity column).
@@ -19,13 +21,6 @@ const GAP_END = 'PEPTIDE1{A.G.K.*}$$$$';
 const GAP_STRIPPED_EXPECTED = 'PEPTIDE1{A.G.K}$$$$V2.0';
 
 test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}) => {
-  // Runtime envelope: cold Helm init via Scenario 2 Helm:editMoleculeCell
-  // (~300s worst, deferred per Round-5 fix) + login (~15s) + setup (~17s;
-  // no blocking Helm:* in setup per Round-5 fix) + Scenarios 3-6 (~35s) =
-  // ~367s worst-case. 600s ceiling matches the sibling spec (both file-scope
-  // and in-body test.setTimeout needed — file-scope override is reliable,
-  // in-body is defense-in-depth; sibling uses both per lines 267 + 274).
-  test.setTimeout(600_000);
   stepErrors.length = 0;
 
   // Open the dataset DIRECTLY via its instance-derived file URL (platform +
@@ -47,8 +42,14 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
     return df?.col('HELM')?.semType === 'Macromolecule';
   }, null, {timeout: 45_000});
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-  // Brief settle for the Helm cell renderer's first paint.
-  await page.waitForTimeout(1500);
+  // Wait for the grid renderer canvas to paint (replaces a blind settle).
+  await page.waitForFunction(() => {
+    const canvases = Array.from(document.querySelectorAll('[name="viewer-Grid"] canvas')) as HTMLCanvasElement[];
+    return canvases.some((c) => {
+      const r = c.getBoundingClientRect();
+      return r.width > 100 && r.height > 100;
+    });
+  }, null, {timeout: 30_000});
 
   // Pre-flight invariants — Bio detector tagged the HELM column with the
   // tags HelmGridCellRenderer attach-gates on.
@@ -83,42 +84,26 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
     'Scenario 1 step 2: Activity column MUST be numeric (double)')
     .toBe('double');
 
-  // Helper: open the Web Editor via the JS-API entry that double-click
-  // dispatches to internally. Per grok-browser refdoc § "Cell editor",
-  // this is the same code path as the canvas dblclick — sanctioned as
-  // setup repetition. (The owned UI flow for cell-editor dialog-open is
-  // covered by helm-editor-and-panels-spec.ts; this lifecycle spec
-  // re-exercises the same JS-API path to keep total runtime under the
-  // wrapper ceiling per cycle 2026-06-09-helm-automate-02 timing study.)
-  //
-  // Round-5 fix: fire-and-forget pattern (matching sibling Block B
-  // fallback pattern). page.evaluate must NOT await Helm:editMoleculeCell
-  // because on a cold server the call can block for the full Helm package init
-  // (RDKit + monomer-lib load). Awaiting inside page.evaluate bounds
-  // the call to specTestOptions.actionTimeout: 15_000, which aborts the
-  // evaluate after 15s. Instead, fire-and-forget in evaluate and let the
-  // outer Playwright waitFor (with a 360s explicit timeout, not actionTimeout)
-  // wait for the dialog to appear. This is exactly the sibling spec's cold-
-  // open fallback pattern (lines 536-546 of helm-editor-and-panels-spec.ts).
+  // Open the Web Editor via the JS-API entry that double-click dispatches to
+  // internally (same code path as the canvas dblclick). The call is fired
+  // without await: on a cold server it blocks for the full Helm package init
+  // (RDKit + monomer-lib), so the dialog appearance is detected via the outer
+  // waitFor rather than the awaited call.
   const openEditorViaJsApi = async () => {
     await page.evaluate(() => {
       const grid = (window as any).grok.shell.tv.grid;
       const DG = (window as any).DG;
       const cell = DG.GridCell.fromColumnRow(grid, 'HELM', 0);
-      // Intentional non-await: fire-and-forget so evaluate returns immediately.
-      // The cold Helm init (~5min) blocks an awaited call; the dialog
-      // appearance is detected via the outer waitFor below.
+      // Fire-and-forget: cold Helm init blocks an awaited call.
       (window as any).grok.functions.call('Helm:editMoleculeCell', {cell});
     });
-    // 360s ceiling covers a first-in-session Helm package init (RDKit + monomer
-    // lib). The new SVG editor itself opens in <1s — no Dojo/JSDraw2 cold-load.
+    // 300s ceiling covers a first-in-session Helm package init.
     await page.locator('.d4-dialog.d4-dialog-full-screen')
-      .waitFor({state: 'visible', timeout: 360_000});
+      .waitFor({state: 'attached', timeout: 300_000});
     await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="app-root"]').first()
       .waitFor({state: 'attached', timeout: 30_000});
     await page.locator('.d4-dialog.d4-dialog-full-screen [data-testid="editor-svg"]').first()
       .waitFor({state: 'attached', timeout: 30_000});
-    await page.waitForTimeout(600);
   };
 
 
@@ -147,12 +132,14 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
       const grid = (window as any).grok.shell.tv.grid;
       grid.scrollToCell('HELM', 50);
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() =>
+      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) > 0, null, {timeout: 10_000});
     await page.evaluate(() => {
       const grid = (window as any).grok.shell.tv.grid;
       grid.scrollToCell('HELM', 0);
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() =>
+      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) === 0, null, {timeout: 10_000});
     const canvasStill = await page.locator('[name="viewer-Grid"] canvas').count();
     expect(canvasStill,
       'helm.rendering.cell-renderer LRU cache: scroll round-trip MUST leave grid canvases attached')
@@ -180,13 +167,14 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
       'render_helm_cell: tag re-apply MUST preserve quality=Macromolecule').toBe('Macromolecule');
     expect(tagState.units,
       'render_helm_cell: tag re-apply MUST preserve meta.units=helm').toBe('helm');
-    // Force a scroll to drive any pending re-paint
+    // Force a scroll to drive any pending re-paint, then settle back to top.
     await page.evaluate(() => {
       const grid = (window as any).grok.shell.tv.grid;
       grid.scrollToCell('HELM', 20);
       grid.scrollToCell('HELM', 0);
     });
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() =>
+      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) === 0, null, {timeout: 10_000});
     const balloonErrors = await page.locator('.d4-balloon.error').count();
     expect(balloonErrors,
       'render_helm_cell: tag re-apply + re-render MUST NOT raise an error balloon').toBe(0);
@@ -237,7 +225,12 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
     });
     expect(tabClicked,
       'Scenario 2: bottom HELM tab MUST be locatable as [data-testid="tab-helm"]').toBe(true);
-    await page.waitForTimeout(800);
+    // Wait for the notation pane to populate before editing.
+    await page.waitForFunction(() => {
+      const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
+      const ed = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
+      return !!ed && (ed.textContent ?? '').length >= 5;
+    }, null, {timeout: 15_000});
     // 2026-06 rewrite: no Apply button — edit the notation-pane-content
     // contenteditable and commit inline (input + Enter + blur). The structure
     // re-draws but the grid cell is NOT mutated until footer OK.
@@ -258,6 +251,8 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
     });
     expect(editApplied.ok,
       `Scenario 2: raw HELM text edit MUST land. debug=${JSON.stringify(editApplied)}`).toBe(true);
+    // Bounded settle: give any (erroneous) early commit a chance to land before
+    // asserting the grid cell is still UNCHANGED (negative assertion).
     await page.waitForTimeout(1000);
     const valueAfterApply = await page.evaluate(() =>
       (window as any).grok.shell.tv.dataFrame.col('HELM').get(0));
@@ -300,7 +295,11 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
       const tab = dlg?.querySelector('[data-testid="tab-helm"]') as HTMLElement | null;
       tab?.click();
     });
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => {
+      const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
+      const ed = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
+      return !!ed && (ed.textContent ?? '').length > 5;
+    }, null, {timeout: 15_000});
     await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog.d4-dialog-full-screen');
       const ed = dlg?.querySelector('[data-testid="notation-pane-content"]') as HTMLElement | null;
@@ -313,7 +312,6 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
         ed.blur();
       }
     });
-    await page.waitForTimeout(500);
     await page.locator('.d4-dialog button[name="button-CANCEL"]').first().click();
     await page.locator('.d4-dialog.d4-dialog-full-screen').waitFor({state: 'hidden', timeout: 10_000});
     const afterCancel = await page.evaluate(() =>
@@ -334,9 +332,6 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
       const cell = df.cell(0, 'HELM');
       grok.shell.o = DG.SemanticValue.fromTableCell(cell);
     });
-    // Round-2: reduced 2500→1500ms (sibling Round-5 pace; Properties widget
-    // renders quickly on sessions where Bio+Helm packages are initialized).
-    await page.waitForTimeout(1500);
     await page.locator('[name="pane-Properties"]').waitFor({state: 'attached', timeout: 15_000});
     await page.evaluate(() => {
       const pane = document.querySelector('[name="pane-Properties"]');
@@ -385,23 +380,16 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
   });
 
   await softStep('Scenario 3 Step 4: switch to a different HELM cell → Properties values are row-specific', async () => {
-    // Round-2 fix: grok.shell.o = DG.SemanticValue.fromTableCell(cell1) does
-    // NOT reliably update the Properties panel DOM table in a fresh headless
-    // Playwright session (async widget-host swap timing differs from MCP
-    // persistent session). Pattern documented in sibling spec Round-6
-    // (helm-editor-and-panels-spec.ts lines 120-138).
-    // Fix: call Helm:propertiesWidget directly for row 1 to assert row-specific
-    // property computation. The context-panel subscription is already verified
-    // by Step 1-3 (row 0 shows correctly via subscription); Step 4's only
-    // remaining claim is that the formula values differ between rows (row-specific
-    // computation — NOT hardcoded). Direct function call is the correct proxy.
+    // The context-panel subscription is verified by Step 1-3; Step 4's claim is
+    // that property values differ between rows (row-specific, not hardcoded).
+    // Call Helm:propertiesWidget directly for row 1 — the panel DOM swap is not
+    // reliably observable in a fresh headless session.
     const row1Props = await page.evaluate(async () => {
       const g = (window as any).grok;
       const DG = (window as any).DG;
       const df = g.shell.tv.dataFrame;
       const cell = df.cell(1, 'HELM');
       const sv = DG.SemanticValue.fromTableCell(cell);
-      // nqName Helm:propertiesWidget confirmed via MCP: DG.Func.find({package:'Helm'})
       const widget = await g.functions.call('Helm:propertiesWidget', {sequence: sv});
       const root = widget?.root ?? widget;
       if (!root) return {ok: false, reason: 'no-widget-root', rows: []};
@@ -434,10 +422,8 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
   });
 
   await softStep('Scenario 3 Step 5: >1000-char HELM string → "Too long sequence" warning, no UI freeze', async () => {
-    // Round-3 fix: pane-subscription timing is unreliable for scratch-DataFrame
-    // cells. grok.shell.o change may not fire Helm:propertiesWidget before the
-    // DOM query runs (observed as tooLongDivText=null across multiple attempts).
-    // Pattern: call Helm:propertiesWidget directly (same approach as Step 4).
+    // Call Helm:propertiesWidget directly (same approach as Step 4): pane
+    // subscription is unreliable for scratch-DataFrame cells.
     const guardInfo = await page.evaluate(async () => {
       const grok = (window as any).grok;
       const DG = (window as any).DG;
@@ -480,7 +466,10 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
     const DG = (window as any).DG;
     grok.shell.o = DG.SemanticValue.fromTableCell(df.cell(0, 'HELM'));
   });
-  await page.waitForTimeout(500);
+  // Wait for the context-object swap to register (no stable DOM observable for
+  // shell.o on the scratch→HELM.csv restore).
+  await page.waitForFunction(() =>
+    (window as any).grok.shell.o != null, null, {timeout: 10_000});
 
 
   await softStep('Scenario 4 Step 1-2: Helm:getMolfiles on HELM column → string column, rowCount matches source', async () => {
@@ -526,6 +515,8 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
   });
 
   await softStep('Scenario 4 Step 3: re-issue getMolfiles after 1.2s → cached editor evicts + re-instantiates without error', async () => {
+    // Semantic wait: the 1.2s eviction window forces real cache eviction of the
+    // cached HWE editor before the re-issue (this is the behavior under test).
     await page.waitForTimeout(1200);
     const reissue = await page.evaluate(async () => {
       const grok = (window as any).grok;
@@ -651,16 +642,11 @@ test('Helm — lifecycle chain for the Macromolecule HELM column', async ({page}
       'remove_gaps: start/end edge cases MUST NOT raise an error balloon').toBe(0);
   });
 
-  // Scenario 6 step 3 (pure-string equivalence) — covered transitively
-  // via the assertions above per SR-1 (the helper internally calls the
-  // pure-string utility; helper return-shape includes monomerMap as the
-  // documented helper-only addition).
-  //
-  // Scenario 6 step 4 final clause (>2-bonded `*` → HelmNotSupportedError)
-  // deferred per SR-2 — no reliable branched-polymer fixture for the
-  // 3-bonded gap monomer is provided in the scenario `.md` or atlas; live
-  // MCP recon produced no path to construct one. The positive paths
-  // (mid / start / end) cover the atlas remove_gaps op contract.
+  // Scenario 6 step 3 (pure-string equivalence) is covered transitively above
+  // (the helper calls the pure-string utility; its return adds monomerMap).
+  // Step 4 final clause (>2-bonded `*` → HelmNotSupportedError) is deferred —
+  // no reliable 3-bonded gap-monomer fixture exists; the mid/start/end paths
+  // cover the remove_gaps op contract.
 
   await page.evaluate(() => (window as any).grok.shell.closeAll());
   finishSpec();

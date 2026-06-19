@@ -1,110 +1,36 @@
 /* ---
 sub_features_covered: [notebooks.menu.open, notebooks.meta.open, notebooks.menu.edit, notebooks.meta.edit, notebooks.menu.rename, notebooks.menu.save-as-json, notebooks.meta.save-as-json, notebooks.menu.share, notebooks.menu.delete, notebooks.meta.delete, notebooks.api.delete, notebooks.meta.render-icon, notebooks.meta.render-tooltip, notebooks.meta.render-details, notebooks.meta.bind, notebooks.meta.get-applicable-cases, notebooks.entity.get-applicable-cases]
 --- */
-// Frontmatter extraction (pre-author hooks):
-//   target_layer: playwright
-//   pyramid_layer: ui-smoke
-//   sub_features_covered: [notebooks.menu.open, notebooks.meta.open, notebooks.menu.edit,
-//     notebooks.meta.edit, notebooks.menu.rename, notebooks.menu.save-as-json,
-//     notebooks.meta.save-as-json, notebooks.menu.share, notebooks.menu.delete,
-//     notebooks.meta.delete, notebooks.api.delete, notebooks.meta.render-icon,
-//     notebooks.meta.render-tooltip, notebooks.meta.render-details, notebooks.meta.bind,
-//     notebooks.meta.get-applicable-cases, notebooks.entity.get-applicable-cases]
-//   ui_coverage_responsibility: [pcmdOpen, pcmdEdit, pcmdDelete, pcmdSaveAsJSON, pcmdShare,
-//     pcmdRename, pcmdApplyTo] (delegated_to: null)
-//   related_bugs: []
+// ui-smoke OWNER of the seven pcmd* notebook context-menu flows. Each flow is DOM-driven:
+// right-click the seeded notebook card link -> click the context-menu item -> assert the
+// platform-side result. The seven flows verify:
+//   S1 (pcmdOpen)      Open -> notebook opens in HTML mode (grok.shell.v.type === 'Notebook').
+//   S2 (pcmdEdit)      Edit -> view transitions toward edit mode (Notebook view). JupyterLab
+//                      iframe interior is manual_only per atlas — NOT touched.
+//   S5 (pcmdShare)     Share... -> shareEntity dialog opens (title `Share <name>`); CANCEL leaves
+//                      the entity unchanged. Run before Rename/Delete so the title carries the seed name.
+//   S6 (pcmdApplyTo)   right-click -> the entity context menu (Open/Delete) opens; the Apply-to group
+//                      is a behavioral observation (getApplicableCases is Dart-side, conditional on the
+//                      seed being linked to an open table). Apply EXECUTION is atlas manual_only.
+//   S4 (pcmdSaveAsJSON) Save As JSON -> direct browser download of a <name>.json file.
+//   S3 (pcmdRename)    Rename... -> modal; clearing the input disables OK (notEmpty validator), typing
+//                      re-enables it; OK renames server-side and the card label updates.
+//   S7 (pcmdDelete)    Delete -> confirm YES -> notebook removed server-side (find(id) returns undefined).
 //
-// Atlas provenance (derived_from):
-//   notebooks.meta.delete   derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L128
-//   notebooks.menu.rename   derived_from: core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L26
-//   notebooks.meta.save-as-json derived_from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L147
-//   notebooks.entity.get-applicable-cases derived_from: core/shared/grok_shared/lib/src/notebook.dart#L55
-//   notebooks.meta.bind     derived_from: core/client/xamgle/lib/src/features/jupyter_notebook/jupyter_notebook_plugin.dart#L46
+// The notebook is SELF-SEEDED with a unique name (no JS-API Notebook factory exists) and linked to an
+// open demog.csv (for Apply-to applicability), so Rename + Delete never mutate shared notebooks.
 //
-// Scope: ui-smoke OWNER of the seven pcmd* notebook context-menu flows (pcmdOpen, pcmdEdit,
-// pcmdDelete, pcmdSaveAsJSON, pcmdShare, pcmdRename, pcmdApplyTo). Each owned flow is DOM-driven:
-// right-click the notebook card -> click the context-menu item -> assert the platform-side result
-// (view transition / dialog open / download event / card removal). The JupyterLab iframe interior
-// of Edit mode is manual_only per atlas — Scenario 2 only asserts the platform-side view transition,
-// NOT iframe cell content. The notebook is SELF-SEEDED with a unique name (no JS-API Notebook factory
-// exists; see recon-notes) so Rename + Delete never mutate the shared Demog/Cars notebooks on dev.
-//
-// Selector recon-notes (live-MCP-observed this session 2026-06-17 on https://dev.datagrok.ai via
-// chrome-devtools MCP). All context-menu + dialog [name=...] selectors below are class-1 (present
-// verbatim in grok-browser/references/notebooks.md); these notes record the behavioral findings and
-// the navigation substitution, not selector fabrication:
-//   - Navigation opener: DG.Func.find({name:'CmdBrowseNotebooks'})[0].apply() — the registered
-//     command the [name="div-ML---Notebooks---Browse-Notebooks"] menu leaf dispatches
-//     (notebook_meta.dart:151). View-independent; flips grok.shell.v.type to 'notebooks' and renders
-//     ~50 cards in ~900ms. Observed live 2026-06-17. The ML top-menu hover path is REFUTED as a
-//     reliable opener (the Browse-Notebooks leaf stays 0x0 / offsetParent null under synthetic AND
-//     trusted hover; proven root cause of prior cold B-RUN-PASS/B-STAB-01 FAILs on sibling specs).
-//     Navigation is NOT one of the seven owned pcmd* ui-smoke flows, so routing it through the
-//     command function is a sanctioned substitution, not a layer violation — every owned pcmd flow
-//     below is driven by a trusted/synthetic context-menu interaction on the rendered card DOM.
-//   - Context menu (right-click card via dispatched contextmenu MouseEvent) items confirmed live
-//     2026-06-17: [name="div-Open"], [name="div-Edit"], [name="div-Delete"],
-//     [name="div-Save-As-JSON"], [name="div-Share..."], [name="div-Rename..."].
-//   - Rename modal confirmed live 2026-06-17: title "Rename Notebook"; [name="input-New-name-"]
-//     pre-filled with the current name; [name="button-OK"] carries class `enabled` when the input is
-//     non-empty and flips to `disabled` when cleared (the Validators.notEmpty gate from
-//     jupyter_notebook_plugin.dart#L26); [name="button-CANCEL"]. The input is Dart-bound
-//     (class "ui-input-editor"); E-SEL-03 — Playwright .fill() sets .value but skips the Dart
-//     change listener so the notEmpty validator never fires. Confirmed live 2026-06-17 via
-//     chrome-devtools MCP that genuine input events DO drive the validator (clearing flips OK to
-//     `disabled`, typing flips it to `enabled`), so the spec clears via keyboard select-all+Delete
-//     and enters the new name via page.keyboard.type() — NOT .fill().
-//   - Share dialog confirmed live 2026-06-17: clicking [name="div-Share..."] opens a .d4-dialog whose
-//     title is `Share <friendlyName>` (e.g. "Share Demog") with contents class `dlg-sharing-settings
-//     ui-form ui-panel`. Closing via [name="button-CANCEL"] leaves the entity unchanged.
-//   - Save As JSON triggers a direct browser file-download (no dialog) of <friendly-name-snake>.json
-//     containing the full entity encoding (notebook_meta.dart#L147) — captured via
-//     page.waitForEvent('download').
-//   - Apply-to: with demog.csv open as the active table and the seeded notebook linked to its
-//     TableInfo (via ML | Notebooks | Open in Notebook / CmdOpenInNotebook), the context menu surfaces
-//     [name="div-Apply-to"] with a sub-leaf named after the OPEN TABLE VIEW (observed live on a Demog
-//     card with demog.csv open: [name="div-Apply-to---Table"], named "Table" not "demog"). The group
-//     presence is the deterministic, selector-driveable invariant (getApplicableCases non-empty); the
-//     apply EXECUTION (convertNotebook -> live Jupyter container) is atlas manual_only / non-
-//     deterministic and is covered as a behavioral remark, not a hard gate.
-//   - Open (HTML mode): clicking [name="div-Open"] re-fetches and opens the notebook in HTML mode;
-//     grok.shell.v.type becomes "Notebook". The HTML-mode ribbon Download combo / [name="button-EDIT"]
-//     are source-derived [SRC] only — they did NOT render during recon (the content area stayed empty
-//     with a 404 logged, consistent with GROK-13999), so this spec asserts the VIEW transition
-//     (grok.shell.v.type === 'Notebook'), not the ribbon buttons.
-//   - Edit: clicking [name="div-Edit"] transitions toward JupyterLab edit mode; the iframe interior is
-//     manual_only. This spec asserts the platform-side view transition (grok.shell.v.type === 'Notebook')
-//     without touching the iframe.
-//   - Seeding: no JS-API Notebook factory is exposed (DG.Notebook.create/.template/.fromJson absent;
-//     new DG.Notebook() throws on save, observed live 2026-06-17). Deterministic seed = click
-//     [name="button-New-Notebook..."] ribbon button, poll grok.dapi.notebooks.order('createdOn',true)
-//     .list({pageSize:10}) (~107ms) for the new id, then rename via friendlyName + dapi.notebooks.save.
-//   - grok.dapi.notebooks.delete REQUIRES the DG.Notebook entity, NOT an id string (a string throws
-//     "reading 'gaf'"); fetch via find(id) first. find(id) is ~67ms and returns undefined once
-//     deleted (vs ~3.3s for a full list scan). Observed live 2026-06-17.
-//   - Gate-B retry findings (live MCP recon 2026-06-18, root-causing B-RUN-PASS + B-STAB-01):
-//       (a) The fresh seed sorts BEYOND page 1 of the 50-per-page gallery (onPage1Unfiltered=false);
-//           the search-narrow surfaces it in ~1.6s. Card lookups MUST search-narrow, not scan page 1.
-//       (b) A full browser reopen (closeAll + CmdBrowseNotebooks + readiness poll) once per scenario
-//           was the cumulative-timeout driver — 8 reopens blow the 300s budget on a cold attempt.
-//           Verified: Open + Edit navigate AWAY to a `Notebook` view (reopen genuinely needed there);
-//           Share / Apply-to / SaveAsJSON stay on the `notebooks` view and the context menu re-opens
-//           on the same filtered card with NO reopen. ensureBrowserNarrowedToSeed only reopens when
-//           grok.shell.v.type !== 'notebooks'.
-//       (c) The Share dialog is created (title `Share <name>`, contents .dlg-sharing-settings) while
-//           its offsetParent is transiently null — detect by ATTACHMENT, not visibility (matches the
-//           known sharing-dialog lazy-layout quirk). Re-open menu + re-click up to 2x for stragglers.
-//       (d) Gate-B retry #1 root-cause (live MCP recon 2026-06-18): the prior run TIMED OUT at the
-//           300s test ceiling. The two view-transition waits (pcmdOpen / pcmdEdit assert
-//           grok.shell.v.type === 'Notebook') were capped at 90s EACH. Warm, the flip is sub-second
-//           (Open: 306ms, Edit: ~200ms after the menu click, measured live), but headless-cold the
-//           first Notebook-view load blocks on Jupyter container warm-up, so a 90s cap can be fully
-//           consumed; 90+90s + the Share poll + reopens then blew the 300s budget and TRUNCATED
-//           Scenarios 5-7 with "browser has been closed" (the B-STAB-01 cascade). Fix: per-flip cap
-//           cut 90s->30s (ample cold-allowance, bounds the cumulative), opener polls 90s->45s, Share
-//           inner poll 12s->6s + reopen attempts 3->2, and the global ceiling raised 300s->420s so an
-//           unlucky cold sequence completes instead of truncating mid-test. No paradigm change — every
-//           owned pcmd flow stays DOM-driven.
+// Selector / behavioral notes:
+//   - Navigation opener: DG.Func.find({name:'CmdBrowseNotebooks'})[0].apply() — view-independent;
+//     flips grok.shell.v.type to 'notebooks'. (Not one of the owned pcmd flows.)
+//   - Right-click the notebook LINK (.d4-link-label), NOT the card wrapper: the wrapper opens the
+//     generic grid menu; the entity menu (Open/Edit/Delete/Save As JSON/Share.../Rename...) opens
+//     only on the link.
+//   - Rename modal input is Dart-bound (E-SEL-03): Playwright .fill() skips the Dart change listener
+//     so the notEmpty validator never fires — clear via keyboard select-all+Delete and type the new
+//     name via page.keyboard.type().
+//   - Share dialog is detected by ATTACHMENT (offsetParent is transiently null while it lays out).
+//   - grok.dapi.notebooks.delete REQUIRES the DG.Notebook entity, NOT an id string; fetch via find(id).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -211,7 +137,9 @@ async function ensureBrowserNarrowedToSeed(page: import('@playwright/test').Page
 }
 
 test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
-  test.setTimeout(420_000);
+  // 6 min: 7 sequential context-menu flows in one test; pcmdOpen/pcmdEdit each load a Notebook view
+  // that can block on cold Jupyter container warm-up.
+  test.setTimeout(360_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -420,12 +348,10 @@ test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
     await input.click();
     await input.press('ControlOrMeta+a');
     await input.press('Delete');
-    await page.waitForTimeout(400);
     await expect(page.locator('[name="button-OK"]').first()).toHaveClass(/disabled/);
 
     // Enter the new name; OK re-enables; confirm.
     await page.keyboard.type(renamedName);
-    await page.waitForTimeout(400);
     await expect(page.locator('[name="button-OK"]').first()).toHaveClass(/enabled/);
     await page.locator('[name="button-OK"]').first().click();
 
