@@ -1,0 +1,162 @@
+# Knowledge-graph rebuild pipeline.
+#
+# Canonical source lives in the knowledge-graph repo at ci/knowledge-graph.yaml.
+# Deploy by copying to  datagrok-ai/public  →  .github/workflows/knowledge-graph.yaml
+#
+# What it does on every source change in `public`:
+#   1. rebuild the whole graph from source (full rebuild — measured ~3.5 min total,
+#      so NO change-detection is needed; see ci/README.md for the numbers)
+#   2. pack the materialized DB into the 2.4 MB kg.kuzu.xz
+#   3. push refreshed JSONL  →  datagrok-ai/knowledge-graph   (source of truth, reviewable diff)
+#      push refreshed .xz     →  datagrok-ai/public/.kg        (what Claude Code consumes)
+#
+# Why full-rebuild, not incremental: the graph is global (cross-package imports,
+# api-usage, features). Bulk COPY-FROM load made a full rebuild ~155x faster
+# (22 min → 9 s), so a clean full rebuild is cheaper and more correct (no stale
+# rows on deletes/renames) than maintaining incremental JSONL diffs.
+
+name: knowledge-graph
+
+on:
+  push:
+    branches: [master]
+    paths:
+      # Anything the extractors read. Excludes .kg/** so the artifact commit
+      # below never re-triggers this workflow.
+      - 'packages/**'
+      - 'libraries/**'
+      - 'help/**'
+      - 'js-api/**'
+  workflow_dispatch:
+    inputs:
+      kg_branch:
+        description: 'knowledge-graph branch to push JSONL to (blank = same name as the triggering branch). PoC-safe default; set to "main" for production.'
+        required: false
+        default: ''
+
+# Serialize: each run pushes to two repos — never let two overlap.
+concurrency:
+  group: knowledge-graph
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # push kg.kuzu.xz back to public (uses GITHUB_TOKEN)
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public (the source tree to analyze)
+        uses: actions/checkout@v4
+        # Working tree only; a single fast-forward commit pushes fine from depth 1.
+
+      - name: Checkout knowledge-graph builder (+ committed JSONL)
+        uses: actions/checkout@v4
+        with:
+          repository: datagrok-ai/knowledge-graph
+          path: kg-src
+          token: ${{ secrets.KG_PUSH_TOKEN }}   # PAT with write access to knowledge-graph
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install builder dependencies
+        run: pip install -r kg-src/requirements-build.txt
+
+      - name: Assemble builder at ./.kg
+        # build.py resolves REPO_ROOT = parents[2] of extractors/_common.py and
+        # 11 extractors read a HARDCODED <REPO_ROOT>/.kg/data path. Both are only
+        # consistent when the builder lives at <public>/.kg — so overlay it there.
+        # Builder code + the data/ dir stay UNTRACKED in public (we only commit the .xz).
+        run: |
+          set -euo pipefail
+          mkdir -p .kg
+          cp -r kg-src/extractors kg-src/schema kg-src/enrichers kg-src/tests \
+                kg-src/build.py kg-src/enrich.py .kg/
+          cp -r kg-src/scripts/. .kg/scripts/
+          rm -rf .kg/data
+          cp -r kg-src/data .kg/data
+
+      - name: Build graph (clean full rebuild, bulk COPY loader)
+        run: |
+          set -euo pipefail
+          # Pass 1: --clean regenerates every JSONL slice from current source,
+          #         dropping rows for deleted/renamed entities (merge is additive,
+          #         so only --clean removes stale rows). data/enrichment is preserved.
+          python .kg/build.py --clean --no-db
+          # Pass 2: re-extract so any extractor that reads a sibling's JSONL now sees
+          #         it, then bulk-load Kuzu via COPY FROM (loader=copy is the default).
+          python .kg/build.py
+
+      - name: Sanity gate (refuse to publish a degenerate graph)
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import kuzu
+          db = kuzu.Database(".kg/kg.kuzu"); conn = kuzu.Connection(db)
+          n = conn.execute("MATCH (n) RETURN count(n)").get_next()[0]
+          e = conn.execute("MATCH ()-[r]->() RETURN count(r)").get_next()[0]
+          print(f"graph: {n} nodes, {e} edges")
+          assert n > 25000 and e > 70000, f"degenerate graph (n={n}, e={e}) — refusing to publish"
+          PY
+
+      - name: Run query tests (advisory)
+        # Runs from the overlaid .kg so the suite's ROOT/kg.kuzu resolves to the built DB.
+        # ADVISORY, not a gate: the suite includes content-quality thresholds (e.g. doc
+        # coverage) that depend on LLM-enrichment freshness, not on build integrity — they
+        # must not block publishing the artifact. The sanity gate above is the hard gate.
+        continue-on-error: true
+        run: python .kg/tests/test_kg_queries.py
+
+      - name: Pack -> kg.kuzu.xz
+        run: python .kg/scripts/pack.py
+
+      - name: Push refreshed JSONL to knowledge-graph
+        run: |
+          set -euo pipefail
+          # --delete so removed slices/rows propagate; enrichment is LLM-derived,
+          # build.py never rewrites it, so leave it untouched.
+          rsync -a --delete .kg/data/nodes/ kg-src/data/nodes/
+          rsync -a --delete .kg/data/edges/ kg-src/data/edges/
+          cd kg-src
+          git config user.name  "datagrok-kg-bot"
+          git config user.email "kg-bot@datagrok.ai"
+          git add data/nodes data/edges
+          if git diff --cached --quiet; then
+            echo "no JSONL changes"; exit 0
+          fi
+          # PoC-safe target: explicit input, else mirror the triggering branch name
+          # (so a run from 'kg-ci-validation' writes to knowledge-graph 'kg-ci-validation',
+          #  never to 'main'). Set the input to 'main' once ready for production.
+          KG_BRANCH="${{ github.event.inputs.kg_branch }}"
+          [ -z "$KG_BRANCH" ] && KG_BRANCH="${GITHUB_REF_NAME}"
+          echo "pushing JSONL to knowledge-graph branch: $KG_BRANCH"
+          git commit -m "KG: refresh JSONL from public@${GITHUB_SHA::12}"
+          for i in 1 2 3; do
+            git ls-remote --exit-code --heads origin "$KG_BRANCH" >/dev/null 2>&1 \
+              && git pull --rebase --autostash origin "$KG_BRANCH" || true
+            git push origin "HEAD:$KG_BRANCH" && break
+            echo "push retry $i"; sleep 3
+          done
+
+      - name: Commit kg.kuzu.xz to public
+        run: |
+          set -euo pipefail
+          git config user.name  "datagrok-kg-bot"
+          git config user.email "kg-bot@datagrok.ai"
+          git add .kg/kg.kuzu.xz          # explicit: overlaid builder files stay untracked
+          if git diff --cached --quiet; then
+            echo "artifact unchanged"; exit 0
+          fi
+          # Always the triggering branch — a PoC run on 'kg-ci-validation' writes the
+          # binary there, never to master.
+          git commit -m "KG: refresh kg.kuzu.xz from ${GITHUB_SHA::12} [skip ci]"
+          for i in 1 2 3; do
+            git ls-remote --exit-code --heads origin "${GITHUB_REF_NAME}" >/dev/null 2>&1 \
+              && git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}" && break
+            echo "push retry $i"; sleep 3
+          done
