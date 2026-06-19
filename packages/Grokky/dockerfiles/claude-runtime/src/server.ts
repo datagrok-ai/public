@@ -42,6 +42,16 @@ NEVER guess function names, parameter names, signatures, or JS API methods. RDKi
 
 For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
 
+## Knowledge graph — query it before you grep
+
+\`workspace/\` ships a queryable knowledge graph of the whole platform (packages, functions, scripts, queries, libraries, classes/methods, docs, changelog — and the edges between them). For ANY structural question ("what implements X?", "which package owns / tests / imports Y?", "where is Z documented?"), your FIRST action is a KG query, not Grep:
+
+\`\`\`bash
+python3 workspace/.kg/scripts/qq.py "MATCH (p:Package {name:'Chem'})-[:HAS_FEATURE]->(f:Feature) RETURN f.name LIMIT 10"
+\`\`\`
+
+First call self-installs the engine (~30s, one-time); after that, milliseconds. Read \`workspace/.kg/CLAUDE.md\` for the node/edge schema and query cookbook before composing non-trivial queries. Fall back only when the KG can't answer.
+
 ## Clarifying ambiguous requests
 
 You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
