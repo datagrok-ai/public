@@ -205,18 +205,14 @@
 
 .chem-similarity-header {
   justify-content: space-between;
-  /* Vertically centre the title, action icons and the metrics link on one line (the 24px icons would
-     otherwise sit lower than the text). */
-  align-items: center;
+  align-items: center; /* keep the 24px icons on the title's baseline */
 }
 
 .chem-similarity-action-group {
   align-items: center;
   gap: 2px;
   margin-right: 4px;
-  /* Absorb the header's free space so the icons sit next to the metrics link on the right edge,
-     rather than floating in the centre of the space-between header. */
-  margin-left: auto;
+  margin-left: auto; /* push the icons to the right edge, next to the metrics link */
 }
 
 .chem-similarity-action-btn {
@@ -236,16 +232,13 @@
   background-color: var(--steel-1);
 }
 
-/* Keyboard focus indicator (WCAG 2.4.7) — these icons are focusable buttons (role/tabindex). */
-.chem-similarity-action-btn:focus-visible {
+.chem-similarity-action-btn:focus-visible { /* keyboard focus ring (WCAG 2.4.7) */
   outline: 2px solid var(--blue-1);
   outline-offset: 1px;
 }
 
-/* Active = toggled: just colour the icon blue (no background fill), matching the platform's
-   filter-toggle icons. */
 .chem-similarity-action-btn.active {
-  color: var(--blue-1);
+  color: var(--blue-1); /* toggled on — matches the platform filter-toggle icon */
 }
 
 .chem-similarity-action-btn.chem-similarity-action-disabled {

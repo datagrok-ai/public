@@ -54,12 +54,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   selectBtn!: HTMLElement; // assigned in the constructor
   filterBtn!: HTMLElement;
   private _filterSub: Subscription | null = null;
-  private _molObserver: IntersectionObserver | null = null;
   // Snapshot of the last full card render, so a non-recompute render (selection/current-row/metadata)
   // refreshes per-card highlights IN PLACE instead of rebuilding the panel (which flickers every card).
   private _renderedCards: {grid: HTMLElement; idx: number}[] = [];
-  private _renderedLazyHosts: {host: HTMLElement; molStr: string}[] = [];
-  private _renderedGridDiv: HTMLElement | null = null;
   private _renderedMolCol: DG.Column | null = null;
   private _renderedSize: string = '';
   private _pushedSummary: string | null = null;
@@ -240,11 +237,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     const refIdx = this.isEditedFromSketcher ? -1 : this.targetMoleculeIdx;
     // Read the row source as a packed buffer once and test bits in JS — avoids a get(i) interop per row.
     const srcBuf = rowSourceIdxs.getBuffer();
-    // Bound by scored rows: a row added during a fast (cached) search has no score yet — exclude it
-    // (rowCount can exceed allDistances.length; don't read OOB).
-    const scored = allDistances.length;
+    // An unscored row (e.g. added after the search) has allDistances[i] === undefined, so the >= cutoff
+    // test already excludes it — no explicit length guard needed.
     return DG.BitSet.create(this.dataFrame!.rowCount, (i) =>
-      i < scored && i !== refIdx && ((srcBuf[i >>> 5] & (1 << (i & 31))) !== 0) &&
+      i !== refIdx && ((srcBuf[i >>> 5] & (1 << (i & 31))) !== 0) &&
       allDistances[i] >= cutoff && allDistances[i] <= 1);
   }
 
@@ -381,19 +377,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return others;
   }
 
-  /** Nearest scrollable ancestor — the IntersectionObserver root for lazy rendering (the viewer scrolls
-   * inside the context panel, not the document viewport). */
-  private _findScrollParent(el: HTMLElement): HTMLElement | null {
-    let p: HTMLElement | null = el.parentElement;
-    while (p) {
-      const oy = getComputedStyle(p).overflowY;
-      if (oy === 'auto' || oy === 'scroll')
-        return p;
-      p = p.parentElement;
-    }
-    return null;
-  }
-
   /** Set a card's current-row/selected highlight (class + background) from the live selection and
    * reference row. Used both when building cards and refreshing them in place (see renderInternal). */
   private _applyCardStyle(grid: HTMLElement, idx: number): void {
@@ -407,33 +390,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       ((isCurRow || isRef) ? '#d3f8bd' : '#f8f8df') : (isCurRow ? '#ddffd9' : '');
   }
 
-  /** (Re)arm the lazy-render observer over `lazyHosts`, rooted at the scroll container with a 300px
-   * prefetch margin (100px against the viewport with no scrollable ancestor). Already-rendered hosts are
-   * skipped, so safe to call again on an in-place refresh. */
-  private _observeLazyHosts(gridDiv: HTMLElement, lazyHosts: {host: HTMLElement; molStr: string}[]): void {
-    const {width, height} = this.sizesMap[this.size];
-    const scrollRoot = this._findScrollParent(gridDiv);
-    this._molObserver?.disconnect();
-    // Close over the local `observer`, not this._molObserver (which the next render reassigns) — so a late
-    // callback unobserves on its OWN observer and never touches a newer instance.
-    const observer = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting)
-          continue;
-        const host = e.target as HTMLElement & {_molStr?: string; _rendered?: boolean};
-        observer.unobserve(host);
-        if (host._rendered || !host.isConnected)
-          continue; // skip detached/already-drawn hosts — no wasted RDKit work after a fast scroll-then-close
-        host._rendered = true;
-        host.appendChild(renderMolecule(host._molStr!, {width, height}));
-      }
-    }, {root: scrollRoot, rootMargin: scrollRoot ? '300px' : '100px'});
-    this._molObserver = observer;
-    for (const lh of lazyHosts) {
-      (lh.host as HTMLElement & {_molStr?: string})._molStr = lh.molStr;
-      observer.observe(lh.host);
-    }
-  }
 
   /** True when two masks are equal — compares packed word buffers directly (no clone), bailing early. */
   private _sameMask(a: DG.BitSet | null, b: DG.BitSet | null): boolean {
@@ -567,8 +523,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.similarSetBitset = null;
     // Drop the cached card snapshot so the next render full-rebuilds (and we don't hold detached DOM refs).
     this._renderedCards = [];
-    this._renderedLazyHosts = [];
-    this._renderedGridDiv = null;
     this._renderedMolCol = null;
     this._builtAgainstFilter = null;
     this._recheckRowSource = null;
@@ -645,10 +599,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
 
   override detach(): void {
     const wasFiltering = this.filterActive; // capture before _resetFilterState clears it
-    // Teardown beyond the shared filter state: lazy-render observer + progress sub (watchdog timer is
-    // cleared by _resetFilterState).
-    this._molObserver?.disconnect();
-    this._molObserver = null;
+    // Teardown beyond the shared filter state: progress sub (watchdog timer is cleared by _resetFilterState).
     this._searchProgressSub?.unsubscribe();
     this._searchProgressSub = null;
     this._resetFilterState();
@@ -660,10 +611,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   async renderInternal(computeData: boolean): Promise<void> {
-    // Tear down the previous render's lazy observer up front: the early-exit paths below never reach the
-    // success-path disconnect, so a prior observer would otherwise keep its detached card hosts alive.
-    this._molObserver?.disconnect();
-    this._molObserver = null;
     if (!this.beforeRender())
       return;
     if (this.moleculeColumn && this.dataFrame) {
@@ -741,14 +688,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.closeWithError(this.error, progressBar);
         return;
       }
-      // Displayed set unchanged (non-recompute render → SAME molCol): refresh highlights in place and
-      // re-arm the observer instead of rebuilding (which flashes every card). A recompute yields a NEW
-      // molCol → full rebuild below.
+      // Displayed set unchanged (non-recompute render → SAME molCol): refresh highlights in place instead
+      // of rebuilding (which flashes every card). A recompute yields a NEW molCol → full rebuild below.
       if (this.molCol === this._renderedMolCol && this.size === this._renderedSize && this._renderedCards.length) {
         for (const {grid, idx} of this._renderedCards)
           this._applyCardStyle(grid, idx);
-        if (this._renderedGridDiv)
-          this._observeLazyHosts(this._renderedGridDiv, this._renderedLazyHosts);
         progressBar?.close();
         return;
       }
@@ -774,7 +718,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const {width, height} = this.sizesMap[this.size];
       const panel = [];
       const grids = [];
-      const lazyHosts: {host: HTMLElement; molStr: string}[] = [];
       const renderedCards: {grid: HTMLElement; idx: number}[] = []; // for later in-place restyle
       let cnt = 0; let cnt2 = 0;
       panel[cnt++] = this.metricsDiv;
@@ -797,14 +740,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const refMolecule = this.isReferenceMolecule(idx);
           const label = refMolecule ? this.sketchButton : ui.div();
           const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
-          const molHost = ui.div([]);
-          molHost.style.width = `${width}px`;
-          molHost.style.height = `${height}px`;
-          lazyHosts.push({host: molHost, molStr: this.molCol!.get(i)});
           const grid = ui.div([
-            molHost,
+            renderMolecule(this.molCol!.get(i), {width, height}),
             label,
-            molProps], { style: { position: 'relative' } });
+            molProps], {style: {position: 'relative'}});
           grid.classList.add('d4-flex-col');
           this._applyCardStyle(grid, idx); // current-row/selected highlight (also reused by in-place path)
           grid.addEventListener('click', (event: MouseEvent) => {
@@ -841,11 +780,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const gridDiv = ui.divH(grids, 'chem-viewer-grid');
       panel[cnt++] = gridDiv;
       this.root.appendChild(ui.panel([ui.divV(panel)]));
-      this._observeLazyHosts(gridDiv, lazyHosts);
       // Snapshot this render so a later non-recompute render can refresh highlights in place.
       this._renderedCards = renderedCards;
-      this._renderedLazyHosts = lazyHosts;
-      this._renderedGridDiv = gridDiv;
       this._renderedMolCol = this.molCol;
       this._renderedSize = this.size;
     }
