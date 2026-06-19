@@ -740,13 +740,21 @@ export const RichFunctionView = Vue.defineComponent({
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
-                    showRun.value &&
+                    showRun.value ?
                       <BigButton
                         isDisabled={!isRunnable.value || isRunning.value || props.isReadonly}
                         onClick={() => emit('runClicked')}
                       >
                         { isOutputOutdated.value ? runLabel.value : 'Rerun' }
-                      </BigButton>
+                      </BigButton> :
+                      (isOutputOutdated.value && !isRunnable.value && !isRunning.value) &&
+                        <div
+                          class='flex items-center justify-center w-full'
+                          style={{color: 'var(--red-3)', fontSize: '12px', gap: '6px', padding: '6px 0'}}
+                        >
+                          <IconFA name='exclamation-triangle' />
+                          <span>Fix invalid inputs to update results</span>
+                        </div>
                   }
                 </div>
               </div> }
