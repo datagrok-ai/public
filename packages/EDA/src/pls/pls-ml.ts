@@ -44,7 +44,7 @@ export class PlsModel {
   /** Check applicability */
   static isApplicable(features: DG.ColumnList, predictColumn: DG.Column): boolean {
     for (const col of features) {
-      if (!col.matches('numerical'))
+      if (!col.matches('numerical') && (col.type !== DG.COLUMN_TYPE.DATE_TIME))
         return false;
     }
     if (!predictColumn.matches('numerical'))

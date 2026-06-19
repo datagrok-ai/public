@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+GROK-20063 PLS Regression: support datetime feature columns instead of failing with "unsupported column type: datetime"
+
 ## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA

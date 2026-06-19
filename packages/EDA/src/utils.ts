@@ -41,6 +41,19 @@ export function checkColumnType(col: DG.Column): void {
     throw new Error(UNSUPPORTED_COLUMN_TYPE_MES + col.type);
 }
 
+/** Replace datetime feature columns with numeric (epoch) columns so they can be used as predictors.
+ * The raw values are preserved exactly, so a model trained here stays consistent with the apply path,
+ * which reads the original datetime column's raw data. Other column types are returned unchanged. */
+export function numericalizeFeatures(features: DG.ColumnList): DG.ColumnList {
+  const cols = features.toList().map((col) => {
+    if (col.type === DG.COLUMN_TYPE.DATE_TIME)
+      return DG.Column.fromFloat64Array(col.name, Float64Array.from(col.getRawData()), col.length);
+    return col;
+  });
+
+  return DG.DataFrame.fromColumns(cols).columns;
+}
+
 /** Check missing values */
 export function checkMissingVals(col: DG.Column): void {
   if (col.stats.missingValueCount > 0 )

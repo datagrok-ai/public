@@ -33,6 +33,7 @@ import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 import {getLinearRegressionParams, getPredictionByLinearRegression,
   isLinearRegressionApplicable, isLinearRegressionInteractive} from './regression';
 import {PlsModel} from './pls/pls-ml';
+import {numericalizeFeatures} from './utils';
 import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
@@ -822,7 +823,7 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Number of latent components.'}}) components: number): Promise<Uint8Array> {
-    const features = df.columns;
+    const features = numericalizeFeatures(df.columns);
 
     const model = new PlsModel();
     await model.fit(
