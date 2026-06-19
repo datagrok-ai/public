@@ -53,6 +53,32 @@ const OUTPUT_TYPE_VALUES = [
   'map', 'datetime', 'blob', 'funccall',
 ];
 
+/** A property's `choices` as a non-empty string list, or `[]` when it has none
+ *  (or the Dart proxy access fails). Empty entries are dropped — the nullable
+ *  empty option is added separately by `stringChoiceOptions`. */
+export function propertyChoices(param: DG.Property): string[] {
+  try {
+    const choices = (param as unknown as {choices?: unknown}).choices;
+    if (!Array.isArray(choices)) return [];
+    return choices.map((c) => String(c)).filter((c) => c.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Build the option list for a string input that declares `choices`, or `null`
+ *  when there are none (caller renders a free-text field instead). A nullable
+ *  property gets a leading empty option; the current value is preserved as an
+ *  option even when it isn't among the declared choices, so imported values are
+ *  never silently dropped. */
+export function stringChoiceOptions(choices: string[], nullable: boolean, current: string): string[] | null {
+  if (choices.length === 0) return null;
+  let options = [...choices];
+  if (nullable) options = ['', ...options];
+  if (current !== '' && !options.includes(current)) options = [current, ...options];
+  return options;
+}
+
 function buildFuncInputTooltip(param: DG.Property): string {
   const parts: string[] = [];
   const desc = param.description;
@@ -141,12 +167,13 @@ export class PropertyPanel {
     }, true);
 
     if (func.inputs.length > 0) {
+      const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
       acc.addPane('Input Parameters', () => {
         const content = ui.div([], 'funcflow-accordion-content');
         for (const inp of func.inputs) {
           const tip = buildFuncInputTooltip(inp);
-          const isPrimitive = inp.name in node.inputValues;
-          if (!isPrimitive) {
+          const isEditable = inp.name in node.inputValues;
+          if (!isEditable) {
             const row = ui.div([ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
             content.appendChild(row);
@@ -159,10 +186,20 @@ export class PropertyPanel {
             continue;
           }
           switch (inp.propertyType) {
-          case 'string':
-            content.appendChild(this.createTextarea(inp.name, String(node.inputValues[inp.name] ?? ''),
-              (v) => {node.inputValues[inp.name] = v;}, tip));
+          case 'string': {
+            // When the property declares `choices`, render a combo (with a
+            // leading empty option when nullable) instead of a free-text field.
+            const current = String(node.inputValues[inp.name] ?? '');
+            const options = stringChoiceOptions(propertyChoices(inp), Boolean(inp.nullable), current);
+            if (options) {
+              content.appendChild(this.createCombo(inp.name, current, options,
+                (v) => {node.inputValues[inp.name] = v;}, tip));
+            } else {
+              content.appendChild(this.createTextarea(inp.name, current,
+                (v) => {node.inputValues[inp.name] = v;}, tip));
+            }
             break;
+          }
           case 'int':
             content.appendChild(this.createNumberInput(inp.name, Number(node.inputValues[inp.name] ?? 0),
               (v) => {node.inputValues[inp.name] = Math.round(v);}, 0, 1, tip));
@@ -176,12 +213,19 @@ export class PropertyPanel {
             content.appendChild(this.createToggle(inp.name, Boolean(node.inputValues[inp.name]),
               (v) => {node.inputValues[inp.name] = v;}, tip));
             break;
+          case 'column':
+            content.appendChild(this.createColumnRow(node, inp.name, false, dataframeParams, tip));
+            break;
+          case 'column_list':
+            content.appendChild(this.createColumnRow(node, inp.name, true, dataframeParams, tip));
+            break;
           }
         }
         return content;
       }, true);
     }
   }
+
 
   // eslint-disable-next-line complexity
   private addInputNodePane(acc: DG.Accordion, node: FlowNode): void {
@@ -364,22 +408,53 @@ export class PropertyPanel {
     return lbl;
   }
 
-  private createTextarea(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+  private buildTextareaEl(value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLTextAreaElement {
     const textarea = document.createElement('textarea');
     textarea.value = value;
     textarea.className = 'funcflow-prop-textarea';
     textarea.rows = 1;
-    textarea.addEventListener('input', () => {
+    const autosize = (): void => {
       textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
+    };
+    textarea.addEventListener('input', () => {
+      autosize();
       onChange(textarea.value);
     });
-    setTimeout(() => {
-      textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
-    }, 0);
+    setTimeout(autosize, 0);
     if (inputTooltip) ui.tooltip.bind(textarea, inputTooltip);
-    return ui.div([this.labelWithTooltip(label, inputTooltip), textarea], 'funcflow-prop-row');
+    return textarea;
+  }
+
+  private createTextarea(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+    return ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row');
+  }
+
+  /** A column / column-list input laid out side by side with its table picker:
+   *  the column-name field (≈70%) and, when the func has 2+ dataframe inputs, a
+   *  table chooser (≈30%) writing the node's `columnTables` association. With a
+   *  single dataframe input the field spans full width (the table is implicit). */
+  private createColumnRow(
+    node: FlowNode, paramName: string, isList: boolean, dataframeParams: string[], tip: string,
+  ): HTMLElement {
+    const colTip = isList ?
+      `${tip} | Comma-separated column names` :
+      `${tip} | Column name (compiled to table.col(...))`;
+    const textarea = this.buildTextareaEl(String(node.inputValues[paramName] ?? ''),
+      (v) => {node.inputValues[paramName] = v;}, colTip);
+
+    const cells: HTMLElement[] = [ui.div([textarea], 'funcflow-col-input-cell')];
+    if (dataframeParams.length >= 2) {
+      if (!node.properties['columnTables']) node.properties['columnTables'] = {};
+      const associations = node.properties['columnTables'] as Record<string, string>;
+      const current = associations[paramName] ?? dataframeParams[0];
+      const select = this.buildSelectEl(current, dataframeParams,
+        (v) => {associations[paramName] = v;}, 'Which table input this column refers to');
+      cells.push(ui.div([select], 'funcflow-col-table-cell'));
+    }
+    return ui.div([this.labelWithTooltip(paramName, colTip), ui.div(cells, 'funcflow-col-grid')],
+      'funcflow-prop-row');
   }
 
   private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string): HTMLElement {
@@ -407,7 +482,7 @@ export class PropertyPanel {
     return ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row');
   }
 
-  private createCombo(label: string, value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+  private buildSelectEl(value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLSelectElement {
     const select = document.createElement('select');
     select.className = 'funcflow-prop-input';
     for (const opt of options) {
@@ -419,6 +494,11 @@ export class PropertyPanel {
     }
     select.addEventListener('change', () => onChange(select.value));
     if (inputTooltip) ui.tooltip.bind(select, inputTooltip);
-    return ui.div([this.labelWithTooltip(label, inputTooltip), select], 'funcflow-prop-row');
+    return select;
+  }
+
+  private createCombo(label: string, value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+    return ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row');
   }
 }

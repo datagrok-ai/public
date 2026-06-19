@@ -653,7 +653,7 @@
       "columns": [
         {
           "tableInfo": {
-            "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+            "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
             "metaParams": {}
           },
           "name": "education",
@@ -664,7 +664,7 @@
         },
         {
           "tableInfo": {
-            "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+            "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
             "metaParams": {}
           },
           "name": "switch",
@@ -675,7 +675,7 @@
         },
         {
           "tableInfo": {
-            "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+            "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
             "metaParams": {}
           },
           "name": "association",
@@ -686,7 +686,7 @@
         },
         {
           "tableInfo": {
-            "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+            "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
             "metaParams": {}
           },
           "name": "distance",
@@ -697,7 +697,7 @@
         },
         {
           "tableInfo": {
-            "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+            "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
             "metaParams": {}
           },
           "name": "arsenic",
@@ -712,7 +712,7 @@
       "fileInfo": {
         "metaParams": {}
       },
-      "id": "d26fdc50-3260-11e9-bcd7-3b54b8a0f601",
+      "id": "e6641860-3260-11e9-b889-2bfe7b437dbf",
       "name": "Wells",
       "friendlyName": "wells",
       "author": {
@@ -742,7 +742,7 @@
     }
   ],
   "environment": "python3",
-  "id": "5431dfae-935e-5948-9423-62a572f402db",
+  "id": "83736246-fe60-5683-b51a-8880f6d2fc85",
   "name": "LogisticModelsOfWellSwitchingInBangladesh",
   "friendlyName": "Logistic models of well switching in Bangladesh",
   "author": {

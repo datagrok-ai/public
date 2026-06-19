@@ -6,6 +6,7 @@ import './tests/node-factory-tests';
 import './tests/compiler-tests';
 import './tests/serializer-tests';
 import './tests/creation-script-import-tests';
+import './tests/panel-tests';
 
 export let _package = new DG.Package();
 export { tests };

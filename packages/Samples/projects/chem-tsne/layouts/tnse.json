@@ -3,7 +3,11 @@
   "type": "Notebook",
   "friendlyName": "Chemical Space Using tSNE",
   "viewStateMap": {
-    "notebookId": "107c9a50-3260-11e9-c59a-ada830f0f28c"
+    "notebookId": "5493e1df-49c1-5bd9-8a7a-987c543c8f0f",
+    "id": "5493e1df-49c1-5bd9-8a7a-987c543c8f0f"
+  },
+  "table": {
+    "id": "295154f0-3260-11e9-8102-71a1f74ba434"
   },
   "id": "a37ef7f0-5970-11e9-86d4-5954d0f069c6",
   "createdOn": "2019-05-07T13:26:30.179385Z",
