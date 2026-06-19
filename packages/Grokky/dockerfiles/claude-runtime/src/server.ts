@@ -469,6 +469,10 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
+  // Drop the SDK session: an aborted session can't be resumed, and the client's
+  // auto-retry inlines the lost context into a fresh message (see ui.ts). Leaving
+  // it here makes the next message resume a dead session and the retry fails.
+  sessions.delete(data.sessionId);
   flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
