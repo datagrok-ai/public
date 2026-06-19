@@ -30,6 +30,7 @@ import {
   uniqueKeepMask,
   validateParams,
 } from '../polytool/pt-chem-enum';
+import {parseChemEnumDefaults, serializeChemEnumState} from '../polytool/pt-chem-enum-settings';
 
 import {_package} from '../package-test';
 
@@ -589,5 +590,35 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
       const r2 = r.rGroupSmilesByNum.get(2)!;
       expect(r2.includes('[*:2]') && !r2.includes('[*:1]'), true, `R2 column not re-labeled: ${r2}`);
     }
+  });
+});
+
+// ─── Package-settings defaults (de)serialization — no RDKit required ─────────
+
+category('PolyTool: ChemEnum: defaults', () => {
+  test('parse rejects null / blank / malformed / wrong-shape', async () => {
+    expect(parseChemEnumDefaults(null), null);
+    expect(parseChemEnumDefaults(''), null);
+    expect(parseChemEnumDefaults('not json'), null);
+    expect(parseChemEnumDefaults(JSON.stringify({rGroups: {}})), null); // no cores
+    expect(parseChemEnumDefaults(JSON.stringify({cores: []})), null); // no rGroups
+  });
+
+  test('serialize → parse round-trips cores and R-groups', async () => {
+    // Original-SMILES only; serialization stores originalSmiles, so the cores/R-groups need no RDKit here.
+    const state = {
+      cores: [{originalSmiles: 'c1ccccc1[*:1]'} as any],
+      rGroupsByNum: new Map([[1, [{originalSmiles: 'C[*:1]'} as any]]]),
+      mode: ChemEnumModes.Cartesian,
+      appendToTable: null, removeDuplicates: true, tableName: 'X',
+    };
+    const entry = parseChemEnumDefaults(serializeChemEnumState(state));
+    if (entry === null) throw new Error('round-trip returned null');
+    expectArray(entry.cores, ['c1ccccc1[*:1]']);
+    expectArray(entry.rGroups['1'], ['C[*:1]']);
+    expect(entry.mode, ChemEnumModes.Cartesian);
+    // Output options (added by GROK-20223) are persisted into the defaults blob too.
+    expect(entry.removeDuplicates, true);
+    expect(entry.tableName, 'X');
   });
 });
