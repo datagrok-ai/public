@@ -145,6 +145,17 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   return [scalarValue, formattedScalarValue, units] as const;
 };
 
+// Stable identity per content so Vue skips re-applying `options` (and a redundant Dart setOptions) on rebuilds.
+const viewerConfigIdentity = new Map<string, Record<string, string | boolean>>();
+const stabilizeViewerConfig = (config: Record<string, string | boolean>) => {
+  const key = JSON.stringify(config);
+  const cached = viewerConfigIdentity.get(key);
+  if (cached)
+    return cached;
+  viewerConfigIdentity.set(key, config);
+  return config;
+};
+
 const tabToProperties = (fc: DG.FuncCall) => {
   const tabsToProps = getEmptyTabToProperties();
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
@@ -168,10 +179,11 @@ const tabToProperties = (fc: DG.FuncCall) => {
         map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
       );
       const df = useObservable(changes$);
+      const config = stabilizeViewerConfig(dfViewer);
       if (isOutput)
-        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config});
       else
-        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config});
     });
     return;
   };
