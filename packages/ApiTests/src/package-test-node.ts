@@ -190,6 +190,9 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
     const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
+    // Wall-clock window for this task, so stress runs can be correlated with the
+    // container CPU/memory time series (UTC, matching the docker_stats collector).
+    const taskStart = new Date().toISOString();
     for (const key of Object.keys(tests))
         if (runAll || categories.has(key))
             data.push(...(await runTests({
@@ -200,6 +203,11 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
             })));
     if (data.length === 0)
         return null;
+    const taskFinish = new Date().toISOString();
+    for (const row of data as any[]) {
+        row.task_start = taskStart;
+        row.task_finish = taskFinish;
+    }
     const df = DG.DataFrame.fromObjects(data)!;
     await df.columns.addNewCalculated('concurrent_run', `${concurrentRun}`, DG.COLUMN_TYPE.INT, false, false);
     await df.columns.addNewCalculated('total_concurrent_runs', `${concurrency}`, DG.COLUMN_TYPE.INT, false, false);
