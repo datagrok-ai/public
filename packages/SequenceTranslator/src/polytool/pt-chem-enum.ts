@@ -1,4 +1,6 @@
 /* eslint-disable max-len */
+import * as DG from 'datagrok-api/dg';
+
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 /**
@@ -754,4 +756,24 @@ export function enumerateSampleRaw(
     seen++;
   }
   return reservoir;
+}
+
+/**
+ * First-occurrence keep-mask for `values`, as a {@link DG.BitSet}: bit `i` is set when
+ * `values[i]` is the first time that value is seen, and cleared for a later duplicate.
+ * Nullish/empty entries are always kept — they stand for blank or unparseable rows that
+ * must not be collapsed together. Returns a ready-to-use BitSet so callers can pass it
+ * straight to `DataFrame.clone` without rebuilding it.
+ */
+export function uniqueKeepMask(values: ReadonlyArray<string | null | undefined>): DG.BitSet {
+  const seen = new Set<string>();
+  // BitSet.create populates via init(), which calls the predicate for i = 0..n-1 in order,
+  // so the stateful `seen` set sees values left-to-right and the first occurrence wins.
+  return DG.BitSet.create(values.length, (i) => {
+    const v = values[i];
+    if (v == null || v === '') return true;
+    if (seen.has(v)) return false;
+    seen.add(v);
+    return true;
+  });
 }

@@ -27,6 +27,7 @@ import {
   remapSingleRLabel,
   rGroupTargetWarnings,
   substituteRLabelWithRingDigit,
+  uniqueKeepMask,
   validateParams,
 } from '../polytool/pt-chem-enum';
 
@@ -39,6 +40,11 @@ function canon(smi: string, rdkit: RDModule): string {
     expect(mol.is_valid(), true, `RDKit rejected SMILES: ${smi}`);
     return mol.get_smiles();
   } finally { mol.delete(); }
+}
+
+/** Materializes a BitSet keep-mask into a plain boolean[] for element-wise comparison. */
+function maskBools(bs: DG.BitSet): boolean[] {
+  return Array.from({length: bs.length}, (_, i) => bs.get(i));
 }
 
 // ─── Regex / normalization / remap — no RDKit required ──────────────────────
@@ -232,6 +238,60 @@ category('PolyTool: ChemEnum: count & validate', () => {
       [2, [makeRGroup('O[*:2]', 2, 'a')]],
     ]), ChemEnumModes.Zip);
     expect(count, -1);
+  });
+});
+
+// ─── Output dedup keep-mask — no RDKit required ─────────────────────────────
+
+category('PolyTool: ChemEnum: dedup', () => {
+  test('keeps first occurrence, drops later duplicates', async () => {
+    expectArray(maskBools(uniqueKeepMask(['A', 'B', 'A', 'C', 'B'])), [true, true, false, true, false]);
+  });
+
+  test('blank and nullish entries are never collapsed', async () => {
+    // Empty/invalid rows (e.g. failed canonicalization) must each be kept, not merged into one.
+    expectArray(maskBools(uniqueKeepMask(['', '', 'A', null, 'A', undefined])), [true, true, true, true, false, true]);
+  });
+});
+
+// ─── Dedup actually shrinks the enumerated output (the "Remove duplicates" option) ──
+
+/** Enumerates, canonicalizes every product, and reports raw vs unique counts — mirrors executeEnumeration. */
+function enumeratedVsUnique(
+  cores: ReturnType<typeof makeCore>[], rGroups: Map<number, ReturnType<typeof makeRGroup>[]>, rdkit: RDModule,
+): {raw: number, unique: number} {
+  const results = enumerate({cores, rGroups, mode: ChemEnumModes.Cartesian}, rdkit)!;
+  const canonical = results.map((r) => canon(r.smiles, rdkit));
+  const unique = uniqueKeepMask(canonical).trueCount;
+  return {raw: results.length, unique};
+}
+
+category('PolyTool: ChemEnum: dedup reduces count', () => {
+  let rdkit: RDModule;
+
+  before(async () => { rdkit = await getRdKitModule(); });
+
+  test('duplicate cores: 6 enumerated collapse to 3 unique', async () => {
+    // Two byte-identical cores mean every product is generated twice over.
+    const cores = [makeCore('C[*:1]', 'dup-a'), makeCore('C[*:1]', 'dup-b')];
+    const r1 = [makeRGroup('O[*:1]', 1, 'a'), makeRGroup('S[*:1]', 1, 'b'), makeRGroup('N[*:1]', 1, 'c')];
+    const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
+    expect(raw, 6); // raw enumerated rows
+    expect(unique, 3); // after "Remove duplicates"
+    expect(unique < raw, true); // the count actually drops
+  });
+
+  test('structural dedup: equivalent R-group SMILES collapse to one molecule', async () => {
+    // Phenyl written aromatic vs kekulized is the SAME group — dedup is by canonical SMILES, not string.
+    const cores = [makeCore('C[*:1]', 'c')];
+    const r1 = [
+      makeRGroup('c1ccccc1[*:1]', 1, 'aromatic'),
+      makeRGroup('C1=CC=CC=C1[*:1]', 1, 'kekulized'),
+      makeRGroup('Cl[*:1]', 1, 'chloro'),
+    ];
+    const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
+    expect(raw, 3); // three R-groups → three enumerated rows
+    expect(unique, 2); // the two phenyls are one molecule
   });
 });
 
