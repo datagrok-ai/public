@@ -70,7 +70,7 @@ export async function hierarchicalClusteringSequencesApp() : Promise<void> {
 //input: dataframe df 
 //input: column_list colNameList 
 //input: string distance = 'euclidean' { choices: ["euclidean","manhattan"] }
-//input: string linkage = 'ward' { choices: ["single","complete","average","weighted","centroid","median","ward"] }
+//input: string linkage = 'ward' { choices: ["single","complete","average","weighted","median","ward"] }
 export async function hierarchicalClustering(df: DG.DataFrame, colNameList: DG.ColumnList, distance: any, linkage: string) : Promise<void> {
   await PackageFunctions.hierarchicalClustering(df, colNameList, distance, linkage);
 }

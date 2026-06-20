@@ -52,7 +52,10 @@ export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.Dat
   const columnsInputDiv = ui.div([columnsInput]);
 
   const distanceInput = ui.input.choice('Distance', {value: DistanceMetric.Euclidean, items: Object.values(DistanceMetric)});
-  const linkageInput = ui.input.choice('Linkage', {value: LinkageMethod.Ward, items: Object.values(LinkageMethod)});
+  // Centroid linkage is excluded: the underlying fastcluster WASM routine for centroid
+  // performs an out-of-bounds heap access on real-world inputs (memory access out of bounds).
+  const linkageInput = ui.input.choice('Linkage', {value: LinkageMethod.Ward,
+    items: Object.values(LinkageMethod).filter((method) => method !== LinkageMethod.Centroid)});
 
   const verticalDiv = ui.divV([
     tableInput.root,
@@ -86,6 +89,13 @@ export async function hierarchicalClusteringUI(
   neighborWidth: number = 300,
   options?: {tableView?: DG.TableView}
 ): Promise<void> {
+  // Centroid linkage crashes the fastcluster WASM routine (out-of-bounds heap access) on
+  // real-world data, leaving the clustering progress indicator hanging. Bail out before any
+  // compute/loader is started so callers get a clear message instead of a silent infinite spinner.
+  if (linkage === LinkageMethod.Centroid) {
+    grok.shell.warning('Centroid linkage is currently unavailable for hierarchical clustering.');
+    return;
+  }
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
   const colNameSet: Set<string> = new Set(colNameList);

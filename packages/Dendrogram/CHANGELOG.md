@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## v.next
+
+* GROK-19595 Hierarchical Clustering: Remove the broken "centroid" linkage option (the fastcluster WASM centroid routine crashes with "memory access out of bounds" on real data and hangs the progress indicator)
+
 ## 1.4.14 (2026-05-19)
 
 * GROK-20143 Demo: Heatmap: cells are editable due to incorrect demo setup
