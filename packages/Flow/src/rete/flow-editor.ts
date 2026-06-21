@@ -26,6 +26,7 @@ import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
@@ -1373,6 +1374,26 @@ export class FlowEditor {
 
   async zoomToFit(): Promise<void> {
     await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
+  }
+
+  /** Re-arrange the whole graph with the layered/banded layout used by the
+   *  creation-script importer (`rete/graph-layout.ts`): layers from the
+   *  connection structure (every edge points right), one band per disjoint
+   *  path, producer paths above the paths that consume them. Repositions every
+   *  node and zooms to fit. */
+  async autoLayout(): Promise<void> {
+    const nodes = this.editor.getNodes();
+    if (nodes.length === 0) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      const source = byId.get(c.source);
+      const target = byId.get(c.target);
+      if (source && target) edges.push({source, target});
+    }
+    layoutGraph(nodes, edges, computeLayers(nodes, edges));
+    for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
+    await this.zoomToFit();
   }
 
   // ---------- lifecycle ----------

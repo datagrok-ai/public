@@ -18,6 +18,7 @@ src/
 │   ├── node-component.tsx        # React Node + Socket components (rendered to DOM by ReactPlugin)
 │   ├── flow-editor.ts            # NodeEditor + AreaPlugin + ConnectionPlugin + ReactPlugin wiring
 │   ├── node-factory.ts           # Type registry: createNode(typeName), DG.Func discovery
+│   ├── graph-layout.ts           # Shared layered/banded layout (importer + Clean Layout ribbon)
 │   └── nodes/
 │       ├── input-nodes.ts        # 13 input types — //input: lines
 │       ├── output-nodes.ts       # Table & Value (with auto-type detect)
@@ -120,20 +121,23 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   `addChemPropertiesColumns`), while the compiler still resolves the pass-through to the same
   expression — no spurious variables in the generated script.
 - **Layout**: all imported nodes start **collapsed** (title bar only — expand per node as needed).
-  Layered left-to-right with **one horizontal band per disjoint path** (weakly connected component):
-  - Columns are **global** — shared x per build layer (`max(source layers)+1`, assigned during the
-    build), width = widest estimated node in that layer — so every edge points right and same-depth
-    nodes line up across bands.
+  The arrangement itself lives in [rete/graph-layout.ts](src/rete/graph-layout.ts) (`layoutGraph`), shared
+  with the **Clean Layout** ribbon action so both produce the same result. Layered left-to-right with
+  **one horizontal band per disjoint path** (weakly connected component):
+  - Columns are **global** — shared x per layer, width = widest estimated node in that layer — so every
+    edge points right and same-depth nodes line up across bands. The importer feeds its incrementally
+    assigned layer map (`max(source layers)+1`); `FlowEditor.autoLayout` derives layers from the
+    connection structure via `computeLayers` (longest-path).
   - Each component is a contiguous band; within a band/column, nodes order by predecessor barycenter
     and greedily stack (`max(nextFreeY, barycenter-h/2, bandTop)`) so chains read as straight lanes,
     branches fan out, and nothing overlaps.
   - Bands are stacked in **dependency order** (`orderedComponents`): a path that produces a table
     (its `SetVar` variable) is placed **above** the path that reads it through a `Select Table` node
-    (matched by normalized name), with ties broken by script/creation order. Because the execution
-    topological sort ranks components by topmost-node `y`, this band order *is* the execution order —
-    producers run before the consumers that read their tables.
-  - `estimateNodeWidth`/`estimateNodeHeight` are exported for the layout-invariant tests
-    (edges-point-right, no-overlap, producer-above-consumer).
+    (matched by normalized name), with ties broken by node order. Because the execution topological
+    sort ranks components by topmost-node `y`, this band order *is* the execution order — producers run
+    before the consumers that read their tables.
+  - `estimateNodeWidth`/`estimateNodeHeight` live in `graph-layout.ts` (re-exported from the importer
+    for the layout-invariant tests: edges-point-right, no-overlap, producer-above-consumer).
 
 The core is a **pure, synchronous, DOM-free** `buildCreationScriptGraph(script): BuiltGraph` — it
 constructs `FlowNode` instances + connection records but touches no editor, so it is the unit-test
@@ -156,6 +160,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
+| `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 

@@ -51,7 +51,11 @@ import * as DG from 'datagrok-api/dg';
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
 import {TypedSocket} from '../rete/sockets';
+import {layoutGraph} from '../rete/graph-layout';
 import {constLabel} from '../rete/nodes/utility-nodes';
+
+// Re-exported for the layout-invariant tests, which import them from here.
+export {estimateNodeWidth, estimateNodeHeight} from '../rete/graph-layout';
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType,
 } from '../rete/node-factory';
@@ -615,171 +619,11 @@ class CreationScriptBuilder {
 
   // ---------- layout ----------
 
-  /** Layered left-to-right layout, one **horizontal band per disjoint path**.
-   *
-   *  Columns are global (shared x per build layer, width = widest node in that
-   *  layer) so every edge points rightward and same-depth nodes line up across
-   *  bands. Each weakly connected component gets its own vertical band, and the
-   *  bands are stacked in **dependency order**: a path that produces a table
-   *  (its `SetVar` variable) sits above the path that reads it through a
-   *  `Select Table` node — so the visual top-to-bottom order matches execution
-   *  (the lower path implicitly consumes the upper one) and disjoint paths stay
-   *  grouped instead of interleaving. Ties break by script (creation) order.
-   *
-   *  Within a band/column, nodes order by predecessor barycenter and greedily
-   *  align to it (chains read as straight lanes, branches fan out, no overlap). */
+  /** Layered left-to-right layout, one **horizontal band per disjoint path** —
+   *  delegated to the shared `layoutGraph` (see `rete/graph-layout.ts`), using
+   *  the layer map assigned incrementally during the build. */
   private layout(): void {
-    const marginX = 40;
-    const marginY = 40;
-    const columnGap = 60;
-    const rowGap = 24;
-    const bandGap = 56;
-
-    // Global column x positions from the widest node per layer.
-    const columnWidth = new Map<number, number>();
-    for (const node of this.nodes) {
-      const layer = this.layer.get(node) ?? 0;
-      columnWidth.set(layer, Math.max(columnWidth.get(layer) ?? 0, estimateNodeWidth(node)));
-    }
-    const columnX = new Map<number, number>();
-    let x = marginX;
-    for (const layer of Array.from(columnWidth.keys()).sort((a, b) => a - b)) {
-      columnX.set(layer, x);
-      x += columnWidth.get(layer)! + columnGap;
-    }
-
-    const predecessors = new Map<FlowNode, FlowNode[]>();
-    for (const c of this.connections) {
-      let list = predecessors.get(c.target);
-      if (!list) predecessors.set(c.target, list = []);
-      list.push(c.source);
-    }
-
-    const centerY = new Map<FlowNode, number>();
-    let bandTop = marginY;
-    for (const component of this.orderedComponents()) {
-      const byLayer = new Map<number, FlowNode[]>();
-      for (const node of component) {
-        const layer = this.layer.get(node) ?? 0;
-        let bucket = byLayer.get(layer);
-        if (!bucket) byLayer.set(layer, bucket = []);
-        bucket.push(node);
-      }
-
-      let bandBottom = bandTop;
-      for (const layer of Array.from(byLayer.keys()).sort((a, b) => a - b)) {
-        const keyed = byLayer.get(layer)!.map((node, index) => {
-          const centers = (predecessors.get(node) ?? [])
-            .map((p) => centerY.get(p))
-            .filter((y): y is number => y !== undefined);
-          const barycenter = centers.length > 0 ?
-            centers.reduce((a, b) => a + b, 0) / centers.length :
-            Number.POSITIVE_INFINITY;
-          return {node, index, barycenter};
-        });
-        keyed.sort((a, b) => a.barycenter === b.barycenter ? a.index - b.index : a.barycenter - b.barycenter);
-
-        let nextFreeY = bandTop;
-        for (const {node, barycenter} of keyed) {
-          const height = estimateNodeHeight(node);
-          const desiredTop = Number.isFinite(barycenter) ? barycenter - height / 2 : nextFreeY;
-          const top = Math.max(nextFreeY, desiredTop, bandTop);
-          node.pos = {x: columnX.get(this.layer.get(node) ?? 0)!, y: top};
-          centerY.set(node, top + height / 2);
-          nextFreeY = top + height + rowGap;
-          bandBottom = Math.max(bandBottom, top + height);
-        }
-      }
-      bandTop = bandBottom + bandGap;
-    }
-  }
-
-  /** Weakly connected components (disjoint paths), each as a node list in
-   *  creation order, ordered top-to-bottom for layout: a component that
-   *  produces a table (a `SetVar` variable) precedes the component that reads
-   *  it via a `Select Table` node; ties break by earliest creation index. */
-  private orderedComponents(): FlowNode[][] {
-    const indexOf = new Map<FlowNode, number>();
-    this.nodes.forEach((n, i) => indexOf.set(n, i));
-
-    // Undirected adjacency over the graph's connections.
-    const adjacency = new Map<FlowNode, FlowNode[]>();
-    for (const node of this.nodes) adjacency.set(node, []);
-    for (const c of this.connections) {
-      adjacency.get(c.source)!.push(c.target);
-      adjacency.get(c.target)!.push(c.source);
-    }
-
-    const componentOf = new Map<FlowNode, number>();
-    const components: FlowNode[][] = [];
-    for (const start of this.nodes) {
-      if (componentOf.has(start)) continue;
-      const id = components.length;
-      const members: FlowNode[] = [];
-      const stack = [start];
-      componentOf.set(start, id);
-      while (stack.length > 0) {
-        const node = stack.pop()!;
-        members.push(node);
-        for (const next of adjacency.get(node) ?? []) {
-          if (!componentOf.has(next)) {
-            componentOf.set(next, id);
-            stack.push(next);
-          }
-        }
-      }
-      members.sort((a, b) => indexOf.get(a)! - indexOf.get(b)!);
-      components.push(members);
-    }
-
-    // Producer → consumer edges between components, matched by normalized name
-    // (a Select Table's tableName ↔ a SetVar's variableName).
-    const norm = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const producerOf = new Map<string, number>();
-    components.forEach((members, id) => {
-      for (const node of members) {
-        if (node.dgFunc?.name?.toLowerCase() === 'setvar') {
-          const key = norm(node.inputValues['variableName']);
-          if (key !== '' && !producerOf.has(key)) producerOf.set(key, id);
-        }
-      }
-    });
-
-    const inDegree = components.map(() => 0);
-    const downstream = components.map(() => new Set<number>());
-    components.forEach((members, id) => {
-      for (const node of members) {
-        if (node.dgTypeName !== SELECT_TABLE_TYPE) continue;
-        const producer = producerOf.get(norm(node.properties['tableName']));
-        if (producer !== undefined && producer !== id && !downstream[producer].has(id)) {
-          downstream[producer].add(id);
-          inDegree[id]++;
-        }
-      }
-    });
-
-    // Kahn over components; among ready ones, pick the earliest by creation.
-    const earliest = components.map((m) => (m.length > 0 ? indexOf.get(m[0])! : 0));
-    const ready: number[] = [];
-    for (let id = 0; id < components.length; id++)
-      if (inDegree[id] === 0) ready.push(id);
-    const order: number[] = [];
-    const placed = new Set<number>();
-    while (ready.length > 0) {
-      let best = 0;
-      for (let i = 1; i < ready.length; i++)
-        if (earliest[ready[i]] < earliest[ready[best]]) best = i;
-      const id = ready.splice(best, 1)[0];
-      order.push(id);
-      placed.add(id);
-      for (const next of downstream[id])
-        if (--inDegree[next] === 0) ready.push(next);
-    }
-    // Any components left in a dependency cycle: append in creation order.
-    for (let id = 0; id < components.length; id++)
-      if (!placed.has(id)) order.push(id);
-
-    return order.map((id) => components[id]);
+    layoutGraph(this.nodes, this.connections.map((c) => ({source: c.source, target: c.target})), this.layer);
   }
 }
 
@@ -787,26 +631,6 @@ class CreationScriptBuilder {
 
 function isPrimitive(v: unknown): v is string | number | boolean {
   return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
-}
-
-/** Estimated rendered height in canvas units, used for stacking before the
- *  DOM exists. Collapsed nodes render as a bare title bar. Expanded: title
- *  ≈ 28px, description ≈ 22px, each socket row ≈ 20px, body padding 12px
- *  (see funcflow.css: .ff-node-title / .ff-socket-row). Input and output
- *  columns sit side by side, so rows = max of the two. Exported for the
- *  layout-invariant tests. */
-export function estimateNodeHeight(node: FlowNode): number {
-  if (node.collapsed) return 30;
-  const rows = Math.max(Object.keys(node.inputs).length, Object.keys(node.outputs).length, 1);
-  return 28 + (node.description ? 22 : 0) + 12 + rows * 20;
-}
-
-/** Estimated rendered width. Collapsed nodes are title-driven (CSS min-width
- *  160px, ≈6.5px/char at the 12px title font plus status dot and paddings);
- *  expanded nodes are dominated by their socket-label rows. */
-export function estimateNodeWidth(node: FlowNode): number {
-  const labelWidth = 44 + String(node.label ?? '').length * 6.5;
-  return Math.max(node.collapsed ? 160 : 220, labelWidth);
 }
 
 
