@@ -190,11 +190,19 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
     const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
+    // The stress suite is the stressTest-marked tests. Filter the registry directly
+    // (not all installed @datagrok-libraries/test versions honor the stressTest run
+    // option), so only stress-marked tests run and the baseline can be 100%.
+    for (const key of Object.keys(tests)) {
+        const cat: any = (tests as any)[key];
+        if (cat?.tests)
+            cat.tests = cat.tests.filter((t: any) => t.options?.stressTest);
+    }
     // Wall-clock window for this task, so stress runs can be correlated with the
     // container CPU/memory time series (UTC, matching the docker_stats collector).
     const taskStart = new Date().toISOString();
     for (const key of Object.keys(tests))
-        if (runAll || categories.has(key))
+        if ((runAll || categories.has(key)) && (tests as any)[key]?.tests?.length)
             data.push(...(await runTests({
                 category: key,
                 test: undefined,
