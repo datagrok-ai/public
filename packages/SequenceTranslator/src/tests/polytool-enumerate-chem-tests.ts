@@ -602,6 +602,7 @@ category('PolyTool: ChemEnum: defaults', () => {
     expect(parseChemEnumDefaults('not json'), null);
     expect(parseChemEnumDefaults(JSON.stringify({rGroups: {}})), null); // no cores
     expect(parseChemEnumDefaults(JSON.stringify({cores: []})), null); // no rGroups
+    expect(parseChemEnumDefaults(JSON.stringify({cores: [], rGroups: {}})), null); // empty cores must not block the CSV fallback
   });
 
   test('serialize → parse round-trips cores and R-groups', async () => {

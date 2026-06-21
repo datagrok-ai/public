@@ -29,7 +29,8 @@ export function parseChemEnumDefaults(json: string | null | undefined): ChemEnum
   if (!json) return null;
   try {
     const parsed = JSON.parse(json);
-    if (!Array.isArray(parsed?.cores) || !parsed.cores.every((s: unknown) => typeof s === 'string') ||
+    if (!Array.isArray(parsed?.cores) || parsed.cores.length === 0 ||
+      !parsed.cores.every((s: unknown) => typeof s === 'string') ||
       typeof parsed?.rGroups !== 'object' || parsed.rGroups === null)
       return null;
     return parsed as ChemEnumHistoryEntry;
