@@ -199,6 +199,7 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
                 category: key,
                 test: undefined,
                 testContext: undefined,
+                stressTest: true,
                 nodeOptions: {package: _package}
             })));
     if (data.length === 0)
