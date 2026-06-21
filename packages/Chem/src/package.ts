@@ -2143,8 +2143,8 @@ export class PackageFunctions {
     fingerprint: string,
     @grok.decorators.param({type: 'int'}) limit: number,
     minScore: number): Promise<DG.DataFrame> {
-    const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
-      fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
+    const res = await chemSimilaritySearch(col, molecule, metricName, limit, minScore,
+      fingerprint as Fingerprint);
     return res ?? DG.DataFrame.create();
   }
 

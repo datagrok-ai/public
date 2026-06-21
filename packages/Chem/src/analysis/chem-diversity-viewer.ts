@@ -28,6 +28,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
     this.tooltipUse = tooltipUse;
   }
 
+
   async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;

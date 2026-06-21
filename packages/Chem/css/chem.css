@@ -205,45 +205,28 @@
 
 .chem-similarity-header {
   justify-content: space-between;
-  align-items: center; /* keep the 24px icons on the title's baseline */
+  align-items: center;
 }
 
+/* the grok icons are pre-styled (color/hover/cursor); we only push the group to the right,
+   give the SVG icon a box so it can't tile, and add a toggle highlight that works for both */
 .chem-similarity-action-group {
   align-items: center;
-  gap: 2px;
-  margin-right: 4px;
-  margin-left: auto; /* push the icons to the right edge, next to the metrics link */
+  gap: 4px;
+  margin-left: auto;
 }
 
-.chem-similarity-action-btn {
+.chem-similarity-action-group > i {
   width: 24px;
   height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--grey-4);
-  padding: 0;
 }
 
-.chem-similarity-action-btn:hover {
-  background-color: var(--steel-1);
-}
-
-.chem-similarity-action-btn:focus-visible { /* keyboard focus ring (WCAG 2.4.7) */
-  outline: 2px solid var(--blue-1);
-  outline-offset: 1px;
-}
-
-.chem-similarity-action-btn.active {
-  color: var(--blue-1); /* toggled on — matches the platform filter-toggle icon */
-}
-
-.chem-similarity-action-btn.chem-similarity-action-disabled {
-  opacity: 0.4;
-  pointer-events: none;
+.chem-similarity-action-group > i.active {
+  background-color: var(--steel-2);
 }
 
 .chem-similarity-prop-label {
