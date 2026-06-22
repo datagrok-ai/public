@@ -88,7 +88,7 @@
 
 #argument: t, Reduction
   t0 = 0.0   {units: min; caption: Initial; category: Misc}                       [Simulation start time]
-  t1 = 200   {units: min; caption: Reduction;   category: Duration; min: 200; max: 500}  [Duration of the cysteamine reduction stage (cFAE half-Ab exchange)]
+  t1 = 200   {units: min; caption: Reduction;   category: Duration; min: 200; max: 1000}  [Duration of the cysteamine reduction stage (cFAE half-Ab exchange)]
    h = 0.5   {units: min; caption: Step;    category: Misc; min: 0.1; max: 2}     [ODE solver time step. Smaller = more accurate]
 
 #update:  Filtration
@@ -155,4 +155,4 @@
            P =    1  {units: atm;   caption: Pressure;    category: Parameters;  min: 1;   max: 2}              [Total headspace pressure]
   switchTime =  135  {units: min;   caption: Switch;   category: Duration;        min: 70;  max: 180; step: 10}  [Transition from UF concentration (VL falls) to diafiltration (VL constant)]
 
-#meta.inputs: mode {caption: Scenario; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Load a scenario, then experiment — change MEA dose, temperature, switch time, or any other input]
+#meta.inputs: mode {caption: Scenario; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-modes.csv")} [Load a scenario, then experiment — change MEA dose, temperature, switch time, or any other input]

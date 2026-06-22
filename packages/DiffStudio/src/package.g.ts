@@ -246,9 +246,9 @@ export async function ivpModel_Pollution(_t0: number, _t1: number, _h: number, y
 //meta.role: model
 //meta.diffStudioModel: System:AppData/DiffStudio/models/bioreactor.ivp
 //editor: Compute2:RichFunctionViewEditor
-//input: string mode {caption: Scenario; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv"); propagateChoice: all} [Load a scenario, then experiment — change MEA dose, temperature, switch time, or any other input]
+//input: string mode {caption: Scenario; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-modes.csv"); propagateChoice: all} [Load a scenario, then experiment — change MEA dose, temperature, switch time, or any other input]
 //input: double _t0 = 0 {nullable: false; units: min; caption: Initial; category: Misc}                       [Simulation start time]
-//input: double _t1 = 200 {nullable: false; units: min; caption: Reduction;   category: Duration; min: 200; max: 500}  [Duration of the cysteamine reduction stage (cFAE half-Ab exchange)]
+//input: double _t1 = 200 {nullable: false; units: min; caption: Reduction;   category: Duration; min: 200; max: 1000}  [Duration of the cysteamine reduction stage (cFAE half-Ab exchange)]
 //input: double _h = 0.5 {nullable: false; units: min; caption: Step;    category: Misc; min: 0.1; max: 2}     [ODE solver time step. Smaller = more accurate]
 //input: double FFox = 0.2 {nullable: false; units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [Parental F405L IgG1 (intact homodimer) — initial concentration]
 //input: double KKox = 0.2 {nullable: false; units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [Parental K409R IgG1 (intact homodimer) — initial concentration]
