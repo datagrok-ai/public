@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* Inputs lookup: Apply the preselected input set's values on form load (previously they appeared only after toggling the choice)
+
 ## 1.6.4 (2026-06-16)
 
 * Use Rich Function View for Model Hub items
