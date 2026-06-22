@@ -69,6 +69,9 @@ export class PackageFunctions {
   static async openCreationScriptFlowDialog(script: string, show: boolean = true): Promise<DG.Dialog> {
     const view = new FuncFlowView();
     view.name = `Creation Script`;
+    // Inside the cramped dialog the overview adds clutter — start it minimized;
+    // expand it once the flow is opened in the full editor.
+    view.setMinimapCollapsed(true);
     try {
       await view.loadFromCreationScript(script);
     } catch (e) {
@@ -78,6 +81,7 @@ export class PackageFunctions {
     const d = ui.dialog({title: 'Creation Script Flow'})
       .add(view.root)
       .addButton('Open In Editor', () => {
+        view.setMinimapCollapsed(false);
         grok.shell.addView(view);
         d.close();
       });

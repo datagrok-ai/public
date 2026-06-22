@@ -9,6 +9,7 @@ import './tests/creation-script-import-tests';
 import './tests/panel-tests';
 import './tests/layout-tests';
 import './tests/order-edge-tests';
+import './tests/minimap-tests';
 
 export let _package = new DG.Package();
 export { tests };
