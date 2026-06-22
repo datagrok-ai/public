@@ -19,7 +19,9 @@ category('Dapi: fetch', () => {
 
     if (!res.ok)
       throw new Error('Post failed');
-  }, {stressTest: true});
+  });  // not stressTest: POSTs to an external echo service (jsonplaceholder);
+       // under load it measures that host + the internet, not the stand. The
+       // 'get' test (stand-local webRoot) covers the fetchProxy path under stress.
 
   test('get', async () => {
     // Stand-local asset (the package's own webRoot) so the stress signal reflects the
