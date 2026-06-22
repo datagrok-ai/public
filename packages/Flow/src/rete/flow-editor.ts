@@ -21,7 +21,7 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowNode, FlowScheme} from './scheme';
+import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
@@ -190,6 +190,8 @@ export class FlowEditor {
   /** When a connection lands on a ValueOutput node and the source slot has a
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
+    // Execution-ordering edges carry no data type — never derive an output type from one.
+    if (isExecKey(String(connection.targetInput)) || isExecKey(String(connection.sourceOutput))) return;
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
     // Match by registered type, not label — titles are user-editable.
     if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
@@ -1033,6 +1035,8 @@ export class FlowEditor {
   private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
     data.element.dataset.connectionId = data.payload.id;
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
+    // Execution-ordering edges render dashed/gray (CSS keys off data-order).
+    data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
   }
 
   /** Set the status of a connection (drives the data-flow animation). */
