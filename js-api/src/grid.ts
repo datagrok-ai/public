@@ -895,9 +895,6 @@ export class FormViewer extends Viewer<IFormSettings> {
    *  (`Current` → dataFrame.currentRow, `Mouse Over` → mouseOverRow, `None`
    *  → an independent internal row). Returns -1 when no row is selected. */
   get row(): number { return api.grok_FormViewer_Get_Row(this.dart); }
-
-  /** Names of the columns currently bound to the form's field handlers. */
-  get columnNames(): string[] { return api.grok_FormViewer_Get_ColumnNames(this.dart); }
 }
 
 
