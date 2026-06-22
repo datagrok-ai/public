@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.6.5 (2026-06-22)
+
+* Set default locale to C.UTF-8 for container build
+
 # 2.6.4 (2026-05-18)
 
 * Snowflake: OAuth authentication support
