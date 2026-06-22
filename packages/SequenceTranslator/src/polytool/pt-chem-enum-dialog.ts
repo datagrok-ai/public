@@ -34,6 +34,7 @@ import {
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
+import {getMarkushDefaults} from './pt-chem-enum-settings';
 import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
@@ -697,7 +698,7 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
 
 // ─── Main dialog ────────────────────────────────────────────────────────────
 
-interface ChemEnumDialogState {
+export interface ChemEnumDialogState {
   cores: ChemEnumCore[];
   rGroupsByNum: Map<number, ChemEnumRGroup[]>;
   mode: ChemEnumMode;
@@ -711,7 +712,7 @@ interface ChemEnumDialogState {
 const HISTORY_KEY = 'd4-markush-enumeration-history';
 const HISTORY_MAX = 10;
 
-interface ChemEnumHistoryEntry {
+export interface ChemEnumHistoryEntry {
   /** ISO timestamp of when the enumeration was recorded. */
   date: string;
   /** One-line summary: `"6 cores · R1:6 · R2:4"`. */
@@ -754,7 +755,7 @@ function summarizeState(state: ChemEnumDialogState): string {
     (partsR.length ? ' · ' + partsR.join(' · ') : '');
 }
 
-function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
+export function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
   const rGroups: { [n: string]: string[] } = {};
   for (const [n, list] of state.rGroupsByNum)
     rGroups[String(n)] = list.map((rg) => rg.originalSmiles);
@@ -777,7 +778,7 @@ function recordHistory(state: ChemEnumDialogState): void {
 }
 
 /** Reparses SMILES through `makeCore` / `makeRGroup` so validation runs with the current rdkit. */
-function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
+export function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
   state.cores = entry.cores.map((smi) => makeCore(smi, '', rdkit));
   state.rGroupsByNum = new Map();
   for (const [nStr, list] of Object.entries(entry.rGroups ?? {})) {
@@ -932,17 +933,22 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     panel.bindActionButton(runBtn as HTMLButtonElement);
     panel.appActionHost?.appendChild(runBtn);
 
-    // Seed the panel: most-recent history wins; if there is none, fall back to the shipped
-    // demo CSVs so the app never opens to an empty screen. Both paths mutate panel.state and
-    // panel.refresh() picks the changes up.
+    // Seed the panel so it never opens to an empty screen, in precedence order — the user's
+    // most-recent history wins, else the admin-configured package-settings defaults, else the
+    // shipped demo CSVs. Every path mutates panel.state and panel.refresh() picks the changes up.
+    const applyAndRefresh = (entry: ChemEnumHistoryEntry) => {
+      applyHistoryEntry(entry, panel.state, rdkit);
+      panel.refresh();
+    };
     const history = readHistory();
     if (history.length > 0) {
-      applyHistoryEntry(history[0], panel.state, rdkit);
-      panel.refresh();
+      applyAndRefresh(history[0]);
     } else {
-      preloadFromFiles(panel.state, rdkit).then((loaded) => {
-        if (loaded) panel.refresh();
-      });
+      const settingsEntry = await getMarkushDefaults();
+      if (settingsEntry)
+        applyAndRefresh(settingsEntry);
+      else
+        preloadFromFiles(panel.state, rdkit).then((loaded) => { if (loaded) panel.refresh(); });
     }
 
     const view = DG.View.create();
@@ -974,8 +980,9 @@ interface ChemEnumPanel {
 
 type ChemEnumLayout = 'dialog' | 'app';
 
-function buildChemEnumPanel(
+export function buildChemEnumPanel(
   rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
+  opts: {hideAppendToTable?: boolean} = {},
 ): ChemEnumPanel {
   const state: ChemEnumDialogState = {
     cores: preloadCore ? [preloadCore] : [],
@@ -1183,6 +1190,9 @@ function buildChemEnumPanel(
     items: grok.shell.tables, nullable: true,
     onValueChanged: (v) => { state.appendToTable = v; },
   });
+  // The defaults editor reuses this panel only to capture cores + R-groups; appending to a
+  // specific open table is meaningless as a saved default, so the caller can hide the input.
+  if (opts.hideAppendToTable) appendToTableInput.root.style.display = 'none';
 
   const removeDuplicatesInput = ui.input.bool('Remove duplicates', {
     value: state.removeDuplicates,

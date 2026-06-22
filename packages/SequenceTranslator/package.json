@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.11.0",
+  "version": "1.11.3",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -19,6 +19,12 @@
       "propertyType": "string",
       "defaultValue": "System:AppData/SequenceTranslator/monomers",
       "nullable": false
+    },
+    {
+      "name": "MarkushDefaults",
+      "description": "Admin-configured defaults (cores, R-groups, mode and output options) that seed the Markush Enumerator app, as a JSON blob. Distributed per user group by the platform. Leave blank to fall back to the shipped CSV files.",
+      "propertyType": "string",
+      "nullable": true
     }
   ],
   "dependencies": {
@@ -30,7 +36,7 @@
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.26.0",
     "lodash": "^4.17.21",
-    "@datagrok-libraries/hwe": "^1.0.0", 
+    "@datagrok-libraries/hwe": "^1.0.0",
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",

@@ -27,6 +27,7 @@ import {
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
+import {markushSettingsEditorWidget} from './polytool/pt-chem-enum-settings';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
@@ -554,6 +555,16 @@ export class PackageFunctions {
   })
   static async harmonizedSequenceNotationProviderConstructor(): Promise<typeof CyclizedNotationProvider> {
     return CyclizedNotationProvider;
+  }
+
+  @grok.decorators.func({
+    name: 'Markush Enumerator package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static async markushSettingsEditor(
+    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {
+    return markushSettingsEditorWidget(properties);
   }
 }
 
