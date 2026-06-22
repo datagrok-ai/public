@@ -623,6 +623,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
   }
 
+  get isFrontPanel(): boolean {
+    return grok.shell.windows.ai.lastElementChild === this.root;
+  }
+
   get rawRender(): boolean { return this._rawRender; }
   get noPrompt(): boolean { return this._noPrompt; }
 
