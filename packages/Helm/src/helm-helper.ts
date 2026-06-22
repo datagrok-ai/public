@@ -149,6 +149,9 @@ export class HelmHelper implements IHelmHelper {
       col.setTag('units', 'helm');
       col.setTag('.alphabetIsMultichar', 'true');
       col.setTag('alphabet', 'UN');
+      // set the width of widget in tag.
+      const ww = Math.floor(window.innerWidth * 0.6);
+      col.setTag('.toAtomicWidgetWidth', ww.toString());
       this._singeHelmDf = DG.DataFrame.fromColumns([col]);
     }
     this._singeHelmDf.col('helm')!.set(0, helm);
