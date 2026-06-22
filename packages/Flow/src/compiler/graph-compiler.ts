@@ -9,7 +9,7 @@
  * inserts into the generated body. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode, FlowConnection} from '../rete/scheme';
+import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
 
@@ -60,10 +60,12 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     if (kind === 'input') {
       const paramName = String(node.properties['paramName'] ?? 'input');
       usedVarNames.add(paramName);
-      // Map every output slot of an input node to the param name.
-      for (const key of Object.keys(node.outputs))
+      // Map every data output slot of an input node to the param name (the
+      // exec-out ordering port carries no data and is skipped).
+      const outKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
+      for (const key of outKeys)
         outputVarMap.set(`${nodeId}:${key}`, paramName);
-      const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
+      const firstOutKey = outKeys[0] ?? 'value';
       steps.push({
         nodeId, nodeType: 'input', funcName: '',
         variableName: paramName,
@@ -77,7 +79,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
 
     if (kind === 'output') {
       const paramName = String(node.properties['paramName'] ?? 'result');
-      const firstInKey = Object.keys(node.inputs)[0] ?? 'value';
+      const firstInKey = Object.keys(node.inputs).find((k) => !isExecKey(k)) ?? 'value';
       const inputExpr = resolveInputExpr(nodeId, firstInKey, incoming, outputVarMap);
       steps.push({
         nodeId, nodeType: 'output', funcName: '',
@@ -95,7 +97,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
       if (utilityKind(node) === 'Breakpoint') {
         const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap);
         for (const key of Object.keys(node.outputs))
-          outputVarMap.set(`${nodeId}:${key}`, inputExpr);
+          if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, inputExpr);
         steps.push({
           nodeId, nodeType: 'utility', funcName: 'Breakpoint',
           variableName: '',
@@ -110,15 +112,16 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
       const step = compileUtilityNode(node, incoming, outputVarMap, usedVarNames);
       steps.push(step);
       for (const key of Object.keys(node.outputs))
-        outputVarMap.set(`${nodeId}:${key}`, step.variableName);
+        if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, step.variableName);
       continue;
     }
 
     // -------- func step --------
+    // Exec ordering ports carry no data — exclude them from data resolution.
     const funcName = node.dgFuncName || node.label;
     const ptCount = node.passthroughCount;
-    const inputKeys = Object.keys(node.inputs);
-    const outputKeys = Object.keys(node.outputs);
+    const inputKeys = Object.keys(node.inputs).filter((k) => !isExecKey(k));
+    const outputKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
 
     // Variable name based on title + first real output's name.
     const realOutputKeys = outputKeys.filter((k) => !k.endsWith(PASSTHROUGH_SUFFIX));
@@ -198,11 +201,12 @@ function compileUtilityNode(
 
   const inputMap = new Map<string, string>();
   for (const key of Object.keys(node.inputs)) {
+    if (isExecKey(key)) continue;
     const conn = incoming.get(node.id)?.get(key);
     if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap));
   }
 
-  const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
+  const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k)) ?? 'value';
   return {
     nodeId: node.id, nodeType: 'utility', funcName: utilityKind(node),
     variableName: varName,

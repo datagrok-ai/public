@@ -107,6 +107,7 @@ export interface IDartApi {
   grok_View_SetIcon(v: any, icon: any): any;
   grok_View_Get_IsPinned(v: any): any;
   grok_View_Set_IsPinned(v: any, value: Bool): any;
+  grok_View_Pin(v: any): any;
   grok_ScriptView_Set_Code(v: any, s: String): any;
   grok_ScriptView_Get_Code(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
@@ -117,6 +118,9 @@ export interface IDartApi {
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
   grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
+  grok_TableView_GetViewerColumns(v: any): any;
+  grok_TableView_CloseAllViewers(v: any): any;
+  grok_TableView_Focus(v: any): any;
   grok_TableView_ReloadData(v: any, enrich: Bool): Promise<any>;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
@@ -348,6 +352,8 @@ export interface IDartApi {
   grok_Viewer_Grid(t: any, json: String): any;
   grok_Viewer_Histogram(t: any, json: String): any;
   grok_Viewer_BoxPlot(t: any, json: String): any;
+  grok_Viewer_Calendar(t: any, json: String): any;
+  grok_Viewer_Form(t: any, json: String): any;
   grok_Viewer_Filters(t: any, json: String): any;
   grok_Viewer_ScatterPlot(t: any, json: String): any;
   grok_Viewer_LineChart(t: any, json: String): any;
@@ -368,6 +374,10 @@ export interface IDartApi {
   grok_ScatterPlotViewer_Get_ViewBox(s: any): any;
   grok_ScatterPlotViewer_Get_XAxisBox(s: any): any;
   grok_ScatterPlotViewer_Get_YAxisBox(s: any): any;
+  grok_ScatterPlotViewer_Get_XAxisSlider(s: any): any;
+  grok_ScatterPlotViewer_Get_YAxisSlider(s: any): any;
+  grok_DensityPlotViewer_Get_XAxisSlider(d: any): any;
+  grok_DensityPlotViewer_Get_YAxisSlider(d: any): any;
   grok_ScatterPlotViewer_PointToScreen(s: any, index: Num): any;
   grok_ScatterPlotViewer_WorldToScreen(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_ScreenToWorld(s: any, x: Num, y: Num): any;
@@ -387,6 +397,9 @@ export interface IDartApi {
   grok_FormViewer_Set_Editable(form: any, editable: Bool): any;
   grok_FormViewer_Get_DesignMode(form: any): any;
   grok_FormViewer_Set_DesignMode(form: any, designMode: Bool): any;
+  grok_FormViewer_BuildForm(f: any, columnNames: any): any;
+  grok_FormViewer_Get_Row(f: any): any;
+  grok_FormViewer_Get_ColumnNames(f: any): any;
   grok_Form_ForDataFrame(table: any, columnNames: any): any;
   grok_Form_Get_Editable(form: any): any;
   grok_Form_Set_Editable(form: any, editable: Bool): any;
@@ -414,6 +427,25 @@ export interface IDartApi {
   grok_BoxPlotViewer_DisableAnnotationRegionDrawing(b: any): any;
   grok_DensityPlotViewer_EnableAnnotationRegionDrawing(d: any, lassoMode: Bool, onAfterDraw: any): any;
   grok_DensityPlotViewer_DisableAnnotationRegionDrawing(d: any): any;
+  grok_PcPlotViewer_ResetView(p: any): any;
+  grok_PcPlotViewer_InvalidateCanvas(p: any): any;
+  grok_PcPlotViewer_Get_ChartBox(p: any): any;
+  grok_PcPlotViewer_Get_ActiveFrame(p: any): any;
+  grok_PcPlotViewer_GetColX(p: any, i: Num): any;
+  grok_PcPlotViewer_Get_ChartW(p: any): any;
+  grok_PcPlotViewer_Get_IsFiltering(p: any): any;
+  grok_CalendarViewer_Get_DateColumn(c: any): any;
+  grok_ConfusionMatrix_Get_IsBinary(m: any): any;
+  grok_ConfusionMatrix_Get_Categories(m: any): any;
+  grok_ConfusionMatrix_Get_Accuracy(m: any): any;
+  grok_ConfusionMatrix_Get_Sensitivity(m: any): any;
+  grok_ConfusionMatrix_GetRowShare(m: any, i: Num): any;
+  grok_ConfusionMatrix_GetColumnShare(m: any, i: Num): any;
+  grok_RocCurve_CalculateAuc(target: any, prediction: any, positiveClass: String): any;
+  grok_CorrelationPlot_GetCorrelation(c: any, c1: any, c2: any): any;
+  grok_TrellisPlot_Get_OneColumnOnly(t: any): any;
+  grok_TrellisPlot_Get_XCategoriesCount(t: any): any;
+  grok_TrellisPlot_Get_YCategoriesCount(t: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;
@@ -897,6 +929,8 @@ export interface IDartApi {
   grok_RangeSlider_Get_Max(rangeSelector: any): any;
   grok_RangeSlider_SetValues(rangeSelector: any, minRange: Num, maxRange: Num, min: Num, max: Num): any;
   grok_RangeSlider_SetShowHandles(rangeSelector: any, value: Bool): any;
+  grok_RangeSlider_Get_IsCustomRange(rs: any): any;
+  grok_RangeSlider_Get_Visible(rs: any): any;
   grok_RangeSlider_Get_OnValuesChanged(rangeSlider: any): any;
   grok_RangeSlider_ScrollTo(rangeSlider: any, newMinValue: Num): any;
   grok_RangeSlider_ScrollBy(rangeSlider: any, delta: Num): any;
@@ -1273,7 +1307,6 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
-  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
@@ -1333,6 +1366,7 @@ export interface IDartApi {
   grok_Column_Get_Tags(c: any): any;
   grok_Column_Matches(c: any, filter: String): any;
   grok_Column_Init(c: any, indexToValue: any): any;
+  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_Column_Clone(c: any, mask: any): any;
   grok_Column_SetAllValues(c: any, value: any): any;
   grok_Column_Get_ValueComparer(c: any): any;
@@ -1575,8 +1609,8 @@ export interface IDartApi {
   grok_BitSet_SetBuffer(b: any, data: any, notify: Bool): any;
   grok_PictureMixin_Get_PictureUrl(p: any): any;
   grok_Project_Get_Path(p: any): any;
-  grok_Project_Get_Options(p: any): any;
   grok_Project_Get_Meta(p: any): any;
+  grok_Project_Get_Options(p: any): any;
   grok_Project_From_Id(id: String): any;
   grok_Project_Get_IsOnServer(p: any): any;
   grok_Project_GetRelations(p: any, link: Bool): any;
@@ -1927,10 +1961,7 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
-  grok_UsageType_Create(): any;
-
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1980,7 +2011,10 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
+  grok_UsageType_Create(): any;
+
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;

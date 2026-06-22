@@ -6,9 +6,10 @@
  *  and a zero-arg factory that returns a fresh `FlowNode` instance. */
 
 import * as DG from 'datagrok-api/dg';
-import {FlowNode} from './scheme';
+import {ClassicPreset} from 'rete';
+import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE} from './scheme';
 import {FuncNode} from './nodes/func-node';
-import {TypedSocket} from './sockets';
+import {TypedSocket, getSocket} from './sockets';
 import {areTypesCompatible} from '../types/type-map';
 
 import {
@@ -211,7 +212,18 @@ export function createNode(typeName: string): FlowNode | null {
   if (!factory) return null;
   const node = factory();
   node.dgTypeName = typeName;
+  addExecPorts(node);
   return node;
+}
+
+/** Add the execution-ordering port pair to a node: an exec-in (accepts many
+ *  predecessors) and an exec-out. Added after the node's own ports so func
+ *  `passthroughCount` indexing and the data-port rows are unaffected. The
+ *  factory builders are left untouched (so the suggestion-menu type probe in
+ *  `getInputTypesForType` never sees an `order` slot). */
+function addExecPorts(node: FlowNode): void {
+  node.addInput(EXEC_IN_KEY, new ClassicPreset.Input(getSocket(ORDER_SOCKET_TYPE), 'before', true));
+  node.addOutput(EXEC_OUT_KEY, new ClassicPreset.Output(getSocket(ORDER_SOCKET_TYPE), 'after', true));
 }
 
 /** All registered type names, mostly for debugging / completeness checks. */

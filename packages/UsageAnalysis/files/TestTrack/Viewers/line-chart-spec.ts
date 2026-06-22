@@ -1,5 +1,6 @@
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -102,7 +103,6 @@ async function openDatasetWithLineChart(page: Page, path: string) {
 async function setupDemogLineChart(page: Page) {
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -117,7 +117,6 @@ async function setupDemogLineChart(page: Page) {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add line chart via Toolbox icon
   await page.evaluate(() => {
     document.querySelector('[name="icon-line-chart"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -127,7 +126,7 @@ async function setupDemogLineChart(page: Page) {
 // -- Test --
 
 test('Line chart tests (Playwright) — UI-first', async ({page}) => {
-  test.setTimeout(600000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await setupDemogLineChart(page);
 
@@ -854,8 +853,5 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
   });
 
   // ── Final summary ──────────────────────────────────────────────────────
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

@@ -18,6 +18,7 @@ src/
 │   ├── node-component.tsx        # React Node + Socket components (rendered to DOM by ReactPlugin)
 │   ├── flow-editor.ts            # NodeEditor + AreaPlugin + ConnectionPlugin + ReactPlugin wiring
 │   ├── node-factory.ts           # Type registry: createNode(typeName), DG.Func discovery
+│   ├── graph-layout.ts           # Shared layered/banded layout (importer + Clean Layout ribbon)
 │   └── nodes/
 │       ├── input-nodes.ts        # 13 input types — //input: lines
 │       ├── output-nodes.ts       # Table & Value (with auto-type detect)
@@ -120,20 +121,23 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   `addChemPropertiesColumns`), while the compiler still resolves the pass-through to the same
   expression — no spurious variables in the generated script.
 - **Layout**: all imported nodes start **collapsed** (title bar only — expand per node as needed).
-  Layered left-to-right with **one horizontal band per disjoint path** (weakly connected component):
-  - Columns are **global** — shared x per build layer (`max(source layers)+1`, assigned during the
-    build), width = widest estimated node in that layer — so every edge points right and same-depth
-    nodes line up across bands.
+  The arrangement itself lives in [rete/graph-layout.ts](src/rete/graph-layout.ts) (`layoutGraph`), shared
+  with the **Clean Layout** ribbon action so both produce the same result. Layered left-to-right with
+  **one horizontal band per disjoint path** (weakly connected component):
+  - Columns are **global** — shared x per layer, width = widest estimated node in that layer — so every
+    edge points right and same-depth nodes line up across bands. The importer feeds its incrementally
+    assigned layer map (`max(source layers)+1`); `FlowEditor.autoLayout` derives layers from the
+    connection structure via `computeLayers` (longest-path).
   - Each component is a contiguous band; within a band/column, nodes order by predecessor barycenter
     and greedily stack (`max(nextFreeY, barycenter-h/2, bandTop)`) so chains read as straight lanes,
     branches fan out, and nothing overlaps.
   - Bands are stacked in **dependency order** (`orderedComponents`): a path that produces a table
     (its `SetVar` variable) is placed **above** the path that reads it through a `Select Table` node
-    (matched by normalized name), with ties broken by script/creation order. Because the execution
-    topological sort ranks components by topmost-node `y`, this band order *is* the execution order —
-    producers run before the consumers that read their tables.
-  - `estimateNodeWidth`/`estimateNodeHeight` are exported for the layout-invariant tests
-    (edges-point-right, no-overlap, producer-above-consumer).
+    (matched by normalized name), with ties broken by node order. Because the execution topological
+    sort ranks components by topmost-node `y`, this band order *is* the execution order — producers run
+    before the consumers that read their tables.
+  - `estimateNodeWidth`/`estimateNodeHeight` live in `graph-layout.ts` (re-exported from the importer
+    for the layout-invariant tests: edges-point-right, no-overlap, producer-above-consumer).
 
 The core is a **pure, synchronous, DOM-free** `buildCreationScriptGraph(script): BuiltGraph` — it
 constructs `FlowNode` instances + connection records but touches no editor, so it is the unit-test
@@ -156,6 +160,8 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
+| `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
+| `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 
@@ -264,6 +270,18 @@ Every func node automatically gets **pass-through output slots** mirroring each 
 - **Compile**: `graph-compiler.ts` resolves a pass-through output to the same expression as the corresponding input — no new variable is generated.
 - **Visual**: dashed border on the socket, faded italic label.
 
+## Execution-Ordering ("order") Edges
+
+A second, **data-free** connection type that expresses pure run-order — "node1 (and everything before it) must run before node2" — so users don't have to rely on vertical node position. Where pass-throughs are func-specific and tied to a data input, order edges work between **any** two nodes.
+
+- **Ports**: `createNode` appends one **exec-in** (`__exec_in`, accepts many predecessors via `multipleConnections`) and one **exec-out** (`__exec_out`) of socket type `order` to *every* node — defined in [scheme.ts](src/rete/scheme.ts) (`EXEC_IN_KEY` / `EXEC_OUT_KEY` / `ORDER_SOCKET_TYPE` / `isExecKey`). They render as gray squares at the node's **top corners** (KNIME flow-variable style); the data-port rows exclude them.
+- **Type isolation**: `areTypesCompatible` returns `false` whenever either side is `order` (checked *before* the `dynamic`/`object` wildcards), so a data port can never connect to an exec port and vice-versa.
+- **Topological sort**: zero changes — the sort already works at the node level over `getConnections()`, so an order edge is just another dependency. Vertical position (`y`) degrades to a tiebreaker between genuinely-unordered nodes.
+- **Compiler**: ignores exec ports — every port-iterating loop in `graph-compiler.ts` filters `isExecKey`, so order edges produce no variable, no data, and never leak `__exec*` into the output.
+- **Layout**: order edges feed `computeLayers`, so Clean Layout places an "after" node to the **right** — execution order reads left-to-right.
+- **Visual**: static gray dotted edge (no data-flow march); `FlowEditor.tagConnectionElement` stamps `data-order="true"`, CSS does the rest.
+- **Serialization**: free — order edges use the existing connection schema (`sourceOutput: __exec_out`, `targetInput: __exec_in`).
+
 ## Function Filtering ([rete/node-factory.ts](src/rete/node-factory.ts))
 
 Functions with no inputs *and* no outputs are skipped. Functions whose role appears in `EXCLUDED_ROLES` (or any tag in `EXCLUDED_TAGS`) are skipped.
@@ -290,7 +308,9 @@ Pipeline ([compiler/](src/compiler)):
    their topmost node's `(y, x)` — a path placed above another finishes completely before the lower
    one starts (lower paths may implicitly read what upper ones produced, e.g. a Select Table reading
    a table an upper path opened). **Within** a component, ready nodes are picked top-to-bottom
-   (`y`, then `x`, then insertion order).
+   (`y`, then `x`, then insertion order). `y` is only a *fallback* ordering — an explicit
+   **order edge** (see Execution-Ordering Edges) makes "A before B" a real graph edge, so users aren't
+   forced to encode run-order through vertical position.
 2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix. Func input resolution runs in two passes: ordinary inputs (connections, primitive `inputValues`) first, then unconnected **`column`/`column_list`** `inputValues` — these inline to `table.col('name')` / `[table.col(…), …]`, where the table comes from the node's `properties['columnTables']` association (so column args need no Select Column node; `tableExprForColumnParam`/`columnSelectionExpr`).
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 

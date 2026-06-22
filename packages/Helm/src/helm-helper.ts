@@ -15,6 +15,9 @@ import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {HelmInput} from './widgets/helm-input';
 import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 /* eslint-enable max-len */
 
 import {_package} from './package';
@@ -24,8 +27,10 @@ import {_package} from './package';
 // (`HelmHelperAdapter` over `HelmService`). The legacy forked Pistoia HELM Web
 // Editor (`org.helm.webeditor` / JSDraw2 / Dojo) is gone — this class no longer
 // touches any of those globals.
-import {HelmHelperAdapter, bridgeMonomerLib, HelmService} from '@datagrok-libraries/hwe';
+import {HelmHelperAdapter, bridgeMonomerLib, HelmService, PolymerTypes} from '@datagrok-libraries/hwe';
 import type {IMonomerLibBaseLike, MonomersFuncsLike} from '@datagrok-libraries/hwe';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export class HelmHelper implements IHelmHelper {
   private static instanceCount: number = 0;
@@ -52,7 +57,15 @@ export class HelmHelper implements IHelmHelper {
   private get editorAdapter(): HelmHelperAdapter {
     if (this._editorAdapter === null) {
       const monomerLib = _package._libHelper!.getMonomerLib() as unknown as IMonomerLibBaseLike;
-      const service = new HelmService({monomerLib: bridgeMonomerLib(monomerLib), rdkitModule: this.rdKitModule});
+      const paneProviders: Map<string, (helm: string) => Promise<HTMLElement>> = new Map();
+      paneProviders.set('FASTA', async (helm) => this._toFastaProvider(helm));
+      paneProviders.set('BILN', async (helm) => this._toBilnProvider(helm));
+      paneProviders.set('Molecular Structure', async (helm) => this._atomicLevelProvider(helm));
+      paneProviders.set('Composition Analysis', async (helm) => this._compositionAnalysisProvider(helm));
+
+
+      const service = new HelmService({monomerLib: bridgeMonomerLib(monomerLib),
+        rdkitModule: this.rdKitModule, extraPanes: paneProviders});
       this._editorAdapter = new HelmHelperAdapter({service, seqHelper: this.seqHelper});
     }
     return this._editorAdapter;
@@ -126,5 +139,71 @@ export class HelmHelper implements IHelmHelper {
 
   removeGaps(srcHelm: string): HelmConvertRes {
     return this.editorAdapter.removeGaps(srcHelm);
+  }
+
+  private _singeHelmDf: DG.DataFrame | null = null;
+  private _getSingleHelmDf(helm: string) {
+    if (this._singeHelmDf === null) {
+      const col = DG.Column.fromStrings('helm', [helm]);
+      col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
+      col.setTag('units', 'helm');
+      col.setTag('.alphabetIsMultichar', 'true');
+      col.setTag('alphabet', 'UN');
+      // set the width of widget in tag.
+      const ww = Math.floor(window.innerWidth * 0.6);
+      col.setTag('.toAtomicWidgetWidth', ww.toString());
+      this._singeHelmDf = DG.DataFrame.fromColumns([col]);
+    }
+    this._singeHelmDf.col('helm')!.set(0, helm);
+    return this._singeHelmDf;
+  }
+
+  private _singleHelmSh: ISeqHandler | null = null;
+  private _getSingleHelmDfSh(helm: string) {
+    if (!this._singleHelmSh) {
+      const df = this._getSingleHelmDf(helm);
+      this._singleHelmSh = this.seqHelper.getSeqHandler(df.col('helm')!);
+    }
+    return this._singleHelmSh;
+  }
+
+  private async _atomicLevelProvider(helm: string) {
+    const df = this._getSingleHelmDf(helm);
+    const semValue = DG.SemanticValue.fromTableCell(df.cell(0, 'helm')!);
+    const w: DG.Widget = await grok.functions.call('Bio:toAtomicLevelPanel', {sequence: semValue}) as DG.Widget;
+    return w.root;
+  }
+
+  private async _compositionAnalysisProvider(helm: string) {
+    const df = this._getSingleHelmDf(helm);
+    const semValue = DG.SemanticValue.fromTableCell(df.cell(0, 'helm')!);
+    const w: DG.Widget = await grok.functions.call('Bio:compositionAnalysisWidget', {sequence: semValue}) as DG.Widget;
+    return w.root;
+  }
+
+  private _toBilnProvider(helm: string) {
+    const parseResult = this.editorAdapter.service.parse(helm);
+    if (parseResult.mol.chains.length < 1 || parseResult.mol.chains.some((c) => c.polymerType !== PolymerTypes.PEPTIDE))
+      return ui.divText('Unsupported sequence for BILN');
+    const sh = this._getSingleHelmDfSh(helm);
+    const ta = ui.input.textArea('', {});
+    ta.value = sh.getConverter(NOTATION.BILN)(helm);
+    ta.input.setAttribute('disabled', 'true');
+    ta.input.style.width = '100%';
+    return ta.input;
+  }
+
+  private _toFastaProvider(helm: string) {
+    const parseResult = this.editorAdapter.service.parse(helm);
+    if (parseResult.mol.chains.length !== 1 ||
+      parseResult.mol.atoms.length !== parseResult.mol.bonds.filter((b) => b.kind !== 'hbond').length + 1
+    )
+      return ui.divText('Unsupported sequence for FASTA');
+    const sh = this._getSingleHelmDfSh(helm);
+    const ta = ui.input.textArea('', {});
+    ta.value = sh.getConverter(NOTATION.FASTA)(helm);
+    ta.input.setAttribute('disabled', 'true');
+    ta.input.style.width = '100%';
+    return ta.input;
   }
 }

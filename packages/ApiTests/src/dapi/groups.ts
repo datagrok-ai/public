@@ -92,13 +92,13 @@ category('Dapi: groups', () => {
           await grok.dapi.groups.delete(target);
       } catch (_) {}
     }
-  }, {stressTest: true});
+  });
 
   test('current user groups', async () => {
     const groups = await grok.dapi.groups.currentUserGroups();
     expect(Array.isArray(groups) && groups.length > 0, true);
     expect(groups.some((g) => g.friendlyName === 'All users'), true);
-  }, {stressTest: true});
+  });
 
   test('delete group', async () => {
     const localTestGroupName = 'js-api-test-group1';

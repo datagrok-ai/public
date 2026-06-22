@@ -90,3 +90,18 @@ export class FlowConnection extends ClassicPreset.Connection<ClassicPreset.Node,
 }
 
 export type FlowScheme = GetSchemes<FlowNode, FlowConnection>;
+
+/** Execution-ordering ports added to *every* node by `createNode`. A connection
+ *  exec-out → exec-in is a pure topological dependency ("run the source, and
+ *  therefore everything before it, before the target"): the topological sort
+ *  treats it like any other edge, but it carries no data — the compiler ignores
+ *  it and it never produces a variable. Lets users express run-order explicitly
+ *  instead of relying on vertical node position. */
+export const ORDER_SOCKET_TYPE = 'order';
+export const EXEC_IN_KEY = '__exec_in';
+export const EXEC_OUT_KEY = '__exec_out';
+
+/** Whether a port key is one of the execution-ordering ports. */
+export function isExecKey(key: string): boolean {
+  return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
+}

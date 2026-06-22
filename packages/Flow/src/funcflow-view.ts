@@ -361,6 +361,7 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Redo', () => void this.flow?.redo())
       .endGroup()
       .group('View')
+      .item('Clean Layout', () => this.cleanLayout())
       .item('Zoom to Fit', () => void this.flow?.zoomToFit())
       .item('Zoom In', () => this.flow?.zoomIn())
       .item('Zoom Out', () => this.flow?.zoomOut())
@@ -401,6 +402,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
       ],
       [
+        ui.iconFA('sitemap', () => this.cleanLayout(), 'Clean Layout (arrange nodes)'),
         ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom In'),
         ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom Out'),
         ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to Fit (double-click empty canvas)'),
@@ -415,6 +417,15 @@ export class FuncFlowView extends DG.ViewBase {
 
   private toggleToolbox(): void {
     grok.shell.windows.showToolbox = !grok.shell.windows.showToolbox;
+  }
+
+  /** Re-arrange the existing graph with the importer's layered/banded layout. */
+  private cleanLayout(): void {
+    if (!this.flow || this.flow.getNodeCount() === 0) {
+      grok.shell.info('Nothing to lay out');
+      return;
+    }
+    void this.flow.autoLayout();
   }
 
   private updateStatusBar(): void {

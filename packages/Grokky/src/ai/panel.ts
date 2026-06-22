@@ -109,6 +109,8 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
+  pushNativeContext(prompt: string): void;
+  flushNativeContext(): string;
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
@@ -129,6 +131,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private wandButton: HTMLElement;
   private _rawRender: boolean = false;
   private _noPrompt: boolean = false;
+  private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
@@ -232,6 +235,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       } finally {
         ui.setUpdateIndicator(this.root, false);
       }
+      this.resetSession();
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
@@ -638,6 +642,18 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.handleClear();
   }
 
+  pushNativeContext(prompt: string): void {
+    this._pendingNativeContext.push(prompt);
+  }
+
+  flushNativeContext(): string {
+    if (this._pendingNativeContext.length === 0)
+      return '';
+    const items = `- "${this._pendingNativeContext.join('"\n- "')}"`;
+    this._pendingNativeContext = [];
+    return `[The user previously asked:]\n${items}\n\n`;
+  }
+
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
     this._streamingContainer = null;
@@ -882,6 +898,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected handleClear() {
     this._messages = [];
     this._uiMessages = [];
+    this._pendingNativeContext = [];
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';

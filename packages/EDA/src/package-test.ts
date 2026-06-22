@@ -9,6 +9,7 @@ import './tests/ttest-tests';
 import './tests/control-comparisons-tests';
 import './tests/pmpo-tests';
 import './tests/pareto-tests';
+import './tests/model-serialization-tests';
 
 export const _package = new DG.Package();
 export {tests};

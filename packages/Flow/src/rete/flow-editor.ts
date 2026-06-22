@@ -21,11 +21,12 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowNode, FlowScheme} from './scheme';
+import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
@@ -189,6 +190,8 @@ export class FlowEditor {
   /** When a connection lands on a ValueOutput node and the source slot has a
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
+    // Execution-ordering edges carry no data type — never derive an output type from one.
+    if (isExecKey(String(connection.targetInput)) || isExecKey(String(connection.sourceOutput))) return;
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
     // Match by registered type, not label — titles are user-editable.
     if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
@@ -1032,6 +1035,8 @@ export class FlowEditor {
   private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
     data.element.dataset.connectionId = data.payload.id;
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
+    // Execution-ordering edges render dashed/gray (CSS keys off data-order).
+    data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
   }
 
   /** Set the status of a connection (drives the data-flow animation). */
@@ -1373,6 +1378,26 @@ export class FlowEditor {
 
   async zoomToFit(): Promise<void> {
     await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
+  }
+
+  /** Re-arrange the whole graph with the layered/banded layout used by the
+   *  creation-script importer (`rete/graph-layout.ts`): layers from the
+   *  connection structure (every edge points right), one band per disjoint
+   *  path, producer paths above the paths that consume them. Repositions every
+   *  node and zooms to fit. */
+  async autoLayout(): Promise<void> {
+    const nodes = this.editor.getNodes();
+    if (nodes.length === 0) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      const source = byId.get(c.source);
+      const target = byId.get(c.target);
+      if (source && target) edges.push({source, target});
+    }
+    layoutGraph(nodes, edges, computeLayers(nodes, edges));
+    for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
+    await this.zoomToFit();
   }
 
   // ---------- lifecycle ----------

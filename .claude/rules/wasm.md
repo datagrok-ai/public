@@ -1,7 +1,7 @@
 # WASM in Datagrok Plugins
 
 For plugins with WASM compiled specifically for that plugin (C++ via Emscripten, Rust via wasm-pack).
-**Reference implementations**: `Chem` (RDKit, C++/Emscripten), `EDA` (C++/Emscripten).
+**Reference implementations**: `Chem` (RDKit, C++/Emscripten), `EDA` (Rust via wasm-pack for the `sci-comp-ml` kernels — PCA/PLS/softmax/linreg; C++/Emscripten for XGBoost). Note: EDA keeps its Rust source in a separate `sci-comp-rust` repo, so it has no in-package `wasm-src/` folder — only the committed `wasm/` artefacts.
 
 ## Directory Layout
 

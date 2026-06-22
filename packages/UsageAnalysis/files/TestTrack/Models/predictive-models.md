@@ -1,40 +1,54 @@
-#### 1. Train
+﻿# Predictive models: end-to-end lifecycle (Train / Apply / Apply on new dataset / Delete)
 
-1. Open **Browse > Files > Demo > Sensors > accelerometer.csv**
-2. Go to **ML > Models > Train Model...**. A dialog opens 
-1. Set:
-   * **Features** to `accel_y`, `accel_z`, `time_offset`
-   * **Model Engine** to `EDA: PLS`
-   * **Components** to 3
-   * **The result of modeling should appear**
-3. Click "SAVE" to save the model as "Accelerometer_model_PLS"
-5. Switch the **Model Engine** to EDA: Linnear Regression
-6. Save the model as "Accelerometer_model_LR"
+## Setup
 
-#### 2. Apply
+- Test account has access to **Demo > Sensors > accelerometer.csv**.
+- Test account has access to **Tools > Dev > Open test dataset** (dev-mode tooling — see Notes).
+- The EDA package is installed (provides the `Eda: PLS Regression` and `Eda: Linear Regression` engines).
 
-1. Open **Browse > Files > Demo > Sensors > accelerometer.csv**
-11. Go to  **ML > Models > Apply Model...** 
-1. Select "Accelerometer_model_PLS" model - **Inputs in "Apply predictive model" form should be set correctly (`accel_y`, `accel_z`, `time_offset`)**
-1. Click OK - **the predictive model result should appear in the last column**
-12. Go to  **Top menu > ML > Models > Apply Model...** 
-1.  Run prediction "Accelerometer model LR" - **check the inputs and the result**
+## Scenarios
 
-#### 3. Apply on a new dataset
+### 1. Train two models on accelerometer.csv
 
-1. Go to **Tools > Dev > Open test dataset**
-1. Set 1000 rows, 10 cols and "random walk as demo table". Click OK
-14. Go to **ML > Models > Apply model**
-1. Select "Accelerometer_model_LR" - **check the inputs and the result**
+1. Open **Browse > Files > Demo > Sensors > accelerometer.csv** — the dataset opens in a table view.
+2. Go to **ML > Models > Train Model...** — the training dialog opens.
+3. Set **Features** to `accel_y`, `accel_z`, `time_offset`.
+4. Set **Model Engine** to `Eda: PLS Regression`.
+5. Set **Components** to `3`.
+6. **Expected:** the modeling result (preview / metrics) appears in the training view.
+7. Click **SAVE** and save the model as `Accelerometer_model_PLS`.
+8. Switch the **Model Engine** to `Eda: Linear Regression`.
+9. Click **SAVE** and save the model as `Accelerometer_model_LR`.
 
-#### 4. Delete 
+### 2. Apply both models to accelerometer.csv
 
-1. Go to **Browse > Platform > Predictive models**
-5. Locate the "Accelerometer_model_LR" and "Accelerometer_model_PLS" models
-3. Check the **Context Panel** tabs 
-2. Delete the "Accelerometer_model_LR" and "Accelerometer_model_PLS" models
+1. Open **Browse > Files > Demo > Sensors > accelerometer.csv** — the dataset opens in a table view.
+2. Go to **ML > Models > Apply Model...** — the "Apply predictive model" dialog opens.
+3. Select the `Accelerometer_model_PLS` model.
+4. **Expected:** the inputs in the "Apply predictive model" form are set correctly to `accel_y`, `accel_z`, `time_offset`.
+5. Click **OK**.
+6. **Expected:** the predictive model result appears as a new last column in the table.
+7. Go to **ML > Models > Apply Model...** again.
+8. Select the `Accelerometer_model_LR` model.
+9. **Expected:** the inputs are set correctly (`accel_y`, `accel_z`, `time_offset`).
+10. Click **OK**.
+11. **Expected:** the `Accelerometer_model_LR` prediction column is appended.
 
----
-{
-  "order": 6
-}
+### 3. Apply Accelerometer_model_LR to a new dataset
+
+1. Go to **Tools > Dev > Open test dataset**.
+2. Set **rows** to `1000`, **columns** to `10`, **dataset** to `random walk as demo table`.
+3. Click **OK** — the synthetic 1000 x 10 table opens.
+4. Go to **ML > Models > Apply Model...**.
+5. Select the `Accelerometer_model_LR` model.
+6. **Expected:** the inputs and the resulting prediction column appear (input-column matching via `isApplicable` Levenshtein/JaroWinkler).
+
+### 4. Delete both models from Browse
+
+1. Go to **Browse > Platform > Models** — the Predictive models browser opens.
+2. Locate `Accelerometer_model_LR` and `Accelerometer_model_PLS` in the gallery.
+3. **Expected:** clicking a model card surfaces the Context Panel with the model's tabs (Description, Performance, etc.).
+4. Right-click `Accelerometer_model_LR` and select **Delete**; confirm the deletion dialog.
+5. **Expected:** the model is removed from the gallery.
+6. Right-click `Accelerometer_model_PLS` and select **Delete**; confirm the deletion dialog.
+7. **Expected:** the model is removed from the gallery.

@@ -1,20 +1,13 @@
 import { test } from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-test('Matrix plot tests', async ({ page, baseURL }) => {
+test('Matrix plot tests', async ({ page }) => {
   test.setTimeout(300_000);
 
-  await page.goto(baseURL ?? '/');
-  await page.locator('[name="Toolbox"], [name="Browse"], .d4-sidebar').first().waitFor({ timeout: 60000 });
-  await page.waitForFunction(() => {
-    try {
-      if (typeof grok === 'undefined' || !grok.shell) return false;
-      grok.shell.settings.showFiltersIconsConstantly;
-      return true;
-    } catch { return false; }
-  }, { timeout: 30000 });
+  await loginToDatagrok(page);
 
   // Setup: close all, open demog, add Matrix plot
   await page.evaluate(async () => {
@@ -291,10 +284,5 @@ test('Matrix plot tests', async ({ page, baseURL }) => {
     if (result.viewersFinal !== result.before) throw new Error('Clone not closed');
   });
 
-  if (stepErrors.length > 0) {
-    throw new Error(
-      'Some steps failed:\n' +
-      stepErrors.map(e => `  [${e.step}]: ${e.error}`).join('\n')
-    );
-  }
+  v.finishSpec();
 });
