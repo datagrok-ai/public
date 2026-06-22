@@ -41,7 +41,7 @@ export function buildViewContext(view: DG.ViewBase): string {
 }
 
 interface DgEntityRef {
-  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space';
+  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space' | 'group' | 'user';
   name: string;
   id?: string;
   connector?: string;
@@ -69,6 +69,10 @@ async function fetchEntity(ref: DgEntityRef): Promise<any> {
     return ref.id ? grok.dapi.projects.find(ref.id) : null;
   case 'space':
     return ref.id ? grok.dapi.spaces.find(ref.id) : null;
+  case 'group':
+    return ref.id ? grok.dapi.groups.find(ref.id) : null;
+  case 'user':
+    return ref.id ? grok.dapi.users.find(ref.id) : null;
   }
 }
 

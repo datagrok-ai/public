@@ -548,7 +548,9 @@ export function setupShellAIPanelUI(): void {
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
   }
-  _shellAIPanel.show();
+
+  if (grok.shell.windows.ai.childElementCount === 0 || _shellAIPanel.isFrontPanel)
+    _shellAIPanel.show(true);
 }
 
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';

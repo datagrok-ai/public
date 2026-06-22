@@ -132,6 +132,24 @@ function createServer(): McpServer {
     () => runTool('whoami', {}, () => api.getCurrentUser()),
   );
 
+  server.tool(
+    'list_connections', 'List data connections with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter (matches connection name)')},
+    ({filter}) => runTool('list_connections', {filter}, () => api.listConnections(filter)),
+  );
+
+  server.tool(
+    'list_groups', 'List groups with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter (matches group name)')},
+    ({filter}) => runTool('list_groups', {filter}, () => api.listGroups(filter)),
+  );
+
+  server.tool(
+    'list_users', 'List users with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter (matches user name/login)')},
+    ({filter}) => runTool('list_users', {filter}, () => api.listUsers(filter)),
+  );
+
   // --- Projects ---
 
   server.tool(

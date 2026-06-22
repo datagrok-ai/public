@@ -142,6 +142,54 @@
   z-index: 999;
 }
 
+/* ---------- overview minimap (bottom-right, screen-space) ---------- */
+.ff-minimap {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 800;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #cfd8dc;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  user-select: none;
+}
+.ff-minimap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #607d8b;
+  background: #eceff1;
+  cursor: default;
+}
+.ff-minimap-toggle {
+  cursor: pointer;
+  color: #90a4ae;
+  padding: 0 2px;
+  line-height: 1;
+}
+.ff-minimap-toggle:hover { color: #455a64; }
+.ff-minimap-body {
+  display: block;
+  cursor: pointer;
+  line-height: 0;
+}
+.ff-minimap[data-collapsed="true"] .ff-minimap-body { display: none; }
+
+.ff-minimap-svg { display: block; background: #f7f9fa; }
+.ff-minimap-node { stroke: #ffffff; stroke-width: 0.5; opacity: 0.9; }
+.ff-minimap-viewport {
+  fill: rgba(33, 150, 243, 0.12);
+  stroke: #1976d2;
+  stroke-width: 1.2;
+}
+
 /* Drag-output suggestion popup. Positioned absolute at the pointer release
    point in viewport coordinates and clamped to fit by the JS that builds it. */
 .ff-suggest-popup {
