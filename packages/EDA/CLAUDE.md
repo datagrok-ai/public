@@ -34,7 +34,7 @@ grok test --gui            # Run with visible browser
 The package combines TypeScript, WASM modules, and web workers for performance-critical computations:
 
 - **WASM modules** (`wasm/`): PCA, PLS, softmax and linear regression run on the Rust + WebAssembly `sci-comp-ml` backend (`wasm/sci_comp_ml.js` glue + `sci_comp_ml_bg.wasm`), wrapped by `wasm/eda-api.ts` and loaded lazily via `src/wasm-loader.ts`. XGBoost remains a C++/Emscripten module.
-- **Web workers** (`src/workers/`): t-SNE and UMAP (manifold learning), plus PCA and PLS fits (`eda-ml-worker.ts`) — kept off the UI thread.
+- **Web workers** (`src/workers/`): t-SNE and UMAP (manifold learning), plus PCA and PLS fits (`eda-ml-worker.ts`) — kept off the UI thread. `softmax-worker.ts` is a TypeScript fallback used only when the WASM softmax fit throws (see `softmax-classifier.ts`); the primary softmax path runs on the Rust+WASM backend on the main thread.
 - **TypeScript API** (`src/`): High-level interfaces, UI components, and integration with the Datagrok platform. Input standardisation happens here (the kernels never standardise — "variant B").
 
 ### Core Modules

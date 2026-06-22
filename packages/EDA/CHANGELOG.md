@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.6.1 (2026-06-22)
+
+Update Datagrok tools
+
 ## 1.6.0 (2026-06-17)
 
 Migrate ML kernels to Rust + WebAssembly; remove LS-SVM

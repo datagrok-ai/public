@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Exploratory Data Analysis Tools",
   "license": "MIT",
   "dependencies": {
@@ -31,7 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^6.4.3",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "^6.2.0",
