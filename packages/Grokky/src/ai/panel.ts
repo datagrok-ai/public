@@ -235,6 +235,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       } finally {
         ui.setUpdateIndicator(this.root, false);
       }
+      this.resetSession();
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
