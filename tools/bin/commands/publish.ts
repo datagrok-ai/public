@@ -469,9 +469,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
     if (debug)
       timestamps = checkData;
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${host}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${host}`
+      : `Failed to validate package on ${host}: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;
@@ -603,7 +603,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     });
     const log = JSON.parse(await body.text());
 
-    fs.unlinkSync('zip');
     if (log != undefined) {
       if (log['#type'] === 'ApiError') {
         color.error(log['message']);
@@ -616,9 +615,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
       }
     }
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${url}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${url}`
+      : `Publish failed: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;
