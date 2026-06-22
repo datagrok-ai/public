@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.4.4 (2026-06-22)
+
+* `grok publish` — fixed every publish failing with a silent `exit 1` after a successful upload: a stray `fs.unlinkSync('zip')` threw `ENOENT` (the archive is streamed in-memory, no `zip` file is ever written), and the surrounding `catch` only logged under `--verbose`. The errant unlink is removed and publish errors are now always surfaced.
+
 ## 6.4.3 (2026-06-22)
 
 * `grok api` — numeric IVP model inputs are now generated with `nullable: false`, so an emptied input field fails form validation instead of running the solver with a null.
