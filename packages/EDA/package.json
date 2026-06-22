@@ -1,8 +1,9 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.5.6",
+  "version": "1.6.0",
   "description": "Exploratory Data Analysis Tools",
+  "license": "MIT",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.10.12",
@@ -33,6 +34,7 @@
     "datagrok-tools": "^5.1.5",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
+    "file-loader": "^6.2.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
@@ -65,7 +67,6 @@
   },
   "category": "Machine Learning",
   "sources": [
-    "wasm/EDA.js",
     "wasm/XGBoostAPI.js"
   ],
   "meta": {
