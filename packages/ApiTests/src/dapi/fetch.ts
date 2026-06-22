@@ -3,6 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, test} from '@datagrok-libraries/test/src/test';
+import {_package} from '../test-package';
 
 
 category('Dapi: fetch', () => {
@@ -21,7 +22,9 @@ category('Dapi: fetch', () => {
   }, {stressTest: true});
 
   test('get', async () => {
-    const url = 'https://dev.datagrok.ai/demo/demog.csv';
+    // Stand-local asset (the package's own webRoot) so the stress signal reflects the
+    // proxy round-trip, not the load/latency of an external host (was dev.datagrok.ai).
+    const url = `${_package.webRoot}files/cars.csv`;
 
     const res = await grok.dapi.fetchProxy(url);
     const resText = await res.text();
