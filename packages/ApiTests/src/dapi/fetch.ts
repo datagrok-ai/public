@@ -24,16 +24,17 @@ category('Dapi: fetch', () => {
        // 'get' test (stand-local webRoot) covers the fetchProxy path under stress.
 
   test('get', async () => {
-    // Stand-local asset (the package's own webRoot) so the stress signal reflects the
-    // proxy round-trip, not the load/latency of an external host (was dev.datagrok.ai).
-    const url = `${_package.webRoot}files/cars.csv`;
+    // Stand-local target so the stress signal reflects the fetchProxy round-trip, not an
+    // external host (was dev.datagrok.ai). Use the stand's own API root (the same
+    // /info/server the deploy health-checks) — a debug-published package's webRoot is
+    // served by the publish client, which has exited by test time, so webRoot fetches
+    // come back empty in the stress harness.
+    const url = `${grok.dapi.root}/info/server`;
 
     const res = await grok.dapi.fetchProxy(url);
     const resText = await res.text();
 
     if (resText.length == 0)
       throw new Error('Response text is empty');
-
-    DG.DataFrame.fromCsv(resText);
   }, {stressTest: true});
 }, {owner: 'aparamonov@datagrok.ai'});
