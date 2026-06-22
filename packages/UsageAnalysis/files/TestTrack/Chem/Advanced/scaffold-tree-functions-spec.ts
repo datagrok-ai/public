@@ -1,72 +1,118 @@
+/* ---
+sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.add, chem.analyze.scaffold-tree.filter, chem.analyze.scaffold-tree.generate, chem.analyze.scaffold-tree.viewer]
+--- */
+// Paired scenario: Advanced/scaffold-tree-functions.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';
+import {finishSpec} from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
-test('Chem: Scaffold Tree basic functions', async ({page}) => {
-  test.setTimeout(300_000);
+test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + property-panel', async ({page}) => {
+  test.setTimeout(360_000);
 
   await loginToDatagrok(page);
+  await page.waitForTimeout(3000);
 
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
-    try { grok.shell.windows.simpleMode = true; } catch (e) {}
-    grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 500));
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
-    grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
+  await softStep('Step 1: Open smiles-50.csv', async () => {
+    await page.evaluate(async () => {
+      try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
+      try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
+      grok.shell.closeAll();
+      const df = await grok.dapi.files.readCsv('System:AppData/Chem/tests/smiles-50.csv');
+      grok.shell.addTableView(df);
+      (window as any).__stf_errors = [];
+      const orig = console.error;
+      console.error = function(...args: any[]) {
+        (window as any).__stf_errors.push(args.map((a: any) => String(a)).join(' '));
+        orig.apply(console, args as any);
+      };
     });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    await new Promise(r => setTimeout(r, 5000));
+    await waitForChemMenu(page);
   });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  await softStep('Open Chem → Analyze → Scaffold Tree → empty viewer appears', async () => {
+  await softStep('Step 2-3: Chem → Analyze → Scaffold Tree → viewer mounted (empty state)', async () => {
     await page.evaluate(async () => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
-      const st = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      await new Promise(r => setTimeout(r, 600));
+      const item = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
-      (st.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 4000));
+      (item.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      await new Promise(r => setTimeout(r, 5000));
     });
-    const hasScaffoldViewer = await page.evaluate(() => {
-      return Array.from(grok.shell.tv.viewers).some((v: any) => /scaffold/i.test(v.type || ''));
+    await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 15000});
+    const emptyState = await page.evaluate(() => {
+      const toolbar = document.querySelector('.chem-scaffold-tree-toolbar');
+      return toolbar?.className?.includes('empty-tree') ?? false;
     });
-    expect(hasScaffoldViewer).toBe(true);
+    expect(emptyState).toBe(true);
   });
 
-  await softStep('Magic wand generates scaffold tree → nodes appear', async () => {
-    const started = await page.evaluate(async () => {
-      // Look for the generate / magic-wand icon in the scaffold tree viewer
-      const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
-      if (!st) return false;
-      const wand = (st as any).root?.querySelector('.fa-magic, [name*="magic"], [title*="Generate" i]');
-      if (wand) { (wand as HTMLElement).click(); return true; }
-      return false;
+  await softStep('Step 4-5: Click magic-wand → scaffold tree generates → nodes appear', async () => {
+    await page.evaluate(async () => {
+      const wand = document.querySelector('[name="viewer-Scaffold-Tree"] [aria-label="Generate"]') as HTMLElement;
+      wand?.click();
     });
-    if (!started) test.skip(true, 'magic wand icon not found');
-    await page.waitForTimeout(25000);
-    const nodes = await page.evaluate(() => {
-      const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
-      if (!st) return 0;
-      return (st as any).root?.querySelectorAll('.d4-tree-view-node, .d4-scaffold-tree-node').length || 0;
+    // Wait up to 60s for nodes
+    const ready = await page.evaluate(async () => {
+      for (let i = 0; i < 30; i++) {
+        const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
+        const nodes = viewer?.querySelectorAll('.d4-tree-view-node') ?? [];
+        const visible = Array.from(nodes).filter(n => n.querySelector('canvas.chem-canvas'));
+        if (visible.length >= 1) return {ok: true, count: visible.length};
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      return {ok: false};
     });
-    expect(nodes).toBeGreaterThan(0);
+    expect((ready as any).ok, `Scaffold tree did not populate within 60s`).toBe(true);
+  });
+
+  await softStep('Step 6-7: Click first scaffold node → table filters', async () => {
+    const before = await page.evaluate(() => grok.shell.t.rowCount);
+    const click = await page.evaluate(async () => {
+      const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
+      const nodes = Array.from(viewer!.querySelectorAll('.d4-tree-view-node'))
+        .filter(n => n.querySelector('canvas.chem-canvas'));
+      if (nodes.length === 0) return {ok: false, reason: 'no visible nodes'};
+      const checkbox = nodes[0].querySelector('input[type="checkbox"]') as HTMLInputElement;
+      if (!checkbox) return {ok: false, reason: 'no checkbox on first node'};
+      checkbox.click();
+      await new Promise(r => setTimeout(r, 3000));
+      return {ok: true};
+    });
+    expect((click as any).ok).toBe(true);
+    const after = await page.evaluate(() => grok.shell.t.filter.trueCount);
+    expect(after).toBeLessThan(before);
+  });
+
+  await softStep('Step 8: Viewer toolbox renders without errors', async () => {
+    const ok = await page.evaluate(() => {
+      const toolbar = document.querySelector('[name="viewer-Scaffold-Tree"] .chem-scaffold-tree-toolbar');
+      return !!toolbar;
+    });
+    expect(ok).toBe(true);
+  });
+
+  await softStep('Step 9: Open property panel via viewer click + Properties...', async () => {
+    await page.evaluate(async () => {
+      const viewer = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Scaffold Tree');
+      grok.shell.o = viewer;
+      await new Promise(r => setTimeout(r, 2000));
+    });
+    // Verify Context Panel has expandable property panes for the viewer
+    const hasPanes = await page.evaluate(() =>
+      document.querySelectorAll('.d4-accordion-pane-header').length > 0);
+    expect(hasPanes).toBe(true);
+  });
+
+  await softStep('Final: no console errors during Scaffold Tree walk', async () => {
+    const errs = await page.evaluate(() => ((window as any).__stf_errors ?? []) as string[]);
+    const stfErrs = errs.filter(e => /scaffold|searchSubstructure/i.test(e));
+    expect(stfErrs.length, `Console errors: ${JSON.stringify(stfErrs.slice(0, 5))}`).toBe(0);
   });
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

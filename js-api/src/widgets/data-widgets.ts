@@ -42,6 +42,14 @@ export class RangeSlider extends DartWidget {
   /** Gets maximum value. */
   get max(): number { return api.grok_RangeSlider_Get_Max(this.dart); };
 
+  /** Whether the current [minRange, maxRange] window is a strict sub-range of
+   *  [min, max] — i.e. the user has narrowed the slider away from full range. */
+  get isCustomRange(): boolean { return api.grok_RangeSlider_Get_IsCustomRange(this.dart); }
+
+  /** Whether the slider element is currently shown. Host viewers toggle this per
+   *  their per-axis rule (e.g. `isCustomRange && (!autoLayout || showAxis)`). */
+  get visible(): boolean { return api.grok_RangeSlider_Get_Visible(this.dart); }
+
   /** Sets values to range slider.
    * @param {number} minRange
    * @param {number} maxRange
@@ -61,7 +69,7 @@ export class RangeSlider extends DartWidget {
   scrollTo(newMinValue: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, newMinValue); }
 
   /** Shifts min and max values by the specified delta. */
-  scrollBy(delta: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, delta); }
+  scrollBy(delta: number): void { return api.grok_RangeSlider_ScrollBy(this.dart, delta); }
 
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {

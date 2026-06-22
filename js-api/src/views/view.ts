@@ -1,5 +1,5 @@
 import {VIEW_TYPE, VIEWER, ViewerType, ViewType} from '../const';
-import {DataFrame} from '../dataframe.js';
+import {Column, DataFrame} from '../dataframe.js';
 import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
@@ -424,6 +424,16 @@ export class TableView extends View {
     api.grok_TableView_ProcessNewViewer(this.dart, v.dart);
     return v;
   }
+
+  /** Returns columns that are explicitly used as data columns in non-grid viewers
+   * (falls back to grid columns when no custom viewers are present). */
+  getViewerColumns(): Column[] { return (api.grok_TableView_GetViewerColumns(this.dart) as any[]).map((c) => toJs(c)); }
+
+  /** Closes all viewers in this view, including minimized ones. */
+  closeAllViewers(): void { api.grok_TableView_CloseAllViewers(this.dart); }
+
+  /** Moves keyboard focus to the grid of this view. */
+  focus(): void { api.grok_TableView_Focus(this.dart); }
 
   /** A dock node for this view.
    *  Use `grok.shell.dockManager` to manipulate it; {@link dockManager} is for controlling

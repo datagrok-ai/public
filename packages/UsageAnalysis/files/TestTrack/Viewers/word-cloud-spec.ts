@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -8,30 +9,7 @@ test('Word cloud', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async () => {
-    const w = window as any;
-    document.body.classList.add('selenium');
-    w.grok.shell.settings.showFiltersIconsConstantly = true;
-    w.grok.shell.windows.simpleMode = true;
-    w.grok.shell.closeAll();
-    const df = await w.grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
-    w.grok.shell.addTableView(df);
-    await new Promise((resolve: any) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    const cols: any[] = [];
-    for (let i = 0; i < df.columns.length; i++) cols.push(df.columns.byIndex(i));
-    const hasBioChem = cols.some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise((r: any) => setTimeout(r, 200));
-      }
-      await new Promise((r: any) => setTimeout(r, 5000));
-    }
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: 'System:DemoFiles/SPGI.csv', semTypeTimeoutMs: 3000});
 
   await softStep('Step 2: Open Add Viewer gallery, click Word Cloud tile', async () => {
     await page.locator('i[aria-label="Add viewer"]').click();
@@ -142,6 +120,5 @@ test('Word cloud', async ({page}) => {
     expect(gone).toBe(true);
   });
 
-  if (stepErrors.length > 0)
-    throw new Error('Step failures:\n' + stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n'));
+  v.finishSpec();
 });

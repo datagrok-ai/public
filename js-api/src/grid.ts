@@ -887,6 +887,17 @@ export class FormViewer extends Viewer<IFormSettings> {
 
   get designMode(): boolean { return api.grok_FormViewer_Get_DesignMode(this.dart); }
   set designMode(x: boolean) { api.grok_FormViewer_Set_DesignMode(this.dart, x); }
+
+  /** Rebuilds the form for the given subset of columns (replaces any current layout). */
+  buildForm(columnNames: string[]): void { api.grok_FormViewer_BuildForm(this.dart, columnNames); }
+
+  /** Effective row index the form currently shows; honours `syncMode`
+   *  (`Current` → dataFrame.currentRow, `Mouse Over` → mouseOverRow, `None`
+   *  → an independent internal row). Returns -1 when no row is selected. */
+  get row(): number { return api.grok_FormViewer_Get_Row(this.dart); }
+
+  /** Names of the columns currently bound to the form's field handlers. */
+  get columnNames(): string[] { return api.grok_FormViewer_Get_ColumnNames(this.dart); }
 }
 
 
