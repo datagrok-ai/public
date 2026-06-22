@@ -51,9 +51,19 @@ function preparseIvpModel(parser, text) {
   // Input names use the script-form names (arg bounds/step `_`-prefixed, loop count `_count`) so the
   // run path, the diff-grok fitting/SA pipeline, and `propagateChoice` lookups all agree on one set
   // of names. `scriptKey` mirrors `name`; it is kept only for the value-forwarding map below.
+  // Numeric IVP inputs are always required: mark them `nullable: false` so an emptied field fails
+  // form validation instead of running with a null (which throws in the solver).
+  const withNullable = (annot) => {
+    const a = (annot ?? '').trim();
+    if (!a.startsWith('{')) return '{nullable: false}';     // no options block
+    if (/[{;\s]nullable\s*:/.test(a)) return a;              // already declares nullable (any value)
+    if (/^\{\s*\}$/.test(a)) return '{nullable: false}';     // empty {}
+    return `{nullable: false; ${a.slice(1).trimStart()}`;    // everything after '{' untouched
+  };
+
   const mk = (type, name, scriptKey, input) =>
     ({tsType: 'number', name, scriptKey,
-      annotation: `//input: ${type} ${name} = ${input.value} ${input.annot ?? ''}`.trim()});
+      annotation: `//input: ${type} ${name} = ${input.value} ${withNullable(input.annot)}`.trim()});
 
   const inputs = [];
   const a = ivp.arg.name;
