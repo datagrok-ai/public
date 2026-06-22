@@ -2091,28 +2091,34 @@ export class DiffStudio {
       tableInputs.set(inpSetsNames[row], inputs);
     }
 
+    const applyLookup = (value: string) => {
+      this.toPreventSolving = true;
+
+      if (value === MISC.DEFAULT)
+        this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
+      else {
+        const colInputs = tableInputs.get(value);
+        // Match by exact name, then `_`-flexibly so a `_t0` input also accepts a legacy `t0` column.
+        this.inputByName.forEach((input, name) =>
+          input.value = colInputs.get(name) ?? colInputs.get(name.replace(/^_/, '')) ?? input.value);
+      }
+
+      this.toPreventSolving = false;
+      firstInput.value = firstInput.value;
+    };
+
     // create input for lookup table use
     const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
       items: choices,
       nullable: false,
       value: choices[0],
       tooltipText: lookupInfo.tooltip,
-      onValueChanged: (value) => {
-        this.toPreventSolving = true;
-
-        if (value === MISC.DEFAULT)
-          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
-        else {
-          const colInputs = tableInputs.get(value);
-          // Match by exact name, then `_`-flexibly so a `_t0` input also accepts a legacy `t0` column.
-          this.inputByName.forEach((input, name) =>
-            input.value = colInputs.get(name) ?? colInputs.get(name.replace(/^_/, '')) ?? input.value);
-        }
-
-        this.toPreventSolving = false;
-        firstInput.value = firstInput.value;
-      },
+      onValueChanged: (value) => applyLookup(value),
     });
+
+    const initialValue = lookupChoiceInput.value;
+    if (this.startingInputs === null && initialValue !== null && initialValue !== MISC.DEFAULT)
+      applyLookup(initialValue);
 
     this.topCategory = lookupInfo.category;
     const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);

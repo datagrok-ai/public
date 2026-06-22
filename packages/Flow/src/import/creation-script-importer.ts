@@ -49,7 +49,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode} from '../rete/scheme';
+import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {TypedSocket} from '../rete/sockets';
 import {layoutGraph} from '../rete/graph-layout';
 import {constLabel} from '../rete/nodes/utility-nodes';
@@ -88,6 +88,9 @@ interface BuiltConnection {
   sourceKey: string;
   target: FlowNode;
   targetKey: string;
+  /** True for execution-order ("order") edges (exec-out → exec-in): a pure
+   *  run-order dependency carrying no data, excluded from the layout. */
+  order?: boolean;
 }
 
 export interface BuiltGraph {
@@ -164,6 +167,9 @@ class CreationScriptBuilder {
   private readonly connections: BuiltConnection[] = [];
   private readonly layer = new Map<FlowNode, number>();
   private readonly warnings: string[] = [];
+  /** Lowercased variable name → the SetVar node that registers it. Used to
+   *  infer order edges to tables referenced by (friendly) name. */
+  private readonly setVarNodes = new Map<string, FlowNode>();
 
   build(script: string): BuiltGraph {
     const calls = this.parseLines(script);
@@ -192,6 +198,7 @@ class CreationScriptBuilder {
     if (outputVariables.length === 0)
       this.warnings.push('No variable assignments found in the creation script');
 
+    this.inferOrderEdges();
     this.layout();
     return {
       nodes: this.nodes,
@@ -603,6 +610,44 @@ class CreationScriptBuilder {
     this.addNode(node);
     this.connect(ref, node, 'value');
     this.layer.set(node, (this.layer.get(ref.node) ?? 0) + 1);
+    this.setVarNodes.set(varName.toLowerCase(), node);
+  }
+
+  /** Infer run-order ("order") edges for tables referenced by name.
+   *
+   *  A creation script can read a table another statement produced via its
+   *  *friendly* name — `Mol1KLocal = OpenTable(…)` at the top, then
+   *  `JoinTables("mol1K local", …)` at the bottom. That reference parses to a
+   *  `ResolveTable`, which we substitute with a `Select Table`
+   *  (`grok.shell.tableByName(...)`) node — but there is no *data* edge back to
+   *  the producer, so nothing forces the producer to run first; only the
+   *  vertical-position heuristic does, which the user can break by moving nodes.
+   *
+   *  We add an order edge from the producing variable's `SetVar` (the node that
+   *  registers the finished table in the context) to the `Select Table` node,
+   *  matching the table name against variable names after normalization
+   *  (case / space / underscore insensitive — the same name↔friendlyName
+   *  convention the Datagrok resolver uses). Order edges carry no data; they
+   *  only constrain execution order (and are excluded from the layout).
+   *
+   *  Creation scripts are linear and acyclic — a statement can only reference
+   *  already-created tables — so the inferred edges never form a cycle. */
+  private inferOrderEdges(): void {
+    if (this.setVarNodes.size === 0) return;
+    const byNorm = new Map<string, FlowNode>();
+    for (const [name, node] of this.setVarNodes) {
+      const key = normalizeName(name);
+      if (key !== '' && !byNorm.has(key)) byNorm.set(key, node);
+    }
+    for (const node of this.nodes) {
+      if (node.dgTypeName !== SELECT_TABLE_TYPE) continue;
+      const producer = byNorm.get(normalizeName(node.properties['tableName']));
+      if (!producer || producer === node) continue;
+      this.connections.push({
+        source: producer, sourceKey: EXEC_OUT_KEY,
+        target: node, targetKey: EXEC_IN_KEY, order: true,
+      });
+    }
   }
 
   private _setVarFunc: DG.Func | null | undefined = undefined;
@@ -623,7 +668,10 @@ class CreationScriptBuilder {
    *  delegated to the shared `layoutGraph` (see `rete/graph-layout.ts`), using
    *  the layer map assigned incrementally during the build. */
   private layout(): void {
-    layoutGraph(this.nodes, this.connections.map((c) => ({source: c.source, target: c.target})), this.layer);
+    const dataEdges = this.connections
+      .filter((c) => !c.order)
+      .map((c) => ({source: c.source, target: c.target}));
+    layoutGraph(this.nodes, dataEdges, this.layer);
   }
 }
 
@@ -631,6 +679,15 @@ class CreationScriptBuilder {
 
 function isPrimitive(v: unknown): v is string | number | boolean {
   return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+}
+
+/** Canonicalize a variable / table name for matching across the name↔friendlyName
+ *  convention: lowercase, drop everything but letters and digits (so spaces,
+ *  underscores, capitalization, and punctuation are all ignored). "Mol1KLocal",
+ *  "mol1K local", and "mol_1k_local" all collapse to "mol1klocal". Mirrors the
+ *  normalization the layout's `orderedComponents` uses for banding. */
+function normalizeName(s: unknown): string {
+  return String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 

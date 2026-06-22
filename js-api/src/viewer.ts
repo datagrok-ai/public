@@ -804,9 +804,6 @@ export class PcPlot extends Viewer<interfaces.IPcPlotSettings> {
   /** Canvas X coordinate of the i-th axis tick (0-based). */
   getColX(i: number): number { return api.grok_PcPlotViewer_GetColX(this.dart, i); }
 
-  /** Pixel width of one inter-axis slot — `chartBox.width / (columnNames.length - 1)`. */
-  get chartW(): number { return api.grok_PcPlotViewer_Get_ChartW(this.dart); }
-
   /** True when at least one per-axis filter slider is narrowed to a custom
    *  range — i.e. the plot is currently filtering rows. */
   get isFiltering(): boolean { return api.grok_PcPlotViewer_Get_IsFiltering(this.dart); }

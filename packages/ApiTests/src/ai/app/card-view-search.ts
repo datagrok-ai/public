@@ -1,14 +1,16 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {expectNoThrow, withAttachedView} from '../helpers';
 
-// CardView search/filter surface. View must be attached before DOM-backed getters/refresh() work,
-// and needs a real objectType — an empty data source makes refresh()/repaint() throw and leak.
+// CardView search/filter surface. View must be attached before DOM-backed getters/refresh() work.
+// The data source comes from the `dataSource` create option (objectType is only render metadata) —
+// without it refresh() throws "DataSource not specified" as an unhandled async rejection.
 category('AI: App: CardView Search', () => {
   const withCardView = (body: (cv: DG.CardView) => void): Promise<void> =>
-    // awaitRender=false: search/filter state is model-backed; objectType gives refresh() a data source.
+    // awaitRender=false: search/filter state is model-backed; dataSource lets refresh() run cleanly.
     withAttachedView<DG.CardView>(() => {
-      const cv = DG.CardView.create({});
+      const cv = DG.CardView.create({dataSource: grok.dapi.scripts});
       cv.objectType = 'Script';
       return cv;
     }, (cv) => {

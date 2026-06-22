@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, df, expectChoices, expectNoThrow, expectPropAndLook, expectRoundTrip,
-  expectRoundTripPropAndLook, until, withAttachedViewer} from '../helpers';
+  expectRoundTripPropAndLook, look, until, withAttachedViewer} from '../helpers';
 
 // FormViewer JS surface: typed factory, editable/designMode, show* toggles, syncMode, buildForm, row, form getter.
 category('AI: Viewers: Form JS API', () => {
@@ -58,11 +58,11 @@ category('AI: Viewers: Form JS API', () => {
     });
   });
 
-  test('buildForm + columnNames — rebuild the form with a subset of columns', async () => {
+  test('buildForm — rebuild the form with a subset of columns (read back via getOptions)', async () => {
     await withAttachedViewer<DG.FormViewer>(demog(), DG.VIEWER.FORM, {}, async (v) => {
       v.buildForm(['name', 'age']);
-      await until(() => (v.columnNames ?? []).length >= 1);
-      const names = v.columnNames ?? [];
+      await until(() => ((look(v)['columnNames'] as string[]) ?? []).length >= 1);
+      const names = (look(v)['columnNames'] as string[]) ?? [];
       expect(names.length >= 1, true);
       expect(names.includes('name') || names.includes('age'), true);
     });

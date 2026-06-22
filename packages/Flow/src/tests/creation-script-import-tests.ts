@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {
   buildCreationScriptGraph, applyGraphToEditor, BuiltGraph,
   estimateNodeWidth, estimateNodeHeight,
@@ -450,6 +451,73 @@ category('Flow: creation script import', () => {
       expect(script.includes('grok.shell.tableByName("demog (2)")'), true, 'table2 via tableByName');
       expect(script.includes('ResolveTable'), false, 'no ResolveTable in generated script');
       expect(script.includes(`.col('USUBJID')`), true, 'key columns via table.col()');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  // ---------- inferred order (run-order) edges ----------
+
+  /** Order edges from the built graph: exec-out → exec-in, no data. */
+  function orderEdges(graph: BuiltGraph) {
+    return graph.connections.filter((c) => c.order);
+  }
+
+  test('order edge inferred from a SetVar to a table referenced by friendly name', async () => {
+    // "mol1K local" is the friendly name of the variable Mol1KLocal created
+    // above — it has no data edge to the producer (it resolves at runtime via
+    // grok.shell.tableByName), so an order edge must force the producer first.
+    const g = buildCreationScriptGraph([
+      'Mol1KLocal = OpenFile("local.csv")',
+      'Result = JoinTables("mol1K local", "demog", ["prID"], ["prID"], ["prID"], ["prID"])',
+    ].join('\n'));
+
+    const edges = orderEdges(g);
+    expect(edges.length, 1, 'exactly one order edge (only "mol1K local" matches a variable)');
+    const edge = edges[0];
+
+    // Endpoints: producer SetVar(Mol1KLocal) → the Select Table for "mol1K local".
+    const setLocal = setVarFor(g, 'Mol1KLocal')!;
+    const selectLocal = g.nodes.find((n) =>
+      n.dgTypeName === 'Utilities/Select Table' && n.properties['tableName'] === 'mol1K local')!;
+    expect(edge.source, setLocal, 'order edge starts at the producing SetVar');
+    expect(edge.target, selectLocal, 'order edge ends at the name-referenced Select Table');
+    expect(edge.sourceKey, EXEC_OUT_KEY, 'wired from the exec-out port');
+    expect(edge.targetKey, EXEC_IN_KEY, 'wired into the exec-in port');
+
+    // "demog" matches no variable — no order edge for its Select Table.
+    const selectDemog = g.nodes.find((n) =>
+      n.dgTypeName === 'Utilities/Select Table' && n.properties['tableName'] === 'demog')!;
+    expect(edges.some((c) => c.target === selectDemog), false, 'no order edge for the unmatched table');
+  });
+
+  test('no order edges when no table name matches a variable', async () => {
+    const g = buildCreationScriptGraph([
+      'A = OpenFile("a.csv")',
+      'Result = JoinTables("totally different", "demog", ["id"], ["id"], ["id"], ["id"])',
+    ].join('\n'));
+    expect(orderEdges(g).length, 0, 'no inferred order edges');
+  });
+
+  test('inferred order edge applies to a live editor, sorts producer before the reference', async () => {
+    const e = makeEditor();
+    try {
+      const g = buildCreationScriptGraph([
+        'Mol1KLocal = OpenFile("local.csv")',
+        'Result = JoinTables("mol1K local", "demog", ["prID"], ["prID"], ["prID"], ["prID"])',
+      ].join('\n'));
+      const added = await applyGraphToEditor(g, e.flow);
+      expect(added, g.connections.length, 'every connection (incl. the order edge) applied');
+
+      // No cycle, and the order edge forces the producer ahead of the reference.
+      const errors = validateGraph(e.flow).filter((r) => r.severity === 'error');
+      expect(errors.length, 0, `validation errors: ${errors.map((x) => x.message).join('; ')}`);
+
+      const script = emitScript(e.flow, SETTINGS);
+      const iSet = script.indexOf('"Mol1KLocal"');
+      const iRef = script.indexOf('tableByName("mol1K local")');
+      expect(iSet >= 0 && iRef >= 0, true, 'both the SetVar and the name reference are emitted');
+      expect(iSet < iRef, true, 'Mol1KLocal is registered before it is read by name');
     } finally {
       destroyEditor(e);
     }

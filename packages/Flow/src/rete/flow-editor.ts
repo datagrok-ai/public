@@ -1603,6 +1603,10 @@ export class FlowEditor {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const edges: LayoutEdge[] = [];
     for (const c of this.editor.getConnections()) {
+      // Order edges ARE included. computeLayers runs fresh here (unlike the
+      // importer's stale incremental layer map), so an order edge is just
+      // another forward dependency — it places the "after" node further right,
+      // letting explicit run-order shape the layout left-to-right.
       const source = byId.get(c.source);
       const target = byId.get(c.target);
       if (source && target) edges.push({source, target});

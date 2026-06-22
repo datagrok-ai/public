@@ -115,6 +115,16 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   func node (labeled `set: <name>`) — the single terminal per variable — wired from the variable's
   final ref. Running the flow registers each value in the context under its original name, so
   downstream consumers (a Select Table in a lower disjoint path, other scripts) can resolve it.
+- **Inferred order edges**: a Select Table reads its table at runtime by name
+  (`grok.shell.tableByName`) with no data edge back to the producer, so nothing *forces* the producer
+  to run first. After all `SetVar`s are wired, `inferOrderEdges` matches each Select Table's
+  `tableName` against the script's variable names — **normalized** (`normalizeName`: lowercase, drop
+  non-alphanumerics) so the name↔friendlyName convention resolves (`Mol1KLocal` ↔ `"mol1K local"`) —
+  and adds an **order edge** (exec-out → exec-in, see Execution-Ordering Edges) from that variable's
+  `SetVar` to the Select Table. Creation scripts are linear/acyclic (a line references only
+  already-created tables), so the edges never form a cycle. They are **excluded from the layout** (the
+  `order` flag on `BuiltConnection`) — banding still relies on `orderedComponents`' name match — but
+  they do constrain the topological sort, so reordering nodes can't break run-order.
 - **Ordering**: after a *bare* call consumes a variable (a direct `GetVar`), the variable ref
   advances to that node's `<input>__pt` pass-through output. The next consumer connects there, so the
   topological sort reproduces the script's sequential line order (critical for in-place mutators like
@@ -164,7 +174,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
-| `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
+| `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 
 ## Rete Pipeline
 
@@ -279,7 +289,7 @@ A second, **data-free** connection type that expresses pure run-order — "node1
 - **Type isolation**: `areTypesCompatible` returns `false` whenever either side is `order` (checked *before* the `dynamic`/`object` wildcards), so a data port can never connect to an exec port and vice-versa.
 - **Topological sort**: zero changes — the sort already works at the node level over `getConnections()`, so an order edge is just another dependency. Vertical position (`y`) degrades to a tiebreaker between genuinely-unordered nodes.
 - **Compiler**: ignores exec ports — every port-iterating loop in `graph-compiler.ts` filters `isExecKey`, so order edges produce no variable, no data, and never leak `__exec*` into the output.
-- **Layout**: order edges feed `computeLayers`, so Clean Layout places an "after" node to the **right** — execution order reads left-to-right.
+- **Layout**: **Clean Layout** (`FlowEditor.autoLayout`) **includes** order edges — it recomputes layers from scratch with `computeLayers`, so an order edge is just another forward dependency: the "after" node lands in a higher layer (further right) and explicit run-order shapes the layout left-to-right. The **importer** is the one exception: it reuses a *stale incremental* layer map (a `Select Table` was assigned layer 0 at creation, before its producer's `SetVar` existed), so feeding order edges to that map would draw a backward wire — the importer therefore **excludes** them (the `order` flag on `BuiltConnection`) and keeps its `orderedComponents` producer-above-consumer banding, with the order edge drawn as a diagonal between bands. (Click Clean Layout after import to re-flow it left-to-right.)
 - **Visual**: static gray dotted edge (no data-flow march); `FlowEditor.tagConnectionElement` stamps `data-order="true"`, CSS does the rest.
 - **Serialization**: free — order edges use the existing connection schema (`sourceOutput: __exec_out`, `targetInput: __exec_in`).
 

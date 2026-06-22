@@ -74,12 +74,14 @@ category('Flow: layout', () => {
     }
   });
 
-  test('autoLayout reproduces producer-above-consumer banding in the editor', async () => {
+  test('autoLayout places an order-edge producer upstream (left) of the consumer', async () => {
     const e = makeEditor();
     try {
-      // Join (defined first) reads "Second" via a Select Table; the Second
-      // producer path is defined later — autoLayout must still place the
-      // producer band above the consumer band.
+      // Join (defined first) reads "Second" via a Select Table; the importer
+      // adds an order edge SetVar(Second) → Select Table("Second"). autoLayout
+      // includes order edges in computeLayers, so the producer chain flows
+      // left-to-right INTO the consumer — the producer sits left of the join,
+      // and the order edge points rightward like any other dependency.
       const g = buildCreationScriptGraph([
         'Joined = JoinTables("First", "Second", ["Id"], ["Id"], ["Id"], ["Id"])',
         'Second = OpenFile("s.csv")',
@@ -95,8 +97,15 @@ category('Flow: layout', () => {
       const join = nodesByFunc(g, 'JoinTables')[0];
       const openSecond = nodesByFunc(g, 'OpenFile')[0];
       const setSecond = nodesByFunc(g, 'SetVar').find((n) => n.inputValues['variableName'] === 'Second')!;
-      expect(openSecond.pos.y < join.pos.y, true, 'producer OpenFile above the join');
-      expect(setSecond.pos.y < join.pos.y, true, 'producer SetVar above the join');
+      expect(openSecond.pos.x < join.pos.x, true, 'producer OpenFile upstream (left) of the join');
+      expect(setSecond.pos.x < join.pos.x, true, 'producer SetVar upstream (left) of the join');
+
+      // Every edge — data and order — points strictly rightward.
+      for (const conn of e.flow.getConnections()) {
+        const s = e.flow.getNodeById(conn.source)!;
+        const t = e.flow.getNodeById(conn.target)!;
+        expect(s.pos.x < t.pos.x, true, `${s.label} must be left of ${t.label}`);
+      }
       expect(noOverlap(e.flow.getNodes()), true, 'no node boxes overlap');
     } finally {
       destroyEditor(e);

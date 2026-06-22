@@ -38,10 +38,6 @@ category('AI: Viewers: PcPlot Extras', () => {
     expect(box.height > 0, true);
   });
 
-  test('chartW equals chartBox.width / (columnNames.length - 1)', async () => {
-    expectFloat(v.chartW, v.chartBox.width / (columns.length - 1));
-  });
-
   test('getColX(i) is monotonically increasing and matches chartBox endpoints', async () => {
     const box = v.chartBox;
     const xs: number[] = [];
