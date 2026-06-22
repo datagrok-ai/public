@@ -18,6 +18,7 @@ src/
 │   ├── node-component.tsx        # React Node + Socket components (rendered to DOM by ReactPlugin)
 │   ├── flow-editor.ts            # NodeEditor + AreaPlugin + ConnectionPlugin + ReactPlugin wiring
 │   ├── node-factory.ts           # Type registry: createNode(typeName), DG.Func discovery
+│   ├── graph-layout.ts           # Shared layered/banded layout (importer + Clean Layout ribbon)
 │   └── nodes/
 │       ├── input-nodes.ts        # 13 input types — //input: lines
 │       ├── output-nodes.ts       # Table & Value (with auto-type detect)
@@ -26,7 +27,7 @@ src/
 │       ├── breakpoint-node.ts    # Debug pause node
 │       └── func-node.ts          # Dynamic node factory per DG.Func, builds pass-through outputs
 ├── compiler/
-│   ├── topological-sort.ts       # Kahn's over editor.getConnections()
+│   ├── topological-sort.ts       # Kahn's, component-by-component (top-y first), y/x-stable
 │   ├── graph-utils.ts            # Thin shim around FlowEditor
 │   ├── graph-compiler.ts         # FlowEditor → CompiledStep[]
 │   ├── script-emitter.ts         # CompiledStep[] → JS source (clean + instrumented modes)
@@ -43,6 +44,8 @@ src/
 ├── serialization/
 │   ├── flow-schema.ts            # .ffjson v2 type definitions (Rete-native, no LiteGraph payload)
 │   └── flow-serializer.ts        # serialize / deserialize / download
+├── import/
+│   └── creation-script-importer.ts  # Table-creation script → flow graph (reverse of the compiler)
 ├── types/
 │   └── type-map.ts               # DG type → slot color, role color, type compatibility
 └── utils/
@@ -54,8 +57,112 @@ src/
 Uses `@grok.decorators` (TS decorator API):
 - `@grok.decorators.app({name: 'Flow', tags: ['app']})` → `funcflowApp(path?)` returns `FuncFlowView`
 - `@grok.decorators.fileViewer({fileViewer: 'ffjson'})` → `viewFuncFlow(file)` opens `.ffjson` files
+- `@grok.decorators.func(...)` → `flowFromCreationScript(script)` builds a flow from a table-creation
+  script, adds the view to the shell, and returns it
 
 Both entry points hide the toolbox/help and show the context panel.
+
+## Creation-Script Import ([import/creation-script-importer.ts](src/import/creation-script-importer.ts))
+
+The reverse of the compiler: takes a **table-creation script** (the cascade of function calls Datagrok
+records for reproducibly-created tables — `df.getTag(DG.Tags.CreationScript)`, used by project data
+sync) and rebuilds it as a flow graph.
+
+```
+Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") //{"timestamp": …}
+Chem:addChemPropertiesColumns(Mol1K, "molecule", true, …)
+AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = true)
+```
+
+- Each line parses via `grok.functions.parse(line, false)` into a `DG.FuncCall` (falls back to
+  stripping the trailing `//{…}` metadata comment, quote-aware so URLs survive).
+- **Assignments** are `SetVar`-shaped calls (two inputs: string `variableName` + non-null `value`);
+  the value call's primary output is recorded in a variable table. The *first* variable is the
+  script's result and gets wired to a Table/Value Output node at the end. Assignments do **not**
+  advance their inputs (they produce a new variable, they don't mutate inputs).
+- **Plain (bare) calls** become `FuncNode`s (via `ensureFuncNodeType` in `node-factory.ts`, which
+  registers catalog-excluded funcs on the fly). They are treated as in-place mutators.
+- **Inputs by type**: a primitive on an *editable* slot (`string`/`int`/`double`/`num`/`bool`) goes
+  into `node.inputValues` (shown/edited in the panel). A primitive on any other slot — notably the
+  `dynamic` `value` of `ResolveColumn` (a column name) — gets a **Constant node** wired in, because
+  those slots aren't editable in the panel and need an explicit producer. `FuncCall` inputs connect
+  recursively; `GetVar` inputs resolve through the variable table.
+- **Column arguments** parse to `ResolveColumn(value:dynamic, parentTable:dataframe)`. The platform
+  `ResolveColumn` misbehaves at runtime, *and* a Select Column node per column argument clutters the
+  graph — so the importer **inlines the column name into `node.inputValues[paramName]`** (the
+  `column`/`column_list` slot is editable in the panel, seeded by `FuncNode`). `ResolveColumnList` →
+  a **comma-separated** value string. At compile time the value becomes `table.col('name')` /
+  `[table.col('a'), …]` (see the compiler note below). These never advance variables.
+  - **Which table** a column resolves against is stored explicitly in the func node's
+    `properties['columnTables']` (`{columnParam → dataframeParam}`), seeded by `FuncNode` to the
+    dataframe input sharing the param's numeric suffix (`keys2`→`table2`) else the first dataframe
+    input (`defaultTableParam`). The panel shows a table-choice combo when the func has **≥2**
+    dataframe inputs (unambiguous for one). The compiler reads this association (falling back to the
+    same suffix/first heuristic for older saves).
+  - **Marginal case**: a column input on a func with **no** dataframe input can't resolve a table —
+    `FuncNode` doesn't seed it (stays connection-only) and the importer falls back to a real
+    **Select Column / Select Columns** node (the older behavior, still wired by `parentTable` / the
+    enclosing call's table). Arrays of plain primitives still become a **List** constant.
+- **Table-name strings** parse to `ResolveTable(value)` calls — substituted with the **Select Table**
+  utility (`grok.shell.tableByName(name)`, also broken platform-side), titled `table: <name>` so
+  collapsed nodes stay readable.
+- **Constant nodes** are titled after their value (`const: <value>`, via `constLabel` in
+  utility-nodes.ts; empty → the type name). Because labels are user-editable, anything semantic must
+  NOT read `node.label`: utility emission dispatches on `dgTypeName` (`utilityKind` in
+  graph-compiler.ts), and the Value Output auto-typing checks `dgTypeName` too.
+- **Outputs / variables**: there are **no Output nodes**. *Every* script variable
+  (`BuiltGraph.outputVariables`, first-assignment order) feeds a real **`SetVar(variableName, value)`**
+  func node (labeled `set: <name>`) — the single terminal per variable — wired from the variable's
+  final ref. Running the flow registers each value in the context under its original name, so
+  downstream consumers (a Select Table in a lower disjoint path, other scripts) can resolve it.
+- **Ordering**: after a *bare* call consumes a variable (a direct `GetVar`), the variable ref
+  advances to that node's `<input>__pt` pass-through output. The next consumer connects there, so the
+  topological sort reproduces the script's sequential line order (critical for in-place mutators like
+  `addChemPropertiesColumns`), while the compiler still resolves the pass-through to the same
+  expression — no spurious variables in the generated script.
+- **Layout**: all imported nodes start **collapsed** (title bar only — expand per node as needed).
+  The arrangement itself lives in [rete/graph-layout.ts](src/rete/graph-layout.ts) (`layoutGraph`), shared
+  with the **Clean Layout** ribbon action so both produce the same result. Layered left-to-right with
+  **one horizontal band per disjoint path** (weakly connected component):
+  - Columns are **global** — shared x per layer, width = widest estimated node in that layer — so every
+    edge points right and same-depth nodes line up across bands. The importer feeds its incrementally
+    assigned layer map (`max(source layers)+1`); `FlowEditor.autoLayout` derives layers from the
+    connection structure via `computeLayers` (longest-path).
+  - Each component is a contiguous band; within a band/column, nodes order by predecessor barycenter
+    and greedily stack (`max(nextFreeY, barycenter-h/2, bandTop)`) so chains read as straight lanes,
+    branches fan out, and nothing overlaps.
+  - Bands are stacked in **dependency order** (`orderedComponents`): a path that produces a table
+    (its `SetVar` variable) is placed **above** the path that reads it through a `Select Table` node
+    (matched by normalized name), with ties broken by node order. Because the execution topological
+    sort ranks components by topmost-node `y`, this band order *is* the execution order — producers run
+    before the consumers that read their tables.
+  - `estimateNodeWidth`/`estimateNodeHeight` live in `graph-layout.ts` (re-exported from the importer
+    for the layout-invariant tests: edges-point-right, no-overlap, producer-above-consumer).
+
+The core is a **pure, synchronous, DOM-free** `buildCreationScriptGraph(script): BuiltGraph` — it
+constructs `FlowNode` instances + connection records but touches no editor, so it is the unit-test
+entry point. `applyGraphToEditor(graph, flow)` pushes it into a live editor;
+`buildFlowFromCreationScript(flow, script)` does both.
+
+UI: `File > Import Creation Script...` in the ribbon menu opens a dialog with a script textarea and a
+"From table" picker prefilled from open tables that carry a creation script.
+`FuncFlowView.loadFromCreationScript(script)` clears the canvas, builds, and zooms to fit.
+
+## Tests ([src/tests/](src/tests))
+
+`package-test.ts` imports the suites; run with `grok test --host localhost`. `test-utils.ts` provides
+`makeEditor`/`destroyEditor` (a detached, off-screen `FlowEditor` whose data layer is populated
+synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
+
+| File | Category | Covers |
+|---|---|---|
+| `type-map-tests.ts` | Flow: type-map | `areTypesCompatible` matrix, `dgTypeToSlotType`, colors |
+| `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
+| `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
+| `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
+| `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
+| `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
+| `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 
 ## Rete Pipeline
 
@@ -132,6 +239,7 @@ Become `//output:` annotation lines.
 |------|----------------|
 | Select Column | `let v = df.col('name')` |
 | Select Columns | `let v = [df.col('a'), df.col('b')]` |
+| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants) |
 | Add Table View | `let v = grok.shell.addTableView(df)` |
 | Log | `console.log([label,] value)` |
 | Info | `grok.shell.info(msg)` |
@@ -172,6 +280,7 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 ## Type System (`types/type-map.ts`)
 
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
+- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName)` checks this **before** role coloring, so specific functions can be pinned regardless of role (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
@@ -181,8 +290,13 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 
 Pipeline ([compiler/](src/compiler)):
 
-1. **Topological sort** — Kahn's algorithm over `editor.getConnections()`.
-2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix.
+1. **Topological sort** — Kahn's algorithm over `editor.getConnections()`, made deterministic and
+   layout-aware: **disjoint subgraphs** (weakly connected components) run one after another, ranked by
+   their topmost node's `(y, x)` — a path placed above another finishes completely before the lower
+   one starts (lower paths may implicitly read what upper ones produced, e.g. a Select Table reading
+   a table an upper path opened). **Within** a component, ready nodes are picked top-to-bottom
+   (`y`, then `x`, then insertion order).
+2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix. Func input resolution runs in two passes: ordinary inputs (connections, primitive `inputValues`) first, then unconnected **`column`/`column_list`** `inputValues` — these inline to `table.col('name')` / `[table.col(…), …]`, where the table comes from the node's `properties['columnTables']` association (so column args need no Select Column node; `tableExprForColumnParam`/`columnSelectionExpr`).
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 
 ### Validation ([compiler/validator.ts](src/compiler/validator.ts))
@@ -221,6 +335,8 @@ Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run
 **Variable hoisting**: when wrapping `let x = ...`, the declaration is hoisted before `try` and only the assignment goes inside, so downstream nodes can reference `x`.
 
 **In-place mutating function support**: when a func node has dataframe input(s) but **zero real outputs**, the wrapper emits a synthetic output entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the modified table is previewable.
+
+**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the docked output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
 
 ## Execution Visualization
 
@@ -296,7 +412,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 - Title row at top (editable label) + node-type badge.
 - Accordion with type-specific panes:
-  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; "connected only" label otherwise).
+  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; a `string` input that declares `.choices` renders a **combo** instead of a text field — with a leading empty option when the property is `nullable` — via `propertyChoices`/`stringChoiceOptions`; `column` → a column-name text field, `column_list` → a comma-separated field, laid out side by side (≈70%/30%, `createColumnRow`) with a table-choice combo when the func has ≥2 dataframe inputs writing `properties['columnTables']`; "connected only" label otherwise).
   - Input nodes: **Input Configuration** (paramName, description, defaultValue, nullable, caption, type/semType filters, choices, min/max, showSlider).
   - Output nodes: **Output Configuration** (paramName + outputType combo for ValueOutput).
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).

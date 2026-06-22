@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler, indexFromEnd} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
@@ -148,6 +148,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
+  const links = conf.links?.map((link) => processLinkData(link));
   const actions = processStepActions(conf.actions ?? [], logger);
   const io = getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
@@ -158,20 +159,24 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
     viewersHook = await hookMaker.apply();
   }
   const states = conf.states?.map((s) => normalizeIdRef(s));
-  return {...conf, viewersHook, io, actions, states};
+  return {...conf, viewersHook, io, links, actions, states};
 }
 
-function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {
+function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedItemContext): PipelineConfigurationStaticProcessed {
   return {
     id: conf.id,
     type: 'static',
     friendlyName: conf.friendlyName,
+    description: conf.description,
     tags: conf.tags,
     steps: [],
     links: [],
     actions: [],
     disableHistory: true,
     isActionStep: true,
+    disableUIAdding: conf.disableUIAdding,
+    disableUIDragging: conf.disableUIDragging,
+    disableUIRemoving: conf.disableUIRemoving,
   } as PipelineConfigurationStaticProcessed;
 }
 

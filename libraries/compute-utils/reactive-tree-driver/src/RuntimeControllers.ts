@@ -20,6 +20,7 @@ export type TemplateInfo = {
 
 export interface IRuntimeLinkController extends IControllerBase {
   setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
+  clearRestriction(name: string): void;
   getInputTemplates(): TemplateInfo[];
   getOutputTemplates(): TemplateInfo[];
   propagateTemplatePair(
@@ -44,7 +45,7 @@ export interface IRuntimeValidatorController extends IControllerBase {
 }
 
 export interface IRuntimePipelineValidatorController extends IControllerBase {
-  setValidation(validation?: ValidationResult): void;
+  setValidation(name: string, validation?: ValidationResult): void;
   /** Outline of the pipeline where this link is defined (not the `to` target). */
   getOutline(): PipelineOutline;
 }

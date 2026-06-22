@@ -1,6 +1,7 @@
 ---
 title: "Basic tasks"
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

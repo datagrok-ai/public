@@ -7,6 +7,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {getMCS} from '../utils/most-common-subs';
 import {rGroupsMinilib} from '../analysis/r-group-analysis';
+import {newChemOpId, runCancellableChemOp} from '../utils/chem-common';
 
 
 category('top menu r-groups', () => {
@@ -198,6 +199,83 @@ M  END
     expect(['smiles', 'Core', 'R1', 'r-groups-highlight_0', 'isMatch']
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
+
+  // --- kill-based cancellation machinery ---
+
+  test('cancellable.runCancellableChemOp', async () => {
+    expect(await runCancellableChemOp(newChemOpId(), () => false, async () => 42), 42, 'returns result when not cancelled');
+    // cancelled while still queued: bails before running work
+    const queuedCancel = await runCancellableChemOp(newChemOpId(), () => true, async () => 42);
+    expect(queuedCancel === undefined, true, 'cancelled-before-work => undefined');
+    // cancelled mid-run: a killed worker's rejected call must surface as undefined, not an error
+    let canceled = false;
+    const killed = await runCancellableChemOp(newChemOpId(), () => canceled, async () => {
+      canceled = true; throw new Error('worker terminated');
+    });
+    expect(killed === undefined, true, 'cancelled + throw => undefined');
+    let threw = false;
+    try {
+      await runCancellableChemOp(newChemOpId(), () => false, async () => {throw new Error('real failure');});
+    } catch (_) {threw = true;}
+    expect(threw, true, 'a real error is rethrown, not swallowed');
+  });
+
+  test('rgroups.cancel.recovery', async () => {
+    const svc = await chemCommonRdKit.getRdKitService();
+    await svc.restartWorker(0); // kill + reload worker 0 — what a cancel does
+    const res = await rGroupsMinilib(sampleTable.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+    expect(res.rGroups.length > 0, true, 'R-Group works after its worker is restarted');
+  }, {timeout: 60000});
+
+  // A long task runs normally while a second one is launched and cancelled: the first must finish
+  // (not collaterally cancelled), the second must bail without running.
+  test('rgroups.cancel.secondNotFirst', async () => {
+    const opA = newChemOpId('opA');
+    const opB = newChemOpId('opB');
+    let bCanceled = false;
+    let bWorkRan = false;
+    let aStarted!: () => void;
+    const aStartedP = new Promise<void>((r) => aStarted = r);
+    // process 1 (A): grabs the section (called first → wins the lock), holds it, completes; never cancelled
+    const aProm = runCancellableChemOp(opA, () => false, async () => {
+      aStarted();   // A now holds the section (runningOpId === opA)
+      await new Promise((r) => setTimeout(r, 500));
+      return 'A-done';
+    });
+    // process 2 (B): launched second, so it queues behind A on the section
+    const bProm = runCancellableChemOp(opB, () => bCanceled, async () => {
+      bWorkRan = true;
+      return 'B-done';
+    });
+    await aStartedP;   // A is now the running op (deterministic, no timing guess)
+    bCanceled = true;
+    // no-op while B is only queued — cancelChemOp must not touch A (the running op)
+    await chemCommonRdKit.cancelChemOp(opB, [0]);
+    const [aRes, bRes] = await Promise.all([aProm, bProm]);
+    expect(aRes, 'A-done', 'first (running) op completes — not collaterally cancelled');
+    expect(bRes === undefined, true, 'second (queued) op is cancelled');
+    expect(bWorkRan, false, 'second op bails before running its work');
+  }, {timeout: 60000});
+
+  // The actual kill path: cancelChemOp on the RUNNING op restarts its worker, rejecting the in-flight call.
+  test('rgroups.cancel.killsRunningOp', async () => {
+    const svc = await chemCommonRdKit.getRdKitService();
+    const opId = newChemOpId('kill');
+    let canceled = false;
+    let started!: () => void;
+    const startedP = new Promise<void>((r) => started = r);
+    const opProm = runCancellableChemOp(opId, () => canceled, async () => {
+      started();   // op holds the section AND its worker-0 call is posted
+      return svc.parallelWorkers[0].mostCommonStructure(['c1ccccc1', 'c1ccccc1O'], false, false);
+    });
+    await startedP;
+    canceled = true;
+    await chemCommonRdKit.cancelChemOp(opId, [0]);   // opId IS running → restartWorker(0) rejects the in-flight call
+    expect(await opProm === undefined, true, 'killing the running op returns undefined');
+    // the kill's try/finally must have released the section — the next op acquires it (no deadlock).
+    const next = await runCancellableChemOp(newChemOpId(), () => false, async () => 'ok');
+    expect(next, 'ok', 'critical section released after the kill — next op runs');
+  }, {timeout: 30000});
 });
 
 const sampleTable = DG.DataFrame.fromCsv(`smiles

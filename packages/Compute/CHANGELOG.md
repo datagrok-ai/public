@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.45.1 (2026-06-04)
+
+- Pick up compute-utils file-input save/load and run JSON export fixes
+
 ## 1.45.0 (2026-03-19)
 
 - Mark as a leagacy package

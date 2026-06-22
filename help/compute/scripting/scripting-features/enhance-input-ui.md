@@ -1,7 +1,8 @@
 ---
 title: "Enhance input UI"
 sidebar_position: 1
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

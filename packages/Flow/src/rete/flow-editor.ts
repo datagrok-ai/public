@@ -26,6 +26,7 @@ import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
@@ -190,7 +191,8 @@ export class FlowEditor {
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
-    if (!targetNode || targetNode.label !== 'Value Output') return;
+    // Match by registered type, not label — titles are user-editable.
+    if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
     const sourceNode = this.editor.getNode(connection.source) as FlowNode | undefined;
     if (!sourceNode) return;
     const sourceOutput = sourceNode.outputs[String(connection.sourceOutput)] as
@@ -200,6 +202,19 @@ export class FlowEditor {
     if (detected && detected !== 'dynamic' && detected !== 'object') {
       targetNode.properties['outputType'] = detected;
       void this.area.update('node', targetNode.id);
+    }
+  }
+
+  /** Collapsed nodes render socket DOM only for *connected* sockets (see
+   *  node-component.tsx). A connection created or removed while an endpoint is
+   *  collapsed changes which sockets must exist, so re-render those nodes.
+   *  Without this, a connection added to an already-collapsed node (creation-
+   *  script import, .ffjson load) has no socket element to attach to and stays
+   *  invisible until the node is expanded and collapsed again. */
+  private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
+    for (const id of [conn.source, conn.target]) {
+      const node = this.editor.getNode(id);
+      if (node?.collapsed) void this.area.update('node', id);
     }
   }
 
@@ -227,6 +242,8 @@ export class FlowEditor {
         this.maybeAutoTypeValueOutput(context.data);
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
+      if (context.type === 'connectioncreated' || context.type === 'connectionremoved')
+        this.refreshCollapsedEndpoints(context.data);
       if (
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
@@ -1357,6 +1374,26 @@ export class FlowEditor {
 
   async zoomToFit(): Promise<void> {
     await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
+  }
+
+  /** Re-arrange the whole graph with the layered/banded layout used by the
+   *  creation-script importer (`rete/graph-layout.ts`): layers from the
+   *  connection structure (every edge points right), one band per disjoint
+   *  path, producer paths above the paths that consume them. Repositions every
+   *  node and zooms to fit. */
+  async autoLayout(): Promise<void> {
+    const nodes = this.editor.getNodes();
+    if (nodes.length === 0) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      const source = byId.get(c.source);
+      const target = byId.get(c.target);
+      if (source && target) edges.push({source, target});
+    }
+    layoutGraph(nodes, edges, computeLayers(nodes, edges));
+    for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
+    await this.zoomToFit();
   }
 
   // ---------- lifecycle ----------

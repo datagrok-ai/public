@@ -10,6 +10,10 @@
 	background: white;
 }
 
+.demo-app-loading {
+	position: relative;
+}
+
 .demo-app-loading > .d4-update-shadow {
 	opacity: 1 !important;
 	background-color: white;

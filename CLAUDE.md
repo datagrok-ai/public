@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the **Datagrok public repository** - the open-source monorepo for the Datagrok data analytics and visualization platform. It contains the JavaScript/TypeScript API, shared libraries, CLI tools, and 76+ extension packages.
 
+## Knowledge graph — query it before you grep
+
+**Read this before you reach for grep/find/rg.** This repo ships a **queryable knowledge graph** of every package, registered function, script, query, library, TS class/method, doc page, tutorial, changelog entry, and Jira ticket — plus the edges between them. It lives at [`.kg/`](.kg/) as a ~2.4 MB committed binary.
+
+For any **structural** question, your FIRST action must be a `.kg/scripts/qq.py` query — **not** a filesystem search. Use it whenever you need to:
+
+- Find which plugin owns a feature: *"what implements substructure search?"*
+- Find documentation for a function: *"where is `searchSubstructure` documented?"*
+- Find who imports / tests / extends / calls / depends on something.
+- Find coverage gaps, or trace a Jira ticket to commits, packages, and docs.
+
+```bash
+python3 .kg/scripts/qq.py "MATCH (p:Package {name:'Chem'})-[:HAS_FEATURE]->(f:Feature) RETURN f.name LIMIT 10"
+```
+
+Run it with plain system Python — **no setup required**. The first call self-installs its engine into `.kg/.venv` (~30s) and unpacks the DB; every call after returns in ~5ms. Cookbook and node/edge schema are in [`.kg/CLAUDE.md`](.kg/CLAUDE.md).
+
+Reach for grep **only** when the question isn't structural (e.g. a raw string literal) or the graph comes up empty. Don't grep `packages/` or `libraries/` to answer a "who implements / owns / uses X" question — that's what the graph is for.
+
 ## Repository Structure
 
 ```

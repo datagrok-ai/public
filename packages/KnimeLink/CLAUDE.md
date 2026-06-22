@@ -81,9 +81,11 @@ The package uses different execution strategies based on deployment type (determ
 Uses a two-phase approach:
 - **Phase 1 (cached)**: Loads cached entries via `loadCachedEntries()` and creates tree items immediately
   with already-registered functions (from autostart). Items are usable before the network request completes.
-- **Phase 2 (live refresh)**: Shows a `TaskBarProgressIndicator`, fetches live deployments from the API,
-  updates existing items' values with fresh functions, adds new items, and removes items whose deployment
-  names are no longer found on the Hub.
+- **Phase 2 (live refresh)**: Appends an inline `ui.loader()` to the root tree node's group host
+  (`treeNode.root.children[0]`) — the same pattern used by DevTools and the file system browser — fetches
+  live deployments from the API, updates existing items' values with fresh functions, adds new items,
+  and removes items whose deployment names are no longer found on the Hub. The loader sits inside the
+  expanded node so it doesn't pollute the global task bar.
 
 Test deployments (deployments named exactly `test_inputs`, case-insensitive) are always grouped last under a "Test workflows" node.
 

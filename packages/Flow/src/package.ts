@@ -34,7 +34,7 @@ export class PackageFunctions {
     return new FuncFlowView();
   }
 
- @grok.decorators.fileViewer({fileViewer: 'ffjson'})
+  @grok.decorators.fileViewer({fileViewer: 'ffjson'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
     file.readAsString().then((json) => view.loadFromJson(json));
@@ -47,5 +47,42 @@ export class PackageFunctions {
       grok.shell.windows.showToolbox = true;
     }, 200);
     return view;
+  }
+
+  /** Builds a flow from a table-creation script (the function-call cascade
+   *  Datagrok records for reproducibly-created tables, used by data sync)
+   *  and opens it in the Flow editor. */
+  @grok.decorators.func({
+    name: 'flowFromCreationScript',
+    description: 'Builds a flow diagram from a table creation script and opens it in the Flow editor',
+  })
+  static async flowFromCreationScript(script: string): Promise<DG.ViewBase> {
+    const view = new FuncFlowView();
+    await view.loadFromCreationScript(script);
+    return view;
+  }
+
+  @grok.decorators.func({
+    name: 'openCreationScriptFlowDialog',
+    meta: {role: 'creationScriptEditor'},
+  })
+  static async openCreationScriptFlowDialog(script: string, show: boolean = true): Promise<DG.Dialog> {
+    const view = new FuncFlowView();
+    view.name = `Creation Script`;
+    try {
+      await view.loadFromCreationScript(script);
+    } catch (e) {
+      grok.shell.error(`Failed to load flow from creation script`);
+      console.error(e);
+    }
+    const d = ui.dialog({title: 'Creation Script Flow'})
+      .add(view.root)
+      .addButton('Open In Editor', () => {
+        grok.shell.addView(view);
+        d.close();
+      });
+    if (show)
+      d.show({resizable: true, width: 800, height: 600});
+    return d;
   }
 }

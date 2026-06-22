@@ -43,8 +43,6 @@
     "webpack-cli": "^4.9.1"
   },
   "scripts": {
-    "build-node": "tsc -p tsconfig.node.json",
-    "start-node": "node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=10-100 --step=5",
     "debug-js-api-tests": "webpack && grok publish localhost",
     "release-js-api-tests": "grok publish localhost --release",
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
@@ -67,7 +65,9 @@
     "debug-js-api-tests-local": "grok publish local",
     "release-js-api-tests-local": "webpack && grok publish localhost --release",
     "debug-js-api-tests-localhost": "grok publish localhost",
-    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
+    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release",
+    "start-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin",
+    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=10-100 --step=5"
   },
   "canEdit": [
     "Administrators"

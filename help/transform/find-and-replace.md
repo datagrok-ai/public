@@ -1,6 +1,7 @@
 ---
 title: "Find and replace"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

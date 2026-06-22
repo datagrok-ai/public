@@ -36,6 +36,7 @@ export interface IUserReport {
 
   labels: Array<string>;
 
+  /// Future-proof config (direction, schedule, etc.). Maps to `options jsonb`.
   /// Options.
   options: {[index: string]: any};
 

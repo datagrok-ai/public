@@ -3,10 +3,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {viewerTypesMapping} from './consts';
+import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
 import {delay, getPropViewers} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
+
+// Exported chart raster size, and the per-chart row stride used to stack several charts for the
+// same dataframe down a sheet. Excel's default row is 15pt (~20px), so a 720px image spans ~36
+// rows; the stride must cover that (plus a 1-row gap) or consecutive charts overlap.
+const EXPORT_VIEWER_WIDTH = 1280;
+const EXPORT_VIEWER_HEIGHT = 720;
+const EXCEL_ROW_HEIGHT_PX = 20;
+const CHART_ROW_STRIDE = Math.ceil(EXPORT_VIEWER_HEIGHT / EXCEL_ROW_HEIGHT_PX) + 1;
 
 const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
   ui.setUpdateIndicator(element, updating);
@@ -72,8 +80,8 @@ export const richFunctionViewReport = async (
         const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
         newViewer.copyViewersLook(viewer);
 
-        const width = 1280;
-        const height = 720;
+        const width = EXPORT_VIEWER_WIDTH;
+        const height = EXPORT_VIEWER_HEIGHT;
 
         const viewerBox = ui.div(newViewer.root, {style: {
           width: `${width}px`,
@@ -159,7 +167,7 @@ export const richFunctionViewReport = async (
             caption: scalarOutput.options['caption'] ?? scalarOutput.name,
             value: lastCall.outputs[scalarOutput.name] ?? '',
             units: scalarOutput.options['units'] ?? '',
-            format: scalarOutput.format,
+            format: scalarOutput.format || DEFAULT_FLOAT_FORMAT,
           })),
           validationStates,
           consistencyStates,
@@ -181,7 +189,7 @@ export const richFunctionViewReport = async (
             exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
             viewer,
             currentDf.columns.length + 2,
-            (index > 0) ? (index * 16) + 1 : 0,
+            index * CHART_ROW_STRIDE,
           );
         };
       }
@@ -211,7 +219,7 @@ export const richFunctionViewReport = async (
               DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
             ]);
             dfToSheet(
-              {sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!, dfCounter, df: stats, column: currentDf.columns.length + 2, row: (index > 0 && nonGridViewers[index - 1]) ? Math.ceil(nonGridViewers[index - 1]!.root.clientHeight / 20) + 1 : 0},
+              {sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!, dfCounter, df: stats, column: currentDf.columns.length + 2, row: index * CHART_ROW_STRIDE},
             );
             dfCounter++;
           } else {
@@ -219,7 +227,7 @@ export const richFunctionViewReport = async (
               exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
               viewer,
               currentDf.columns.length + 2,
-              (index > 0) ? (index * 16) + 1 : 0,
+              index * CHART_ROW_STRIDE,
             );
           }
         }
@@ -322,7 +330,7 @@ const dfToSheet = (
       const col = df.col(colIdx)!;
       const rawVal = df.get(col.name, rowIdx);
       if (col?.type === 'double') {
-        const format = col?.tags?.['format'] ?? '0.00';
+        const format = col?.tags?.['format'] ?? DEFAULT_FLOAT_FORMAT;
         const val = formatNumber(rawVal, format);
         row.push(val);
       } else

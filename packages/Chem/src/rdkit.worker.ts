@@ -37,7 +37,7 @@ ctx.addEventListener('message', async (e: any) => {
     else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS)
       result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
     else if (op === WORKER_CALL.R_GROUP_ANALYSIS)
-      result = _rdKitServiceWorker!.rGroupAnalysis(args[0], args[1], args[2], args[3]);
+      result = await _rdKitServiceWorker!.rGroupAnalysis(args[0], args[1], args[2], args[3]);
     else if (op === WORKER_CALL.INVALIDATE_CACHE)
       _rdKitServiceWorker!.invalidateCache();
     else if (op === WORKER_CALL.SET_TERMINATE_FLAG)

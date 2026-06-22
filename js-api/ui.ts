@@ -29,6 +29,7 @@ import {
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  EmailDialog, EmailDialogOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -493,6 +494,27 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
+ * Creates a toggle button (`d4-toggle-button`). When clicked, marks itself as current
+ * (`d4-current`) and clears that class from sibling toggle buttons under the same parent.
+ * Wrap a set of these in {@link toggleButtonGroup} to get the group container styling.
+ * @param caption  Button text.
+ * @param handler  Invoked on click after the active state is updated.
+ * @param tooltip  Tooltip shown on hover.
+ */
+export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
+  return api.grok_UI_ToggleButton(caption, handler, tooltip);
+}
+
+/**
+ * Wraps a list of {@link toggleButton}s in a vertical `d4-toggle-button-group` container.
+ * @param buttons      Toggle buttons to group.
+ * @param toggleFirst  If true, marks the first button as `d4-current`.
+ */
+export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolean = false): HTMLDivElement {
+  return api.grok_UI_ToggleButtonGroup(buttons, toggleFirst);
+}
+
+/**
  * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
@@ -640,6 +662,14 @@ export function link(
 */
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
+}
+
+/**
+ * Creates an email dialog with editable subject/to/bcc, a markdown body,
+ * and attachment management.
+ */
+export function composeEmail(options?: EmailDialogOptions): EmailDialog {
+  return EmailDialog.create(options);
 }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
@@ -1101,6 +1131,10 @@ export namespace input {
     return _create(d4.InputType.Files, name, options);
   }
 
+  export function folder(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
+    return _create(d4.InputType.Folder, name, options);
+  }
+
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -1440,7 +1474,7 @@ export class tools {
       let width = 100;
       if (element.classList.contains('ui-input-bool'))
         width = 30;
-      if (element.classList.contains('ui-input-switch'))
+      if (element.classList.contains('ui-input-bool-switch'))
         width = 50;
       if (element.classList.contains('ui-input-table'))
         width = 200;

@@ -44,6 +44,12 @@ section):
 | percent                    | 7,050%  |
 | thousand separator         | 71      |
 | full precision             | 70.5    |
+| G7                         | 70.5    |
+| G15                        | 70.5    |
+
+`G7` strips float32→float64 conversion noise (0.10000000149... → 0.1); `G15`
+does the same for doubles (`0.1 + 0.2` → `0.3`). Any `G<n>` works. See .NET's
+[General format specifier](https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings#general-format-specifier-g).
 
 ### Datetime
 

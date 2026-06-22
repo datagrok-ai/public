@@ -8,6 +8,8 @@ import {
   DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
+  MpoCalculator,
+  MpoResult,
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
@@ -92,6 +94,8 @@ export async function computeMpo(
   silent: boolean = false,
   processed: boolean = false,
   createDesirabilityColumns: boolean = false,
+  preview: boolean = false,
+  calculator?: MpoCalculator,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -107,6 +111,25 @@ export async function computeMpo(
   }
 
   const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
+
+  // Preview path: compute directly via the shared helpers, skipping the two DG.Func.call() round-trips that the
+  // OK path below uses to stay recorded/replayable. A passed-in calculator caches desirability across edits.
+  if (preview) {
+    const columns = applyDesirabilityTags(df, mappedProperties, true);
+    if (columns.length > 0) {
+      const isDifferent = df.rowCount !== columns[0].length;
+      const result = (calculator ?? new MpoCalculator())
+        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns);
+      for (const c of collectMpoResultColumns(df, result, isDifferent)) {
+        const existing = df.col(c.name);
+        if (existing)
+          df.columns.remove(existing.name);
+        df.columns.add(c);
+      }
+    }
+    return df.col(profileName) ? [profileName] : [];
+  }
+
   const call = await DG.Func.find({package: 'Chem', name: 'mpoTransformFunction'})[0].prepare({
     df,
     profileName,
@@ -122,6 +145,41 @@ export async function computeMpo(
   }).call(undefined, undefined, {processed});
 
   return df.col(profileName) ? [profileName] : [];
+}
+
+/// Sets the `desirabilityTemplate` tag on each column named in `properties` and returns the tagged
+/// columns. Shared by Chem:mpoTransformFunction (the recorded transform) and the interactive preview.
+export function applyDesirabilityTags(
+  df: DG.DataFrame,
+  properties: Record<string, PropertyDesirability>,
+  silent: boolean = false,
+): DG.Column[] {
+  const columns: DG.Column[] = [];
+  for (const [columnName, desirability] of Object.entries(properties)) {
+    const column = df.col(columnName);
+    if (!column) {
+      if (!silent)
+        grok.shell.warning(`Column "${columnName}" not found. Skipping.`);
+      continue;
+    }
+    column.setTag('desirabilityTemplate', JSON.stringify(desirability));
+    columns.push(column);
+  }
+  if (columns.length === 0 && !silent)
+    grok.shell.error('No valid columns found matching the profile properties.');
+  return columns;
+}
+
+/// Picks the columns to join back into `df` from an mpo() / MpoCalculator result: the score column when
+/// it's new (or the row count differs), plus all desirability columns. Shared by Chem:mpoCalculate
+/// (the recorded transform) and the interactive preview.
+export function collectMpoResultColumns(df: DG.DataFrame, result: MpoResult, isDifferent: boolean): DG.Column[] {
+  const columns: DG.Column[] = [];
+  if (result.scoreColumn && (!df.col(result.scoreColumn.name) || isDifferent))
+    columns.push(result.scoreColumn);
+  if (result.desirabilityColumns)
+    columns.push(...result.desirabilityColumns);
+  return columns;
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {
@@ -189,7 +247,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
     if (count >= MAX_MPO_PROPERTIES)
       break;
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
-    count++;
+    ++count;
   }
   return {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
 }
@@ -222,7 +280,7 @@ export function deepEqual<T>(current: T, original: T): boolean {
   if (Array.isArray(original)) {
     if (!Array.isArray(current) || current.length !== original.length)
       return false;
-    for (let i = 0; i < original.length; i++) {
+    for (let i = 0; i < original.length; ++i) {
       if (!deepEqual(current[i], original[i]))
         return false;
     }

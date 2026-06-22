@@ -30,10 +30,13 @@ export const MAX_MCS_ROW_COUNT = 50000;
 export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';
 const TERMINATE_SEARCH = 'terminate_substructure_search';
 const SUBSTRUCTURE_SEARCH_PROGRESS = 'substructure_search_progress';
+const MOL_COLUMN_VALUES_CHANGED = 'chem_mol_column_values_changed';
 export const getTerminateEventName =
   (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
+export const getValuesChangedEventName =
+  (tableName: string, colName: string) => `${MOL_COLUMN_VALUES_CHANGED}-${tableName}-${colName}`;
 export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ?
     `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';

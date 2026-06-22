@@ -1,6 +1,7 @@
 ---
 title: 'Access control'
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 1
 unlisted: false
 ---

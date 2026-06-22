@@ -6,7 +6,7 @@ import {
   PipelineStateDynamic,
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {findNextStep, findPrevStep, findNextSubStep} from '../utils';
+import {findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid} from '../utils';
 
 function mockFuncCall(uuid: string, opts?: {isReadonly?: boolean}): StepFunCallState {
   return {
@@ -35,6 +35,7 @@ function mockStaticPipeline(
     uuid,
     configId: uuid,
     friendlyName: undefined,
+    description: undefined,
     version: undefined,
     nqName: undefined,
     isReadonly: opts?.isReadonly ?? false,
@@ -55,6 +56,7 @@ function mockDynamicPipeline(
     uuid,
     configId: uuid,
     friendlyName: undefined,
+    description: undefined,
     version: undefined,
     nqName: undefined,
     isReadonly: opts?.isReadonly ?? false,
@@ -480,6 +482,65 @@ category('Navigation: findNextSubStep', () => {
       mockFuncCall('step1'),
     ], {forceNavigate: true});
     expect(findNextSubStep(pipe)?.state.uuid, 'pipe');
+  });
+});
+
+// ============================================================
+// resolveChosenUuid (selection repair after structural change)
+// ============================================================
+
+category('Navigation: resolveChosenUuid', () => {
+  test('alive uuid is returned unchanged', async () => {
+    const tree = buildDefaultTree();
+    expect(resolveChosenUuid('step2', tree, [0, 1, 0]), 'step2');
+  });
+
+  test('alive uuid wins over a stale fallback path (reorder)', async () => {
+    const tree = mockStaticPipeline('root', [
+      mockFuncCall('step1'),
+      mockFuncCall('step2'),
+      mockFuncCall('step3'),
+    ]);
+    // step2 is alive but its old path pointed at index 2 — uuid must still win
+    expect(resolveChosenUuid('step2', tree, [0, 2]), 'step2');
+  });
+
+  test('removed middle step resolves to the neighbor at the same index', async () => {
+    // step2 (was at [0,1]) removed; index 1 now holds step3
+    const afterRemoval = mockStaticPipeline('root', [
+      mockFuncCall('step1'),
+      mockFuncCall('step3'),
+    ]);
+    expect(resolveChosenUuid('step2', afterRemoval, [0, 1]), 'step3');
+  });
+
+  test('removed last step climbs to its parent (root)', async () => {
+    // step2 (was last at [0,1]) removed; index 1 is now out of bounds
+    const afterRemoval = mockStaticPipeline('root', [
+      mockFuncCall('step1'),
+    ]);
+    expect(resolveChosenUuid('step2', afterRemoval, [0, 1]), 'root');
+  });
+
+  test('removed nested last step climbs to its parent pipeline', async () => {
+    // step3 (was last at [0,1,1]) removed; pipeA still present
+    const afterRemoval = mockStaticPipeline('root', [
+      mockFuncCall('step1'),
+      mockStaticPipeline('pipeA', [
+        mockFuncCall('step2'),
+      ]),
+    ]);
+    expect(resolveChosenUuid('step3', afterRemoval, [0, 1, 1]), 'pipeA');
+  });
+
+  test('unknown uuid with no fallback path defaults to root', async () => {
+    const tree = buildDefaultTree();
+    expect(resolveChosenUuid('does-not-exist', tree), 'root');
+  });
+
+  test('undefined uuid defaults to root', async () => {
+    const tree = buildDefaultTree();
+    expect(resolveChosenUuid(undefined, tree), 'root');
   });
 });
 

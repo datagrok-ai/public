@@ -88,7 +88,7 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestDF1', { df });
   }
 
-  export async function testCustomView(): Promise<void> {
+  export async function testCustomView(): Promise<any> {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 
@@ -104,5 +104,13 @@ export namespace funcs {
   */
   export async function testFittingOutputs(): Promise<void> {
     return await grok.functions.call('Compute2:TestFittingOutputs', {});
+  }
+
+  export async function testCustomExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestCustomExportModel', { a });
+  }
+
+  export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
+    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
   }
 }

@@ -378,7 +378,9 @@ export class AddNewColumnDialog {
   initInputName(): DG.InputBase {
     const control = ui.input.string('', {value: ''});
     control.onInput.subscribe(async () => {
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), true);
+      if (!this.codeMirror)
+        return;
+      await this.updatePreview(this.codeMirror.state.doc.toString(), true);
     });
     control.setTooltip(this.tooltips['name']);
 
@@ -401,7 +403,9 @@ export class AddNewColumnDialog {
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => {
       this.changedType = true;
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
+      if (!this.codeMirror)
+        return;
+      await this.updatePreview(this.codeMirror.state.doc.toString(), false);
     });
     control.setTooltip(this.tooltips['type']);
 

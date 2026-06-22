@@ -36,6 +36,7 @@ import './app/view-identity-docking';
 import './app/view-layout-roundtrip';
 
 // Viewer JS API
+import './viewers/annotation-regions-cross-viewer';
 import './viewers/axis-range-sliders';
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';

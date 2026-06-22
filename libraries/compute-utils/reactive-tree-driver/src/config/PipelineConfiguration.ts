@@ -195,12 +195,15 @@ export type PipelineStepConfiguration<S> = {
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
+  links?: PipelineLinkConfiguration<LinkOf<S>>[];
   actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   states?: StatesOf<S>;
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
   viewersHook?: ViewersHook;
+  // Per-step opt-in: when true, TreeWizard shows save-to-history and a history panel for this step.
+  enableHistory?: boolean;
   io?: S;
 };
 
@@ -215,6 +218,7 @@ export type PipelineConfigurationBase<S> = {
   nqName?: NqName;
   version?: string;
   friendlyName?: string;
+  description?: string;
   links?: PipelineLinkConfiguration<LinkOf<S>>[];
   actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   onInit?: PipelineInitConfiguration<LinkOf<S>>;

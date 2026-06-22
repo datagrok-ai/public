@@ -85,8 +85,6 @@ export class DataSourceType {
 
   static Teradata = 'Teradata';
 
-  static Twitter = 'Twitter';
-
   static Vertica = 'Vertica';
 
   static Web = 'Web';
@@ -151,6 +149,8 @@ export class Permission {
   static ADMIN_STICKY_META = 'AdminStickyMeta';
 
   static ADMIN_KEYS = 'AdminKeys';
+
+  static ADMIN_SYNC = 'AdminSync';
 
   static CREATE_REPOSITORY = 'CreateRepository';
 

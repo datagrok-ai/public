@@ -4,27 +4,28 @@ title: "AI"
 
 # AI in Datagrok
 
-Datagrok provides first-class AI capabilities that enhance data exploration, analysis, 
-application development, and user experience across the entire platform. 
-AI operates on top of Datagrok’s unified introspectable architecture, which exposes data, 
-functions, viewers, widgets, schemas, and UI state in a structured way. 
-This enables accurate natural-language control, automated workflows,
+Datagrok provides first-class AI capabilities that enhance data exploration, analysis,
+application development, and user experience across the entire platform.
+AI operates on top of Datagrok's unified introspectable architecture, which exposes data,
+functions, viewers, widgets, schemas, and UI state in a structured way.
+This structure enables accurate natural-language control, automated workflows,
 permissions, governance, and context-aware assistance throughout the platform.
 
-Datagrok takes advantage of the existing AI ecosystem by connecting and using MCP servers
-and other external integrations in a managed way. At the same time, Datagrok also 
-exposes an MCP server that can be used by external orchestrator.
+Datagrok takes advantage of the existing AI ecosystem by connecting to Model Context Protocol
+(MCP) servers and other external integrations in a managed way. At the same time, Datagrok also
+exposes its own MCP server that an external orchestrator can use.
 
 ---
 
-# Smart Assistant
+## Smart Assistant
 
-The Smart Assistant enables users to interact with datasets, molecules, sequences, 
-viewers, dashboards, notebooks, and databases using natural language. It interprets user 
-intent and converts it into Datagrok operations. Can be operated via voice input, 
-optimized for quick interactions and hands-free workflows, as well as for presentations.
+With the Smart Assistant, you interact with datasets, molecules, sequences,
+viewers, dashboards, notebooks, and databases using natural language. It interprets user
+intent and converts it into Datagrok operations. You can operate it by voice for quick,
+hands-free interactions and for presentations.
 
 Widgets in Datagrok expose:
+
 - Applicable functions
 - Properties
 - Named events
@@ -32,28 +33,27 @@ Widgets in Datagrok expose:
 
 AI uses this to understand the interface and execute commands such as:
 
-- “Zoom in on the scatter plot”
-- “Close the histogram”
-- “Color by age”
+- "Zoom in on the scatter plot"
+- "Close the histogram"
+- "Color by age"
 
 The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
 
 ![](ai-visualizations.gif)
 
-
-## Natural-language queries
+### Natural-language queries
 
 Users can issue free-form commands such as:
 
-- “Which compounds have high toxicity risk and low solubility”
-- “Show molecules with IC50 < 10 nM and Lipophilicity < 3”
-- “Average height by race”
-- “Cluster these compounds on similarity”
+- "Which compounds have high toxicity risk and low solubility"
+- "Show molecules with IC50 < 10 nM and Lipophilicity < 3"
+- "Average height by race"
+- "Cluster these compounds on similarity"
 
-AI translates these into operations such as filters, computed columns, cheminformatics transforms, 
+AI translates these into operations such as filters, computed columns, cheminformatics transforms,
 clustering, or visualizations.
 
-## Search integration
+### Search integration
 
 The global search bar uses AI to classify the intent behind the query:
 
@@ -65,28 +65,28 @@ The global search bar uses AI to classify the intent behind the query:
 
 It selects the correct action pattern and executes or suggests follow-up actions.
 
-## Reasoning and function chaining
+### Reasoning and function chaining
 
-AI uses Datagrok’s unified function model to:
+AI uses Datagrok's unified function model to:
 
 - Filter applicable functions based on current context
 - Generate multi-step function chains
 - Fill parameters via reasoning or context
 - Execute with a confirmation step when appropriate
 
-Example: “Show the chemical space, color by activity, then add regression line”.
+Example: "Show the chemical space, color by activity, then add regression line".
 
 ![](ai-function-chaining.png)
 
-## Context-aware suggestions
+### Context-aware suggestions
 
 Semantic types (molecule, sequence, plate, ID, assay, gene) guide contextual suggestions such as:
 
-- “Would you like to run an ADMET prediction model”
-- “Try clustering these compounds on similarity”
-- “Convert sequences to molecules and compute descriptors”
+- "Would you like to run an ADMET prediction model"
+- "Try clustering these compounds on similarity"
+- "Convert sequences to molecules and compute descriptors"
 
-## Auto-narrative insight
+### Auto-narrative insight
 
 For dashboards and result sets, AI generates textual insights:
 
@@ -95,7 +95,7 @@ For dashboards and result sets, AI generates textual insights:
 - Summary statistics
 - Observations specific to chemical or biological data
 
-## Domain-specific helpers
+### Domain-specific helpers
 
 - Molecule processing (salt stripping, standardization)
 - Sequence-to-molecule transformations
@@ -104,7 +104,7 @@ For dashboards and result sets, AI generates textual insights:
 
 ---
 
-# AI-assisted visualizations
+## AI-assisted visualizations
 
 Visualize and transform data with natural language:
 
@@ -112,45 +112,46 @@ Visualize and transform data with natural language:
 - "Average weight by race and gender"
 - "Show me distribution of activity by compound"
 - "Show me the chemical space"
-- "Do the R-group analysis" 
+- "Do the R-group analysis"
 
 ---
 
-# Self-guided AI-assisted Database Exploration
+## Self-guided AI-assisted database exploration
 
 Datagrok supports multiple AI-driven approaches to working with databases. These approaches can be mixed or used
 independently depending on data governance requirements and user expertise.
 
-## 1. Database identifiers
+### 1. Database identifiers
 
-You can register the identifier patterns using the regular expression 
+You can register the identifier patterns using the regular expression
 (for instance, `CHEMBL\\d+` for CHEMBL identifiers) and point it to the database column
 where it comes from. Datagrok then would recognize these identifier everywhere (even within
 a sentence), and give you a way to drill down and see the associated information on that,
 automatically following the foreign keys defined in the database schema. This is a very
-powerful tool that lets users get data with minimum setup. It is also integrated with 
+powerful tool that lets users get data with minimum setup. It is also integrated with
 the smart assistant:
 
 ![](../../develop/how-to/db/chembl-search-everywhere.png)
 
-Learn more
-- [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)
-- For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)
+Learn more:
 
-## 2. Parameterized SQL with metadata annotations
+- [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)
+- For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/db/register-identifiers)
+
+### 2. Parameterized SQL with metadata annotations
 
 You can create curated SQL queries with:
 
 - Parameter descriptions
 - Expected query and value patterns
-- Optional parameter transformations  
+- Optional parameter transformations
   (e.g., resolve compound names to SMILES before query execution)
 
 AI maps user intent to the closest SQL template and fills parameters safely.
 
 ![](search-integrated-queries-1.png)
 
-## 3. Fully AI-driven ad-hoc querying
+### 3. Fully AI-driven ad-hoc querying
 
 Users can write English-language queries directly over a schema. AI will:
 
@@ -161,12 +162,12 @@ Users can write English-language queries directly over a schema. AI will:
 
 Example queries:
 
-- “Find all binding data for thrombin and show compounds in chemical space with pChEMBL filters”
-- “Northwind sales by country”
+- "Find all binding data for thrombin and show compounds in chemical space with pChEMBL filters"
+- "Northwind sales by country"
 
 ![](../../access/databases/img/query-editor-ai.gif)
 
-## 4. Integrated routing layer
+### 4. Integrated routing layer
 
 All approaches unify under a single routing engine that:
 
@@ -176,19 +177,19 @@ All approaches unify under a single routing engine that:
 
 ![](search-integrated-queries-2.png)
 
-# Help and Documentation Assistance
+## Help and documentation assistance
 
-The AI system is integrated with Datagrok’s wiki, enabling question-driven documentation exploration similar to DeepWiki:
+The AI system is integrated with Datagrok's wiki for question-driven documentation exploration, similar to DeepWiki:
 
-- “How do I run UMAP on sequences”
-- “How do I use lasso selection on a scatter plot”
-- “How do I convert sequence columns to molecules and calculate their masses”
+- "How do I run UMAP on sequences"
+- "How do I use lasso selection on a scatter plot"
+- "How do I convert sequence columns to molecules and calculate their masses"
 
 AI retrieves relevant documentation sections or synthesizes an answer based on the wiki.
 
 ---
 
-# Automatic Troubleshooting
+## Automatic troubleshooting
 
 When errors occur in scripts, queries, workflows, or viewers, AI can:
 
@@ -202,7 +203,7 @@ This uses a combination of internal logs, semantic metadata, and known error pat
 
 ---
 
-# Vibe-coded Apps
+## Vibe-coded apps
 
 Users can describe an app in natural language and AI generates:
 
@@ -210,24 +211,24 @@ Users can describe an app in natural language and AI generates:
 - Functional code using the Datagrok JS API
 - Event wiring
 - Dataflows and computation logic
-- Integration with plugins such as Chem, Bio, MolTrack
+- Integration with plugins such as Chem, Bio, and MolTrack
 
-Example:  
-“I want a sketcher on the left, predicted ADME properties on the right, and when 
-I press SUBMIT the molecule should be registered in MolTrack.”
+Example:
+"I want a sketcher on the left, predicted ADME properties on the right, and when
+I press SUBMIT the molecule should be registered in MolTrack."
 
 ---
 
-# Context and Skills
+## Context and skills
 
-Describe the context and skills required to do a particular task, and associate it 
-with a particular Datagrok group or role. This will be used by agentic AI.
+Describe the context and skills required to do a particular task, and associate it
+with a particular Datagrok group or role. Agentic AI then uses this information.
 
 For instance, for the "Chemists" group you might provide the knowledge of
 how to use the compound registration system, and what standard procedures
 or workflows to follow.
 
-# Agents
+## Agents
 
 Agents are long-running, context-aware processes that can:
 
@@ -238,51 +239,62 @@ Agents are long-running, context-aware processes that can:
 
 They operate through the same unified function and context model. A few ways to start them:
 
-- **User-Initiated**: scientist types intent in natural language inside Datagrok; agent translates to precise tool calls
-  and returns results into the live session. Examples: SAR narrative from a grid selection, compound registration with
-  dedup, PK model fitting, retrosynthesis scouting.
-- **Event-Triggered**: agents watch data feeds. CRO delivers results → auto hit picking. Tox data exceeds threshold →
-  safety escalation. SEND dataset uploaded → FDA conformance validation. Inventory drops → procurement initiated. Zero
-  polling burden on scientists.
-- **Scheduled**: always-on intelligence. Weekly project briefs synthesized before Monday standup. Nightly competitive CI
-  scan of patents/trials/preprints. 6-hour EDC surveillance during active trials. Weekly model drift detection with
-  auto-retraining.
+- **User-Initiated**: scientist types intent in natural language inside Datagrok, and the agent
+  translates to precise tool calls and returns results into the live session. Examples: SAR
+  narrative from a grid selection, compound registration with dedup, PK model fitting, and
+  retrosynthesis scouting.
+- **Event-Triggered**: agents watch data feeds. CRO delivers results → auto hit picking. Tox data
+  exceeds threshold → safety escalation. SEND dataset uploaded → FDA conformance validation.
+  Inventory drops → procurement initiated. Zero polling burden on scientists.
+- **Scheduled**: always-on intelligence. Weekly project briefs synthesized before Monday standup.
+  Nightly competitive CI scan of patents/trials/preprints. 6-hour EDC surveillance during active
+  trials. Weekly model drift detection with auto-retraining.
 
 ---
 
-# Models
+## Models
 
-Datagrok uses a multi-tiered model strategy:
+Datagrok's AI is powered by Anthropic's Claude models. The models handle reasoning, search
+routing, and natural-language tasks. For autonomous, multi-step work, such as writing scripts,
+building apps, and acting on your behalf, Datagrok uses Claude Code, Anthropic's agentic coding
+assistant. Requests run through a managed runtime that keeps your data and credentials inside
+your deployment.
 
-- Regex-based intent parsing for fast, obvious cases
-- Client-side Gemini Nano for classification and triage
-- Server-side LLMs (ChatGPT, enterprise-provided models) for advanced reasoning
-- Agentic AI (Claude Code) for autonomous work
+You choose the provider that serves them:
 
-Enterprise users can plug in their own model endpoints.
+- Anthropic
+- [Amazon Bedrock](https://code.claude.com/docs/en/amazon-bedrock)
+- [Microsoft Foundry](https://code.claude.com/docs/en/microsoft-foundry)
+
+With this setup, enterprises serve the models from the cloud they already trust, under their
+own governance and billing.
 
 ---
 
-# Examples
+## Examples
 
-### Function Chaining
+### Function chaining
+
 - ADME properties for aspirin
 - Gasteiger charges for CHEMBL identifiers
 - Convert sequences to SMILES
 - Convert SMILES to HELM
 - Multi-step visualizations
 
-### Database Queries
+### Database queries
+
 - Compounds active against specific targets
 - Shigella bioactivity
 - PK for LEVOFLOXACIN
 - Assay details for specific targets
 
 ### Visualizations
+
 - Create scatter plot, zoom in, add regression, color by metadata
 - Distribution plots per compound class
 
 ### Identifiers
+
 - CHEMBL IDs
 - Sequence-to-molecule transformations
 - Target summaries (organism, synonyms, related targets)

@@ -7,7 +7,8 @@ keywords:
  - Column Manager
  - Flex View
  - Toolbox
-format: mdx
+mdx:
+  format: mdx
 unlisted: true
 ---
 

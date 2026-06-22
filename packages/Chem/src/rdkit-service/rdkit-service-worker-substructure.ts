@@ -6,6 +6,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -107,7 +108,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
     // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
-    if (molString && !hasNewLines(molString) && molString.length > 5000)
+    if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
       return null; // do not attempt to parse very long SMILES, will cause MOB. P.s. passing undefined details fails rdkit
     return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
@@ -138,7 +139,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
           mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          if (cachedMol || this.addToCache(mol))
+          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+          if (mol && this.addToCache(mol))
             isCached = true;
           if (mol) {
             if (stereoAgnostic)
@@ -411,7 +413,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 
-  rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string): IRGroupAnalysisResult {
+  async rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string):
+    Promise<IRGroupAnalysisResult> {
     let mols: MolList | null = null;
     let res: RGroupDecomp | null = null;
     let core: RDMol | null = null;
@@ -424,7 +427,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     const coreColName = 'Core';
     const molColName = 'Mol';
     const resCols = [];
+    const emptyResult = (): IRGroupAnalysisResult =>
+      ({colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []});
     try {
+      if (this._requestTerminated)
+        return emptyResult();
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
         core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
@@ -442,12 +449,19 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       res = this._rdKitModule.get_rgd(core!, options ? options : '');
       const unmatches: number[] = [];
       for (let i = 0; i < molecules.length; i ++) {
+        if (i % this._terminationCheckDelay === 0)
+          await new Promise((r) => setTimeout(r, 0));
+        if (this._requestTerminated)
+          return emptyResult();
         const match = res!.add(mols!.at(i));
         if (match == -1)
           unmatches.push(i);
       }
 
       res!.process();
+
+      if (this._requestTerminated)
+        return emptyResult();
 
       cols = res!.get_rgroups_as_columns();
       colNames = Object.keys(cols).filter((it) => it !== molColName); //exclude Mol column from result since we do not need it
@@ -464,6 +478,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           const isRGroupCol = colNames[i] !== coreColName;
           const col = Array<string>(molecules.length);
           for (let j = 0; j < molecules.length; j++) {
+            if (j % this._terminationCheckDelay === 0)
+              await new Promise((r) => setTimeout(r, 0));
+            if (this._requestTerminated)
+              return emptyResult();
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {
@@ -483,7 +501,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
         return {colNames: colNames, smiles: resCols, atomsToHighLight: atomsToHighlight, bondsToHighLight: bondsToHighlight};
       }
-      return {colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []};
+      return emptyResult();
     } catch (e: any) {
       throw new Error(e.message);
     } finally {
@@ -497,10 +515,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   invalidateCache() {
     this._cacheCounter = 0;
-    if (this._molsCache) {
-      this._molsCache.forEach((it) => it?.delete());
-      this._molsCache.clear();
-    }
   }
 
   mmpGetFragments(molecules: string[]): IMmpFragmentsResult {

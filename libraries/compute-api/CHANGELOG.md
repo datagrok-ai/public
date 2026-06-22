@@ -1,5 +1,17 @@
 # compute-api changelog
 
+## 0.7.6 (2026-06-04)
+
+- Rebuilt against compute-utils 1.46.1
+
+## 0.7.5 (2026-06-04)
+
+- Import tree-driver directly so consumers don't bundle the fitting worker
+
+## 0.7.4 (2026-06-03)
+
+- `startWorkflow` accepts step shorthand
+
 ## 0.7.2 (2026-03-19)
 
 - 1.27 platform support

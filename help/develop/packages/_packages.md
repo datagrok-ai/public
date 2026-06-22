@@ -297,7 +297,7 @@ Your package might contain the following additional folders, depending on your n
 
 [connections]: ../../access/access.md#data-connection "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
 
-[custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
+[custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Charts
 
 [database queries]: ../../access/access.md#data-query "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
 
@@ -319,7 +319,7 @@ Your package might contain the following additional folders, depending on your n
 
 [header parameters]: ../../datagrok/functions/func-params-annotation.md#header-parameters
 
-[javaScript API]: https://datagrok.ai/api/js/api
+[javaScript API]: https://datagrok.ai/api/js/
 
 [LTS version of Node.js]: https://nodejs.org/en/download/
 
@@ -333,7 +333,7 @@ Your package might contain the following additional folders, depending on your n
 
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
 
-[package section]: https://datagrok.ai/api/js/api/dg/classes/Package
+[package section]: https://datagrok.ai/api/js/dg/classes/Package
 
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 

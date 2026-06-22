@@ -25,6 +25,7 @@ import {
   CHEM_SPACE_EMBEDDING_COL,
   CHEM_SPACE_CLUSTER_COL,
 } from './constants';
+import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
@@ -115,7 +116,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
+import {applyDesirabilityTags, collectMpoResultColumns, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
@@ -313,7 +314,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static getCLogP(
     @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) smiles: string): number {
-    if (!smiles || (!hasNewLines(smiles) && smiles.length > 5000))
+    if (!smiles || (!hasNewLines(smiles) && smiles.length > MAX_SMILES_LENGTH))
       return NaN; // do not attempt to parse very long SMILES, will cause MOB.
     const mol = PackageFunctions.getRdKitModule().get_mol(smiles);
     const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
@@ -761,6 +762,11 @@ export class PackageFunctions {
   @grok.decorators.editor()
   static ChemSpaceEditor(
     @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): void {
+    const dataFrame = grok.shell.tv?.dataFrame;
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length) {
+      grok.shell.warning(`Chemical Space requires an open table with a Molecule column`);
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
     const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
     const editor = funcEditor.getEditor();
@@ -2077,6 +2083,28 @@ export class PackageFunctions {
     });
   }
 
+  @grok.decorators.func({
+    name: 'Export as SVG',
+    description: 'Exports structure as SVG',
+    meta: {'action': 'Export as SVG', 'exclude-actions-panel': 'true'},
+  })
+  static exportAsSvg(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const gridCell = value?.gridCell;
+    const bounds = gridCell?.bounds;
+    if (!value?.value || !bounds)
+      return;
+
+    const width = 600;
+    const height = bounds.height * (width / bounds.width);
+    const svg = _rdRenderer.toSvg(gridCell, width, height);
+    if (!svg) {
+      grok.shell.warning('Failed to export structure as SVG');
+      return;
+    }
+    DG.Utils.download('molecule.svg', svg, 'image/svg+xml');
+  }
+
   @grok.decorators.func()
   static isSmiles(
     @grok.decorators.param({type: 'string'}) s: string): boolean {
@@ -2202,7 +2230,10 @@ export class PackageFunctions {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
       const toxCols = await getToxicityRisksColumns(molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
-      toxCols.forEach((col) => table.columns.add(col));
+      toxCols.forEach((col) => {
+        col.name = table.columns.getUnusedName(col.name);
+        table.columns.add(col);
+      });
     } finally {
       pb.close();
     }
@@ -2732,12 +2763,8 @@ export class PackageFunctions {
       return null;
     const cols = Array.from(columns);
     const isDifferent = df.rowCount !== cols[0].length;
-    const {scoreColumn, desirabilityColumns} = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns);
-    const resultColumns: DG.Column[] = [];
-    if (scoreColumn && (!df.col(scoreColumn.name) || isDifferent))
-      resultColumns.push(scoreColumn);
-    if (desirabilityColumns)
-      resultColumns.push(...desirabilityColumns);
+    const result = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns);
+    const resultColumns = collectMpoResultColumns(df, result, isDifferent);
     return resultColumns.length > 0 ? DG.DataFrame.fromColumns(resultColumns) : null;
   }
 
@@ -2753,25 +2780,7 @@ export class PackageFunctions {
     silent: boolean = false,
   ): DG.Column[] {
     const parsedProperties: Record<string, PropertyDesirability> = JSON.parse(currentProperties);
-    const columns: DG.Column[] = [];
-
-    for (const [propertyName, desirability] of Object.entries(parsedProperties)) {
-      const column = df.columns.byName(propertyName);
-      if (!column) {
-        if (!silent)
-          grok.shell.warning(`Column "${propertyName}" not found. Skipping.`);
-        continue;
-      }
-      column.setTag('desirabilityTemplate', JSON.stringify(desirability));
-      columns.push(column);
-    }
-
-    if (columns.length === 0) {
-      if (!silent)
-        grok.shell.error('No valid columns found matching the profile properties.');
-    }
-
-    return columns;
+    return applyDesirabilityTags(df, parsedProperties, silent);
   }
 
   @grok.decorators.fileViewer({

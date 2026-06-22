@@ -107,6 +107,7 @@ export class ControllerBase<T> {
 export class LinkController extends ControllerBase<[any, RestrictionType]> implements IRuntimeLinkController {
   public inputTemplates: TemplateInfo[];
   public outputTemplates: TemplateInfo[];
+  public consistencyResets = new Set<string>();
 
   constructor(args: ControllerBaseArgs) {
     super(args);
@@ -117,7 +118,15 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
   setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
+    this.consistencyResets.delete(name);
     this.outputs[name] = [state, restriction] as const;
+  }
+
+  clearRestriction(name: string) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    delete this.outputs[name];
+    this.consistencyResets.add(name);
   }
 
   getInputTemplates(): TemplateInfo[] {
@@ -191,7 +200,6 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
 }
 
 export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimePipelineValidatorController {
-  public output: ValidationResult | undefined;
   public outline: PipelineOutline;
 
   constructor(args: PipelineValidatorControllerArgs) {
@@ -199,9 +207,10 @@ export class PipelineValidatorController extends ControllerBase<ValidationResult
     this.outline = args.outline;
   }
 
-  setValidation(validation?: ValidationResult) {
+  setValidation(name: string, validation?: ValidationResult) {
     this.checkIsClosed();
-    this.output = validation;
+    this.checkOutput(name);
+    this.outputs[name] = validation;
   }
 
   getOutline(): PipelineOutline {

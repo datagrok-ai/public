@@ -106,5 +106,5 @@ PLS components contain more predictive information than ones provided by princip
 ## See also
 
 * [Dimensionality reduction](dim-reduction.md)
-* [Analysis of variances](anova.md)
+* [Analysis of variances](group-comparison.md#anova)
 * [Tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/MultivariateAnalysis)

@@ -242,7 +242,7 @@ async function handleRead(args: ReportArgs): Promise<boolean> {
 
   const screenshotOut = args['extract-screenshot'] as string | undefined;
   const d42Dir = args['extract-d42'] as string | undefined;
-  const extractActions = args['extract-actions'] === true;
+  const extractClientLog = args['extract-client-log'] === true;
 
   try {
     let loaded: LoadedReport;
@@ -270,6 +270,18 @@ async function handleRead(args: ReportArgs): Promise<boolean> {
     const {meta: envelopeMeta, body} = unwrapEnvelope(loaded.data);
     const meta = Object.assign({}, envelopeMeta, sidecarMeta || {});
 
+    // Legacy-archive fallback: pre-consolidation report zips carry `actions`
+    // but no `clientLog`. Fold here so downstream consumers see one canonical
+    // field.
+    const hasClientLog = Array.isArray(body && body.clientLog) && body.clientLog.length > 0;
+    const hasLegacyActions = Array.isArray(body && body.actions) && body.actions.length > 0;
+    if (!hasClientLog && hasLegacyActions) {
+      body.clientLog = body.actions;
+      process.stderr.write('warning: report uses legacy `actions` field; treating as client log.\n');
+    }
+    if (body && 'actions' in body)
+      delete body.actions;
+
     const output: any = {meta, ...body};
     const files: any = {};
 
@@ -286,14 +298,14 @@ async function handleRead(args: ReportArgs): Promise<boolean> {
         files.d42 = written;
     }
 
-    if (extractActions && Array.isArray(body && body.actions)) {
+    if (extractClientLog && Array.isArray(body && body.clientLog)) {
       const stem = inputPath != null
         ? inputPath.replace(/\.[^./\\]+$/, '')
         : networkBase;
       if (stem != null) {
-        const actionsPath = `${stem}_actions.json`;
-        fs.writeFileSync(actionsPath, JSON.stringify(body.actions, null, 2));
-        files.actions = actionsPath;
+        const clientLogPath = `${stem}_client_log.json`;
+        fs.writeFileSync(clientLogPath, JSON.stringify(body.clientLog, null, 2));
+        files.clientLog = clientLogPath;
       }
     }
 

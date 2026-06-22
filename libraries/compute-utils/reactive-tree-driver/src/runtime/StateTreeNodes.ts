@@ -168,6 +168,7 @@ export class FuncCallNode implements IStoreProvider {
       funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
       viewersHook: this.config.viewersHook,
+      enableHistory: this.config.enableHistory,
       actions,
     };
     if (options.disableNodesUUID)
@@ -332,13 +333,6 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  clearOldTags(currentIds: Set<string>) {
-    const cur = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? {};
-    const next = pruneByKeys(cur, currentIds);
-    if (next)
-      this.nodeDescription.setState('tags', next);
-  }
-
   setPipelineValidation(uuid: string, r?: ValidationResult) {
     const cur = {...this.pipelineValidations$.value};
     if (r === undefined)
@@ -361,6 +355,7 @@ export class PipelineNodeBase implements IStoreProvider {
       version: this.config.version,
       nqName: this.config.nqName,
       friendlyName: this.config.friendlyName,
+      description: this.config.description,
       isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)

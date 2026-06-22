@@ -1,6 +1,7 @@
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git ca-certificates python3 python3-venv python3-pip make g++ && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -14,8 +15,7 @@ RUN groupadd -g 2001 grok && \
 
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
 COPY --chown=grok:grok src ./src
-RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production && \
-    npm install -g @zilliz/claude-context-mcp@latest
+RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production
 
 COPY --chown=grok:grok plugin /app/plugin
 

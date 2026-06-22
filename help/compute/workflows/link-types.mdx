@@ -231,6 +231,22 @@ template. Used by the [default handler](#default-handler) for the
 template ↔ template case; available to custom handlers that want the
 same primitive.
 
+#### `clearRestriction`
+
+```
+clearRestriction(name: string): void;
+```
+
+Clears the consistency restriction on all matched outputs of `name`
+without changing their current value. After the handler completes the
+targeted inputs are no longer marked as "set by a link" and no longer
+report inconsistency — until another link writes them again. Calling
+`clearRestriction` on an output that has no active restriction is a
+no-op. If the handler also calls `setAll(name, ...)` for the same
+output, the later of the two calls wins.
+
+See [Consistency](#consistency) for the underlying model.
+
 
 ### Default handler
 
@@ -384,6 +400,23 @@ the `action` field of an [`Advice`](#setvalidation) item; returns `undefined`
 if no such action is wired up. The descriptor is consumed internally by the
 platform — your code only forwards it.
 
+Not gated by [`showWhen`/`hideWhen`](#visibility): `getValidationAction`
+returns a descriptor regardless of whether the UI would currently render the
+action. Use [`isActionVisible`](#isactionvisible) if a validator needs to
+mirror the UI's decision.
+
+#### `isActionVisible`
+
+```
+isActionVisible(name: string, actionId: string): boolean;
+```
+
+Returns the same boolean that Compute2 uses to decide whether to render the
+action — `true` when the action has no [`showWhen`/`hideWhen`](#visibility) or
+when its current evaluation matches; `false` when the action is hidden or
+when the `name`/`actionId` pair is not wired up. Pure query; does not affect
+execution.
+
 For validation of the workflow structure itself (rather than a single
 script io) use [pipeline validators](#pipeline-validators) — a reactive,
 multi-validator-per-node mechanism that can be triggered from any
@@ -396,10 +429,12 @@ Pipeline validators attach a validation result to one or more workflow
 nodes rather than to a script io. They have type `pipelineValidator`.
 Unlike regular validators, they target workflow nodes — the
 link-defining workflow, a named descendant, or several at once via an
-array `to`. The handler writes a single `ValidationResult`, which is
-broadcast to every matched target. Multiple pipeline validators on the
-same node combine their results, and the merged outcome is exposed on
-the workflow state as `structureCheckResults`.
+array `to`. Like every other link type, each `to` entry is named, and
+the handler writes a result per name with `setValidation(name, result)`,
+so it can validate a single matched node or several independently.
+Multiple pipeline validators on the same node combine their results, and
+the merged outcome is exposed on the workflow state as
+`structureCheckResults`.
 
 Pipeline validators are reactive in two ways:
 
@@ -419,12 +454,15 @@ The pipeline validator controller has the following methods:
 #### `setValidation` (pipeline validator)
 
 ```
-setValidation(validation?: ValidationResult): void;
+setValidation(name: string, validation?: ValidationResult): void;
 ```
 
-Sets (or clears) this validator's contribution to the merged
-`structureCheckResults` of the target workflow node. Pass `undefined` to
-remove the contribution.
+Sets (or clears) this validator's contribution for the `to` output named
+`name`, merged into the `structureCheckResults` of that target workflow
+node. `name` is the output's name in the `to` query (for example, `to:
+'check:first(inner)'` is named `check`). Omit the validation to remove the
+contribution. To write the same result to every matched target, call
+`setValidation` once per name.
 
 #### `getOutline`
 
@@ -613,6 +651,39 @@ with `to: 'out1:targetPipeline'` can also use
 `from: 'in1:targetPipeline/step1/result'` to read a child step's output and
 decide which step type to add. This works because the forward-only constraint
 only applies to reference selectors (`@ref`), not to independent path specs.
+
+### Visibility
+
+`showWhen` and `hideWhen` make an action conditionally visible based on the
+current tree state. Both accept an LQL string or an array of them, with the
+same shape as the link-level [`from`](#from) and [`not`](#not) fields. They
+are re-evaluated on every tree mutation.
+
+#### `showWhen`
+
+_Optional_
+
+Positive gate. The action is visible only when every required entry matches
+at least one node. Entries flagged `(optional)` are ignored for the decision.
+An empty or absent `showWhen` imposes no positive gate.
+
+#### `hideWhen`
+
+_Optional_
+
+Negative gate. The action is hidden whenever any entry matches. An empty or
+absent `hideWhen` imposes no negative gate. `hideWhen` is checked first and
+overrides `showWhen`.
+
+The `(call)` flag and the `[id]` selector form are not allowed in `showWhen`
+/ `hideWhen` queries — only the same path/tag matchers used in `from`/`not`.
+
+Visibility is a UI hint, not an execution gate. Compute2 honors it when
+rendering actions at positions `buttons`, `menu`, and `globalmenu`. RTD
+itself still runs hidden actions if invoked, and
+[`getValidationAction`](#getvalidationaction) returns a descriptor regardless
+of visibility. Validators that need to mirror the UI's decision can call
+[`isActionVisible`](#isactionvisible).
 
 ### Data actions
 

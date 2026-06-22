@@ -93,9 +93,9 @@ category('Features', () => {
 category('Features: Structure', () => {
   // Tests that Bioreactor's output column count exceeds MAX_LINE_CHART (= 4).
   // getIVP() populates ivp.outputs (or falls back to ivp.inits.size when no #output block exists);
-  // getScriptLines() reads this count and injects multiAxis: "true" into the viewer annotation
-  // when count > MAX_LINE_CHART — this is what enables the Multiaxis chart tab in the Diff Studio UI.
-  test('Bioreactor output columns exceed MAX_LINE_CHART (multiaxis mode expected)', async () => {
+  // getScriptLines() reads this count and emits the 'DiffStudio Facet' viewer in the annotation
+  // when count > MAX_LINE_CHART — this is what renders the per-variable facet grid in RFV and the app.
+  test('Bioreactor output columns exceed MAX_LINE_CHART (facet mode expected)', async () => {
     const ivp = getIVP(USE_CASES.BIOREACTOR);
     const outputCount = ivp.outputs ? ivp.outputs.size : ivp.inits.size;
     expect(

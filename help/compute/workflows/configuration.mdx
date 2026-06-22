@@ -25,7 +25,7 @@ An example of a minimal workflow package setup is available
 To register a workflow, create a package
 function (called a provider) with at least these annotations:
 ```
-//tags: model
+//meta.role: model
 //editor: Compute2:TreeWizardEditor
 //input: object params
 //output: object result
@@ -197,6 +197,18 @@ _Optional_
 
 Disables workflow history, useful for nested workflows with nqName set
 to an empty function with a help file.
+
+#### `enableHistory`
+
+_Optional_
+
+A per-step flag on a FuncCall step (default `false`). When `true`, the
+step's review panel shows a "Save this step to history" icon and a
+history toggle. The history panel lists only the runs explicitly saved
+for this step (not every past run of the function). Picking a run
+replaces the step's FuncCall with the chosen run, leaving the rest of the
+workflow unchanged. This is independent of the workflow-level
+`disableHistory`.
 
 #### `customExports`
 

@@ -1,6 +1,7 @@
 ---
 title: "Core Datagrok concepts"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

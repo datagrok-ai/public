@@ -2,6 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
+import './tests/rich-function-view-tests';
+import './tests/rich-function-view-direct-tests';
+
 export const _package = new DG.Package();
 export {tests};
 

@@ -1,6 +1,7 @@
 ---
 title: 'Account and settings (User Profile)'
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 3
 unlisted: false
 ---

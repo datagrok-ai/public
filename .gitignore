@@ -102,3 +102,4 @@ CLAUDE.local.md
 
 test-console-output-?.log
 test-record-?.mp4
+.claude/settings.local.json

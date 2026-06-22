@@ -28,6 +28,7 @@ import {emitScript} from './compiler/script-emitter';
 import {
   serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile,
 } from './serialization/flow-serializer';
+import {buildFlowFromCreationScript} from './import/creation-script-importer';
 import {FlowSettings} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
@@ -351,6 +352,8 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Open Flow...', () => void this.openFlow())
       .item('Save Flow...', () => this.saveFlow())
       .separator()
+      .item('Import Creation Script...', () => this.importCreationScriptDialog())
+      .separator()
       .item('Export Settings...', () => this.editSettings())
       .endGroup()
       .group('Edit')
@@ -358,6 +361,7 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Redo', () => void this.flow?.redo())
       .endGroup()
       .group('View')
+      .item('Clean Layout', () => this.cleanLayout())
       .item('Zoom to Fit', () => void this.flow?.zoomToFit())
       .item('Zoom In', () => this.flow?.zoomIn())
       .item('Zoom Out', () => this.flow?.zoomOut())
@@ -398,6 +402,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
       ],
       [
+        ui.iconFA('sitemap', () => this.cleanLayout(), 'Clean Layout (arrange nodes)'),
         ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom In'),
         ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom Out'),
         ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to Fit (double-click empty canvas)'),
@@ -412,6 +417,15 @@ export class FuncFlowView extends DG.ViewBase {
 
   private toggleToolbox(): void {
     grok.shell.windows.showToolbox = !grok.shell.windows.showToolbox;
+  }
+
+  /** Re-arrange the existing graph with the importer's layered/banded layout. */
+  private cleanLayout(): void {
+    if (!this.flow || this.flow.getNodeCount() === 0) {
+      grok.shell.info('Nothing to lay out');
+      return;
+    }
+    void this.flow.autoLayout();
   }
 
   private updateStatusBar(): void {
@@ -584,6 +598,63 @@ export class FuncFlowView extends DG.ViewBase {
     };
     if (this.flow) await load();
     else setTimeout(() => void load(), 100);
+  }
+
+  /** Rebuild the canvas from a table-creation script — the cascade of
+   *  function calls Datagrok records for reproducibly-created tables
+   *  (the script behind a project's data sync). Replaces the current graph. */
+  async loadFromCreationScript(script: string): Promise<void> {
+    const load = async (): Promise<void> => {
+      try {
+        await this.flow.clear();
+        const result = await buildFlowFromCreationScript(this.flow, script);
+        this.updateStatusBar();
+        await this.flow.zoomToFit();
+        for (const warning of result.warnings) grok.shell.warning(warning);
+        grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
+      } catch (e: any) {
+        grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
+      }
+    };
+    if (this.flow) await load();
+    else setTimeout(() => void load(), 100);
+  }
+
+  /** Dialog: paste a creation script (or prefill it from an open table that
+   *  carries one) and rebuild the canvas from it. */
+  private importCreationScriptDialog(): void {
+    const scriptInput = ui.input.textArea('Script', {value: ''});
+    scriptInput.input.style.minHeight = '180px';
+    scriptInput.input.style.minWidth = '420px';
+    (scriptInput.input as HTMLTextAreaElement).placeholder =
+      'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv")\nChem:addChemPropertiesColumns(Mol1K, "molecule", true, …)';
+
+    const items: HTMLElement[] = [];
+    const tables = grok.shell.tables.filter((t) => (t.getTag(DG.Tags.CreationScript) ?? '') !== '');
+    if (tables.length > 0) {
+      const tableInput = ui.input.choice<string>('From table', {
+        items: tables.map((t) => t.name),
+        onValueChanged: (name: string | null) => {
+          const table = tables.find((t) => t.name === name);
+          if (table) scriptInput.value = table.getTag(DG.Tags.CreationScript) ?? '';
+        },
+      });
+      ui.tooltip.bind(tableInput.root, 'Prefill the script from an open table that has a creation script');
+      items.push(tableInput.root);
+    }
+    items.push(scriptInput.root);
+
+    ui.dialog({title: 'Import Creation Script'})
+      .add(ui.divV(items))
+      .onOK(() => {
+        const script = scriptInput.value.trim();
+        if (script === '') {
+          grok.shell.warning('Creation script is empty');
+          return;
+        }
+        void this.loadFromCreationScript(script);
+      })
+      .show({width: 560, height: 420});
   }
 
   private showValidation(): void {

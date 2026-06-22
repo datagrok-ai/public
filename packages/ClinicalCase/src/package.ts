@@ -265,6 +265,10 @@ export class PackageFunctions {
       'optional': true,
     }) options?: any,
   ): Promise<string> {
+    const containers = await grok.dapi.docker.dockerContainers.filter('name = "clinical-case"').list();
+    if (containers.length === 0)
+      throw new Error('Clinical Case validation container "clinical-case" is not available on this server');
+
     const result = await grok.functions.call('ClinicalCase:run_core_validate', {
       standard,
       version,

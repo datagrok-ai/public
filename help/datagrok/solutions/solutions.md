@@ -1,6 +1,7 @@
 ---
 title: "Solutions"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

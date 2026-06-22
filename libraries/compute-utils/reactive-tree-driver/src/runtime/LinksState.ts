@@ -178,23 +178,20 @@ export class LinksState {
   public createStateLinks(state: BaseTree<StateTreeNode>) {
     const links = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
-      if (!isFuncCallNode(item)) {
-        const {config} = item;
-        const matchedLinks = (config.links ?? [])
-          .map((link) => matchNodeLink(node, link))
-          .filter((x) => !!x)
-          .flat();
-        const links = matchedLinks.map((minfo) => {
-          const spec = minfo.spec;
-          const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
-            ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
-            : undefined;
-          const link = new Link(path, minfo, debounce, this.logger);
-          return link;
-        });
-        return [...acc, ...links];
-      }
-      return acc;
+      const {config} = item;
+      const matchedLinks = (config.links ?? [])
+        .map((link) => matchNodeLink(node, link))
+        .filter((x) => !!x)
+        .flat();
+      const links = matchedLinks.map((minfo) => {
+        const spec = minfo.spec;
+        const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
+          ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
+          : undefined;
+        const link = new Link(path, minfo, debounce, this.logger);
+        return link;
+      });
+      return [...acc, ...links];
     }, [] as Link[]);
     return links;
   }

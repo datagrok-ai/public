@@ -3,8 +3,8 @@
   "friendlyName": "CVM Tests",
   "version": "1.5.0",
   "author": {
-    "name": "Pavlo Polovyi",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated CVM tests",

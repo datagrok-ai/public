@@ -1,0 +1,49 @@
+StudyID,MouseID,Species,Strain,Sex,BodyWeight_g,Route,Dose_mg_kg,NominalTime_hr,ActualTime_hr,Conc_ng_mL,BLQ,LLOQ_ng_mL,Matrix,SamplingType,Comment
+MOUSE-PK-002,M001,Mouse,CD-1,F,23.9,PO,10,0.25,0.214,2157.31,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M002,Mouse,CD-1,M,28.5,PO,10,0.25,0.131,676.01,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M003,Mouse,CD-1,F,26.7,PO,10,0.25,0.301,1046.17,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M004,Mouse,CD-1,M,29.7,PO,10,0.5,0.485,1176.72,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M005,Mouse,CD-1,F,27.3,PO,10,0.5,0.485,1683.27,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M006,Mouse,CD-1,F,28.0,PO,10,0.5,0.564,1858.59,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M007,Mouse,CD-1,M,33.0,PO,10,1.0,0.966,2252.14,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M008,Mouse,CD-1,F,29.4,PO,10,1.0,0.912,1296.86,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M009,Mouse,CD-1,M,36.9,PO,10,1.0,0.975,2376.10,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M010,Mouse,CD-1,M,24.6,PO,10,2.0,2.017,170.13,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M011,Mouse,CD-1,M,32.2,PO,10,2.0,1.979,785.79,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M012,Mouse,CD-1,F,31.8,PO,10,2.0,1.96,593.24,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M013,Mouse,CD-1,F,26.2,PO,10,4.0,4.051,231.79,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M014,Mouse,CD-1,M,32.1,PO,10,4.0,3.985,162.87,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M015,Mouse,CD-1,M,25.7,PO,10,4.0,4.068,59.26,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M016,Mouse,CD-1,M,34.3,PO,10,8.0,8.088,6.76,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M017,Mouse,CD-1,F,23.9,PO,10,8.0,7.942,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M018,Mouse,CD-1,M,30.4,PO,10,8.0,8.016,29.60,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M019,Mouse,CD-1,F,27.0,PO,10,12.0,12.057,3.06,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M020,Mouse,CD-1,F,29.3,PO,10,12.0,12.029,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M021,Mouse,CD-1,F,22.6,PO,10,12.0,11.943,221.39,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M022,Mouse,CD-1,M,31.9,PO,10,24.0,24.019,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M023,Mouse,CD-1,M,30.3,PO,10,24.0,24.121,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M024,Mouse,CD-1,M,34.1,PO,10,24.0,23.983,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M025,Mouse,CD-1,M,27.5,PO,50,0.25,0.158,5243.76,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M026,Mouse,CD-1,F,25.5,PO,50,0.25,0.241,6514.39,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M027,Mouse,CD-1,M,26.7,PO,50,0.25,0.296,6336.69,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M028,Mouse,CD-1,F,26.7,PO,50,0.5,0.416,5534.69,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M029,Mouse,CD-1,M,36.0,PO,50,0.5,0.455,8456.49,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M030,Mouse,CD-1,F,24.2,PO,50,0.5,0.558,15599.45,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M031,Mouse,CD-1,M,27.7,PO,50,1.0,0.974,8530.00,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M032,Mouse,CD-1,F,27.2,PO,50,1.0,0.989,4942.17,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M033,Mouse,CD-1,M,31.9,PO,50,1.0,0.912,9277.03,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M034,Mouse,CD-1,M,32.7,PO,50,2.0,2.069,6749.17,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M035,Mouse,CD-1,F,21.2,PO,50,2.0,1.941,17045.86,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M036,Mouse,CD-1,F,27.5,PO,50,2.0,1.952,3978.50,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M037,Mouse,CD-1,M,28.2,PO,50,4.0,4.126,151.49,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M038,Mouse,CD-1,F,26.3,PO,50,4.0,3.911,1408.40,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M039,Mouse,CD-1,M,32.2,PO,50,4.0,3.926,2403.24,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M040,Mouse,CD-1,F,27.2,PO,50,8.0,7.896,235.53,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M041,Mouse,CD-1,F,26.0,PO,50,8.0,8.033,11.12,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M042,Mouse,CD-1,F,24.2,PO,50,8.0,8.025,15.45,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M043,Mouse,CD-1,M,26.9,PO,50,12.0,11.997,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M044,Mouse,CD-1,M,33.5,PO,50,12.0,12.025,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M045,Mouse,CD-1,F,26.3,PO,50,12.0,12.088,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M046,Mouse,CD-1,F,25.9,PO,50,24.0,23.94,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed
+MOUSE-PK-002,M047,Mouse,CD-1,F,27.5,PO,50,24.0,23.907,13.15,False,1.0,Plasma,Destructive,Terminal bleed
+MOUSE-PK-002,M048,Mouse,CD-1,M,25.0,PO,50,24.0,23.843,0.00,True,1.0,Plasma,Destructive,BLQ - terminal bleed

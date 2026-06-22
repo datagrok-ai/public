@@ -124,6 +124,9 @@ Datagrok supports the following types in all scripting languages:
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
+For the native equivalent of each type in Python, R, Octave, Julia, and JavaScript,
+see [Data types](../../../compute/scripting/scripting-features/data-types.md).
+
 Some of the options apply to all parameters, while other are type-specific. 
 
 <details> 
@@ -272,6 +275,24 @@ sub-groups:
 When all parameters in a category are hidden programmatically (via `input.visible = false`),
 the category header hides automatically. If all sub-categories under a section header are also
 hidden, that header hides too.
+
+### Output parameter groups
+
+Use `meta.outputCategoryGroups` to organize scalar **output** categories into super-categories.
+The format mirrors `meta.categoryGroups` but applies only to scalar outputs rendered by
+Compute2's Rich Function View. DataFrame and viewer outputs are unaffected; the annotation
+is deliberately separate so the two can coexist on the same function.
+
+```js
+//output: double rmse {category: Metrics}
+//output: double r2 {category: Metrics}
+//output: double trainTime {category: Performance}
+//meta.outputCategoryGroups: {"Summary": ["Metrics", "Performance"]}
+```
+
+Each top-level key produces one scalar-output tab; nested `{label: [...]}` entries appear
+as indented sub-sections inside that tab. Referenced categories that don't exist, or that
+contain non-scalar outputs, are silently skipped — their original tabs are left in place.
 
 ### Initial values and optional parameters
 
@@ -791,7 +812,7 @@ The annotation works with different output types:
 
 #### Example: Murcko scaffolds (Python)
 
-The [Murcko Scaffolds](https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds) function from the Chem package
+The [Murcko Scaffolds](https://datagrok.ai/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds) function from the Chem package
 extracts molecular scaffolds and joins them to the input table:
 
 ```python

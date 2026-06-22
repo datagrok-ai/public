@@ -9,7 +9,9 @@ import {
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
+import {STEP_HISTORY_OPTION} from '../History/History';
 import {TreeNode} from './TreeNode';
 import {Draggable, dragContext} from '@he-tree/vue';
 import {AugmentedStat} from './types';
@@ -20,14 +22,16 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
+  applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
-  reportTree,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
 import {createCompositorOverlayService} from '../../composables/use-compositor-overlay';
@@ -152,35 +156,40 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
+      const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
       ui.dialog(`Update confirmation`)
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
-        .onOK(() => runSequence(startUuid, rerunWithConsistent))
+        .add(includeInfoInput.root)
+        .onOK(() => runSequence(startUuid, rerunWithConsistent, undefined, includeInfoInput.value ?? false))
         .show({center: true, modal: true});
     };
 
-    const saveSubTreeState = (uuid: string) => {
-      const chosenStepDesc = states.descriptions[uuid];
-      const dialog = new EditRunMetadataDialog({
-        title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
-        description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
-        tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
+    // Builds the save dialog prefilled from a node's meta states (title/description/tags),
+    // with optional overrides (e.g. the pipeline meta-call data for the whole-model save).
+    const makeNodeMetadataDialog = (uuid?: string, extra?: Record<string, any>) => {
+      const desc = uuid ? states.descriptions[uuid] : undefined;
+      return new EditRunMetadataDialog({
+        title: typeof desc?.title === 'string' ? desc.title : '',
+        description: typeof desc?.description === 'string' ? desc.description : '',
+        tags: Array.isArray(desc?.tags) ? desc.tags : [],
+        ...extra,
       });
+    };
+
+    const saveSubTreeState = (uuid: string) => {
+      const dialog = makeNodeMetadataDialog(uuid);
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         saveDynamicItem(chosenStepUuid.value!, editOptions);
       });
-
       dialog.show({center: true, width: 500});
     };
 
     const saveEntireModelState = () => {
       if (!treeState.value) return;
-
-      const rootDesc = states.descriptions[treeState.value.uuid];
-      const dialog = new EditRunMetadataDialog({...rootDesc, ...currentMetaCallData.value});
+      const dialog = makeNodeMetadataDialog(treeState.value.uuid, currentMetaCallData.value);
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         savePipeline(editOptions);
       });
-
       dialog.show({center: true, width: 500});
     };
 
@@ -345,25 +354,25 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
+      if (!treeState.value || !chosenStepUuid.value)
         return null;
-
-      if (!chosenStepUuid.value)
-        chosenStepUuid.value = treeState.value.uuid;
-
-      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
-
-      if (step)
-        return step;
-
-      // step with current uuid is removed from the tree, try setting the current step by the route
-      const currentURL = new URL(window.location.href);
-      const currentStep = currentURL.searchParams.get('currentStep');
-      if (currentStep)
-        setCurrentStepByPath(currentStep, treeState.value);
-
-      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) ?? null;
     });
+
+    // Owns chosenStepUuid: defaults it on first load and repairs it when the
+    // selected node disappears (e.g. the selected step was removed). Falls back
+    // along the old positional path to the nearest surviving ancestor, so a
+    // removed last child resolves to its parent instead of dangling.
+    Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
+      if (!treeState)
+        return;
+      const fallbackPath = searchParams.currentStep ?
+        searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
+        undefined;
+      const next = resolveChosenUuid(chosenStepUuid.value, treeState, fallbackPath);
+      if (next !== chosenStepUuid.value)
+        chosenStepUuid.value = next;
+    }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
@@ -435,19 +444,13 @@ export const TreeWizard = Vue.defineComponent({
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },
         runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
-          const exports =  Utils.getCustomExports(fc.func);
-          const item = exports.find(x => x.name === exportName);
-          if (!item)
-            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-          const res = await DG.Func.byName(fc.func.nqName).apply({
+          return applyCustomExport(fc, exportName, {
             startDownload: false,
-            funcCall: fc,
             validationState: states.validations?.[uuid],
             consistencyState: states.consistency?.[uuid],
             isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
             runError: states.calls?.[uuid]?.runError,
           });
-          return res;
         },
       };
       return exportData.handler(treeState.value!, utils);
@@ -458,6 +461,31 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    // per-step history is opt-in via the `enableHistory` flag on a FuncCall step
+    const currentStepHistoryEnabled = Vue.computed(() => {
+      const s = chosenStepState.value;
+      return !!s && isFuncCallState(s) && !!s.enableHistory;
+    });
+
+    // RFV renders the save-to-history icon and emits this with the step's FuncCall.
+    // Prefill comes from the step's node meta states, same as the workflow/subtree saves.
+    const saveStepToHistory = (fc: DG.FuncCall) => {
+      const dialog = makeNodeMetadataDialog(chosenStepUuid.value);
+      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
+        if (editOptions.title) fc.options['title'] = editOptions.title;
+        if (editOptions.description) fc.options['description'] = editOptions.description;
+        if (editOptions.tags) fc.options['tags'] = editOptions.tags;
+        fc.options[STEP_HISTORY_OPTION] = 'true';
+        try {
+          await historyUtils.saveRun(fc);
+          grok.shell.info('Step saved to history');
+        } catch (e: any) {
+          grok.shell.error(e);
+        }
+      });
+      dialog.show({center: true, width: 500});
+    };
 
     const isRunDisabled = Vue.computed(() => {
       if (!chosenStepUuid.value)
@@ -493,7 +521,7 @@ export const TreeWizard = Vue.defineComponent({
         return {};
       const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
       const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
-      const actions = [...globalActions, ...currentStepActions];
+      const actions = [...globalActions, ...currentStepActions].filter((action) => action.visible !== false);
       return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
         if (action.position === 'menu' || action.position === 'globalmenu') {
@@ -508,7 +536,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const buttonActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons')
+        if (action.position === 'buttons' && action.visible !== false)
           acc.push(action);
 
         return acc;
@@ -547,7 +575,7 @@ export const TreeWizard = Vue.defineComponent({
     const isEachDraggable = (stat: AugmentedStat) => {
       return stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIDragging);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
@@ -566,12 +594,22 @@ export const TreeWizard = Vue.defineComponent({
         if (oldIndex !== newIndex)
           moveStep(draggedStep.data.uuid, newIndex);
       }
+      // he-tree skips inbound modelValue rebuilds while its `dragNode` data is set. A slow
+      // frame or a debugger pause during drag-end can strand `dragNode` truthy, which then
+      // freezes every later structural update (added/removed steps stop rendering). The
+      // library clears it in its own `dragend` handler, but that path is unreliable under
+      // interruption; `after-drop` fires reliably, so clear it here too.
+      const inst = treeInstance.value as any;
+      if (inst) {
+        inst.dragNode = null;
+        inst.dragOvering = false;
+      }
     };
 
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
         (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIRemoving);
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////
@@ -590,11 +628,6 @@ export const TreeWizard = Vue.defineComponent({
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
-          />
-          <IconFA
-            name='bug'
-            tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
-            onClick={() => inspectorHidden.value = !inspectorHidden.value }
           />
           {isTreeReady.value &&
             treeState.value &&
@@ -620,11 +653,16 @@ export const TreeWizard = Vue.defineComponent({
           /> }
           {isTreeReady.value && showReturn.value && <IconFA
             name='check'
-            tooltip={'Confim data'}
+            tooltip={'Confirm data'}
             style={{'padding-right': '3px'}}
             onClick={onReturnClicked}
           />
           }
+          <IconFA
+            name='bug'
+            tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
+            onClick={() => inspectorHidden.value = !inspectorHidden.value }
+          />
         </RibbonPanel>
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
@@ -653,7 +691,7 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
-        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+        { isTreeReady.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
           <RibbonMenu groupName={category} view={currentView.value}>
             {
               actions.map((action) => Vue.withDirectives(<span onClick={() => runActionWithConfirmation(action.uuid)}>
@@ -698,6 +736,7 @@ export const TreeWizard = Vue.defineComponent({
 
                 rootDroppable={false}
                 treeLine
+                updateBehavior='disabled'
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
                 statHandler={restoreOpenedNodes}
@@ -724,6 +763,7 @@ export const TreeWizard = Vue.defineComponent({
                         stat={stat}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
+                        pipelineValidationState={states.pipelineValidations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
@@ -733,7 +773,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
@@ -759,8 +799,11 @@ export const TreeWizard = Vue.defineComponent({
                 validationStates={states.validations[chosenStepUuid.value]}
                 consistencyStates={states.consistency[chosenStepUuid.value]}
                 isReadonly={chosenStepState.value.isReadonly}
+                isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
+                stepHistory={currentStepHistoryEnabled.value}
                 onUpdate:funcCall={onFuncCallChange}
+                onSaveToHistory={saveStepToHistory}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
@@ -802,7 +845,7 @@ export const TreeWizard = Vue.defineComponent({
                       }
                       { hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                         <BigButton
-                          onClick={() => runSequence(chosenStepUuid.value!, true)}
+                          onClick={() => runSubtreeWithConfirm(chosenStepUuid.value!, true)}
                         >
                            Update
                         </BigButton>

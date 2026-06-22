@@ -41,6 +41,11 @@ import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
+// hwe editor stylesheet (`.hw-*` classes). hwe ships its CSS only as a bundler
+// import (no runtime injection), so the PolyTool HELM editor dialog renders
+// unstyled unless we import it here. See @datagrok-libraries/hwe editor.css.
+import '@datagrok-libraries/hwe/styles.css';
+
 export * from './package.g';
 
 /** Temporary polyfill */

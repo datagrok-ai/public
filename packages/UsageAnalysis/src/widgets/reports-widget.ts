@@ -24,6 +24,9 @@ export class ReportsWidget extends DG.Widget {
         progress.close();
       }
     });
+    // The link lives inside the Home view; without this the click bubbles to the Home view's
+    // root handler, which re-selects Home and steals focus from the just-opened Reports view.
+    link.addEventListener('click', (e) => e.stopPropagation());
     this.root.appendChild(ui.box(ui.div(link, {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', height: '40px', paddingRight: '8px'}}), {style: {maxHeight: '40px'}}));
     this.root.appendChild(ui.waitBox(async () => {
       const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').order('createdOn', true).list({pageNumber: 1, pageSize: 20});

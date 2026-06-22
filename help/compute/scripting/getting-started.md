@@ -1,7 +1,8 @@
 ---
 title: "Getting started with scripting"
 sidebar_position: 0
-format: 'mdx'
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

@@ -1,5 +1,11 @@
 # Helm changelog
 
+## 3.0.1 (2026-06-20)
+
+* Migration to Datagrok Helm Web Editor
+* Support for new Helm Service, editor, parsing and rendering
+* Helm editor panes including molecular structure, composition and conversion
+
 ## 2.13.4 (2026-03-31)
 
 ### Features

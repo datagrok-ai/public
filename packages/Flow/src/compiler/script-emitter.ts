@@ -103,6 +103,14 @@ export function emitScript(
     if (inst) lines.push(...emitFuncStepInstrumented(step, options!, flow));
     else lines.push(emitFuncStep(step));
 
+    // A SetVar whose value is a dataframe at runtime also registers it under
+    // the table's runtime name, so creation-script GetVars that reference the
+    // table by its actual name resolve (the platform resolver registers both).
+    // The dataframe check is emitted into the script (runtime instanceof), since
+    // the value slot is often `dynamic` even when it carries a dataframe.
+    const setVarValue = setVarValueExpr(step, flow);
+    if (setVarValue) lines.push(emitSetVarByDataframeName(setVarValue));
+
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
   }
@@ -170,6 +178,21 @@ function emitUtilityStep(step: CompiledStep): string | null {
     const names = String(step.properties['columnNames'] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     const exprs = names.map((n) => `${t}.col('${n}')`).join(', ');
     return `let ${step.variableName} = [${exprs}];`;
+  }
+  case 'Select Table': {
+    // Resolve an open table by name, tolerating how it was registered: the
+    // exact name, a no-spaces variant, and a lower-camel variant; for each,
+    // try a shell table (tableByName) then a context variable (getVar). The
+    // first non-null wins.
+    const raw = String(step.properties['tableName'] ?? '');
+    const noSpaces = raw.replace(/ /g, '');
+    const lowerFirst = noSpaces.charAt(0).toLowerCase() + noSpaces.slice(1);
+    const names = Array.from(new Set([raw, noSpaces, lowerFirst]));
+    const expr = names.map((n) => {
+      const q = JSON.stringify(n);
+      return `grok.shell.tableByName(${q}) ?? grok.shell.getVar(${q})`;
+    }).join(' ?? ');
+    return `let ${step.variableName} = ${expr};`;
   }
   case 'Add Table View': {
     const t = step.inputs.get('table') ?? 'undefined';
@@ -347,6 +370,20 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
     }
   }
 
+  // SetVar produces no output, but its `value` input is the stored value —
+  // surface it (labeled by the variable name) so clicking the node previews it
+  // (table → grid, column → sample, …) exactly like any output-bearing node.
+  if (node && node.dgFunc?.name?.toLowerCase() === 'setvar') {
+    const valueExpr = step.inputs.get('value');
+    if (valueExpr && valueExpr !== 'undefined') {
+      const varLabel = JSON.stringify(String(node.inputValues['variableName'] ?? 'value'));
+      const valueInput = (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)['value'];
+      const slotType = valueInput?.socket.dgType;
+      const typeArg = slotType && slotType !== 'dynamic' ? `, '${slotType}'` : '';
+      outputEntries.push(`${varLabel}: __ff_summarize(${valueExpr}${typeArg})`);
+    }
+  }
+
   const outputsObj = outputEntries.length > 0 ? `{${outputEntries.join(', ')}}` : '{}';
   lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs: ${outputsObj}});`);
   lines.push('} catch (__ff_err) {');
@@ -357,6 +394,29 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   }
   lines.push('}');
   return lines;
+}
+
+/** The `value` input expression of a SetVar func step, or null when the step
+ *  isn't a SetVar or has no value. The slot type may be `dynamic` even when the
+ *  value is a dataframe at runtime, so we can't decide at emit time whether the
+ *  extra dataframe-name registration applies — the emitted code checks it at
+ *  runtime (see emitSetVarByDataframeName). */
+function setVarValueExpr(step: CompiledStep, flow: FlowEditor): string | null {
+  const node = flow.getNodeById(step.nodeId);
+  if (!node || node.dgFunc?.name?.toLowerCase() !== 'setvar') return null;
+  const valueExpr = step.inputs.get('value');
+  if (!valueExpr || valueExpr === 'undefined') return null;
+  return valueExpr;
+}
+
+/** Runtime-guarded second `SetVar` registration: when the value is a dataframe,
+ *  also register it keyed by the dataframe's runtime `.name`, so creation-script
+ *  `GetVar`s that reference the table by its actual name resolve (the platform
+ *  resolver registers both). The `instanceof` check is at runtime because the
+ *  value slot is often `dynamic` even when it carries a dataframe. */
+function emitSetVarByDataframeName(valueExpr: string): string {
+  return `if (${valueExpr} instanceof DG.DataFrame) ` +
+    `await grok.functions.call('SetVar', {variableName: ${valueExpr}.name, value: ${valueExpr}});`;
 }
 
 /** For each non-pass-through dataframe output, emit

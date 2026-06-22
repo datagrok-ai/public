@@ -1,0 +1,12 @@
+# Derived / local — never committed.
+.venv/
+__pycache__/
+*.pyc
+*.log
+.kg_server.pid
+.cache/
+kg.html
+# Materialized DB, rebuilt from kg.kuzu.xz — anchored so it won't catch .xz/.version
+/kg.kuzu
+/kg.kuzu.wal
+/kg.kuzu.tmp

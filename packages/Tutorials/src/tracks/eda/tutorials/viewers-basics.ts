@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval, merge } from 'rxjs';
+import { fromEvent, interval, merge } from 'rxjs';
 import $ from 'cash-dom';
 import { waitForElementClick } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -13,7 +13,7 @@ export class ViewersTutorial extends Tutorial {
   get description() {
     return 'Learn how to use different viewers together';
   }
-  get steps() { return 14; }
+  get steps() { return 20; }
 
   get icon() {
     return '📊👁️';
@@ -43,20 +43,32 @@ export class ViewersTutorial extends Tutorial {
     const ribbonPanels = grok.shell.v.getRibbonPanels();
     const addViewerIcon = ribbonPanels[1][1];
     await this.action(
-      'Locate and click the Add viewer icon',
+      'Click the Add viewer icon to open the gallery',
       waitForElementClick(addViewerIcon), addViewerIcon);
 
     const chartsSpanDiv = Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
       const span = div.querySelector('span');
       return span && span.textContent === 'Charts';
     }) as HTMLElement;
-    await this.action('Locate the Charts section and click on it', waitForElementClick(chartsSpanDiv), chartsSpanDiv);
+    await this.action('Click the "Charts" tag to filter the viewers', waitForElementClick(chartsSpanDiv), chartsSpanDiv);
 
-    const radarViewerElement = Array.from(document.querySelectorAll('.viewer-gallery-root .d4-item-card.viewer-gallery .card-label'))
-      .find(label => label.textContent === 'Radar')
-      ?.closest('.d4-item-card.viewer-gallery') as HTMLElement ?? null;
-    await this.action('Locate the card containing Radar viewer',
+    const radarViewerElement = this.getViewerCard('Radar');
+    await this.action('Select the Radar viewer',
     waitForElementClick(radarViewerElement), radarViewerElement);
+
+    const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
+      '<b>Sunburst</b> shows hierarchical data as nested rings.';
+    await this.action('Open the viewer gallery again', waitForElementClick(addViewerIcon), addViewerIcon, sunburstInfo);
+
+    const searchInput = document.querySelector('.vg-controls input.ui-input-editor') as HTMLInputElement;
+    await this.action('Type "Sunburst" in the search box',
+      fromEvent(searchInput, 'input').pipe(filter(() => searchInput.value.toLowerCase().includes('sunburst'))),
+      searchInput);
+
+    const sunburstViewerElement = this.getViewerCard('Sunburst');
+    await this.action('Select the Sunburst viewer',
+      grok.events.onViewerAdded.pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst')),
+      sunburstViewerElement);
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
@@ -78,6 +90,9 @@ export class ViewersTutorial extends Tutorial {
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
       `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
     await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync);
+
+    const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
+    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect);
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +
@@ -120,5 +135,10 @@ export class ViewersTutorial extends Tutorial {
       '<b>Apply Data Settings</b>. Note that style settings can be applied even to ' +
       'viewers that have different source of data.';
     await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo);
+  }
+
+  private getViewerCard(name: string): HTMLElement | null {
+    return Array.from(document.querySelectorAll<HTMLElement>('.viewer-gallery-root .d4-item-card.viewer-gallery'))
+      .find(card => card.offsetParent !== null && card.querySelector('.card-label')?.textContent === name) ?? null;
   }
 }

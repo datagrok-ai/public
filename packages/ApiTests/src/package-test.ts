@@ -61,8 +61,10 @@ import './utils/progressIndicator';
 import './ai/ai-tests';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import { setTestPackage } from './test-package';
 
 export const _package = new DG.Package();
+setTestPackage(_package);
 export { tests };
 
 //name: test
