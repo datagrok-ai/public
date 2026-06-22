@@ -55,12 +55,12 @@
       prompt: Color rows by {risk:numerical} (red ≥ 0.5, green < 0.5)
       prefer: { risk: 'name~="risk|herg|tox"' }
 
-    - label: Select top 10 compounds by {metric:numerical}
-      prompt: Select top 10 compounds by {metric:numerical}
+    - label: Select top 10 rows by {metric:numerical}
+      prompt: Select top 10 rows by {metric:numerical}
       prefer: { metric: 'name~="affinity|ic50|ec50|potency"' }
 
-    - label: Hide compounds flagged for {flag:categorical}
-      prompt: Hide compounds flagged for {flag:categorical}
+    - label: Hide rows flagged for {flag:categorical}
+      prompt: Hide rows flagged for {flag:categorical}
       prefer: { flag: 'name~="mutagen|tumor|alert|flag"' }
 
     - label: Pin the {mol:semType=Molecule} column
