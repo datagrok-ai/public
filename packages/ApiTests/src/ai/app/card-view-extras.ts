@@ -1,13 +1,16 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {withAttachedView} from '../helpers';
 
 // CardView config mirrors (hierarchyProperties, renderMode, objectType, CustomCardView subclass).
 // Getters read the rendered DOM; unattached CardView getters throw on a null context.
+// A `dataSource` is required: attaching the view triggers an initial refresh, which throws
+// "DataSource not specified" as an unhandled async rejection when none is supplied.
 category('AI: App: CardView Extras', () => {
   const withCardView = (body: (cv: DG.CardView) => void): Promise<void> =>
     // awaitRender=false: these getters are model-backed (attachment suffices, no render needed).
-    withAttachedView<DG.CardView>(() => DG.CardView.create({}), (cv) => {
+    withAttachedView<DG.CardView>(() => DG.CardView.create({dataSource: grok.dapi.scripts}), (cv) => {
       expect(cv instanceof DG.CardView, true);
       body(cv);
     }, false);
@@ -42,12 +45,14 @@ category('AI: App: CardView Extras', () => {
   });
 
   test('CustomCardView subclass constructs a valid CardView', async () => {
-    await withAttachedView(() => new DG.CustomCardView({}), async (ccv) => {
+    await withAttachedView(() => new DG.CustomCardView({dataSource: grok.dapi.scripts}), async (ccv) => {
       expect(ccv instanceof DG.CustomCardView, true);
       expect(ccv instanceof DG.CardView, true);
       // Exercise a model getter to prove the attached subclass is a live CardView.
-      ccv.renderMode = DG.RENDER_MODE.GRID;
-      expect(ccv.renderMode, DG.RENDER_MODE.GRID);
+      // GRID mode would drive refreshGrid() on the construction-time async init() refresh,
+      // which needs Dart-side grid properties a JS CardView has no meta for — use BRIEF.
+      ccv.renderMode = DG.RENDER_MODE.BRIEF;
+      expect(ccv.renderMode, DG.RENDER_MODE.BRIEF);
     }, false);
   });
 }, {owner: 'agolovko@datagrok.ai'});

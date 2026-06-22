@@ -11,42 +11,30 @@ category('AI: Viewers: BoxPlot Annotations', () => {
       });
   });
 
-  test('meta.annotationRegions on BoxPlot surfaces platform gap', async () => {
-    // Pins a known gap: passes today, will FAIL once BoxPlotLook declares annotationRegions.
+  test('meta.annotationRegions round-trips on BoxPlot', async () => {
     const v = DG.Viewer.boxPlot(demog(), {value: 'age', category1: 'race'});
-    let pinned = false;
-    try {
-      const ar = v.meta.annotationRegions;
-      ar.add({header: 'will not stick', description: 'gap pin', opacity: 50});
-      pinned = ar.items.length === 0;
-    } catch (_e) {
-      pinned = true;
-    }
-    expect(pinned, true);
+    const ar = v.meta.annotationRegions;
+    const before = ar.items.length;
+    ar.add({header: 'AI band', description: 'box annotation', opacity: 50});
+    expect(ar.items.length, before + 1);
+    expect(ar.items[ar.items.length - 1].header, 'AI band');
   });
 
-  test('enableAnnotationRegionDrawing surfaces wrap gap', async () => {
-    // Bug-pin: passes today (TypeError), will FAIL once the Dart wrap lands.
-    const v = DG.Viewer.boxPlot(demog(), {value: 'age', category1: 'race'});
-    let threw = false;
-    try {
-      (v as any).enableAnnotationRegionDrawing((_r: any) => {});
-    } catch (_e) {
-      threw = true;
-    }
-    expect(threw, true);
+  test('enableAnnotationRegionDrawing is callable without throwing', async () => {
+    await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT,
+      {value: 'age', category1: 'race'}, async (v) => {
+        expect(typeof (v as any).enableAnnotationRegionDrawing, 'function');
+        (v as any).enableAnnotationRegionDrawing(false, (_r: any) => {});
+        (v as any).disableAnnotationRegionDrawing();
+      });
   });
 
-  test('disableAnnotationRegionDrawing surfaces wrap gap', async () => {
-    // Bug-pin: passes today (TypeError), will FAIL once the Dart wrap lands.
-    const v = DG.Viewer.boxPlot(demog(), {value: 'age', category1: 'race'});
-    let threw = false;
-    try {
-      (v as any).disableAnnotationRegionDrawing();
-    } catch (_e) {
-      threw = true;
-    }
-    expect(threw, true);
+  test('disableAnnotationRegionDrawing is callable without throwing', async () => {
+    await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT,
+      {value: 'age', category1: 'race'}, async (v) => {
+        expect(typeof (v as any).disableAnnotationRegionDrawing, 'function');
+        (v as any).disableAnnotationRegionDrawing();
+      });
   });
 
   test('viewport getter/setter survives resetView()', async () => {

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectCleared, expectRoundTrip, look, until, withTableView} from '../helpers';
+import {demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, until, withTableView} from '../helpers';
 
 // LineChart prop JSON-shape round-trips not covered by line-chart-js-api.ts.
 category('AI: Viewers: LineChart extras', () => {
@@ -60,18 +60,18 @@ category('AI: Viewers: LineChart extras', () => {
     expect(cleared['overviewAggrType'], 'avg');
   });
 
-  // whiskersType flip resets markerOpacity to its optimal value.
+  // whiskersType flip resets markerOpacity to its optimal value. The snap reads the render-time
+  // markerOpacity, refreshed only on redraw, so wait for the chart to settle between toggles.
   test('whiskersType change auto-adjusts markerOpacity', async () => {
     await withTableView(demog(), async (tv) => {
       const c = v();
       tv.addViewer(c);
-      c.setOptions({whiskersType: 'None'});
-      await until(() => look(c)['markerOpacity'] === 100);
-      expect(look(c)['markerOpacity'], 100);
-      c.setOptions({whiskersType: 'Med | Q1, Q3'});
+      await until(() => c.root.querySelector('canvas') != null);
+      expect(look(c)['markerOpacity'], 100); // no whiskers -> full opacity
+      await expectFiresWithin(c.onAfterDrawScene, () => c.setOptions({whiskersType: 'Med | Q1, Q3'}), 2000);
       await until(() => look(c)['markerOpacity'] !== 100);
       expect(look(c)['markerOpacity'] !== 100, true);
-      c.setOptions({whiskersType: 'None'});
+      await expectFiresWithin(c.onAfterDrawScene, () => c.setOptions({whiskersType: 'None'}), 2000);
       await until(() => look(c)['markerOpacity'] === 100);
       expect(look(c)['markerOpacity'], 100);
     });
