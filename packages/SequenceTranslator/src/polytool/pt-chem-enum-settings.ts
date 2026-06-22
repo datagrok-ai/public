@@ -117,9 +117,9 @@ export async function markushSettingsEditorWidget(propList: DG.Property[]): Prom
 
   const monomersProp = propList.find((p) => p.name === monomersPathPropName);
   if (monomersProp) {
-    const defaultTooltip = monomersProp.description ?? 'Path to additional monomer libraries';
+    const defaultTooltip = monomersProp.description || 'Path to additional monomer libraries';
     let curTooltip = defaultTooltip;
-    const curValue: string = monomersProp.get(null) ?? monomersProp.defaultValue; // null is passed here because there is an getter override in the core
+    const curValue: string = monomersProp.get(null) || monomersProp.defaultValue; // null is passed here because there is an getter override in the core
     const monomersHeader = ui.h1('Monomers', {style: {marginBottom: '6px', marginTop: '6px'}});
     const monomersInput = ui.input.string('Monomers path', {value: curValue});
     ui.tooltip.bind(monomersInput.input, () => curTooltip);
