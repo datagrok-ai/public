@@ -174,6 +174,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           // Recompute fingerprints/bitset only when the data, reference molecule, metric,
           // fingerprint or threshold change — a pure `limit` change just re-slices the cache.
           if (computeKey !== this.computeKey) {
+            // claim the key before the await so a concurrent render doesn't start a duplicate search
+            this.computeKey = computeKey;
             progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
             const res = await chemSimilarityBitset(moleculeColumn, this.targetMolecule,
               this.distanceMetric as BitArrayMetrics, this.cutoff, this.fingerprint as Fingerprint);
@@ -183,7 +185,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             }
             this.simScores = res.scores;
             this.simBitset = res.bitset;
-            this.computeKey = computeKey;
             if (this.applyFilter) // re-apply the collaborative filter against the new bitset
               this.dataFrame.rows.requestFilter();
           }
