@@ -111,8 +111,10 @@ export async function markushSettingsEditorWidget(propList: DG.Property[]): Prom
     });
     ui.tooltip.bind(clearButton, 'Remove the configured defaults; the app falls back to the shipped CSV files');
 
+    editButton.style.margin = '0';
+    clearButton.style.margin = '0';
     w.root.appendChild(summary);
-    w.root.appendChild(ui.divH([editButton, clearButton], {style: {gap: '8px', marginTop: '6px'}}));
+    w.root.appendChild(ui.divH([editButton, clearButton], {style: {gap: '8px', marginTop: '6px', justifyContent: 'flex-start'}}));
   }
 
   const monomersProp = propList.find((p) => p.name === monomersPathPropName);
