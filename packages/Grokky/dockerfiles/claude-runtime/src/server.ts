@@ -1,10 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
-import {query} from '@anthropic-ai/claude-agent-sdk';
+import {query, createSdkMcpServer, tool as sdkTool} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
+import {z} from 'zod/v4';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
@@ -15,9 +17,11 @@ import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} fr
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
-type FenceMode = 'prose' | 'exec' | 'entity' | 'other';
+type FenceMode = 'prose' | 'entity' | 'other';
 interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
 const fenceStates = new Map<string, FenceState>();
+// Most-recent tool_use name per session, used to tag the matching tool_result (see F2 follow-up).
+const lastToolNames = new Map<string, string>();
 const FENCE_RE = /^```([\w-]*)\s*$/;
 
 const BASH_EXEC_PROMPT = `\
@@ -56,8 +60,8 @@ First call self-installs the engine (~30s, one-time); after that, milliseconds. 
 
 You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
 
-// Inlined into the system prompt. Only datagrok-exec is universal (the fenced-block
-// contract is needed for every response that emits code). Everything else is loaded
+// Inlined into the system prompt. datagrok-exec is universal — it defines the contract for the
+// datagrok_exec tool, which nearly every action-taking response uses. Everything else is loaded
 // on demand via the Skill tool — skills' description triggers handle routing.
 const INLINED_SKILL_NAMES = [
   'datagrok-exec',
@@ -156,10 +160,39 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
-function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
+// In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
+// awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
+// Created per handleMessage so the ws/sid/active closure stays current.
+function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery) {
+  const asResult = (o: unknown) => ({content: [{type: 'text' as const, text: JSON.stringify(o)}]});
+  return createSdkMcpServer({
+    name: 'datagrok-browser',
+    version: '1.0.0',
+    tools: [sdkTool(
+      'datagrok_exec',
+      'Run JavaScript in the Datagrok tab to perform an action (add viewer, filter, open file, ' +
+      'upload data, …). Returns {success, returnValue?, error?}. For informational questions ' +
+      '("how do I…", "what is…") answer in plain text — do NOT call this tool.',
+      {code: z.string().describe(
+        'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
+        'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
+      )},
+      async ({code}) => {
+        try {
+          return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
+        } catch (e: any) {
+          return asResult({success: false, error: e.message});
+        }
+      },
+    )],
+  });
+}
+
+function buildMcpServers(browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
   servers['datagrok-knowledge'] = createPackageKnowledgeServer(userId);
+  servers['datagrok-browser'] = browserExecServer;
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
@@ -175,13 +208,14 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string
 }
 
 function buildOptions(
+  browserExecServer: ReturnType<typeof createBrowserExecServer>,
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string,
   userId?: string,
   model?: ClaudeModel,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
+  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
   // Bash and 'none' modes are minimal — don't pull in output-format skills.
   const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
   return {
@@ -233,6 +267,7 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   search_code: (i) => `Search code: ${i.query ?? ''}`,
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
+  datagrok_exec: (i) => `Execute in browser${i.code ? ': ' + (i.code).slice(0, 60).replace(/\n/g, ' ') : ''}`,
 };
 
 function toolSummary(name: string, input: Record<string, unknown>): string {
@@ -266,8 +301,8 @@ function emit(ws: WsSender, msg: OutgoingMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-function kindOf(mode: FenceMode): 'exec' | 'entity' | undefined {
-  return mode === 'exec' || mode === 'entity' ? mode : undefined;
+function kindOf(mode: FenceMode): 'entity' | undefined {
+  return mode === 'entity' ? 'entity' : undefined;
 }
 
 function emitChunk(ws: WsSender, sid: string, content: string, mode: FenceMode): void {
@@ -301,9 +336,7 @@ function emitFiltered(ws: WsSender, sid: string, text: string): void {
 
       if (st.mode === 'prose') {
         const lang = fence[1];
-        st.mode = lang === 'datagrok-exec' ? 'exec' :
-          lang === 'datagrok-entities' ? 'entity' :
-          'other';
+        st.mode = lang === 'datagrok-entities' ? 'entity' : 'other';
         emitChunk(ws, sid, lines[i] + '\n', st.mode);
       } else {
         emitChunk(ws, sid, lines[i] + '\n', st.mode);
@@ -344,14 +377,16 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'assistant':
     for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use')
+      if (block.type === 'tool_use') {
+        lastToolNames.set(sid, block.name);
         emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
+      }
     }
     break;
   case 'user': {
     const content = extractResult(e);
     if (content)
-      emit(ws, {type: 'tool_result', sessionId: sid, content});
+      emit(ws, {type: 'tool_result', sessionId: sid, content, toolName: lastToolNames.get(sid)});
     break;
   }
   case 'stream_event':
@@ -377,7 +412,22 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
 interface ActiveQuery {
   abortController: AbortController;
   queryHandle: ReturnType<typeof query> | null;
-  pendingInputResolve: ((value: any) => void) | null;
+  // requestId → resolver, so parallel tool calls each await their own browser reply.
+  pendingInputs: Map<string, (value: any) => void>;
+}
+
+// Round-trips a tool call to the browser: emits input_request, resolves on the matching
+// input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
+function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any): Promise<any> {
+  const requestId = randomUUID();
+  emit(ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
+  return new Promise<any>((resolve, reject) => {
+    active.pendingInputs.set(requestId, resolve);
+    active.abortController.signal.addEventListener('abort', () => {
+      if (active.pendingInputs.delete(requestId))
+        reject(new Error('aborted'));
+    }, {once: true});
+  });
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
@@ -394,11 +444,15 @@ function unregisterActiveQuery(sid: string): void {
 
 function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
   const active = activeQueries.get(data.sessionId);
-  if (active?.pendingInputResolve) {
-    const resolve = active.pendingInputResolve;
-    active.pendingInputResolve = null;
-    resolve(data.value);
-  }
+  if (!active)
+    return;
+  // Correlate by requestId; fall back to the sole pending request for older clients that omit it.
+  const id = data.requestId ?? (active.pendingInputs.size === 1 ? active.pendingInputs.keys().next().value : undefined);
+  const resolve = id !== undefined ? active.pendingInputs.get(id) : undefined;
+  if (!resolve)
+    return;
+  active.pendingInputs.delete(id!);
+  resolve(data.value);
 }
 
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
@@ -413,7 +467,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
-  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
+  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputs: new Map()};
   registerActiveQuery(sid, active);
 
   const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
@@ -432,21 +486,15 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
   ]);
 
+  const browserExecServer = createBrowserExecServer(ws, sid, active);
+
   let gotResult = false;
-  const systemPromptMode = data.systemPromptMode ?? 'datagrok';
   try {
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
+    const opts = buildOptions(browserExecServer, existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
-        emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
-        const updatedInput = await new Promise<any>((resolve, reject) => {
-          active.pendingInputResolve = resolve;
-          abortController.signal.addEventListener('abort', () => {
-            active.pendingInputResolve = null;
-            reject(new Error('aborted'));
-          }, {once: true});
-        });
+        const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
         return {behavior: 'allow' as const, updatedInput};
       }
       return {behavior: 'allow' as const, updatedInput: input};
@@ -466,6 +514,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
     fenceStates.delete(sid);
+    lastToolNames.delete(sid);
     unregisterActiveQuery(sid);
   }
 }
@@ -479,9 +528,8 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
-  // Drop the SDK session: an aborted session can't be resumed, and the client's
-  // auto-retry inlines the lost context into a fresh message (see ui.ts). Leaving
-  // it here makes the next message resume a dead session and the retry fails.
+  // Drop the SDK session: an aborted session can't be resumed. Leaving it here makes the
+  // next message resume a dead session, so the following turn would fail to continue.
   sessions.delete(data.sessionId);
   flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});

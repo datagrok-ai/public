@@ -33,20 +33,20 @@ phrase. A bare "create a project Foo" is Step 1 only.
 the create message included one of the explicit attach phrases above. AND
 `projectId` from Step 1 is known.
 
-**Do:** emit ONE `datagrok-exec` block that PERSISTS the live entities and
+**Do:** call `datagrok_exec` with code that persists the live entities and
 returns their server-side ids. `t.getTableInfo().id` is a client-side stub —
 attaching it will fail with "insufficient privileges to edit". You MUST call
 `uploadDataFrame` first.
 
-```datagrok-exec
+```js
 const tableInfoId = await grok.dapi.tables.uploadDataFrame(t);
 const layout = view.saveLayout();
 await grok.dapi.layouts.save(layout);
 return {tableInfoId, layoutId: layout.id};
 ```
 
-The block's return value comes back on the NEXT turn as a fenced
-`<exec-result>` JSON. Do NOT ask the user for the ids.
+The ids come back synchronously in the tool result as `returnValue`.
+Do NOT ask the user for the ids.
 
 If the user only asked about the table (not the layout), drop the layout lines.
 If only about the layout, drop the table lines.
@@ -78,13 +78,13 @@ group(s) before calling.
 - Pre-announcing future steps in the same turn ("I'll create the project, then
   attach the table, then share..."). Announce only the step you're doing now.
 - Chaining Step 2/3/4 from a bare "create a project Foo" message.
-- Returning `t.getTableInfo().id` from the datagrok-exec block — client stub.
+- Returning `t.getTableInfo().id` from the datagrok_exec code — client stub.
   Always use `await grok.dapi.tables.uploadDataFrame(t)`.
-- `grok.dapi.projects.save(project)` inside datagrok-exec — bypasses governance.
-- `project.addChild(...)` / `project.addLink(...)` inside datagrok-exec — bypasses MCP.
-- `grok.dapi.permissions.grant(...)` inside datagrok-exec — bypasses share governance.
+- `grok.dapi.projects.save(project)` in datagrok_exec code — bypasses governance.
+- `project.addChild(...)` / `project.addLink(...)` in datagrok_exec code — bypasses MCP.
+- `grok.dapi.permissions.grant(...)` in datagrok_exec code — bypasses share governance.
 - Calling `create_project` more than once in the same workflow.
-- Asking the user for the table or layout id — the datagrok-exec block returns them.
+- Asking the user for the table or layout id — the tool result contains them.
 
 ## Failure handling
 

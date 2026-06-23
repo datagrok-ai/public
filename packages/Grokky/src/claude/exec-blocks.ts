@@ -9,16 +9,16 @@ export interface ExecError {
 
 export async function executeSingleBlock(
   code: string, view: DG.ViewBase, blockIndex: number,
-): Promise<{element: HTMLElement | null; error: ExecError | null}> {
+): Promise<{element: HTMLElement | null; value: any; error: ExecError | null}> {
   try {
     const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
     const result = await new Function('grok', 'ui', 'DG', 'view', 't',
       'return (async () => {' + code + '})()',
     )(grok, ui, DG, view, t);
-    return {element: result instanceof HTMLElement ? result : null, error: null};
+    const element = result instanceof HTMLElement ? result : null;
+    return {element, value: element ? undefined : result, error: null};
   } catch (e: any) {
-    grok.shell.error(`datagrok-exec error: ${e.message}`);
-    return {element: null, error: {blockIndex, error: e?.message ?? String(e)}};
+    return {element: null, value: undefined, error: {blockIndex, error: e?.message ?? String(e)}};
   }
 }
 

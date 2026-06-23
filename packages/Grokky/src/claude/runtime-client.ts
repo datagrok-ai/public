@@ -8,13 +8,13 @@ export const ClaudeModel = {
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
-export type ChunkEvent = {sessionId: string, content: string, kind?: 'exec' | 'entity'};
+export type ChunkEvent = {sessionId: string, content: string, kind?: 'entity'};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type ToolResultEvent = {sessionId: string, content: string};
+export type ToolResultEvent = {sessionId: string, content: string, toolName?: string};
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
-export type InputRequestEvent = {sessionId: string, toolName: string, input: any};
+export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -100,7 +100,7 @@ export class ClaudeRuntimeClient {
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
         break;
       case 'tool_result':
-        this.onToolResult.next({sessionId: data.sessionId, content: data.content});
+        this.onToolResult.next({sessionId: data.sessionId, content: data.content, toolName: data.toolName});
         break;
       case 'final':
         this.onFinal.next({
@@ -115,7 +115,7 @@ export class ClaudeRuntimeClient {
         this.onAborted.next({sessionId: data.sessionId});
         break;
       case 'input_request':
-        this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
+        this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
         break;
       case 'sync_status':
         if (data.status === 'done' && Array.isArray(data.files))
@@ -172,10 +172,17 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
   }
 
-  respondToInput(sessionId: string, value: any): void {
+  respondToInput(sessionId: string, requestId: string, value: any): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
-    this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
+    let payload: string;
+    try {
+      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value});
+    } catch {
+      // Non-serializable executed-JS return — reply with an error so the tool call resolves.
+      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value: {success: false, error: 'result is not serializable'}});
+    }
+    this.ws.send(payload);
   }
 
   async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
