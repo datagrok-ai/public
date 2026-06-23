@@ -66,12 +66,13 @@ export class PackageFunctions {
     name: 'openCreationScriptFlowDialog',
     meta: {role: 'creationScriptEditor'},
   })
-  static async openCreationScriptFlowDialog(script: string, show: boolean = true): Promise<DG.Dialog> {
+  static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
     const view = new FuncFlowView();
     view.name = `Creation Script`;
     // Inside the cramped dialog the overview adds clutter — start it minimized;
     // expand it once the flow is opened in the full editor.
     view.setMinimapCollapsed(true);
+    const tableInfos = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
     try {
       await view.loadFromCreationScript(script);
     } catch (e) {

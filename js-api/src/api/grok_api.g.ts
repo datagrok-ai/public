@@ -1626,6 +1626,7 @@ export interface IDartApi {
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;
   grok_TableInfo_Get_Tags(ti: any): any;
+  grok_TableInfo_SaveCreationScript(ti: any, script: String): Promise<any>;
   grok_ColumnInfo_Get_Type(ci: any): any;
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;
