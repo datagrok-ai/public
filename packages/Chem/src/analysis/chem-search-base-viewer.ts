@@ -9,7 +9,6 @@ import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
 
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
-export const MAX_LIMIT = 50;
 export enum RowSourceTypes {
   All = 'All',
   Filtered = 'Filtered',
@@ -35,16 +34,21 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeColumnName: string;
   initialized: boolean = false;
   metricsDiv: HTMLElement | null;
+  metricsLink: HTMLElement | null = null;
   moleculeProperties: string[];
   renderCompleted = new Subject<void>();
   isComputing = false;
   rowSource: string;
   error = '';
 
+  /** Upper bound for the `limit` property; subclasses override to widen it. Must stay a getter —
+   * it's read in the base constructor, before subclass field initializers would run. */
+  get maxLimit(): number { return 50; }
+
   constructor(name: string, col?: DG.Column) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
-    this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
+    this.limit = this.int('limit', 12, {min: 1, max: this.maxLimit});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
@@ -106,8 +110,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       const col = this.dataFrame.col(property.get(this));
       this.moleculeColumn = col;
     }
-    if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
-      this.limit = MAX_LIMIT;
+    if (property.name === 'limit' && property.get(this) > this.maxLimit)
+      this.limit = this.maxLimit;
     if (property.name === 'moleculeProperties') {
       this.debouncedRender(false);
       return;
@@ -122,8 +126,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       grok.shell.o = object;
     }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
-    if (this.metricsDiv!.children.length > 1)
-      this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
+    // remove the specific link element we previously added, so any other persistent
+    // header controls (e.g. the similarity viewer's action icons) are left untouched
+    this.metricsLink?.remove();
+    this.metricsLink = metricsButton;
     this.metricsDiv!.appendChild(metricsButton);
   }
 
