@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.28.2 (2026-06-22)
+
+* Migrated to the standalone HELM Web Editor (`@datagrok-libraries/hwe`), replacing the legacy `helm-web-editor` / `js-draw-lite` dependencies; fixed HELM substructure filter editor sizing.
+* Fixed monomer library not fully resetting on reload — stale SMILES-to-monomer cache is now cleared so updated libraries take effect immediately.
+* To Atomic Level widget: molecule size is now configurable via column tags, with a clearer message when the monomer limit is exceeded.
+
 ## 2.27.15 (2026-06-10)
 
 * Support complex entities in linear translation workflow, like, multiple linkers, conjugates, multi-phosphates, etc.

@@ -1,5 +1,12 @@
 # Sequence Translator changelog
 
+## 1.11.3 (2026-06-23)
+
+* Markush enumeration: R-group templates picker backed by a built-in catalogue of common substituents (alkyl, aryl, heteroaryl, halogens, amines, protecting groups); copy R-groups between positions, append/replace with de-duplication, and export R-groups to CSV.
+* Markush enumeration: added "Remove duplicates" option (dedupe results by canonical SMILES) and a custom result table name.
+* Added `MarkushDefaults` package setting and settings editor — admin-configured defaults (cores, R-groups, mode and output options) seed the Markush Enumerator, distributed per user group.
+* HELM Web Editor migration: PolyTool HELM enumeration now operates directly on HELM strings, dropping the JSDraw2 globals while preserving input formatting.
+
 ## 1.10.26 (2026-06-10)
 
 * OligoNucleotide renderer: standalone backbone linkers (`p`, `[sp]`, or any monomer whose natural analog is `p`) — whether a 5'/3' cap, mid-strand, or a consecutive run — now render as linkage arcs (no chip), instead of being mistaken for conjugate pills. Recognized from the monomer library.
