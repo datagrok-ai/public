@@ -58,7 +58,7 @@ First call self-installs the engine (~30s, one-time); after that, milliseconds. 
 
 ## Clarifying ambiguous requests
 
-You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
+You have the AskUserQuestion tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible.`;
 
 // Inlined into the system prompt. datagrok-exec is universal — it defines the contract for the
 // datagrok_exec tool, which nearly every action-taking response uses. Everything else is loaded
