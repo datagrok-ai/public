@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.6.2 (2026-06-23)
+
+Fix the package build
+
 ## 1.6.1 (2026-06-22)
 
 Update Datagrok tools
