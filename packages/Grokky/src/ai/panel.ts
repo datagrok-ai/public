@@ -3,10 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {delay} from 'rxjs/operators'
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
 import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -114,7 +113,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
-  private root: HTMLElement;
+  readonly root: HTMLElement;
   protected view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
@@ -278,71 +277,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
     if (this._inline)
       this.root.classList.add('d4-ai-inline-mode');
-
-    this.setupSubscriptions();
-  }
-
-  protected setupSubscriptions() {
-    if (this._inline)
-      return;
-    let wasShown = false;
-    // Defer the dock/undock until after the view switch has settled.
-    const sub = grok.events.onCurrentViewChanged.pipe(delay(150)).subscribe(() => {
-      if (grok.shell.v != this.view) {
-        wasShown = this.isShown;
-        if (wasShown)
-          this.hide();
-      } else if (wasShown)
-        this.show();
-    });
-
-    const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
-      if (rv == this.view)
-        this.toggle();
-    });
-    const that = this;
-    function onKeyDownHandler(event: KeyboardEvent) {
-      if (grok.shell.v === that.view && event.ctrlKey && event.key === 'i') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        that.toggle();
-      }
-    }
-    document.addEventListener('keydown', onKeyDownHandler);
-
-    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-      if (view == this.view) {
-        sub.unsubscribe();
-        closeSub.unsubscribe();
-        this.hide();
-        this.dispose();
-        toggleSub.unsubscribe();
-        document.removeEventListener('keydown', onKeyDownHandler);
-      }
-    });
   }
 
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
 
-  show(focus: boolean = false) {
-    // Opening the AI panel steals focus from the active element (e.g., query editor)
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const aiContainer = grok.shell.windows.ai;
-    if (!aiContainer.contains(this.root))
-      aiContainer.appendChild(this.root);
-    grok.shell.windows.showAI = true;
+  activate(focus: boolean = false): void {
     this.renderEmptyState();
     if (focus)
       this.textArea.focus();
-    else
-      previouslyFocused?.focus();
-  }
-
-  hide() {
-    if (grok.shell.windows.ai.contains(this.root))
-      grok.shell.windows.showAI = false;
   }
 
   formatConversation() {
@@ -359,10 +303,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   async copyConversationToClipboard() {
     return copyToClipboard(this.formatConversation());
-  }
-
-  toggle() {
-    this.isShown ? this.hide() : this.show(true);
   }
 
   dispose() {
@@ -620,14 +560,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         loader.remove();
       }
     };
-  }
-
-  get isShown(): boolean {
-    return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
-  }
-
-  get isFrontPanel(): boolean {
-    return grok.shell.windows.ai.lastElementChild === this.root;
   }
 
   get rawRender(): boolean { return this._rawRender; }
@@ -1258,18 +1190,6 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       const layout = DG.ViewLayout.fromViewState(viewState);
       this.tableView.loadLayout(layout, true);
     }
-  }
-}
-
-export class ShellAIPanel extends AIPanel {
-  protected get placeHolder() { return 'Ask AI anything...'; }
-
-  constructor() {
-    super('shell-ai-panel', null as any);
-  }
-
-  protected setupSubscriptions(): void {
-    // Shell panel is not tied to a view — no view-change tracking needed
   }
 }
 

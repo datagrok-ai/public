@@ -152,6 +152,12 @@ export function isEnterKey(e: KeyboardEvent): boolean {
   return e.key === 'Enter' || e.keyCode === 13;
 }
 
+export const SHORTCUT_HINT = 'Ctrl+I';
+
+export function isToggleKey(e: KeyboardEvent): boolean {
+  return e.ctrlKey && (e.key === 'i' || e.keyCode === 73);
+}
+
 /** Copies text to the clipboard, resolving to whether it succeeded (never rejects).
  * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable —
  * Dartium / Chrome ≤ 65 / insecure contexts. */

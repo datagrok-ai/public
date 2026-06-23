@@ -7,9 +7,10 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
@@ -242,8 +243,10 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const catalogs = allDbInfos.map((d) => d.name);
   const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
+  initAIWindow();
   const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  panel.show();
+  AIWindowManager.instance.register(v, panel);
+  AIWindowManager.instance.showPanel(panel, false);
 
   let sqlContext: SQLGenerationContext | null = null;
 
@@ -465,12 +468,13 @@ async function streamOnce(
   });
 }
 
-let _shellAIPanel: ShellAIPanel | null = null;
+let _shellAIPanel: AIPanel | null = null;
 
-export function setupShellAIPanelUI(): void {
-  if (!grok.ai.config.configured) return;
+export function initAIWindow(): AIPanel | null {
+  if (!grok.ai.config.configured)
+    return null;
   if (!_shellAIPanel) {
-    _shellAIPanel = new ShellAIPanel();
+    _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
     _shellAIPanel.onRunRequest.subscribe(async (args) => {
       if (args.currentPrompt.prompt.trim() === '/noprompt') {
         _shellAIPanel!.enableNoPrompt();
@@ -478,10 +482,15 @@ export function setupShellAIPanelUI(): void {
       }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
+    AIWindowManager.instance.init(_shellAIPanel);
   }
+  return _shellAIPanel;
+}
 
-  if (grok.shell.windows.ai.childElementCount === 0 || _shellAIPanel.isFrontPanel)
-    _shellAIPanel.show(true);
+export function setupShellAIPanelUI(): void {
+  if (!initAIWindow())
+    return;
+  AIWindowManager.instance.show();
 }
 
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
@@ -493,12 +502,12 @@ export async function setupTableViewAIPanelUI() {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
     // setup ribbon panel icon
-    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
     // setup the panel itself
     const panel = new TVAIPanel(tableView);
-    panel.hide();
+    AIWindowManager.instance.register(tableView, panel);
 
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
@@ -522,11 +531,11 @@ export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
     if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
     const panel = new ScriptingAIPanel(scriptView);
-    panel.hide();
+    AIWindowManager.instance.register(scriptView, panel);
     panel.onRunRequest.subscribe(async (args) => {
       await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
     });
@@ -557,14 +566,17 @@ export function setupAgentScriptsUI(): void {
 
 async function runAgentScript(name: string): Promise<void> {
   try {
-    setupShellAIPanelUI();
-    _shellAIPanel!.resetSession();
+    const shell = initAIWindow();
+    if (!shell)
+      return;
+    AIWindowManager.instance.showPanel(shell);
+    shell.resetSession();
     const workflow = await _package.files.readAsText(`scripts/${name}.md`);
     const prompt =
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;
     const displayPrompt = `▶ Running workflow: ${name}`;
-    await runPromptWithLifecycle(_shellAIPanel!, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
+    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
   } catch (e: any) {
     grok.shell.error(`Failed to run ${name}: ${e.message}`);
   }
