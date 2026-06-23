@@ -16,7 +16,7 @@ select
     max(case when not s.passed then s.result end) as sample_error
 from stress_tests s
 where s.build_name = (select name from selected) and not s.skipped
-    and s.test_name not like '%Unhandled exceptions: Exception' and s.test_name != ': : '
+    and s.test_name != ': : '
 group by s.test_name, s.total_concurrent_runs
 having sum(case when not s.passed then 1 else 0 end) > 0
 order by s.test_name, s.total_concurrent_runs
