@@ -159,6 +159,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
+  private _loaderPauseTimer: number | null = null;
   private _sessionId: string;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
@@ -365,6 +366,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   dispose() {
+    this.clearStreamingLoaderTimer();
     this.stopRecognition();
     this.root.remove();
     this._messages = [];
@@ -614,6 +616,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.runButtonTooltip = actionButtionValues.run;
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
+        this.clearStreamingLoaderTimer();
         loader.remove();
       }
     };
@@ -685,20 +688,38 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
-      loader.style.display = 'none';
       this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
+      this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
       this._streamingMarkdownEl!.replaceWith(el);
       this._streamingMarkdownEl = el;
     }
+    this.refreshStreamingLoader(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
+  refreshStreamingLoader(loader: HTMLElement): void {
+    loader.style.display = 'none';
+    this.clearStreamingLoaderTimer();
+    this._loaderPauseTimer = window.setTimeout(() => {
+      loader.style.display = '';
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    }, 600);
+  }
+
+  clearStreamingLoaderTimer(): void {
+    if (this._loaderPauseTimer != null) {
+      clearTimeout(this._loaderPauseTimer);
+      this._loaderPauseTimer = null;
+    }
+  }
+
   async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
+    this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
@@ -718,6 +739,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected renderFinalContent(content: string): void {
+    this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
     renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
@@ -735,6 +757,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   clearStreaming(): void {
+    this.clearStreamingLoaderTimer();
     this._streamingContainer?.remove();
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
@@ -900,6 +923,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleClear() {
+    this.clearStreamingLoaderTimer();
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
