@@ -1,5 +1,6 @@
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -7,51 +8,9 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 // -- UI Helpers --
 
-/** Open column selector popup via mousedown on .d4-column-selector-column */
-async function openColumnPopup(page: Page, selectorName: string) {
-  await page.evaluate((name) => {
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const sel = document.querySelector(`[name="${name}"]`);
-    const colLabel = sel!.querySelector('.d4-column-selector-column');
-    (colLabel || sel)!.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, selectorName);
-  await page.waitForTimeout(500);
-}
-
-/** Set column via column selector popup: open, press first key, type rest, ArrowDown, Enter.
- *  For nullable selectors (Color, Size) that have an empty first row, if the UI attempt
- *  fails to set the column, falls back to JS API via the provided propName. */
-async function setColumnViaSelector(page: Page, selectorName: string, columnName: string, propName?: string) {
-  await openColumnPopup(page, selectorName);
-  await page.keyboard.press(columnName[0].toLowerCase());
-  await page.waitForTimeout(100);
-  if (columnName.length > 1)
-    await page.keyboard.type(columnName.slice(1).toLowerCase());
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
-
-  // Verify and fall back to JS API if the selector didn't apply
-  if (propName) {
-    const applied = await page.evaluate(({propName, columnName}) => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      if ((sp.props as any)[propName] !== columnName) {
-        (sp.props as any)[propName] = columnName;
-        return false;
-      }
-      return true;
-    }, {propName, columnName});
-    if (!applied)
-      console.warn(`setColumnViaSelector: UI failed for ${selectorName}→${columnName}, used JS API fallback`);
-  }
-}
-
-/** Clear column via selector: open popup and press Enter on the empty first row */
-async function clearColumnViaSelector(page: Page, selectorName: string) {
-  await openColumnPopup(page, selectorName);
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
-}
+/** Set a Scatter plot column via the column-combobox UI flow (pickColumnViaSelector alias). */
+const setCol = (page: Page, comboboxSuffix: string, columnName: string, propName: string) =>
+  v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName});
 
 /** Right-click center of scatter plot canvas to open context menu using real Playwright mouse */
 async function openScatterContextMenu(page: Page) {
@@ -101,31 +60,8 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 5000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath});
 
-  // Phase 3: Add scatter plot via Toolbox icon click (UI)
   await page.evaluate(() => {
     document.querySelector('[name="icon-scatter-plot"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -133,27 +69,27 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Changing axes ──────────────────────────────────────────────────────
   await softStep('Changing axes', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE');
+    await setCol(page, 'x', 'AGE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('AGE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT');
+    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.yColumnName
     )).toBe('WEIGHT');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'RACE');
+    await setCol(page, 'x', 'RACE', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('RACE');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'STARTED');
+    await setCol(page, 'x', 'STARTED', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('STARTED');
 
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'HEIGHT');
+    await setCol(page, 'x', 'HEIGHT', 'xColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
     )).toBe('HEIGHT');
@@ -161,8 +97,8 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Axis types and inversion ───────────────────────────────────────────
   await softStep('Axis types and inversion', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE');
-    await setColumnViaSelector(page, 'div-column-combobox-y', 'WEIGHT');
+    await setCol(page, 'x', 'AGE', 'xColumnName');
+    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
 
     // Set X Axis Type to logarithmic via context menu
     await openScatterContextMenu(page);
@@ -249,12 +185,12 @@ test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Color coding ──────────────────────────────────────────────────────
   await softStep('Color coding', async () => {
-    await setColumnViaSelector(page, 'div-column-combobox-color', 'SEX', 'colorColumnName');
+    await setCol(page, 'color', 'SEX', 'colorColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
     )).toBe('SEX');
 
-    await setColumnViaSelector(page, 'div-column-combobox-color', 'AGE', 'colorColumnName');
+    await setCol(page, 'color', 'AGE', 'colorColumnName');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
     )).toBe('AGE');

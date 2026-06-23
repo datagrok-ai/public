@@ -5,7 +5,6 @@ import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import {PuppeteerNode} from 'puppeteer';
 import type * as DG from 'datagrok-api/dg';
-import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import {spaceToCamelCase} from '../utils/utils';
 import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
@@ -25,8 +24,8 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--window-size=1920,1080',
     '--js-flags=--expose-gc',
   ],
-  ignoreHTTPSErrors: true,
-  headless: 'new',
+  acceptInsecureCerts: true,
+  headless: true,
   protocolTimeout: 0,
 };
 
@@ -160,7 +159,7 @@ export async function getBrowserPage(
   });
   page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
-  await page.setCookie({name: 'auth', value: token});
+  await page.browser().setCookie({name: 'auth', value: token, domain: new URL(url).hostname});
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
@@ -207,24 +206,6 @@ export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);
 }
-
-export const recorderConfig = {
-  followNewTab: true,
-  fps: 25,
-  ffmpeg_Path: null,
-  videoFrame: {
-    width: 1280,
-    height: 630,
-  },
-  videoCrf: 18,
-  videoCodec: 'libx264',
-  videoPreset: 'ultrafast',
-  videoBitrate: 1000,
-  autopad: {
-    color: 'black',
-  },
-  // aspectRatio: '16:9',
-};
 
 export async function loadPackage(
     packageDir: string,
@@ -323,13 +304,17 @@ export async function loadTestsList(packages: string[], core: boolean = false, r
       const logsDir = `./load-test-console-output${suffix}.log`;
       const recordDir = `./load-test-record${suffix}.mp4`;
 
-      recorder = new PuppeteerScreenRecorder(page, recorderConfig);
-      await recorder.start(recordDir);
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
       page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
-      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('pageerror', (error: any) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
       page.on('response', (response) => {
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
@@ -739,19 +724,26 @@ export async function runBrowser(
       page = out.page;
       webUrl = await getWebUrlFromPage(page);
     }
-    const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
+    let recorder = null;
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
     if (browserOptions.record && !existingBrowserSession) {
-      // Only set up recording on initial browser creation, not on retry
-      await recorder.start(recordDir);
+      // Only set up recording on initial browser creation, not on retry.
+      // Recording is an optional diagnostic — if it can't start (e.g. ffmpeg is
+      // missing on the runner), warn and keep testing instead of failing the pass.
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
       page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
-      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('pageerror', (error: any) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
       page.on('response', (response) => {
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
@@ -826,7 +818,7 @@ export async function runBrowser(
         else
           console.log(`[console.log] ${text}`);
       });
-      page.on('pageerror', (error) => {
+      page.on('pageerror', (error: any) => {
         console.log(`\x1b[31m[page error] ${error.message}\x1b[0m`);
       });
     }
@@ -980,7 +972,7 @@ export async function runBrowser(
     printFinalCategorySummary();
 
     if (browserOptions.record && !existingBrowserSession)
-      await recorder.stop();
+      await recorder?.stop();
 
     if (modernOutput) {
       testingResults.verbosePassed = '';

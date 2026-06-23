@@ -96,7 +96,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'description': 'Predicts ADMET properties and appends result columns.',
-    'top-menu': 'Chem | Admetica | Сalculate...',
+    'top-menu': 'Chem | Admetica | Calculate...',
     'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(
@@ -162,13 +162,16 @@ export class PackageFunctions {
     outputs: [],
   })
   static async admeticaDemo(): Promise<DG.ViewBase | null> {
-    return await initializeAdmeticaApp(false);
+    const demoView = await initializeAdmeticaApp(false, null, false);
+    return grok.shell.addPreview(demoView!);
   }
 }
 
-async function initializeAdmeticaApp(addPath: boolean = true, parent: DG.FuncCall | null = null): Promise<DG.ViewBase | null> {
+async function initializeAdmeticaApp(addPath: boolean = true, parent: DG.FuncCall | null = null,
+  persistSketcherValue: boolean = true): Promise<DG.ViewBase | null> {
   const app = new AdmeticaViewApp(parent);
   app.addPath = addPath;
+  app.persistSketcherValue = persistSketcherValue;
   await app.init();
   return app.tableView!;
 }

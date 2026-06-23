@@ -11,7 +11,8 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 const DASH_GAP_SYMBOL = '-';

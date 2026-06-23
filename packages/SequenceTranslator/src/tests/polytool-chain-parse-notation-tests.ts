@@ -56,14 +56,12 @@ category('PolyTool: Chain: parseNotation', () => {
       // expect(resChain.getNotationHelm(), testData.tgt.helm);
       // expect(resChain.getNotation(), testData.src.seq);
 
-      const resMol = resChain.mol!;
-      const hwe = helmHelper.createHelmWebEditor();
-      hwe.editor.setMol(resMol!);
-      const resMolHelm = hwe.editor.getHelm();
-
+      // hwe migration (Phase 6): `Chain.mol` is now an internal plain-object
+      // graph (not a JSDraw2 / HELM Web Editor mol), so the obsolete
+      // `editor.setMol(mol)` → `editor.getHelm()` cross-check was dropped.
+      // `Chain.getHelm()` (`fromObjectsToHelm`) is the canonical serialization.
       const resHelm = resChain.getHelm();
 
-      expect(resMolHelm, testData.tgt.helm);
       expect(resHelm, testData.tgt.helm);
     }, testName == 'reaction2' ? {skipReason: 'reverse reaction'} : undefined);
   }

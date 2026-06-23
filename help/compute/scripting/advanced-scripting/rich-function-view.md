@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Rich Function View"
 sidebar_position: 1
 ---
@@ -138,6 +140,11 @@ function MyScriptViewersHookMaker() {
   }
 }
 ```
+
+When used inside a [workflow](../../workflows/workflows.mdx), the hook also receives a `meta`
+argument and is re-invoked whenever metadata published by
+[`meta` links](../../workflows/link-types.mdx) changes. See the workflow-side
+[`viewersHook` reference](../../workflows/configuration.mdx) for the full signature.
 
 RichFunctionView supports the `dockSpawnConfig` option to control the
 viewer's width. By default, any viewer occupies all available
@@ -305,6 +312,70 @@ outputDf = inputDf.clone();
 </Tabs>
 ```
 
+## Form layout and run controls
+
+A few annotations control how the input form and the **Run** button are presented, without
+affecting computations.
+
+### Customize the Run button label
+
+Use `meta.runLabel` to change the text on the **Run** button. The default is `Run`. When the
+output is outdated after a previous run, the button automatically switches to `Rerun` regardless
+of this label.
+
+```javascript title="Your script header"
+//meta.runLabel: Simulate
+```
+
+### Render the input form as a tab
+
+By default the input form is docked on the left side of the view. Set `meta.formAsTab` to `true`
+to render it as a regular tab next to the output viewers instead.
+
+```javascript title="Your script header"
+//meta.formAsTab: true
+```
+
+When `formAsTab` is enabled, dock-type hints from [`dockSpawnConfig`](#visualize-input-data) on
+the inputs panel are ignored.
+
+### Workflow-oriented behavior
+
+The annotations below take effect whenever a script is rendered through RichFunctionView, but
+they are designed for [workflow](../../workflows/workflows.mdx) UX — where the user navigates
+between many steps and wants to focus on outputs. In a standalone single-script view they still
+work, but the use case is unusual.
+
+#### Keep the Run button always available
+
+By default the **Run** button is hidden once the current run is up to date. Enable the `rerun`
+feature flag to keep it available, so the user can always launch a fresh run with the same
+inputs.
+
+```javascript title="Your script header"
+//meta.features: {"rerun": true}
+```
+
+Inside a workflow the flag controls the **Rerun** button in the step's navigation toolbar
+(Back / Run / Next / Update). In standalone RichFunctionView the same flag keeps the in-form
+Run button visible after a completed run.
+
+#### Collapse the input form on open
+
+Set `meta.inputsHidden` to `true` to start with the input form collapsed. A small chevron in the
+form panel header lets the user reveal it on demand and collapse it back later.
+
+```javascript title="Your script header"
+//meta.inputsHidden: true
+```
+
+The form stays collapsed even when validators emit warnings or errors. This is safe because:
+
+- A validation error blocks the **Run** button, so the user cannot start a run with invalid
+  inputs unnoticed.
+- In a [workflow](../../workflows/workflows.mdx), warnings and errors also appear on the
+  workflow navigation tree, surfacing issues even when the form is not visible.
+
 ## Provide custom docs and export data
 
 ### Add the readme
@@ -410,6 +481,23 @@ The export function will receive the following arguments:
 * `validationState`: `Record<string, ValidationResult>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 * `consistencyState`: `Record<string, ConsistencyInfo>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 
+Declare these as `//input:` parameters of the export function. The current call must be
+typed `funccall`:
+
+```javascript
+//name: MyPDFExport
+//input: funccall funcCall
+//input: bool startDownload
+//output: object result
+export function myPDFExport(funcCall, startDownload) {
+  // build the report for funcCall; download it when startDownload is true
+}
+```
+
+Workflows also support a workflow-level `customExports` option with a different handler
+signature (it receives the whole pipeline state, not a single call). See the workflow
+[Custom exports reference](../../workflows/configuration.mdx) for details.
+
 
 ## Review and compare historical script runs
 
@@ -434,6 +522,19 @@ To disable history, add the following line to your code:
 ```javascript title="Your script header"
 //meta.features: {"history": false}
 ```
+
+### Highlight key parameters in history cards
+
+By default, history cards list all inputs and outputs in declaration order. Use `meta.mainParams`
+to pin a short list of names that should appear prominently on each card, making it easier to
+distinguish runs at a glance.
+
+```javascript title="Your script header"
+//meta.mainParams: ["initTemp", "ambTemp", "timeToCool"]
+```
+
+Names refer to the script's `//input:` and `//output:` parameters. Other parameters are still
+saved and shown in the card details.
 
 ### Compare historical runs
 
@@ -471,6 +572,15 @@ Click on the column header with table data (e.g. `Temp. vs time`) to see conveni
 ## Model parameters optimization
 
 With **RichFunctionView** you can use the powerful built-in optimization functions.
+
+:::warning High-intensity computation
+
+Both **Sensitivity** analysis and **Parameter optimization** trigger
+many simultaneous runs of the model.  We recommend using these
+features on fast `Javascript` and `WebAssembly` scripts to avoid
+repeatable running of heavy server-side code.
+
+:::
 
 ### Sensitivity analysis
 
@@ -552,9 +662,19 @@ inverse problem to the [sensitivity analysis](../../function-analysis.md#sensiti
 the input conditions that lead to a specified output of the model. It
 computes inputs minimizing deviation measured by loss function.
 
-:::warning High-intensity computation
+To enable parameters optimization, set the `fitting` feature flag:
 
-Both **Sensitivity** analysis and **Parameter optimization** trigger
-many simultaneous runs of the model.  We recommend using these
-features on fast `Javascript` and `WebAssembly` scripts to avoid
-repeatable running of heavy server-side code.
+```javascript title="Your script header"
+//meta.features: {"fitting": true}
+```
+
+#### Tuning fitting defaults
+
+You can override the parameter-fitting view's default settings with `meta.fittingSettings`. The
+value is a JSON object that is merged with the platform defaults at startup; anything you do not
+set keeps its default. The schema is defined alongside the optimizer in
+`libraries/compute-utils/function-views/src/fitting/optimizer-api.ts`.
+
+```javascript title="Your script header"
+//meta.fittingSettings: {"method": "Nelder-Mead", "maxIterations": 200}
+```

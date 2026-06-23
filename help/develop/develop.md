@@ -68,7 +68,7 @@ In addition to that, it might contain the following folders:
   <!--, [Discovery](https://github.com/datagrok-ai/labs/tree/master/packages/Discovery)-->
 * `files` and `tables`: data for demonstration and testing.
   Example: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  <!--, [Sunburst](https://github.com/datagrok-ai/labs/tree/master/packages/Sunburst)-->
+  <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Charts/src/viewers/sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/views/layouts.md)
 * `schemas`: `yaml` files with property schemas
 * `jobs`: data jobs

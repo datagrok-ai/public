@@ -550,3 +550,32 @@ category('ComputeUtils: Driver cross-pipeline data propagation', async () => {
   });
 });
 
+// ============================================================
+// Per-step history flag (enableHistory)
+// ============================================================
+
+category('ComputeUtils: Driver per-step history flag', async () => {
+  before(async () => {});
+
+  test('FuncCall step exposes enableHistory in view state', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2', enableHistory: true},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+    };
+    const pconf = await getProcessedConfig(config);
+    // config processing carries the flag through unchanged
+    expectDeepEqual((pconf as any).steps[0].enableHistory, true, {prefix: 'enableHistory in processed config'});
+    // build the tree but skip init() so toState does not touch the mock funccall
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+    // the view state (consumed by TreeWizard) exposes the flag, sourced from config
+    const step1State = (tree.nodeTree.getNode([{idx: 0}]).getItem() as any).toState({});
+    const step2State = (tree.nodeTree.getNode([{idx: 1}]).getItem() as any).toState({});
+    expectDeepEqual(step1State.enableHistory, true, {prefix: 'step1 exposes enableHistory'});
+    expectDeepEqual(step2State.enableHistory, undefined, {prefix: 'step2 has no enableHistory'});
+  });
+});
+

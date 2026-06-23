@@ -1,5 +1,60 @@
 # Datagrok-tools changelog
 
+## 6.4.5 (2026-06-23)
+
+* `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.
+
+## 6.4.4 (2026-06-22)
+
+* `grok publish` — fixed every publish failing with a silent `exit 1` after a successful upload: a stray `fs.unlinkSync('zip')` threw `ENOENT` (the archive is streamed in-memory, no `zip` file is ever written), and the surrounding `catch` only logged under `--verbose`. The errant unlink is removed and publish errors are now always surfaced.
+
+## 6.4.3 (2026-06-22)
+
+* `grok api` — numeric IVP model inputs are now generated with `nullable: false`, so an emptied input field fails form validation instead of running the solver with a null.
+
+## 6.4.2 (2026-06-18)
+
+* `grok publish` — registry-aware Docker fallback: when a package's image isn't built locally and the target server has no compatible record, `grok publish` now checks the configured registry and Docker Hub (`docker manifest inspect`) for the expected `datagrok/<name>:<version>` (and content-hashed) tag and uses it, instead of reporting "No fallback available" and failing. Fixes dependency publishes (e.g. Bio → @datagrok/chem) on CI runners where the image exists in the registry but not locally.
+
+## 6.4.1 (2026-06-18)
+
+* Fixed `grok` failing with `Cannot find module './commands/build'` — the `.npmignore` `build.js` rule was unanchored and excluded the compiled `bin/commands/build.js` from the published package; anchored it to `/build.js`.
+* Pinned `ignore-walk` to ^6.0.5 so the package still supports Node 18 (9.x requires Node 22+).
+
+## 6.4.0 (2026-06-18)
+
+* Dependencies: sanitized and updated all dependencies; `npm install` is now warning-free and `npm audit` reports 0 vulnerabilities (was 24).
+* Dependencies: migrated linting to ESLint 9 flat config (`eslint.config.mjs` + `typescript-eslint` + `@stylistic`), dropping the archived `eslint-config-google`.
+* Dependencies: upgraded Puppeteer to v24 and migrated to its native `page.screencast()` for `--record`, removing `puppeteer-screen-recorder` and the deprecated `fluent-ffmpeg`.
+* Dependencies: replaced `archiver-promise` with `archiver` directly, and replaced `@babel/cli` with a small `@babel/core` build script (`build.js`) to drop deprecated transitive packages (glob@7, inflight).
+
+## 6.3.3 (2026-06-16)
+
+* Fixed Celery Docker image generation — the image wasn't built locally on publish.
+
+## 6.3.2 (2026-06-15)
+
+* `func-gen` webpack plugin — generated RichFunctionView model inputs now use the script-form names (argument bounds/step `_t0`/`_t1`/`_h`, loop count `_count`) instead of the deprefixed forms, so the run, fitting, and sensitivity-analysis paths share one set of input names with diff-grok's pipeline. Fixes `Inconsistent inputs: "_t0" is missing` when starting fitting/SA from a Rich Function View.
+* `func-gen` webpack plugin — the generated RichFunctionView model output annotation appends the `DiffStudio Facet` viewer (last), alongside Grid and Line chart.
+* `grok stresstest` — run the ApiTests Node test runner directly via tsx (`src/package-test-node.ts`) instead of a compiled `dist-node` bundle; dropped the obsolete `npm run build-node` step and the `tsconfig-paths-bootstrap.js` / `dist-node` invocation.
+
+## 6.3.0 (2026-06-12)
+
+* `func-gen` webpack plugin — generates RichFunctionView model wrappers from Diff Studio `#meta.role: model` `.ivp` files. Inputs/output are derived from the parsed IVP, `#meta.icon` becomes the model icon, and `#meta.inputs` lookups are emitted as real `propagateChoice: all` inputs (rendered natively by the Rich Function View, unlike `meta.inputs`). Ships a prebuilt, tree-shaken CJS bundle of diff-grok's IVP parser (`plugins/ivp-parser.bundle.cjs`); regenerate with `npm run update:ivp-parser`.
+
+## 6.2.6 (2026-05-26)
+
+* `grok s tables upload` — accepts `.d42` binary blobs in addition to `.csv`. Content-Type is auto-detected from the file extension (`application/octet-stream` for d42, `text/csv` otherwise); server content-negotiates and persists either form against the same `/public/v1/tables/{name}` endpoint.
+
+## 6.2.5 (2026-05-21)
+
+* `grok report read` — renamed `--extract-actions` to `--extract-client-log`; sidecar is now `<stem>_client_log.json`. The old flag is no longer accepted.
+* `grok report read` — legacy `actions` field in pre-consolidation report zips is folded into `clientLog` at read time (stderr warning emitted), so downstream consumers see one canonical field. Companion to the platform-side merge that drops `reports_data.actions` in favor of `client_log`.
+
+## 6.2.4 (2026-05-13)
+
+* GROK-20097: package template — replaced deprecated `"moduleResolution": "node"` in `tsconfig.json` with `"bundler"`, suppressing the TypeScript warning for new packages.
+
 ## 6.2.3 (2026-05-06)
 
 * `grok test` — added `--skip-puppeteer` flag (symmetric counterpart of `--skip-playwright`). Bypasses `loadPackages()` and the Puppeteer/`DG.Test` runner so Playwright-only test directories (e.g. `public/playwright-public`) can run end-to-end via `grok test --skip-puppeteer` without tripping the Dart/JS package loader.

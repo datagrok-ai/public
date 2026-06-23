@@ -1,7 +1,8 @@
 ---
 title: "Dashboards"
 sidebar_position: 2
-format: mdx
+mdx:
+  format: mdx
 ---
 
 Dashboards are projects like [spaces](space.md) that contain data (a [dataframe](../table.md)) and the visualizations applied

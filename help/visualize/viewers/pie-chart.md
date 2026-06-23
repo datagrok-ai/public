@@ -53,7 +53,6 @@ Controls:
 | Show Value | boolean | Show the number of values inside the pie. |
 | Show Column Selector | boolean |  |
 | Show Mouse Over Row Group | boolean | Highlight part of the pie that corresponds to the mouse-over rows |
-| Show Selected Rows | boolean | Highlight selected rows |
 | Margin Left | number |  |
 | Margin Top | number |  |
 | Margin Right | number |  |
@@ -79,6 +78,8 @@ Controls:
 | Label Position | string |  |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Selection** | | |
+| Show Selected Rows | boolean | Highlight selected rows |
 | **Description** | | |
 | Show Title | boolean |  |
 

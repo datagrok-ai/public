@@ -43,6 +43,6 @@ The SharePoint connector supports OneDrive as well, when **Drive** is set to "On
 See also:
 
 * [File shares](../files.md)
-* [Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/app-aad-token)
+* [Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/fundamentals/whatis)
 * [SharePoint](https://www.microsoft.com/en-us/microsoft-365/sharepoint)
 * [OneDrive](https://www.microsoft.com/en-us/microsoft-365/onedrive)

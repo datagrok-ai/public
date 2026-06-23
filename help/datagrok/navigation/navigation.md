@@ -19,7 +19,8 @@ keywords:
  - global search
  - routing
  - URL sharing 
-format: mdx
+mdx:
+  format: mdx
 toc_max_heading_level: 5
 sidebar_position: 2
 ---

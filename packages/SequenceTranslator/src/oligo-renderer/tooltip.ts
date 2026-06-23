@@ -14,6 +14,7 @@
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {getMonomerLibHelper, IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 
@@ -22,7 +23,7 @@ import {
   canonicalPhosphateSymbol, canonicalSugarSymbol,
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
-import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 
 const STRUCT_W = 110;
 const STRUCT_H = 90;
@@ -208,14 +209,13 @@ function makeStructureCell(label: string): { root: HTMLElement; body: HTMLDivEle
  * Since only one tooltip is visible at a time, moving the cached node
  * between tooltip hosts via `appendChild` is safe: the previous host is
  * being torn down. */
-const _structCache = new Map<string, HTMLElement>();
+const _structCache = new DG.LruCache<string, HTMLElement>(256);
 
 function drawMolfileCached(host: HTMLDivElement, molfile: string, cacheKey: string): void {
   try {
     let cached = _structCache.get(cacheKey);
     if (!cached) {
       cached = grok.chem.drawMolecule(molfile, STRUCT_W, STRUCT_H, false);
-      if (_structCache.size > 256) _structCache.clear();
       _structCache.set(cacheKey, cached);
     }
     host.innerHTML = '';

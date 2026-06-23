@@ -25,6 +25,21 @@ export function getCurrentUser(): Promise<unknown> {
   return request('GET', '/public/v1/users/current');
 }
 
+export function listConnections(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/connections${qs}`);
+}
+
+export function listGroups(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/groups${qs}`);
+}
+
+export function listUsers(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/users${qs}`);
+}
+
 // --- Projects ---
 
 export function listProjects(filter?: string): Promise<unknown[]> {
@@ -50,6 +65,29 @@ export function searchProject(name: string): Promise<unknown[]> {
 
 export function listRecentProjects(): Promise<unknown[]> {
   return request('GET', '/projects/recent');
+}
+
+export function attachEntityToProject(
+  projectId: string, entityId: string, link: boolean = false,
+): Promise<unknown> {
+  return request('POST', '/projects/relations', {
+    id: randomUUID(),
+    project: {id: projectId},
+    entity: {id: entityId},
+    isLink: link,
+  });
+}
+
+export function shareProject(
+  projectId: string, groups: string[], access: 'View' | 'Edit' = 'View',
+): Promise<unknown> {
+  const name = encodeURIComponent(projectId.replace(/:/g, '.'));
+  const qs = new URLSearchParams({groups: groups.join(','), access}).toString();
+  return request('POST', `/public/v1/entities/${name}/shares?${qs}`);
+}
+
+export function listProjectShares(projectId: string): Promise<unknown[]> {
+  return request('GET', `/privileges/permissions?entityId=${encodeURIComponent(projectId)}`);
 }
 
 // --- Spaces ---

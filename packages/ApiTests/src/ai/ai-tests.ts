@@ -1,31 +1,99 @@
 // Static helpers
 import './color/color-static-helpers';
+import './color/paint-marker-axis-helpers';
+import './stats/stats-advanced';
 import './qnum/qnum-static-helpers';
+import './utils/geometry-helpers';
+import './utils/click-utils-helpers';
 import './utils/lru-cache';
 import './utils/string-utils-helpers';
 import './utils/utils-static-helpers';
 
+// App JS API
+import './app/balloon-js-api';
+import './app/browse-panel-js-api';
+import './app/card-view-search';
+import './app/card-view-extras';
+import './app/context-help-panel-sync';
+import './app/favorites-js-api';
+import './app/files-view-js-api';
+import './app/functions-call-cmdfunc';
+import './app/routing-dragdrop-js-api';
+import './app/visual-db-query-editor-js-api';
+import './app/dock-manager-state';
+import './app/dock-manager-tree';
+import './app/functions-parse';
+import './app/progress-indicator-js-api';
+import './app/shell-table-view-lookup';
+import './app/shell-view-events';
+import './app/shell-windows-visibility';
+import './app/tableview-control';
+import './app/tableview-state';
+import './app/tooltip-js-api';
+import './app/top-menu-js-api';
+import './app/view-geometry-ribbon';
+import './app/view-identity-docking';
+import './app/view-layout-roundtrip';
+
 // Viewer JS API
+import './viewers/annotation-regions-cross-viewer';
+import './viewers/axis-range-sliders';
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';
 import './viewers/bar-chart-legend-visibility';
+import './viewers/box-plot-annotations';
 import './viewers/box-plot-extras';
 import './viewers/box-plot-js-api';
 import './viewers/box-plot-legend-visibility';
+import './viewers/calendar-js-api';
+import './viewers/confusion-matrix-js-api';
+import './viewers/correlation-plot-js-api';
 import './viewers/density-plot-js-api';
+import './viewers/filters-events';
+import './viewers/form-js-api';
+import './viewers/form-extras';
 import './viewers/histogram-extras';
 import './viewers/histogram-js-api';
+import './viewers/js-viewer';
 import './viewers/line-chart-auto-detect';
 import './viewers/line-chart-extras';
+import './viewers/line-chart-formula-lines';
 import './viewers/line-chart-js-api';
+import './viewers/matrix-plot-js-api';
+import './viewers/network-diagram-js-api';
+import './viewers/pc-plot-extras';
 import './viewers/pc-plot-js-api';
 import './viewers/pie-chart-js-api';
+import './viewers/roc-curve-js-api';
 import './viewers/scatter-plot-auto-detect';
 import './viewers/scatter-plot-extras';
 import './viewers/scatter-plot-js-api';
+import './viewers/tile-viewer-js-api';
+import './viewers/tree-map-js-api';
+import './viewers/trellis-plot-js-api';
+import './viewers/viewer-event-roundup';
+import './viewers/viewer-events';
+import './viewers/viewer-geometry';
 import './viewers/viewer-layout-backward-compat';
+import './viewers/viewer-lifecycle-events';
 
-// Reported issues (regression coverage from JIRA tickets and GitHub issues)
+// Widget JS API
+import './widgets/dialog-js-api';
+import './widgets/accordion-js-api';
+import './widgets/column-grid-js-api';
+import './widgets/filter-group-advanced';
+import './widgets/columns-input';
+import './widgets/grid-extras';
+import './widgets/grid-filter-base';
+import './widgets/input-extras';
+import './widgets/menu-js-api';
+import './widgets/tab-control-js-api';
+import './widgets/tags-input';
+import './widgets/tree-view-js-api';
+import './widgets/widget-descriptor';
+import './widgets/widget-extras';
+
+// Reported issues
 import './reported-issues/gh-3469';
 import './reported-issues/grok-2892';
 import './reported-issues/grok-13205';
@@ -35,7 +103,6 @@ import './reported-issues/grok-15006';
 import './reported-issues/grok-16994';
 import './reported-issues/grok-17118';
 import './reported-issues/grok-17498';
-import './reported-issues/grok-17579';
 import './reported-issues/grok-18000';
 import './reported-issues/grok-18091';
 import './reported-issues/grok-18169';

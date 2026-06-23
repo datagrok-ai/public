@@ -4,9 +4,8 @@ import './polyfills'; // must run before anything else — Chrome 50 / Dartium s
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {interval} from 'rxjs';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
-import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
+import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI, initAIWindow} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
@@ -26,13 +25,18 @@ export class PackageFunctions {
   static async init() {
     await UsageLimiter.getInstance().init();
     setupSearchUI();
+    initAIWindow();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+    setupAgentScriptsUI();
     PackageFunctions.ensureAgentsFolder();
+    // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
+    ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
     PackageFunctions.subscribeToSyncEvents();
   }
 
-  // Creates agents/ folder in My Files if it doesn't exist yet.
+  // Creates agents/ folder in My Files if it doesn't exist yet, and seeds agents/scripts/
+  // with any demo files from the package's files/scripts/ folder.
   static async ensureAgentsFolder(): Promise<void> {
     try {
       const conn = await grok.dapi.connections.filter('name = "My files"').first();
@@ -45,8 +49,25 @@ export class PackageFunctions {
           'Place your personal knowledge files here. Claude will use them as context.');
         console.log('Grokky: created agents/ folder');
       }
+      await PackageFunctions.seedScriptsFolder(`${agentsPath}/scripts`);
     } catch (e: any) {
       console.warn('Grokky: failed to ensure agents folder:', e.message);
+    }
+  }
+
+  // Copies demo files from the package's files/scripts/ into MyFiles agents/scripts/.
+  // Existing files are left untouched so user edits are preserved.
+  static async seedScriptsFolder(destPath: string): Promise<void> {
+    const sourceFiles: DG.FileInfo[] = await _package.files.list('scripts', false);
+    for (const fi of sourceFiles) {
+      if (fi.isDirectory)
+        continue;
+      const destFilePath = `${destPath}/${fi.name}`;
+      if (await grok.dapi.files.exists(destFilePath))
+        continue;
+      const content = await fi.readAsString();
+      await grok.dapi.files.writeAsText(destFilePath, content);
+      console.log(`Grokky: seeded ${fi.name} into agents/scripts/`);
     }
   }
 
@@ -56,8 +77,10 @@ export class PackageFunctions {
 
   // Subscribes to platform events that should trigger file sync.
   static subscribeToSyncEvents(): void {
+    // Background sync is best-effort: swallow errors (e.g. runtime container not running) so they
+    // don't surface as unhandled rejections that get auto-reported on every package load.
     const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
-      ClaudeRuntimeClient.getInstance().syncUserFiles(...args);
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args).catch(() => {});
 
     // MyFiles agents: file operations (create, upload, delete, rename, move)
     grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
@@ -77,15 +100,8 @@ export class PackageFunctions {
 
     // Packages: when a JS bundle is loaded
     grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
-      sync('packages', pkg.name);
-    });
-
-    // Poll for shared connections and package updates every 10 minutes.
-    // No reliable push events exist for sharing or other users' publishes.
-    // TODO: think about more efficient strategies here.
-    interval(15 * 60 * 1000).subscribe(() => {
-      sync('shared');
-      sync('packages');
+      if (pkg?.name)
+        sync('packages', pkg.name);
     });
   }
 

@@ -4,8 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME} from './ui-constants';
-import {CONTROL_EXPR, METHOD_KEY_WORD} from './constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME,
+  LIBRARY_CHANGED_EVENT} from './ui-constants';
+import {CONTROL_EXPR, CONTROL_TAG, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 import {DEFAULT_OPTIONS} from './solver-tools';
 
@@ -44,6 +45,15 @@ export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
 
   return mad;
 } // error
+
+/** Sanitize model name into a filename-safe ASCII token */
+export function sanitizeModelFileName(name: string): string {
+  const cleaned = name
+    .replace(/[^A-Za-z0-9_-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return cleaned.length > 0 ? cleaned : 'model';
+}
 
 /** Return unused IVP-file name */
 export function unusedFileName(name: string, files: string[]): string {
@@ -256,30 +266,399 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   return dfs[0];
 }
 
+let recentDfPromise: Promise<DG.DataFrame> | null = null;
+let recentDfSnapshot: DG.DataFrame | null = null;
+let recentDfFailed = false;
+
+/** Kick off (or reuse) a background read of the recent-models dataframe */
+export function prefetchRecentModelsTable(): void {
+  if (recentDfPromise !== null)
+    return;
+  recentDfPromise = getRecentModelsTable()
+    .then((v) => { recentDfSnapshot = v; recentDfFailed = false; return v; })
+    .catch((e) => {
+      recentDfFailed = true;
+      recentDfPromise = null;
+      throw e;
+    });
+}
+
+/** Get memoized recent-models dataframe; deduplicates concurrent callers */
+export function getCachedRecentModelsTable(): Promise<DG.DataFrame> {
+  if (recentDfPromise === null)
+    prefetchRecentModelsTable();
+  return recentDfPromise!;
+}
+
+/** Synchronously read the last successfully-resolved recent-models dataframe.
+ *  Returns null if the prefetch has not completed yet. The snapshot is
+ *  intentionally preserved across invalidations so dropdown menus do not
+ *  flicker between «old data» and «Loading…» on refresh — they show stale
+ *  data briefly until the next prefetch resolves. */
+export function getCachedRecentModelsTableSync(): DG.DataFrame | null {
+  return recentDfSnapshot;
+}
+
+/** True if the most recent prefetch attempt rejected (e.g. filesystem error). */
+export function isCachedRecentModelsFailed(): boolean {
+  return recentDfFailed;
+}
+
+/** Drop cached recent-models promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedRecentModelsTableSync). */
+export function invalidateRecentCache(): void {
+  recentDfPromise = null;
+}
+
 /** Return model files from user's home */
 export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
   const folder = `${grok.shell.user.project.name}:Home/`;
   return await grok.dapi.files.list(folder, true, MISC.MODEL_FILE_EXT);
 }
 
+let myModelFilesPromise: Promise<DG.FileInfo[]> | null = null;
+let myModelFilesSnapshot: DG.FileInfo[] | null = null;
+let myModelFilesFailed = false;
+
+/** Kick off (or reuse) a background read of the user's model files */
+export function prefetchMyModelFiles(): void {
+  if (myModelFilesPromise !== null)
+    return;
+  myModelFilesPromise = getMyModelFiles()
+    .then((v) => { myModelFilesSnapshot = v; myModelFilesFailed = false; return v; })
+    .catch((e) => {
+      myModelFilesFailed = true;
+      myModelFilesPromise = null;
+      throw e;
+    });
+}
+
+/** Get memoized user's model files; deduplicates concurrent callers */
+export function getCachedMyModelFiles(): Promise<DG.FileInfo[]> {
+  if (myModelFilesPromise === null)
+    prefetchMyModelFiles();
+  return myModelFilesPromise!;
+}
+
+/** Synchronously read the last successfully-resolved my-models listing.
+ *  Returns null if the prefetch has not completed yet. Snapshot survives
+ *  invalidations to avoid dropdown flicker on refresh. */
+export function getCachedMyModelFilesSync(): DG.FileInfo[] | null {
+  return myModelFilesSnapshot;
+}
+
+/** True if the most recent my-models prefetch attempt rejected. */
+export function isCachedMyModelFilesFailed(): boolean {
+  return myModelFilesFailed;
+}
+
+/** Drop cached my-models promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedMyModelFilesSync). */
+export function invalidateMyModelFilesCache(): void {
+  myModelFilesPromise = null;
+}
+
 /** Get equations from file */
 export async function getEquationsFromFile(path: string): Promise<string | null> {
   try {
-    const exist = await grok.dapi.files.exists(path);
-    const idx = path.lastIndexOf('/');
-    const folderPath = path.slice(0, idx + 1);
-    let file: DG.FileInfo;
-
-    if (exist) {
-      const fileList = await grok.dapi.files.list(folderPath);
-      file = fileList.find((file) => file.nqName === path);
-
-      return await file.readAsString();
-    } else
-      return null;
-  } catch (e) {
+    return await grok.dapi.files.readAsText(path);
+  } catch {
     return null;
   }
+}
+
+// ---- Model content cache ----
+//
+// Maps a server-side .ivp path to its current text. Populated lazily by
+// `loadModelContent` / `readAndCacheModelContent`, eagerly during tree build
+// (Library + Recent + My Models prewarm), and updated on Save / Update so the
+// cached entry reflects the latest in-memory edit. Tree-click previews then
+// open the model from memory instead of paying a server round-trip.
+//
+// Known limitation: cross-tab / external edits to the same file (other tab,
+// other user, platform file browser) are NOT detected — entries become stale
+// until the user explicitly refreshes. Acceptable trade-off for instant
+// tree clicks.
+
+const modelContentCache = new Map<string, string>();
+
+/** Whether a path is a server-resident path that can serve as a cache key.
+ *  Drag-and-dropped files have no `:` separator and must bypass the cache. */
+function isCacheableModelPath(path: string | null | undefined): path is string {
+  return !!path && path.includes(':');
+}
+
+/** Read cached model content; `undefined` if the path is not cached */
+export function getCachedModelContent(path: string): string | undefined {
+  return modelContentCache.get(path);
+}
+
+/** Store model content for a path; overwrites any existing entry. No-op for non-server paths. */
+export function setCachedModelContent(path: string, content: string): void {
+  if (isCacheableModelPath(path))
+    modelContentCache.set(path, content);
+}
+
+/** Drop a single entry from the content cache */
+export function invalidateModelContent(path: string): void {
+  modelContentCache.delete(path);
+}
+
+/** Clear all entries from the content cache */
+export function clearModelContentCache(): void {
+  modelContentCache.clear();
+}
+
+/** Resolve model content for a path: cache → readAsText → cache. Returns `null` on read failure. */
+export async function loadModelContent(path: string): Promise<string | null> {
+  if (!isCacheableModelPath(path))
+    return null;
+  const cached = modelContentCache.get(path);
+  if (cached !== undefined)
+    return cached;
+  const text = await getEquationsFromFile(path);
+  if (text !== null)
+    modelContentCache.set(path, text);
+  return text;
+}
+
+/** Resolve content for a `FileInfo` via the cache, falling back to `file.readAsString()`.
+ *  Use this in entry-points that already hold a `FileInfo` (preview / full-view openers).
+ *  For drag-and-dropped files (no server path) the cache is bypassed entirely. */
+export async function readAndCacheModelContent(file: DG.FileInfo): Promise<string> {
+  const path = file.fullPath;
+  if (isCacheableModelPath(path)) {
+    const cached = modelContentCache.get(path);
+    if (cached !== undefined)
+      return cached;
+  }
+  const text = await file.readAsString();
+  if (isCacheableModelPath(path))
+    modelContentCache.set(path, text);
+  return text;
+} // readAndCacheModelContent
+
+let myModelContentPrewarmPromise: Promise<void> | null = null;
+
+/** Kick off a background prewarm of the content cache for every file in My Models.
+ *  Idempotent: subsequent calls reuse the in-flight promise so listing + content reads
+ *  are issued at most once per session. Failures are swallowed so the prewarm cannot
+ *  block or break the caller. */
+export function prefetchMyModelFilesContent(): void {
+  if (myModelContentPrewarmPromise !== null)
+    return;
+  myModelContentPrewarmPromise = (async () => {
+    try {
+      const files = await getCachedMyModelFiles();
+      await Promise.all(files.map((f) => loadModelContent(f.fullPath).catch(() => null)));
+    } catch {
+      // listing failed — drop the latch so a later call can retry
+      myModelContentPrewarmPromise = null;
+    }
+  })();
+}
+
+const folderListingCache = new Map<string, Promise<DG.FileInfo[]>>();
+const folderListingSnapshots = new Map<string, DG.FileInfo[]>();
+
+/** Get memoized non-recursive listing of a folder; deduplicates concurrent callers */
+export function getCachedFolderListing(folderPath: string): Promise<DG.FileInfo[]> {
+  let p = folderListingCache.get(folderPath);
+  if (!p) {
+    p = grok.dapi.files.list(folderPath)
+      .then((v) => { folderListingSnapshots.set(folderPath, v); return v; })
+      .catch((e) => {
+        folderListingCache.delete(folderPath);
+        throw e;
+      });
+    folderListingCache.set(folderPath, p);
+  }
+  return p;
+}
+
+/** Kick off (or reuse) a background listing of a folder */
+export function prefetchFolderListing(folderPath: string): void {
+  void getCachedFolderListing(folderPath);
+}
+
+/** Drop cached listing for a folder so the next read re-hits storage.
+ *  The sync snapshot is left in place — eventual consistency for dropdowns. */
+export function invalidateFolderListing(folderPath: string): void {
+  folderListingCache.delete(folderPath);
+}
+
+/** Resolve a FileInfo for a given full path via the folder-listing cache; null if not present */
+export async function getCachedFileInfo(path: string): Promise<DG.FileInfo | null> {
+  const idx = path.lastIndexOf('/');
+  if (idx < 0)
+    return null;
+  const folder = path.slice(0, idx + 1);
+  try {
+    const listing = await getCachedFolderListing(folder);
+    return listing.find((f) => f.nqName === path) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Synchronously read a previously-resolved folder listing; null if no snapshot. */
+export function getCachedFolderListingSync(folderPath: string): DG.FileInfo[] | null {
+  return folderListingSnapshots.get(folderPath) ?? null;
+}
+
+/** Sync variant of getCachedFileInfo: looks up a FileInfo in already-prefetched
+ *  folder listings without touching the network. Returns null when the parent
+ *  folder has not been listed yet (caller should kick prefetchFolderListing
+ *  beforehand) or the path is missing from the listing. */
+export function getCachedFileInfoSync(path: string): DG.FileInfo | null {
+  const idx = path.lastIndexOf('/');
+  if (idx < 0)
+    return null;
+  const folder = path.slice(0, idx + 1);
+  const listing = folderListingSnapshots.get(folder);
+  if (!listing)
+    return null;
+  return listing.find((f) => f.nqName === path) ?? null;
+}
+
+/** External (custom) Library model entry resolved from external-models.json */
+export type ExternalLibraryEntry = {
+  modelPath: string,
+  displayName: string,
+  description: string,
+  iconUrl: string,
+  helpUrl: string | undefined,
+};
+
+/** Load & resolve all external (custom) models registered in external-models.json */
+export async function getExternalLibraryEntries(webRoot: string): Promise<ExternalLibraryEntry[]> {
+  const entries: ExternalLibraryEntry[] = [];
+  try {
+    const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+    if (!(await grok.dapi.files.exists(manifestPath)))
+      return entries;
+
+    const text = await grok.dapi.files.readAsText(manifestPath);
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed?.models))
+      return entries;
+
+    for (const entry of parsed.models) {
+      const modelPath: string | undefined = entry?.path;
+      const iconFile: string | undefined = entry?.icon;
+      const helpUrl: string | undefined = entry?.help;
+      if (!modelPath)
+        continue;
+
+      const content = await getEquationsFromFile(modelPath);
+      if (content === null)
+        continue;
+      // Free prewarm: we already paid for the read to extract name + description
+      setCachedModelContent(modelPath, content);
+
+      const {name, description} = extractIvpNameAndDescription(content);
+      const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
+      const displayName = name || fallbackName;
+      const iconUrl = `${webRoot}files/icons/${iconFile || 'default.png'}`;
+
+      entries.push({modelPath, displayName, description, iconUrl, helpUrl});
+    }
+  } catch {
+    // silently skip if manifest is missing or malformed
+  }
+  return entries;
+}
+
+let externalEntriesPromise: Promise<ExternalLibraryEntry[]> | null = null;
+let externalEntriesSnapshot: ExternalLibraryEntry[] | null = null;
+let externalEntriesFailed = false;
+let externalEntriesWebRoot: string | null = null;
+
+/** Kick off (or reuse) a background resolution of external library entries */
+export function prefetchExternalLibraryEntries(webRoot: string): void {
+  externalEntriesWebRoot = webRoot;
+  if (externalEntriesPromise !== null)
+    return;
+  externalEntriesPromise = getExternalLibraryEntries(webRoot)
+    .then((v) => { externalEntriesSnapshot = v; externalEntriesFailed = false; return v; })
+    .catch((e) => {
+      externalEntriesFailed = true;
+      externalEntriesPromise = null;
+      throw e;
+    });
+}
+
+/** Get memoized external library entries; deduplicates concurrent callers */
+export function getCachedExternalLibraryEntries(webRoot: string): Promise<ExternalLibraryEntry[]> {
+  if (externalEntriesPromise === null || externalEntriesWebRoot !== webRoot)
+    prefetchExternalLibraryEntries(webRoot);
+  return externalEntriesPromise!;
+}
+
+/** Synchronously read the last successfully-resolved external library entries.
+ *  Returns null if the prefetch has not completed yet. Snapshot survives
+ *  invalidations triggered by LIBRARY_CHANGED_EVENT so dropdown menus show
+ *  stale entries briefly until the new prefetch resolves, instead of flicker. */
+export function getCachedExternalLibraryEntriesSync(): ExternalLibraryEntry[] | null {
+  return externalEntriesSnapshot;
+}
+
+/** True if the most recent external-entries prefetch attempt rejected. */
+export function isCachedExternalLibraryEntriesFailed(): boolean {
+  return externalEntriesFailed;
+}
+
+/** Drop cached external entries promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedExternalLibraryEntriesSync). */
+export function invalidateExternalLibraryEntriesCache(): void {
+  externalEntriesPromise = null;
+}
+
+// Central invalidation: whenever external-models.json changes, drop the cache
+// and kick off a fresh background resolution (if webRoot is known).
+grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
+  invalidateExternalLibraryEntriesCache();
+  if (externalEntriesWebRoot !== null)
+    prefetchExternalLibraryEntries(externalEntriesWebRoot);
+});
+
+/** Extract `#name:` and `#description:` from an .ivp file content.
+ *  The description block can place its content either on the same line as the
+ *  `#description:` header, or on subsequent indented lines until the next
+ *  `#`-directive. Multi-line descriptions are collapsed into a single
+ *  space-separated string. */
+export function extractIvpNameAndDescription(content: string): {name: string, description: string} {
+  const namePrefix = `${CONTROL_EXPR.NAME}:`;
+  const descPrefix = `${CONTROL_EXPR.DESCR}:`;
+  let name = '';
+  const descParts: string[] = [];
+  let inDescBlock = false;
+  let descDone = false;
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+    if (inDescBlock) {
+      if (line.startsWith(CONTROL_TAG)) {
+        inDescBlock = false;
+        descDone = true;
+        // fall through to let this directive line be handled below
+      } else {
+        if (line.length > 0)
+          descParts.push(line);
+        continue;
+      }
+    }
+    if (!name && line.startsWith(namePrefix))
+      name = line.slice(namePrefix.length).trim();
+    else if (!descDone && descParts.length === 0 && line.startsWith(descPrefix)) {
+      const rest = line.slice(descPrefix.length).trim();
+      if (rest.length > 0)
+        descParts.push(rest);
+      inDescBlock = true;
+    }
+    if (name && descDone)
+      break;
+  }
+  return {name, description: descParts.join(' ')};
 }
 
 /** Return category control widget */

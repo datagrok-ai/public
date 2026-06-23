@@ -1,5 +1,46 @@
 # Sequence Translator changelog
 
+## 1.11.3 (2026-06-23)
+
+* Markush enumeration: R-group templates picker backed by a built-in catalogue of common substituents (alkyl, aryl, heteroaryl, halogens, amines, protecting groups); copy R-groups between positions, append/replace with de-duplication, and export R-groups to CSV.
+* Markush enumeration: added "Remove duplicates" option (dedupe results by canonical SMILES) and a custom result table name.
+* Added `MarkushDefaults` package setting and settings editor — admin-configured defaults (cores, R-groups, mode and output options) seed the Markush Enumerator, distributed per user group.
+* HELM Web Editor migration: PolyTool HELM enumeration now operates directly on HELM strings, dropping the JSDraw2 globals while preserving input formatting.
+
+## 1.10.26 (2026-06-10)
+
+* OligoNucleotide renderer: standalone backbone linkers (`p`, `[sp]`, or any monomer whose natural analog is `p`) — whether a 5'/3' cap, mid-strand, or a consecutive run — now render as linkage arcs (no chip), instead of being mistaken for conjugate pills. Recognized from the monomer library.
+* OligoNucleotide renderer: alignment now accounts for standalone linkers. A run of linkers on one strand that the other lacks opens a gap (bases stay aligned / paired), and the partner strand draws a single wider arc across it.
+* Demo data (`files/samples/sirna-demo.csv`): added a phosphate-capped single strand with mid-strand linkers and a duplex with a sense-only linker bulge.
+
+## 1.10.25 (2026-06-09)
+
+* OligoNucleotide renderer: strand alignment is now driven by the HELM when present — `strandtype` annotations decide the sense/antisense roles (chains are swapped accordingly) and `$connections$` `pair` entries fix the base-pair register.
+* OligoNucleotide renderer: when no explicit info is present, sense/antisense are auto-aligned by sliding the antisense to the column shift with the most complementary base pairs (natural-analog aware), with terminal overhangs on either end rendered true.
+* Oligo context panel: shows the resolved duplex register (blunt vs overhangs, and whether it came from explicit HELM pairs or auto-alignment).
+* Oligo Structures panel: order the Sense / Antisense panes by the parsed strand roles (honoring `strandtype` swaps) rather than raw chain order, so a flipped HELM (sense = RNA2) no longer mislabels the strands.
+* Demo data (`files/samples/sirna-demo.csv`): added rows with 3' overhangs and rows carrying explicit HELM pair / strandtype info.
+
+## 1.10.24 (2026-05-19)
+
+* Removed redundant demos
+
+## 1.10.23 (2026-05-15)
+
+* OligoNucleotide renderer: adaptive chip sizing (no hard max cap), 10px vertical breathing room, base-pair indicators (G-C 3 lines, A-U/A-T 2 lines, mismatches dashed), size-proportional chip corners.
+* OligoNucleotide cell: double-click opens a full-screen canvas viewer with hover tooltips; HELM editing moved to a separate "Edit HELM" action alongside "Copy as HELM" and "Copy as Image".
+* WK lines between matching bases.
+
+## 1.10.22 (2026-05-15)
+
+* OligoNucleotide renderer: strand-oriented redesign — sugar stripes on the outside edge of each strand, linkages as rounded apex arches; all colors sourced from the Bio monomer library.
+* OligoNucleotide renderer: fixed reversed-antisense linkage placement (was shifted by one gap and dropping the leftmost-data linkage).
+* Speedup canonicalization of Markush enumeration results.
+
+## 1.10.21 (2026-05-14)
+
+* Markush enumeration UI redesign, history and bug fixes
+
 ## 1.10.18 (2026-05-11)
 
 * OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.

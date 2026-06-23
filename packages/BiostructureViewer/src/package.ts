@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -886,10 +887,10 @@ export class PackageFunctions {
    *  with the same name. Called via
    *  `grok.functions.call('BiostructureViewer:mol3dAtomPickerLinkWidget', {mol3DCol})`. */
   @grok.decorators.func({
-    name: 'mol3dAtomPickerLinkWidget',
+    name: 'Link With Molecule Column',
     outputs: [{name: 'result', type: 'widget'}],
   })
-  static mol3dAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
+  static mol3dAtomPickerLinkWidget(@grok.decorators.param({options: {semType: 'Molecule3D'}}) mol3DCol: DG.Column): DG.Widget {
     return getMol3DAtomPickerLinkWidget(mol3DCol);
   }
 

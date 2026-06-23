@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils';
+import {PipelineInstanceConfigInput, normalizePipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
 
@@ -65,9 +65,9 @@ export async function initComputeApi() {
     await initFunc.prepare().call();
 }
 
-export async function startWorkflow<T=any>(nqName: string, version: string, instanceConfig: PipelineInstanceConfig): Promise<T> {
+export async function startWorkflow<T=any>(nqName: string, version: string, instanceConfig: PipelineInstanceConfigInput): Promise<T> {
   const startFunc = DG.Func.find({package: 'Compute2', name: 'StartWorkflow'})[0];
-  const call = startFunc.prepare({nqName, version, instanceConfig});
+  const call = startFunc.prepare({nqName, version, instanceConfig: normalizePipelineInstanceConfig(instanceConfig)});
   await call.call();
   return call.getOutputParamValue();
 }

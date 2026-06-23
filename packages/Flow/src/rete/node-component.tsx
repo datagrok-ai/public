@@ -15,7 +15,7 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
 
@@ -45,8 +45,14 @@ function isConnected(nodeId: string, side: 'input' | 'output', key: string): boo
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
   const collapsed = node.collapsed === true;
-  const inputs = Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>;
-  const outputs = Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>;
+  // Exec (execution-ordering) ports render separately at the top corners — keep
+  // them out of the regular data-socket rows.
+  const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
+    .filter(([key]) => !isExecKey(key));
+  const outputs = (Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>)
+    .filter(([key]) => !isExecKey(key));
+  const execIn = node.inputs[EXEC_IN_KEY] as ClassicPreset.Input<TypedSocket> | undefined;
+  const execOut = node.outputs[EXEC_OUT_KEY] as ClassicPreset.Output<TypedSocket> | undefined;
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
   const ptCount = node.passthroughCount ?? 0;
 
@@ -70,6 +76,37 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       data-selected={node.selected ? 'true' : 'false'}
       data-status={(node as unknown as {dgStatus?: string}).dgStatus ?? 'idle'}
     >
+      {/* Execution-ordering ports — top corners (KNIME flow-variable style).
+          exec-in (left) accepts "run after" predecessors; exec-out (right)
+          drives successors. Always rendered so edges stay attached even when
+          the node is collapsed. */}
+      <div className="ff-node-exec-row">
+        <span className="ff-exec-port ff-exec-in" title="Run after (order in)">
+          {execIn && (
+            <RefSocket
+              name="exec-in-socket"
+              emit={props.emit}
+              side="input"
+              socketKey={EXEC_IN_KEY}
+              nodeId={node.id}
+              payload={execIn.socket}
+            />
+          )}
+        </span>
+        <span className="ff-exec-port ff-exec-out" title="Run before (order out)">
+          {execOut && (
+            <RefSocket
+              name="exec-out-socket"
+              emit={props.emit}
+              side="output"
+              socketKey={EXEC_OUT_KEY}
+              nodeId={node.id}
+              payload={execOut.socket}
+            />
+          )}
+        </span>
+      </div>
+
       <div className="ff-node-title" style={titleStyle} data-role={node.dgRole ?? ''}>
         <div
           className="ff-node-status"

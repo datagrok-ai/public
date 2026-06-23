@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {hasNewLines} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 /** Adds a derived column, given a source column `col` and extraction function `extract`.
  * Handles progress indication, and molecule disposal. */
@@ -13,7 +14,7 @@ function getDerived(col: DG.Column, description: string,
     let mol: RDMol | null = null;
     try {
       const molString = col.get(i);
-      if (molString && typeof molString === 'string' && !hasNewLines(molString) && molString.length > 5000) {
+      if (molString && typeof molString === 'string' && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH) {
         result[i] = '';
         continue; // do not attempt to parse very long SMILES, will cause MOB.
       }

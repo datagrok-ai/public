@@ -21,10 +21,12 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.19",
+    "js-yaml": "^4.1.0",
     "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
+    "@types/js-yaml": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
@@ -63,6 +65,22 @@
   "sources": [
     "css/ai.css"
   ],
+  "credentials": {
+    "parameters": [
+      {"name": "provider", "propertyType": "string", "choices": ["Anthropic", "Bedrock", "Microsoft Foundry"], "nullable": false, "defaultValue": "Anthropic", "description": "Backend that serves Claude for the claude-runtime container."},
+      {"name": "apiKey", "propertyType": "string", "nullable": true, "description": "Anthropic API key (provider = Anthropic)."},
+      {"name": "region", "propertyType": "string", "nullable": true, "description": "AWS region the Claude models are enabled in, e.g. us-east-1 (provider = Bedrock)."},
+      {"name": "awsBearerToken", "propertyType": "string", "nullable": true, "description": "Bedrock API key — simpler auth without full AWS credentials; sets AWS_BEARER_TOKEN_BEDROCK (provider = Bedrock)."},
+      {"name": "awsAccessKeyId", "propertyType": "string", "nullable": true, "description": "AWS access key id (provider = Bedrock). Omit when using a Bedrock API key."},
+      {"name": "awsSecretAccessKey", "propertyType": "string", "nullable": true, "description": "AWS secret access key (provider = Bedrock). Omit when using a Bedrock API key."},
+      {"name": "awsSessionToken", "propertyType": "string", "nullable": true, "description": "AWS session token for temporary credentials (provider = Bedrock). Optional."},
+      {"name": "foundryResource", "propertyType": "string", "nullable": true, "description": "Microsoft Foundry resource name (provider = Microsoft Foundry)."},
+      {"name": "foundryApiKey", "propertyType": "string", "nullable": true, "description": "Microsoft Foundry API key from the resource's Endpoints and keys; omit to use Microsoft Entra ID (provider = Microsoft Foundry)."},
+      {"name": "opusModel", "propertyType": "string", "nullable": true, "description": "Model the 'opus' alias resolves to. Bedrock: inference profile id (e.g. us.anthropic.claude-opus-4-8). Foundry: deployment name (e.g. claude-opus-4-8)."},
+      {"name": "sonnetModel", "propertyType": "string", "nullable": true, "description": "Model the 'sonnet' alias resolves to — Bedrock inference profile id / Foundry deployment name."},
+      {"name": "haikuModel", "propertyType": "string", "nullable": true, "description": "Model the 'haiku' alias resolves to — Bedrock inference profile id / Foundry deployment name."}
+    ]
+  },
   "overrides": {
     "datagrok-api": "$datagrok-api"
   }

@@ -1,9 +1,9 @@
 import {test, expect, Page} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
@@ -25,30 +25,22 @@ async function togglePropCheckbox(page: Page, rowName: string) {
   }, rowName);
 }
 
-/** Open the density plot column popup via mousedown, type column name, confirm with Enter */
-async function setColumnViaPopup(page: Page, axis: 'x' | 'y', colName: string) {
-  await page.evaluate((ax: string) => {
-    const viewer = document.querySelector('[name="viewer-Density-plot"]') as HTMLElement;
-    const combo = viewer.querySelector(`[name="div-column-combobox-${ax}"]`) as HTMLElement;
-    combo?.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, axis);
-  await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'), {timeout: 3000});
-  await page.keyboard.type(colName);
-  await page.keyboard.press('Enter');
-}
+/** Thin alias over helpers/viewers.ts:pickColumnViaSelector scoped to the Density-plot viewer. */
+const setColumnViaPopup = (page: Page, axis: 'x' | 'y', colName: string) =>
+  v.pickColumnViaSelector(page, {
+    comboboxSuffix: axis,
+    columnName: colName,
+    scopeSelector: '[name="viewer-Density-plot"]',
+    popupWaitStrategy: 'backdrop',
+    viewerType: 'Density plot',
+    propName: axis === 'x' ? 'xColumnName' : 'yColumnName',
+  });
 
 test('Density plot tests', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
+  await loginToDatagrok(page);
 
-  // Phase 2: Open dataset — combine setup + open in one evaluate
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -63,7 +55,6 @@ test('Density plot tests', async ({page}: {page: Page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Density Plot by clicking toolbox icon
   await page.evaluate(() => {
     (document.querySelector('[name="icon-density-plot"]') as HTMLElement)?.click();
   });

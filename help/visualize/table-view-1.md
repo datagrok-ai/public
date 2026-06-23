@@ -1,6 +1,7 @@
 ---
 title: "Table View"
-format: mdx
+mdx:
+  format: mdx
 sidebar_position: 1
 slug: /table-view
 ---
@@ -70,6 +71,22 @@ property of the `View` class.
 
 :::
 
+### Multiple views
+
+You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
+
+All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
+
+#### Add view
+
+To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
+
+#### Clone view
+
+To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
+
+![Add view and clone view](viewers/img/add-vew-clone-vew.gif)
+
 ### Viewer properties
 
 Each viewer has a set of properties associated with it. These properties define
@@ -112,6 +129,14 @@ Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box
 **Categorical columns:** When the color column is categorical, the viewer displays a legend showing each category with its assigned color. You can change the color of any category by clicking on the color swatch in the legend or through the grid context menu. If the column has more categories than the supported limit (100), the viewer uses the categorical color scheme defined in the viewer's properties or context menu instead of showing individual legend items.
 
 **Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
+
+#### Viewer controls font
+
+Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
+
+To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
+
+![](viewers/img/viewers-font.gif)
 
 ### Tooltips
 
@@ -425,17 +450,6 @@ To embed:
 1. Copy the generated iframe and use it on your site.
 
 <img src={EmbedViewerDialog} width="450"/>
-
-## Viewer controls font
-
-Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
-
-To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
-
-![](viewers/img/viewers-font.gif)
-
-## Viewer coloring
-<!-- TODO: Write about coloring -->
 
 ## Utilities
 

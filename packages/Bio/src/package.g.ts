@@ -746,7 +746,7 @@ export async function demoBioSequenceSpace() : Promise<void> {
 }
 
 //description: Activity Cliffs analysis on Macromolecules data
-//meta.demoPath: Bioinformatics | Activity Cliffs
+//meta.demoPath: Bioinformatics | Sequence Activity Cliffs
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 export async function demoBioActivityCliffs() : Promise<void> {
   await PackageFunctions.demoBioActivityCliffs();
@@ -760,10 +760,10 @@ export async function demoBioAtomicLevel() : Promise<void> {
   await PackageFunctions.demoBioAtomicLevel();
 }
 
-//description: SI-RNA sequences, molecular structures, curves and assay data
+//description: siRNA sequences, molecular structures, curves and assay data
 //meta.demoSkip: true
-//meta.demoPath: Bioinformatics | SI-RNA
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/SI-RNA
+//meta.demoPath: Bioinformatics | siRNA
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/siRNA
 export async function demoBioSiRNA() : Promise<void> {
   await PackageFunctions.demoBioSiRNA();
 }

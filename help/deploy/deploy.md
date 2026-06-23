@@ -68,3 +68,13 @@ After the platform is reachable, configure cross-cutting concerns:
 2. [SMTP](complete-setup/configure-smtp.md)
 3. [Install packages](complete-setup/install-packages.md)
 4. [S3 backups](complete-setup/configure-s3-backup.md) (cloud deployments)
+
+## Plugin Docker containers
+
+Plugins can ship their own Docker containers (AI, cheminformatics, bioinformatics, custom
+compute). Datagrok manages the lifecycle through `grok_spawner` and an optional
+`grok_registry_proxy` — both included in every deployment path above.
+
+See [Docker containers (under the hood)](../develop/under-the-hood/docker-containers.md) for
+the image and container state machines, the JWT-authenticated registry flow, orchestrator
+backends (Docker / Swarm / ECS / Kubernetes), and the per-deployment-path setup checklist.

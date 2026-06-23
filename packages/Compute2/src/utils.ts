@@ -2,19 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
+  isDynamicPipelineState,
   isFuncCallState,
-  isParallelPipelineState,
-  isSequentialPipelineState,
   isStaticPipelineState,
   PipelineInstanceRuntimeData,
   PipelineState,
-  PipelineStateParallel,
-  PipelineStateSequential,
+  PipelineStateDynamic,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
+import {getCustomExports} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
 import {ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -26,8 +26,7 @@ export type NodeWithPath = {
 }
 
 function hasSteps(state: PipelineState) {
-  return isParallelPipelineState(state) ||
-  isSequentialPipelineState(state) ||
+  return isDynamicPipelineState(state) ||
   isStaticPipelineState(state);
 }
 
@@ -69,6 +68,27 @@ export function findTreeNodeByPath(pathSegments: number[], state: PipelineState)
   }: undefined;
 };
 
+// Returns a uuid guaranteed to exist in `tree`. Keeps the current selection if
+// it is still alive; otherwise climbs the old positional path to the nearest
+// surviving ancestor (handles a removed last child resolving out of bounds);
+// otherwise falls back to root. Never returns a dead uuid.
+export function resolveChosenUuid(
+  currentUuid: string | undefined,
+  tree: PipelineState,
+  fallbackPath?: number[],
+): string {
+  if (currentUuid && findNodeWithPathByUuid(currentUuid, tree))
+    return currentUuid;
+  let path = fallbackPath ? [...fallbackPath] : [];
+  while (path.length > 1) {
+    const byPath = findTreeNodeByPath(path, tree);
+    if (byPath)
+      return byPath.state.uuid;
+    path = path.slice(0, -1);
+  }
+  return tree.uuid;
+}
+
 export function findTreeNodeParrent(uuid: string, state: PipelineState): PipelineState | undefined {
   const notVisitedStates = [state];
 
@@ -76,8 +96,7 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
     const currentState = notVisitedStates.pop()!;
 
     if (
-      isParallelPipelineState(currentState) ||
-        isSequentialPipelineState(currentState) ||
+      isDynamicPipelineState(currentState) ||
         isStaticPipelineState(currentState)
     ) {
       for (const item of currentState.steps) {
@@ -121,14 +140,13 @@ export function findNextSubStep(state: PipelineState): NodeWithPath | undefined 
   return _findTreeNode([state], suitableForNavStep);
 }
 
-export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
-PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
+export type PipelineWithAdd = PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData>;
 
 export const hasRunnableSteps = (data: PipelineState) =>
-  (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly && data.steps.length > 0;
+  isDynamicPipelineState(data) && !data.isReadonly && data.steps.length > 0;
 
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
-  (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly &&
+  isDynamicPipelineState(data) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
@@ -164,6 +182,22 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   const firstInconsistency = Object.values(consistencyStates || {}).find(
     (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
   return !!firstInconsistency;
+};
+
+export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
+  Object.values(consistencyStates || {}).some((v) => v.inconsistent);
+
+export const hasSubtreeAnyInconsistencies = (
+  data: PipelineState,
+  callStates: Record<string, FuncCallStateInfo | undefined>,
+  consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
+) => {
+  return _findTreeNode(
+    [data],
+    (state: PipelineState) => isFuncCallState(state) ?
+      (!state.isReadonly && hasAnyInconsistency(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
+      false,
+  );
 };
 
 export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
@@ -285,4 +319,30 @@ function getExportName(
 
 export function setDifference<T>(a: Set<T>, b: Set<T>) {
   return new Set(Array.from(a).filter((item) => !b.has(item)));
+}
+
+/** Resolves the custom export named `exportName` declared on the funcCall's function
+ *  (via `meta.customExports`) and applies it, passing the funcCall through. */
+export async function applyCustomExport(
+  fc: DG.FuncCall,
+  exportName: string,
+  args: Record<string, unknown> = {},
+): Promise<unknown> {
+  const item = getCustomExports(fc.func).find((x) => x.name === exportName);
+  if (!item)
+    throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+  return DG.Func.byName(item.function).apply({funcCall: fc, ...args});
+}
+
+export function applyDefaultGridFloatFormat(viewer: DG.Viewer | undefined, type: string) {
+  if (!viewer || type !== DG.VIEWER.GRID) return;
+  const grid = viewer as DG.Grid;
+  for (let i = 0; i < grid.columns.length; i++) {
+    const gc = grid.columns.byIndex(i);
+    const col = gc?.column;
+    if (!col || col.type !== DG.COLUMN_TYPE.FLOAT) continue;
+    if (gc!.format) continue;
+    if (col.tags?.['format']) continue;
+    gc!.format = DEFAULT_FLOAT_FORMAT;
+  }
 }

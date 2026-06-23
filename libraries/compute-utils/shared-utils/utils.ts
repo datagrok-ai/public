@@ -73,6 +73,14 @@ export const getRunLabel = (func: DG.Func) => {
   return func.options['runLabel'];
 };
 
+export const getFormAsTab = (func: DG.Func): boolean => {
+  return func.options['formAsTab'] === 'true';
+};
+
+export const getInputsHidden = (func: DG.Func): boolean => {
+  return func.options['inputsHidden'] === 'true';
+};
+
 export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
   return JSON.parse(func.options['customExports'] ?? '[]');
 };
@@ -174,3 +182,21 @@ export const getStarted = (call: DG.FuncCall) => {
 export const delay = (delayInms: number) => {
   return new Promise((resolve) => setTimeout(resolve, delayInms));
 };
+
+// Compatible with both the new js-api (GROK-14159 `currentUserGroups`) and older
+// API versions that lack it; remove the fetch fallback once datagrok-api ships the method.
+export async function getCurrentUserGroups(): Promise<DG.Group[]> {
+  const groupsApi = grok.dapi.groups as any;
+  if (typeof groupsApi.currentUserGroups === 'function')
+    return await groupsApi.currentUserGroups();
+  return await (await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[];
+}
+
+// Compatible with both the new js-api (GROK-14160 `requestMembership`) and older
+// API versions that lack it; remove the fetch fallback once datagrok-api ships the method.
+export async function requestGroupMembership(group: DG.Group, requester: DG.Group): Promise<void> {
+  const groupsApi = grok.dapi.groups as any;
+  if (typeof groupsApi.requestMembership === 'function')
+    return await groupsApi.requestMembership(group, requester);
+  await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${requester.id}`, {method: 'POST'});
+}

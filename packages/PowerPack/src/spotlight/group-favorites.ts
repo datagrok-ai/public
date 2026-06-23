@@ -8,9 +8,18 @@ export interface GroupFavorites {
   isAdmin: boolean;
 }
 
+let _userGroupPromise: Promise<DG.Group> | null = null;
+
+/** Cached lookup of the current user's group. */
+export function getCurrentUserGroup(): Promise<DG.Group> {
+  if (!_userGroupPromise)
+    _userGroupPromise = grok.dapi.groups.find(DG.User.current().group.id);
+  return _userGroupPromise;
+}
+
 /** Returns all pinned objects across the current user's groups. */
 export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
-  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  const userGroup = await getCurrentUserGroup();
   const adminIds = new Set(userGroup.adminMemberships.map((g) => g.id));
   const groups = [...userGroup.memberships, ...userGroup.adminMemberships]
     .filter((g) => !g.personal && g.friendlyName);
@@ -23,22 +32,23 @@ export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
   });
 
   const results: GroupFavorites[] = [];
-  await Promise.all(uniqueGroups.map(async (g) => {
-    try {
-      const entities = await grok.dapi.entities.getFavorites(g);
+  try {
+    const byGroup = await grok.dapi.entities.getFavoritesForGroups(uniqueGroups);
+    for (const g of uniqueGroups) {
+      const entities = byGroup[g.id] ?? [];
       if (entities.length > 0)
         results.push({group: g, entities, isAdmin: adminIds.has(g.id)});
     }
-    catch (e) {
-      console.warn(`Failed to load group favorites for "${g.friendlyName}"`, e);
-    }
-  }));
+  }
+  catch (e) {
+    console.warn('Failed to load group favorites', e);
+  }
   return results;
 }
 
 /** Returns groups the current user is an admin of (excluding personal groups). */
 export async function getAdminGroups(): Promise<DG.Group[]> {
-  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  const userGroup = await getCurrentUserGroup();
   return userGroup.adminMemberships.filter((g) => !g.personal && g.friendlyName);
 }
 

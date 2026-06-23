@@ -1,5 +1,20 @@
 # Bio changelog
 
+## 2.28.2 (2026-06-22)
+
+* Migrated to the standalone HELM Web Editor (`@datagrok-libraries/hwe`), replacing the legacy `helm-web-editor` / `js-draw-lite` dependencies; fixed HELM substructure filter editor sizing.
+* Fixed monomer library not fully resetting on reload — stale SMILES-to-monomer cache is now cleared so updated libraries take effect immediately.
+* To Atomic Level widget: molecule size is now configurable via column tags, with a clearer message when the monomer limit is exceeded.
+
+## 2.27.15 (2026-06-10)
+
+* Support complex entities in linear translation workflow, like, multiple linkers, conjugates, multi-phosphates, etc.
+
+## 2.27.11 (2026-05-15)
+
+* Sequence Space / Sequence Activity Cliffs editors: bail with a clear error when no current table or Macromolecule column is available (prevents NullError in DimReductionBaseEditor)
+* HELMCore monomer library: assigned chemistry-keyed colors to RNA sugars, linkers, and conjugates.
+
 ## 2.27.4 (2026-04-29)
 
 * Support for non canonical RNA and correct splitting in helm

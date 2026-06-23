@@ -6,10 +6,6 @@ import * as DG from 'datagrok-api/dg';
 
 //Limitation constants
 const COMP_MIN = 1;
-const SAMPLES_COUNT_MIN = 1;
-const FEATURES_COUNT_MIN = 1;
-const PERCENTAGE_MIN = 0;
-const PERCENTAGE_MAX = 100;
 const MAX_ELEMENTS_COUNT = 100000000;
 export const NIPALS_PREFER_COLS_COUNT = 900;
 
@@ -18,10 +14,6 @@ const TINY = 0.000001;
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
 const COMP_EXCESS = 'components must not be greater than features count.';
-const INCORERRECT_MIN_MAX_MES = 'min must be less than max.';
-const INCORERRECT_FEATURES_MES = 'features must be positive.';
-const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
-const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
 const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
 const UNSUPPORTED_COLUMN_TYPE_MES = 'unsupported column type: ';
 const INCORRECT_MIN_DIST_MES = 'min distance must be positive.';
@@ -143,22 +135,6 @@ export function checkWasmDimensionReducerInputs(features: DG.ColumnList, compone
     throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 }
 
-// Check inputs of data for SVM testing generator
-export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: number,
-  min: number, max: number, violatorsPercentage: number): void {
-  if (min >= max)
-    throw new Error(INCORERRECT_MIN_MAX_MES);
-
-  if (featuresCount < FEATURES_COUNT_MIN)
-    throw new Error(INCORERRECT_FEATURES_MES);
-
-  if (samplesCount < SAMPLES_COUNT_MIN)
-    throw new Error(INCORERRECT_SAMPLES_MES);
-
-  if ((violatorsPercentage < PERCENTAGE_MIN) || (violatorsPercentage > PERCENTAGE_MAX))
-    throw new Error(INCORERRECT_PERCENTAGE_MES);
-}
-
 // Returns rows of column data
 export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
   const columns = columnList.toList();
@@ -272,7 +248,8 @@ export function extractNonConstantColsDf(features: DG.ColumnList): DG.DataFrame 
 }
 
 /** Describe viewers and return the Done button */
-export function describeElements(roots: HTMLElement[], description: string[], position: string[]): HTMLButtonElement {
+export function describeElements(roots: HTMLElement[], description: string[], position: string[],
+  parent?: HTMLElement): HTMLButtonElement {
   if (roots.length !== description.length)
     throw new Error('Non-equal size of viewer roots and descriptions');
 
@@ -288,7 +265,7 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   }, 'Go to the next viewer');
 
   const prevBtn = ui.button('prev', () => {
-    idx -= 1;    
+    idx -= 1;
     popup.remove();
     step();
   }, 'Go to the previous viewer');
@@ -296,17 +273,18 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
- btnsDiv.style.marginLeft = 'auto';
- btnsDiv.style.marginRight = '0px';
+  btnsDiv.style.marginLeft = 'auto';
+  btnsDiv.style.marginRight = '0px';
 
   const step = () => {
     if (idx < roots.length) {
       msg = ui.divV([ui.markdown(description[idx]), btnsDiv]);
       popup = ui.hints.addHint(roots[idx], msg, position[idx] as ui.hints.POSITION);
+      parent?.appendChild(popup);
       doneBtn.hidden = (idx < roots.length - 1);
       nextBtn.hidden = (idx === roots.length - 1);
       prevBtn.hidden = (idx < 1);
-      
+
       closeIcn = popup.querySelector('i') as HTMLElement;
       closeIcn.onclick = () => doneBtn.click();
     }

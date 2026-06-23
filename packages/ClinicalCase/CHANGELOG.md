@@ -1,5 +1,9 @@
 # Clinical Case changelog
 
+## v.next
+
+* GROK-19985: Validation: Throw a clear error when the clinical-case container is unavailable instead of the platform-level NoSuchMethodError
+
 ## 1.4.0 (2026-03-16)
 
 * xpt file handler + linter fixes

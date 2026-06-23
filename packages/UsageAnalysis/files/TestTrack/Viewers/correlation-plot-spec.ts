@@ -1,23 +1,16 @@
 import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 test('Correlation Plot tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
+  await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -32,7 +25,6 @@ test('Correlation Plot tests', async ({page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Correlation Plot via toolbox
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-correlation-plot"]');
     if (icon) (icon as HTMLElement).click();
@@ -41,8 +33,7 @@ test('Correlation Plot tests', async ({page}) => {
 
   // #### Double-click and cell interaction
   await softStep('Double-click and cell interaction', async () => {
-    // Canvas-based cells: double-click via DOM events does not reach Dart event loop
-    // Verify ignoreDoubleClick property works
+    // Canvas cells: double-click via DOM events doesn't reach Dart; verify ignoreDoubleClick instead.
     const result = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find(v => v.type === 'Correlation plot')!;
       const defaultIgnore = cp.props.ignoreDoubleClick;
@@ -253,8 +244,5 @@ test('Correlation Plot tests', async ({page}) => {
     expect(result.restoredShowR).toBe(false);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

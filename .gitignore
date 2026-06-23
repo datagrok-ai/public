@@ -21,6 +21,12 @@ test-record.mp4
 test-report.csv
 test-console-output.log
 
+# Dev auth + Playwright test outputs (UsageAnalysis test automation)
+packages/UsageAnalysis/auth-dev.json
+packages/UsageAnalysis/test-playwright-output/
+packages/UsageAnalysis/test-playwright-report.json
+packages/UsageAnalysis/test-report-playwright.csv
+
 # Build results
 dist/
 zip
@@ -96,3 +102,4 @@ CLAUDE.local.md
 
 test-console-output-?.log
 test-record-?.mp4
+.claude/settings.local.json

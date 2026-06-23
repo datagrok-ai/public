@@ -1,5 +1,6 @@
-export {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorController, IRuntimePipelineMutationController, INameSelectorController, IFuncallActionController} from './src/RuntimeControllers';
-export {PipelineConfiguration, AbstractPipelineActionConfiguration, Handler, Validator, MetaHandler, MutationHandler, SelectorHandler, FunccallActionHandler, PipelineExport, ExportUtils, ExportCbInput} from './src/config/PipelineConfiguration';
+export type {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorController, IRuntimePipelineValidatorController, IRuntimePipelineMutationController, INameSelectorController, IFuncallActionController} from './src/RuntimeControllers';
+export type {PipelineConfiguration, AbstractPipelineActionConfiguration, Handler, Validator, PipelineValidator, MetaHandler, MutationHandler, SelectorHandler, FunccallActionHandler, PipelineExport, ExportUtils, ExportCbInput} from './src/config/PipelineConfiguration';
 export {isPipelineActionConfig} from './src/config/config-utils';
-export {PipelineInstanceConfig} from './src/config/PipelineInstance';
-export {ValidationResult, StepHandle, GranularMutationOp} from './src/data/common-types';
+export {normalizePipelineInstanceConfig} from './src/config/PipelineInstance';
+export type {PipelineInstanceConfig, PipelineInstanceConfigInput} from './src/config/PipelineInstance';
+export type {ValidationResult, StepHandle, GranularMutationOp} from './src/data/common-types';

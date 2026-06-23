@@ -80,7 +80,7 @@ import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {molecular3DStructureWidget, toAtomicLevelWidget, toAtomicLevelSingle} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
-import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
@@ -236,6 +236,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SequenceSpaceEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Space requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Sequence Space'})
       .add(funcEditor.getEditor())
@@ -258,6 +267,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SeqActivityCliffsEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Activity Cliffs requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Activity Cliffs'})
       .add(funcEditor.getEditor())
@@ -1539,7 +1557,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Activity Cliffs analysis on Macromolecules data',
-    demoPath: 'Bioinformatics | Activity Cliffs',
+    demoPath: 'Bioinformatics | Sequence Activity Cliffs',
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
   })
   static async demoBioActivityCliffs(): Promise<void> {
@@ -1557,9 +1575,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.demo({
-    description: 'SI-RNA sequences, molecular structures, curves and assay data',
-    demoPath: 'Bioinformatics | SI-RNA',
-    path: '/apps/Tutorials/Demo/Bioinformatics/SI-RNA',
+    description: 'siRNA sequences, molecular structures, curves and assay data',
+    demoPath: 'Bioinformatics | siRNA',
+    path: '/apps/Tutorials/Demo/Bioinformatics/siRNA',
     meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
   })
   static async demoBioSiRNA(): Promise<void> {

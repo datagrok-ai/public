@@ -1,5 +1,10 @@
 # Samples changelog
 
+## v.next
+
+* GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
+* GROK-14286: Demo Notebooks: Open both the wells table and the notebook view by default
+
 ## 1.4.2 (2025-09-22)
 
 * GROK-18923: Northwind: order details by @quantity, @productname, @Country: error

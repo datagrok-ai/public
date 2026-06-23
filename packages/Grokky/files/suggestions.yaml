@@ -1,0 +1,96 @@
+# Power-search entries (surfaced in the global search bar — no view filter)
+- context: powerSearch
+  scope: global
+  key: function-chaining
+  label: Function chaining
+  suggestions:
+    - prompt: ADME properties for aspirin
+    - prompt: Gasteiger for CHEMBL1234
+    - prompt: Gasteiger for Apremilast
+    - label: Convert SMILES to HELM
+      prompt: Convert C[C@H](N)C(=O)N(C)CC(=O)N[C@@H](Cc1ccc(N)cc1)C(=O)O to HELM
+    - prompt: 'Convert to SMILES: GATTACA'
+
+- context: powerSearch
+  scope: global
+  key: database-queries
+  label: Database queries
+  suggestions:
+    - prompt: ADCs with IC50 above 400
+    - prompt: ADCs with caspase activity > 8
+    - prompt: Shigella bioactivity
+    - prompt: PK for LEVOFLOXACIN
+    - prompt: CHO assay data
+
+- context: powerSearch
+  scope: global
+  key: documentation
+  label: Documentation
+  suggestions:
+    - label: UMAP on sequences — parameters
+      prompt: How to perform UMAP on sequences and what parameters are available to tune?
+    - prompt: How to use lasso selection on a scatter plot?
+
+# Context-panel entries (surfaced via the wand icon — filtered by current view)
+- context: panel
+  scope: column
+  key: molecule
+  match: { semType: Molecule }
+  label: Molecule column
+  icon: atom
+  suggestions:
+    - prompt: Show chemical space
+    - prompt: Calculate Lipinski descriptors
+    - prompt: Find molecules containing a pyridine ring
+    - prompt: Identify structural alerts and toxicity risks
+
+- context: panel
+  scope: view
+  key: view
+  match: { type: TableView }
+  label: This view
+  icon: table
+  suggestions:
+    - label: Color rows by {risk:numerical}
+      prompt: Color rows by {risk:numerical} (red ≥ 0.5, green < 0.5)
+      prefer: { risk: 'name~="risk|herg|tox"' }
+
+    - label: Select top 10 rows by {metric:numerical}
+      prompt: Select top 10 rows by {metric:numerical}
+      prefer: { metric: 'name~="affinity|ic50|ec50|potency"' }
+
+    - label: Hide rows flagged for {flag:categorical}
+      prompt: Hide rows flagged for {flag:categorical}
+      prefer: { flag: 'name~="mutagen|tumor|alert|flag"' }
+
+    - label: Pin the {mol:semType=Molecule} column
+      prompt: Pin the {mol:semType=Molecule} column
+
+    - label: Scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
+      prompt: Add a scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
+      prefer:
+        x: 'name~="lipo|logp|logd"'
+        y: 'name~="affinity|ic50|potency"'
+        c: 'name~="stage|class|status"'
+
+    - prompt: Show correlation matrix across numerical columns
+
+- context: panel
+  scope: global
+  key: anywhere
+  label: Anywhere
+  icon: globe
+  suggestions:
+    - label: Show recent projects
+      prompt: show recent projects
+
+- context: panel
+  scope: global
+  key: code-generation
+  label: Code generation
+  icon: code
+  suggestions:
+    - label: 'JS: interactive sketcher with molecule properties'
+      prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
+    - label: 'Python: render Gasteiger partial charges'
+      prompt: 'Python: write a function that accepts a molecule and renders Gasteiger partial charges as a result'

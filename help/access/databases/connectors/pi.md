@@ -3,7 +3,7 @@ title: "PI"
 ---
 
 Provides access to the
-[PI](https://techsupport.osisoft.com/products/) database using SQL queries via a JDBC driver.
+[PI](https://www.aveva.com/en/products/aveva-pi-system/) database using SQL queries via a JDBC driver.
 
 ## Connection parameters
 
@@ -24,4 +24,4 @@ Provides access to the
 See also:
 
 * [Data connection](../../access.md#data-connection)
-* [PI](https://techsupport.osisoft.com/products/)
+* [PI](https://www.aveva.com/en/products/aveva-pi-system/)

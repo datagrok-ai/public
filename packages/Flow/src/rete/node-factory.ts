@@ -6,9 +6,10 @@
  *  and a zero-arg factory that returns a fresh `FlowNode` instance. */
 
 import * as DG from 'datagrok-api/dg';
-import {FlowNode} from './scheme';
+import {ClassicPreset} from 'rete';
+import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE} from './scheme';
 import {FuncNode} from './nodes/func-node';
-import {TypedSocket} from './sockets';
+import {TypedSocket, getSocket} from './sockets';
 import {areTypesCompatible} from '../types/type-map';
 
 import {
@@ -18,7 +19,7 @@ import {
 } from './nodes/input-nodes';
 import {TableOutputNode, ValueOutputNode} from './nodes/output-nodes';
 import {
-  SelectColumnNode, SelectColumnsNode, AddTableViewNode, LogNode, InfoNode,
+  SelectColumnNode, SelectColumnsNode, SelectTableNode, AddTableViewNode, LogNode, InfoNode,
   WarningNode, ToStringNode, FromJsonNode, ToJsonNode,
   ConstStringNode, ConstIntNode, ConstDoubleNode, ConstBoolNode, ConstListNode,
 } from './nodes/utility-nodes';
@@ -27,7 +28,7 @@ import {
   LessThanNode, LessOrEqualNode, ContainsNode, StartsWithNode, EndsWithNode, IsNullNode,
 } from './nodes/comparison-nodes';
 import {BreakpointNode} from './nodes/breakpoint-node';
-import {getRole, getTags, getPackageName, getFuncDisplayName} from '../utils/dart-proxy-utils';
+import {getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName} from '../utils/dart-proxy-utils';
 
 export interface FuncInfo {
   func: DG.Func;
@@ -92,6 +93,7 @@ export function registerBuiltinNodes(): void {
   // Utilities
   register('Utilities/Select Column', () => new SelectColumnNode());
   register('Utilities/Select Columns', () => new SelectColumnsNode());
+  register('Utilities/Select Table', () => new SelectTableNode());
   register('Utilities/Add Table View', () => new AddTableViewNode());
   register('Utilities/Log', () => new LogNode());
   register('Utilities/Info', () => new InfoNode());
@@ -171,6 +173,38 @@ export function getRegisteredFuncs(): FuncInfo[] {
   return funcRegistry;
 }
 
+/** Node type name for a DG.Func, registering a factory on the fly when the
+ *  function is not in the catalog (e.g. its role is excluded). Used by the
+ *  creation-script importer, where parsed funcs must always yield a node —
+ *  and a `dgTypeName` the serializer can persist. Matching is by qualified
+ *  name, so a freshly parsed Dart instance finds its registered twin. */
+export function ensureFuncNodeType(func: DG.Func): string {
+  registerAllFunctions();
+
+  const qName = getFuncQualifiedName(func).toLowerCase();
+  for (const info of funcRegistry) {
+    if (getFuncQualifiedName(info.func).toLowerCase() === qName)
+      return info.nodeTypeName;
+  }
+
+  const role = getRole(func);
+  const pkgName = getPackageName(func);
+  const category = role || 'Uncategorized';
+  let typeName = `DG Functions/${category}/${func.name}`;
+  if (FACTORIES.has(typeName))
+    typeName = `DG Functions/${category}/${pkgName}:${func.name}`;
+  for (let i = 2; FACTORIES.has(typeName); i++)
+    typeName = `DG Functions/${category}/${pkgName}:${func.name}#${i}`;
+
+  const capturedFunc = func;
+  register(typeName, () => new FuncNode(capturedFunc));
+  funcRegistry.push({
+    func, name: getFuncDisplayName(func) || func.name,
+    role, tags: getTags(func), packageName: pkgName, nodeTypeName: typeName,
+  });
+  return typeName;
+}
+
 /** Instantiate a registered node type by name. Returns null if unknown.
  *  Stamps `dgTypeName` on the new node so the serializer can persist it. */
 export function createNode(typeName: string): FlowNode | null {
@@ -178,7 +212,18 @@ export function createNode(typeName: string): FlowNode | null {
   if (!factory) return null;
   const node = factory();
   node.dgTypeName = typeName;
+  addExecPorts(node);
   return node;
+}
+
+/** Add the execution-ordering port pair to a node: an exec-in (accepts many
+ *  predecessors) and an exec-out. Added after the node's own ports so func
+ *  `passthroughCount` indexing and the data-port rows are unaffected. The
+ *  factory builders are left untouched (so the suggestion-menu type probe in
+ *  `getInputTypesForType` never sees an `order` slot). */
+function addExecPorts(node: FlowNode): void {
+  node.addInput(EXEC_IN_KEY, new ClassicPreset.Input(getSocket(ORDER_SOCKET_TYPE), 'before', true));
+  node.addOutput(EXEC_OUT_KEY, new ClassicPreset.Output(getSocket(ORDER_SOCKET_TYPE), 'after', true));
 }
 
 /** All registered type names, mostly for debugging / completeness checks. */

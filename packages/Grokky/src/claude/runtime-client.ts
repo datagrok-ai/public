@@ -8,19 +8,20 @@ export const ClaudeModel = {
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
-export type ChunkEvent = {sessionId: string, content: string};
+export type ChunkEvent = {sessionId: string, content: string, kind?: 'entity'};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type ToolResultEvent = {sessionId: string, content: string};
+export type ToolResultEvent = {sessionId: string, content: string, toolName?: string};
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
-export type InputRequestEvent = {sessionId: string, toolName: string, input: any};
+export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
   private ws: WebSocket | null = null;
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
+  private _connectPromise: Promise<void> | null = null;
 
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
@@ -47,8 +48,13 @@ export class ClaudeRuntimeClient {
   }
 
   async ensureConnected(): Promise<void> {
-    if (!this.connected)
-      await this.connect();
+    if (this.connected)
+      return;
+    if (!this._connectPromise) {
+      this._connectPromise = this.connect()
+        .finally(() => { this._connectPromise = null; });
+    }
+    return this._connectPromise;
   }
 
   async connect(): Promise<void> {
@@ -56,17 +62,21 @@ export class ClaudeRuntimeClient {
       return;
 
     try {
-      const [runtimeContainers, mcpContainers] = await Promise.all([
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
-        grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
-      ]);
-      if (runtimeContainers.length > 0) {
-        this.containerId = runtimeContainers[0].id;
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
+      if (!this.containerId || !this.mcpServerUrl) {
+        const [runtimeContainers, mcpContainers] = await Promise.all([
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
+        ]);
+        this.containerId = runtimeContainers[0]?.id ?? null;
+        this.mcpServerUrl = mcpContainers[0] ?
+          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
+          null;
       }
-      if (mcpContainers.length > 0)
-        this.mcpServerUrl = `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp`;
+      if (this.containerId)
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
     } catch (e) {
+      this.containerId = null;
+      this.mcpServerUrl = null;
       console.error('Failed to connect to Claude runtime:', e);
     }
 
@@ -77,21 +87,20 @@ export class ClaudeRuntimeClient {
       let data: any;
       try {
         data = JSON.parse(event.data);
-      }
-      catch {
+      } catch {
         console.error('ClaudeRuntimeClient: failed to parse message', event.data);
         return;
       }
 
       switch (data.type) {
       case 'chunk':
-        this.onChunk.next({sessionId: data.sessionId, content: data.content});
+        this.onChunk.next({sessionId: data.sessionId, content: data.content, kind: data.kind});
         break;
       case 'tool_activity':
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
         break;
       case 'tool_result':
-        this.onToolResult.next({sessionId: data.sessionId, content: data.content});
+        this.onToolResult.next({sessionId: data.sessionId, content: data.content, toolName: data.toolName});
         break;
       case 'final':
         this.onFinal.next({
@@ -106,10 +115,9 @@ export class ClaudeRuntimeClient {
         this.onAborted.next({sessionId: data.sessionId});
         break;
       case 'input_request':
-        this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
+        this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
         break;
       case 'sync_status':
-        console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
         if (data.status === 'done' && Array.isArray(data.files))
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
@@ -164,13 +172,20 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
   }
 
-  respondToInput(sessionId: string, value: any): void {
+  respondToInput(sessionId: string, requestId: string, value: any): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
-    this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
+    let payload: string;
+    try {
+      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value});
+    } catch {
+      // Non-serializable executed-JS return — reply with an error so the tool call resolves.
+      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value: {success: false, error: 'result is not serializable'}});
+    }
+    this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;
     return new Promise((resolve, reject) => {
@@ -189,6 +204,7 @@ export class ClaudeRuntimeClient {
       this.send(sid, message, {
         ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
         ...(options?.model ? {model: options.model} : {}),
+        ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       });
     });
   }

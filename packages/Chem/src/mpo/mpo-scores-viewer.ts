@@ -12,6 +12,12 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
   mode: 'best' | 'worst';
   interacting = false;
 
+  // A molecule's structure doesn't change when the profile is edited — only its score and
+  // whether it ranks top/bottom. So the rendered molecule DOM is reused across renders by row
+  // index; only the cheap wrapper (score text + highlight) is rebuilt.
+  private molDivCache = new DG.LruCache<number, HTMLElement>(64);
+  private molSize?: {width: number; height: number};
+
   constructor(df: DG.DataFrame, mpoColName: string, mode: 'best' | 'worst' = 'best') {
     const moleculeCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
     super('MPO Scores', moleculeCol!);
@@ -23,6 +29,18 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     this.mode = mode;
     this.limit = 4;
     this.root.classList.add('chem-mpo-scores-viewer');
+  }
+
+  // Rendering is driven explicitly by the context panel's render() calls, so we skip the
+  // base viewer's dataframe-event subscriptions — onMetadataChanged in particular fires on
+  // every computeMpo tag write and would re-rank all rows redundantly.
+  async onTableAttached(): Promise<void> {
+    this.init();
+    if (this.dataFrame) {
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      this.moleculeColumnName = this.moleculeColumn?.name ?? '';
+    }
+    await this.render(true);
   }
 
   private showMessage(msg: string) {
@@ -50,14 +68,14 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     }
   }
 
-  private createGrid(rowIdx: number): HTMLElement {
-    const mol = this.moleculeColumn?.get(rowIdx);
-    const score = Number(this.mpoColumn.get(rowIdx) ?? 0);
+  private getMolDiv(rowIdx: number): HTMLElement {
+    this.molSize ??= {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height};
+    return this.molDivCache.getOrCreate(rowIdx, () => renderMolecule(this.moleculeColumn?.get(rowIdx), this.molSize!));
+  }
 
-    const molDiv = renderMolecule(mol, {
-      width: this.sizesMap[this.size].width,
-      height: this.sizesMap[this.size].height,
-    });
+  private createGrid(rowIdx: number): HTMLElement {
+    const score = Number(this.mpoColumn.get(rowIdx) ?? 0);
+    const molDiv = this.getMolDiv(rowIdx);
 
     const scoreDiv = ui.divText(score.toFixed(2));
     scoreDiv.style.marginTop = '6px';
@@ -92,16 +110,24 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     this.curIdx = this.dataFrame.currentRowIdx === -1 ? 0 : this.dataFrame.currentRowIdx;
 
     const rowCount = Math.min(this.limit, this.dataFrame.rowCount);
-    const sortedRows = Array.from({length: this.dataFrame.rowCount}, (_, i) => i)
-      .sort((a, b) =>
-        this.mode === 'best' ?
-          Number(this.mpoColumn.get(b)) - Number(this.mpoColumn.get(a)) :
-          Number(this.mpoColumn.get(a)) - Number(this.mpoColumn.get(b)),
-      )
-      .slice(0, rowCount);
+    const scores = this.mpoColumn.getRawData();
+    const best = this.mode === 'best';
+    // a ranks at least as high as b (higher score for 'best', lower for 'worst')
+    const ranksFirst = (a: number, b: number): boolean => best ? scores[a] >= scores[b] : scores[a] <= scores[b];
+    // O(n) partial selection of the top `rowCount` indices — avoids sorting all rows.
+    const sortedRows: number[] = [];
+    for (let i = 0; i < scores.length; ++i) {
+      if (sortedRows.length === rowCount && ranksFirst(sortedRows[rowCount - 1], i))
+        continue;
+      let pos = 0;
+      while (pos < sortedRows.length && ranksFirst(sortedRows[pos], i))
+        ++pos;
+      sortedRows.splice(pos, 0, i);
+      if (sortedRows.length > rowCount)
+        sortedRows.pop();
+    }
 
     const grids = sortedRows.map((i) => this.createGrid(i));
-
     const panel = ui.divH(grids, 'chem-viewer-grid');
     this.root.appendChild(ui.panel([ui.divV([panel])]));
   }

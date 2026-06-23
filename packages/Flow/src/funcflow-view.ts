@@ -25,9 +25,11 @@ import {
 } from './rete/node-factory';
 import {validateGraph} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
+import {emitCreationScript} from './compiler/creation-script-emitter';
 import {
   serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile,
 } from './serialization/flow-serializer';
+import {buildFlowFromCreationScript} from './import/creation-script-importer';
 import {FlowSettings} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
@@ -43,6 +45,11 @@ export class FuncFlowView extends DG.ViewBase {
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
   private validationLabel!: HTMLElement;
+
+  /** Desired initial minimap state, applied once the editor is created (the
+   *  editor is built async). Hosts set this before the editor exists — e.g. the
+   *  creation-script preview dialog opens with the minimap minimized. */
+  private minimapCollapsed = false;
 
   private flowSettings: FlowSettings = {
     scriptName: 'MyFuncFlow',
@@ -237,6 +244,15 @@ export class FuncFlowView extends DG.ViewBase {
       // bottom-docked panel with the captured value (if any).
       this.autoSelectFirstOutputNode();
     };
+
+    this.flow.setMinimapCollapsed(this.minimapCollapsed);
+  }
+
+  /** Set the overview minimap's collapsed state. Remembered and (re)applied when
+   *  the editor finishes initializing, so it can be called before that. */
+  setMinimapCollapsed(collapsed: boolean): void {
+    this.minimapCollapsed = collapsed;
+    this.flow?.setMinimapCollapsed(collapsed);
   }
 
   /** Find the first output node in the graph (preferring one that has
@@ -351,6 +367,8 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Open Flow...', () => void this.openFlow())
       .item('Save Flow...', () => this.saveFlow())
       .separator()
+      .item('Import Creation Script...', () => this.importCreationScriptDialog())
+      .separator()
       .item('Export Settings...', () => this.editSettings())
       .endGroup()
       .group('Edit')
@@ -358,6 +376,7 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Redo', () => void this.flow?.redo())
       .endGroup()
       .group('View')
+      .item('Clean Layout', () => this.cleanLayout())
       .item('Zoom to Fit', () => void this.flow?.zoomToFit())
       .item('Zoom In', () => this.flow?.zoomIn())
       .item('Zoom Out', () => this.flow?.zoomOut())
@@ -369,6 +388,8 @@ export class FuncFlowView extends DG.ViewBase {
       .item('View Script', () => this.generateAndPreview())
       .item('Copy Script to Clipboard', () => this.copyScriptToClipboard())
       .item('Export as .js File', () => this.exportAsJs())
+      .separator()
+      .item('Compile to Creation Script...', () => this.compileToCreationScript())
       .separator()
       .item('Validate Graph', () => this.showValidation())
       .endGroup()
@@ -390,6 +411,7 @@ export class FuncFlowView extends DG.ViewBase {
       ],
       [
         ui.iconFA('code', () => this.generateAndPreview(), 'View Script'),
+        ui.iconFA('stream', () => this.compileToCreationScript(), 'Compile to Creation Script'),
         ui.iconFA('copy', () => this.copyScriptToClipboard(), 'Copy Script'),
         ui.iconFA('download', () => this.exportAsJs(), 'Export .js'),
       ],
@@ -398,6 +420,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
       ],
       [
+        ui.iconFA('sitemap', () => this.cleanLayout(), 'Clean Layout (arrange nodes)'),
         ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom In'),
         ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom Out'),
         ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to Fit (double-click empty canvas)'),
@@ -412,6 +435,15 @@ export class FuncFlowView extends DG.ViewBase {
 
   private toggleToolbox(): void {
     grok.shell.windows.showToolbox = !grok.shell.windows.showToolbox;
+  }
+
+  /** Re-arrange the existing graph with the importer's layered/banded layout. */
+  private cleanLayout(): void {
+    if (!this.flow || this.flow.getNodeCount() === 0) {
+      grok.shell.info('Nothing to lay out');
+      return;
+    }
+    void this.flow.autoLayout();
   }
 
   private updateStatusBar(): void {
@@ -558,6 +590,45 @@ export class FuncFlowView extends DG.ViewBase {
     grok.shell.info('Script copied to clipboard');
   }
 
+  /** Compile the graph into a Datagrok **creation script** (the grok-language
+   *  function-call cascade, the inverse of "Import Creation Script") and show it
+   *  in a dialog with any warnings about nodes that have no creation-script form. */
+  private compileToCreationScript(): void {
+    if (!this.flow) return;
+    let result;
+    try {
+      result = emitCreationScript(this.flow);
+    } catch (e: any) {
+      grok.shell.error(`Creation script generation failed: ${e.message}`);
+      return;
+    }
+    const {script, warnings} = result;
+
+    const blocks: HTMLElement[] = [];
+    if (warnings.length > 0) {
+      const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
+      list.style.color = '#b26a00';
+      list.style.marginBottom = '8px';
+      list.style.maxHeight = '120px';
+      list.style.overflow = 'auto';
+      blocks.push(ui.divText(`${warnings.length} warning(s) — these nodes have no creation-script form:`,
+        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+      blocks.push(list);
+    }
+    const pre = document.createElement('pre');
+    pre.className = 'funcflow-script-preview';
+    pre.textContent = script || '// (nothing to emit)';
+    blocks.push(pre);
+
+    ui.dialog({title: 'Creation Script'})
+      .add(ui.divV(blocks))
+      .addButton('Copy to Clipboard', () => {
+        navigator.clipboard.writeText(script);
+        grok.shell.info('Creation script copied to clipboard');
+      })
+      .show({width: 720, height: 520});
+  }
+
   private exportAsJs(): void {
     const script = this.generateScript();
     if (script) this.downloadScriptAsJs(script);
@@ -584,6 +655,63 @@ export class FuncFlowView extends DG.ViewBase {
     };
     if (this.flow) await load();
     else setTimeout(() => void load(), 100);
+  }
+
+  /** Rebuild the canvas from a table-creation script — the cascade of
+   *  function calls Datagrok records for reproducibly-created tables
+   *  (the script behind a project's data sync). Replaces the current graph. */
+  async loadFromCreationScript(script: string): Promise<void> {
+    const load = async (): Promise<void> => {
+      try {
+        await this.flow.clear();
+        const result = await buildFlowFromCreationScript(this.flow, script);
+        this.updateStatusBar();
+        await this.flow.zoomToFit();
+        for (const warning of result.warnings) grok.shell.warning(warning);
+        grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
+      } catch (e: any) {
+        grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
+      }
+    };
+    if (this.flow) await load();
+    else setTimeout(() => void load(), 100);
+  }
+
+  /** Dialog: paste a creation script (or prefill it from an open table that
+   *  carries one) and rebuild the canvas from it. */
+  private importCreationScriptDialog(): void {
+    const scriptInput = ui.input.textArea('Script', {value: ''});
+    scriptInput.input.style.minHeight = '180px';
+    scriptInput.input.style.minWidth = '420px';
+    (scriptInput.input as HTMLTextAreaElement).placeholder =
+      'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv")\nChem:addChemPropertiesColumns(Mol1K, "molecule", true, …)';
+
+    const items: HTMLElement[] = [];
+    const tables = grok.shell.tables.filter((t) => (t.getTag(DG.Tags.CreationScript) ?? '') !== '');
+    if (tables.length > 0) {
+      const tableInput = ui.input.choice<string>('From table', {
+        items: tables.map((t) => t.name),
+        onValueChanged: (name: string | null) => {
+          const table = tables.find((t) => t.name === name);
+          if (table) scriptInput.value = table.getTag(DG.Tags.CreationScript) ?? '';
+        },
+      });
+      ui.tooltip.bind(tableInput.root, 'Prefill the script from an open table that has a creation script');
+      items.push(tableInput.root);
+    }
+    items.push(scriptInput.root);
+
+    ui.dialog({title: 'Import Creation Script'})
+      .add(ui.divV(items))
+      .onOK(() => {
+        const script = scriptInput.value.trim();
+        if (script === '') {
+          grok.shell.warning('Creation script is empty');
+          return;
+        }
+        void this.loadFromCreationScript(script);
+      })
+      .show({width: 560, height: 420});
   }
 
   private showValidation(): void {

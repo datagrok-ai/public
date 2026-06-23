@@ -345,6 +345,37 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     await _testToAtomicLevelWithCustomMonomer(srcHelm, expectedSmiles);
   });
 
+  // Explicit/inline SMILES monomers (e.g. `[*N(C)[C@H](C(=O)*)CCC |$_R1;...$|]`)
+  // must round-trip through HELM → atomic level. They are resolved on-spot by
+  // Datagrok's monomer functions (assigned `#P{N}` symbols) so the pseudo-molfile
+  // carries a clean, space-free, resolvable symbol. Regression: post-migration
+  // the raw SMILES (with its CXSMILES space) leaked into the pseudo-molfile and
+  // got truncated, so the converter could not resolve the monomer.
+  test('explicitSmilesMonomers', async () => {
+    const cases: {name: string, helm: string, expected: string}[] = [
+      {
+        name: 'single-chain macrocycle',
+        helm: `PEPTIDE1{[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$`,
+        expected: `CCC[C@H]1C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@H](C)C(=O)N(C)[C@@H](CCC)C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@@H](C)C(=O)N1C`,
+      },
+      {
+        name: 'two-chain (named + inline SMILES monomers)',
+        helm: `PEPTIDE1{[meL].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[meL].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}|PEPTIDE2{E.[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].E.[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE2,PEPTIDE2,8:R2-1:R1|PEPTIDE1,PEPTIDE2,1:R1-3:R3|PEPTIDE2,PEPTIDE1,1:R3-8:R2$$$V2.0`,
+        expected: `CCC[C@H]1C(=O)O[C@H](Cc2ccccc2)C(=O)N[C@H]2CCC(=O)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CCC)N(C)C(=O)[C@H](C)OC(=O)[C@H](CCC)N(C)C(=O)[C@@H](Cc3ccccc3)OC(=O)[C@H](CC(C)C)N(C)C(=O)[C@@H](C)OC(=O)[C@H](CC(C)C)N(C)C(=O)CC[C@H](NC(=O)[C@@H](C)OC2=O)C(=O)O[C@H](Cc2ccccc2)C(=O)N(C)[C@@H](CCC)C(=O)O[C@@H](C)C(=O)N1C`,
+      },
+    ];
+    const canonical = (smiles: string): string => {
+      const mol = rdKitModule.get_mol(smiles);
+      try { return mol.get_smiles(); } finally { mol.delete(); }
+    };
+    const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
+    for (const {name, helm, expected} of cases) {
+      const resMolFile = seqHelper.helmToAtomicLevelSingle(helm, converter, true, true);
+      const resSmiles = grok.chem.convert(resMolFile.molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+      expect(canonical(resSmiles), canonical(expected), `${name}: SMILES mismatch`);
+    }
+  });
+
   async function _testToAtomicLevel(
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {
@@ -483,6 +514,10 @@ category('toAtomicLevelHelmRna', async () => {
     // Direct sp3 C-P bond — appears ONLY when a bridging O on the linker
     // R-side has been (incorrectly) removed.
     DIRECT_C_P: '[CX4][PX4]',
+    // P-O-P bridge — appears between consecutive phosphate units (a 5'/3'
+    // di-/tri-phosphate or a run of phosphate linkers in the chain). Each
+    // additional phosphate in a row adds one such bridge.
+    P_O_P: '[PX4][OX2][PX4]',
     // Five-membered ring with exactly one ring oxygen — furanose.
     FURANOSE: '[#6;R]1[#6;R][#6;R][#6;R][O;R]1',
     // Adenine bicyclic core (aromatic Kekule-tolerant).
@@ -537,7 +572,12 @@ category('toAtomicLevelHelmRna', async () => {
     if (begin < 0) return atoms;
     const end = molfile.indexOf('M  V30 END ATOM', begin);
     const block = molfile.substring(begin, end >= 0 ? end : molfile.length);
-    const lineRe = /^M\s+V30\s+(\d+)\s+(\S+)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/gm;
+    // Capture the x/y coordinate TOKENS as `\S+` (not a strict numeric pattern)
+    // so a non-finite coordinate ('NaN' / 'Infinity' / '-Infinity') is still
+    // matched and surfaces as a NaN/Infinity from parseFloat — that is what
+    // lets `expectNoNaN`'s finite-check below actually fire. A strict numeric
+    // capture would silently skip the bad atom line and hide the defect.
+    const lineRe = /^M\s+V30\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)/gm;
     let m: RegExpExecArray | null;
     while ((m = lineRe.exec(block))) {
       const idx = parseInt(m[1]) - 1;
@@ -546,6 +586,24 @@ category('toAtomicLevelHelmRna', async () => {
       atoms.push({element: m[2], x: parseFloat(m[3]), y: parseFloat(m[4])});
     }
     return atoms;
+  }
+
+  /** Guard against the exact failure mode this suite was extended to fix:
+   * NaN / Infinity atom coordinates. RDKit rejects such a molfile on the OCL
+   * step, but we assert it directly on the produced molblock so the failure
+   * message points at the layout bug rather than a downstream parse error.
+   * Scans the raw V30 atom block for any non-finite coordinate token. */
+  function expectNoNaN(molfile: string): void {
+    const begin = molfile.indexOf('M  V30 BEGIN ATOM');
+    const end = molfile.indexOf('M  V30 END ATOM', begin >= 0 ? begin : 0);
+    const block = begin >= 0 ? molfile.substring(begin, end >= 0 ? end : molfile.length) : molfile;
+    const bad = /\b(nan|-?inf(?:inity)?)\b/i.test(block);
+    expect(bad, false, `produced molfile contains a non-finite (NaN/Infinity) coordinate:\n${molfile}`);
+    // Also confirm every parsed coordinate is a finite number.
+    for (const a of parseV3KAtoms(molfile)) {
+      expect(Number.isFinite(a.x) && Number.isFinite(a.y), true,
+        `non-finite coordinate on a ${a.element} atom (x=${a.x}, y=${a.y})`);
+    }
   }
 
   /** Run a SMARTS against the molecule and collect every atom index that
@@ -983,6 +1041,238 @@ category('toAtomicLevelHelmRna', async () => {
       expect(looksLikeSteroid(mol), true,
         'expected steroid (gonane) ring system from Chol at 3\'');
       expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected one r(T) furanose');
+    });
+  });
+
+  // ===================================================================
+  // Phosphate-position regressions.
+  //
+  // The linear HELM-RNA path used to assign sugar/base/phosphate roles by
+  // POSITION (index mod 3), assuming a strict [sugar, base, phosphate]
+  // repeat. Any phosphate that did not land where that triple index
+  // expected — a 5'-leading phosphate, several phosphates in a row, a
+  // linker dropped between nucleotides — shifted every role, so a phosphate
+  // was laid out as a sugar (branch-angle math on a 2-R-group monomer →
+  // NaN coordinates) and RDKit rejected the molfile on the OCL step.
+  //
+  // Roles are now derived from each monomer's library definition (monomer
+  // type + R-groups), so a phosphate is a phosphate wherever it sits. These
+  // tests pin: (1) the molfile has no NaN/Infinity coordinates, (2) it is a
+  // single connected fragment, (3) phosphorus / sulfur / fluorine counts
+  // are exactly right, and (4) the expected backbone chemistry (diesters,
+  // P-O-P bridges, no spurious direct C-P bonds) is present.
+  // ===================================================================
+
+  // 5'-leading phosphate (single). Chain: HO-P-O-r(A)-p-r(C)-p-OH. The
+  // leading p must become a real 5'-monophosphate, not be mistaken for a
+  // sugar.
+  test('rna-5p-leading-phosphate', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{p.r(A)p.r(C)p}$$$$`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // leading p + inter-nucleotide p + trailing p = 3 phosphorus.
+      expect(countAtoms(mol, 15), 3, 'expected 3 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+      // The inter-nucleotide linker is a proper phosphodiester.
+      expect(countSmarts(mol, SMARTS.PHOSPHODIESTER) >= 1, true,
+        'expected ≥ 1 inter-nucleotide phosphodiester');
+      // The 5'-leading phosphate is not part of a P-O-P bridge (only one P
+      // at the 5' end).
+      expect(countSmarts(mol, SMARTS.P_O_P), 0, 'no P-O-P bridge for a single 5\' phosphate');
+    });
+  });
+
+  // The user's exact 5'-leading-phosphate report. 1 leading p + 18 r(X)p
+  // + a trailing phosphate-less r(C) ⇒ 19 phosphorus, 19 furanoses.
+  test('rna-5p-leading-phosphate-long', async () => {
+    const helm = `RNA1{p.r(C)p.r(A)p.r(C)p.r(A)p.r(A)p.r(G)p.r(T)p.r(T)p.r(T)p.r(A)p.r(T)p.r(A)p.r(T)p.r(T)p.r(C)p.r(A)p.r(G)p.r(T)p.r(C)}$$$$`;
+    const {molfile, smiles} = await helmRnaLinear(helm);
+    expect(smiles.indexOf('.') === -1, true, 'expected single connected fragment');
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 19, 'expected 19 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 19, 'expected 19 furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // Multiple phosphates at the 5' end → a 5'-triphosphate (two P-O-P
+  // bridges). Chain: HO-P-O-P-O-P-O-r(C)-p-r(A)-p-OH.
+  test('rna-5p-multiple-leading-phosphates', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{p.p.p.r(C)p.r(A)p}$$$$`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // 3 leading + 1 inter-nucleotide + 1 trailing = 5 phosphorus.
+      expect(countAtoms(mol, 15), 5, 'expected 5 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      // The 5'-triphosphate run contributes two P-O-P bridges.
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges from the 5\' triphosphate run');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // The user's exact multiple-leading-phosphates report. 3 leading p + 18
+  // r(X)p + trailing r(C) ⇒ 21 phosphorus, 19 furanoses.
+  test('rna-5p-multiple-leading-phosphates-long', async () => {
+    const helm = `RNA1{p.p.p.r(C)p.r(A)p.r(C)p.r(A)p.r(A)p.r(G)p.r(T)p.r(T)p.r(T)p.r(A)p.r(T)p.r(A)p.r(T)p.r(T)p.r(C)p.r(A)p.r(G)p.r(T)p.r(C)}$$$$`;
+    const {molfile, smiles} = await helmRnaLinear(helm);
+    expect(smiles.indexOf('.') === -1, true, 'expected single connected fragment');
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 21, 'expected 21 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 19, 'expected 19 furanose rings');
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges from the 5\' triphosphate run');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // Multiple thio-linkers in the middle of the chain. Chain:
+  // r(A)-p-[sp]-[sp]-r(C)-p. The two consecutive sp linkers must chain
+  // (P-O-P) without disconnecting the molecule or losing a bridging O.
+  test('rna-middle-multiple-linkers', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{r(A)p.[sp].[sp].r(C)p}$$$$V2.0`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // p + sp + sp + p = 4 phosphorus; sp + sp = 2 sulfur.
+      expect(countAtoms(mol, 15), 4, 'expected 4 phosphorus atoms');
+      expect(countAtoms(mol, 16), 2, 'expected 2 sulfur atoms (from the two sp)');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      // A run of three phosphates (p-sp-sp) ⇒ at least two P-O-P bridges.
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges in the p-sp-sp run');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // The user's exact mid-chain linkers report. 18 r(X)p + trailing r(C) +
+  // two [sp] linkers between positions ⇒ 20 phosphorus, 2 sulfur, 19
+  // furanoses.
+  test('rna-middle-multiple-linkers-long', async () => {
+    const helm = `RNA1{r(C)p.r(A)p.r(C)p.r(A)p.r(A)p.r(G)p.r(T)p.r(T)p.r(T)p.r(A)p.[sp].[sp].r(T)p.r(A)p.r(T)p.r(T)p.r(C)p.r(A)p.r(G)p.r(T)p.r(C)}$$$$V2.0`;
+    const {molfile, smiles} = await helmRnaLinear(helm);
+    expect(smiles.indexOf('.') === -1, true, 'expected single connected fragment');
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 20, 'expected 20 phosphorus atoms');
+      expect(countAtoms(mol, 16), 2, 'expected 2 sulfur atoms (from the two sp)');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 19, 'expected 19 furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // Multiple phosphates at the 3' end → a 3'-triphosphate. Chain:
+  // r(A)-p-r(C)-p-p-p, capped with OH. Trailing run of three P ⇒ two P-O-P.
+  test('rna-3p-multiple-trailing-phosphates', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{r(A)p.r(C)p.p.p}$$$$`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // inter-nucleotide p + 3 trailing p = 4 phosphorus.
+      expect(countAtoms(mol, 15), 4, 'expected 4 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges from the 3\' triphosphate run');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // Deoxyribose (DNA) sugar with a 5'-leading phosphate, to confirm the
+  // role classification is not RNA-ribose specific.
+  test('rna-5p-leading-phosphate-deoxyribose', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{p.d(A)p.d(C)p}$$$$`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 3, 'expected 3 phosphorus atoms');
+      // Deoxyribose still has a ring oxygen ⇒ matches the furanose pattern.
+      // Each monocyclic (deoxy)furanose matches exactly once (RDKit uniquify),
+      // so the count is exactly 2 — assert it exactly like the ribose tests.
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected exactly 2 (deoxy)furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+  });
+
+  // Methylphosphonate linker (mp) in the middle. mp carries an intramonomer
+  // C-P bond by design, so DIRECT_C_P is expected here — we instead assert
+  // the molecule stays connected, the bridging oxygens survive on both
+  // sides, and the phosphorus count is right.
+  test('rna-middle-methylphosphonate', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{r(A)[mp].r(C)p}$$$$V2.0`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // mp linker + trailing p = 2 phosphorus.
+      expect(countAtoms(mol, 15), 2, 'expected 2 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      // The mp linker is a methylphosphonate diester: P with two bridging
+      // C-O-P arms (one to each sugar). Exactly one such diester here.
+      expect(countSmarts(mol, '[#6][OX2][PX4](=[OX1])([CH3])[OX2][#6]'), 1,
+        'expected the methylphosphonate diester linkage');
+    });
+  });
+
+  // Broadest torture case: a 5'-leading phosphate, a run of three
+  // non-canonical linkers (Rsp / s2p / sp) in the middle, non-canonical
+  // sugars (fana 2'-F, ena bicyclic, moe 2'-MOE) and non-canonical bases
+  // (m1A, N-acetyl ac4C, 2-thio s2C). If this assembles cleanly, the linear
+  // path handles arbitrary backbone composition.
+  test('rna-complex-noncanonical-mix', async () => {
+    const helm = `RNA1{p.[fana]([m1A])p.[Rsp].[s2p].[ena]([ac4C])[sp].[moe]([s2C])p}$$$$V2.0`;
+    const {molfile, smiles} = await helmRnaLinear(helm);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // Phosphorus: leading p + p + Rsp + s2p + sp + trailing p = 6.
+      expect(countAtoms(mol, 15), 6, 'expected 6 phosphorus atoms');
+      // Sulfur: Rsp(1) + s2p(2) + sp(1) + s2C(1) = 5.
+      expect(countAtoms(mol, 16), 5, 'expected 5 sulfur atoms');
+      // Fluorine: fana 2'-F = 1, on a furanose ring carbon.
+      expect(countAtoms(mol, 9), 1, 'expected exactly 1 fluorine (fana 2\'-F)');
+      expect(countSmarts(mol, SMARTS.FLUORO_ON_FURANOSE) >= 1, true,
+        'fluorine must sit on a furanose ring carbon');
+      // Furanoses (ring O): fana + ena + moe = 3 (≥ 3 to tolerate the
+      // bicyclic ena ring-match multiplicity).
+      expect(countSmarts(mol, SMARTS.FURANOSE) >= 3, true, 'expected ≥ 3 furanose rings');
+      // ac4C contributes an N-acetyl group.
+      expect(countSmarts(mol, SMARTS.N_ACETYL) >= 1, true,
+        'expected N-acetyl group from ac4C');
+      // No bridging oxygen lost anywhere along this dense backbone.
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+      // The non-canonical linker run forms exactly two P-O-P bridges at the
+      // two consecutive-phosphate joints p–Rsp and Rsp–s2p.
+      expect(countSmarts(mol, SMARTS.P_O_P) >= 2, true,
+        'expected ≥ 2 P-O-P bridges across the linker run');
+    });
+  });
+
+  // 5'-leading phosphate combined with a 3'-terminal modifier (GalNAc).
+  // Chain: HO-P-O-r(A)-p-r(C)-GalNAc. This is the layout that exercises BOTH
+  // a leading phosphate AND the has3pTerm branch of getResultingAtomBondCounts
+  // (no trailing OH cap): the declared bond count must equal the emitted bond
+  // lines so the produced molfile is well-formed before the OCL pass — not
+  // only after it. The terminal modifier replaces the trailing phosphate.
+  test('rna-5p-leading-phosphate-3p-galnac', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{p.r(A)p.r(C)[GalNAc]}$$$$V2.0`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment, got: ${smiles}`);
+    expectNoNaN(molfile);
+    withMol(molfile, (mol) => {
+      // leading p + inter-nucleotide p = 2 phosphorus (GalNAc replaces the
+      // trailing phosphate, so no 3' P).
+      expect(countAtoms(mol, 15), 2, 'expected 2 phosphorus atoms');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'expected 2 furanose rings');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+      // GalNAc's N-acetyl group at the 3' terminus.
+      expect(countSmarts(mol, SMARTS.N_ACETYL) >= 1, true,
+        'expected N-acetyl group from the 3\' GalNAc');
+      // GalNAc is a hexopyranose (6-membered ring with one O).
+      expect(hasSmarts(mol, '[#6]1[#6][#6][#6][#6][O]1'), true,
+        'expected a pyranose ring from GalNAc');
     });
   });
 });

@@ -11,10 +11,12 @@ that action handlers need to be triggered separately
 whenever any of their inputs change.
 
 Links and actions are created at runtime based on matching rules defined in
-[Link Query Language](./links-spec.mdx) (LQL).
+[Link Query Language](./link-query-language) (LQL).
 A link will not be created until the workflow state
 satisfies these matching rules.
 If changes in the current workflow break the link matching rules, the link will be destroyed.
+
+## Common
 
 ### Common options
 
@@ -30,6 +32,7 @@ There are several types of links/actions:
 
 - `data`
 - `validator`
+- `pipelineValidator`
 - `meta`
 - `nodemeta`
 - `funccall`
@@ -37,13 +40,13 @@ There are several types of links/actions:
 
 #### `from`
 
-Describes link inputs via a [Link Query Language](./links-spec.mdx).
+Describes link inputs via a [Link Query Language](./link-query-language).
 Can be either a LQL string or an array of zero or more LQL strings.
 All LQL queries should have at least one match, otherwise the link will not be created.
 
 #### `to`
 
-Describes link outputs via a [Link Query Language](./links-spec.mdx).
+Describes link outputs via a [Link Query Language](./link-query-language).
 Can be either a LQL string or an array of zero or more LQL strings.
 All LQL queries should have at least one match, otherwise the link will not be created.
 
@@ -67,16 +70,18 @@ _Optional_
 
 Can be either a LQL string or an array of zero or more LQL strings.
 
-If all LQL queries match, the link will not be created.
-Queries are targeting script nodes or workflows.
+If any LQL query matches, the link will not be created.
+Queries are targeting script nodes or workflows. The `(call)` flag is
+accepted here as a clarity marker but has no effect — `not` queries are
+already node-level.
 
 #### `base`
 
 _Optional_
 
-Could be either a [LQL](links-spec.mdx) string or an array of exactly 1 LQL string.
+Could be either a [LQL](./link-query-language) string or an array of exactly 1 LQL string.
 Queries are targeting script nodes or
-workflows. Used in [reference selectors](./links-spec).
+workflows. Used in [reference selectors](./link-query-language-reference#selectors).
 
 #### `dataFrameMutations`
 
@@ -134,9 +139,12 @@ undefined.
 getMatchedInputs(): Readonly<Set<string>>;
 ```
 
-Returns a set of all matched input queries names. The set is ordered
-based on depth first traversal, if a query returns multiple matches,
-the first one is used for ordering.
+Returns the set of `from` query names that produced at least one match for the
+current link instance. Iteration order follows a depth-first traversal of the
+workflow tree at the moment the link fires; when a query matches multiple nodes,
+the position of its first match determines its place in the order. Use this to
+detect which optional inputs are present before reading them with
+[`getFirst`](#getfirst) / [`getAll`](#getall).
 
 #### `getMatchedOutputs`
 
@@ -144,9 +152,8 @@ the first one is used for ordering.
 getMatchedOutputs(): Readonly<Set<string>>;
 ```
 
-Returns a set of all matched outputs queries names. The set is ordered
-based on depth first traversal, if a query returns multiple matches,
-the first one is used for ordering.
+Same as [`getMatchedInputs`](#getmatchedinputs), but for the `to` query names.
+Use this to find out which optional outputs exist before writing to them.
 
 #### `getAdditionalParam`
 
@@ -157,70 +164,20 @@ getAdditionalParam(name: string): any | undefined;
 Only used in actions, for passing additional parameters from
 [validators](#validators).
 
+#### `hasCall`
 
-### Action options
+```
+hasCall(name: string): boolean;
+```
 
-These options are available for all action types.
-
-#### `position`
-
-Where to show action. Possible values are
-- `buttons` action is show in workflow/script ui as a button
-- `menu` action is show as menu item in the workflow/script view
-- `globalmenu` action is show as menu item in all nested workflow/script views
-- `none` action is not show on ui at all
-
-#### `friendlyName`
-
-_Optional_
-
-User-friendly action name to show on UI.
-
-#### `description`
-
-_Optional_
-
-Action description to show as a hover on UI.
-
-#### `menuCategory`
-
-_Optional_
-
-Creates a separate menu with `menuCategory` name, if multiple actions
-has the same menuCategory, they will be grouped together. Applicable
-only for actions with position `menu`.
-
-#### `confirmationMessage`
-
-_Optional_
-
-A confirmation dialog with this text will be shown before running the
-action.
+Returns `true` iff `name` was declared in `from` with the `(call)` flag
+and matched at runtime. Outside [FuncCall actions](#funccall-actions),
+`(call)` inputs must also be marked `(optional)` — the actual
+`DG.FuncCall` is not exposed; `hasCall` is the only way handlers see the
+result. Throws if `name` is not a declared `(call)` input.
 
 
-#### `icon`
-
-_Optional_
-
-Font awesome icon to be shown as a part of the UI action button.
-
-#### `visibleOn`
-
-_Optional_
-
-Shows the action on a specific child step instead of the node where it is
-defined. The value is the `id` of the target step. The action's `from`/`to`
-still resolve at the definition scope, so the action can read from and write
-to any node the parent workflow can reach. This is useful when an action
-logically belongs to a child step's UI but needs access to sibling steps'
-data. Works with all action types (data, funccall, pipeline).
-
-Because `from`/`to` resolve independently, a pipeline mutation action can
-read from a step _inside_ its own target pipeline. For example, an action
-with `to: 'out1:targetPipeline'` can also use
-`from: 'in1:targetPipeline/step1/result'` to read a child step's output and
-decide which step type to add. This works because the forward-only constraint
-only applies to reference selectors (`@ref`), not to independent path specs.
+## Data flow
 
 ### Data links
 
@@ -240,13 +197,73 @@ Receives an output query name, state, and an optional restriction. Sets
 all matched outputs to the specified state with the restriction. For
 more details about restriction see [Consistency](#consistency).
 
+#### `getInputTemplates` / `getOutputTemplates`
+
+```
+getInputTemplates(): TemplateInfo[];
+getOutputTemplates(): TemplateInfo[];
+
+type TemplateInfo = {
+  name: string | number;
+  ios: {ioName: string, scriptIoId: string}[];
+};
+```
+
+Enumerate the template slots produced by [`(template)` wildcard
+selectors](./link-query-language#wildcard-selectors) on each side, in
+spec order. Each entry pairs the link-io name with the underlying script
+IO id. Returns `[]` when no wildcard selectors are used.
+
+#### `propagateTemplatePair`
+
+```
+propagateTemplatePair(
+  inputTemplate: string | number,
+  outputTemplate: string | number,
+  defaultRestrictions?: Record<string, RestrictionType> | RestrictionType,
+): void;
+```
+
+Name-matches a single (input-template, output-template) pair and runs
+`getFirst` → `setAll` for each matched script IO id. Unmatched ids on
+either side are silently dropped. Throws if either name is not a known
+template. Used by the [default handler](#default-handler) for the
+template ↔ template case; available to custom handlers that want the
+same primitive.
+
+#### `clearRestriction`
+
+```
+clearRestriction(name: string): void;
+```
+
+Clears the consistency restriction on all matched outputs of `name`
+without changing their current value. After the handler completes the
+targeted inputs are no longer marked as "set by a link" and no longer
+report inconsistency — until another link writes them again. Calling
+`clearRestriction` on an output that has no active restriction is a
+no-op. If the handler also calls `setAll(name, ...)` for the same
+output, the later of the two calls wins.
+
+See [Consistency](#consistency) for the underlying model.
+
 
 ### Default handler
 
-For [data links](#data-links) it is possible to omit `hander` and use
-a default one. For each [LQL](links-spec.mdx) input query the first matched input is
-passed to the corresponding by order LQL output. It is also possible
-to configure restrictions, via
+For [data links](#data-links) it is possible to omit `handler` and use
+a default one.
+
+Each top-level entry in `from`/`to` is one *slot*. The default handler
+pairs slots by index. For each pair:
+
+- **bare ↔ bare**: the first matched input is passed to the
+  corresponding output, in declaration order. This is the original
+  behavior.
+- **template ↔ template**: when both slots come from
+  [`(template)` wildcard selectors](./link-query-language#wildcard-selectors),
+  the handler matches their IOs by script IO name (not position) and
+  silently drops anything unique to one side.
+- **template ↔ bare**: throws — flip the order or split the link.
 
 #### `defaultRestrictions`
 
@@ -283,7 +300,9 @@ scope of workflow, nested workflow, or a script.
 ![Inconsistent data mark](pics/wineQ_full_workflow_consistency_check.png)
 
 
-### Validators
+## Validators
+
+### IO validators {#io-validators}
 
 Validators are used to validate inputs and have `validator`
 type. Multiple validators can target the same script io, validation
@@ -302,7 +321,7 @@ Validators have the following additional configuration options:
 
 _Optional_
 
-Could be either a [LQL](links-spec.mdx) string or an array of multiple
+Could be either a [LQL](./link-query-language) string or an array of multiple
 LQL strings.  Queries are targeting script nodes or workflows. Actions
 descriptors could be retrieved using
 [`getValidationAction`](#getvalidationaction) controller method and
@@ -357,10 +376,14 @@ export interface Advice {
 export type ValidationItem = string | Advice;
 ```
 
-Where `description` is a validation message, `actionName` is a visible
-action name, `action` is a result of
-[`getValidationAction`](#getvalidationaction). `additionalParams`
-could be access inside action controller via
+A `ValidationItem` is either a plain `string` (a message with no follow-up)
+or an `Advice` (a message that comes with one or more user-runnable actions).
+Use the string form for simple errors/warnings; use `Advice` when the user can
+click a button to fix the problem or jump to the offending step. `description`
+is the text shown to the user, `actionName` is the label on the action button,
+`action` is the opaque action descriptor returned by
+[`getValidationAction`](#getvalidationaction), and `additionalParams` is a
+free-form bag of values forwarded to the action handler, where it is read with
 [`getAdditionalParam`](#getadditionalparam).
 
 #### `getValidationAction`
@@ -369,16 +392,112 @@ could be access inside action controller via
 getValidationAction(id: string, actionId: string) : string | undefined;
 ```
 
-Gets an action descriptor to be used in `ValidationResult`.
+Looks up an action that the validator wants to expose alongside its messages.
+`id` is the LQL query name used in the validator's [`actions`](#actions)
+field; `actionId` is the `id` of the matched action's configuration on the
+target node. Returns an opaque string descriptor that should be placed into
+the `action` field of an [`Advice`](#setvalidation) item; returns `undefined`
+if no such action is wired up. The descriptor is consumed internally by the
+platform — your code only forwards it.
 
-For validation of the current workflow structure itself use another
-method described [here](configuration.mdx#structurecheck).
+Not gated by [`showWhen`/`hideWhen`](#visibility): `getValidationAction`
+returns a descriptor regardless of whether the UI would currently render the
+action. Use [`isActionVisible`](#isactionvisible) if a validator needs to
+mirror the UI's decision.
 
+#### `isActionVisible`
+
+```
+isActionVisible(name: string, actionId: string): boolean;
+```
+
+Returns the same boolean that Compute2 uses to decide whether to render the
+action — `true` when the action has no [`showWhen`/`hideWhen`](#visibility) or
+when its current evaluation matches; `false` when the action is hidden or
+when the `name`/`actionId` pair is not wired up. Pure query; does not affect
+execution.
+
+For validation of the workflow structure itself (rather than a single
+script io) use [pipeline validators](#pipeline-validators) — a reactive,
+multi-validator-per-node mechanism that can be triggered from any
+inputs or outputs.
+
+
+### Pipeline validators
+
+Pipeline validators attach a validation result to one or more workflow
+nodes rather than to a script io. They have type `pipelineValidator`.
+Unlike regular validators, they target workflow nodes — the
+link-defining workflow, a named descendant, or several at once via an
+array `to`. Like every other link type, each `to` entry is named, and
+the handler writes a result per name with `setValidation(name, result)`,
+so it can validate a single matched node or several independently.
+Multiple pipeline validators on the same node combine their results, and
+the merged outcome is exposed on the workflow state as
+`structureCheckResults`.
+
+Pipeline validators are reactive in two ways:
+
+- They subscribe to their `from` ports and re-fire (debounced) on input
+  changes, the same way regular validators do.
+- They also re-fire after any tree structure update (step added, removed
+  or moved), so they can react to topology changes their `from` ports
+  might not capture.
+
+Routing is expressed via the standard `to` query — see the
+[LQL reference](./link-query-language-reference#grammar) for the full grammar. A
+zero-segment path targets the link-defining workflow node (self); a
+segmented path targets a descendant.
+
+The pipeline validator controller has the following methods:
+
+#### `setValidation` (pipeline validator)
+
+```
+setValidation(name: string, validation?: ValidationResult): void;
+```
+
+Sets (or clears) this validator's contribution for the `to` output named
+`name`, merged into the `structureCheckResults` of that target workflow
+node. `name` is the output's name in the `to` query (for example, `to:
+'check:first(inner)'` is named `check`). Omit the validation to remove the
+contribution. To write the same result to every matched target, call
+`setValidation` once per name.
+
+#### `getOutline`
+
+```
+getOutline(): PipelineOutline;
+```
+
+Returns the current `PipelineOutline` of the workflow where this link
+is defined (the link's prefix node), including all nested workflows.
+This is independent of the `to` target — `to` says where the result
+is written; `getOutline()` describes the link's own scope. Use this
+when the validator needs to inspect the workflow topology, e.g. the
+number of nested steps or their configIds.
+
+`PipelineOutline` is a structure-only snapshot of the workflow subtree: each
+node carries its `id`, `configId`, and `type`, and workflow nodes carry a
+recursive `steps` array. Runtime data (FuncCalls, validation state, mutable
+runtime metadata) is intentionally omitted so the outline is cheap to walk
+and stable across re-fires. The full type lives in
+`@datagrok-libraries/compute-api`; LSP will show the recursive shape.
+
+#### `debounce` (pipeline validator)
+
+Same semantics as for regular `validator` links. Default is 250ms.
+
+
+## Metadata
 
 ### Metadata links
 
-Metadata links are used for [viewers hooks](configuration.mdx) and have a type `meta`.
-Meta controller has an additional method:
+Metadata links have type `meta`. They write small chunks of metadata against
+script IO targets; the platform interprets the metadata to customize the UI
+that surrounds the input/output (which is rendered by
+[viewer hooks](./configuration#viewershook-script-node)). Meta controller has an
+additional method:
 
 #### `setViewMeta`
 
@@ -390,26 +509,26 @@ Sets metadata to an output query with the specified name. Multiple
 links can have the same output target, provided they are using
 different keys.
 
-It is possible to hide script inputs setting the following meta:
-```
-{ hidden: true }
-```
+#### UI metadata
 
-Also, an input annotation should
-include `optional: true`
+The platform understands the following well-known keys when set on a script
+input or output:
 
-For choice inputs it is possible to update an
-items list:
+| Key | Effect |
+|------|--------|
+| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. The input annotation must include `optional: true`, otherwise the platform requires a value. |
+| `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
 
-```
-{ items: ['one', 'two', 'three'] }
-```
+Any other key/value pair is forwarded to the viewer hook unchanged, so
+custom viewer integrations can define their own meta keys.
 
-There are also integrations available with
+#### Feature integrations (sensitivity analysis, optimization)
+
+The same `meta` link type wires script IOs into the
 [sensitivity-analysis](../compute.md#sensitivity-analysis) and
-[optimization](../compute.md#input-parameter-optimization)
-tools. Enabling these tool integrations could be done only for
-javascript functions using the following annotation:
+[optimization](../compute.md#input-parameter-optimization) tools. Enabling
+these tool integrations can be done only for JavaScript functions using the
+following annotation:
 
 ```
 //meta.features: {"sens-analysis": true, "fitting": true}
@@ -453,6 +572,10 @@ following workflow/script nodes targets:
 - `tags` will be used to fill tags when user saves a workflow. Note
   that tags here are completely unrelated to `PipelineConfiguration`
   ones. They tag a particular saved instance of a workflow.
+- `body` is rendered as markdown in the Compute2 step row, below the
+  title (via the `<dg-markdown>` webcomponent). Use this for inline
+  notes, step instructions, or reactive status text. Works on every
+  step kind including action steps.
 
 Node meta controller has an additional method:
 
@@ -462,6 +585,105 @@ setDescriptionItem(name: string, description: any): void;
 
 Sets description to an output query with the specified name.
 
+
+## Actions
+
+### Action options
+
+These options are available for all action types.
+
+#### `position`
+
+Where to show action. Possible values are
+- `buttons` action is show in workflow/script ui as a button
+- `menu` action is show as menu item in the workflow/script view
+- `globalmenu` action is show as menu item in all nested workflow/script views
+- `none` action is not show on ui at all
+
+#### `friendlyName`
+
+_Optional_
+
+User-friendly action name to show on UI.
+
+#### `description`
+
+_Optional_
+
+Action description to show as a hover on UI.
+
+#### `menuCategory`
+
+_Optional_
+
+Creates a separate menu with `menuCategory` name, if multiple actions
+has the same menuCategory, they will be grouped together. Applicable
+only for actions with position `menu`.
+
+#### `confirmationMessage`
+
+_Optional_
+
+A confirmation dialog with this text will be shown before running the
+action.
+
+
+#### `icon`
+
+_Optional_
+
+Font awesome icon to be shown as a part of the UI action button.
+
+#### `visibleOn`
+
+_Optional_
+
+Shows the action on a descendant step or pipeline instead of the declaring
+node. The value is the bare `config.id` of the target; the first DFS match
+wins. Not a link-spec path. If no descendant matches, the action is
+hidden. The action's `from`/`to` still resolve at the definition scope, so
+it can read from and write to anything the parent workflow can reach.
+Works with all action types (data, funccall, pipeline).
+
+Because `from`/`to` resolve independently, a pipeline mutation action can
+read from a step _inside_ its own target workflow. For example, an action
+with `to: 'out1:targetPipeline'` can also use
+`from: 'in1:targetPipeline/step1/result'` to read a child step's output and
+decide which step type to add. This works because the forward-only constraint
+only applies to reference selectors (`@ref`), not to independent path specs.
+
+### Visibility
+
+`showWhen` and `hideWhen` make an action conditionally visible based on the
+current tree state. Both accept an LQL string or an array of them, with the
+same shape as the link-level [`from`](#from) and [`not`](#not) fields. They
+are re-evaluated on every tree mutation.
+
+#### `showWhen`
+
+_Optional_
+
+Positive gate. The action is visible only when every required entry matches
+at least one node. Entries flagged `(optional)` are ignored for the decision.
+An empty or absent `showWhen` imposes no positive gate.
+
+#### `hideWhen`
+
+_Optional_
+
+Negative gate. The action is hidden whenever any entry matches. An empty or
+absent `hideWhen` imposes no negative gate. `hideWhen` is checked first and
+overrides `showWhen`.
+
+The `(call)` flag and the `[id]` selector form are not allowed in `showWhen`
+/ `hideWhen` queries — only the same path/tag matchers used in `from`/`not`.
+
+Visibility is a UI hint, not an execution gate. Compute2 honors it when
+rendering actions at positions `buttons`, `menu`, and `globalmenu`. RTD
+itself still runs hidden actions if invoked, and
+[`getValidationAction`](#getvalidationaction) returns a descriptor regardless
+of visibility. Validators that need to mirror the UI's decision can call
+[`isActionVisible`](#isactionvisible).
 
 ### Data actions
 
@@ -546,6 +768,19 @@ moveStep(name: string, step: StepHandle, position: number): void;
 
 Moves a step to a new position within the target dynamic workflow.
 
+:::warning
+
+A pipeline-action handler must not queue mutations on overlapping
+subtrees — for example, calling `setPipelineState` or granular ops on an
+outer pipeline together with granular ops on one of its descendants
+(reached via a separate `to:` port). The driver detects this and aborts
+the action. Combine the mutations into a single `setPipelineState` at
+the common ancestor, or operate only at the inner level.
+
+:::
+
+
+## Hooks
 
 ### Init hook
 

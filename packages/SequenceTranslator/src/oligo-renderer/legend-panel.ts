@@ -20,6 +20,8 @@ import {
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
+import {getMonomerColors} from './monomer-colors';
+import {describeOverhangs, isLinkerMonomer} from './alignment';
 
 export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
@@ -42,6 +44,9 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
       if (nt.phosphate) bump(phosCounts, nt.phosphate);
       if (nt.base && !isCanonicalBase(nt.base))
         bump(baseCounts, nt.base);
+    } else if (isLinkerMonomer(m)) {
+      // Standalone backbone linker (`p`, `[sp]`, …) — counted as a linkage.
+      bump(phosCounts, m.symbol);
     } else {
       bump(conjCounts, m.symbol);
     }
@@ -50,14 +55,16 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const root = ui.divV([], {style: {fontSize: '12px'}});
 
   // Summary
-  root.appendChild(section('Summary', ui.tableFromMap({
+  const summary: Record<string, string> = {
     'Sense length': `${sLen} nt`,
     'Antisense length': aLen ? `${aLen} nt` : 'single-strand',
     'Modifications used': humanizeModSet(sugarCounts, phosCounts, baseCounts),
     'Conjugates': conjCounts.size ?
       Array.from(conjCounts.entries()).map(([s, n]) => `${resolveConjugate(s).meta.name} ×${n}`).join(', ') :
       '—',
-  })));
+  };
+  if (model.antisense) summary['Duplex'] = describeDuplexAlignment(model);
+  root.appendChild(section('Summary', ui.tableFromMap(summary)));
 
   // Legend — only modifications actually present in this cell.
   // Note: there's no "Copy" section here — the platform already adds a
@@ -69,6 +76,23 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
 
 function bump(map: Map<string, number>, key: string): void {
   map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+/** One-line human summary of how the two strands line up: blunt vs the
+ * overhangs implied by the alignment, plus where the register came from
+ * (explicit HELM pairs vs auto-aligned by complementarity). */
+function describeDuplexAlignment(model: ReturnType<typeof parseHelmDuplex>): string {
+  const o = describeOverhangs(model);
+  if (!o) return '—';
+  const ends: string[] = [];
+  if (o.sense5) ends.push(`5' sense +${o.sense5}`);
+  if (o.anti3) ends.push(`3' antisense +${o.anti3}`);
+  if (o.sense3) ends.push(`3' sense +${o.sense3}`);
+  if (o.anti5) ends.push(`5' antisense +${o.anti5}`);
+  const shape = ends.length ? `overhangs: ${ends.join(', ')}` : 'blunt';
+  const src = o.source === 'explicit' ? 'from HELM pairs' :
+    o.source === 'auto' ? 'auto-aligned' : '';
+  return `${o.paired} bp, ${shape}${src ? ` (${src})` : ''}`;
 }
 
 function humanizeModSet(
@@ -110,9 +134,10 @@ function section(title: string, body: HTMLElement): HTMLElement {
 
 /** Build a legend filtered to modifications actually present in this cell.
  * One row per unique mod, with the count to the right. Items collapse by
- * canonical symbol so legacy/canonical aliases share a row. Custom bases
- * (non-A/C/G/U/T HELM symbols) are listed with their natural-analog color
- * — resolved async via the central Bio monomer library. */
+ * canonical symbol so legacy/canonical aliases share a row. Colors come from
+ * the same `getMonomerColors()` path the canvas renderer uses — so what's
+ * drawn on the chip and what's in the legend swatch are always in sync. The
+ * local mod meta only supplies the fallback color and human-readable name. */
 function buildCellLegend(
   sugars: Map<string, number>, phos: Map<string, number>,
   conjs: Map<string, number>, bases: Map<string, number>,
@@ -120,34 +145,39 @@ function buildCellLegend(
   type Item = { label: string; color: string; count: number };
   const items: Item[] = [];
 
-  // Sugar mods — collapse by canonical symbol so e.g. mR + m → one row
+  // Sugars — collapse by canonical symbol so e.g. mR + m → one row. Canonical
+  // ribose/deoxyribose are included too since the canvas now draws a stripe
+  // for every sugar, not just the modified ones.
   const sugarByCanon = new Map<string, number>();
   for (const [sym, n] of sugars.entries()) {
     const c = canonicalSugarSymbol(sym);
-    if (c === 'r' || c === 'd') continue; // unmodified
     sugarByCanon.set(c, (sugarByCanon.get(c) ?? 0) + n);
   }
   for (const [c, n] of sugarByCanon.entries()) {
     const meta = resolveSugar(c, null).meta;
-    items.push({label: meta.name, color: meta.color, count: n});
+    const libColor = getMonomerColors('sugar', c).backgroundcolor;
+    items.push({label: meta.name, color: libColor ?? meta.color, count: n});
   }
 
-  // Phosphate / linkage mods
+  // Phosphate / linkage mods — show ALL linkages used in the cell (including
+  // canonical `p`) since the canvas now draws an apex for every linkage.
   const phosByCanon = new Map<string, number>();
   for (const [sym, n] of phos.entries()) {
     const c = canonicalPhosphateSymbol(sym);
-    if (c === 'p') continue;
     phosByCanon.set(c, (phosByCanon.get(c) ?? 0) + n);
   }
   for (const [c, n] of phosByCanon.entries()) {
     const meta = resolvePhosphate(c).meta;
-    items.push({label: `${meta.name} (linkage)`, color: meta.color, count: n});
+    const libColor = getMonomerColors('linker', c).backgroundcolor;
+    items.push({label: `${meta.name} (linkage)`, color: libColor ?? meta.color, count: n});
   }
 
-  // Custom bases — color via natural analog from the central Bio lib (sync).
+  // Custom bases — prefer the library's base color; fall back to natural-
+  // analog palette and finally to FALLBACK_COLOR.
   for (const [sym, n] of bases.entries()) {
+    const libColor = getMonomerColors('base', sym).backgroundcolor;
     const analog = getNaturalAnalog(sym);
-    const color = (analog && BASE_COLORS[analog]) ? BASE_COLORS[analog] : FALLBACK_COLOR;
+    const color = libColor ?? (analog && BASE_COLORS[analog]) ?? FALLBACK_COLOR;
     const label = analog ? `${sym} (base, analog ${analog})` : `${sym} (base)`;
     items.push({label, color, count: n});
   }
@@ -155,7 +185,8 @@ function buildCellLegend(
   // Conjugates
   for (const [sym, n] of conjs.entries()) {
     const meta = resolveConjugate(sym).meta;
-    items.push({label: meta.name, color: meta.color, count: n});
+    const libColor = getMonomerColors('chem', sym).backgroundcolor;
+    items.push({label: meta.name, color: libColor ?? meta.color, count: n});
   }
 
   if (items.length === 0) {

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {filter, map, take} from 'rxjs/operators';
-import {getContextHelp, getPackage} from '../../shared-utils/utils';
+import {getContextHelp, getCurrentUserGroups, getPackage, requestGroupMembership} from '../../shared-utils/utils';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -57,8 +57,7 @@ async function requestMembership(groupName: string) {
 
     const group = groups[0];
 
-    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
-    await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
+    await requestGroupMembership(group, grok.shell.user.group);
 
     grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`);
   } catch (e: any) {
@@ -109,9 +108,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   static async getUserGroups() {
-    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-    const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-    return userGroups;
+    return await getCurrentUserGroups();
   }
 
   static getMissingGroups(func: DG.Func, userGroups: DG.Group[]) {
@@ -231,16 +228,18 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override async renderPreview(x: DG.Func): Promise<DG.View> {
+    const userGroups = await this.awaitUserGroups();
+    const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
+    // Return the editor view directly so the docked preview is the view RFV/TreeWizard controls;
+    // wrapping it in fromViewAsync makes a separate view the tracked preview, so pin() and the ribbon act on the wrong one.
+    if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
+      const call = x.prepare();
+      const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
+      return res.getOutputParamValue() as DG.View;
+    }
+
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
-      const userGroups = await this.awaitUserGroups();
-      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
-      if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
-        const call = x.prepare();
-        const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
-        const view = res.getOutputParamValue() as DG.View;
-        return view;
-      }
       const v = await super.renderPreview(x);
       v.name = (x.friendlyName ?? x.name) + ' preview';
 

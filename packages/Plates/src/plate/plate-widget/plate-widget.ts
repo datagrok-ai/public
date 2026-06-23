@@ -178,7 +178,7 @@ export class PlateWidget extends DG.Widget {
       .subscribe((event: MouseEvent) => {
         const gridCell = this.grid.hitTest(event.offsetX, event.offsetY);
 
-        if (!gridCell || !gridCell.isTableCell || gridCell.gridColumn.idx === 0)
+        if (!gridCell || (gridCell.gridRow ?? -1) < 0 || gridCell.gridColumn.idx === 0)
           return;
 
         const gridRow = gridCell.gridRow;
@@ -199,7 +199,7 @@ export class PlateWidget extends DG.Widget {
 
   private setupHoverEvents(grid: DG.Grid) {
     grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
-      if (gc.isTableCell) {
+      if (gc.gridRow !== null && gc.gridRow >= 0 && gc.gridColumn?.dart && gc.gridColumn?.idx > 0) {
         gc.grid.root.style.cursor = 'pointer';
         this.hoveredCell = {row: gc.gridRow!, col: gc.gridColumn.idx - 1};
         grid.invalidate();
@@ -230,7 +230,7 @@ export class PlateWidget extends DG.Widget {
     return PlateWidget.detailedView(plate);
   }
 
-  static detailedView(plate: Plate): PlateWidget {
+  static detailedView(plate: Plate, showTabs = true): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
 
@@ -241,14 +241,14 @@ export class PlateWidget extends DG.Widget {
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
 
     const mainContainer = ui.divH([
-      pw.tabs.root,
+      showTabs ? pw.tabs.root : pw.grid.root,
       pw.detailsDiv,
     ], 'assay-plates--plate-widget__main-container');
-
+    pw.root.innerHTML = '';
     pw.root.appendChild(mainContainer);
 
     pw.grid.onCurrentCellChanged
-      .pipe(filter((gc) => gc.isTableCell && gc.gridRow !== null))
+      .pipe(filter((gc) => gc.gridRow !== null && gc.gridRow >= 0 && gc.gridColumn?.dart && gc.gridColumn?.idx > 0))
       .subscribe((gc) => {
         if (pw.wellDetailsDiv) {
           ui.empty(pw.wellDetailsDiv);
@@ -285,40 +285,52 @@ export class PlateWidget extends DG.Widget {
     this.setupHoverEvents(grid);
   }
 
+  private _forRendering = false;
+
+  public static renderingInstance(): PlateWidget {
+    const w = new PlateWidget();
+    w._forRendering = true;
+    return w;
+  }
+
   refresh() {
-    this._positiveMinCache = null;
-    this._positiveMinCacheCol = undefined;
-    const currentPaneName = this.tabs.currentPane?.name;
-    this.tabs.clear();
-    this.grids.clear();
-    this.tabs.addPane('Summary', () => {
-      // this.grid.invalidate();
-      return this.grid.root;
-    });
-    // this.tabs.addPane(`X Outliers X`, () => this.grid.root);
-    const allColumns = this.plate.data.columns.toList()
-      .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
+    if (!this._forRendering) {
+      this._positiveMinCache = null;
+      this._positiveMinCacheCol = undefined;
+      const currentPaneName = this.tabs.currentPane?.name;
+      this.tabs.clear();
+      this.grids.clear();
+      this.tabs.addPane('Summary', () => {
+        // this.grid.invalidate();
+        return this.grid.root;
+      });
+      // this.tabs.addPane(`X Outliers X`, () => this.grid.root);
+      const allColumns = this.plate.data.columns.toList()
+        .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
 
-    for (const col of allColumns)
-      this.tabs.addPane(col.name, () => this.createLayerGrid(col.name, false));
+      for (const col of allColumns)
+        this.tabs.addPane(col.name, () => this.createLayerGrid(col.name, false));
 
-    if (currentPaneName)
-      this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
-    else if (this.tabs.panes.length > 0)
-      this.tabs.currentPane = this.tabs.getPane('Summary');
-
+      if (currentPaneName)
+        this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
+      else if (this.tabs.panes.length > 0)
+        this.tabs.currentPane = this.tabs.getPane('Summary');
+    }
     const t = this.plate.data;
     const nonLayoutCols = t.columns.toList();
     this._colorColumn = nonLayoutCols.find((c) => c.semType === 'Activity' || c.name.toLowerCase() === 'activity') ??
                       nonLayoutCols.find((c) => c.semType === 'Concentration' || c.name.toLowerCase().includes('concentration')) ??
                       nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
 
-    this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
-    this.grid.columns.clear();
-    for (let i = 0; i <= this.plate.cols; i++)
-      this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+    if (this.grid.columns.length !== this.plate.cols + 1 || this.grid.dataFrame.rowCount !== this.plate.rows) {
+      this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
+      this.grid.columns.clear();
+      for (let i = 0; i <= this.plate.cols; i++)
+        this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+    }
 
-    this.grid.invalidate();
+    if (!this._forRendering)
+      this.grid.invalidate();
   }
 
   private createLayerGrid(layer: string, isRole: boolean): HTMLElement {

@@ -77,7 +77,7 @@ export class Dapi {
     return new FuncsDataSource(api.grok_Dapi_Functions());
   }
 
-  /** Data Connections API (finding, saving, sharing data connections 
+  /** Data Connections API (finding, saving, sharing data connections
    * and folders, getting database schemas) */
   get connections(): DataConnectionsDataSource {
     return new DataConnectionsDataSource(api.grok_Dapi_Connections());
@@ -218,6 +218,12 @@ export class Dapi {
    *  @type {AdminDataSource} */
   get admin(): AdminDataSource {
     return new AdminDataSource(api.grok_Dapi_Admin());
+  }
+
+  /** Server info API endpoint
+   *  @type {InfoDataSource} */
+  get info(): InfoDataSource {
+    return new InfoDataSource(api.grok_Dapi_Info());
   }
 
   /** Logging API endpoint
@@ -387,14 +393,35 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
+  /** Returns the configured report email address from admin settings.
+   * Used as the default recipient for error reports and admin notifications. */
+  async getReportEmail(): Promise<string> {
+    return JSON.parse(await api.grok_Dapi_Admin_GetReportEmail(this.dart));
+  }
+
   /**
    * Sends email
    * @param email - message that will be sent using configured SMTP service
    */
-  sendEmail(email: Email): Promise<void> {
+  async sendEmail(email: Email): Promise<void> {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
-    return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
+    const fd = new FormData();
+    fd.append('subject', email.subject);
+    fd.append('to', email.to.join(','));
+    if (email.text)
+      fd.append('text', email.text);
+    if (email.html)
+      fd.append('html', email.html);
+    if (email.bcc && email.bcc.length)
+      fd.append('bcc', email.bcc.join(','));
+    const toBlob = (a: EmailAttachment) => a.data instanceof Blob ? a.data : new Blob([a.data as BlobPart], { type: a.contentType ?? 'application/octet-stream' });
+    for (const a of email.attachments ?? [])
+      fd.append('attachment', toBlob(a), a.name);
+    const r = await fetch(`${api.grok_Dapi_Root()}/admin/email`,
+        { method: 'POST', body: fd, credentials: 'include' });
+    if (!r.ok)
+      throw new Error(await r.text());
   }
 
   /** Sends a message to the specified browser client
@@ -402,6 +429,29 @@ export class AdminDataSource {
   pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
     return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
   }
+}
+
+export class InfoDataSource {
+  dart: any;
+  /** @constructs InfoDataSource */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns the latest storage usage snapshot, refreshed hourly on the server. */
+  getStorageStats(): Promise<{[key: string]: any}> {
+    return api.grok_Dapi_Info_GetStorageStats(this.dart);
+  }
+}
+
+/** Attachment for an [Email]. */
+export interface EmailAttachment {
+  /** Filename shown in the recipient's mail client. */
+  name: string,
+  /** Attachment bytes. Blob is streamed natively; Uint8Array is wrapped in a Blob. */
+  data: Blob | Uint8Array,
+  /** Optional MIME type override; defaults to Blob.type or 'application/octet-stream'. */
+  contentType?: string,
 }
 
 /** Email that can be sent using the configured SMTP service */
@@ -420,6 +470,9 @@ export interface Email {
 
   /** Blind carbon copy */
   bcc?: string [],
+
+  /** Files attached to the message. */
+  attachments?: EmailAttachment[],
 }
 
 export interface ServiceInfo {
@@ -511,6 +564,17 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   async getGroupsLookup(name: string): Promise<Group[]> {
     return toJs(await api.grok_Dapi_Get_GroupsLookup(name));
   }
+
+  /** Returns all groups the current user belongs to, including transitive parent groups. */
+  async currentUserGroups(): Promise<Group[]> {
+    return toJs(await api.grok_Dapi_Get_CurrentUserGroups());
+  }
+
+  /** Requests that `requester` be added as a member of `group`.
+   *  An admin of `group` must approve before the membership takes effect. */
+  async requestMembership(group: Group, requester: Group): Promise<void> {
+    return api.grok_GroupsDataSource_RequestMembership(group.id, requester.id);
+  }
 }
 
 
@@ -533,6 +597,14 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
   /** Returns entities favorited by the specified group (or the current user's group if not specified) */
   getFavorites(group?: Group): Promise<Entity[]> {
     return toJs(api.grok_EntitiesDataSource_GetFavorites(this.dart, toDart(group)));
+  }
+
+  /** Returns favorites for multiple groups in a single round trip; object keyed by group id. */
+  async getFavoritesForGroups(groups: Group[]): Promise<{[gid: string]: Entity[]}> {
+    const obj: {[k: string]: any[]} = await api.grok_EntitiesDataSource_GetFavoritesForGroups(this.dart, groups.map((g) => toDart(g)));
+    for (const gid of Object.keys(obj))
+      obj[gid] = obj[gid].map((e) => toJs(e));
+    return obj;
   }
 
   /** Allows to set properties for entities */

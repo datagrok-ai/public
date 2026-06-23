@@ -2,7 +2,7 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, Column, DataFrame} from "./dataframe.js";
 import {Property, IProperty} from "./entities";
-import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
+import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs, RangeSlider} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
@@ -10,7 +10,7 @@ import {__obs, EventData, EventType, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
-import {Grid, Point, Rect} from "./grid";
+import {FormViewer, Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
@@ -108,6 +108,23 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   /// current row clicked
   get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-row-click')); }
   get onPropertyValueChanged(): rxjs.Observable<EventData<Property>> { return this.onEvent('d4-property-value-changed'); }
+
+  /** Fires when the viewer's underlying DataFrame is replaced (table attached). */
+  get onDataFrameChanged(): rxjs.Observable<any> { return this.onEvent('d4-data-frame-changed'); }
+  /** Fires when the viewer is resized. */
+  get onResized(): rxjs.Observable<null> { return this.onEvent('d4-viewer-resized'); }
+  /** Fires after the viewer completes a layout pass. */
+  get onAfterLayout(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-after-layout'); }
+  /** Fires before rendering of the main canvas. */
+  get onBeforeDrawScene(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-before-draw-scene'); }
+  /** Fires after rendering of the main canvas. */
+  get onAfterDrawScene(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-after-draw-scene'); }
+  /** Fires before rendering of the overlay canvas (interactive layer). */
+  get onBeforeDrawOverlay(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-before-draw-overlay'); }
+  /** Fires after rendering of the overlay canvas (interactive layer). */
+  get onAfterDrawOverlay(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-after-draw-overlay'); }
+  /** Fires after the viewer is rendered. */
+  get onViewerRendered(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-viewer-rendered'); }
 
   initDartObject(dart: any) {
     this.dart = dart;
@@ -224,6 +241,14 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
+  static confusionMatrix(t: DataFrame, options?: Partial<interfaces.IConfusionMatrixSettings>): ConfusionMatrix {
+    return <ConfusionMatrix>Viewer.fromType(VIEWER.CONFUSION_MATRIX, t, options);
+  }
+
+  static rocCurve(t: DataFrame, options?: Partial<interfaces.IRocCurveSettings>): RocCurve {
+    return <RocCurve>Viewer.fromType(VIEWER.ROC_CURVE, t, options);
+  }
+
   static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
     return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
@@ -244,12 +269,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new LineChartViewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
-  static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): Viewer<interfaces.INetworkDiagramSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
+  static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): NetworkDiagramViewer {
+    return new NetworkDiagramViewer((Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options) as Viewer).dart);
   }
 
-  static calendar(t: DataFrame, options?: Partial<interfaces.ICalendarSettings>): Viewer<interfaces.ICalendarSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.CALENDAR, t, options);
+  static calendar(t: DataFrame, options?: Partial<interfaces.ICalendarSettings>): CalendarViewer {
+    return new CalendarViewer(api.grok_Viewer_Calendar(t.dart, _toJson(options)));
   }
 
   static correlationPlot(t: DataFrame, options?: Partial<interfaces.ICorrelationPlotSettings>): Viewer<interfaces.ICorrelationPlotSettings> {
@@ -260,16 +285,16 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <DensityPlotViewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
   }
 
-  static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): Viewer<interfaces.IFormSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.FORM, t, options);
+  static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): FormViewer {
+    return new FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
   }
 
   static markup(t: DataFrame, options?: Partial<interfaces.IMarkupViewerSettings>): Viewer<interfaces.IMarkupViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.MARKUP, t, options);
   }
 
-  static matrixPlot(t: DataFrame, options?: Partial<interfaces.IMatrixPlotSettings>): Viewer<interfaces.IMatrixPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.MATRIX_PLOT, t, options);
+  static matrixPlot(t: DataFrame, options?: Partial<interfaces.IMatrixPlotSettings>): MatrixPlot {
+    return <MatrixPlot>Viewer.fromType(VIEWER.MATRIX_PLOT, t, options);
   }
 
   static pcPlot(t: DataFrame, options?: Partial<interfaces.IPcPlotSettings>): Viewer<interfaces.IPcPlotSettings> {
@@ -288,12 +313,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.STATISTICS, t, options);
   }
 
-  static tile(t: DataFrame, options?: Partial<interfaces.ITileViewerSettings>): Viewer<interfaces.ITileViewerSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.TILE_VIEWER, t, options);
+  static tile(t: DataFrame, options?: Partial<interfaces.ITileViewerSettings>): TileViewer {
+    return <TileViewer>Viewer.fromType(VIEWER.TILE_VIEWER, t, options);
   }
 
-  static treeMap(t: DataFrame, options?: Partial<interfaces.ITreeMapSettings>): Viewer<interfaces.ITreeMapSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.TREE_MAP, t, options);
+  static treeMap(t: DataFrame, options?: Partial<interfaces.ITreeMapSettings>): TreeMap {
+    return <TreeMap>Viewer.fromType(VIEWER.TREE_MAP, t, options);
   }
 
   static trellisPlot(t: DataFrame, options?: Partial<interfaces.ITrellisPlotSettings>): Viewer<interfaces.ITrellisPlotSettings> {
@@ -550,6 +575,13 @@ export class FilterGroup extends Viewer {
   remove(filter: Filter | Widget) {
     api.grok_FilterGroup_Remove(this.dart, filter);
   }
+
+  get onFilterAdded(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-added'); }
+  get onFilterRemoved(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-removed'); }
+  get onFilterCriteriaChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-criteria-changed'); }
+  get onFilterEnabledChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-enabled-changed'); }
+  get onFilterSync(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-sync'); }
+  get onFormulaFilterChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-formula-filter-changed'); }
 }
 
 export type CategoryDataArgs = {
@@ -593,8 +625,6 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
 
   screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
 
-  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
-  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
@@ -638,6 +668,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
+  /** The horizontal (X) axis range slider. Its `isCustomRange` flips to true
+   *  once the X range is narrowed; drives whether the slider auto-hides. */
+  get xAxisSlider(): RangeSlider { return toJs(api.grok_ScatterPlotViewer_Get_XAxisSlider(this.dart)); }
+  /** The vertical (Y) axis range slider. */
+  get yAxisSlider(): RangeSlider { return toJs(api.grok_ScatterPlotViewer_Get_YAxisSlider(this.dart)); }
+
   /** Convert coords */
   worldToScreen(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
   screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
@@ -662,10 +698,9 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
-  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
-  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
   get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
+  get onPointsSelected(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-scatterplot-points-selected'); }
 }
 
 export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
@@ -679,6 +714,13 @@ export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
   }
 
   disableAnnotationRegionDrawing(): void { api.grok_DensityPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
+
+  /** X (horizontal) axis range slider. */
+  get xAxisSlider(): RangeSlider { return toJs(api.grok_DensityPlotViewer_Get_XAxisSlider(this.dart)); }
+  /** Y (vertical) axis range slider. */
+  get yAxisSlider(): RangeSlider { return toJs(api.grok_DensityPlotViewer_Get_YAxisSlider(this.dart)); }
+
+  get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-density-plot-zoomed'); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
@@ -697,6 +739,9 @@ export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
   get onLineSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-line'); }
   get onMouseOverBins(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-bins'); }
   get onMouseOverLine(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-line'); }
+  get onMissingValuesFilteredOut(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-out-missing-values'); }
+  get onFilterValuesChanged(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-values-changed'); }
+  get onVisibilityToggled(): rxjs.Observable<null> { return this.onEvent('d4-histogram-visibility-toggled'); }
 }
 
 export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
@@ -742,8 +787,33 @@ export class PcPlot extends Viewer<interfaces.IPcPlotSettings> {
     super(dart);
   }
 
+  /** Resets pan/zoom and per-axis filter sliders to their initial state. */
+  resetView(): void { api.grok_PcPlotViewer_ResetView(this.dart); }
+
+  /** Schedules a redraw of the main + overlay canvases. */
+  invalidateCanvas(): void { api.grok_PcPlotViewer_InvalidateCanvas(this.dart); }
+
+  /** Bounding rect of the plot area in canvas coords. `null` until the
+   *  first layout pass — attach the viewer and `await wait()` first. */
+  get chartBox(): Rect { return toJs(api.grok_PcPlotViewer_Get_ChartBox(this.dart)); }
+
+  /** The DataFrame the chart is currently rendering — equals
+   *  `dataFrame` unless a transformation (e.g. group-by) is applied. */
+  get activeFrame(): DataFrame { return toJs(api.grok_PcPlotViewer_Get_ActiveFrame(this.dart)); }
+
+  /** Canvas X coordinate of the i-th axis tick (0-based). */
+  getColX(i: number): number { return api.grok_PcPlotViewer_GetColX(this.dart, i); }
+
+  /** True when at least one per-axis filter slider is narrowed to a custom
+   *  range — i.e. the plot is currently filtering rows. */
+  get isFiltering(): boolean { return api.grok_PcPlotViewer_Get_IsFiltering(this.dart); }
+
+  get canvas(): HTMLCanvasElement { return this.getInfo()['canvas']; }
+  get overlay(): HTMLCanvasElement { return this.getInfo()['overlay']; }
+
   get onLineClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
   get onLineHovered(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-pc-plot-reset-view'); }
 }
 
 export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
@@ -766,8 +836,6 @@ export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
   disableAnnotationRegionDrawing(): void { api.grok_BoxPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
 
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
-  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
-  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-boxplot-point-click'); }
 }
 
@@ -778,17 +846,74 @@ export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings>
   }
 
   get onCorrCellClicked(): rxjs.Observable<EventData<CorrPlotCellArgs>> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
+
+  /** Correlation coefficient between columns [c1] and [c2], honoring the viewer's
+   *  correlationType (Pearson/Spearman) and combined row filter. */
+  getCorrelation(c1: Column, c2: Column): number {
+    return api.grok_CorrelationPlot_GetCorrelation(this.dart, toDart(c1), toDart(c2));
+  }
+}
+
+export class TreeMap extends Viewer<interfaces.ITreeMapSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+export class MatrixPlot extends Viewer<interfaces.IMatrixPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+export class TileViewer extends Viewer<interfaces.ITileViewerSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
 }
 
 export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings> {
   constructor(dart: any) {
     super(dart);
   }
+
+  /// Whether the matrix is binary (exactly two categories).
+  get isBinary(): boolean { return api.grok_ConfusionMatrix_Get_IsBinary(this.dart); }
+
+  /// The list of class categories present in the matrix.
+  get categories(): string[] { return api.grok_ConfusionMatrix_Get_Categories(this.dart); }
+
+  /// Overall accuracy: (sum of diagonal) / total.
+  get accuracy(): number { return api.grok_ConfusionMatrix_Get_Accuracy(this.dart); }
+
+  /// Sensitivity (recall) — binary only; returns 0 when not binary.
+  get sensitivity(): number { return api.grok_ConfusionMatrix_Get_Sensitivity(this.dart); }
+
+  /// Specificity — binary only; derived from getRowShare(1).
+  get specificity(): number { return this.getRowShare(1); }
+
+  /// Precision — binary only; derived from getColumnShare(0).
+  get precision(): number { return this.getColumnShare(0); }
+
+  /// Negative predicted value — binary only; derived from getColumnShare(1).
+  get negativePredictedValue(): number { return this.getColumnShare(1); }
+
+  /// Share of correctly predicted objects within the actual class at [i] (row). Null when the row is empty.
+  getRowShare(i: number): number { return api.grok_ConfusionMatrix_GetRowShare(this.dart, i) ?? null; }
+
+  /// Share of correct predictions within the predicted class at [i] (column). Null when the column is empty.
+  getColumnShare(i: number): number { return api.grok_ConfusionMatrix_GetColumnShare(this.dart, i) ?? null; }
 }
 
 export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
   constructor(dart: any) {
     super(dart);
+  }
+
+  /// Area under the ROC curve for [prediction] scores against the binary [target] column,
+  /// treating [positiveClass] as the positive label. May be NaN on degenerate (single-class) input.
+  auc(target: Column, prediction: Column, positiveClass: string): number {
+    return api.grok_RocCurve_CalculateAuc(toDart(target), toDart(prediction), positiveClass);
   }
 }
 
@@ -797,6 +922,10 @@ export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
   constructor(dart: any) {
     super(dart);
   }
+
+  /** Auto-detected DateTime column the viewer renders against (`null` if the
+   *  DataFrame has no DateTime column). Populated on frame attach. */
+  get dateColumn(): Column | null { return toJs(api.grok_CalendarViewer_Get_DateColumn(this.dart)) ?? null; }
 
   get onCalendarClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-calendar-clicked'); }
 }
@@ -807,6 +936,15 @@ export class PivotViewer extends Viewer<interfaces.IPivotViewerSettings> {
   }
 
   get onAggregationChanged(): rxjs.Observable<null> { return this.onEvent('d4-pivot-grid-aggr-changed'); }
+}
+
+export class NetworkDiagramViewer extends Viewer<interfaces.INetworkDiagramSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onNodeClicked(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-network-diagram-node-click'); }
+  get onEdgeClicked(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-network-diagram-edge-click'); }
 }
 
 export class ViewerMetaHelper {
@@ -830,6 +968,18 @@ export class TrellisPlotViewer extends Viewer<interfaces.ITrellisPlotSettings> {
   get onInnerViewerClicked(): rxjs.Observable<number[]> { return this.onEvent('d4-trellis-plot-inner-viewer-clicked'); }
   get onTrellisCurrentCellChanged(): rxjs.Observable<CategoryDataArgs> { return this.onEvent('d4-trellis-plot-current-cell-changed'); }
   get onViewerTypeChanged(): rxjs.Observable<string> { return this.onEvent('d4-trellis-plot-viewer-type-changed'); }
+  get onViewerPropertiesOpen(): rxjs.Observable<null> { return this.onEvent('d4-trellis-plot-viewer-properties-open'); }
+
+  /** True when the trellis is driven by a single category column (one of X/Y). */
+  get oneColumnOnly(): boolean { return api.grok_TrellisPlot_Get_OneColumnOnly(this.dart); }
+
+  /** Number of trellis cells along the X axis — product of the category counts of
+   *  all X columns. `null` until the viewer has resolved its columns (post-attach). */
+  get xCategoriesCount(): number | null { return api.grok_TrellisPlot_Get_XCategoriesCount(this.dart) ?? null; }
+
+  /** Number of trellis cells along the Y axis — product of the category counts of
+   *  all Y columns. `null` until the viewer has resolved its columns (post-attach). */
+  get yCategoriesCount(): number | null { return api.grok_TrellisPlot_Get_YCategoriesCount(this.dart) ?? null; }
 }
 
 export class ViewerFormulaLinesHelper extends FormulaLinesHelper {

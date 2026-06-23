@@ -1,38 +1,21 @@
-import {test, expect, chromium} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {test, expect} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-test('Calendar viewer', async () => {
+test('Calendar viewer', async ({page}) => {
   test.setTimeout(600_000);
 
-  // Reuse the existing Chrome session (user is already logged in)
-  const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-  }
-  await page.waitForFunction(() => {
-    try {
-      return typeof grok !== 'undefined'
-        && grok.shell
-        && typeof grok.shell.closeAll === 'function'
-        && grok.dapi
-        && grok.dapi.files;
-    } catch { return false; }
-  }, {timeout: 60000});
-  // Wait until Dart bindings are fully registered
+  await loginToDatagrok(page);
+  // Wait until Dart bindings are fully registered (closeAll callable).
   await page.waitForFunction(() => {
     try { grok.shell.closeAll(); return true; }
     catch { return false; }
   }, {timeout: 60000});
 
-  // Phase 2: Open demog
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
@@ -299,10 +282,7 @@ test('Calendar viewer', async () => {
     expect(result.errors).toEqual([]);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

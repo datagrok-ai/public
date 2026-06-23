@@ -5,11 +5,20 @@ import * as DG from 'datagrok-api/dg';
 /** Regex that matches `${...}` column refs, accounting for escaped braces `\{`/`\}` inside. */
 const COL_REF_REGEX = /\$\{((?:\\.|[^}\\])*)\}/g;
 
+/** Matches the leading `${...}` column ref of a formula (the part that names its axis column). */
+const LEADING_COL_REF = /^\s*\$\{(?:\\.|[^}\\])*\}/;
+
 /** Escape a column name so it can be safely embedded in `${...}` — wraps nested braces. */
 const escapeColName = (name: string): string => grok.functions.handleOuterBracketsInColName(name, true);
 
 /** Wrap a column name as a `${...}` reference, escaping nested braces. */
 const wrapCol = (name: string): string => `\${${escapeColName(name)}}`;
+
+/** True iff both columns share a non-empty `group` tag (GROK-19736). */
+const sameGroup = (a: DG.Column | null, b: DG.Column | null): boolean => {
+  const g = a?.getTag('group');
+  return !!g && g === b?.getTag('group');
+};
 
 function validateBandFormula(value: string): string {
   const bandFormulaHelp = 'Band formula should be in format: ${column} in(min, max)';
@@ -274,9 +283,14 @@ class Table {
   // real cell — so without a column the indicator stays invisible until the user clicks.
   // Using `currentCell` here sets both row and column atomically.
   public set currentItemIdx(rowIdx: number) {
-    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount)
+    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount) {
+      const sameRow = this.dataFrame.currentRowIdx === rowIdx;
       this.dataFrame.currentCell = this.dataFrame.cell(rowIdx, 'title');
-    else
+      // Defer scroll: on dialog open the grid viewport is still laying out.
+      // Skip when already current (e.g. editing the current row) — would jolt the viewport.
+      if (!sameRow)
+        requestAnimationFrame(() => this.grid.scrollToCell('title', rowIdx));
+    } else
       this.dataFrame.currentRowIdx = rowIdx;
   }
 
@@ -333,6 +347,7 @@ class Table {
       showCurrentRowIndicator: true,
       showSelectedRows: false,
       allowRowResizing: false,
+      allowRowSelection: false,
       allowBlockSelection: false,
       allowColSelection: false,
       allowRowReordering: false,
@@ -1997,38 +2012,41 @@ export class FormulaLinesDialog {
 
     this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
       const currentItem = this.currentTable?.currentItem;
-      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer ||
-        !currentItem || (currentItem.type !== ITEM_TYPE.BAND && currentItem.type !== ITEM_TYPE.LINE))
+      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer || !currentItem ||
+        (currentItem.type !== ITEM_TYPE.BAND && currentItem.type !== ITEM_TYPE.LINE && !isAnnotationRegionType(currentItem.type)))
         return;
 
       const { property } = typeArgs.args as unknown as { property: DG.Property };
-      if (!['xColumnName', 'yColumnName', 'yColumnNames'].includes(property.name))
+      if (!['xColumnName', 'yColumnName', 'yColumnNames', 'valueColumnName'].includes(property.name))
         return;
 
       const item = currentItem as DG.FormulaLine;
       const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
+      // Snapshot once: the getter re-reads viewer props (and scans columns for line charts) on every access.
+      const axisCols = this.preview.axisCols;
 
       if (currentItem.type === ITEM_TYPE.BAND) {
         // Only rebuild the editor when the axis column actually changed; otherwise our own
         // preview.update (triggered by editing title/description/etc.) would steal focus on
         // every keystroke, since setOptions re-fires onPropertyValueChanged for the same value.
         let newCol2: string | undefined;
-        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x)
-          newCol2 = this.preview.axisCols.x.name;
+        if (isHorz && property.name === 'xColumnName' && axisCols.x)
+          newCol2 = axisCols.x.name;
         else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
-          && this.preview.axisCols.y)
-          newCol2 = this.preview.axisCols.y.name;
+          && axisCols.y)
+          newCol2 = axisCols.y.name;
         if (newCol2 !== undefined && item.column2 !== newCol2) {
           item.column2 = newCol2;
           this.editor.update(this.currentTable.currentItemIdx, true);
         }
       } else if (currentItem.type === ITEM_TYPE.LINE) {
+        // Constant line follows its own axis directly (keeps the value on the newly selected column).
         const meta = DG.FormulaLinesHelper.getMeta(item);
         if (!meta.argName) {
           const newCol = isHorz
-            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y?.name ?? null : null
-            : property.name === 'xColumnName' ? this.preview.axisCols.x?.name ?? null : null;
-          if (newCol) {
+            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? axisCols.y?.name ?? null : null
+            : property.name === 'xColumnName' ? axisCols.x?.name ?? null : null;
+          if (newCol && newCol !== meta.funcName) {
             this.editor.inputColumn2Changing = true;
             item.formula = `${wrapCol(newCol)} = ${meta.expression ?? '0'}`;
             const col = this.preview.dataFrame.col(newCol);
@@ -2038,6 +2056,87 @@ export class FormulaLinesDialog {
             this.editor.inputColumn2Changing = false;
           }
         }
+      }
+
+      const siblingAxisCol = (colName?: string): DG.Column | null => {
+        if (!colName)
+          return null;
+        const target = this.preview.dataFrame.col(colName);
+        for (const c of [axisCols.x, axisCols.y])
+          if (c && c.name !== colName && sameGroup(c, target))
+            return c;
+        return null;
+      };
+
+      // Line/band: the leading ${column} follows its same-group sibling onto the axis.
+      if (currentItem.type === ITEM_TYPE.BAND || currentItem.type === ITEM_TYPE.LINE) {
+        // getMeta parses the formula and throws on in-progress/invalid input — bail rather than crash the handler.
+        let lineMeta: DG.FormulaLineMeta;
+        try {
+          lineMeta = DG.FormulaLinesHelper.getMeta(item);
+        }
+        catch {
+          return;
+        }
+        // Band → range column (argName). Line → left side (funcName), but only for two-variable
+        // lines: a constant line has no argName and is already axis-followed by the branch above.
+        const leadingCol = currentItem.type === ITEM_TYPE.BAND
+          ? lineMeta.argName
+          : (lineMeta.argName ? lineMeta.funcName : undefined);
+        const candCol = siblingAxisCol(leadingCol);
+        if (candCol) {
+          // Grouped siblings render identically via d4 substitution, so the preview already
+          // reflects the user's axis change — only the editor's displayed formula needs refreshing.
+          this.editor.inputColumn2Changing = true;
+          item.formula = item.formula!.replace(LEADING_COL_REF, () => wrapCol(candCol.name));
+          this.editor.update(this.currentTable.currentItemIdx, true);
+          this.editor.inputColumn2Changing = false;
+        }
+        return;
+      }
+
+      // Annotation regions: area x/y fields and formula1/2 leading columns follow same-group siblings.
+      const regionIdx = this.currentTable.currentItemIdx - this.preview.formulaLineItems.length;
+      let changed = false;
+
+      if (currentItem.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
+        const region = currentItem as DG.AreaAnnotationRegion;
+        for (const axis of ['x', 'y'] as const) {
+          const map = region[(axis + 'Map') as keyof DG.AreaAnnotationRegion] as string | undefined;
+          const full = region[axis] ?? '';
+          const baseName = map && full.endsWith(map) ? full.substring(0, full.length - map.length - 1) : full;
+          const candCol = siblingAxisCol(baseName);
+          if (candCol) {
+            region[axis] = map ? `${candCol.name} ${map}` : candCol.name;
+            changed = true;
+          }
+        }
+      } else if (currentItem.type === ITEM_TYPE.FORMULA_REGION_ANNOTATION) {
+        const region = currentItem as DG.FormulaAnnotationRegion;
+        for (const key of ['formula1', 'formula2'] as const) {
+          const f = region[key];
+          if (!f)
+            continue;
+          let candCol: DG.Column | null = null;
+          try {
+            candCol = siblingAxisCol(DG.FormulaLinesHelper.getMetaByFormula(f, ITEM_TYPE.LINE).funcName);
+          }
+          catch {
+            continue;
+          }
+          if (candCol) {
+            region[key] = f.replace(LEADING_COL_REF, () => wrapCol(candCol!.name));
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        // Region renders on the current axis via d4 substitution; refresh the editor inputs only
+        // (a preview.update here would re-derive axes and snap 1D value-axis viewers back).
+        this.editor.inputColumn2Changing = true;
+        this.editor.update(regionIdx, false);
+        this.editor.inputColumn2Changing = false;
       }
     }));
   }

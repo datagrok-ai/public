@@ -9,9 +9,18 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
+/** Structural shape of what the demo app needs from a `func` (real DG.Func or project shim). */
+export interface DemoEntryFunc {
+  name: string;
+  description: string;
+  options: {[key: string]: any};
+  package: {name: string};
+  apply(): Promise<any>;
+}
+
 export type DemoFunc = {
   name: string;
-  func: DG.Func,
+  func: DemoEntryFunc,
   category: string;
   path: string;
   keywords: string;
@@ -29,6 +38,31 @@ export class DemoView extends DG.ViewBase {
   private _focusGuardCleanup: (() => void) | null = null;
   DEMO_APP_PATH: string = 'apps/Tutorials/Demo';
 
+  private _addedProjectIds = new Set<string>();
+  public projectsReady: Promise<void>;
+
+  private static _imagePaths = new WeakMap<HTMLElement, string>();
+
+  private static _imageObserver: IntersectionObserver | null =
+    (typeof IntersectionObserver !== 'undefined') ? new IntersectionObserver((entries, obs) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting)
+          continue;
+        const el = entry.target as HTMLElement;
+        obs.unobserve(el);
+        const path = DemoView._imagePaths.get(el);
+        if (path != null)
+          DemoView._loadCardImage(el, path);
+      }
+    }, {rootMargin: '200px'}) : null;
+
+  private static _loadCardImage(el: HTMLElement, path: string): void {
+    fetch(path)
+      .then((r) => r.ok ? r.url : Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`))
+      .then((url) => el.style.backgroundImage = `url(${url})`)
+      .catch((url) => el.style.backgroundImage = `url(${url})`);
+  }
+
   constructor(initVisual: boolean = true) {
     super();
     this.tree = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Demo');
@@ -37,13 +71,125 @@ export class DemoView extends DG.ViewBase {
       this._initTree();
     if (initVisual)
       this._initContent();
+    this.projectsReady = this._initProjects();
+  }
+
+  private async _initProjects(): Promise<void> {
+    const found = await grok.dapi.projects.filter('entityMetaParams.name = "demoPath"').list({pageSize: 50});
+    if (found.length === 0)
+      return;
+    const projects = await Promise.all(found.map((p) => grok.dapi.projects.find(p.id)));
+    let added = 0;
+    for (const p of projects) {
+      if (this._addedProjectIds.has(p.id))
+        continue;
+      const path = p.meta?.demoPath as string | undefined;
+      if (!path)
+        continue;
+      const dir = DEMO_APP_HIERARCHY.children.find((d) => path.includes(d.name));
+      if (!dir)
+        continue;
+      const parts = path.split('|').map((s) => s.trim());
+      const entry: DemoFunc = {
+        name: parts[parts.length - 1],
+        func: this._projectAsFunc(p, path),
+        category: dir.name, path, keywords: '',
+        imagePath: p.pictureUrl,
+      };
+      this.funcs.push(entry);
+      this._addProjectToTree(entry);
+      this._addedProjectIds.add(p.id);
+      added++;
+    }
+    if (added > 0) {
+      this.funcs.sort((a, b) => sortFunctionsByHierarchy(a.func as DG.Func, b.func as DG.Func));
+      if (this.root)
+        this._initContent();
+    }
+  }
+
+  private _projectAsFunc(p: DG.Project, demoPath: string): DemoEntryFunc {
+    return {
+      name: p.name,
+      description: p.description ?? '',
+      options: {[DG.FUNC_OPTIONS.DEMO_PATH]: demoPath},
+      package: {name: 'Project'},
+      apply: () => p.open(),
+    };
+  }
+
+  private _addProjectToTree(entry: DemoFunc): void {
+    const path = entry.path.split('|').map((s) => s.trim());
+    let group: DG.TreeViewGroup = this.tree;
+    let parentName: string;
+    if (path.length > 2) {
+      let gp = path[0];
+      group = this.tree.getOrCreateGroup(path[0], {path: gp}, false);
+      for (let i = 1; i < path.length - 1; i++) {
+        gp += `/${path[i]}`;
+        group = group.getOrCreateGroup(path[i], {path: gp}, false);
+      }
+      parentName = path[path.length - 2];
+    }
+    else {
+      group = this.tree.getOrCreateGroup(entry.category, {path: path[0]}, false);
+      parentName = entry.category;
+    }
+    if (group.items.some((n) => n.text === entry.name))
+      return;
+    const node = group.item(entry.name, {path: entry.path});
+    node.root.onmouseover = (event) => {
+      ui.tooltip.show(entry.func.description ?
+        ui.divV([entry.func.description, ui.element('br'), 'Datagrok project']) :
+        ui.div('Datagrok project'), event.clientX, event.clientY);
+    };
+    node.root.onmouseout = (_) => ui.tooltip.hide();
+    const targetIndex = this._hierarchyInsertIndex(group, parentName, entry.name);
+    if (targetIndex !== null && targetIndex !== group.children.length - 1) {
+      node.remove();
+      group.addNode(node, targetIndex);
+    }
+  }
+
+  /** Index where `name` should sit in `group` based on DEMO_APP_HIERARCHY order, or null if not orderable. */
+  private _hierarchyInsertIndex(group: DG.TreeViewGroup, parentName: string, name: string): number | null {
+    const children = this._findHierarchyChildren(parentName);
+    if (children === null)
+      return null;
+    const targetPos = children.findIndex((c) => c.name === name);
+    if (targetPos < 0)
+      return null;
+    const order = new Map(children.map((c, i) => [c.name, i] as [string, number]));
+    const siblings = group.children.filter((n) => n.text !== name);
+    let index = 0;
+    for (const sib of siblings) {
+      const sibPos = order.get(sib.text) ?? Infinity;
+      if (sibPos < targetPos)
+        index++;
+      else
+        break;
+    }
+    return index;
+  }
+
+  private _findHierarchyChildren(name: string, list: {name: string; children?: any[]}[] = DEMO_APP_HIERARCHY.children): {name: string}[] | null {
+    for (const c of list) {
+      if (c.name === name && c.children)
+        return c.children;
+      if (c.children) {
+        const r = this._findHierarchyChildren(name, c.children);
+        if (r)
+          return r;
+      }
+    }
+    return null;
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
+  public async startDemoFunc(func: DemoEntryFunc, viewPath: string): Promise<void> {
     const splitViewPath = viewPath.split('|');
     const path = splitViewPath.map((s) => s.trim()).join('/');
     const dockNodes = Array.from(grok.shell.dockManager.rootNode.children)
@@ -60,10 +206,9 @@ export class DemoView extends DG.ViewBase {
         el = el.parentElement;
       activeTabContent = el;
     }
-    const updateIndicatorRoot = (activeTabContent ??
-      dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
+    const tabContent = (activeTabContent ?? dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
+    const updateIndicatorRoot = (tabContent.parentElement ?? tabContent) as HTMLElement;
 
-    this._closePrevDemoViews();
     this.currentView = null;
 
     const viewsBefore = new Set<DG.View>(Array.from(grok.shell.views));
@@ -89,6 +234,7 @@ export class DemoView extends DG.ViewBase {
           })
         ])]);
         grok.shell.addView(v);
+        this._closePrevDemoViews();
         this.currentView = v;
         v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
       } finally {
@@ -104,10 +250,10 @@ export class DemoView extends DG.ViewBase {
       const viewBeforeApply = grok.shell.v;
       try {
         await func.apply();
+        this._closePrevDemoViews();
         this.currentView = grok.shell.v;
         if (grok.shell.tv instanceof DG.TableView)
           await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
-        this._initWindowOptions();
       } finally {
         this._tagNewDemoViews(viewsBefore, func.name);
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
@@ -135,11 +281,8 @@ export class DemoView extends DG.ViewBase {
 
   private _tagNewDemoViews(viewsBefore: Set<DG.View>, funcName: string): void {
     for (const v of grok.shell.views) {
-      if (!viewsBefore.has(v)) {
-        try {
-          v.temp['demoApp'] = funcName;
-        } catch (_) {}
-      }
+      if (!viewsBefore.has(v))
+        v.temp['demoApp'] = funcName;
     }
   }
 
@@ -279,22 +422,14 @@ export class DemoView extends DG.ViewBase {
 
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
 
-      const img = ui.div([ui.wait(async () => {
-        let root = ui.div('','img');
-        root.className = 'ui-image';
-        await fetch(`${directionFuncs[i].imagePath}`)
-          .then(response => {
-            if (response.ok) {
-              return Promise.resolve(response.url)
-            } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
-            }
-          })
-          .then((data) => root.style.backgroundImage = `url(${data})`)
-          .catch((data) => root.style.backgroundImage = `url(${data})`);
-        return root;
-        })
-      ]);
+      const imgEl = ui.div('', 'ui-image');
+      if (DemoView._imageObserver != null) {
+        DemoView._imagePaths.set(imgEl, directionFuncs[i].imagePath);
+        DemoView._imageObserver.observe(imgEl);
+      }
+      else
+        DemoView._loadCardImage(imgEl, directionFuncs[i].imagePath);
+      const img = ui.div([imgEl]);
 
       let item = ui.card(ui.divV([
         img,
@@ -314,8 +449,9 @@ export class DemoView extends DG.ViewBase {
         node?.click();
       };
 
-      const packageMessage = `Part of the ${directionFuncs[i].func.package.name === 'Tutorials' ?
-        'platform core' : `${directionFuncs[i].func.package.name} package`}`;
+      const packageMessage = directionFuncs[i].func.package.name === 'Project' ? 'Datagrok project' :
+        `Part of the ${directionFuncs[i].func.package.name === 'Tutorials' ?
+          'platform core' : `${directionFuncs[i].func.package.name} package`}`;
       ui.tooltip.bind(item, () => directionFuncs[i].func.description ?
         ui.divV([directionFuncs[i].func.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
 
@@ -327,7 +463,6 @@ export class DemoView extends DG.ViewBase {
 
   nodeView(viewName: string, path: string): void {
     this._closeDemoScript();
-    this.currentView?.close();
     this.currentView = null;
 
     const view = DG.View.create();
@@ -383,6 +518,8 @@ export class DemoView extends DG.ViewBase {
     const searchInput = this._createSearchInput(directionFuncs, tree);
     view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     grok.shell.addView(view);
+    this._closePrevDemoViews();
+    view.temp['demoApp'] = `_categoryView:${viewName}`;
     this.currentView = view;
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
   }
@@ -474,7 +611,6 @@ export class DemoView extends DG.ViewBase {
         return;
 
       this._closeDemoScript();
-      this.close();
       const panelRoot = this.tree.rootNode.root.parentElement!;
       treeNodeY = panelRoot.scrollTop!;
 
@@ -492,7 +628,7 @@ export class DemoView extends DG.ViewBase {
           this._initWindowOptions();
           this.tree.rootNode.root.focus();
         });
-        const demoFunc = DemoView.findDemoFunc(value.value.path);
+        const demoFunc = this.funcs.find((f) => f.path === value.value.path)?.func ?? DemoView.findDemoFunc(value.value.path);
         await this.startDemoFunc(demoFunc, value.value.path);
       } else {
         this.focusSub = grok.events.onCurrentViewChanged.subscribe(() => {
@@ -504,6 +640,7 @@ export class DemoView extends DG.ViewBase {
         });
         this.nodeView(value.text, value.value.path);
       }
+      this.close();
 
       panelRoot.scrollTo(0, treeNodeY);
     });

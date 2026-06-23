@@ -169,3 +169,78 @@ category('ComputeUtils: Driver run steps sequence', async () => {
     expectDeepEqual(fcnode4.getStateStore().getState('res'), 3);
   });
 });
+
+const configMixedRestrictions: PipelineConfiguration = {
+  id: 'pipelineMix',
+  type: 'static',
+  steps: [
+    {id: 'src1', nqName: 'LibTests:TestAdd2'},
+    {id: 'src2', nqName: 'LibTests:TestAdd2'},
+    {id: 'target', nqName: 'LibTests:TestSub2'},
+  ],
+  links: [
+    {
+      id: 'l-info',
+      from: 'from:src1/res',
+      to: 'to:target/a',
+      defaultRestrictions: {to: 'info'},
+    },
+    {
+      id: 'l-restricted',
+      from: 'from:src2/res',
+      to: 'to:target/b',
+      defaultRestrictions: {to: 'restricted'},
+    },
+  ],
+};
+
+category('ComputeUtils: Driver run steps sequence includeInfo', async () => {
+  test('Should preserve info inputs when includeInfo is false', async () => {
+    const pconf = await getProcessedConfig(configMixedRestrictions);
+    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    await tree.init().toPromise();
+    const src1 = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+    const src2 = tree.nodeTree.getNode([{idx: 1}]).getItem() as FuncCallNode;
+    const target = tree.nodeTree.getNode([{idx: 2}]).getItem() as FuncCallNode;
+    src1.getStateStore().setState('a', 1);
+    src1.getStateStore().setState('b', 2);
+    src2.getStateStore().setState('a', 10);
+    src2.getStateStore().setState('b', 5);
+    await waitForMutations(tree);
+    await src1.getStateStore().run().toPromise();
+    await src2.getStateStore().run().toPromise();
+    await waitForMutations(tree);
+    // simulate user edit on the linked inputs without dropping the link restrictions
+    target.instancesWrapper.editState('a', 100);
+    target.instancesWrapper.editState('b', 7);
+    await waitForMutations(tree);
+    await tree.runSequence(target.uuid, true, false, false).toPromise();
+    await waitForMutations(tree);
+    // info input keeps user override (100), restricted input snaps back to 15: 100 - 15 = 85
+    expectDeepEqual(target.getStateStore().getState('res'), 85);
+  });
+
+  test('Should also reset info inputs when includeInfo is true', async () => {
+    const pconf = await getProcessedConfig(configMixedRestrictions);
+    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    await tree.init().toPromise();
+    const src1 = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+    const src2 = tree.nodeTree.getNode([{idx: 1}]).getItem() as FuncCallNode;
+    const target = tree.nodeTree.getNode([{idx: 2}]).getItem() as FuncCallNode;
+    src1.getStateStore().setState('a', 1);
+    src1.getStateStore().setState('b', 2);
+    src2.getStateStore().setState('a', 10);
+    src2.getStateStore().setState('b', 5);
+    await waitForMutations(tree);
+    await src1.getStateStore().run().toPromise();
+    await src2.getStateStore().run().toPromise();
+    await waitForMutations(tree);
+    target.instancesWrapper.editState('a', 100);
+    target.instancesWrapper.editState('b', 7);
+    await waitForMutations(tree);
+    await tree.runSequence(target.uuid, true, false, true).toPromise();
+    await waitForMutations(tree);
+    // both inputs snap back: 3 - 15 = -12
+    expectDeepEqual(target.getStateStore().getState('res'), -12);
+  });
+});

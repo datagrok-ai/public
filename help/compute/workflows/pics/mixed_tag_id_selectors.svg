@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 510" width="800" height="510" font-family="sans-serif" font-size="14">
+  <style>
+    text { fill: #222; }
+    .query { font-family: monospace; font-weight: 600; font-size: 14px; }
+    .node { fill: #dee7e5; stroke: #3465a4; stroke-width: 1; }
+    .container { fill: #f0f0f5; stroke: #888; stroke-width: 1; }
+    .tagmatch { fill: #ffe994; stroke: #b8860b; stroke-width: 2; }
+    .finalmatch { fill: #afd095; stroke: #ff4000; stroke-width: 2; }
+    .nl { font-size: 13px; }
+    .tag { font-size: 11px; fill: #666; font-style: italic; }
+    .caption { font-size: 13px; fill: #555; }
+  </style>
+
+  <text x="20" y="26" font-size="18" font-weight="600">Mixing tags and ids</text>
+
+  <!-- Legend -->
+  <rect x="20" y="40" width="18" height="16" class="tagmatch"/>
+  <text x="44" y="54" font-size="13">step 1 (tag) match</text>
+  <rect x="190" y="40" width="18" height="16" class="finalmatch"/>
+  <text x="214" y="54" font-size="13">final match</text>
+  <rect x="320" y="40" width="18" height="16" class="container"/>
+  <text x="344" y="54" font-size="13">container</text>
+  <rect x="430" y="40" width="18" height="16" class="node"/>
+  <text x="454" y="54" font-size="13">step</text>
+
+  <!-- ============== Tree 1: step 1 — #all(metric) ============== -->
+  <g transform="translate(20, 76)">
+    <text x="0" y="14" class="query">step 1: #all(metric)</text>
+
+    <!-- myworkflow (root container) -->
+    <rect x="0" y="28" width="240" height="24" rx="3" class="container"/>
+    <text x="10" y="44" class="nl">myworkflow</text>
+
+    <!-- subA (step 1 match) -->
+    <rect x="20" y="60" width="220" height="24" rx="3" class="tagmatch"/>
+    <text x="30" y="76" class="nl">subA</text>
+    <text x="230" y="76" text-anchor="end" class="tag">(metric)</text>
+
+    <!-- subA / script1 -->
+    <rect x="40" y="92" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="108" class="nl">script1</text>
+
+    <!-- subA / script2 -->
+    <rect x="40" y="124" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="140" class="nl">script2</text>
+
+    <!-- subA / helper -->
+    <rect x="40" y="156" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="172" class="nl">helper</text>
+
+    <!-- subB -->
+    <rect x="20" y="188" width="220" height="24" rx="3" class="container"/>
+    <text x="30" y="204" class="nl">subB</text>
+
+    <!-- subB / script1 -->
+    <rect x="40" y="220" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="236" class="nl">script1</text>
+
+    <!-- subC (step 1 match) -->
+    <rect x="20" y="252" width="220" height="24" rx="3" class="tagmatch"/>
+    <text x="30" y="268" class="nl">subC</text>
+    <text x="230" y="268" text-anchor="end" class="tag">(metric)</text>
+
+    <!-- subC / script1 -->
+    <rect x="40" y="284" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="300" class="nl">script1</text>
+
+    <!-- subC / helper -->
+    <rect x="40" y="316" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="332" class="nl">helper</text>
+
+    <!-- subC / script2 -->
+    <rect x="40" y="348" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="364" class="nl">script2</text>
+  </g>
+
+  <!-- ============== Tree 2: step 2 — /last(script1|script2)/input1 ============== -->
+  <g transform="translate(320, 76)">
+    <text x="0" y="14" class="query">step 2: /last(script1|script2)/input1</text>
+
+    <rect x="0" y="28" width="240" height="24" rx="3" class="container"/>
+    <text x="10" y="44" class="nl">myworkflow</text>
+
+    <!-- subA — still in play -->
+    <rect x="20" y="60" width="220" height="24" rx="3" class="tagmatch"/>
+    <text x="30" y="76" class="nl">subA</text>
+    <text x="230" y="76" text-anchor="end" class="tag">(metric)</text>
+
+    <rect x="40" y="92" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="108" class="nl">script1</text>
+
+    <!-- subA / script2 — FINAL MATCH (last of script1|script2 under subA) -->
+    <rect x="40" y="124" width="200" height="24" rx="3" class="finalmatch"/>
+    <text x="50" y="140" class="nl">script2</text>
+
+    <rect x="40" y="156" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="172" class="nl">helper</text>
+
+    <rect x="20" y="188" width="220" height="24" rx="3" class="container"/>
+    <text x="30" y="204" class="nl">subB</text>
+
+    <rect x="40" y="220" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="236" class="nl">script1</text>
+
+    <!-- subC — still in play -->
+    <rect x="20" y="252" width="220" height="24" rx="3" class="tagmatch"/>
+    <text x="30" y="268" class="nl">subC</text>
+    <text x="230" y="268" text-anchor="end" class="tag">(metric)</text>
+
+    <rect x="40" y="284" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="300" class="nl">script1</text>
+
+    <rect x="40" y="316" width="200" height="24" rx="3" class="node"/>
+    <text x="50" y="332" class="nl">helper</text>
+
+    <!-- subC / script2 — FINAL MATCH (last of script1|script2 under subC) -->
+    <rect x="40" y="348" width="200" height="24" rx="3" class="finalmatch"/>
+    <text x="50" y="364" class="nl">script2</text>
+  </g>
+
+  <!-- Caption -->
+  <text x="20" y="485" class="caption">`#all(metric)` selects subA and subC (step 1). For each, `last(script1|script2)` walks their direct</text>
+  <text x="20" y="503" class="caption">children and picks the last with id `script1` or `script2`. `/input1` then targets the input on that script.</text>
+</svg>

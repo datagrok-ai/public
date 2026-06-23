@@ -9,8 +9,8 @@
  * inserts into the generated body. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode, FlowConnection} from '../rete/scheme';
-import {FuncNode} from '../rete/nodes/func-node';
+import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
+import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
@@ -60,10 +60,12 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     if (kind === 'input') {
       const paramName = String(node.properties['paramName'] ?? 'input');
       usedVarNames.add(paramName);
-      // Map every output slot of an input node to the param name.
-      for (const key of Object.keys(node.outputs))
+      // Map every data output slot of an input node to the param name (the
+      // exec-out ordering port carries no data and is skipped).
+      const outKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
+      for (const key of outKeys)
         outputVarMap.set(`${nodeId}:${key}`, paramName);
-      const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
+      const firstOutKey = outKeys[0] ?? 'value';
       steps.push({
         nodeId, nodeType: 'input', funcName: '',
         variableName: paramName,
@@ -77,7 +79,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
 
     if (kind === 'output') {
       const paramName = String(node.properties['paramName'] ?? 'result');
-      const firstInKey = Object.keys(node.inputs)[0] ?? 'value';
+      const firstInKey = Object.keys(node.inputs).find((k) => !isExecKey(k)) ?? 'value';
       const inputExpr = resolveInputExpr(nodeId, firstInKey, incoming, outputVarMap);
       steps.push({
         nodeId, nodeType: 'output', funcName: '',
@@ -92,10 +94,10 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
 
     if (kind === 'utility') {
       // Breakpoint: pure pass-through — output slot resolves to its input expr.
-      if (node.label === 'Breakpoint') {
+      if (utilityKind(node) === 'Breakpoint') {
         const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap);
         for (const key of Object.keys(node.outputs))
-          outputVarMap.set(`${nodeId}:${key}`, inputExpr);
+          if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, inputExpr);
         steps.push({
           nodeId, nodeType: 'utility', funcName: 'Breakpoint',
           variableName: '',
@@ -110,15 +112,16 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
       const step = compileUtilityNode(node, incoming, outputVarMap, usedVarNames);
       steps.push(step);
       for (const key of Object.keys(node.outputs))
-        outputVarMap.set(`${nodeId}:${key}`, step.variableName);
+        if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, step.variableName);
       continue;
     }
 
     // -------- func step --------
+    // Exec ordering ports carry no data — exclude them from data resolution.
     const funcName = node.dgFuncName || node.label;
     const ptCount = node.passthroughCount;
-    const inputKeys = Object.keys(node.inputs);
-    const outputKeys = Object.keys(node.outputs);
+    const inputKeys = Object.keys(node.inputs).filter((k) => !isExecKey(k));
+    const outputKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
 
     // Variable name based on title + first real output's name.
     const realOutputKeys = outputKeys.filter((k) => !k.endsWith(PASSTHROUGH_SUFFIX));
@@ -129,17 +132,33 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     usedVarNames.add(varName);
 
     // Resolve inputs: connected → expression from outputVarMap, else hardcoded.
+    // Column / column-list values are deferred to a second pass: they compile to
+    // `table.col(...)` against an associated dataframe input, which must be
+    // resolved first.
     const inputMap = new Map<string, string>();
     for (const key of inputKeys) {
       const conn = incoming.get(nodeId)?.get(key);
       if (conn) {
         inputMap.set(key, resolveConnExpr(conn, outputVarMap));
-      } else if (key in node.inputValues) {
-        const val = node.inputValues[key];
-        const slotType = (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
-        if (val !== undefined)
-          inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
+        continue;
       }
+      if (!(key in node.inputValues)) continue;
+      const slotType = slotTypeOf(node, key);
+      if (slotType === 'column' || slotType === 'column_list') continue; // pass 2
+      const val = node.inputValues[key];
+      if (val !== undefined)
+        inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
+    }
+    // Pass 2: inline unconnected column / column-list values as `table.col(...)`
+    // expressions, resolving the table from the node's `columnTables` association.
+    for (const key of inputKeys) {
+      if (inputMap.has(key) || !(key in node.inputValues)) continue;
+      const slotType = slotTypeOf(node, key);
+      if (slotType !== 'column' && slotType !== 'column_list') continue;
+      const raw = String(node.inputValues[key] ?? '').trim();
+      if (raw === '') continue;
+      const tableExpr = tableExprForColumnParam(node, key, inputMap);
+      if (tableExpr) inputMap.set(key, columnSelectionExpr(slotType, raw, tableExpr));
     }
 
     // Map output slots: pass-throughs → corresponding input expr; real → varName.
@@ -182,19 +201,68 @@ function compileUtilityNode(
 
   const inputMap = new Map<string, string>();
   for (const key of Object.keys(node.inputs)) {
+    if (isExecKey(key)) continue;
     const conn = incoming.get(node.id)?.get(key);
     if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap));
   }
 
-  const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
+  const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k)) ?? 'value';
   return {
-    nodeId: node.id, nodeType: 'utility', funcName: node.label,
+    nodeId: node.id, nodeType: 'utility', funcName: utilityKind(node),
     variableName: varName,
     inputs: inputMap,
     outputs: new Map([[firstOutKey, varName]]),
     properties: {...node.properties},
     inputValues: {...node.inputValues},
   };
+}
+
+/** Stable utility node kind — the trailing segment of the registered type name
+ *  (`Constants/String` → `String`). Labels are user-editable (constant nodes
+ *  title themselves `const: <value>`), so emission dispatch must not read
+ *  `node.label`; it stays only a fallback for nodes created outside the
+ *  factory (tests). */
+function utilityKind(node: FlowNode): string {
+  return node.dgTypeName?.split('/').pop() ?? node.label;
+}
+
+function slotTypeOf(node: FlowNode, key: string): string | undefined {
+  return (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
+}
+
+/** Resolve the table expression a column/column-list input selects from: the
+ *  dataframe input recorded in the node's `columnTables` association, falling
+ *  back (older graphs / hand-built nodes) to the numeric-suffix pairing then
+ *  the first connected dataframe input. Returns undefined when no dataframe
+ *  input is resolvable, in which case the column value is dropped. */
+function tableExprForColumnParam(
+  node: FlowNode, paramName: string, inputMap: Map<string, string>,
+): string | undefined {
+  const associations = node.properties['columnTables'] as Record<string, string> | undefined;
+  const explicit = associations?.[paramName];
+  if (explicit && inputMap.has(explicit)) return inputMap.get(explicit);
+
+  const dataframeKeys = (Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>)
+    .filter(([, inp]) => inp?.socket.dgType === 'dataframe')
+    .map(([k]) => k);
+  if (dataframeKeys.length === 0) return undefined;
+  const fallback = defaultTableParam(paramName, dataframeKeys);
+  if (fallback && inputMap.has(fallback)) return inputMap.get(fallback);
+  for (const k of dataframeKeys) if (inputMap.has(k)) return inputMap.get(k);
+  return undefined;
+}
+
+/** `table.col('name')` for a column, `[table.col('a'), table.col('b')]` for a
+ *  column-list (comma-separated, trimmed) — identical to the Select Column(s)
+ *  utility emission, so inlined columns and explicit nodes generate the same code. */
+function columnSelectionExpr(slotType: string, raw: string, tableExpr: string): string {
+  if (slotType === 'column') return `${tableExpr}.col('${escapeColumnName(raw)}')`;
+  const names = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  return `[${names.map((n) => `${tableExpr}.col('${escapeColumnName(n)}')`).join(', ')}]`;
+}
+
+function escapeColumnName(name: string): string {
+  return name.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
 }
 
 function resolveInputExpr(

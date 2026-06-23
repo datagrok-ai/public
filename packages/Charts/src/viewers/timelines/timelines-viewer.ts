@@ -25,6 +25,7 @@ export class TimelinesViewer extends EChartViewer {
   markerSize: number;
   markerPosition: markerPosition;
   lineWidth: number;
+  autoSize: boolean;
   dateFormat: string;
   axisPointer: string;
   showZoomSliders: boolean;
@@ -65,6 +66,8 @@ export class TimelinesViewer extends EChartViewer {
     this.markerPosition = <markerPosition> this.string('markerPosition', 'main line',
       {choices: ['main line', 'above main line', 'scatter']});
     this.lineWidth = this.int('lineWidth', 3);
+    this.autoSize = this.bool('autoSize', true,
+      {description: 'Auto-scale marker size and line width based on the Y-axis zoom level'});
     this.dateFormat = this.string('dateFormat'); // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       {choices: ['cross', 'line', 'shadow', 'none']});
@@ -100,10 +103,6 @@ export class TimelinesViewer extends EChartViewer {
         this.chart.getOption().dataZoom!.forEach((z, i) => {
           this.zoomState[i][0] = z.start!;
           this.zoomState[i][1] = z.end!;
-          if (z.type === 'slider' && Object.keys(z).includes('yAxisIndex')) {
-            this.lineWidth = z.end! - z.start! < 60 ? z.end! - z.start! < 30 ? 3 : 2 : 1;
-            this.markerSize = z.end! - z.start! < 60 ? z.end! - z.start! < 30 ? 6 : 4 : 3;
-          }
         });
       });
 
@@ -322,17 +321,24 @@ export class TimelinesViewer extends EChartViewer {
       const start = api.coord!([api.value!(1), categoryIndex]);
       const end = api.coord!([api.value!(2), categoryIndex]);
       const width = end[0] - start[0];
+      let markerSize = this.markerSize;
+      let lineWidth = this.lineWidth;
+      if (this.autoSize) {
+        const yZoom = this.zoomState[3][1] - this.zoomState[3][0];
+        lineWidth = yZoom < 60 ? (yZoom < 30 ? 3 : 2) : 1;
+        markerSize = yZoom < 60 ? (yZoom < 30 ? 6 : 4) : 3;
+      }
 
       const group: echarts.EChartOption.SeriesCustom.RenderItemReturnGroup = {
         type: 'group',
         children: [],
       };
 
-      if (isNaN(api.value!(1)) || isNaN(api.value!(2)) || this.markerSize > width) {
+      if (isNaN(api.value!(1)) || isNaN(api.value!(2)) || markerSize > width) {
         const xPos = (shift: number): number => isNaN(start[0]) ? end[0] : start[0] - shift;
         const yPos = (shift: number): number => end[1] - (this.markerPosition === 'main line' ? shift :
-          this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
-            ((params.dataIndex! % 2) * 2 - 1)*(this.markerSize * 3));
+          this.markerPosition === 'above main line' ? Math.max(markerSize, lineWidth) + shift :
+            ((params.dataIndex! % 2) * 2 - 1)*(markerSize * 3));
 
         // echarts.EChartOption.SeriesCustom.RenderItemReturnCircle | echarts.EChartOption.SeriesCustom.RenderItemReturnRect | echarts.EChartOption.SeriesCustom.RenderItemReturnRing
         const marker: any = {
@@ -340,17 +346,17 @@ export class TimelinesViewer extends EChartViewer {
           shape: this.marker === 'circle' ? {
             cx: xPos(0),
             cy: yPos(0),
-            r: this.markerSize / 2,
+            r: markerSize / 2,
           } : this.marker === 'ring' ? {
             cx: xPos(0),
             cy: yPos(0),
-            r: this.markerSize / 2,
-            r0: this.markerSize / 4,
+            r: markerSize / 2,
+            r0: markerSize / 4,
           } : {
-            x: xPos(this.markerSize / 2),
-            y: yPos(this.markerSize / 2),
-            width: this.markerSize,
-            height: this.markerSize,
+            x: xPos(markerSize / 2),
+            y: yPos(markerSize / 2),
+            width: markerSize,
+            height: markerSize,
           },
           style: {
             fill: api.value!(5) ? this.selectionColor :
@@ -363,15 +369,15 @@ export class TimelinesViewer extends EChartViewer {
           marker.type = 'rect';
           marker.x = xPos(0);
           marker.y = yPos(0);
-          marker.shape.x = -this.markerSize / 2;
-          marker.shape.y = -this.markerSize / 2;
-          marker.shape.r = this.markerSize / 4;
+          marker.shape.x = -markerSize / 2;
+          marker.shape.y = -markerSize / 2;
+          marker.shape.r = markerSize / 4;
           marker.rotation = 0.785398;
         } else if (this.marker === 'rect') {
           marker.x = 0;
           marker.y = 0;
-          marker.shape.x = xPos(this.markerSize / 2);
-          marker.shape.y = yPos(this.markerSize / 2);
+          marker.shape.x = xPos(markerSize / 2);
+          marker.shape.y = yPos(markerSize / 2);
           marker.shape.r = 0;
           marker.rotation = 0;
         }
@@ -380,9 +386,9 @@ export class TimelinesViewer extends EChartViewer {
       } else {
         const rectShape = echarts.graphic.clipRectByRect({
           x: start[0],
-          y: start[1] - this.lineWidth / 2,
+          y: start[1] - lineWidth / 2,
           width: width,
-          height: this.lineWidth,
+          height: lineWidth,
         }, {
           x: params.coordSys!.x!,
           y: params.coordSys!.y!,
@@ -391,11 +397,11 @@ export class TimelinesViewer extends EChartViewer {
         });
 
         if (overlap) {
-          const height = api.size!([0, 1])[1];
-          const offset = Math.max(this.markerSize * 2, this.lineWidth);
+          const rowHeight = api.size!([0, 1])[1];
+          const offset = Math.max(markerSize * 2, lineWidth);
           // Shift along the Y axis
           rectShape.y += (this.count % 3) ? (this.count % 3 === 2) ?
-            0 : offset-height/2 : height/2-offset;
+            0 : offset-rowHeight/2 : rowHeight/2-offset;
           this.count += 1;
         }
 

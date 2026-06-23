@@ -1,7 +1,8 @@
 ---
 title: "Layout"
 sidebar_position: 2
-format: mdx
+mdx:
+  format: mdx
 ---
 
 In Datagrok, the visual representation of data (a _layout_) is separate from the data itself

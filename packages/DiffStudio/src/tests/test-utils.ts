@@ -13,34 +13,43 @@ import {DF_NAME} from '../constants';
 const TIMEOUT = 10000;
 const MIN_ROWS = 1;
 
-/** Template for testing solving ODEs */
+/** Parse, generate, run an IVP problem and assert each stage produced a result. */
+export async function checkIvpSolves(problem: string): Promise<void> {
+  let ivp: IVP | null = null;
+  let code: string | null = null;
+  let script: DG.Script | null = null;
+  let params: Record<string, number> | null = null;
+  let call: DG.FuncCall | null = null;
+  let solution: DG.DataFrame | null = null;
+
+  try {
+    ivp = getIVP(problem);
+    code = getScriptLines(ivp).join('\n');
+    script = DG.Script.create(code);
+    params = getScriptParams(ivp);
+    call = script.prepare(params);
+
+    await call.call();
+
+    solution = call.outputs[DF_NAME];
+  } catch (e) {}
+
+  expect( ivp !== null, true, 'Failed to parse equations');
+  expect( code !== null, true, 'Failed to create JS-code');
+  expect( script !== null, true, 'Failed to create the platform script');
+  expect( params !== null, true, 'Failed to get script params');
+  expect( call !== null, true, 'Failed to get funccall');
+  expect( solution !== null, true, 'Failed to apply numerical method');
+  expect( solution!.rowCount >= MIN_ROWS, true, 'Solving failed: an empty dataframe');
+}
+
+/** Template for testing solving ODEs from an inline problem string. */
 export function testTemplate(name: string, problem: string): void {
-  test(name, async () => {
-    let ivp: IVP | null = null;
-    let code: string | null = null;
-    let script: DG.Script | null = null;
-    let params: Record<string, number> | null = null;
-    let call: DG.FuncCall | null = null;
-    let solution: DG.DataFrame | null = null;
+  test(name, async () => await checkIvpSolves(problem), {timeout: TIMEOUT});
+};
 
-    try {
-      ivp = getIVP(problem);
-      code = getScriptLines(ivp).join('\n');
-      script = DG.Script.create(code);
-      params = getScriptParams(ivp);
-      call = script.prepare(params);
-
-      await call.call();
-
-      solution = call.outputs[DF_NAME];
-    } catch (e) {}
-
-    expect( ivp !== null, true, 'Failed to parse equations');
-    expect( code !== null, true, 'Failed to create JS-code');
-    expect( script !== null, true, 'Failed to create the platform script');
-    expect( params !== null, true, 'Failed to get script params');
-    expect( call !== null, true, 'Failed to get funccall');
-    expect( solution !== null, true, 'Failed to apply numerical method');
-    expect( solution.rowCount >= MIN_ROWS, true, 'Solving failed: an empty dataframe');
-  }, {timeout: TIMEOUT});
+/** Template for testing a model shipped as an `.ivp` file under `files/<filePath>`. */
+export function testIvpFile(name: string, filePath: string): void {
+  test(name, async () => await checkIvpSolves(await _package.files.readAsText(filePath)),
+    {timeout: TIMEOUT});
 };

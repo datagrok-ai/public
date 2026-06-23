@@ -142,6 +142,54 @@
   z-index: 999;
 }
 
+/* ---------- overview minimap (bottom-right, screen-space) ---------- */
+.ff-minimap {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 800;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #cfd8dc;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  user-select: none;
+}
+.ff-minimap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #607d8b;
+  background: #eceff1;
+  cursor: default;
+}
+.ff-minimap-toggle {
+  cursor: pointer;
+  color: #90a4ae;
+  padding: 0 2px;
+  line-height: 1;
+}
+.ff-minimap-toggle:hover { color: #455a64; }
+.ff-minimap-body {
+  display: block;
+  cursor: pointer;
+  line-height: 0;
+}
+.ff-minimap[data-collapsed="true"] .ff-minimap-body { display: none; }
+
+.ff-minimap-svg { display: block; background: #f7f9fa; }
+.ff-minimap-node { stroke: #ffffff; stroke-width: 0.5; opacity: 0.9; }
+.ff-minimap-viewport {
+  fill: rgba(33, 150, 243, 0.12);
+  stroke: #1976d2;
+  stroke-width: 1.2;
+}
+
 /* Drag-output suggestion popup. Positioned absolute at the pointer release
    point in viewport coordinates and clamped to fit by the JS that builds it. */
 .ff-suggest-popup {
@@ -403,6 +451,30 @@
   box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.12);
 }
 
+/* Column input + table picker laid out side by side (≈70% / 30%). The column
+   field flexes to fill remaining space; the table chooser is a fixed share. */
+.funcflow-col-grid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.funcflow-col-input-cell {
+  flex: 1 1 70%;
+  min-width: 0;
+}
+
+.funcflow-col-table-cell {
+  flex: 0 0 30%;
+  min-width: 0;
+}
+
+.funcflow-col-input-cell .funcflow-prop-textarea,
+.funcflow-col-table-cell .funcflow-prop-input {
+  width: 100%;
+}
+
 .funcflow-prop-toggle-row {
   flex-direction: row !important;
   align-items: center;
@@ -452,6 +524,7 @@
   border-top: 1px solid var(--grey-2, #ddd);
   background: var(--grey-1, #f7f8fa);
   min-height: 24px;
+  flex-grow: unset !important;
 }
 
 /* Script preview dialog */
@@ -816,6 +889,57 @@
   opacity: 0.4;
   stroke-dasharray: 3 3;
   animation: none;
+}
+
+/* ---------- execution-ordering (exec) ports + order edges ---------- */
+
+/* Exec ports sit at the node's top corners (KNIME flow-variable style): a small
+   gray square instead of a round data dot. The row itself has no height — the
+   ports are absolutely positioned so they straddle the top edge. */
+.ff-node-exec-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.ff-exec-port {
+  position: absolute;
+  top: -5px;
+  pointer-events: auto;
+  /* Flex (like .ff-socket-row) so the rete socket <span> — which the connection
+     plugin registers and hit-tests via elementsFromPoint — blockifies into a
+     real box. An inline span here collapses to 0 height, so the plugin never
+     picks the socket and the click falls through to the node drag. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ff-exec-in { left: 8px; }
+.ff-exec-out { right: 8px; }
+
+.ff-exec-port .ff-socket {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #9e9e9e !important;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px #757575;
+  cursor: crosshair;
+}
+.ff-exec-port .ff-socket:hover { transform: scale(1.25); }
+
+/* Order edges: static gray dotted line, no data-flow march — reads clearly as
+   "control, not data". Placed after the status overrides so it wins on ties. */
+.ff-connection[data-order="true"] .ff-connection-path,
+.ff-connection[data-order="true"][data-status] .ff-connection-path {
+  stroke: #9e9e9e !important;
+  stroke-width: 1.8;
+  stroke-dasharray: 2 4;
+  animation: none;
+  opacity: 0.85;
 }
 
 /* Single keyframe used by all the dash-march states above. Negative offset

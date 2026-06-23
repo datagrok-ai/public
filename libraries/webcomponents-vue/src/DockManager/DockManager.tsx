@@ -19,6 +19,7 @@ export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
     activePanelTitle: Object as Vue.PropType<String>,
+    preferredPanelTitle: Object as Vue.PropType<String>,
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
@@ -27,10 +28,12 @@ export const DockManager = Vue.defineComponent({
     'panelClosed': (_element: HTMLElement) => true,
     'panelOpened': (_element: HTMLElement) => true,
     'update:activePanelTitle': (_newPanel: string | null, _prevPanel: string | null) => true,
+    'tabClicked': (_title: string | null) => true,
   },
   methods: {
     'saveLayout': (): string => '',
     'loadLayout': async (_a: string) => void(0),
+    'setActivePanel': (_t: string | null | undefined) => void(0),
   },
   setup(props, {slots, emit, expose}) {
     Vue.onRenderTriggered((event) => {
@@ -39,11 +42,15 @@ export const DockManager = Vue.defineComponent({
 
     const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
     const activePanelTitle = Vue.computed(() => props.activePanelTitle);
+    const preferredPanelTitle = Vue.computed(() => props.preferredPanelTitle);
 
     const saveLayout = () => dockSpawnRef.value?.saveLayout();
     const loadLayout = (layout: string) => dockSpawnRef.value?.loadLayout(layout);
+    const setActivePanel = (t: string | null | undefined) => {
+      if (dockSpawnRef.value && t != null) dockSpawnRef.value.activePanelTitle = t;
+    };
 
-    expose({saveLayout, loadLayout});
+    expose({saveLayout, loadLayout, setActivePanel});
 
     const onManagerInitFinished = (ev: any) => {
       const manager = ev.detail;
@@ -69,9 +76,11 @@ export const DockManager = Vue.defineComponent({
       <dock-spawn-ts
         style={{'width': '100%'}}
         activePanelTitle={activePanelTitle.value}
+        preferredPanelTitle={preferredPanelTitle.value}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onPanelOpened={(ev: {detail: any}) => emit('panelOpened', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
+        onTabClicked={(ev: {detail: {title: string | null}}) => emit('tabClicked', ev.detail.title)}
         onManagerInitFinished={onManagerInitFinished}
         ref={dockSpawnRef}
       >

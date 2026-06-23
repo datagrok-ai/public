@@ -7,13 +7,16 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
-import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
+import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIWindowManager} from './ai-window';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {executeSingleBlock, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
+import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {_package} from '../package';
 
 interface ExecutionPlan {
   plan: string[];
@@ -45,6 +48,7 @@ interface StreamingOpts {
   outputSchema?: object;
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
+
 
 export const RENDERED_EVENT = 'grokky-rendered';
 
@@ -107,7 +111,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
   return widget;
 }
 
@@ -128,18 +132,18 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
         return;
 
       const codeAcc = ui.accordion();
-      const code = '```datagrok-exec\n' + result.code + '\n```';
-      codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
+      const fencedCode = '```datagrok-exec\n' + result.code + '\n```';
+      codeAcc.addPane('Code', () => createStyledMarkdown(fencedCode), false);
       host.appendChild(codeAcc.root);
 
       let resolveExec: () => void = () => {};
       const execDone = new Promise<void>((res) => { resolveExec = res; });
       host.appendChild(ui.wait(async () => {
         try {
-          const execResults = await executeDatagrokBlocks(code, grok.shell.v);
-          return ui.divV(execResults);
-        } catch (e: any) {
-          return ui.info(`Execution error: ${e?.message ?? e}`);
+          const {element, error} = await executeSingleBlock(result.code, grok.shell.v, 0);
+          if (error)
+            return ui.info(`Execution error: ${error.error}`);
+          return element ?? ui.divText('');
         } finally {
           resolveExec();
         }
@@ -178,25 +182,23 @@ export function setupSearchUI() {
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const aiIcon = ui.iconFA('magic', () => { aiCombinedSearch(searchInput.value); }, 'Ask AI');
-    aiIcon.style.cursor = 'pointer';
-    aiIcon.style.color = 'var(--blue-1)';
-    aiIcon.style.marginLeft = '4px';
-    aiIcon.style.marginRight = '4px';
-    parent.appendChild(aiIcon);
+    const wandIcon = ui.iconFA('magic', async (e) => {
+      const scopes = await resolveScopes('powerSearch');
+      showSuggestionsMenu(scopes, (prompt) => {
+        searchInput.value = prompt;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+        // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
+        // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
+        setTimeout(() => aiCombinedSearch(prompt), 600);
+      }, e);
+    }, 'Prompt suggestions');
+    wandIcon.classList.add('grokky-search-wand');
+    parent.insertBefore(wandIcon, searchInput);
 
-    const onSearchChanged = () => {
-      if (!searchInput.value?.trim())
-        aiIcon.style.display = 'none';
-      else
-        aiIcon.style.display = 'flex';
-    };
-    searchInput.addEventListener('input', onSearchChanged);
-    // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
     if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
-      searchHelpDiv.style.visibility = 'hidden';
+      searchHelpDiv.style.display = 'none';
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
@@ -205,10 +207,8 @@ export function setupSearchUI() {
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
       if (searchHelpDiv)
-        searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
+        searchHelpDiv.style.display = searchInput.value?.trim().split(' ').length > 1 ? '' : 'none';
     });
-
-    onSearchChanged();
   }
 
   const retries = 0;
@@ -224,7 +224,7 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);
@@ -243,8 +243,10 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const catalogs = allDbInfos.map((d) => d.name);
   const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
+  initAIWindow();
   const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  panel.show();
+  AIWindowManager.instance.register(v, panel);
+  AIWindowManager.instance.showPanel(panel, false);
 
   let sqlContext: SQLGenerationContext | null = null;
 
@@ -262,6 +264,7 @@ export async function runPromptWithLifecycle(
   view: DG.ViewBase,
   quotaCategory: string,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+  displayPrompt?: string,
 ): Promise<void> {
   if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
@@ -282,12 +285,17 @@ export async function runPromptWithLifecycle(
     // Echo the user message before routing so it never disappears, even when
     // grok.ai.processPrompt's built-in handler claims the prompt.
     session = panel.startChatSession();
-    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
+    if (displayPrompt) {
+      session.session.addEngineMessage({role: 'user', content: [{type: 'text', text: prompt}]});
+      session.session.addUiMessage(displayPrompt, false, {system: true});
+    } else
+      session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
     if (await grok.ai.processPrompt(prompt)) {
       // Built-in handler claimed the prompt — no AI response, just a green check next to it.
       session.session.markHandledNatively();
       session.endSession();
+      panel.pushNativeContext(prompt);
       return;
     }
   }
@@ -300,128 +308,173 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
-  const chatSession = existingSession ?? panel.startChatSession();
-  const sessionId = panel.sessionId;
-  let accumulated = '';
-  let toolStatus = '';
-  const subs: {unsubscribe: () => void}[] = [];
-  const cleanup = () => subs.forEach((s) => s.unsubscribe());
-
-  const forSession = <T extends {sessionId: string}>(
-    source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
-    handler: (evt: T) => void,
-  ) => subs.push(source.subscribe((evt) => {
-      if (evt.sessionId === sessionId)
-        handler(evt);
-    }));
-
-  const endWithError = (msg: string) => {
-    panel.clearStreaming();
-    grok.shell.error(msg);
-    chatSession.endSession();
-    cleanup();
-  };
-
+async function runClaudeStreaming(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+  systemPromptMode?: string,
+  existingSession?: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<void> {
+  const session = existingSession ?? panel.startChatSession();
+  if (!existingSession)
+    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
   try {
-    const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
-
-    await client.ensureConnected();
-
-    if (!existingSession)
-      chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
-
-    forSession(client.onChunk, (evt) => {
-      accumulated += evt.content;
-      toolStatus = '';
-      panel.updateStreaming(accumulated, chatSession.loader);
-    });
-
-    forSession(client.onToolActivity, (evt) => {
-      toolStatus = `\n\n---\n**${evt.summary}**`;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
-    });
-
-    forSession(client.onToolResult, (evt) => {
-      toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
-    });
-
-    forSession(client.onFinal, (evt) => {
-      panel.cancelInputRequest();
-      // evt.content is the SDK's result.result — only the final assistant turn after the last
-      // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
-      // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
-      const fullContent = accumulated || evt.content;
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-      panel.finalizeStreaming(fullContent, view);
-      chatSession.endSession();
-      cleanup();
-    });
-
-    forSession(client.onError, (evt) => {
-      panel.cancelInputRequest();
-      endWithError(`Claude: ${evt.message}`);
-    });
-
-    forSession(client.onAborted, () => {
-      panel.cancelInputRequest();
-      panel.clearStreaming();
-      chatSession.session.addUiMessage('**Processing aborted by user**', false);
-      chatSession.endSession();
-      cleanup();
-    });
-
-    forSession(client.onInputRequest, async (evt) => {
-      // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
-      const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
-      if (clientToolHandler && mcpToolName !== evt.toolName) {
-        try {
-          const result = await clientToolHandler(mcpToolName, evt.input);
-          client.respondToInput(sessionId, result);
-        } catch (e: any) {
-          client.respondToInput(sessionId, `Error: ${e.message}`);
-        }
-        return;
-      }
-      // Default: AskUserQuestion
-      accumulated = '';
-      toolStatus = '';
-      panel.clearStreaming();
-      const response = await panel.showInputRequest(evt.input);
-      if (response) {
-        client.respondToInput(sessionId, response);
-        const answerText = Object.values(response.answers).join(', ');
-        chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
-      }
-    });
-
-    subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
-
-    subs.push(getAIAbortSubscription().subscribe(() => {
-      client.abort(sessionId);
-    }));
-
-    const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-    client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
-  } catch (e: any) {
-    panel.clearStreaming();
-    grok.shell.error(`Claude runtime: ${e.message}`);
-    console.error('Claude runtime error:', e);
-    chatSession.endSession();
-    cleanup();
+    await streamOnce(panel, userPrompt, view, clientToolHandler, systemPromptMode, session);
+  } finally {
+    session.endSession();
   }
 }
 
-let _shellAIPanel: ShellAIPanel | null = null;
+async function streamOnce(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  clientToolHandler: ((toolName: string, input: any) => Promise<string>) | undefined,
+  systemPromptMode: string | undefined,
+  chatSession: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<void> {
+  return new Promise<void>(async (resolve) => {
+    const sessionId = panel.sessionId;
+    let accumulated = ''; // full markdown — kept for session history
+    let displayBuffer = ''; // shown during streaming (entity chunks excluded from display, kept in finalBuffer)
+    let finalBuffer = ''; // entity chunks stay so renderEntityBlocks finds them at finalize
+    let toolStatus = '';
+    let nextBlockIndex = 0;
+    const subs: {unsubscribe: () => void}[] = [];
+    const cleanup = () => subs.forEach((s) => s.unsubscribe());
 
-export function setupShellAIPanelUI(): void {
-  if (!grok.ai.config.configured) return;
+    const forSession = <T extends {sessionId: string}>(
+      source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
+      handler: (evt: T) => void,
+    ) => subs.push(source.subscribe((evt) => {
+        if (evt.sessionId === sessionId)
+          handler(evt);
+      }));
+
+    const endWithError = (msg: string) => {
+      panel.clearStreaming();
+      grok.shell.error(msg);
+      cleanup();
+      resolve();
+    };
+
+    try {
+      const client = ClaudeRuntimeClient.getInstance();
+      const nativeCtx = panel.flushNativeContext();
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
+      const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
+
+      await client.ensureConnected();
+
+      forSession(client.onChunk, (evt) => {
+        accumulated += evt.content;
+        if (evt.kind !== 'entity') {
+          displayBuffer += evt.content;
+          toolStatus = '';
+          panel.updateStreaming(displayBuffer, chatSession.loader);
+        }
+        finalBuffer += evt.content;
+      });
+
+      forSession(client.onToolActivity, (evt) => {
+        toolStatus = `\n\n---\n**${evt.summary}**`;
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
+      });
+
+      forSession(client.onToolResult, (evt) => {
+        // datagrok_exec results are internal — Claude's prose is the user-facing feedback.
+        if (evt.toolName?.endsWith('datagrok_exec'))
+          return;
+        toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
+      });
+
+      forSession(client.onFinal, async (evt) => {
+        panel.cancelInputRequest();
+        const exec = accumulated || evt.content;
+        const display = finalBuffer || evt.content;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
+        await panel.finalizeStreaming(display, exec, view);
+        cleanup();
+        resolve();
+      });
+
+      forSession(client.onError, (evt) => {
+        panel.cancelInputRequest();
+        endWithError(`Claude: ${evt.message}`);
+      });
+
+      forSession(client.onAborted, async () => {
+        panel.cancelInputRequest();
+        panel.clearStreaming();
+        chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        cleanup();
+        resolve();
+      });
+
+      forSession(client.onInputRequest, async (evt) => {
+        // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
+        if (evt.toolName === 'datagrok_exec') {
+          const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (element)
+            panel.appendStreamedElement(element);
+          const result = error ?
+            {success: false, error: error.error} :
+            {success: true, ...(value != null ? {returnValue: value} : {})};
+          client.respondToInput(sessionId, evt.requestId, result);
+          return;
+        }
+        // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
+        const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
+        if (clientToolHandler && mcpToolName !== evt.toolName) {
+          try {
+            const result = await clientToolHandler(mcpToolName, evt.input);
+            client.respondToInput(sessionId, evt.requestId, result);
+          } catch (e: any) {
+            client.respondToInput(sessionId, evt.requestId, `Error: ${e.message}`);
+          }
+          return;
+        }
+        // Default: AskUserQuestion
+        accumulated = '';
+        displayBuffer = '';
+        finalBuffer = '';
+        toolStatus = '';
+        panel.clearStreaming();
+        const response = await panel.showInputRequest(evt.input);
+        if (response) {
+          client.respondToInput(sessionId, evt.requestId, response);
+          const answerText = Object.values(response.answers).join(', ');
+          chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+        }
+      });
+
+      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+
+      subs.push(getAIAbortSubscription().subscribe(() => {
+        client.abort(sessionId);
+      }));
+
+      const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
+      client.send(sessionId, prompt, {
+        ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+      });
+    } catch (e: any) {
+      panel.clearStreaming();
+      grok.shell.error(`Claude runtime: ${e.message}`);
+      console.error('Claude runtime error:', e);
+      cleanup();
+      resolve();
+    }
+  });
+}
+
+let _shellAIPanel: AIPanel | null = null;
+
+export function initAIWindow(): AIPanel | null {
+  if (!grok.ai.config.configured)
+    return null;
   if (!_shellAIPanel) {
-    _shellAIPanel = new ShellAIPanel();
+    _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
     _shellAIPanel.onRunRequest.subscribe(async (args) => {
       if (args.currentPrompt.prompt.trim() === '/noprompt') {
         _shellAIPanel!.enableNoPrompt();
@@ -429,8 +482,15 @@ export function setupShellAIPanelUI(): void {
       }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
+    AIWindowManager.instance.init(_shellAIPanel);
   }
-  _shellAIPanel.show();
+  return _shellAIPanel;
+}
+
+export function setupShellAIPanelUI(): void {
+  if (!initAIWindow())
+    return;
+  AIWindowManager.instance.show();
 }
 
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
@@ -442,12 +502,12 @@ export async function setupTableViewAIPanelUI() {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
     // setup ribbon panel icon
-    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
     // setup the panel itself
     const panel = new TVAIPanel(tableView);
-    panel.hide();
+    AIWindowManager.instance.register(tableView, panel);
 
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
@@ -471,11 +531,11 @@ export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
     if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
     const panel = new ScriptingAIPanel(scriptView);
-    panel.hide();
+    AIWindowManager.instance.register(scriptView, panel);
     panel.onRunRequest.subscribe(async (args) => {
       await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
     });
@@ -485,4 +545,39 @@ export async function setupScriptsAIPanelUI() {
     if (view.type === 'ScriptView')
       setTimeout(() => handleView(view as DG.ScriptView), 500);
   });
+}
+
+// Adds a "Run" button to the ribbon of file views opened from MyFiles/agents/scripts/.
+export function setupAgentScriptsUI(): void {
+  grok.events.onViewAdded.subscribe((view) => {
+    try {
+      const basePath = view.basePath ?? view.path ?? '';
+      if (!basePath.includes('/agents/scripts/'))
+        return;
+      const {name} = view;
+      const runIcon = ui.iconFA('play', () => runAgentScript(name), `Run ${name}`);
+      runIcon.classList.add('fas');
+      view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
+    } catch (e: any) {
+      console.warn('Grokky: failed to add run button:', e.message);
+    }
+  });
+}
+
+async function runAgentScript(name: string): Promise<void> {
+  try {
+    const shell = initAIWindow();
+    if (!shell)
+      return;
+    AIWindowManager.instance.showPanel(shell);
+    shell.resetSession();
+    const workflow = await _package.files.readAsText(`scripts/${name}.md`);
+    const prompt =
+      `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
+      `---\n${workflow}\n---`;
+    const displayPrompt = `▶ Running workflow: ${name}`;
+    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
+  } catch (e: any) {
+    grok.shell.error(`Failed to run ${name}: ${e.message}`);
+  }
 }

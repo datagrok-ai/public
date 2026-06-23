@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -215,6 +216,5 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
     grok.shell.closeAll();
   }, [spgiLayoutId, demogLayoutId].filter(Boolean));
 
-  if (stepErrors.length > 0)
-    throw new Error(stepErrors.map(e => `[${e.step}] ${e.error}`).join('\n'));
+  v.finishSpec();
 });

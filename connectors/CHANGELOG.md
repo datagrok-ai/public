@@ -1,5 +1,23 @@
 # Grok Connect changelog
 
+# 2.6.5 (2026-06-22)
+
+* Set default locale to C.UTF-8 for container build
+
+# 2.6.4 (2026-05-18)
+
+* Snowflake: OAuth authentication support
+* Generalized lazy OAuth consent for data connectors
+* GROK-20093: Per-connector OAuth flavour declared on OAuthSpec (host-suffix rules + RFC 8693 token-exchange specs; removes Databricks-specific knowledge from datlas)
+* OAuth scopes moved from Credentials to DataConnection
+* Databricks: Added openid scope to OAuth template
+* VisualQuery: Fixed BigQuery path qualification
+* Skip login/password in JDBC properties when auth method doesn't use them
+
+# 2.6.3 (2026-05-18)
+
+* Fixes list<string> parameters support with punctuation for Snowflake and MSSQL
+
 # 2.6.2 (2026-03-26)
 
 * Snowflake: OAuth (JWT) authentication with per-user identity

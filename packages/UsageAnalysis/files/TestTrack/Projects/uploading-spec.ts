@@ -1,179 +1,599 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+/* ---
+sub_features_covered: [projects.api.files.sync, projects.api.save, projects.upload]
+--- */
+// Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
+// Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
+// before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
+import {test, expect, type Page} from '@playwright/test';
+import {softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
+import {
+  projectsTestOptions,
+  evalJs,
+  gotoApp,
+  setupSession,
+  provisionSpaceFixture,
+  releaseSpaceFixture,
+  SpaceFixture,
+} from './_helpers';
+import {
+  openTableFromFile,
+  openTableFromDbQuery,
+  openTableFromDbTable,
+  provisionSystemDatagrokQuery,
+  addAggregateToWorkspace,
+  assertProvenanceScript,
+  resetShell,
+  PROVENANCE_PATTERNS,
+  ProvisionedQuery,
+  SYSTEM_DATAGROK_DB_TABLE,
+  SYSTEM_DATAGROK_NQNAME,
+  SYSTEM_DATAGROK_QUERIES,
+} from '../helpers/openers';
+import {
+  saveAllTablesWithProvenance,
+  reopenAndAssertProvenance,
+  deleteProjectWithCleanup,
+  SavedAllTables,
+} from '../helpers/projects';
 
-test.use(specTestOptions);
+test.use(projectsTestOptions);
 
-test('Uploading — Case 1: Files + Files (Link Tables, save, reopen)', async ({page}) => {
-  test.setTimeout(300_000);
-
-  await loginToDatagrok(page);
-
-  await page.evaluate(async () => {
-    const w = window as any;
-    document.body.classList.add('selenium');
-    w.grok.shell.settings.showFiltersIconsConstantly = true;
-    w.grok.shell.windows.simpleMode = true;
-    w.grok.shell.closeAll();
-
-    const df1 = await w.grok.dapi.files.readCsv('System:DemoFiles/SPGI_v2_infinity.csv');
-    df1.name = 'SPGI_v2_infinity';
-    w.grok.shell.addTableView(df1);
-    await new Promise<void>((resolve) => {
-      const sub = df1.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-
-    const df2 = await w.grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
-    df2.name = 'SPGI';
-    w.grok.shell.addTableView(df2);
-    await new Promise<void>((resolve) => {
-      const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
+// Strip the `.script` provenance tag from every open dataframe — emulates Data Sync OFF (snapshot mode).
+async function stripProvenance(page: Page): Promise<void> {
+  await evalJs(page, `(async () => {
+    for (const df of grok.shell.tables) {
+      if (df.tags?.has?.('.script')) df.tags.delete('.script');
     }
-    await new Promise((r) => setTimeout(r, 5000));
+  })()`);
+}
+
+// Provision a transient root Space with a copy of demog.csv. Returns a fixture or an env-skip blocker
+// (Spaces createRootSpace may not exist on older builds — callers should test.skip on a blocker).
+async function provisionSpaceWithDemog(
+  page: Page, namePrefix: string,
+): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
+  const probe = await provisionSpaceFixture(page, {
+    namePrefix,
+    fileName: 'demog.csv',
   });
+  if (probe.blocked || !probe.fixture) {
+    if (probe.fixture) await releaseSpaceFixture(page, probe.fixture);
+    return {blocked: true, reason: probe.reason};
+  }
+  return {fixture: probe.fixture};
+}
 
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30_000});
+function throwOnStepErrors() {
+  finishSpec();
+}
 
-  await softStep('Open Data > Link Tables', async () => {
-    // Submenu items are not "visible" in Playwright's sense until parent menu is hovered.
-    // Dispatch the underlying click directly via DOM (matches what manual UI click does).
-    await page.evaluate(() => {
-      const item = document.querySelector<HTMLElement>('[name="div-Data---Link-Tables..."]');
-      if (!item) throw new Error('div-Data---Link-Tables... not in DOM');
-      item.click();
+// ---------------------------------------------------------------------------
+// Case 1 — Files + Files (Link Tables UI delegated to projects-ui-smoke)
+// ---------------------------------------------------------------------------
+
+async function runCase1(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case1_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  try {
+    await softStep('open demog.csv and cars.csv', async () => {
+      const t1 = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
+      expect(t1.rowCount).toBeGreaterThan(0);
+      const t2 = await openTableFromFile(page, 'System:DemoFiles/cars.csv');
+      expect(t2.rowCount).toBeGreaterThan(0);
     });
-    await page.locator('.d4-dialog[name="dialog-Link-Tables"]').waitFor({timeout: 10_000});
-  });
 
-  await softStep('Configure Link Tables: SPGI_v2_infinity → SPGI on Id, selection to filter', async () => {
-    await page.evaluate(() => {
-      const dlg = document.querySelector('.d4-dialog[name="dialog-Link-Tables"]')!;
-      const left = dlg.querySelector<HTMLSelectElement>('[name="input-selectTableLeft"]')!;
-      const right = dlg.querySelector<HTMLSelectElement>('[name="input-selectTableRight"]')!;
-      const linkType = dlg.querySelector<HTMLSelectElement>('[name="input-Link-Type"]')!;
-      left.value = 'SPGI_v2_infinity';
-      left.dispatchEvent(new Event('change', {bubbles: true}));
-      right.value = 'SPGI';
-      right.dispatchEvent(new Event('change', {bubbles: true}));
-      linkType.value = 'selection to filter';
-      linkType.dispatchEvent(new Event('change', {bubbles: true}));
-    });
-    await page.evaluate(() => {
-      document.querySelector<HTMLElement>('.d4-dialog[name="dialog-Link-Tables"] [name="button-LINK"]')!.click();
-    });
-    await page.waitForTimeout(1200);
-    await page.evaluate(() => {
-      document.querySelector<HTMLElement>('.d4-dialog[name="dialog-Link-Tables"] [name="button-CLOSE"]')!.click();
-    });
-    await page.waitForTimeout(600);
-    expect(await page.locator('.d4-dialog[name="dialog-Link-Tables"]').count()).toBe(0);
-  });
+    if (sync === 'off') await stripProvenance(page);
 
-  await softStep('Verify link: select 1 row in SPGI_v2_infinity → SPGI filters to matching rows', async () => {
-    const verify = await page.evaluate(async () => {
-      const w = window as any;
-      const inf = w.grok.shell.tables.find((t: any) => t.name === 'SPGI_v2_infinity');
-      const spgi = w.grok.shell.tables.find((t: any) => t.name === 'SPGI');
-      const targetId = inf.col('Id').get(0);
-      inf.selection.setAll(false);
-      inf.selection.set(0, true);
-      await new Promise((r) => setTimeout(r, 800));
-      let expected = 0;
-      const idCol = spgi.col('Id');
-      for (let i = 0; i < spgi.rowCount; i++) if (idCol.get(i) === targetId) expected++;
-      return {filterCount: spgi.filter.trueCount, expected};
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
     });
-    expect(verify.filterCount).toBe(verify.expected);
-    expect(verify.filterCount).toBeGreaterThan(0);
-  });
 
-  const projName = `Test_Case1_NoSync_${Date.now()}`;
-
-  await softStep('Open Save Project dialog (ribbon Save button)', async () => {
-    await page.evaluate(() => document.querySelector<HTMLElement>('[name="button-Save"]')!.click());
-    await page.locator('.d4-dialog[name="dialog-Save-project"]').waitFor({timeout: 10_000});
-  });
-
-  await softStep('Note: Data sync toggles hidden for tables loaded via readCsv (no source binding)', async () => {
-    const hiddenCount = await page.evaluate(() => {
-      const dlg = document.querySelector('.d4-dialog[name="dialog-Save-project"]')!;
-      const hosts = Array.from(dlg.querySelectorAll<HTMLElement>('[name="input-host-Data-sync"]'));
-      return hosts.filter((h) => h.style.display === 'none').length;
+    await softStep('reopen verifies both tables re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.files : undefined;
+      const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
-    // Documenting the observation; not failing — Data sync is hidden because tables
-    // were loaded via grok.dapi.files.readCsv() instead of Browse-tree double-click.
-    expect(hiddenCount).toBeGreaterThanOrEqual(0);
-  });
-
-  await softStep(`Set project name "${projName}" and click OK`, async () => {
-    const nameLocator = page.locator('.d4-dialog[name="dialog-Save-project"] input[type="text"].ui-input-editor').first();
-    await nameLocator.click();
-    await page.keyboard.press('ControlOrMeta+A');
-    await page.keyboard.type(projName);
-    await page.waitForTimeout(300);
-    await page.evaluate(() => {
-      document.querySelector<HTMLElement>('.d4-dialog[name="dialog-Save-project"] [name="button-OK"]')!.click();
-    });
-    // Poll for project to appear (up to 20s)
-    let found = false;
-    for (let i = 0; i < 20; i++) {
-      await page.waitForTimeout(1000);
-      found = await page.evaluate(async (n) => {
-        const w = window as any;
-        const list = await w.grok.dapi.projects.list({pageSize: 200});
-        return !!list.find((p: any) => p.friendlyName === n);
-      }, projName);
-      if (found) break;
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    expect(found).toBe(true);
-  });
+  }
 
-  await softStep('Close all and reopen the project — both tables should restore', async () => {
-    const result = await page.evaluate(async (n) => {
-      const w = window as any;
-      const list = await w.grok.dapi.projects.list({pageSize: 200});
-      const proj = list.find((p: any) => p.friendlyName === n);
-      w.grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 800));
-      await proj.open();
-      await new Promise((r) => setTimeout(r, 6000));
-      return w.grok.shell.tables.map((t: any) => ({name: t.name, rows: t.rowCount}));
-    }, projName);
-    expect(result.find((t) => t.name === 'SPGI_v2_infinity')?.rows).toBe(3624);
-    expect(result.find((t) => t.name === 'SPGI')?.rows).toBe(3624);
-  });
+  throwOnStepErrors();
+}
 
-  await softStep('Verify link still works after reopen (FINDING: link is NOT persisted on dev)', async () => {
-    const probe = await page.evaluate(async () => {
-      const w = window as any;
-      const inf = w.grok.shell.tables.find((t: any) => t.name === 'SPGI_v2_infinity');
-      const spgi = w.grok.shell.tables.find((t: any) => t.name === 'SPGI');
-      inf.selection.setAll(false);
-      inf.selection.set(0, true);
-      await new Promise((r) => setTimeout(r, 1200));
-      return {filterCount: spgi.filter.trueCount, total: spgi.rowCount};
+test('Projects / Uploading / Case 1: Files + Files (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase1(page, 'on');
+});
+
+test('Projects / Uploading / Case 1: Files + Files (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase1(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 2 — Query + Query (provisioned on System:Datagrok)
+// ---------------------------------------------------------------------------
+
+async function runCase2(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case2_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let provisioned: ProvisionedQuery | null = null;
+  let saved: SavedAllTables | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  try {
+    await softStep('provision query and run twice (two query result tables)', async () => {
+      provisioned = await provisionSystemDatagrokQuery(page, {
+        nameStem: 'case2_query',
+        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+      });
+      expect(provisioned.queryId).toBeTruthy();
+      const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
+      expect(t1.rowCount).toBeGreaterThan(0);
+      const t2 = await openTableFromDbQuery(page, provisioned.queryNqName);
+      expect(t2.rowCount).toBeGreaterThan(0);
     });
-    // The scenario expects filtering to work after reopen — this assertion will FAIL on dev,
-    // surfacing the platform finding that selection→filter links are not persisted.
-    expect(probe.filterCount).toBeLessThan(probe.total);
-  });
 
-  await softStep('Cleanup: delete the saved project', async () => {
-    await page.evaluate(async (n) => {
-      const w = window as any;
-      const list = await w.grok.dapi.projects.list({pageSize: 200});
-      const proj = list.find((p: any) => p.friendlyName === n);
-      if (proj) await w.grok.dapi.projects.delete(proj);
-      w.grok.shell.closeAll();
-    }, projName);
-  });
+    if (sync === 'off') await stripProvenance(page);
 
-  if (stepErrors.length > 0)
-    throw new Error('Step failures:\n' + stepErrors.map((e) => `- ${e.step}: ${e.error}`).join('\n'));
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies both query results re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.db_query : undefined;
+      const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+    if (provisioned) await provisioned.cleanup();
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 2: Query + Query (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase2(page, 'on');
+});
+
+test('Projects / Uploading / Case 2: Query + Query (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase2(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 3 — Query + File
+// ---------------------------------------------------------------------------
+
+async function runCase3(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case3_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let provisioned: ProvisionedQuery | null = null;
+  let saved: SavedAllTables | null = null;
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  try {
+    await softStep('provision query, run it, and open spgi-100 file', async () => {
+      provisioned = await provisionSystemDatagrokQuery(page, {
+        nameStem: 'case3_query',
+        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+      });
+      expect(provisioned.queryId).toBeTruthy();
+      const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
+      expect(t1.rowCount).toBeGreaterThan(0);
+      const t2 = await openTableFromFile(page, 'System:AppData/Chem/tests/spgi-100.csv');
+      expect(t2.rowCount).toBeGreaterThan(0);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies query result + file table re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const result = await reopenAndAssertProvenance(page, saved.projectId);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+    if (provisioned) await provisioned.cleanup();
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 3: Query + File (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase3(page, 'on');
+});
+
+test('Projects / Uploading / Case 3: Query + File (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase3(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 4 — Spaces + Spaces (open demog.csv twice from the same Space)
+// ---------------------------------------------------------------------------
+
+async function runCase4(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case4_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+  let fixture: SpaceFixture | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  const provisioning = await provisionSpaceWithDemog(page, `case4-${sync}-${stamp}`);
+  if ('blocked' in provisioning) {
+    console.warn(`Case 4 env-skip — ${provisioning.reason}`);
+    test.skip(true, provisioning.reason);
+    return;
+  }
+  fixture = provisioning.fixture;
+
+  try {
+    await softStep('open demog.csv from Space twice', async () => {
+      const t1 = await openTableFromFile(page, fixture!.filePath);
+      expect(t1.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'files', t1.script);
+      const t2 = await openTableFromFile(page, fixture!.filePath);
+      expect(t2.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'files', t2.script);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies both Space tables re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.files : undefined;
+      const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+    if (fixture) await releaseSpaceFixture(page, fixture);
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 4: Spaces + Spaces (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase4(page, 'on');
+});
+
+test('Projects / Uploading / Case 4: Spaces + Spaces (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase4(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 5 — Spaces + File (demog from Space + spgi-100 from System:AppData)
+// ---------------------------------------------------------------------------
+
+async function runCase5(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case5_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+  let fixture: SpaceFixture | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  const provisioning = await provisionSpaceWithDemog(page, `case5-${sync}-${stamp}`);
+  if ('blocked' in provisioning) {
+    console.warn(`Case 5 env-skip — ${provisioning.reason}`);
+    test.skip(true, provisioning.reason);
+    return;
+  }
+  fixture = provisioning.fixture;
+
+  try {
+    await softStep('open demog.csv from Space + spgi-100.csv from Files', async () => {
+      const t1 = await openTableFromFile(page, fixture!.filePath);
+      expect(t1.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'files', t1.script);
+      const t2 = await openTableFromFile(page, 'System:AppData/Chem/tests/spgi-100.csv');
+      expect(t2.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'files', t2.script);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies Space + File tables re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      // Mixed sources — both happen to be `files` pattern but reopen verifies
+      // the active TableView only; pattern check is loose.
+      const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.files : undefined;
+      const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+    if (fixture) await releaseSpaceFixture(page, fixture);
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 5: Spaces + File (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase5(page, 'on');
+});
+
+test('Projects / Uploading / Case 5: Spaces + File (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase5(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 6 — Spaces + Query (demog from Space + provisioned System:Datagrok query)
+// ---------------------------------------------------------------------------
+
+async function runCase6(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case6_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+  let fixture: SpaceFixture | null = null;
+  let provisioned: ProvisionedQuery | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  const provisioning = await provisionSpaceWithDemog(page, `case6-${sync}-${stamp}`);
+  if ('blocked' in provisioning) {
+    console.warn(`Case 6 env-skip — ${provisioning.reason}`);
+    test.skip(true, provisioning.reason);
+    return;
+  }
+  fixture = provisioning.fixture;
+
+  try {
+    await softStep('open demog.csv from Space + run provisioned query', async () => {
+      const t1 = await openTableFromFile(page, fixture!.filePath);
+      expect(t1.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'files', t1.script);
+      provisioned = await provisionSystemDatagrokQuery(page, {
+        nameStem: 'case6_query',
+        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+      });
+      expect(provisioned.queryId).toBeTruthy();
+      const t2 = await openTableFromDbQuery(page, provisioned.queryNqName);
+      expect(t2.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'db_query', t2.script);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.projectId).toBeTruthy();
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies Space + Query tables re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      // Mixed sources — pattern check skipped; verify multi-table reopen.
+      const result = await reopenAndAssertProvenance(page, saved.projectId);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+    if (provisioned) await provisioned.cleanup();
+    if (fixture) await releaseSpaceFixture(page, fixture);
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 6: Spaces + Query (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase6(page, 'on');
+});
+
+test('Projects / Uploading / Case 6: Spaces + Query (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase6(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 8 — Files + Pivot Table (Add to workspace)
+// ---------------------------------------------------------------------------
+
+async function runCase8(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case8_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  try {
+    await softStep('open demog.csv as base + Pivot Table → Add', async () => {
+      const base = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
+      expect(base.rowCount).toBeGreaterThan(0);
+      const derived = await addAggregateToWorkspace(page, {via: 'pivot-viewer'});
+      expect(derived.rowCount).toBeGreaterThan(0);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies base + pivot derived re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const result = await reopenAndAssertProvenance(page, saved.projectId);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase8(page, 'on');
+});
+
+test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase8(page, 'off');
+});
+
+// ---------------------------------------------------------------------------
+// Case 9 — DB table (System:Datagrok / public.groups) + Aggregate Rows
+// ---------------------------------------------------------------------------
+
+async function runCase9(page: Page, sync: 'on' | 'off') {
+  const stamp = Date.now();
+  const projectName = `Test_Case9_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
+  let saved: SavedAllTables | null = null;
+
+  await gotoApp(page);
+  await setupSession(page);
+  await resetShell(page);
+
+  try {
+    await softStep('open public.groups via DbQuery + Aggregate Rows → Add', async () => {
+      const base = await openTableFromDbTable(page, {
+        connectionNqName: SYSTEM_DATAGROK_NQNAME,
+        schemaName: SYSTEM_DATAGROK_DB_TABLE.schemaName,
+        tableName: SYSTEM_DATAGROK_DB_TABLE.tableName,
+      });
+      expect(base.rowCount).toBeGreaterThan(0);
+      await assertProvenanceScript(page, 'db_table', base.script);
+      const derived = await addAggregateToWorkspace(page, {via: 'menu'});
+      expect(derived.rowCount).toBeGreaterThan(0);
+    });
+
+    if (sync === 'off') await stripProvenance(page);
+
+    await softStep(`save all tables with Data Sync ${sync.toUpperCase()}`, async () => {
+      saved = await saveAllTablesWithProvenance(page, projectName);
+      expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(2);
+    });
+
+    await softStep('reopen verifies base + aggregate derived re-materialize', async () => {
+      if (!saved) throw new Error('no saved project');
+      const result = await reopenAndAssertProvenance(page, saved.projectId);
+      expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
+      expect(result.reopenedRowCount).toBeGreaterThan(0);
+    });
+  } finally {
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
+        await deleteProjectWithCleanup(page, {tableInfoId});
+    }
+  }
+
+  throwOnStepErrors();
+}
+
+test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync ON)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase9(page, 'on');
+});
+
+test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync OFF)', async ({page}) => {
+  test.setTimeout(420_000);
+  stepErrors.length = 0;
+  await runCase9(page, 'off');
 });

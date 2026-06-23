@@ -36,6 +36,8 @@ class UniChemSource {
   description: string;
 
   static _sources: {[key: number]: UniChemSource} = {};
+  // Name → source lookup built once in refreshSources(), so byName() is O(1).
+  static _byNameIndex: Map<string, UniChemSource> = new Map();
 
   static idNamesChoices: string[] = `actor,atlas,bindingdb,brenda,carotenoiddb,chebi,chembl,chemicalbook,comptox,drugbank,drugcentral,emolecules,fdasrs,gtopdb,hmdb,ibm,inchi,inchi_key,kegg_ligand,lincs,lipidmaps,mcule,metabolights,molport,nih_ncc,nikkaji,nmrshiftdb2,pdb,pharmgkb,pubchem,pubchem_dotf,pubchem_tpharma,recon,rhea,selleck,smiles,surechembl,zinc`.split(',');
 
@@ -95,21 +97,20 @@ class UniChemSource {
   static async refreshSources(): Promise<void> {
     const table = await getOrLoadUnichemSources();
     const rowCount = table.rowCount;
+    this._byNameIndex.clear();
     for (let i = 0; i < rowCount; i++) {
       const id = table.get('src_id', i);
-      this._sources[id] = new UniChemSource(
+      const source = new UniChemSource(
         id, table.get('name', i), table.get('name_long', i), table.get('name_label', i),
-        table.get('base_id_url', i), table.get('base_id_url', i), table.get('description', i),
+        table.get('base_id_url', i), table.get('src_url', i), table.get('description', i),
       );
+      this._sources[id] = source;
+      this._byNameIndex.set(source.name, source);
     }
   }
 
   static byName(name: string): UniChemSource | null {
-    for (const source of Object.values(this._sources)) {
-      if (source.name === name)
-        return source;
-    }
-    return null;
+    return this._byNameIndex.get(name) ?? null;
   }
 }
 
@@ -130,7 +131,6 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
 
   for (const [source, id] of Object.entries(idMap))
     idMap[source] = {id: id, link: UniChemSource.byName(source)!.baseUrl + id};
-    // idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
 
   return idMap;
 }
@@ -333,7 +333,10 @@ export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fro
 async function _chemMapViaQuery(keys: DG.Column, queryName: string, resultColumnName: string) {
   const query: DG.DataQuery = await grok.functions.eval(`chembl:${queryName}`);
   if (!query) throw new Error('Missing Chembl package');
-  const df = DG.DataFrame.fromColumns([keys]);
+  // chembl:* converter SQL references ids.key — clone & rename so the caller's column is not mutated.
+  const keysCopy = keys.clone();
+  keysCopy.name = 'key';
+  const df = DG.DataFrame.fromColumns([keysCopy]);
   df.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(df.rowCount).keys()]));
   const call: DG.FuncCall = await (query.prepare({'ids': df})).call();
   const result: DG.DataFrame = call.getOutputParamValue() as DG.DataFrame;
@@ -376,19 +379,12 @@ function isInchi(s: string) {
   return s && s.startsWith('InChI=') && s.length > 8;
 }
 
-function isInchiKey(s: string) {
-  if (s?.length !== 27 || s[14] !== '-' || s[25] !== '-')
-    return false;
+/** Standard InChIKey format: 14-letter hash block A, hyphen, 10-letter hash block B,
+ *  hyphen, 1-letter version/protonation flag (e.g., `XLYOFNOQVPJJNP-UHFFFAOYSA-N`). */
+const INCHIKEY_RE = /^[A-Z]{14}-[A-Z]{10}-[A-Z]$/;
 
-  for (let i = 0; i < s.length; i++) {
-    if (i != 14 && i != 15) {
-      const c = s.charCodeAt(i);
-      if (!(c >= 65 && c <= 90))
-        return false;
-    }
-  }
-
-  return true;
+function isInchiKey(s: string): boolean {
+  return INCHIKEY_RE.test(s);
 }
 
 export async function textToSmiles(molfile: string): Promise<string | null> {

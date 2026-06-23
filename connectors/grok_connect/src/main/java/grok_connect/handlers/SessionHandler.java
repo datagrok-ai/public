@@ -63,10 +63,22 @@ public class SessionHandler {
         result.errorMessage = message;
         result.errorStackTrace = stackTrace;
         session.getRemote().sendStringByFuture(String.format("ERROR: %s", GrokConnect.gson.toJson(result)));
+        closeQueryManagerQuietly();
         session.close();
     }
 
     public void onMessage(String message) throws Throwable {
+        try {
+            onMessageInternal(message);
+        } catch (Throwable t) {
+            // Ensure the DB connection is released even if onClose never fires
+            // (half-open WS, datlas crash mid-stream, errors before COMPLETED_OK).
+            closeQueryManagerQuietly();
+            throw t;
+        }
+    }
+
+    private void onMessageInternal(String message) throws Throwable {
         if (message.startsWith(MESSAGE_START)) {
             LOGGER.debug("Received message with json call from the server");
             message = message.substring(6);
@@ -148,6 +160,19 @@ public class SessionHandler {
     public void onClose() throws SQLException {
         if (queryManager != null)
             queryManager.close();
+    }
+
+    private void closeQueryManagerQuietly() {
+        if (completableFuture != null && !completableFuture.isDone()) {
+            completableFuture.cancel(true);
+        }
+        if (queryManager != null) {
+            try {
+                queryManager.close();
+            } catch (Throwable t) {
+                LOGGER.warn("Failed to close QueryManager during cleanup", t);
+            }
+        }
     }
 
     public boolean skipLog(String level) {

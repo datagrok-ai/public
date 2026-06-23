@@ -1,6 +1,6 @@
 ---
 name: datagrok-entities
-description: Use after a Datagrok MCP tool result contains entity data — files, scripts, queries, connections, projects, or spaces. Wrap those entities in a datagrok-entities fenced block so they render as interactive cards instead of markdown links or bullet lists. Required whenever the Datagrok MCP returns entities; never paraphrase them as plain text.
+description: Use after a Datagrok MCP tool result contains entity data — files, scripts, queries, connections, projects, spaces, groups, or users. Wrap those entities in a datagrok-entities fenced block so they render as interactive cards instead of markdown links or bullet lists. Required whenever the Datagrok MCP returns entities; never paraphrase them as plain text.
 ---
 
 # datagrok-entities
@@ -24,6 +24,8 @@ as an interactive card the user can click to open the entity.
 | `connection` | `id`, `name`           | `dataSource`         |
 | `project`    | `id`, `name`           | —                    |
 | `space`      | `id`, `name`           | —                    |
+| `group`      | `id`, `name`           | —                    |
+| `user`       | `id`, `name`           | —                    |
 
 ## Notes
 

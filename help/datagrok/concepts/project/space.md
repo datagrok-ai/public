@@ -1,6 +1,7 @@
 ---
 title: "Spaces"
-format: mdx
+mdx:
+  format: mdx
 ---
 
 Spaces act like folders that contain various [entities](../objects.md), such as tables,

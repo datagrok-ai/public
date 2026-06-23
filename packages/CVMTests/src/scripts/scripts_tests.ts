@@ -9,6 +9,7 @@ import {
   before,
   after,
 } from '@datagrok-libraries/test/src/test';
+import {randomString, isEqualBytes, escapingTestStrings} from '../utils/test-utils';
 import dayjs from 'dayjs';
 
 const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
@@ -55,7 +56,7 @@ for (const lang of languages) {
 
     test('Dataframe input/output', async () => {
       function getSample(): DG.DataFrame {
-        return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
+        return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
       }
       const sample1 = getSample();
       const sample2 = getSample();
@@ -104,8 +105,8 @@ for (const lang of languages) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
-              'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
+          {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
+            'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
       }, {stressTest: serverSideLanguages.includes(lang), timeout: 90000});
@@ -135,12 +136,10 @@ for (const lang of languages) {
     }, {stressTest: serverSideLanguages.includes(lang)});
 
     test('Escaping', async () => {
-      const testStrings = ['\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', '\n and \\n',
-        String.raw`CO\C1=C(C(=C(C=C1)/C=N\N=C(N)N)Cl)OC`, '"', '\'', '\n', '\t', '\\', '\\n', '\\r', '\\t'];
-      for (let i = 0; i < testStrings.length; i++) {
+      for (let i = 0; i < escapingTestStrings.length; i++) {
         const result = await grok.functions.call(`CVMTests:${lang}Echo`,
-          {'string_input': testStrings[i]});
-        expect(testStrings[i], result);
+          {'string_input': escapingTestStrings[i]});
+        expect(escapingTestStrings[i], result);
       }
     });
 
@@ -148,7 +147,7 @@ for (const lang of languages) {
       test('String list input', async () => {
         const stringList = ['apple', 'banana', 'cherry', 'date'];
         const result = await grok.functions.call(`CVMTests:${lang}ListStringTest`,
-            {'string_list': stringList});
+          {'string_list': stringList});
         expect(result, 'date');
       }, {stressTest: serverSideLanguages.includes(lang)});
     }
@@ -335,21 +334,4 @@ export async function getScriptTime(name: string, params: object = {}): Promise<
   const start = Date.now();
   await grok.functions.call(name, params);
   return Date.now() - start;
-}
-
-function randomString(length: number, chars: string) {
-  let result = '';
-  for (let i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
-  return result;
-}
-
-function isEqualBytes(bytes1: Uint8Array, bytes2: Uint8Array): boolean {
-  if (bytes1.length !== bytes2.length)
-    return false;
-
-  for (let i = 0; i < bytes1.length; i++)
-    if (bytes1[i] !== bytes2[i])
-      return false;
-
-  return true;
 }

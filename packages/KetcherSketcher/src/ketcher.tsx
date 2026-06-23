@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import * as grok from 'datagrok-api/grok';
@@ -13,6 +14,27 @@ import {KETCHER_MOLV2000, KETCHER_MOLV3000} from './constants';
 
 type NotationKey = 'smiles' | 'molblock' | 'molblockV3000' | 'smarts';
 
+// Ketcher's <RulerArea> reads SVGLength.value on a width="100%" canvas before the SVG can
+// resolve relative units (e.g. while the macromolecules editor is still display:none),
+// throwing NotSupportedError ("Could not resolve relative length") mid-render and blanking
+// the editor. Return 0 in only that case — Ketcher already handles a 0-width canvas — while
+// letting any unrelated error propagate. Workaround for upstream epam/ketcher#7568 / #3515;
+// remove once Ketcher stops measuring the hidden canvas during initialization.
+const _svgLenDesc = Object.getOwnPropertyDescriptor(SVGLength.prototype, 'value')!;
+const _svgLenGet = _svgLenDesc.get!;
+Object.defineProperty(SVGLength.prototype, 'value', {
+  ..._svgLenDesc,
+  get() {
+    try {
+      return _svgLenGet.call(this);
+    } catch (e) {
+      if (e instanceof DOMException)
+        return 0;
+      throw e;
+    }
+  },
+});
+
 export class KetcherSketcher extends grok.chem.SketcherBase {
   _smiles: string | null = null;
   _molV2000: string | null = null;
@@ -21,9 +43,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
   reactRoot: ReactDOM.Root | null = null;
-  private _editorComponent: React.ReactElement | null = null;
-  private _editorMounted = false;
-  private _resizeObserver: ResizeObserver | null = null;
+  updatingMolecule = false;
+  private importedMoleculesCounter = 0;
+  private _detached = false;
 
   constructor() {
     super();
@@ -54,61 +76,45 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         // });
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async () => {
+          if (this._detached)
+            return;
+          this.updatingMolecule = false;
           // we do not reset explicit mol in case this is the first change event called after ketcher was created
           // since change event is fired not only when user changes the molecule but also when the molecule is
           // initially set into ketcher
-          if (this._smiles !== null || this._molV2000 !== null || this._molV3000 !== null || this._smarts !== null)
+          if (this.importedMoleculesCounter > 0)
+            this.importedMoleculesCounter --;
+          else
             this.explicitMol = null;
           try {
             this._smiles = await this._sketcher!.getSmiles();
           } catch { //in case we are working with smarts - getSmiles() will fail with exception
             this._smiles = null;
           }
-          this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
-          this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+          // detach() (e.g. clicking OK on the cell editor dialog) unmounts the React <Editor>
+          // while the awaits above are still pending; ketcher-core then drops its singleton
+          // instance and any getMolfile() still in flight throws "couldnt find ketcher instance N".
+          try {
+            if (this._detached)
+              return;
+            this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
+            this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
+            this._smarts = await this._sketcher!.getSmarts();
+          } catch {
+            return;
+          }
           this.onChanged.next(null);
         });
       },
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
-    this._editorComponent = React.createElement(Editor, props, null);
-    this.root.appendChild(this.ketcherHost);
 
-    // Mounting Ketcher's <Editor> into a zero-sized or detached host causes
-    // <RulerArea> to throw NotSupportedError reading SVGLength.value
-    // ('Could not resolve relative length') because the canvas SVG uses
-    // width/height="100%" and cannot resolve relative units without a sized
-    // containing block. Defer the React mount until the host actually has
-    // non-zero dimensions. (Adopted from PR #3789.)
-    this._mountEditorWhenSized();
-  }
-
-  private _mountEditorWhenSized(): void {
-    if (this._editorMounted) return;
-    const rect = this.ketcherHost.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      this._mountEditor();
-      return;
-    }
-    this._resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          this._mountEditor();
-          break;
-        }
-      }
-    });
-    this._resizeObserver.observe(this.ketcherHost);
-  }
-
-  private _mountEditor(): void {
-    if (this._editorMounted || !this._editorComponent) return;
-    this._editorMounted = true;
-    this._resizeObserver?.disconnect();
-    this._resizeObserver = null;
+    const component = React.createElement(Editor, props, null);
     this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
-    this.reactRoot.render(this._editorComponent);
+    this.reactRoot.render(component);
+
+    this.root.appendChild(this.ketcherHost);
   }
 
   async init(host: grok.chem.Sketcher) {
@@ -136,6 +142,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set smiles(smiles: string) {
+    //in case we opened sketcher in filter, draw something and clicked Cancel -> ketcher will be detached
+    // and we will not get into onChange event, so update inner structures to prevent loosing the information
+    this._smiles = smiles;
+    this._molV2000 = null;
+    this._molV3000 = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('smiles', smiles);
   }
 
@@ -154,6 +167,11 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molFile(molfile: string) {
+    this._molV2000 = molfile;
+    this._smiles = null;
+    this._molV3000 = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('molblock', molfile);
   }
 
@@ -172,14 +190,26 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molV3000(molfile: string) {
+    this._molV3000 = molfile;
+    this._molV2000 = null;
+    this._smiles = null;
+    this._smarts = null;
+    this.importedMoleculesCounter++;
     this._setNotation('molblockV3000', molfile);
   }
 
   async getSmarts(): Promise<string> {
-    return this._sketcher ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    if (this._sketcher)
+      return !this._detached ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    return this._smarts ?? '';
   }
 
   set smarts(smarts: string) {
+    this._smarts = smarts;
+    this._molV3000 = null;
+    this._molV2000 = null;
+    this._smiles = null;
+    this.importedMoleculesCounter++;
     this._setNotation('smarts', smarts);
   }
 
@@ -220,25 +250,20 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   private _setNotation(notation: NotationKey, value: string): void {
-    //in case kecther is closed and we reset value from outside - only possible when clearing filter from filter panel
-    if (this.isDetached && !value) {
-      this._smiles = '';
-      this._smarts = '';
-      this._molV2000 = DG.WHITE_MOLBLOCK;
-      this._molV3000 = DG.WHITE_MOLBLOCK_V_3000;
-    }
+    this.updatingMolecule = true;
     this.setKetcherMolecule(value);
-    if (notation !== 'smarts')
-      this.explicitMol = {notation, value};
+    //@ts-ignore
+    this.explicitMol = {notation, value};
   }
 
   detach() {
+    this._detached = true;
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
-    this._resizeObserver?.disconnect();
-    this._resizeObserver = null;
-    this._editorComponent = null;
     this.reactRoot?.unmount();
     this.reactRoot = null;
     super.detach();
+    //if detach occured while setting molecule into ketcher, send onChange, since we will not enter ketcher's onChange handler
+    if (this.updatingMolecule)
+      this.onChanged.next(null);
   }
 }
