@@ -351,6 +351,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
+| Moving Average Line Color | number | Orange by default, to contrast with the default blue markers. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
 | **Tooltip** | | |
@@ -370,6 +371,10 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Mean Absolute Error | boolean |  |
 | Show Root Mean Square Error | boolean |  |
 | Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Period: the number of points averaged at each position — Excel''s trailing window of the point and its predecessors (ordered by X). A count of rows, not a time unit. |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |

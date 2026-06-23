@@ -747,6 +747,22 @@ export interface IScatterPlotSettings {
 
   regressionLineTransparency: number;
 
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Period: the number of points averaged at each position — Excel's trailing window of
+  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  movingAverageWindow: number;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  /// Orange by default, to contrast with the default blue markers.
+  movingAverageLineColor: number;
+
   annotationRegions: string;
 
   showViewerAnnotationRegions: boolean;
@@ -2405,6 +2421,22 @@ export interface ILineChartSettings {
   regressionLineColor: number;
 
   regressionLineTransparency: number;
+
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Period: the number of points averaged at each position — Excel's trailing window of
+  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  movingAverageWindow: number;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  /// Orange by default, to contrast with the default blue markers.
+  movingAverageLineColor: number;
 
   annotationRegions: string;
 
