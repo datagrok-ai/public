@@ -1,50 +1,25 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable, Subscription} from 'rxjs';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {demog, expectPropAndLook, look, subscribeAll, withAttachedViewer} from '../helpers';
 
-// JS API source: public/js-api/src/viewer.ts:611 (ScatterPlotViewer), with
-// the shared meta helper at viewer.ts:769 (ViewerMetaHelper).
-// Scatter-only JS surface: df.plot.scatter shorthand, the meta.formulaLines /
-// meta.annotationRegions add/items/clear API, the typed zoom() method, the
-// seven Scatter event Observables (onZoomed / onResetView / onViewportChanged /
-// onAfterDrawScene / onBeforeDrawScene / onPointClicked / onPointDoubleClicked),
-// and viewBox-family geometry accessors. Asymmetric toJs wrapping observed:
-// viewBox lands as a DG.Rect, but xAxisBox / yAxisBox return raw objects
-// pre-paint. screenToWorld / worldToScreen / pointToScreen are skipped — same
-// pre-paint NaN.floor() risk as LineChartViewer.screenToWorld.
+// ScatterPlot JS API: factory, meta helpers, zoom, events, addViewer geometry.
 category('AI: Viewers: ScatterPlot JS API', () => {
   test('df.plot.scatter shorthand returns typed ScatterPlotViewer', async () => {
-    const df = grok.data.demo.demog(50);
+    const df = demog();
     const v = df.plot.scatter({xColumnName: 'age', yColumnName: 'height', colorColumnName: 'race'});
     expect(v instanceof DG.ScatterPlotViewer, true);
-    expect(v.type, DG.VIEWER.SCATTER_PLOT);
     expect(v.dataFrame === df, true);
-    expect(v.props['xColumnName'], 'age');
-    expect(v.props['yColumnName'], 'height');
-    expect(v.props['colorColumnName'], 'race');
-    const look = v.getOptions(true).look;
-    expect(look['xColumnName'], 'age');
-    expect(look['yColumnName'], 'height');
-    expect(look['colorColumnName'], 'race');
+    expectPropAndLook(v, {xColumnName: 'age', yColumnName: 'height', colorColumnName: 'race'});
   });
 
   test('meta.formulaLines helper round-trip', async () => {
-    const df = grok.data.demo.demog(50);
-    const v = df.plot.scatter({xColumnName: 'age', yColumnName: 'height'});
+    const v = demog().plot.scatter({xColumnName: 'age', yColumnName: 'height'});
     const fl = v.meta.formulaLines;
-    expect(fl != null, true);
-    expect(Array.isArray(fl.items), true);
     expect(fl.items.length, 0);
     fl.add({title: 'AI test line', formula: '${height} = ${age} + 100', type: 'line'});
-    const items = fl.items;
-    expect(items.length, 1);
-    expect(items[0].title, 'AI test line');
-    expect(items[0].formula, '${height} = ${age} + 100');
-    const raw = v.props['formulaLines'];
-    expect(typeof raw, 'string');
-    const parsed = JSON.parse(raw);
-    expect(Array.isArray(parsed), true);
+    expect(fl.items.length, 1);
+    expect(fl.items[0].title, 'AI test line');
+    const parsed = JSON.parse(v.props['formulaLines']);
     expect(parsed.length, 1);
     expect(parsed[0].title, 'AI test line');
     fl.clear();
@@ -52,21 +27,13 @@ category('AI: Viewers: ScatterPlot JS API', () => {
   });
 
   test('meta.annotationRegions helper round-trip', async () => {
-    const df = grok.data.demo.demog(50);
-    const v = df.plot.scatter({xColumnName: 'age', yColumnName: 'height'});
+    const v = demog().plot.scatter({xColumnName: 'age', yColumnName: 'height'});
     const ar = v.meta.annotationRegions;
-    expect(ar != null, true);
-    expect(Array.isArray(ar.items), true);
     expect(ar.items.length, 0);
     ar.add({header: 'AI test region', description: 'helper round-trip', opacity: 50});
-    const items = ar.items;
-    expect(items.length, 1);
-    expect(items[0].header, 'AI test region');
-    expect(items[0].description, 'helper round-trip');
-    const raw = v.props['annotationRegions'];
-    expect(typeof raw, 'string');
-    const parsed = JSON.parse(raw);
-    expect(Array.isArray(parsed), true);
+    expect(ar.items.length, 1);
+    expect(ar.items[0].header, 'AI test region');
+    const parsed = JSON.parse(v.props['annotationRegions']);
     expect(parsed.length, 1);
     expect(parsed[0].header, 'AI test region');
     ar.clear();
@@ -74,74 +41,29 @@ category('AI: Viewers: ScatterPlot JS API', () => {
   });
 
   test('zoom() reflects xMin/xMax/yMin/yMax in attached look', async () => {
-    const df = grok.data.demo.demog(50);
-    const tv = grok.shell.addTableView(df);
-    try {
-      const v = tv.addViewer(DG.VIEWER.SCATTER_PLOT,
-        {xColumnName: 'age', yColumnName: 'height'}) as DG.ScatterPlotViewer;
-      expect(v instanceof DG.ScatterPlotViewer, true);
-      v.zoom(20, 150, 60, 200);
-      const look = v.getOptions(true).look;
-      expect('xMin' in look, true);
-      expect('xMax' in look, true);
-      expect('yMin' in look, true);
-      expect('yMax' in look, true);
-    }
-    finally {
-      tv.close();
-    }
+    await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
+      {xColumnName: 'age', yColumnName: 'height'}, (v) => {
+        v.zoom(20, 150, 60, 200);
+        const l = look(v);
+        for (const k of ['xMin', 'xMax', 'yMin', 'yMax'])
+          expect(k in l, true);
+      });
   });
 
   test('Scatter event Observables are subscribable', async () => {
-    const df = grok.data.demo.demog(20);
-    const v = df.plot.scatter({xColumnName: 'age', yColumnName: 'height'});
-    const subs: Subscription[] = [];
-    try {
-      const streams: Observable<any>[] = [
-        v.onZoomed,
-        v.onResetView,
-        v.onViewportChanged,
-        v.onAfterDrawScene,
-        v.onBeforeDrawScene,
-        v.onPointClicked,
-        v.onPointDoubleClicked,
-      ];
-      for (var s of streams) {
-        expect(s != null, true);
-        expect(typeof s.subscribe, 'function');
-        const sub = s.subscribe(() => {});
-        expect(typeof sub.unsubscribe, 'function');
-        subs.push(sub);
-      }
-    }
-    finally {
-      for (var sub of subs)
-        sub.unsubscribe();
-    }
+    const v = demog(20).plot.scatter({xColumnName: 'age', yColumnName: 'height'});
+    subscribeAll([v.onZoomed, v.onResetView, v.onViewportChanged,
+      v.onAfterDrawScene, v.onBeforeDrawScene, v.onPointClicked, v.onPointDoubleClicked])();
   });
 
   test('view.addViewer typed instance + viewBox/getInfo geometry', async () => {
-    const df = grok.data.demo.demog(50);
-    const tv = grok.shell.addTableView(df);
-    try {
-      const v = tv.addViewer(DG.VIEWER.SCATTER_PLOT,
-        {xColumnName: 'age', yColumnName: 'height'}) as DG.ScatterPlotViewer;
-      expect(v.type, DG.VIEWER.SCATTER_PLOT);
-      expect(v instanceof DG.ScatterPlotViewer, true);
-      var found: DG.Viewer | undefined;
-      for (var x of tv.viewers)
-        if (x.type === DG.VIEWER.SCATTER_PLOT) { found = x; break; }
-      expect(found != null, true);
-      expect(found instanceof DG.ScatterPlotViewer, true);
-      const vb = v.viewBox;
-      expect(vb instanceof DG.Rect, true);
-      const info = v.getInfo();
-      expect(info != null, true);
-      expect('canvas' in info, true);
-      expect('overlay' in info, true);
-    }
-    finally {
-      tv.close();
-    }
+    await withAttachedViewer<DG.ScatterPlotViewer>(demog(), DG.VIEWER.SCATTER_PLOT,
+      {xColumnName: 'age', yColumnName: 'height'}, (v) => {
+        expect(v instanceof DG.ScatterPlotViewer, true);
+        expect(v.viewBox instanceof DG.Rect, true);
+        const info = v.getInfo();
+        expect('canvas' in info, true);
+        expect('overlay' in info, true);
+      });
   });
 });

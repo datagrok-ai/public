@@ -1,5 +1,19 @@
 # EDA changelog
 
+## 1.6.1 (2026-06-22)
+
+Update Datagrok tools
+
+## 1.6.0 (2026-06-17)
+
+Migrate ML kernels to Rust + WebAssembly; remove LS-SVM
+
+* PCA, PLS, softmax and linear regression now run on the Rust + WASM
+  `sci-comp-ml` backend (XGBoost unchanged).
+* Linear regression adds Elastic Net (L1/L2) and gradient-descent
+  hyperparameters; defaults remain ordinary least squares.
+* Removed LS-SVM and the legacy C++/Emscripten backend.
+
 ## 1.5.6 (2026-06-01)
 
 * Add two-sample t-test (Welch and Student)

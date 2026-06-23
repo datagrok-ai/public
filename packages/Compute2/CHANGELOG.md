@@ -1,5 +1,19 @@
 # Compute2 changelog
 
+## 1.5.4 (2026-06-16)
+
+- RFV: Help panel is dockable via `dockSpawnConfig['Help']`, so models can anchor it instead of it landing on the first chart
+- RFV: multithreaded fitting for Diff Studio models
+- RFV: propagate Diff Studio mapped (lookup) input to Sensitivity Analysis and Fitting views
+- Update the standalone RFV URL with the run id on save
+- Fix custom export running the model instead of the declared function
+- GROK-19187: Fix back navigation duplicating the Model Hub tab
+- GROK-19188: Fix models not having a proper URL
+- Track the RFV focused tab separately for inputs and outputs
+- Use type-only imports/exports to silence rspack warnings
+- Fix custom view test code
+- Pick up compute-utils 1.46.3
+
 ## 1.5.3 (2026-06-05)
 
 - Fix navigation tree desync after a drag reorder: clear stranded `dragNode` state in the after-drop handler and treat the driver tree as the single source of truth

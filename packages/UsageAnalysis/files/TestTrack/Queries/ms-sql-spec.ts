@@ -241,15 +241,18 @@ test('Queries — MS SQL: Add / Edit / Browse / Delete', async ({page}) => {
   await softStep('Part 4 — Delete query and verify removal', async () => {
     // Tree right-click → Delete is unreachable (query absent from refreshed tree).
     // JS API fallback: delete via dapi and confirm find returns null.
+    expect(savedQueryId).toBeTruthy();
     const deleted = await page.evaluate(async (id) => {
       const q = await (window as any).grok.dapi.queries.find(id).catch(() => null);
-      if (!q) return { skipped: true };
+      if (!q) return { found: false, ok: false };
       await (window as any).grok.dapi.queries.delete(q);
       await new Promise((r) => setTimeout(r, 1000));
       const after = await (window as any).grok.dapi.queries.find(id).catch(() => null);
-      return { ok: !after };
+      return { found: true, ok: !after };
     }, savedQueryId);
-    expect((deleted as any).ok ?? (deleted as any).skipped).toBe(true);
+    // The query was saved in Part 1.6, so it must be present and actually deleted here.
+    expect((deleted as any).found, 'saved query should still exist before delete').toBe(true);
+    expect((deleted as any).ok, 'query must be gone after delete').toBe(true);
   });
 
   if (stepErrors.length > 0)

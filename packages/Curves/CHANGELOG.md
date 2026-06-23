@@ -1,5 +1,9 @@
 # Curves changelog
 
+## v.next
+
+* GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+
 ## 1.12.0 (2026-04-02)
 
 ### Features

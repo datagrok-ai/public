@@ -9,23 +9,43 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {
+  addRGroupsFromSmiles,
+  buildExportColumns,
   CHEM_ENUM_MAX_RESULTS,
   ChemEnumCore,
   ChemEnumMode,
   ChemEnumModes,
   ChemEnumRGroup,
+  copyRGroupList,
   enumerateRaw,
   enumerateSampleRaw,
   extractRNumbers,
+  BUILTIN_R_GROUP_TEMPLATES,
+  isValidTemplateSmiles,
   makeCore,
   makeRGroup,
   normalizeRLabels,
+  parseRGroupTemplates,
+  pickDefaultTargetR,
+  RGroupTemplate,
+  RGroupTemplateItem,
+  rGroupTargetWarnings,
+  uniqueKeepMask,
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
+import {getMarkushDefaults} from './pt-chem-enum-settings';
 import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
+
+const DEFAULT_TABLE_NAME = 'Markush enumeration';
+const DEFAULT_REMOVE_DUPLICATES = true;
+
+/** Single source of truth for the result-table name: a trimmed user value, or the default when blank/missing. */
+function resolveTableName(raw: string | undefined): string {
+  return raw?.trim() || DEFAULT_TABLE_NAME;
+}
 
 const MODE_TOOLTIPS: Record<ChemEnumMode, string> = {
   [ChemEnumModes.Zip]: 'Zip: every R-group list must have the same length N. The i-th result uses the i-th entry from every list. Produces N results per core.',
@@ -458,6 +478,204 @@ async function openImportWizard(
   });
 }
 
+// ─── Copy R-group list to another slot ──────────────────────────────────────
+
+/** R#s referenced by at least one valid (non-errored) core — feeds the default target and warnings. */
+function collectCoreRNumbers(state: ChemEnumDialogState): Set<number> {
+  const nums = new Set<number>();
+  for (const c of state.cores) {
+    if (c.error) continue;
+    for (const rn of c.rNumbers) nums.add(rn);
+  }
+  return nums;
+}
+
+
+/**
+ * Opens a dialog to copy R`srcN`'s substituent list into another R-slot — core-aware default
+ * target, Append/Replace, advisory warnings. The copy + re-labeling is done by `copyRGroupList`.
+ */
+function openCopyToRGroupDialog(
+  srcN: number,
+  state: ChemEnumDialogState,
+  rdkit: RDModule,
+  refresh: () => void,
+): void {
+  const srcList = state.rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0) {
+    grok.shell.info(`R${srcN} has no substituents to copy.`);
+    return;
+  }
+
+  // Snapshot (the dialog is modal over a static panel).
+  const coreRNumbers = collectCoreRNumbers(state);
+  const invalidCount = srcList.filter((rg) => rg.error != null).length;
+
+  const defaultTarget = pickDefaultTargetR(new Set(state.rGroupsByNum.keys()), coreRNumbers, srcN);
+
+  const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
+  const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
+  ui.tooltip.bind(mergeInput.input,
+    'Append: add the copied substituents after any existing entries in the target slot.\n' +
+    'Replace: clear the target slot first, then populate it with the copies.');
+
+  const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
+  let okBtn: HTMLButtonElement | null = null;
+
+  const fail = (m: string) => {
+    status.innerText = m;
+    status.style.color = 'var(--red-3)';
+    if (okBtn) okBtn.disabled = true;
+  };
+
+  const updateStatus = () => {
+    const t = targetInput.value;
+    if (t == null || !Number.isInteger(t) || t < 1) return fail('Enter a valid R-group number (≥ 1).');
+    if (t === srcN) return fail(`Target R# must differ from the source (R${srcN}).`);
+    const existing = state.rGroupsByNum.get(t)?.length ?? 0;
+    const replace = mergeInput.value === 'Replace';
+    const noun = srcList.length === 1 ? 'substituent' : 'substituents';
+    const msg = existing > 0 ?
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing).` :
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (new slot).`;
+    const warnings = rGroupTargetWarnings(t, invalidCount, coreRNumbers);
+    if (warnings.length > 0) {
+      status.innerText = `${msg} ⚠ ${warnings.join('; ')}.`;
+      status.style.color = 'var(--orange-2)';
+    } else {
+      status.innerText = msg;
+      status.style.color = 'var(--green-2)';
+    }
+    if (okBtn) okBtn.disabled = false;
+  };
+
+  targetInput.onChanged.subscribe(updateStatus);
+  mergeInput.onChanged.subscribe(updateStatus);
+
+  const dialog = ui.dialog({title: `Copy R${srcN} to…`})
+    .add(ui.divV([targetInput.root, mergeInput.root, status]))
+    .onOK(() => {
+      const t = targetInput.value;
+      if (t == null || !Number.isInteger(t) || t < 1 || t === srcN) return;
+      copyRGroupList(state.rGroupsByNum, srcN, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      refresh();
+    });
+  dialog.show({resizable: false, width: 360});
+  okBtn = dialog.getButton('OK') as HTMLButtonElement;
+  updateStatus();
+}
+
+/**
+ * Opens a dialog to insert a ready-made R-group template (e.g. the alkyl series) into an R-slot,
+ * with a target R# and Append/Replace. The substituents are built + re-labeled by `addRGroupsFromSmiles`.
+ */
+// Loads every *.json in files/enumeration/r-group-templates/ once (memoized) and merges them, so the
+// shipped catalogue and any client-dropped template files all show up in the picker. Client files are
+// listed first and our default (DEFAULT_TEMPLATES_FILE) last, so the built-in sets sit at the bottom.
+// A malformed file is skipped, not fatal; if nothing loads, falls back to BUILTIN (never empty).
+const TEMPLATES_DIR = 'enumeration/r-group-templates';
+const DEFAULT_TEMPLATES_FILE = 'r-group-templates.json';
+let templatesPromise: Promise<RGroupTemplate[]> | null = null;
+function loadRGroupTemplates(rdkit: RDModule): Promise<RGroupTemplate[]> {
+  return templatesPromise ??= (async () => {
+    const all: RGroupTemplate[] = [];
+    try {
+      const files = (await _package.files.list(TEMPLATES_DIR)).filter((f) => f.extension.toLowerCase() === 'json');
+      files.sort((a, b) =>
+        (a.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) - (b.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) ||
+        a.fileName.localeCompare(b.fileName));
+      for (const f of files) {
+        try {
+          for (const t of parseRGroupTemplates(await _package.files.readAsText(f))) {
+            const items = t.items.filter((it) => isValidTemplateSmiles(it.smiles, rdkit));
+            if (items.length > 0) all.push({...t, items});
+          }
+        } catch (e) { _package.logger.warning(`Skipped R-group template file ${f.fileName}: ${e}`); }
+      }
+    } catch { /* fall back to the built-in set below */ }
+    return all.length > 0 ? all : BUILTIN_R_GROUP_TEMPLATES;
+  })();
+}
+
+function openAddTemplateDialog(
+  templates: RGroupTemplate[], state: ChemEnumDialogState, rdkit: RDModule, refresh: () => void,
+): void {
+  const coreRNumbers = collectCoreRNumbers(state);
+
+  const templateInput = ui.input.choice<string>('Template',
+    {items: templates.map((t) => t.name), value: templates[0].name});
+  const defaultTarget = pickDefaultTargetR(new Set(state.rGroupsByNum.keys()), coreRNumbers);
+  const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
+  const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
+  ui.tooltip.bind(mergeInput.input,
+    'Append: add the template after any existing entries.\nReplace: overwrite the target slot.');
+
+  const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
+  let okBtn: HTMLButtonElement | null = null;
+  const fail = (m: string) => { status.innerText = m; status.style.color = 'var(--red-3)'; if (okBtn) okBtn.disabled = true; };
+
+  // `working` is the curated subset that will be inserted. It starts as the whole template; each
+  // preview card has a hover-revealed ✕ that drops its substituent. Switching templates resets it.
+  let working: RGroupTemplateItem[] = [];
+  const resetWorking = () => {
+    const tmpl = templates.find((x) => x.name === templateInput.value);
+    working = tmpl ? [...tmpl.items] : [];
+  };
+
+  // Thumbnail grid of the working set; hover a card to enlarge or ✕ to remove it before inserting.
+  const previewHost = ui.div([], {style: {display: 'flex', flexWrap: 'wrap', overflowY: 'auto',
+    gap: '4px', padding: '4px 0', maxWidth: '100%', maxHeight: `${CARD_H * 2 + 16}px`, minHeight: `${CARD_H}px`}});
+  const renderPreview = () => {
+    ui.empty(previewHost);
+    for (const item of working) {
+      // Show a generic `*` attachment (not `*:1`) so the preview reads the same for any target R#.
+      const display = item.smiles.replace(/\[\*:\d+\]/g, '[*]');
+      // Remove only this card's node (template items are unique) — no redraw of the survivors.
+      const card = buildCard({smiles: display, subtitle: item.label ?? display, onRemove: () => {
+        const i = working.indexOf(item);
+        if (i >= 0) working.splice(i, 1);
+        card.remove();
+        updateStatus();
+      }});
+      previewHost.appendChild(card);
+    }
+  };
+
+  const updateStatus = () => {
+    const t = targetInput.value;
+    if (t == null || !Number.isInteger(t) || t < 1) return fail('Enter a valid R-group number (≥ 1).');
+    if (working.length === 0) return fail('No substituents selected — keep at least one.');
+    const existing = state.rGroupsByNum.get(t)?.length ?? 0;
+    const replace = mergeInput.value === 'Replace';
+    const msg = existing > 0 ?
+      `Add ${working.length} substituents to R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing).` :
+      `Add ${working.length} substituents to R${t} (new slot).`;
+    const warnings = rGroupTargetWarnings(t, 0, coreRNumbers);
+    status.innerText = warnings.length > 0 ? `${msg} ⚠ ${warnings.join('; ')}.` : msg;
+    status.style.color = warnings.length > 0 ? 'var(--orange-2)' : 'var(--green-2)';
+    if (okBtn) okBtn.disabled = false;
+  };
+
+  templateInput.onChanged.subscribe(() => { resetWorking(); renderPreview(); updateStatus(); });
+  targetInput.onChanged.subscribe(updateStatus);
+  mergeInput.onChanged.subscribe(updateStatus);
+
+  const dialog = ui.dialog({title: 'Add R-group template'})
+    .add(ui.divV([templateInput.root, previewHost, targetInput.root, mergeInput.root, status]))
+    .onOK(() => {
+      const t = targetInput.value;
+      if (t == null || !Number.isInteger(t) || t < 1 || working.length === 0) return;
+      const smiles = working.map((it) => it.smiles);
+      addRGroupsFromSmiles(state.rGroupsByNum, smiles, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      refresh();
+    });
+  dialog.show({resizable: true, width: 520});
+  okBtn = dialog.getButton('OK') as HTMLButtonElement;
+  resetWorking();
+  renderPreview();
+  updateStatus();
+}
+
 // ─── Error badge ────────────────────────────────────────────────────────────
 
 function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => void } {
@@ -480,11 +698,13 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
 
 // ─── Main dialog ────────────────────────────────────────────────────────────
 
-interface ChemEnumDialogState {
+export interface ChemEnumDialogState {
   cores: ChemEnumCore[];
   rGroupsByNum: Map<number, ChemEnumRGroup[]>;
   mode: ChemEnumMode;
   appendToTable: DG.DataFrame | null;
+  removeDuplicates: boolean;
+  tableName: string;
 }
 
 // ─── History (localStorage-backed, shared by dialog + app) ──────────────────
@@ -492,7 +712,7 @@ interface ChemEnumDialogState {
 const HISTORY_KEY = 'd4-markush-enumeration-history';
 const HISTORY_MAX = 10;
 
-interface ChemEnumHistoryEntry {
+export interface ChemEnumHistoryEntry {
   /** ISO timestamp of when the enumeration was recorded. */
   date: string;
   /** One-line summary: `"6 cores · R1:6 · R2:4"`. */
@@ -502,6 +722,10 @@ interface ChemEnumHistoryEntry {
   cores: string[];
   /** R-number → list of original R-group SMILES. JSON object so we can round-trip. */
   rGroups: { [rNumber: string]: string[] };
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  removeDuplicates?: boolean;
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  tableName?: string;
 }
 
 function readHistory(): ChemEnumHistoryEntry[] {
@@ -531,7 +755,7 @@ function summarizeState(state: ChemEnumDialogState): string {
     (partsR.length ? ' · ' + partsR.join(' · ') : '');
 }
 
-function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
+export function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
   const rGroups: { [n: string]: string[] } = {};
   for (const [n, list] of state.rGroupsByNum)
     rGroups[String(n)] = list.map((rg) => rg.originalSmiles);
@@ -541,6 +765,8 @@ function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
     mode: state.mode,
     cores: state.cores.map((c) => c.originalSmiles),
     rGroups,
+    removeDuplicates: state.removeDuplicates,
+    tableName: resolveTableName(state.tableName),
   };
 }
 
@@ -552,7 +778,7 @@ function recordHistory(state: ChemEnumDialogState): void {
 }
 
 /** Reparses SMILES through `makeCore` / `makeRGroup` so validation runs with the current rdkit. */
-function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
+export function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
   state.cores = entry.cores.map((smi) => makeCore(smi, '', rdkit));
   state.rGroupsByNum = new Map();
   for (const [nStr, list] of Object.entries(entry.rGroups ?? {})) {
@@ -562,6 +788,8 @@ function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogSta
   }
   if (entry.mode === ChemEnumModes.Zip || entry.mode === ChemEnumModes.Cartesian)
     state.mode = entry.mode;
+  state.removeDuplicates = entry.removeDuplicates ?? DEFAULT_REMOVE_DUPLICATES;
+  state.tableName = resolveTableName(entry.tableName);
 }
 
 function formatHistoryDate(iso: string): string {
@@ -705,17 +933,22 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     panel.bindActionButton(runBtn as HTMLButtonElement);
     panel.appActionHost?.appendChild(runBtn);
 
-    // Seed the panel: most-recent history wins; if there is none, fall back to the shipped
-    // demo CSVs so the app never opens to an empty screen. Both paths mutate panel.state and
-    // panel.refresh() picks the changes up.
+    // Seed the panel so it never opens to an empty screen, in precedence order — the user's
+    // most-recent history wins, else the admin-configured package-settings defaults, else the
+    // shipped demo CSVs. Every path mutates panel.state and panel.refresh() picks the changes up.
+    const applyAndRefresh = (entry: ChemEnumHistoryEntry) => {
+      applyHistoryEntry(entry, panel.state, rdkit);
+      panel.refresh();
+    };
     const history = readHistory();
     if (history.length > 0) {
-      applyHistoryEntry(history[0], panel.state, rdkit);
-      panel.refresh();
+      applyAndRefresh(history[0]);
     } else {
-      preloadFromFiles(panel.state, rdkit).then((loaded) => {
-        if (loaded) panel.refresh();
-      });
+      const settingsEntry = await getMarkushDefaults();
+      if (settingsEntry)
+        applyAndRefresh(settingsEntry);
+      else
+        preloadFromFiles(panel.state, rdkit).then((loaded) => { if (loaded) panel.refresh(); });
     }
 
     const view = DG.View.create();
@@ -747,14 +980,17 @@ interface ChemEnumPanel {
 
 type ChemEnumLayout = 'dialog' | 'app';
 
-function buildChemEnumPanel(
+export function buildChemEnumPanel(
   rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
+  opts: {hideAppendToTable?: boolean} = {},
 ): ChemEnumPanel {
   const state: ChemEnumDialogState = {
     cores: preloadCore ? [preloadCore] : [],
     rGroupsByNum: new Map(),
     mode: ChemEnumModes.Cartesian,
     appendToTable: null,
+    removeDuplicates: DEFAULT_REMOVE_DUPLICATES,
+    tableName: DEFAULT_TABLE_NAME,
   };
 
   // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
@@ -855,16 +1091,18 @@ function buildChemEnumPanel(
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
       const label = ui.divText(`R${n} (${list.length})`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
+      const copyBtn = ui.button('Copy to…', () => openCopyToRGroupDialog(n, state, rdkit, refresh));
+      copyBtn.style.marginLeft = '4px';
+      ui.tooltip.bind(copyBtn, `Copy all R${n} substituents into another R-group slot`);
       const clearBtn = ui.button('Remove all', () => { state.rGroupsByNum.delete(n); refresh(); });
       clearBtn.style.marginLeft = '4px';
       ui.tooltip.bind(clearBtn, `Remove all R${n} groups`);
-      const header = ui.divH([label, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
+      const header = ui.divH([label, copyBtn, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
       const renderer = (i: number): HTMLElement => {
         const rg = list[i];
-        const remap = rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : '';
         const subtitle = rg.error ? 'invalid' :
           rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
-            `r group ${i + 1} · R${rg.rNumber}${remap}`;
+            `r group ${i + 1} · R${rg.rNumber}`;
         return buildCard({
           smiles: rg.error ? '' : rg.smiles,
           subtitle,
@@ -952,6 +1190,26 @@ function buildChemEnumPanel(
     items: grok.shell.tables, nullable: true,
     onValueChanged: (v) => { state.appendToTable = v; },
   });
+  // The defaults editor reuses this panel only to capture cores + R-groups; appending to a
+  // specific open table is meaningless as a saved default, so the caller can hide the input.
+  if (opts.hideAppendToTable) appendToTableInput.root.style.display = 'none';
+
+  const removeDuplicatesInput = ui.input.bool('Remove duplicates', {
+    value: state.removeDuplicates,
+    onValueChanged: (v) => { state.removeDuplicates = !!v; },
+  });
+  ui.tooltip.bind(removeDuplicatesInput.input,
+    'Removes duplicate molecules from the final enumerated output (compared by canonical SMILES). ' +
+    'This is distinct from the import wizard\'s dedup, which collapses identical input cores/R-groups.');
+
+  const tableNameInput = ui.input.string('Table name', {
+    value: state.tableName,
+    onValueChanged: (v) => { state.tableName = v ?? ''; },
+  });
+  ui.tooltip.bind(tableNameInput.input,
+    'Name of the result table created by the enumeration (ignored when appending to an existing table).');
+  // Wider field so longer table names stay fully visible.
+  tableNameInput.input.style.width = '250px';
 
   let okButton: HTMLButtonElement | null = null;
 
@@ -988,10 +1246,16 @@ function buildChemEnumPanel(
     if (okButton) okButton.disabled = !v.ok;
     if (coresClearBtn) coresClearBtn.disabled = state.cores.length === 0;
     if (rGroupsClearBtn) rGroupsClearBtn.disabled = state.rGroupsByNum.size === 0;
+    // Re-sync the option inputs after external state mutation (e.g. applying a history entry).
+    // Their onValueChanged only writes state (no refresh()), so this can't re-enter; modeInput is
+    // left untouched on purpose — setting its value would re-enter refresh() and loop.
+    removeDuplicatesInput.value = state.removeDuplicates;
+    tableNameInput.value = state.tableName;
     redrawPreview();
   };
 
-  // ── Add/import handlers (dedup now lives in the import wizard, gated by its checkbox) ──
+  // ── Add/import handlers. Input dedup (identical cores/R-groups) is gated by the import
+  //    wizard's checkbox; output dedup (identical products) is the "Remove duplicates" option. ──
   const addCoreFromSketcher = async () => {
     const c = await openCoreSketchDialog(rdkit);
     if (!c) return;
@@ -1022,10 +1286,22 @@ function buildChemEnumPanel(
     }
     refresh();
   };
+  const addRGroupsFromTemplate = () =>
+    loadRGroupTemplates(rdkit).then((templates) => openAddTemplateDialog(templates, state, rdkit, refresh));
+
+  // ── CSV export — one combined file. First column "Core", then one column per R# (R1, R2, …).
+  // The columns have different lengths (cores vs each R# list), so shorter ones are padded with
+  // empty cells. Not the tidiest table, but it carries the whole setup in a single CSV.
+  const exportAllCsv = () => {
+    const cols = buildExportColumns(state.cores, state.rGroupsByNum);
+    if (cols.length === 0) { grok.shell.info('Nothing to export.'); return; }
+    const df = DG.DataFrame.fromColumns(cols.map((c) => DG.Column.fromStrings(c.name, c.values)));
+    DG.Utils.download('markush-enumeration.csv', df.toCsv());
+  };
 
   const sectionHeader = (
     label: string,
-    onDraw?: () => void, onImport?: () => void, onClear?: () => void,
+    onDraw?: () => void, onImport?: () => void, onClear?: () => void, onTemplate?: () => void,
   ): {root: HTMLElement, clearBtn?: HTMLButtonElement} => {
     const parts: HTMLElement[] = [
       ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
@@ -1041,6 +1317,15 @@ function buildChemEnumPanel(
       importBtn.style.marginLeft = '4px';
       ui.tooltip.bind(importBtn, `${label}: pick a table + column`);
       parts.push(importBtn);
+    }
+    if (onTemplate) {
+      // Icon + label, matching "+ Draw" / "↓ Import…": leading swatchbook glyph at the same size as the +/↓.
+      const tmplIcon = ui.iconFA('swatchbook');
+      tmplIcon.style.fontSize = 'inherit';
+      tmplIcon.style.marginRight = '4px';
+      const templateBtn = ui.button([tmplIcon, 'Templates'], onTemplate, `${label}: insert a ready-made set`);
+      templateBtn.style.marginLeft = '4px';
+      parts.push(templateBtn);
     }
     let clearBtn: HTMLButtonElement | undefined;
     if (onClear) {
@@ -1068,9 +1353,13 @@ function buildChemEnumPanel(
   );
   coresClearBtn = coresHeader.clearBtn;
 
+  // Single combined-export icon — `arrow-to-bottom`, the same glyph the grid's download button uses.
+  const exportBtn = ui.iconFA('arrow-to-bottom', exportAllCsv, 'Download cores + R-groups as one CSV');
+
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
     () => { state.rGroupsByNum.clear(); refresh(); },
+    addRGroupsFromTemplate,
   );
   rGroupsClearBtn = rGroupsHeader.clearBtn;
 
@@ -1147,7 +1436,9 @@ function buildChemEnumPanel(
       runHeader,
       modeInput.root,
       appendToTableInput.root,
-      clearAllBtn,
+      removeDuplicatesInput.root,
+      tableNameInput.root,
+      ui.divH([clearAllBtn, exportBtn], {style: {gap: '8px', alignItems: 'center'}}),
       actionRow,
     ], {style: {
       ...cellBaseStyle, flex: '0 0 auto', overflow: 'visible',
@@ -1215,7 +1506,12 @@ function buildChemEnumPanel(
       errorBadge.root,
     ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
 
-    const footer = ui.div([appendToTableInput.root], {style: {padding: '2px 0'}});
+    const footer = ui.divV([
+      ui.divH([appendToTableInput.root, exportBtn],
+        {style: {alignItems: 'center', gap: '8px'}}),
+      removeDuplicatesInput.root,
+      tableNameInput.root,
+    ], {style: {padding: '2px 0'}});
 
     body = ui.divV([
       split, statusLine, footer,
@@ -1263,11 +1559,11 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       DG.Column.fromStrings(`R${n}`, results.map((r) => r.rGroupSmilesByNum.get(n) ?? '')));
     for (const c of rCols) c.semType = DG.SEMTYPE.MOLECULE;
 
-    const df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
-    df.name = 'Chem Enumeration';
+    let df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
 
     // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
     pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
+    let canonical: string[] | null = null;
     try {
       const res: DG.Column = await grok.functions.call('Chem:convertNotation', {
         data: df,
@@ -1281,9 +1577,21 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       const resArr = res.toList();
       smilesCol.init((i) => resArr[i]);
       smilesCol.meta.units = DG.chem.Notation.Smiles;
+      canonical = resArr;
     } catch (err: any) {
       // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
       _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);
+    }
+
+    // Dedup by canonical SMILES — reuse the array materialized during canonicalization
+    // (falling back to the column only when canonicalization was skipped).
+    if (state.removeDuplicates) {
+      const keep = uniqueKeepMask(canonical ?? smilesCol.toList());
+      const removed = df.rowCount - keep.trueCount;
+      if (removed > 0) {
+        df = df.clone(keep);
+        grok.shell.info(`Removed ${removed} duplicate molecule${removed === 1 ? '' : 's'}.`);
+      }
     }
 
     pi.update(90, 'Finalizing...');
@@ -1293,6 +1601,9 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       state.appendToTable.append(df, true);
       await state.appendToTable.meta.detectSemanticTypes();
     } else {
+      // Set name on the final frame: `df` may have been reassigned by `clone()` above,
+      // and `name` is a dedicated Dart property that `clone(saveTags)` does not carry.
+      df.name = resolveTableName(state.tableName);
       grok.shell.addTableView(df);
     }
   } catch (err: any) {

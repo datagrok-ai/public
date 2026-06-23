@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {
   buildCreationScriptGraph, applyGraphToEditor, BuiltGraph,
   estimateNodeWidth, estimateNodeHeight,
@@ -144,7 +145,7 @@ category('Flow: creation script import', () => {
 
   // ---------- the exact reported bug (Chem) ----------
 
-  test('column argument becomes a Select Column utility wired to the table', async () => {
+  test('column argument becomes an inline column input value, no Select Column node', async () => {
     if (!chemAvailable()) return; // Chem not on this server — skip gracefully
     const g = buildCreationScriptGraph(CHEM_SCRIPT);
     expect(g.warnings.length, 0, `unexpected warnings: ${g.warnings.join(' | ')}`);
@@ -152,20 +153,18 @@ category('Flow: creation script import', () => {
     const open = oneNodeByFunc(g, 'OpenFile');
     const chem = oneNodeByFunc(g, 'addChemPropertiesColumns');
 
-    // ResolveColumn (broken on the platform) is replaced by a Select Column utility.
+    // ResolveColumn (broken on the platform) is no longer wired through a
+    // Select Column node — the column name is stored on the input instead.
     expect(nodesByFunc(g, 'ResolveColumn').length, 0, 'no ResolveColumn node');
-    const selects = nodesByLabel(g, 'Select Column');
-    expect(selects.length, 1, 'one Select Column node');
-    const select = selects[0];
-    expect(select.dgNodeType, 'utility');
-    expect(select.properties['columnName'], 'molecule');
+    expect(nodesByLabel(g, 'Select Column').length, 0, 'no Select Column node');
+    expect(chem.inputValues['molecules'], 'molecule', 'column name stored as input value');
+    expect(sourceOf(g, chem, 'molecules'), null, 'molecules input is not connected');
 
-    // Its table is the enclosing call's table (the OpenFile output).
-    expect(sourceOf(g, select, 'table')?.node, open, 'Select Column.table ← OpenFile');
+    // The column resolves against the chem call's own table input.
+    expect((chem.properties['columnTables'] as Record<string, string>)['molecules'], 'table');
 
     // The chem call's own inputs.
     expect(sourceOf(g, chem, 'table')?.node, open);
-    expect(sourceOf(g, chem, 'molecules')?.node, select, 'chem.molecules ← Select Column');
     expect(chem.inputValues['MW'], true); // boolean slot → inputValue
     expect(chem.inputValues['logS'], false);
   });
@@ -216,9 +215,10 @@ category('Flow: creation script import', () => {
     }
   });
 
-  test('column_list arguments map to Select Columns wired to the right table', async () => {
-    // Each column_list parses to an array of ResolveColumn calls; numbered
-    // params pair with the matching table (keys2/values2 → table2).
+  test('column_list arguments become inline comma-separated input values', async () => {
+    // Each column_list parses to an array of ResolveColumn calls; the names are
+    // joined into the input value, and the column→table association pairs by the
+    // numeric suffix (keys2/values2 → table2).
     const g = buildCreationScriptGraph(
       'Result = JoinTables("demog", "demog (2)", ["USUBJID"], ["USUBJID"], ' +
       '["USUBJID", "AGE", "SEX"], ["USUBJID", "AGE"], "inner", true)');
@@ -236,24 +236,21 @@ category('Flow: creation script import', () => {
     expect(table1.dgTypeName, 'Utilities/Select Table');
     expect(table2.dgTypeName, 'Utilities/Select Table');
     expect(table1.properties['tableName'], 'demog');
-    expect(table1.label, 'table: demog');
     expect(table2.properties['tableName'], 'demog (2)');
-    expect(table2.label, 'table: demog (2)');
 
-    // Four Select Columns utilities, one per column_list param.
-    const selects = nodesByLabel(g, 'Select Columns');
-    expect(selects.length, 4);
-    const byParam = (key: string) => sourceOf(g, join, key)!.node;
-    expect(byParam('keys1').properties['columnNames'], 'USUBJID');
-    expect(byParam('keys2').properties['columnNames'], 'USUBJID');
-    expect(byParam('values1').properties['columnNames'], 'USUBJID, AGE, SEX');
-    expect(byParam('values2').properties['columnNames'], 'USUBJID, AGE');
+    // Column lists are inlined as comma-separated input values — no Select Columns nodes.
+    expect(nodesByLabel(g, 'Select Columns').length, 0, 'no Select Columns nodes');
+    expect(join.inputValues['keys1'], 'USUBJID');
+    expect(join.inputValues['keys2'], 'USUBJID');
+    expect(join.inputValues['values1'], 'USUBJID, AGE, SEX');
+    expect(join.inputValues['values2'], 'USUBJID, AGE');
 
-    // Numbered pairing: *1 lists read from table1, *2 lists from table2.
-    expect(sourceOf(g, byParam('keys1'), 'table')?.node, table1);
-    expect(sourceOf(g, byParam('values1'), 'table')?.node, table1);
-    expect(sourceOf(g, byParam('keys2'), 'table')?.node, table2);
-    expect(sourceOf(g, byParam('values2'), 'table')?.node, table2);
+    // Numbered pairing recorded in the association: *1 lists → table1, *2 → table2.
+    const assoc = join.properties['columnTables'] as Record<string, string>;
+    expect(assoc['keys1'], 'table1');
+    expect(assoc['values1'], 'table1');
+    expect(assoc['keys2'], 'table2');
+    expect(assoc['values2'], 'table2');
 
     // The variable Result is stored by SetVar from JoinTables' real output.
     const setVar = setVarFor(g, 'Result')!;
@@ -261,9 +258,8 @@ category('Flow: creation script import', () => {
     expect(setSrc?.node, join);
     expect(setSrc!.key.endsWith(PASSTHROUGH), false, 'stored from the real result, not a pass-through');
 
-    // Exact graph size:
-    // JoinTables + 2 Select Table + 4 Select Columns + SetVar (no output node).
-    expect(g.nodes.length, 8);
+    // Exact graph size: JoinTables + 2 Select Table + SetVar (no output, no Select Columns).
+    expect(g.nodes.length, 4);
   });
 
   test('layout: a producer path sits above the path that consumes its table', async () => {
@@ -378,6 +374,67 @@ category('Flow: creation script import', () => {
     }
   });
 
+  test('SetVar emits a runtime-guarded registration under the dataframe name', async () => {
+    const e = makeEditor();
+    try {
+      const g = buildCreationScriptGraph('T = OpenFile("System:AppData/x.csv")');
+      await applyGraphToEditor(g, e.flow);
+
+      // The value slot can be `dynamic`, so the dataframe check is done at
+      // runtime: when the value is a DataFrame, SetVar also registers it under
+      // the table's runtime .name, so GetVars that use the actual table name
+      // resolve (single node on the canvas, two assignments in the output).
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('instanceof DG.DataFrame'), true, 'runtime dataframe guard emitted');
+      expect(/variableName: \w+\.name\b/.test(script), true, 'second SetVar keyed by the dataframe runtime name');
+      // The variable-name registration is still present (single node, two assigns).
+      expect(script.includes(`variableName: "T"`), true, 'primary SetVar by variable name');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('mixed local/connected script: columns inlined, no Select Column(s) nodes, compiles', async () => {
+    if (!chemAvailable()) return;
+    const e = makeEditor();
+    try {
+      const FULL_SCRIPT = [
+        'Mol1KLocal = OpenTable("65d4d9d0-48b0-11f1-e424-4b91b3dfc6ce")',
+        'Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") // {"timestamp": 1781796656926}',
+        'Chem:addChemPropertiesColumns(Mol1K, "molecule", true, true, true, true, true, false, false, false, false)',
+        'AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth", subscribeOnChanges = true)',
+        'Result = JoinTables("mol1K", "mol1K local", ["prID"], ["prID"], ' +
+          '["molecule", "prID", "IDDB", "MW", "HBA", "HBD", "LogP", "LogS", "smth"], ' +
+          '["molecule", "prID", "IDDB"])',
+        'Chem:addChemPropertiesColumns(Result, "molecule", false, false, false, false, ' +
+          'false, false, false, true, false)',
+        'Chem:addChemPropertiesColumns(Result, "mol1K local.molecule", false, false, ' +
+          'false, false, false, false, true, false, false)',
+      ].join('\n');
+
+      const g = buildCreationScriptGraph(FULL_SCRIPT);
+      await applyGraphToEditor(g, e.flow);
+
+      // The whole point: no Select Column / Select Columns clutter.
+      expect(nodesByLabel(g, 'Select Column').length, 0, 'no Select Column nodes');
+      expect(nodesByLabel(g, 'Select Columns').length, 0, 'no Select Columns nodes');
+
+      const errors = validateGraph(e.flow).filter((r) => r.severity === 'error');
+      expect(errors.length, 0, `validation errors: ${errors.map((x) => x.message).join('; ')}`);
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('ResolveColumn'), false, 'no ResolveColumn in generated script');
+      // Single-column args inlined as table.col(...), incl. the qualified name.
+      expect(script.includes(`.col('molecule')`), true, 'molecule column selected via .col()');
+      expect(script.includes(`.col('mol1K local.molecule')`), true, 'qualified column name preserved');
+      // column_list args inlined as arrays of table.col(...).
+      expect(script.includes(`.col('prID')`), true, 'join key column via .col()');
+      expect(script.includes(`.col('smth')`), true, 'join value column via .col()');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('join script emits grok.shell.tableByName instead of ResolveTable', async () => {
     const e = makeEditor();
     try {
@@ -394,6 +451,73 @@ category('Flow: creation script import', () => {
       expect(script.includes('grok.shell.tableByName("demog (2)")'), true, 'table2 via tableByName');
       expect(script.includes('ResolveTable'), false, 'no ResolveTable in generated script');
       expect(script.includes(`.col('USUBJID')`), true, 'key columns via table.col()');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  // ---------- inferred order (run-order) edges ----------
+
+  /** Order edges from the built graph: exec-out → exec-in, no data. */
+  function orderEdges(graph: BuiltGraph) {
+    return graph.connections.filter((c) => c.order);
+  }
+
+  test('order edge inferred from a SetVar to a table referenced by friendly name', async () => {
+    // "mol1K local" is the friendly name of the variable Mol1KLocal created
+    // above — it has no data edge to the producer (it resolves at runtime via
+    // grok.shell.tableByName), so an order edge must force the producer first.
+    const g = buildCreationScriptGraph([
+      'Mol1KLocal = OpenFile("local.csv")',
+      'Result = JoinTables("mol1K local", "demog", ["prID"], ["prID"], ["prID"], ["prID"])',
+    ].join('\n'));
+
+    const edges = orderEdges(g);
+    expect(edges.length, 1, 'exactly one order edge (only "mol1K local" matches a variable)');
+    const edge = edges[0];
+
+    // Endpoints: producer SetVar(Mol1KLocal) → the Select Table for "mol1K local".
+    const setLocal = setVarFor(g, 'Mol1KLocal')!;
+    const selectLocal = g.nodes.find((n) =>
+      n.dgTypeName === 'Utilities/Select Table' && n.properties['tableName'] === 'mol1K local')!;
+    expect(edge.source, setLocal, 'order edge starts at the producing SetVar');
+    expect(edge.target, selectLocal, 'order edge ends at the name-referenced Select Table');
+    expect(edge.sourceKey, EXEC_OUT_KEY, 'wired from the exec-out port');
+    expect(edge.targetKey, EXEC_IN_KEY, 'wired into the exec-in port');
+
+    // "demog" matches no variable — no order edge for its Select Table.
+    const selectDemog = g.nodes.find((n) =>
+      n.dgTypeName === 'Utilities/Select Table' && n.properties['tableName'] === 'demog')!;
+    expect(edges.some((c) => c.target === selectDemog), false, 'no order edge for the unmatched table');
+  });
+
+  test('no order edges when no table name matches a variable', async () => {
+    const g = buildCreationScriptGraph([
+      'A = OpenFile("a.csv")',
+      'Result = JoinTables("totally different", "demog", ["id"], ["id"], ["id"], ["id"])',
+    ].join('\n'));
+    expect(orderEdges(g).length, 0, 'no inferred order edges');
+  });
+
+  test('inferred order edge applies to a live editor, sorts producer before the reference', async () => {
+    const e = makeEditor();
+    try {
+      const g = buildCreationScriptGraph([
+        'Mol1KLocal = OpenFile("local.csv")',
+        'Result = JoinTables("mol1K local", "demog", ["prID"], ["prID"], ["prID"], ["prID"])',
+      ].join('\n'));
+      const added = await applyGraphToEditor(g, e.flow);
+      expect(added, g.connections.length, 'every connection (incl. the order edge) applied');
+
+      // No cycle, and the order edge forces the producer ahead of the reference.
+      const errors = validateGraph(e.flow).filter((r) => r.severity === 'error');
+      expect(errors.length, 0, `validation errors: ${errors.map((x) => x.message).join('; ')}`);
+
+      const script = emitScript(e.flow, SETTINGS);
+      const iSet = script.indexOf('"Mol1KLocal"');
+      const iRef = script.indexOf('tableByName("mol1K local")');
+      expect(iSet >= 0 && iRef >= 0, true, 'both the SetVar and the name reference are emitted');
+      expect(iSet < iRef, true, 'Mol1KLocal is registered before it is read by name');
     } finally {
       destroyEditor(e);
     }

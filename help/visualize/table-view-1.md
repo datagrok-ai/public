@@ -130,6 +130,14 @@ Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box
 
 **Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
 
+#### Viewer controls font
+
+Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
+
+To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
+
+![](viewers/img/viewers-font.gif)
+
 ### Tooltips
 
 By default, Datagrok shows tooltips for columns, rows, and data visualized in

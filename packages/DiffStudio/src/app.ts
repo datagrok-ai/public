@@ -11,7 +11,7 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
 import {getIvp2WebWorker, getPipelineCreator, getInputVector, applyPipeline, getOutputNames} from 'diff-grok';
 
-import {CONTROL_EXPR, MAX_LINE_CHART} from './constants';
+import {CONTROL_EXPR, LOOP, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 
@@ -1958,7 +1958,11 @@ export class DiffStudio {
       return line.slice(1); // we ignore 1-st '&'
     };
 
-    // Inputs for argument
+    // Inputs for argument. Lookup keys use the script-form names (`_t0`/`_t1`/`_h`) so the values
+    // lookup matches the dataframe columns by the same names the model and RFV use.
+    const argLookupKey: Record<string, string> = {
+      initial: `_${ivp.arg.name}0`, final: `_${ivp.arg.name}1`, step: '_h',
+    };
     for (const key of ARG_INPUT_KEYS) {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
@@ -1974,7 +1978,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
-      saveInput(key, input);
+      saveInput(argLookupKey[key], input);
     }
 
     // Inputs for initial values
@@ -2029,7 +2033,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
-      saveInput(SCRIPTING.COUNT, input);
+      saveInput(LOOP.COUNT_NAME, input);
     }
 
     if (this.toRunWhenFormCreated)
@@ -2087,26 +2091,34 @@ export class DiffStudio {
       tableInputs.set(inpSetsNames[row], inputs);
     }
 
+    const applyLookup = (value: string) => {
+      this.toPreventSolving = true;
+
+      if (value === MISC.DEFAULT)
+        this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
+      else {
+        const colInputs = tableInputs.get(value);
+        // Match by exact name, then `_`-flexibly so a `_t0` input also accepts a legacy `t0` column.
+        this.inputByName.forEach((input, name) =>
+          input.value = colInputs.get(name) ?? colInputs.get(name.replace(/^_/, '')) ?? input.value);
+      }
+
+      this.toPreventSolving = false;
+      firstInput.value = firstInput.value;
+    };
+
     // create input for lookup table use
     const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
       items: choices,
       nullable: false,
       value: choices[0],
       tooltipText: lookupInfo.tooltip,
-      onValueChanged: (value) => {
-        this.toPreventSolving = true;
-
-        if (value === MISC.DEFAULT)
-          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
-        else {
-          const colInputs = tableInputs.get(value);
-          this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
-        }
-
-        this.toPreventSolving = false;
-        firstInput.value = firstInput.value;
-      },
+      onValueChanged: (value) => applyLookup(value),
     });
+
+    const initialValue = lookupChoiceInput.value;
+    if (this.startingInputs === null && initialValue !== null && initialValue !== MISC.DEFAULT)
+      applyLookup(initialValue);
 
     this.topCategory = lookupInfo.category;
     const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);

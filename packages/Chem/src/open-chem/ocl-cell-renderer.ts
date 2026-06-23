@@ -43,11 +43,15 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
 
     try {
       const mol = this.molCache.getOrCreate(molString, () => oclMol(molString));
-      OCLCellRenderer._canvas.width = w;
-      OCLCellRenderer._canvas.height = h;
+      const r = window.devicePixelRatio;
+      const dw = Math.floor(w * r);
+      const dh = Math.floor(h * r);
+      OCLCellRenderer._canvas.width = dw;
+      OCLCellRenderer._canvas.height = dh;
+      const offCtx = OCLCellRenderer._canvas.getContext('2d', {willReadFrequently: true})!;
       // @ts-ignore
       OCL.StructureView.drawMolecule(OCLCellRenderer._canvas, mol, {suppressChiralText: true});
-      g.drawImage(OCLCellRenderer._canvas, x, y);
+      g.putImageData(offCtx.getImageData(0, 0, dw, dh), Math.floor(x * r), Math.floor(y * r));
     } catch (exception) {
       const midX = x + w / 2;
       const midY = y + h / 2;

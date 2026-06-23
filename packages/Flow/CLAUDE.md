@@ -18,6 +18,7 @@ src/
 │   ├── node-component.tsx        # React Node + Socket components (rendered to DOM by ReactPlugin)
 │   ├── flow-editor.ts            # NodeEditor + AreaPlugin + ConnectionPlugin + ReactPlugin wiring
 │   ├── node-factory.ts           # Type registry: createNode(typeName), DG.Func discovery
+│   ├── graph-layout.ts           # Shared layered/banded layout (importer + Clean Layout ribbon)
 │   └── nodes/
 │       ├── input-nodes.ts        # 13 input types — //input: lines
 │       ├── output-nodes.ts       # Table & Value (with auto-type detect)
@@ -86,18 +87,22 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   `dynamic` `value` of `ResolveColumn` (a column name) — gets a **Constant node** wired in, because
   those slots aren't editable in the panel and need an explicit producer. `FuncCall` inputs connect
   recursively; `GetVar` inputs resolve through the variable table.
-- **Column arguments** parse to `ResolveColumn(value:dynamic, parentTable:dataframe)` where
-  `parentTable` is often `null`. The platform `ResolveColumn` function misbehaves at runtime, so the
-  importer substitutes the built-in **Select Column** utility (emits `table.col('name')`): the column
-  name goes into the node's `columnName` property and the `table` input is wired to the explicit
-  `parentTable` when present, else the **enclosing call's resolved table** (so the chain is
-  self-contained). `ResolveColumnList` → **Select Columns** (`columnNames`). These resolver calls
-  never advance variables.
-- **column_list arguments** (e.g. `JoinTables` keys/values) parse to a **JS array of `ResolveColumn`
-  calls** — the whole array maps to one **Select Columns** utility whose `columnNames` joins the
-  names. Table attribution pairs **numbered params by suffix** (`keys2`/`values2` → `table2`),
-  falling back to the call's first table, then the outer context. Arrays of plain primitives become
-  a **List** constant.
+- **Column arguments** parse to `ResolveColumn(value:dynamic, parentTable:dataframe)`. The platform
+  `ResolveColumn` misbehaves at runtime, *and* a Select Column node per column argument clutters the
+  graph — so the importer **inlines the column name into `node.inputValues[paramName]`** (the
+  `column`/`column_list` slot is editable in the panel, seeded by `FuncNode`). `ResolveColumnList` →
+  a **comma-separated** value string. At compile time the value becomes `table.col('name')` /
+  `[table.col('a'), …]` (see the compiler note below). These never advance variables.
+  - **Which table** a column resolves against is stored explicitly in the func node's
+    `properties['columnTables']` (`{columnParam → dataframeParam}`), seeded by `FuncNode` to the
+    dataframe input sharing the param's numeric suffix (`keys2`→`table2`) else the first dataframe
+    input (`defaultTableParam`). The panel shows a table-choice combo when the func has **≥2**
+    dataframe inputs (unambiguous for one). The compiler reads this association (falling back to the
+    same suffix/first heuristic for older saves).
+  - **Marginal case**: a column input on a func with **no** dataframe input can't resolve a table —
+    `FuncNode` doesn't seed it (stays connection-only) and the importer falls back to a real
+    **Select Column / Select Columns** node (the older behavior, still wired by `parentTable` / the
+    enclosing call's table). Arrays of plain primitives still become a **List** constant.
 - **Table-name strings** parse to `ResolveTable(value)` calls — substituted with the **Select Table**
   utility (`grok.shell.tableByName(name)`, also broken platform-side), titled `table: <name>` so
   collapsed nodes stay readable.
@@ -110,26 +115,39 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
   func node (labeled `set: <name>`) — the single terminal per variable — wired from the variable's
   final ref. Running the flow registers each value in the context under its original name, so
   downstream consumers (a Select Table in a lower disjoint path, other scripts) can resolve it.
+- **Inferred order edges**: a Select Table reads its table at runtime by name
+  (`grok.shell.tableByName`) with no data edge back to the producer, so nothing *forces* the producer
+  to run first. After all `SetVar`s are wired, `inferOrderEdges` matches each Select Table's
+  `tableName` against the script's variable names — **normalized** (`normalizeName`: lowercase, drop
+  non-alphanumerics) so the name↔friendlyName convention resolves (`Mol1KLocal` ↔ `"mol1K local"`) —
+  and adds an **order edge** (exec-out → exec-in, see Execution-Ordering Edges) from that variable's
+  `SetVar` to the Select Table. Creation scripts are linear/acyclic (a line references only
+  already-created tables), so the edges never form a cycle. They are **excluded from the layout** (the
+  `order` flag on `BuiltConnection`) — banding still relies on `orderedComponents`' name match — but
+  they do constrain the topological sort, so reordering nodes can't break run-order.
 - **Ordering**: after a *bare* call consumes a variable (a direct `GetVar`), the variable ref
   advances to that node's `<input>__pt` pass-through output. The next consumer connects there, so the
   topological sort reproduces the script's sequential line order (critical for in-place mutators like
   `addChemPropertiesColumns`), while the compiler still resolves the pass-through to the same
   expression — no spurious variables in the generated script.
 - **Layout**: all imported nodes start **collapsed** (title bar only — expand per node as needed).
-  Layered left-to-right with **one horizontal band per disjoint path** (weakly connected component):
-  - Columns are **global** — shared x per build layer (`max(source layers)+1`, assigned during the
-    build), width = widest estimated node in that layer — so every edge points right and same-depth
-    nodes line up across bands.
+  The arrangement itself lives in [rete/graph-layout.ts](src/rete/graph-layout.ts) (`layoutGraph`), shared
+  with the **Clean Layout** ribbon action so both produce the same result. Layered left-to-right with
+  **one horizontal band per disjoint path** (weakly connected component):
+  - Columns are **global** — shared x per layer, width = widest estimated node in that layer — so every
+    edge points right and same-depth nodes line up across bands. The importer feeds its incrementally
+    assigned layer map (`max(source layers)+1`); `FlowEditor.autoLayout` derives layers from the
+    connection structure via `computeLayers` (longest-path).
   - Each component is a contiguous band; within a band/column, nodes order by predecessor barycenter
     and greedily stack (`max(nextFreeY, barycenter-h/2, bandTop)`) so chains read as straight lanes,
     branches fan out, and nothing overlaps.
   - Bands are stacked in **dependency order** (`orderedComponents`): a path that produces a table
     (its `SetVar` variable) is placed **above** the path that reads it through a `Select Table` node
-    (matched by normalized name), with ties broken by script/creation order. Because the execution
-    topological sort ranks components by topmost-node `y`, this band order *is* the execution order —
-    producers run before the consumers that read their tables.
-  - `estimateNodeWidth`/`estimateNodeHeight` are exported for the layout-invariant tests
-    (edges-point-right, no-overlap, producer-above-consumer).
+    (matched by normalized name), with ties broken by node order. Because the execution topological
+    sort ranks components by topmost-node `y`, this band order *is* the execution order — producers run
+    before the consumers that read their tables.
+  - `estimateNodeWidth`/`estimateNodeHeight` live in `graph-layout.ts` (re-exported from the importer
+    for the layout-invariant tests: edges-point-right, no-overlap, producer-above-consumer).
 
 The core is a **pure, synchronous, DOM-free** `buildCreationScriptGraph(script): BuiltGraph` — it
 constructs `FlowNode` instances + connection records but touches no editor, so it is the unit-test
@@ -152,7 +170,11 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
-| `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
+| `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse |
+| `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
+| `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
+| `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
+| `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 
 ## Rete Pipeline
 
@@ -259,6 +281,18 @@ Every func node automatically gets **pass-through output slots** mirroring each 
 - **Compile**: `graph-compiler.ts` resolves a pass-through output to the same expression as the corresponding input — no new variable is generated.
 - **Visual**: dashed border on the socket, faded italic label.
 
+## Execution-Ordering ("order") Edges
+
+A second, **data-free** connection type that expresses pure run-order — "node1 (and everything before it) must run before node2" — so users don't have to rely on vertical node position. Where pass-throughs are func-specific and tied to a data input, order edges work between **any** two nodes.
+
+- **Ports**: `createNode` appends one **exec-in** (`__exec_in`, accepts many predecessors via `multipleConnections`) and one **exec-out** (`__exec_out`) of socket type `order` to *every* node — defined in [scheme.ts](src/rete/scheme.ts) (`EXEC_IN_KEY` / `EXEC_OUT_KEY` / `ORDER_SOCKET_TYPE` / `isExecKey`). They render as gray squares at the node's **top corners** (KNIME flow-variable style); the data-port rows exclude them.
+- **Type isolation**: `areTypesCompatible` returns `false` whenever either side is `order` (checked *before* the `dynamic`/`object` wildcards), so a data port can never connect to an exec port and vice-versa.
+- **Topological sort**: zero changes — the sort already works at the node level over `getConnections()`, so an order edge is just another dependency. Vertical position (`y`) degrades to a tiebreaker between genuinely-unordered nodes.
+- **Compiler**: ignores exec ports — every port-iterating loop in `graph-compiler.ts` filters `isExecKey`, so order edges produce no variable, no data, and never leak `__exec*` into the output.
+- **Layout**: **Clean Layout** (`FlowEditor.autoLayout`) **includes** order edges — it recomputes layers from scratch with `computeLayers`, so an order edge is just another forward dependency: the "after" node lands in a higher layer (further right) and explicit run-order shapes the layout left-to-right. The **importer** is the one exception: it reuses a *stale incremental* layer map (a `Select Table` was assigned layer 0 at creation, before its producer's `SetVar` existed), so feeding order edges to that map would draw a backward wire — the importer therefore **excludes** them (the `order` flag on `BuiltConnection`) and keeps its `orderedComponents` producer-above-consumer banding, with the order edge drawn as a diagonal between bands. (Click Clean Layout after import to re-flow it left-to-right.)
+- **Visual**: static gray dotted edge (no data-flow march); `FlowEditor.tagConnectionElement` stamps `data-order="true"`, CSS does the rest.
+- **Serialization**: free — order edges use the existing connection schema (`sourceOutput: __exec_out`, `targetInput: __exec_in`).
+
 ## Function Filtering ([rete/node-factory.ts](src/rete/node-factory.ts))
 
 Functions with no inputs *and* no outputs are skipped. Functions whose role appears in `EXCLUDED_ROLES` (or any tag in `EXCLUDED_TAGS`) are skipped.
@@ -270,6 +304,7 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 ## Type System (`types/type-map.ts`)
 
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
+- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName)` checks this **before** role coloring, so specific functions can be pinned regardless of role (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
@@ -284,8 +319,10 @@ Pipeline ([compiler/](src/compiler)):
    their topmost node's `(y, x)` — a path placed above another finishes completely before the lower
    one starts (lower paths may implicitly read what upper ones produced, e.g. a Select Table reading
    a table an upper path opened). **Within** a component, ready nodes are picked top-to-bottom
-   (`y`, then `x`, then insertion order).
-2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix.
+   (`y`, then `x`, then insertion order). `y` is only a *fallback* ordering — an explicit
+   **order edge** (see Execution-Ordering Edges) makes "A before B" a real graph edge, so users aren't
+   forced to encode run-order through vertical position.
+2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix. Func input resolution runs in two passes: ordinary inputs (connections, primitive `inputValues`) first, then unconnected **`column`/`column_list`** `inputValues` — these inline to `table.col('name')` / `[table.col(…), …]`, where the table comes from the node's `properties['columnTables']` association (so column args need no Select Column node; `tableExprForColumnParam`/`columnSelectionExpr`).
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 
 ### Validation ([compiler/validator.ts](src/compiler/validator.ts))
@@ -401,7 +438,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 - Title row at top (editable label) + node-type badge.
 - Accordion with type-specific panes:
-  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; "connected only" label otherwise).
+  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; a `string` input that declares `.choices` renders a **combo** instead of a text field — with a leading empty option when the property is `nullable` — via `propertyChoices`/`stringChoiceOptions`; `column` → a column-name text field, `column_list` → a comma-separated field, laid out side by side (≈70%/30%, `createColumnRow`) with a table-choice combo when the func has ≥2 dataframe inputs writing `properties['columnTables']`; "connected only" label otherwise).
   - Input nodes: **Input Configuration** (paramName, description, defaultValue, nullable, caption, type/semType filters, choices, min/max, showSlider).
   - Output nodes: **Output Configuration** (paramName + outputType combo for ValueOutput).
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).
@@ -436,6 +473,7 @@ Spotfire-inspired light theme:
 - **Drag from toolbox**: `ui.makeDroppable` on the canvas container — accepts `DG.FileInfo` (creates an `OpenFile` node with `inputValues['fullPath']`) or `DG.Func` (looks up the registered factory by func name). Native HTML5 drag from the FunctionBrowser carries the typeName via the `FF_DRAG_MIME` data type; the canvas drop handler reads it and calls `addNodeAt` with the drop point.
 - **Snap-to-grid + alignment guides**: `nodetranslate` is intercepted in `FlowEditor.wireEvents` — `computeSnap` returns either an alignment-snapped position (when an edge/center is within `alignThreshold` of another node's edge/center) or a 20px grid-snapped position. While dragging, dashed guide lines on a screen-space overlay (`.ff-guide-overlay`) mark the alignment axes; hidden on `nodedragged`.
 - **Pan-to-new-node**: `addNodeAtCenter` calls `panToNode(id)` after one rAF, translating the AreaPlugin so the freshly-added node is at viewport center.
+- **Overview minimap** (bottom-right): a screen-space SVG overlay built by `FlowEditor.installMinimap` (sibling of the guide overlay in `this.container`, *not* in the transformed canvas). Draws each node as a small rect (title color) plus the current viewport rectangle; click/drag pans (centers the viewport on the clicked graph point). Redraws are rAF-coalesced via `scheduleMinimapRedraw`, hooked into the area pipe (`translated`/`zoomed`/`render`/`nodetranslated`) and graph-change events. **Clicking anywhere on the header** minimizes it to the title bar (`data-collapsed`; the chevron is just an affordance). It's always present — there's no hide-entirely option. `FlowEditor.setMinimapCollapsed(bool)` sets the state programmatically; `FuncFlowView.setMinimapCollapsed(bool)` queues it until the (async) editor exists — used by `openCreationScriptFlowDialog`, which opens minimized in the dialog and expands on **Open In Editor**. The fit transform is stashed on the svg `data-*` so click→canvas mapping reuses it. rect-select and double-click-to-fit skip `.ff-minimap`.
 - **Drag-out suggestion menu**: pointerdown on `.ff-socket-row-output .ff-socket` records the source slot; if pointerup lands on empty canvas (not a node, not a socket) AND no connection was created in between, [`openSuggestionMenu`](src/rete/flow-editor.ts) opens a searchable popup of every node type whose first input is type-compatible with the dragged source (Value Output sorted first). Selecting an item creates the node at the drop point and auto-connects the source to its first compatible input. Compatible-types lookup is cached per node type — see `findNodeTypesAcceptingInput` / `_sampleInputTypesCache` in `node-factory.ts`.
 
 ## Key Dependencies

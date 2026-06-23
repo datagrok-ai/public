@@ -7,7 +7,7 @@ import {
   test,
   expectObject,
   expectExceptionAsync,
-  before
+  before,
 } from '@datagrok-libraries/test/src/test';
 
 category('Docker', () => {
@@ -23,7 +23,7 @@ category('Docker', () => {
   test('Get response: On demand', async () => {
     const container = await stopContainer(containerOnDemandName);
     await testResponse(container.id);
-  }, {timeout: 240000, /*stressTest: true*/});
+  }, {timeout: 240000 /*stressTest: true*/});
 
   test('Container timeout', async () => {
     let container = await stopContainer(containerOnDemandName);
@@ -57,7 +57,7 @@ category('Docker', () => {
     } finally {
       grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
     }
-  }, {timeout: 240000, /*stressTest: true*/});
+  }, {timeout: 240000 /*stressTest: true*/});
 
   test('Proxy WebSocket', async () => {
     let ws: WebSocket | undefined;
@@ -70,25 +70,24 @@ category('Docker', () => {
           if (event.data === testMessage) {
             cleanup();
             res();
-          }
-          else {
+          } else {
             cleanup();
-            rej(new Error(`First message wasn't the same as expected: ${event.data}`))
+            rej(new Error(`First message wasn't the same as expected: ${event.data}`));
           }
         };
 
         const onError = (_: Event) => {
           cleanup();
-          rej(new Error("WebSocket encountered an error"));
+          rej(new Error('WebSocket encountered an error'));
         };
 
         function cleanup() {
-          ws!.removeEventListener("message", onMessage);
-          ws!.removeEventListener("error", onError);
+          ws!.removeEventListener('message', onMessage);
+          ws!.removeEventListener('error', onError);
         }
 
-        ws!.addEventListener("message", onMessage);
-        ws!.addEventListener("error", onError);
+        ws!.addEventListener('message', onMessage);
+        ws!.addEventListener('error', onError);
         ws!.send(testMessage);
       });
     } finally {
@@ -116,5 +115,5 @@ async function testResponse(containerId: string): Promise<void> {
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
   const body = await response.json();
   expect(response.status, 200, `Response status was ${response.status}, responded with: ${body['datagrok-error']}`);
-  expectObject(body, {"result": 16});
+  expectObject(body, {'result': 16});
 }

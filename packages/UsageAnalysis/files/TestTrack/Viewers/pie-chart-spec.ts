@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -12,96 +13,34 @@ test('Pie chart tests', async ({page}) => {
   await loginToDatagrok(page);
 
   // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   // Phase 3: Add Pie chart
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-pie-chart"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-Pie-chart"]').waitFor({timeout: 5000});
+  await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
   // #### Sorting
   await softStep('Sorting', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      pie.props.categoryColumnName = 'RACE';
-      const r: any[] = [];
-
-      pie.props.pieSortType = 'by value';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortType);
-
-      pie.props.pieSortOrder = 'desc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortOrder);
-
-      pie.props.pieSortOrder = 'asc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortOrder);
-
-      pie.props.pieSortType = 'by category';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortType);
-
-      pie.props.pieSortOrder = 'asc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortOrder);
-
-      pie.props.pieSortOrder = 'desc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.pieSortOrder);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {categoryColumnName: 'RACE', pieSortType: 'by value'}, read: 'pieSortType'},
+      {set: {pieSortOrder: 'desc'}, read: 'pieSortOrder'},
+      {set: {pieSortOrder: 'asc'}, read: 'pieSortOrder'},
+      {set: {pieSortType: 'by category'}, read: 'pieSortType'},
+      {set: {pieSortOrder: 'asc'}, read: 'pieSortOrder'},
+      {set: {pieSortOrder: 'desc'}, read: 'pieSortOrder'},
+    ]);
     expect(result).toEqual(['by value', 'desc', 'asc', 'by category', 'asc', 'desc']);
   });
 
   // #### Segment angle and length
   await softStep('Segment angle and length', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      pie.props.categoryColumnName = 'RACE';
-      const r: any[] = [];
-
-      pie.props.segmentAngleColumnName = 'AGE';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.segmentAngleColumnName);
-
-      pie.props.segmentAngleAggrType = 'sum';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.segmentAngleAggrType);
-
-      pie.props.segmentAngleAggrType = 'count';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.segmentAngleAggrType);
-
-      pie.props.segmentLengthColumnName = 'WEIGHT';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.segmentLengthColumnName);
-
-      pie.props.segmentLengthAggrType = 'max';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(pie.props.segmentLengthAggrType);
-
-      pie.props.segmentAngleColumnName = '';
-      pie.props.segmentLengthColumnName = '';
-      await new Promise(res => setTimeout(res, 300));
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {categoryColumnName: 'RACE', segmentAngleColumnName: 'AGE'}, read: 'segmentAngleColumnName'},
+      {set: {segmentAngleAggrType: 'sum'}, read: 'segmentAngleAggrType'},
+      {set: {segmentAngleAggrType: 'count'}, read: 'segmentAngleAggrType'},
+      {set: {segmentLengthColumnName: 'WEIGHT'}, read: 'segmentLengthColumnName'},
+      {set: {segmentLengthAggrType: 'max'}, read: 'segmentLengthAggrType'},
+      {set: {segmentAngleColumnName: '', segmentLengthColumnName: ''}},
+    ]);
     expect(result[0]).toBe('AGE');
     expect(result[1]).toBe('sum');
     expect(result[2]).toBe('count');
@@ -111,40 +50,15 @@ test('Pie chart tests', async ({page}) => {
 
   // #### Appearance
   await softStep('Appearance', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      const r: any[] = [];
-
-      pie.props.startAngle = 90;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.startAngle);
-
-      pie.props.startAngle = 180;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.startAngle);
-
-      pie.props.startAngle = 0;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.startAngle);
-
-      pie.props.maxRadius = 100;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.maxRadius);
-
-      pie.props.maxRadius = 150;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.maxRadius);
-
-      pie.props.shift = 10;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.shift);
-
-      pie.props.shift = 0;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.shift);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {startAngle: 90}, wait: 200, read: 'startAngle'},
+      {set: {startAngle: 180}, wait: 200, read: 'startAngle'},
+      {set: {startAngle: 0}, wait: 200, read: 'startAngle'},
+      {set: {maxRadius: 100}, wait: 200, read: 'maxRadius'},
+      {set: {maxRadius: 150}, wait: 200, read: 'maxRadius'},
+      {set: {shift: 10}, wait: 200, read: 'shift'},
+      {set: {shift: 0}, wait: 200, read: 'shift'},
+    ]);
     expect(result).toEqual([90, 180, 0, 100, 150, 10, 0]);
   });
 
@@ -182,24 +96,11 @@ test('Pie chart tests', async ({page}) => {
 
   // #### Outline
   await softStep('Outline', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      const r: number[] = [];
-
-      pie.props.outlineLineWidth = 5;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.outlineLineWidth);
-
-      pie.props.outlineLineWidth = 0;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.outlineLineWidth);
-
-      pie.props.outlineLineWidth = 1;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.outlineLineWidth);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {outlineLineWidth: 5}, wait: 200, read: 'outlineLineWidth'},
+      {set: {outlineLineWidth: 0}, wait: 200, read: 'outlineLineWidth'},
+      {set: {outlineLineWidth: 1}, wait: 200, read: 'outlineLineWidth'},
+    ]);
     expect(result).toEqual([5, 0, 1]);
   });
 
@@ -227,51 +128,22 @@ test('Pie chart tests', async ({page}) => {
 
   // #### Column selector
   await softStep('Column selector', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      const r: boolean[] = [];
-
-      pie.props.showColumnSelector = false;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.showColumnSelector);
-
-      pie.props.showColumnSelector = true;
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.showColumnSelector);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {showColumnSelector: false}, wait: 200, read: 'showColumnSelector'},
+      {set: {showColumnSelector: true}, wait: 200, read: 'showColumnSelector'},
+    ]);
     expect(result).toEqual([false, true]);
   });
 
   // #### Legend
   await softStep('Legend', async () => {
-    const result = await page.evaluate(async () => {
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      const r: any[] = [];
-
-      pie.props.legendVisibility = 'Always';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.legendVisibility);
-
-      pie.props.legendPosition = 'LeftTop';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.legendPosition);
-
-      pie.props.legendPosition = 'RightBottom';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.legendPosition);
-
-      pie.props.legendVisibility = 'Never';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.legendVisibility);
-
-      pie.props.legendVisibility = 'Auto';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(pie.props.legendVisibility);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Pie chart', [
+      {set: {legendVisibility: 'Always'}, wait: 200, read: 'legendVisibility'},
+      {set: {legendPosition: 'LeftTop'}, wait: 200, read: 'legendPosition'},
+      {set: {legendPosition: 'RightBottom'}, wait: 200, read: 'legendPosition'},
+      {set: {legendVisibility: 'Never'}, wait: 200, read: 'legendVisibility'},
+      {set: {legendVisibility: 'Auto'}, wait: 200, read: 'legendVisibility'},
+    ]);
     expect(result).toEqual(['Always', 'LeftTop', 'RightBottom', 'Never', 'Auto']);
   });
 
@@ -634,8 +506,5 @@ test('Pie chart tests', async ({page}) => {
     expect(result[3].filtered).toBeGreaterThan(0);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

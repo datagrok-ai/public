@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -8,23 +9,8 @@ test('3D Scatter Plot — Test Track scenarios', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: open dataset
-  await page.evaluate(async () => {
-    const g: any = (window as any).grok;
-    document.body.classList.add('selenium');
-    g.shell.settings.showFiltersIconsConstantly = true;
-    g.shell.windows.simpleMode = true;
-    g.shell.closeAll();
-    const df = await g.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    g.shell.addTableView(df);
-    await new Promise<void>(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
-  // Phase 3: add 3D Scatter Plot
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-3d-scatter-plot"]') as HTMLElement;
     icon.click();
@@ -38,7 +24,6 @@ test('3D Scatter Plot — Test Track scenarios', async ({page}) => {
   });
   expect(await sp()).toBe(true);
 
-  // JS API helpers — scatter-plot-spec.ts pattern
   const setProps = async (patch: Record<string, any>) => {
     await page.evaluate((p) => {
       const g: any = (window as any).grok;
@@ -258,8 +243,5 @@ test('3D Scatter Plot — Test Track scenarios', async ({page}) => {
     expect(await page.evaluate(() => !!document.querySelector('[name="viewer-Bar-chart"]'))).toBe(false);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

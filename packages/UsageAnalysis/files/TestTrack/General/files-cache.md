@@ -1,12 +1,18 @@
-1. Go to Files > Demo. Check if there is cache enabled for Demo connection. (Open context menu on Demo connection, press 'Edit...', check 'Cache' checkbox)
-2. Create new folder in Files > Demo root directory with name "Folder cache test"
-3. Create cache mapping for newly created directory. Open context menu on Demo connection, press 'Cache...', choose new foolder, add cron invalidtion: `*/2 * * * *` (every 2 minutes)
-4. Create file test.txt in "Folder cache test" folder
-5. Write "Hello world!" in the file and save it.
-6. Rename file to 'test1.txt'
-7. Rename folder to "Folder cache test1"
-8. Delete "Folder cache test1" folder. Make sure the folder is deleted.
-9. Check cache mappings, the mapping for created folder should be deleted also (Context menu, Cache...)
+File-share folder/file CRUD lifecycle on a connection:
+
+1. Create a new folder "Folder cache test" in a connection's directory.
+2. Create file test.txt in the folder and write "Hello world!" into it.
+3. Rename the file to 'test1.txt'.
+4. Rename the folder to "Folder cache test1".
+5. Delete the "Folder cache test1" folder. Make sure the folder is deleted.
+
+> Automated by `files-cache-spec.ts` (folder/file create-write-read-rename-delete
+> lifecycle via `grok.dapi.files`).
+>
+> The connection-level **cache** configuration — enabling "Cache" on the
+> connection, creating a "Cache..." mapping with cron invalidation
+> `*/2 * * * *`, and verifying the mapping is removed together with its folder —
+> is manual (no JS API): see `files-cache-ui.md`.
 
 ---
 {

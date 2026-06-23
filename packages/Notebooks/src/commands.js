@@ -37,7 +37,7 @@ const cmdIds = {
   undo: 'notebook-cells:undo',
   redo: 'notebook-cells:redo',
   insertBelow: 'notebook-cells:insert-below',
-  insertAbove: 'notebook-cells:insert-above'
+  insertAbove: 'notebook-cells:insert-above',
 };
 
 export const SetupCommands = (commands, nbWidget, handler) => {
@@ -45,69 +45,69 @@ export const SetupCommands = (commands, nbWidget, handler) => {
   commands.addCommand(cmdIds.select, {label: 'Completer: Select', execute: () => handler.completer.selectActive()});
   commands.addCommand(cmdIds.interrupt, {
     label: 'Interrupt',
-    execute: async () => nbWidget.context.sessionContext.session.kernel.interrupt()
+    execute: async () => nbWidget.context.sessionContext.session.kernel.interrupt(),
   });
   commands.addCommand(cmdIds.restart, {
     label: 'Restart Kernel',
-    execute: () => sessionContextDialogs.restart(nbWidget.context.sessionContext)
+    execute: () => sessionContextDialogs.restart(nbWidget.context.sessionContext),
   });
   commands.addCommand(cmdIds.switchKernel, {
     label: 'Switch Kernel',
-    execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext)
+    execute: () => sessionContextDialogs.selectKernel(nbWidget.context.sessionContext),
   });
   commands.addCommand(cmdIds.runAndAdvance, {
     label: 'Run and Advance',
-    execute: () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext)
+    execute: () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext),
   });
   commands.addCommand(cmdIds.run, {
     label: 'Run',
-    execute: () => NotebookActions.run(nbWidget.content, nbWidget.context.sessionContext)
+    execute: () => NotebookActions.run(nbWidget.content, nbWidget.context.sessionContext),
   });
   commands.addCommand(cmdIds.save, {label: 'Save', execute: () => nbWidget.context.save()});
   commands.addCommand(cmdIds.editMode, {label: 'Edit Mode', execute: () => nbWidget.content.mode = 'edit'});
   commands.addCommand(cmdIds.commandMode, {label: 'Command Mode', execute: () => nbWidget.content.mode = 'command'});
   commands.addCommand(cmdIds.selectBelow, {
     label: 'Select Below',
-    execute: () => NotebookActions.selectBelow(nbWidget.content)
+    execute: () => NotebookActions.selectBelow(nbWidget.content),
   });
   commands.addCommand(cmdIds.selectAbove, {
     label: 'Select Above',
-    execute: () => NotebookActions.selectAbove(nbWidget.content)
+    execute: () => NotebookActions.selectAbove(nbWidget.content),
   });
   commands.addCommand(cmdIds.extendAbove, {
     label: 'Extend Above',
-    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content)
+    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content),
   });
   commands.addCommand(cmdIds.extendTop, {
     label: 'Extend to Top',
-    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content, true)
+    execute: () => NotebookActions.extendSelectionAbove(nbWidget.content, true),
   });
   commands.addCommand(cmdIds.extendBelow, {
     label: 'Extend Below',
-    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content)
+    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content),
   });
   commands.addCommand(cmdIds.extendBottom, {
     label: 'Extend to Bottom',
-    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content, true)
+    execute: () => NotebookActions.extendSelectionBelow(nbWidget.content, true),
   });
   commands.addCommand(cmdIds.merge, {
     label: 'Merge Cells',
-    execute: () => NotebookActions.mergeCells(nbWidget.content)
+    execute: () => NotebookActions.mergeCells(nbWidget.content),
   });
   commands.addCommand(cmdIds.split, {label: 'Split Cell', execute: () => NotebookActions.splitCell(nbWidget.content)});
   commands.addCommand(cmdIds.undo, {label: 'Undo', execute: () => NotebookActions.undo(nbWidget.content)});
   commands.addCommand(cmdIds.redo, {label: 'Redo', execute: () => NotebookActions.redo(nbWidget.content)});
   commands.addCommand(cmdIds.deleteCell, {
     label: 'Delete Cell',
-    execute: () => NotebookActions.deleteCells(nbWidget.content)
+    execute: () => NotebookActions.deleteCells(nbWidget.content),
   });
   commands.addCommand(cmdIds.insertBelow, {
     label: 'Insert Cell Below',
-    execute: () => NotebookActions.insertBelow(nbWidget.content)
+    execute: () => NotebookActions.insertBelow(nbWidget.content),
   });
   commands.addCommand(cmdIds.insertAbove, {
     label: 'Insert Cell Above',
-    execute: () => NotebookActions.insertAbove(nbWidget.content)
+    execute: () => NotebookActions.insertAbove(nbWidget.content),
   });
 
   commands.addCommand(cmdIds.invokeNotebook, {
@@ -115,7 +115,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
     execute: () => {
       if (nbWidget.content.activeCell.model.type === 'code')
         return commands.execute(cmdIds.invoke);
-    }
+    },
   });
 
   commands.addCommand(cmdIds.selectNotebook, {
@@ -123,7 +123,7 @@ export const SetupCommands = (commands, nbWidget, handler) => {
     execute: () => {
       if (nbWidget.content.activeCell.model.type === 'code')
         return commands.execute(cmdIds.select);
-    }
+    },
   });
 
   let searchInstance;
@@ -144,31 +144,29 @@ export const SetupCommands = (commands, nbWidget, handler) => {
       // find next and previous are now enabled
       commands.notifyCommandChanged();
       searchInstance.focusInput();
-    }
+    },
   });
 
   commands.addCommand(cmdIds.findNext, {
     label: 'Find Next',
     isEnabled: () => !!searchInstance,
     execute: async () => {
-      if (!searchInstance) {
+      if (!searchInstance)
         return;
-      }
       await searchInstance.provider.highlightNext();
       searchInstance.updateIndices();
-    }
+    },
   });
 
   commands.addCommand(cmdIds.findPrevious, {
     label: 'Find Previous',
     isEnabled: () => !!searchInstance,
     execute: async () => {
-      if (!searchInstance) {
+      if (!searchInstance)
         return;
-      }
       await searchInstance.provider.highlightPrevious();
       searchInstance.updateIndices();
-    }
+    },
   });
 
   const bindings = [
@@ -197,8 +195,8 @@ export const SetupCommands = (commands, nbWidget, handler) => {
     {selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['A'], command: cmdIds.insertAbove},
     {selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Shift J'], command: cmdIds.extendBelow},
     {selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Z'], command: cmdIds.undo},
-    {selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Y'], command: cmdIds.redo}
+    {selector: '.jp-Notebook.jp-mod-commandMode:focus', keys: ['Y'], command: cmdIds.redo},
   ];
 
-  bindings.map(binding => commands.addKeyBinding(binding));
+  bindings.map((binding) => commands.addKeyBinding(binding));
 };

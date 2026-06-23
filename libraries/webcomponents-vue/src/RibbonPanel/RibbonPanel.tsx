@@ -4,6 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {v4 as uuidv4} from 'uuid';
 
+const shallowEqualNodes = (a: HTMLElement[], b: HTMLElement[]): boolean =>
+  a.length === b.length && a.every((el, i) => el === b[i]);
+
 export const RibbonPanel = Vue.defineComponent({
   name: 'RibbonPanel',
   props: {
@@ -36,6 +39,11 @@ export const RibbonPanel = Vue.defineComponent({
       const panels = currentView.value.getRibbonPanels();
       const existingPanelIdx = panels.findIndex(isInstanceManagedPanel);
       const panel = [...elements.values()];
+
+      // Skip the DG round-trip when our panel is already present with the same nodes.
+      // Re-renders re-run the ref callbacks with identical DOM nodes; re-pushing them is a no-op.
+      if (existingPanelIdx >= 0 && shallowEqualNodes(panels[existingPanelIdx], panel))
+        return;
 
       // Nothing to add/remove
       if (existingPanelIdx < 0 && panel.length == 0) {

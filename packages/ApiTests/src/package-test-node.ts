@@ -1,22 +1,24 @@
 import { readdir } from 'fs/promises';
 import { writeFileSync } from 'fs';
-import { basename, join } from 'path';
+import { basename, dirname, join } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
-import { startDatagrok } from 'datagrok-api/datagrok';
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+
+import { setTestPackage } from './test-package';
 
 declare let grok: typeof _grok, DG: typeof _DG;
 export let _package: _DG.Package;
 
 const testsExclude = [
-    'sticky_meta.js',
-    'benchmarks.js',
-    'functions-annotations.js',
-    'vector-functions-and-scripts.js'
+    'sticky_meta.ts',
+    'benchmarks.ts',
+    'functions-annotations.ts',
+    'vector-functions-and-scripts.ts'
 ];
 
 async function main(): Promise<void> {
@@ -24,10 +26,14 @@ async function main(): Promise<void> {
     console.log('Exchanging devKey for token...');
     const apiToken = await getToken(apiUrl, devKey);
     console.log('Received token.');
+    // Loaded dynamically (not a static import) so Node/tsx resolve datagrok-api's
+    // named exports through cjs-module-lexer instead of failing at link time.
+    const { startDatagrok } = await import('datagrok-api/datagrok');
     await startDatagrok({apiUrl, apiToken});
     _package = await grok.dapi.packages.filter('shortName = "ApiTests"').first();
     if (!_package)
         throw new Error('ApiTests package should be installed.');
+    setTestPackage(_package);
 
     await loadTestFiles();
 
@@ -156,6 +162,8 @@ function parseArgs() {
 }
 
 async function getToken(url: string, key: string) {
+    // Raw fetch is intentional here: this runs before startDatagrok(), so the grok
+    // client (and grok.dapi) isn't initialized yet — there's no dapi layer to use.
     const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
     const json = await response.json();
     if (json.isSuccess == true)
@@ -165,7 +173,7 @@ async function getToken(url: string, key: string) {
 }
 
 async function loadTestFiles(): Promise<void> {
-    const dapiDir = join(__dirname, 'dapi');
+    const dapiDir = join(dirname(fileURLToPath(import.meta.url)), 'dapi');
     const files = await readdir(dapiDir);
     for (const file of files) {
         const baseName = basename(file);
@@ -173,8 +181,8 @@ async function loadTestFiles(): Promise<void> {
             console.log(`Skipping tests in ${baseName} because test file marked as unsupported.`);
             continue;
         }
-        if (baseName.endsWith('.js'))
-            require(join(dapiDir, file));
+        if (baseName.endsWith('.ts'))
+            await import(pathToFileURL(join(dapiDir, file)).href);
     }
 }
 
@@ -182,16 +190,33 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
     const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
+    // The stress suite is the stressTest-marked tests. Filter the registry directly
+    // (not all installed @datagrok-libraries/test versions honor the stressTest run
+    // option), so only stress-marked tests run and the baseline can be 100%.
+    for (const key of Object.keys(tests)) {
+        const cat: any = (tests as any)[key];
+        if (cat?.tests)
+            cat.tests = cat.tests.filter((t: any) => t.options?.stressTest);
+    }
+    // Wall-clock window for this task, so stress runs can be correlated with the
+    // container CPU/memory time series (UTC, matching the docker_stats collector).
+    const taskStart = new Date().toISOString();
     for (const key of Object.keys(tests))
-        if (runAll || categories.has(key))
+        if ((runAll || categories.has(key)) && (tests as any)[key]?.tests?.length)
             data.push(...(await runTests({
                 category: key,
                 test: undefined,
                 testContext: undefined,
+                stressTest: true,
                 nodeOptions: {package: _package}
             })));
     if (data.length === 0)
         return null;
+    const taskFinish = new Date().toISOString();
+    for (const row of data as any[]) {
+        row.task_start = taskStart;
+        row.task_finish = taskFinish;
+    }
     const df = DG.DataFrame.fromObjects(data)!;
     await df.columns.addNewCalculated('concurrent_run', `${concurrentRun}`, DG.COLUMN_TYPE.INT, false, false);
     await df.columns.addNewCalculated('total_concurrent_runs', `${concurrency}`, DG.COLUMN_TYPE.INT, false, false);

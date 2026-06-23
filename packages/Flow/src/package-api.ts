@@ -30,7 +30,7 @@ export namespace funcs {
     return await grok.functions.call('Flow:FlowFromCreationScript', { script });
   }
 
-  export async function openCreationScriptFlowDialog(script: string ): Promise<any> {
-    return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script });
+  export async function openCreationScriptFlowDialog(script: string , show: boolean ): Promise<any> {
+    return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script, show });
   }
 }

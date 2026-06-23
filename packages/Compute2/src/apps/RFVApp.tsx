@@ -6,7 +6,7 @@ import {Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
-import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
+import {catchError, debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -44,7 +44,13 @@ export const RFVApp = Vue.defineComponent({
       switchMap(([, isValid]) => {
         if (!isValid || currentCallState.value.isRunning)
           return of(null);
-        return from(run());
+        // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
+        return from(run()).pipe(
+          catchError((err) => {
+            grok.shell.error(err instanceof Error ? err.message : `${err}`);
+            return of(null);
+          }),
+        );
       }),
     ).subscribe();
 

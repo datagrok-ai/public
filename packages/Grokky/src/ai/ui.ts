@@ -298,6 +298,7 @@ export async function runPromptWithLifecycle(
       // Built-in handler claimed the prompt — no AI response, just a green check next to it.
       session.session.markHandledNatively();
       session.endSession();
+      panel.pushNativeContext(prompt);
       return;
     }
   }
@@ -413,7 +414,9 @@ async function streamOnce(
 
     try {
       const client = ClaudeRuntimeClient.getInstance();
-      const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
+      const nativeCtx = panel.flushNativeContext();
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
+      const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       await client.ensureConnected();
 
@@ -545,7 +548,9 @@ export function setupShellAIPanelUI(): void {
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
   }
-  _shellAIPanel.show();
+
+  if (grok.shell.windows.ai.childElementCount === 0 || _shellAIPanel.isFrontPanel)
+    _shellAIPanel.show(true);
 }
 
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';

@@ -27,6 +27,7 @@ import {
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
+import {markushSettingsEditorWidget} from './polytool/pt-chem-enum-settings';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
@@ -40,6 +41,11 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-lib
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
+// hwe editor stylesheet (`.hw-*` classes). hwe ships its CSS only as a bundler
+// import (no runtime injection), so the PolyTool HELM editor dialog renders
+// unstyled unless we import it here. See @datagrok-libraries/hwe editor.css.
+import '@datagrok-libraries/hwe/styles.css';
 
 export * from './package.g';
 
@@ -549,6 +555,16 @@ export class PackageFunctions {
   })
   static async harmonizedSequenceNotationProviderConstructor(): Promise<typeof CyclizedNotationProvider> {
     return CyclizedNotationProvider;
+  }
+
+  @grok.decorators.func({
+    name: 'Markush Enumerator package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static async markushSettingsEditor(
+    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {
+    return markushSettingsEditorWidget(properties);
   }
 }
 

@@ -21,11 +21,12 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowNode, FlowScheme} from './scheme';
+import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
@@ -93,6 +94,15 @@ export class FlowEditor {
   private vGuide: HTMLElement | null = null;
   private hGuide: HTMLElement | null = null;
 
+  /** Bottom-right overview minimap (screen-space overlay; not part of the
+   *  transformed canvas). `null` until `installMinimap`. */
+  private minimapEl: HTMLElement | null = null;
+  private minimapSvg: SVGSVGElement | null = null;
+  private minimapRedrawScheduled = false;
+  /** Minimap inner drawing area in px (SVG viewport). */
+  private readonly minimapW = 200;
+  private readonly minimapH = 130;
+
   /** Suggestion-menu drag state. Set on `connectionpick` for an output
    *  socket; cleared on `connectiondrop`. If the drop didn't create a
    *  connection AND wasn't on a target socket, the suggestion popup opens. */
@@ -153,6 +163,7 @@ export class FlowEditor {
     this.installRectSelect();
     this.installHoverDocs();
     this.installWaypointInteractions();
+    this.installMinimap();
 
     // Expose a narrow callback surface to React components that need to talk
     // back into the editor.
@@ -189,6 +200,8 @@ export class FlowEditor {
   /** When a connection lands on a ValueOutput node and the source slot has a
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
+    // Execution-ordering edges carry no data type — never derive an output type from one.
+    if (isExecKey(String(connection.targetInput)) || isExecKey(String(connection.sourceOutput))) return;
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
     // Match by registered type, not label — titles are user-editable.
     if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
@@ -247,8 +260,10 @@ export class FlowEditor {
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
         context.type === 'cleared'
-      )
+      ) {
         this.callbacks.onGraphChanged?.();
+        this.scheduleMinimapRedraw();
+      }
       return context;
     });
 
@@ -283,14 +298,17 @@ export class FlowEditor {
       if (context.type === 'nodetranslated') {
         const node = this.editor.getNode(context.data.id);
         if (node) node.pos = {...context.data.position};
+        this.scheduleMinimapRedraw();
       }
       if (context.type === 'nodedragged') this.hideGuides();
       // Keep the CSS dot-grid background aligned to the area transform — the
       // grid is screen-space, the canvas content lives in a transformed
       // space, so we rescale and shift the bg whenever pan/zoom changes.
       if (context.type === 'translated' || context.type === 'zoomed' ||
-          context.type === 'render')
+          context.type === 'render') {
         this.updateGridTransform();
+        this.scheduleMinimapRedraw();
+      }
       // Tag each rendered connection wrapper with its id + status for the
       // CSS-driven execution-state animations (`[data-status="active"]` etc).
       if (context.type === 'rendered' && (context.data as {type?: string}).type === 'connection')
@@ -392,6 +410,203 @@ export class FlowEditor {
   private hideGuides(): void {
     if (this.vGuide) this.vGuide.style.display = 'none';
     if (this.hGuide) this.hGuide.style.display = 'none';
+  }
+
+  // ---------- minimap ----------
+
+  /** Build the bottom-right overview minimap: an SVG that draws every node as a
+   *  small rect plus the current viewport rectangle. Click/drag inside it pans
+   *  the canvas; the header button minimizes it to a title bar. Lives directly
+   *  in `this.container` (screen-space), so it doesn't pan/zoom with the graph. */
+  private installMinimap(): void {
+    const el = document.createElement('div');
+    el.className = 'ff-minimap';
+    el.dataset.collapsed = 'false';
+
+    const header = document.createElement('div');
+    header.className = 'ff-minimap-header';
+    const title = document.createElement('span');
+    title.className = 'ff-minimap-title';
+    title.textContent = 'Overview';
+    const toggle = document.createElement('span');
+    toggle.className = 'ff-minimap-toggle';
+    toggle.title = 'Minimize';
+    toggle.textContent = '▾';
+    header.appendChild(title);
+    header.appendChild(toggle);
+
+    const body = document.createElement('div');
+    body.className = 'ff-minimap-body';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'ff-minimap-svg');
+    svg.setAttribute('width', String(this.minimapW));
+    svg.setAttribute('height', String(this.minimapH));
+    svg.setAttribute('viewBox', `0 0 ${this.minimapW} ${this.minimapH}`);
+    body.appendChild(svg);
+
+    el.appendChild(header);
+    el.appendChild(body);
+    this.container.appendChild(el);
+    this.minimapEl = el;
+    this.minimapSvg = svg;
+
+    // Clicking anywhere on the header minimizes/restores. stopPropagation so it
+    // never pans the canvas. (The chevron is just a visual affordance — the
+    // click bubbles to the header handler.)
+    header.addEventListener('pointerdown', (e) => e.stopPropagation());
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleMinimapCollapsed();
+    });
+
+    this.installMinimapNavigation(body);
+    this.scheduleMinimapRedraw();
+  }
+
+  /** Click/drag in the minimap body → pan so the clicked graph point centers in
+   *  the viewport. We map minimap px → canvas coords using the same fit the
+   *  draw step computed (stored on the svg via data-* for reuse). */
+  private installMinimapNavigation(body: HTMLElement): void {
+    const panToEvent = (e: PointerEvent): void => {
+      const svg = this.minimapSvg;
+      if (!svg) return;
+      const fit = this.readMinimapFit();
+      if (!fit) return;
+      const rect = svg.getBoundingClientRect();
+      const mmx = e.clientX - rect.left;
+      const mmy = e.clientY - rect.top;
+      // minimap px → canvas coords (inverse of the draw transform)
+      const cx = (mmx - fit.offsetX) / fit.scale + fit.minX;
+      const cy = (mmy - fit.offsetY) / fit.scale + fit.minY;
+      const cont = this.container.getBoundingClientRect();
+      const k = this.area.area.transform.k;
+      void this.area.area.translate(cont.width / 2 - cx * k, cont.height / 2 - cy * k);
+    };
+
+    body.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      panToEvent(e);
+      body.setPointerCapture(e.pointerId);
+      const onMove = (ev: PointerEvent): void => panToEvent(ev);
+      const onUp = (): void => {
+        body.removeEventListener('pointermove', onMove);
+        body.removeEventListener('pointerup', onUp);
+        body.removeEventListener('pointercancel', onUp);
+      };
+      body.addEventListener('pointermove', onMove);
+      body.addEventListener('pointerup', onUp);
+      body.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  /** Collapse the minimap to its header bar, or restore it. Public so hosts can
+   *  set the initial state (e.g. collapsed inside a preview dialog). */
+  setMinimapCollapsed(collapsed: boolean): void {
+    const el = this.minimapEl;
+    if (!el) return;
+    el.dataset.collapsed = collapsed ? 'true' : 'false';
+    const toggle = el.querySelector<HTMLElement>('.ff-minimap-toggle');
+    if (toggle) {
+      toggle.textContent = collapsed ? '▸' : '▾';
+      toggle.title = collapsed ? 'Expand' : 'Minimize';
+    }
+    if (!collapsed) this.scheduleMinimapRedraw();
+  }
+
+  private toggleMinimapCollapsed(): void {
+    if (this.minimapEl) this.setMinimapCollapsed(this.minimapEl.dataset.collapsed !== 'true');
+  }
+
+  /** Read the fit transform stashed on the svg by the last redraw. */
+  private readMinimapFit(): {scale: number; offsetX: number; offsetY: number; minX: number; minY: number} | null {
+    const svg = this.minimapSvg;
+    if (!svg || svg.dataset.scale === undefined) return null;
+    return {
+      scale: parseFloat(svg.dataset.scale),
+      offsetX: parseFloat(svg.dataset.offsetX!),
+      offsetY: parseFloat(svg.dataset.offsetY!),
+      minX: parseFloat(svg.dataset.minX!),
+      minY: parseFloat(svg.dataset.minY!),
+    };
+  }
+
+  /** Coalesce minimap redraws to one per frame — the area pipe fires many
+   *  translate/render events during a single drag. */
+  private scheduleMinimapRedraw(): void {
+    if (!this.minimapEl || this.minimapRedrawScheduled) return;
+    if (this.minimapEl.dataset.collapsed === 'true') return;
+    this.minimapRedrawScheduled = true;
+    requestAnimationFrame(() => {
+      this.minimapRedrawScheduled = false;
+      this.redrawMinimap();
+    });
+  }
+
+  private redrawMinimap(): void {
+    const svg = this.minimapSvg;
+    if (!svg) return;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const nodes = this.editor.getNodes();
+    const pad = 8;
+    if (nodes.length === 0) {
+      delete svg.dataset.scale;
+      return;
+    }
+
+    // Graph bounds in canvas coords.
+    let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+    const boxes: Array<{x: number; y: number; w: number; h: number; color: string}> = [];
+    for (const node of nodes) {
+      const sz = this.measureNode(node.id);
+      const color = (node as unknown as {color?: string}).color ?? '#90a4ae';
+      boxes.push({x: node.pos.x, y: node.pos.y, w: sz.w, h: sz.h, color});
+      minX = Math.min(minX, node.pos.x);
+      minY = Math.min(minY, node.pos.y);
+      maxX = Math.max(maxX, node.pos.x + sz.w);
+      maxY = Math.max(maxY, node.pos.y + sz.h);
+    }
+
+    const graphW = Math.max(1, maxX - minX);
+    const graphH = Math.max(1, maxY - minY);
+    const scale = Math.min((this.minimapW - 2 * pad) / graphW, (this.minimapH - 2 * pad) / graphH);
+    const offsetX = (this.minimapW - graphW * scale) / 2 - minX * scale;
+    const offsetY = (this.minimapH - graphH * scale) / 2 - minY * scale;
+    svg.dataset.scale = String(scale);
+    svg.dataset.offsetX = String(offsetX);
+    svg.dataset.offsetY = String(offsetY);
+    svg.dataset.minX = String(minX);
+    svg.dataset.minY = String(minY);
+
+    const toMapX = (cx: number): number => cx * scale + offsetX;
+    const toMapY = (cy: number): number => cy * scale + offsetY;
+
+    for (const b of boxes) {
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('x', String(toMapX(b.x)));
+      r.setAttribute('y', String(toMapY(b.y)));
+      r.setAttribute('width', String(Math.max(2, b.w * scale)));
+      r.setAttribute('height', String(Math.max(2, b.h * scale)));
+      r.setAttribute('rx', '1.5');
+      r.setAttribute('fill', b.color);
+      r.setAttribute('class', 'ff-minimap-node');
+      svg.appendChild(r);
+    }
+
+    // Viewport rectangle (canvas coords visible through the container).
+    const t = this.area.area.transform;
+    const cont = this.container.getBoundingClientRect();
+    const vx = -t.x / t.k; const vy = -t.y / t.k;
+    const vw = cont.width / t.k; const vh = cont.height / t.k;
+    const vp = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    vp.setAttribute('x', String(toMapX(vx)));
+    vp.setAttribute('y', String(toMapY(vy)));
+    vp.setAttribute('width', String(Math.max(0, vw * scale)));
+    vp.setAttribute('height', String(Math.max(0, vh * scale)));
+    vp.setAttribute('class', 'ff-minimap-viewport');
+    svg.appendChild(vp);
   }
 
   // ---------- drag-output-to-empty suggestion menu ----------
@@ -864,7 +1079,7 @@ export class FlowEditor {
       if (ev.button !== 0) return;
       if (!ev.ctrlKey && !ev.metaKey) return;
       const target = ev.target as HTMLElement | null;
-      if (target?.closest('.ff-node, .ff-socket')) return;
+      if (target?.closest('.ff-node, .ff-socket, .ff-minimap')) return;
       ev.preventDefault();
       ev.stopPropagation();
 
@@ -1032,6 +1247,8 @@ export class FlowEditor {
   private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
     data.element.dataset.connectionId = data.payload.id;
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
+    // Execution-ordering edges render dashed/gray (CSS keys off data-order).
+    data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
   }
 
   /** Set the status of a connection (drives the data-flow animation). */
@@ -1167,7 +1384,7 @@ export class FlowEditor {
     this.container.addEventListener('dblclick', (e) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target.closest('.ff-node, .ff-socket, .ff-control, .d4-menu-item, input, textarea, select'))
+      if (target.closest('.ff-node, .ff-socket, .ff-control, .ff-minimap, .d4-menu-item, input, textarea, select'))
         return;
       e.preventDefault();
       void this.zoomToFit();
@@ -1375,6 +1592,30 @@ export class FlowEditor {
     await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
   }
 
+  /** Re-arrange the whole graph with the layered/banded layout used by the
+   *  creation-script importer (`rete/graph-layout.ts`): layers from the
+   *  connection structure (every edge points right), one band per disjoint
+   *  path, producer paths above the paths that consume them. Repositions every
+   *  node and zooms to fit. */
+  async autoLayout(): Promise<void> {
+    const nodes = this.editor.getNodes();
+    if (nodes.length === 0) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      // Order edges ARE included. computeLayers runs fresh here (unlike the
+      // importer's stale incremental layer map), so an order edge is just
+      // another forward dependency — it places the "after" node further right,
+      // letting explicit run-order shape the layout left-to-right.
+      const source = byId.get(c.source);
+      const target = byId.get(c.target);
+      if (source && target) edges.push({source, target});
+    }
+    layoutGraph(nodes, edges, computeLayers(nodes, edges));
+    for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
+    await this.zoomToFit();
+  }
+
   // ---------- lifecycle ----------
 
   async clear(): Promise<void> {
@@ -1389,6 +1630,10 @@ export class FlowEditor {
     if (this.pointerDownTracker)
       window.removeEventListener('pointerdown', this.pointerDownTracker, true);
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
+    if (this.minimapEl) this.minimapEl.remove();
+    // Null these so a still-pending rAF redraw after teardown is a no-op.
+    this.minimapEl = null;
+    this.minimapSvg = null;
     this.area.destroy();
     delete (window as unknown as {__ff_editor?: unknown}).__ff_editor;
   }

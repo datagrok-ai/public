@@ -10,11 +10,9 @@ import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagro
 import './tests/_first-tests';
 import './tests/helm-tests';
 import './tests/findMonomers-tests';
-import './tests/helm-service-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
-import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';

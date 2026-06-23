@@ -8,6 +8,10 @@ description: Use whenever you need the Datagrok browser to actually execute Java
 The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 `datagrok-exec`. Regular ` ```javascript ` blocks render as snippets only.
 
+Emit a block to *perform* an action the user asked for (add a viewer, filter,
+open a file, run a function). For informational questions — "how do I…", "what
+is…", "explain…", "can you…" — answer in plain text; do not execute code.
+
 ## Globals inside the block
 
 | Variable | Type            | Available                                         |
@@ -19,6 +23,25 @@ The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 | `t`      | `DG.DataFrame`  | Only when `view.type === 'TableView'`             |
 
 The block runs in an async IIFE, so `await` works directly.
+
+## Native top-menu commands
+
+If an operation already exists as a top-menu command (aggregate, join, cluster,
+add column, …), invoke it instead of building a custom `ui.dialog`. Walk the menu
+with `find()` (chain through `|` groups), matching leaf text exactly:
+
+```datagrok-exec
+grok.shell.topMenu.find('Data').find('Aggregate Rows...').click();
+grok.shell.topMenu.find('Edit').find('Go To').find('Row...').click();
+```
+
+| Menu     | Commands                                                                                                                  |
+|----------|--------------------------------------------------------------------------------------------------------------------------|
+| `Edit`   | `Undo`, `Redo`, `Add New Column...`, `Add Rows...`, `Column Properties...`, `Find and Replace...`, `Go To \| Row...`, `Go To \| Next Selected`, `Go To \| Prev Selected`, `Remove \| Selected Rows`, `Remove \| Selected Columns`, `Remove \| Selected Rows or Columns` |
+| `View`   | `Columns`, `Console`, `Context Panel`, `Schema`, `Tables`, `Variables`, `Toolbox`, `Windows`, `Home`, `Reset Filter`, `Edit Tooltip...`, `Embed...`, `Full Screen`, `Presentation Mode`, `Layout \| Save to Gallery`, `Layout \| Open Gallery`, `Layout \| Clone View`, `Layout \| Download`, `Layout \| Clear` |
+| `Select` | `All`, `None`, `Invert`, `All Columns`, `Duplicates...`, `Missing Values...`, `Random Rows...`, `Extract Selected Rows`, `Filter to Column...`, `Selection to Column...`, `Selection to Filter` |
+| `Data`   | `Aggregate Rows...` (also pivot), `Join Tables...`, `Link Tables...`, `Compare Tables...`, `Compare Columns...`, `Append Tables...`, `Unpivot...`, `Split Column...`, `Split Column by RegExp...`, `Categorize...`, `Anonymize...`, `Batch Edit...` |
+| `ML`     | `Analyze \| PCA...`, `Analyze \| PLS...`, `Analyze \| ANOVA...`, `Analyze \| Multivariate Analysis...`, `Cluster \| DBSCAN...`, `Cluster \| MCL...`, `Models \| Train Model...`, `Models \| Apply Model...`, `Notebooks \| New Notebook...`, `Reduce Dimensionality...`, `Impute Missing Values...`, `Pareto Front...` |
 
 ## Per-area skills
 

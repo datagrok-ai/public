@@ -4,11 +4,14 @@ Users can change the information in their profiles. Such as profile photo, passw
 
 ## Testing scenarios
 
-1. Use positive scenario to edit profile information (user photo, password, name)
-- Change user photo using an different formats of image files. All popular image formats are supported.
-- Edit name. Profile information is changed by entry data
-- Change password using negative scenario (invalid old password, mismatched passwords). Password is not changed, the appropriate validation message should be shown on the dialog.
-2. Change user photo using an incorrect file format. Photo should't change.
+1. Edit name. Profile information is changed by the entered data and persists.
+
+> Automated by `profile-settings-spec.ts` (name edit via `dapi.users.save`,
+> verified across a re-fetch, original name restored afterwards).
+>
+> Profile-photo upload (multiple formats + invalid-format rejection) and the
+> "Change password..." negative validation (mismatched / wrong current
+> password) are manual: see `profile-settings-ui.md`.
 
 ---
 {

@@ -1,0 +1,91 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "friendlyName": "wells",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 840,
+      "height": 771,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 840,
+          "height": 771,
+          "element": {
+            "id": "3480bc50-48b0-11f1-df52-c3e8fad53132",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 44,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 63,
+                  "columnName": "switch",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 148,
+                  "columnName": "arsenic",
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 162,
+                  "columnName": "distance",
+                  "cellType": "number",
+                  "format": "0.0000000000000000",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 83,
+                  "columnName": "education",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 92,
+                  "columnName": "association",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                }
+              ]
+            },
+            "title": "wells",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "tableId": "e6641860-3260-11e9-b889-2bfe7b437dbf"
+  },
+  "name": "Wells"
+}

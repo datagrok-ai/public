@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   category,
   test,
-  expect
+  expect,
 } from '@datagrok-libraries/test/src/test';
 
 category('Files: OpenFile', () => {
@@ -26,7 +26,7 @@ category('Files: OpenFile', () => {
       const v = grok.shell.addTableView(df);
       const ti = df.getTableInfo();
       const layout = v.saveLayout();
-      let project = DG.Project.create();
+      const project = DG.Project.create();
       project.name = projectName;
       project.addChild(ti);
       project.addChild(layout);

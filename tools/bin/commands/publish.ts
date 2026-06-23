@@ -1,5 +1,4 @@
-// @ts-ignore
-import archiver from 'archiver-promise';
+import archiver from 'archiver';
 import crypto from 'crypto';
 import fs from 'fs';
 // @ts-ignore
@@ -106,6 +105,33 @@ function localImageExists(fullName: string, checkPlatform: boolean = true): bool
   } catch {
     return false;
   }
+}
+
+function imageExistsInRegistry(ref: string): boolean {
+  try {
+    execSync(`docker manifest inspect ${ref}`, {stdio: ['pipe', 'pipe', 'pipe']});
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+// Looks for an already-published image in the configured registry and on Docker Hub,
+// without pulling it. Prefers the content-hashed release tag (exact dockerfile match),
+// then the plain version tag. Returns the canonical `datagrok/<name>:<tag>` reference
+// for image.json, or null when nothing usable is published.
+function resolveRegistryImage(imageName: string, registryTag: string, versionTag: string,
+  registry: string | undefined): string | null {
+  const tags = registryTag === versionTag ? [versionTag] : [registryTag, versionTag];
+  for (const tag of tags) {
+    const canonical = `datagrok/${imageName}:${tag}`;
+    if (registry && imageExistsInRegistry(`${registry}/${canonical}`))
+      return canonical;
+    if (imageExistsInRegistry(canonical))
+      return canonical;
+  }
+  return null;
 }
 
 function dockerLogin(registry: string, devKey: string): boolean {
@@ -360,19 +386,29 @@ async function processDockerImages(
           if (!result || result.fallback)
             color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
         }
-        else if (skipDockerRebuild) {
-          color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
-          result = {image: null, fallback: true, requestedVersion: registryTag};
-        }
         else {
-          // No fallback and no local image — must build
-          color.warn(`No fallback available. Building ${img.fullLocalName}...`);
-          const built = buildAndPush();
-          if (built)
-            result = built;
-          else {
+          // The server has no compatible record, but the image may already be
+          // published in the configured registry / Docker Hub (e.g. pushed by an
+          // earlier CI run). Use it directly rather than failing or rebuilding.
+          const registryImage = resolveRegistryImage(img.imageName, registryTag, img.imageTag, registry);
+          if (registryImage) {
+            result = {image: registryImage, fallback: true, requestedVersion: registryTag};
+            color.success(`Falling back to registry image ${registryImage}`);
+          }
+          else if (skipDockerRebuild) {
+            color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
             result = {image: null, fallback: true, requestedVersion: registryTag};
-            color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+          }
+          else {
+            // No fallback and no local image — must build
+            color.warn(`No fallback available. Building ${img.fullLocalName}...`);
+            const built = buildAndPush();
+            if (built)
+              result = built;
+            else {
+              result = {image: null, fallback: true, requestedVersion: registryTag};
+              color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+            }
           }
         }
       }
@@ -433,9 +469,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
     if (debug)
       timestamps = checkData;
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${host}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${host}`
+      : `Failed to validate package on ${host}: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;
@@ -567,7 +603,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     });
     const log = JSON.parse(await body.text());
 
-    fs.unlinkSync('zip');
     if (log != undefined) {
       if (log['#type'] === 'ApiError') {
         color.error(log['message']);
@@ -580,9 +615,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
       }
     }
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${url}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${url}`
+      : `Publish failed: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;

@@ -281,6 +281,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Size** | | |
 | Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
 | Show Size Selector | boolean |  |
+| Show Markers With Empty Size | boolean | When a *Size* column is set, render rows with empty values using the minimum marker size instead of hiding them. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |

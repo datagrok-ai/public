@@ -1,9 +1,14 @@
 import {MonomerType, PolymerType} from '../helm/types';
 import {MonomerTypes, PolymerTypes} from '../helm/consts';
-
-import HELM_POLYMER_TYPE = PolymerTypes;
-import HELM_MONOMER_TYPE = MonomerTypes;
 import {RGroup} from '../types/monomer-library';
+
+// hwe exports the HELM type vocabulary as `as const` objects (value-only), not
+// TS enums, so we re-create the value+type duality the old `import X = Enum`
+// aliases provided — consumers use these both as a value (`.RNA`) and as a type.
+const HELM_POLYMER_TYPE = PolymerTypes;
+type HELM_POLYMER_TYPE = PolymerType;
+const HELM_MONOMER_TYPE = MonomerTypes;
+type HELM_MONOMER_TYPE = MonomerType;
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
 
