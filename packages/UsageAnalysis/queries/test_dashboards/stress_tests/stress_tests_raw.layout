@@ -1,9 +1,5 @@
 {
   "#type": "ViewLayout",
-  "table": {
-    "id": "56209430-8560-11f0-adc2-636035fa442a"
-  },
-  "type": "TableView",
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
@@ -25,7 +21,7 @@
               "width": 800,
               "height": 1000,
               "element": {
-                "id": "a2000000-0000-0000-0000-000000000001",
+                "id": "a1000000-0000-0000-0000-000000000001",
                 "type": "Grid",
                 "look": {
                   "#type": "GridLook",
@@ -56,7 +52,7 @@
           "width": 1200,
           "height": 1000,
           "element": {
-            "id": "a2000000-0000-0000-0000-000000000002",
+            "id": "a1000000-0000-0000-0000-000000000002",
             "type": "Box plot",
             "look": {
               "#type": "BoxPlotLook",
@@ -72,8 +68,10 @@
         "children": []
       }
     ],
-    "floating": []
+    "floating": [],
+    "tableName": "StressTestsRaw"
   },
-  "name": "Stress Raw",
-  "friendlyName": "Stress Raw"
+  "columns": [],
+  "name": "StressTestsRaw",
+  "friendlyName": "Stress Tests Raw"
 }
