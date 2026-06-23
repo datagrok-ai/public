@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.4.5 (2026-06-23)
+
+* `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.
+
 ## 6.4.4 (2026-06-22)
 
 * `grok publish` — fixed every publish failing with a silent `exit 1` after a successful upload: a stray `fs.unlinkSync('zip')` threw `ENOENT` (the archive is streamed in-memory, no `zip` file is ever written), and the surrounding `catch` only logged under `--verbose`. The errant unlink is removed and publish errors are now always surfaced.
