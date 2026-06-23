@@ -1,5 +1,5 @@
---name: StressTestsRaw
---friendlyName: UA | Tests | Stress Tests Raw
+--name: StressTestsFailures
+--friendlyName: UA | Tests | Stress Tests Failures
 --connection: System:Datagrok
 --input: string build {nullable: true; choices: Query("select b.name from builds b where exists (select 1 from stress_tests s where s.build_name = b.name) order by b.build_date desc")}
 WITH selected AS (
@@ -10,13 +10,14 @@ WITH selected AS (
 select
     s.test_name as test,
     s.total_concurrent_runs as threads,
-    s.concurrent_run,
-    s.duration as ms,
-    s.passed,
-    s.result as error,
-    s.date_time as started
+    count(*) as runs,
+    sum(case when not s.passed then 1 else 0 end) as fails,
+    cast(round(100.0 * sum(case when s.passed then 1 else 0 end) / count(*)) as int) as pass_rate,
+    max(case when not s.passed then s.result end) as sample_error
 from stress_tests s
 where s.build_name = (select name from selected) and not s.skipped
     and s.test_name not like '%Unhandled exceptions: Exception' and s.test_name != ': : '
-order by s.test_name, s.total_concurrent_runs, s.concurrent_run
+group by s.test_name, s.total_concurrent_runs
+having sum(case when not s.passed then 1 else 0 end) > 0
+order by s.test_name, s.total_concurrent_runs
 --end
