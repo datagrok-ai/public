@@ -25,6 +25,7 @@ import {
 } from './rete/node-factory';
 import {validateGraph} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
+import {emitCreationScript} from './compiler/creation-script-emitter';
 import {
   serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile,
 } from './serialization/flow-serializer';
@@ -388,6 +389,8 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Copy Script to Clipboard', () => this.copyScriptToClipboard())
       .item('Export as .js File', () => this.exportAsJs())
       .separator()
+      .item('Compile to Creation Script...', () => this.compileToCreationScript())
+      .separator()
       .item('Validate Graph', () => this.showValidation())
       .endGroup()
       .group('Execution')
@@ -408,6 +411,7 @@ export class FuncFlowView extends DG.ViewBase {
       ],
       [
         ui.iconFA('code', () => this.generateAndPreview(), 'View Script'),
+        ui.iconFA('stream', () => this.compileToCreationScript(), 'Compile to Creation Script'),
         ui.iconFA('copy', () => this.copyScriptToClipboard(), 'Copy Script'),
         ui.iconFA('download', () => this.exportAsJs(), 'Export .js'),
       ],
@@ -584,6 +588,45 @@ export class FuncFlowView extends DG.ViewBase {
     if (!script) return;
     navigator.clipboard.writeText(script);
     grok.shell.info('Script copied to clipboard');
+  }
+
+  /** Compile the graph into a Datagrok **creation script** (the grok-language
+   *  function-call cascade, the inverse of "Import Creation Script") and show it
+   *  in a dialog with any warnings about nodes that have no creation-script form. */
+  private compileToCreationScript(): void {
+    if (!this.flow) return;
+    let result;
+    try {
+      result = emitCreationScript(this.flow);
+    } catch (e: any) {
+      grok.shell.error(`Creation script generation failed: ${e.message}`);
+      return;
+    }
+    const {script, warnings} = result;
+
+    const blocks: HTMLElement[] = [];
+    if (warnings.length > 0) {
+      const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
+      list.style.color = '#b26a00';
+      list.style.marginBottom = '8px';
+      list.style.maxHeight = '120px';
+      list.style.overflow = 'auto';
+      blocks.push(ui.divText(`${warnings.length} warning(s) — these nodes have no creation-script form:`,
+        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+      blocks.push(list);
+    }
+    const pre = document.createElement('pre');
+    pre.className = 'funcflow-script-preview';
+    pre.textContent = script || '// (nothing to emit)';
+    blocks.push(pre);
+
+    ui.dialog({title: 'Creation Script'})
+      .add(ui.divV(blocks))
+      .addButton('Copy to Clipboard', () => {
+        navigator.clipboard.writeText(script);
+        grok.shell.info('Creation script copied to clipboard');
+      })
+      .show({width: 720, height: 520});
   }
 
   private exportAsJs(): void {

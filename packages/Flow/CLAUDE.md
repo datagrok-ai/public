@@ -31,6 +31,7 @@ src/
 │   ├── graph-utils.ts            # Thin shim around FlowEditor
 │   ├── graph-compiler.ts         # FlowEditor → CompiledStep[]
 │   ├── script-emitter.ts         # CompiledStep[] → JS source (clean + instrumented modes)
+│   ├── creation-script-emitter.ts # FlowEditor → grok-language creation script (inverse of the importer)
 │   └── validator.ts              # Pre-compilation checks
 ├── execution/
 │   ├── execution-state.ts        # NodeExecStatus enum, NodeExecState (string node IDs)
@@ -158,6 +159,46 @@ UI: `File > Import Creation Script...` in the ribbon menu opens a dialog with a 
 "From table" picker prefilled from open tables that carry a creation script.
 `FuncFlowView.loadFromCreationScript(script)` clears the canvas, builds, and zooms to fit.
 
+## Creation-Script Emit ([compiler/creation-script-emitter.ts](src/compiler/creation-script-emitter.ts))
+
+The **inverse** of the importer: `emitCreationScript(flow): {script, warnings}` compiles the graph back
+into a grok-language creation script. Unlike [script-emitter.ts](src/compiler/script-emitter.ts) (pure,
+DOM-free JS), it uses the platform's **own** serializer — `DG.Func.prepare(params).toString()` (Dart
+`toConsole`/`valueToString`) — as the single source of truth, so it needs a **live backend** (tests run
+on a local stand). The serialization contract (verified against the Dart source):
+
+- `SetVar.prepare({variableName, value}).toString()` → `Name = <value>`; a `FuncCall` value recurses
+  inline. `GetVar.prepare({variableName}).toString()` → the **bare** identifier — the *only* way to render
+  a dataframe argument as a variable reference (a plain string or a real `DataFrame` both render as a
+  *quoted name*).
+- `column` arg → quoted column **name** (not JS `table.col(...)`); `column_list` → `[...]`; scalars/bools
+  handled by the serializer; **optional params equal to their default are omitted** (so the importer's
+  seeded `''` must be dropped — see `isEmptyLiteral` — or `sheetName = ""` leaks).
+
+Graph → script mapping (walks `topologicalSort`, exec/order ports filtered by `isExecKey`):
+
+- **Producer** = a func whose *real* (non-`__pt`) output is **consumed or anchored** → `X = f(...)`
+  (assignment), downstream uses a bare `X`. The test is whether the real output is *used*, NOT whether the
+  func declares one: `AddNewColumn` declares a real output but threads its table through a pass-through, so
+  it stays a **bare call**.
+- **In-place mutator / side-effecting call** = no consumed real output → bare `f(...)`; its `__pt` outputs
+  forward the same variable (`forwardPassthroughs`).
+- **SetVar node** = the variable-name anchor; `computeAnchors` walks its `value` back through the `__pt`
+  chain (`walkToProducer`) to name the producer at the head, so an imported chain re-emits as
+  `Mol1K = OpenFile(...)` / bare mutators / (no redundant `Mol1K = Mol1K`).
+- **Select Table** → table-name string; **Select Column(s)** → column name(s); **Constants** → literals;
+  **Input** node → bare `GetVar(paramName)` ref; **order edges** → ordering only, no line.
+- **Warn & skip**: JS-only nodes (comparisons, ToString, FromJSON, ToJSON, Log/Info/Warning, Add Table
+  View) have no grok-language form → a warning is collected and the node is skipped; consumers resolve to
+  `skip`, so the rest still emits.
+
+Round-trips faithfully: import → emit reproduces the chem/join example scripts (incl. qualified column
+names, namespaced funcs, bare refs), and `emit → import → emit` is idempotent.
+
+UI: the **Compile to Creation Script** ribbon action (`stream` icon, and `Script > Compile to Creation
+Script...`) opens a dialog with the script, a copy button, and a warnings strip (`compileToCreationScript`
+in [funcflow-view.ts](src/funcflow-view.ts)).
+
 ## Tests ([src/tests/](src/tests))
 
 `package-test.ts` imports the suites; run with `grok test --host localhost`. `test-utils.ts` provides
@@ -175,6 +216,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
+| `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, warn-and-skip for JS-only nodes (needs a live backend) |
 
 ## Rete Pipeline
 
@@ -324,6 +366,8 @@ Pipeline ([compiler/](src/compiler)):
    forced to encode run-order through vertical position.
 2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix. Func input resolution runs in two passes: ordinary inputs (connections, primitive `inputValues`) first, then unconnected **`column`/`column_list`** `inputValues` — these inline to `table.col('name')` / `[table.col(…), …]`, where the table comes from the node's `properties['columnTables']` association (so column args need no Select Column node; `tableExprForColumnParam`/`columnSelectionExpr`).
 3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
+
+This pipeline targets **JavaScript**. For the alternate **creation-script** target (grok-language cascade, via the platform's own serializer), see **Creation-Script Emit** above — it walks the same topological order but emits `prepare().toString()` lines instead of JS.
 
 ### Validation ([compiler/validator.ts](src/compiler/validator.ts))
 
@@ -493,6 +537,6 @@ Spotfire-inspired light theme:
 
 1. **Adding a new built-in node**: subclass `FlowNode` in the appropriate `rete/nodes/*.ts` file, set `dgNodeType` and slot definitions in the constructor, then register a factory in `node-factory.ts` `registerBuiltinNodes()`. Add it to the appropriate `*Nodes` array in `function-browser.ts`. If it generates code, add a case to `emitUtilityStep()` in `script-emitter.ts`. Property tooltips go in `UTILITY_PROP_TOOLTIPS` in `property-panel.ts`.
 2. **Adding a new DG type**: add to `DG_TYPE_MAP` in `type-map.ts` (slot type + color); extend `COMPATIBLE_TYPES` if needed.
-3. **Modifying script emission**: all code generation lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag toggles the try/catch + event path. New step kinds need handling in both clean (`emitFuncStep` / `emitUtilityStep`) and instrumented (`emitFuncStepInstrumented` / `wrapInstrumented`) paths.
+3. **Modifying script emission**: JS code generation lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag toggles the try/catch + event path. New step kinds need handling in both clean (`emitFuncStep` / `emitUtilityStep`) and instrumented (`emitFuncStepInstrumented` / `wrapInstrumented`) paths. A new **utility** node that should also appear in **creation scripts** needs a branch in `emitUtility` of [creation-script-emitter.ts](src/compiler/creation-script-emitter.ts) (resolve its output to an `ArgValue`); otherwise it falls into warn-and-skip.
 4. **Adding execution visual states**: extend `NodeExecStatus` in `execution-state.ts` and add a CSS rule `.ff-node-status[data-status="newstate"] { ... }`. Then update `ExecutionVisualizer` to set the status, no JS animation needed (CSS keyframes handle it).
 5. **Adding output preview types**: extend the union in `OutputPreviewPanel` and add a case to `classifyOutput` / `buildPreview`. Make sure `getOutputTypeHints()` propagates the right declared type.

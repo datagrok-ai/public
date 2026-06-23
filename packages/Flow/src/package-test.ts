@@ -10,6 +10,7 @@ import './tests/panel-tests';
 import './tests/layout-tests';
 import './tests/order-edge-tests';
 import './tests/minimap-tests';
+import './tests/creation-script-emit-tests';
 
 export let _package = new DG.Package();
 export { tests };
