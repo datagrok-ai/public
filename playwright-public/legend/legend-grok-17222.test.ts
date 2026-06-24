@@ -181,12 +181,25 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
     }
     expect(after).not.toBe(setup.before);
     expect(after).toBeGreaterThan(0);
-    // Bug invariant — fix invariant for GROK-17222: Line chart legend reflects post-Pie-click filter.
-    const lcItems = await page.evaluate(() => {
-      const lc = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Line chart');
-      return lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+    // GROK-17222 invariant: after the Pie click narrows to a strict category subset, the
+    // Line chart legend must not list more categories than remain visible (pre-fix: kept all).
+    const lc = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const lcv = tv.viewers.find((v: any) => v.type === 'Line chart');
+      const items = lcv.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const df = tv.dataFrame;
+      const col = df.col('Stereo Category');
+      const totalCats = col.categories.length;
+      const counts: Record<string, number> = {};
+      for (const c of col.categories) counts[c] = 0;
+      for (let i = 0; i < df.rowCount; i++) if (df.filter.get(i)) counts[col.get(i)]++;
+      const survivors = Object.values(counts).filter((n) => n > 0).length;
+      return {items, survivors, totalCats};
     });
-    expect(lcItems, 'Line chart legend updates after Pie click-to-filter (GROK-17222)').toBeGreaterThanOrEqual(0);
+    expect(lc.survivors, 'Pie click-to-filter must narrow the visible category set (GROK-17222)')
+      .toBeLessThan(lc.totalCats);
+    expect(lc.items, 'Line chart legend must not list more categories than remain visible after Pie filter (GROK-17222)')
+      .toBeLessThanOrEqual(lc.survivors);
   });
 
   // Step 7 (bug repro): Bar chart click-to-filter narrows the dataset → legend updates.
@@ -264,13 +277,14 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
     }
     expect(result!.survivors).toBe(1);
     expect(result!.totalFiltered).toBeGreaterThan(0);
-    // Bug invariant — fix invariant for GROK-17222: Line chart legend item count
-    // tracks Bar-click-narrowed survivor set (≤ all categories).
+    // GROK-17222 invariant: Bar click narrowed to a single visible category (survivors===1),
+    // so the Line chart legend must track that and not keep listing every category.
     const lcItems = await page.evaluate(() => {
       const lc = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Line chart');
       return lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
-    expect(lcItems, 'Line chart legend updates after Bar click-to-filter (GROK-17222)').toBeGreaterThanOrEqual(0);
+    expect(lcItems, 'Line chart legend must not exceed the Bar-narrowed survivor set (GROK-17222)')
+      .toBeLessThanOrEqual(result!.survivors);
   });
 
   // Cleanup: clear filters and close views.

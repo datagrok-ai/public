@@ -7,8 +7,8 @@
 //     trueCount unchanged (negative baseline) instead of positive narrowing.
 //   - miniLegend property is NOT exposed on viewer.props — use legendPosition='LeftTop'
 //     + .d4-corner-legend-icon visibility as the mini-mode equivalent.
-//   - Project save hits a foreign-key constraint on unsaved-dataframe projects —
-//     graceful-degrade pattern.
+//   - Saving a project with an in-memory dataframe hits project_relations_entity_id_fkey;
+//     upload the dataframe + save its TableInfo (and layout) first, then save the project.
 //   - Bar / Line / Box default 'Auto' hides the legend — set legendVisibility='Always'
 //     before legend-presence assertions.
 //   - "Primary Series Name" does not exist in SPGI — use "Primary Scaffold Name" for
@@ -446,17 +446,14 @@ test('Legend visibility and positioning', async ({page}) => {
       await page.waitForTimeout(400);
       const chevron = page.locator('[name="icon-hide-corner-legend"]').first();
       if (await chevron.count() > 0) {
-        await chevron.click({timeout: 5000}).catch(() => {});
-        await page.waitForTimeout(800);
-        // After collapse, .d4-corner-legend-icon should appear (mini-mode equivalent).
-        const miniIconCount = await page.locator('.d4-corner-legend-icon').count();
-        expect(miniIconCount).toBeGreaterThanOrEqual(0);
-        // Click mini-icon to expand back (legend-mini-icon-toggle flow).
+        await chevron.click({timeout: 5000});
+        // Collapsing the corner legend must reveal its mini-icon (mini-mode equivalent).
         const miniIcon = page.locator('.d4-corner-legend-icon').first();
-        if (await miniIcon.count() > 0) {
-          await miniIcon.click({timeout: 3000}).catch(() => {});
-          await page.waitForTimeout(500);
-        }
+        await expect(miniIcon, 'collapsing the corner legend must reveal its mini-icon')
+          .toBeVisible({timeout: 5000});
+        // Click mini-icon to expand back (legend-mini-icon-toggle flow).
+        await miniIcon.click({timeout: 3000}).catch(() => {});
+        await page.waitForTimeout(500);
       }
     }
   });
@@ -478,21 +475,37 @@ test('Legend visibility and positioning', async ({page}) => {
     expect(res.pos).toBeTruthy();
   });
 
-  // Scenario 11 steps 1-3: project save+close+reopen (FK graceful-degrade).
+  // Scenario 11 steps 1-3: project save+close+reopen (df/TableInfo/layout persisted first).
   // ui-smoke-delegated-to: Projects section's smoke (cross-section)
   let projectId: string | null = null;
-  await softStep('Sc11 steps 1-3: project save+close+reopen (FK graceful-degrade)', async () => {
+  let tableId: string | null = null;
+  let sc11LayoutId: string | null = null;
+  await softStep('Sc11 steps 1-3: project save+close+reopen', async () => {
     const res = await page.evaluate(async () => {
       let pid: string | null = null;
+      let tid: string | null = null;
+      let lid: string | null = null;
       try {
         const DG = (window as any).DG;
+        const df = (window as any).grok.shell.tv.dataFrame;
+        // Persist df + TableInfo first to satisfy project_relations_entity_id_fkey.
+        const ti = df.getTableInfo();
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(ti);
+        tid = ti.id;
         const proj = DG.Project.create();
         proj.name = 'LegendVPProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        proj.addChild(ti);
+        // Save the layout in the project too, so reopen restores the viewers whose
+        // legendVisibility/legendPosition this step asserts.
+        const layout = (window as any).grok.shell.tv.saveLayout();
+        proj.addChild(layout);
+        await (window as any).grok.dapi.layouts.save(layout);
+        lid = layout.id;
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200), tableId: tid, layoutId: lid};
       }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 1200));
@@ -500,34 +513,38 @@ test('Legend visibility and positioning', async ({page}) => {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
       } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid, tableId: tid, layoutId: lid};
       }
       await new Promise(r => setTimeout(r, 3500));
-      const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
+      let tv = (window as any).grok.shell.tv;
+      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid, tableId: tid, layoutId: lid};
+      // Project reopen restores the table but not the viewers; apply the saved layout
+      // (the deterministic restore path used above) before reading the persisted props.
+      try { if (lid) tv.loadLayout(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
+      await new Promise(r => setTimeout(r, 2000));
+      tv = (window as any).grok.shell.tv;
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
-      return {phase: 'verified', ok: true, projectId: pid,
+      return {phase: 'verified', ok: true, projectId: pid, tableId: tid, layoutId: lid,
         vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(res.vis).toBeTruthy();
-      expect(res.pos).toBeTruthy();
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    projectId = res.projectId ?? null;
+    tableId = (res as any).tableId ?? null;
+    sc11LayoutId = (res as any).layoutId ?? null;
+    expect(res.ok, `project round-trip failed (phase ${res.phase}): ${res.error ?? ''}`).toBe(true);
+    expect(res.vis).toBeTruthy();
+    expect(res.pos).toBeTruthy();
   });
 
   await softStep('Cleanup: drop layouts/projects + closeAll', async () => {
-    await page.evaluate(async ([l1, l2, l3, pid]: [string | null, string | null, string | null, string | null]) => {
-      for (const id of [l1, l2, l3]) {
+    await page.evaluate(async ([l1, l2, l3, l4, pid, tid]: [string | null, string | null, string | null, string | null, string | null, string | null]) => {
+      for (const id of [l1, l2, l3, l4]) {
         if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch(_) {}
       }
       if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch(_) {}
+      if (tid) try { const ti = await (window as any).grok.dapi.tables.find(tid); if (ti) await (window as any).grok.dapi.tables.delete(ti); } catch(_) {}
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-    }, [layoutId1, layoutId2, layoutId3, projectId] as [string | null, string | null, string | null, string | null]);
+    }, [layoutId1, layoutId2, layoutId3, sc11LayoutId, projectId, tableId] as [string | null, string | null, string | null, string | null, string | null, string | null]);
   });
 
   if (stepErrors.length > 0)

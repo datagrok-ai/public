@@ -249,15 +249,22 @@ test('Legend color consistency', async ({page}) => {
   await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
     const res = await page.evaluate(async () => {
       let projectId: string | null = null;
+      let tableId: string | null = null;
       try {
         const DG = (window as any).DG;
+        const df = (window as any).grok.shell.tv.dataFrame;
+        // Persist df + TableInfo first to satisfy project_relations_entity_id_fkey.
+        const ti = df.getTableInfo();
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(ti);
+        tableId = ti.id;
         const proj = DG.Project.create();
         proj.name = 'ColorConsistProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        proj.addChild(ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         projectId = saved.id;
       } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200), tableId};
       }
       // Save succeeded — proceed to close + reopen
       (window as any).grok.shell.closeAll();
@@ -266,52 +273,40 @@ test('Legend color consistency', async ({page}) => {
         const reopened = await (window as any).grok.dapi.projects.find(projectId);
         await reopened.open();
       } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId};
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId, tableId};
       }
       await new Promise(r => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId};
+      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId, tableId};
       const col = tv.dataFrame.col('Stereo Category');
       // Verify via JSON tag (deterministic) instead of getColor(idx).
       const tag = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
       const colorAfter = String(tag['R_ONE'] ?? '').toLowerCase();
-      const viewerColors: Record<string, string|null> = {};
-      for (const v of tv.viewers) {
-        if (v.type === 'Grid') continue;
-        const items = Array.from(v.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
-        const rOneItem = items.find(el => el.querySelector('.d4-legend-value')?.textContent?.trim() === 'R_ONE');
-        viewerColors[v.type] = rOneItem ? getComputedStyle(rOneItem).color : null;
-      }
-      return {phase: 'verified', ok: true, projectId, colorAfter, viewerColors};
+      return {phase: 'verified', ok: true, projectId, tableId, colorAfter};
     });
-    if (res.ok) {
-      (globalThis as any).__ccProjectId = res.projectId;
-      expect(res.colorAfter).toBe('#1f77b4');
-      const colors = res.viewerColors as Record<string, string|null>;
-      let checked = 0;
-      for (const [_, color] of Object.entries(colors)) {
-        if (color === 'rgb(31, 119, 180)') checked++;
-      }
-      expect(checked, 'at least 1 viewer reflects R_ONE=blue post-reopen').toBeGreaterThanOrEqual(1);
-    } else {
-      // Known FK / related limitation — record but pass (round-trip path remains documented).
-      const errStr = String(res.error ?? '');
-      expect(errStr.includes('foreign key') || errStr.includes('FK') || errStr.length > 0).toBe(true);
-    }
+    (globalThis as any).__ccProjectId = res.projectId;
+    (globalThis as any).__ccTableId = (res as any).tableId;
+    // GROK-17278/related: the palette (column color-coding) must survive a real project
+    // save+close+reopen. Live viewer rendering of the palette is covered by Scenario 2.
+    expect(res.ok, `project round-trip failed (phase ${res.phase}): ${res.error ?? ''}`).toBe(true);
+    expect(res.colorAfter).toBe('#1f77b4');
   });
 
   // technical: drop the saved layout/project and clear views before next test.
   await softStep('Cleanup', async () => {
-    await page.evaluate(async ([layoutId, projectId]) => {
+    await page.evaluate(async ([layoutId, projectId, tableId]) => {
       if (layoutId) {
         try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(layoutId)); } catch(_) {}
       }
       if (projectId) {
         try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(projectId)); } catch(_) {}
       }
+      if (tableId) {
+        try { const ti = await (window as any).grok.dapi.tables.find(tableId); if (ti) await (window as any).grok.dapi.tables.delete(ti); } catch(_) {}
+      }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-    }, [(globalThis as any).__ccLayoutId, (globalThis as any).__ccProjectId]);
+    }, [(globalThis as any).__ccLayoutId, (globalThis as any).__ccProjectId, (globalThis as any).__ccTableId]);
   });
 
   if (stepErrors.length > 0)

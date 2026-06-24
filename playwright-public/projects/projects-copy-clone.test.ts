@@ -60,11 +60,9 @@ async function addViewerSafely(page: any, viewerName: string): Promise<void> {
 }
 
 // Recreate the original baseline project (delete old, open fresh demog.csv,
-// save again). Needed between sub-flows because Save-Copy-with-Link (4b) on
-// dev triggers GROK-19750 — the original's table reference gets stale, so
-// subsequent reopens find an empty TableView (verified 2026-05-08). 4c/4d
-// need a working original to add their respective viewers; this helper
-// restores it.
+// save again). Used between sub-flows to give 4c/4d a clean, independent
+// original to add their respective viewers to and re-save from, regardless of
+// the reopen/close state the prior sub-flow left behind.
 async function rehydrateOriginal(page: any, name: string): Promise<{projectId: string; tableInfoId: string}> {
   // Delete old project entity if present
   await evalJs(page, `(async () => {
@@ -229,25 +227,20 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       await reopenProjectById(page, ids.original!.projectId);
       const rc = await reopenedRowCount(page);
       const vc = await reopenedViewerCount(page);
-      // GROK-19750 regression on dev (verified 2026-05-08): Save-Copy-with-Link
-      // breaks the original's table reference — reopen yields rowCount=0 and
-      // viewers=0. Log the regression so it stays visible, but do not fail
-      // the test (the 4c/4d prep steps recreate the original anyway).
-      if (rc === 0)
-        console.warn('GROK-19750 regression detected on dev: original `demog` rowCount=0 after Save-Copy-with-Link');
-      if (vc === 0)
-        console.warn('GROK-19750 regression detected on dev: original lost all viewers after Save-Copy-with-Link');
+      // GROK-19750 invariant: after Save-Copy-with-Link, reopening the original must
+      // still yield its table (and viewers) — the bug dropped both to 0.
+      expect(rc, 'GROK-19750: original table must survive Save-Copy-with-Link').toBeGreaterThan(0);
+      expect(vc, 'GROK-19750: original viewers must survive Save-Copy-with-Link').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
       await page.waitForTimeout(800);
     });
 
     // -------------------------------------------------------------------
     // Sub-flow 4c — Save Copy with Clone.
-    // GROK-19750 workaround: 4b's Save-Copy-with-Link corrupts the original
-    // on dev (table reference drops on reopen). Recreate the original so
-    // 4c has a working baseline to add a viewer to and re-save from.
+    // Re-establish a clean original baseline before adding a viewer and re-saving
+    // (defensive: keeps 4c independent of 4b's reopen/close state).
     // -------------------------------------------------------------------
-    await softStep('4c prep: rehydrate original (GROK-19750 workaround)', async () => {
+    await softStep('4c prep: rehydrate original (clean baseline)', async () => {
       ids.original = await rehydrateOriginal(page, names.original);
       expect(ids.original.projectId).toBeTruthy();
     });

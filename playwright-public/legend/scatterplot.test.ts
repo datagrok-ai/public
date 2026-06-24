@@ -44,17 +44,20 @@ async function openSPGI(page: any): Promise<void> {
   await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
 }
 
-async function cleanupAll(page: any, layoutId?: string | null, projectId?: string | null): Promise<void> {
-  await page.evaluate(async ([lid, pid]: [string | null | undefined, string | null | undefined]) => {
+async function cleanupAll(page: any, layoutId?: string | null, projectId?: string | null, tableId?: string | null): Promise<void> {
+  await page.evaluate(async ([lid, pid, tid]: [string | null | undefined, string | null | undefined, string | null | undefined]) => {
     if (lid) {
       try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch(_) {}
     }
     if (pid) {
       try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch(_) {}
     }
+    if (tid) {
+      try { const ti = await (window as any).grok.dapi.tables.find(tid); if (ti) await (window as any).grok.dapi.tables.delete(ti); } catch(_) {}
+    }
     (window as any).grok.shell.closeAll();
     await new Promise(r => setTimeout(r, 500));
-  }, [layoutId ?? null, projectId ?? null]);
+  }, [layoutId ?? null, projectId ?? null, tableId ?? null]);
 }
 
 // Scenario 1: Color + Marker combined legend on Scatter plot
@@ -186,31 +189,34 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         return {layoutId: null, ok: false, error: String(e?.message ?? e).slice(0, 200)};
       }
     });
-    if (res.ok) {
-      layoutId = res.layoutId;
-      expect(typeof layoutId).toBe('string');
-    } else {
-      // Layout round-trip is server-bound; if dapi hangs/fails, accept as
-      // documented platform limitation (matches FK graceful-degrade pattern).
-      expect(String(res.error ?? '').length).toBeGreaterThan(0);
-    }
+    // Layout round-trip must succeed (GROK-17278/GROK-17438 persistence baseline).
+    expect(res.ok, `layout round-trip failed: ${res.error ?? ''}`).toBe(true);
+    layoutId = res.layoutId;
+    expect(typeof layoutId).toBe('string');
   });
 
-  // Scenario 1 steps 8-9: project round-trip with FK graceful-degrade.
-  // Known FK on unsaved-dataframe projects.
+  // Scenario 1 steps 8-9: project round-trip (df + TableInfo persisted first).
   let projectId: string | null = null;
-  await softStep('Sc1 steps 8-9: project save+close+reopen (FK graceful-degrade)', async () => {
+  let tableId: string | null = null;
+  await softStep('Sc1 steps 8-9: project save+close+reopen', async () => {
     const res = await page.evaluate(async () => {
       let pid: string | null = null;
+      let tid: string | null = null;
       try {
         const DG = (window as any).DG;
+        const df = (window as any).grok.shell.tv.dataFrame;
+        // Persist df + TableInfo first to satisfy project_relations_entity_id_fkey.
+        const ti = df.getTableInfo();
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(ti);
+        tid = ti.id;
         const proj = DG.Project.create();
         proj.name = 'ScatterCombinedProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        proj.addChild(ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200), tableId: tid};
       }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 1200));
@@ -218,26 +224,24 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
       } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid, tableId: tid};
       }
       await new Promise(r => setTimeout(r, 3500));
-      return {phase: 'verified', ok: true, projectId: pid};
+      return {phase: 'verified', ok: true, projectId: pid, tableId: tid};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      expect(projectId).toBeTruthy();
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    projectId = res.projectId ?? null;
+    tableId = (res as any).tableId ?? null;
+    expect(res.ok, `project round-trip failed (phase ${res.phase}): ${res.error ?? ''}`).toBe(true);
+    expect(projectId).toBeTruthy();
   });
 
   // Scenario 1 step 10: categorical-formula color column → categorical legend.
   await softStep('Sc1 step 10: categorical formula → categorical legend', async () => {
     const count = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
-      if (!tv) {
-        // technical: project FK degrade closed the view — reopen SPGI inline
+      // The project round-trip above reopened a viewer-less table view; restore SPGI + a
+      // Scatter plot when either the view or the scatter viewer is missing.
+      if (!tv || !tv.viewers.find((v: any) => v.type === 'Scatter plot')) {
         (window as any).grok.shell.closeAll();
         const df2 = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
         (window as any).grok.shell.addTableView(df2);
@@ -273,7 +277,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   });
 
   await softStep('Cleanup', async () => {
-    await cleanupAll(page, layoutId, projectId);
+    await cleanupAll(page, layoutId, projectId, tableId);
   });
 
   if (stepErrors.length > 0)
@@ -677,20 +681,28 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
     expect(res.rOneMeta).not.toBe('0xff808080');
   });
 
-  // Scenario 5 steps 12-13: project round-trip (FK graceful-degrade).
+  // Scenario 5 steps 12-13: project round-trip — color survives reopen.
   let projectId: string | null = null;
-  await softStep('Sc5 steps 12-13: project save+close+reopen (FK graceful-degrade)', async () => {
+  let tableId: string | null = null;
+  await softStep('Sc5 steps 12-13: project save+close+reopen', async () => {
     const res = await page.evaluate(async () => {
       let pid: string | null = null;
+      let tid: string | null = null;
       try {
         const DG = (window as any).DG;
+        const df = (window as any).grok.shell.tv.dataFrame;
+        // Persist df + TableInfo first to satisfy project_relations_entity_id_fkey.
+        const ti = df.getTableInfo();
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(ti);
+        tid = ti.id;
         const proj = DG.Project.create();
         proj.name = 'ScatterGridColorProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        proj.addChild(ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200), tableId: tid};
       }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 1200));
@@ -698,28 +710,25 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
       } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid, tableId: tid};
       }
       await new Promise(r => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
+      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid, tableId: tid};
       const col = tv.dataFrame.col('Stereo Category');
       const idxROne = col.categories.indexOf('R_ONE');
-      return {phase: 'verified', ok: true, projectId: pid,
+      return {phase: 'verified', ok: true, projectId: pid, tableId: tid,
         rOneAfter: '0x' + (col.meta.colors.getColor(idxROne) >>> 0).toString(16)};
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      // Color customization survives reopen — not the neutral grey baseline.
-      expect(res.rOneAfter).not.toBe('0xff808080');
-    } else {
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    projectId = res.projectId ?? null;
+    tableId = (res as any).tableId ?? null;
+    expect(res.ok, `project round-trip failed (phase ${res.phase}): ${res.error ?? ''}`).toBe(true);
+    // Color customization survives reopen — not the neutral grey baseline.
+    expect(res.rOneAfter).not.toBe('0xff808080');
   });
 
   await softStep('Cleanup', async () => {
-    await cleanupAll(page, layoutId, projectId);
+    await cleanupAll(page, layoutId, projectId, tableId);
   });
 
   if (stepErrors.length > 0)

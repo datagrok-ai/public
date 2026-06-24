@@ -148,31 +148,35 @@ test('GROK-17278: line chart legend color persists across layout + project round
         return {layoutId: null, ok: false, error: String(e?.message ?? e).slice(0, 200)};
       }
     });
-    if (res.ok) {
-      layoutId = res.layoutId;
-      // Bug invariant — fix invariant for GROK-17278: colour persists across layout round-trip.
-      expect(res.rOneAfterReload, 'R_ONE retains blue after layout round-trip (GROK-17278)').toBe('#1f77b4');
-    } else {
-      // Layout dapi server-bound; if it hangs, accept as documented limitation
-      // (matches FK graceful-degrade pattern — round-trip path remains exercised).
-      expect(String(res.error ?? '').length).toBeGreaterThan(0);
-    }
+    // GROK-17278 invariant: the layout round-trip must succeed and R_ONE must stay blue.
+    expect(res.ok, `layout round-trip failed: ${res.error ?? ''}`).toBe(true);
+    layoutId = res.layoutId;
+    expect(res.rOneAfterReload, 'R_ONE retains blue after layout round-trip (GROK-17278)').toBe('#1f77b4');
   });
 
-  // Steps 6-8: project save + closeAll + reopen. FK graceful-degrade.
+  // Steps 6-8: project save + closeAll + reopen (df + TableInfo persisted first).
   let projectId: string | null = null;
+  let tableId: string | null = null;
   await softStep('Steps 6-8 + Step 8 invariant: project save+closeAll+reopen, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
       let pid: string | null = null;
+      let tid: string | null = null;
       try {
         const DG = (window as any).DG;
+        const df = (window as any).grok.shell.tv.dataFrame;
+        // Persist the dataframe + TableInfo first so the project relation satisfies
+        // project_relations_entity_id_fkey (pattern from complex-derived-tables).
+        const ti = df.getTableInfo();
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(ti);
+        tid = ti.id;
         const proj = DG.Project.create();
         proj.name = 'GROK17278Proj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        proj.addChild(ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200), tableId: tid};
       }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 1200));
@@ -180,44 +184,43 @@ test('GROK-17278: line chart legend color persists across layout + project round
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
       } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid, tableId: tid};
       }
       await new Promise(r => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
+      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid, tableId: tid};
       const col = tv.dataFrame.col('Stereo Category');
       const t = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
       return {
         phase: 'verified',
         ok: true,
         projectId: pid,
+        tableId: tid,
         rOneAfter: String(t['R_ONE'] ?? '').toLowerCase(),
       };
     });
-    if (res.ok) {
-      projectId = res.projectId ?? null;
-      // Bug invariant — fix invariant for GROK-17278: colour persists across project round-trip.
-      expect(res.rOneAfter, 'R_ONE retains blue after project save+close+reopen (GROK-17278)').toBe('#1f77b4');
-    } else {
-      // Known FK constraint on unsaved-dataframe projects (project_relations_entity_id_fkey).
-      // Layout round-trip above provides the deterministic persistence assertion.
-      const errStr = String(res.error ?? '');
-      expect(errStr.length).toBeGreaterThan(0);
-    }
+    projectId = res.projectId ?? null;
+    tableId = (res as any).tableId ?? null;
+    // GROK-17278 invariant: the project round-trip must succeed and R_ONE must stay blue.
+    expect(res.ok, `project round-trip failed (phase ${res.phase}): ${res.error ?? ''}`).toBe(true);
+    expect(res.rOneAfter, 'R_ONE retains blue after project save+close+reopen (GROK-17278)').toBe('#1f77b4');
   });
 
   // Cleanup: drop layout/project + close all views.
   await softStep('Cleanup', async () => {
-    await page.evaluate(async ([lid, pid]: [string | null, string | null]) => {
+    await page.evaluate(async ([lid, pid, tid]: [string | null, string | null, string | null]) => {
       if (lid) {
         try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
       }
       if (pid) {
         try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
       }
+      if (tid) {
+        try { const ti = await (window as any).grok.dapi.tables.find(tid); if (ti) await (window as any).grok.dapi.tables.delete(ti); } catch (_) {}
+      }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-    }, [layoutId, projectId] as [string | null, string | null]);
+    }, [layoutId, projectId, tableId] as [string | null, string | null, string | null]);
   });
 
   if (stepErrors.length > 0)
