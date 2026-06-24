@@ -1,19 +1,7 @@
 /**
  * Playwright helpers for the projects feature.
  *
- * Namespace per helpers-candidates.yaml: `helpers.playwright.projects.*`.
  * Imported as: `import * as projects from '../helpers/projects';` (or named).
- *
- * Authoring cycle: c1a-2026-05-03 (7 lighter helpers — saveProject, waitForSaved,
- * saveAndReopen, openProjectFromDashboards, buildVariantsComposite,
- * collectChainProducedProjects, rename).
- *
- * c1b-2026-05-03 will add: deleteProjectViaContextMenu, shareProjectViaContextMenu,
- * saveCopy, logoutAndLoginAs.
- *
- * Selectors / behavior verified against post-Prompt-1 reference docs
- * (`grok-browser/references/projects.md` "Project Dialog Selectors" + "Context
- * Menu Items" sections + Quick Reference per-tile pattern).
  */
 
 import {Page, expect} from '@playwright/test';
@@ -30,18 +18,14 @@ import {Page, expect} from '@playwright/test';
  * Save/Share dialogs unless the scenario explicitly tests that flow.").
  *
  * IMPORTANT: the UI Save Project dialog auto-normalizes typed names to
- * PascalCase (e.g. `c1a-helpers-save` → `C1aHelpersSave`), which breaks
+ * PascalCase (e.g. `my-helpers-save` → `MyHelpersSave`), which breaks
  * downstream `dapi.projects.filter('name = "X"')` lookups. The JS API path
- * preserves names verbatim and is the canonical path for fixture-helper
- * usage. Tests that need to exercise the Save-Project-dialog UI flow
- * specifically should use a future `saveProjectViaUI` helper instead (not
- * yet implemented; deferred to C1b cycle).
+ * preserves names verbatim and is the canonical path for fixture-helper usage.
  *
  * Note: the JS API path creates an empty project entity (no view linkage).
- * `addLink(view)` returns a Dart-side `NoSuchMethodError` per Session B
- * Sub-investigation; until that's resolved at the platform layer, helpers
- * that need a populated project should use a different mechanism (e.g.
- * Wave 1a JS API approximation in projects-copy-clone-spec.ts:62-70).
+ * `addLink(view)` returns a Dart-side `NoSuchMethodError`; until that's
+ * resolved at the platform layer, helpers that need a populated project should
+ * use a different mechanism (a JS API approximation that creates the tables).
  *
  * @param page - Playwright Page (login complete; table view optional).
  * @param name - Project name to save under (preserved verbatim).
@@ -75,9 +59,8 @@ export async function saveProject(
 /**
  * Wait until a project with the given name is visible via the JS API.
  *
- * Replaces the 9 inline `expect.poll(... dapi.projects.filter().first())`
- * copies surfaced across Wave 1a/1b specs. Default 60s timeout with
- * progressive intervals matching the project-save flake budget on dev.
+ * Default 60s timeout with progressive intervals matching the project-save
+ * flake budget on dev.
  *
  * Note: this uses `filter('name = "X"').first()` for visibility. Per the
  * `rename` helper's caveat, the search index lags after rename — for
@@ -158,8 +141,7 @@ export async function saveAndReopen(
 
 /**
  * Open a project by locating its tile in Browse > Dashboards and
- * double-clicking. Uses the per-tile selector pattern documented in
- * `grok-browser/references/projects.md` Quick Reference:
+ * double-clicking. Uses the per-tile selector pattern
  * `[name="div-{project-name-lowercased}"]`.
  *
  * Caller must have already navigated to Browse > Dashboards (or call
@@ -196,12 +178,12 @@ export async function openProjectFromDashboards(
 // ---------------------------------------------------------------------------
 
 /**
- * Build a composite cross-fixture for the `project-url.md` scenario.
+ * Build a composite cross-fixture of project variants.
  *
- * For C1a: uses JS API approximation per Wave 1a pattern — creates separate
- * project entities for each requested variant with naming convention
+ * Uses a JS API approximation — creates separate project entities for each
+ * requested variant with naming convention
  * `<sourceProjectName>-{link|clone|pvc}`. The actual UI Save-Copy-with-mode
- * flow is exercised by the `saveCopy` helper (C1b cycle).
+ * flow is exercised by the `saveCopy` helper.
  *
  * The original source project must already exist on the server (created by
  * `saveProject` or by an upstream chained spec).
@@ -234,7 +216,7 @@ export async function buildVariantsComposite(
       // recording which mode it represents.
       const p = DG.Project.create();
       p.name = name;
-      p.description = `c1a buildVariantsComposite ${variant} variant of "${src}" (JS API approximation; saveCopy UI flow deferred to C1b)`;
+      p.description = `buildVariantsComposite ${variant} variant of "${src}" (JS API approximation)`;
       await grok.dapi.projects.save(p);
     }, {src: sourceProjectName, name: variantName, variant});
     result[variant] = variantName;
@@ -255,7 +237,7 @@ export async function buildVariantsComposite(
  * downstream `dapi.projects.delete` or `find` operations.
  *
  * @param page - Playwright Page (login complete).
- * @param namePrefix - Name prefix (e.g. "AutoTest-Share-" or "c1a-test-").
+ * @param namePrefix - Name prefix (e.g. "AutoTest-Share-").
  * @returns Array of project descriptors.
  */
 export async function collectChainProducedProjects(
@@ -279,13 +261,10 @@ export async function collectChainProducedProjects(
  * Rename a project via JS API and verify server-side persistence.
  *
  * IMPORTANT: verification uses `dapi.projects.find(id)`, NOT
- * `dapi.projects.filter('name = "<new>"').first()`. Per Session B Sub 5
- * investigation: the rename DOES persist (re-fetch by ID returns the new
- * name) but the search index has eventually-consistent lag — filter-by-name
- * may return null for several seconds after a rename. Always verify by ID.
- *
- * Wave 1b complex-rename-spec round 1 reported "3/3 FAIL" because the
- * verification used filter-by-name; this helper bakes in the correct path.
+ * `dapi.projects.filter('name = "<new>"').first()`. The rename DOES persist
+ * (re-fetch by ID returns the new name) but the search index has
+ * eventually-consistent lag — filter-by-name may return null for several
+ * seconds after a rename. Always verify by ID.
  *
  * @param page - Playwright Page (login complete).
  * @param projectId - Project ID (UUID) to rename. Use ID, not name, because
@@ -317,7 +296,7 @@ export async function rename(
 }
 
 // ===========================================================================
-// C1b helpers (heavier UI flows) — added 2026-05-03 via c1-2026-05-03-helpers-c1b
+// Heavier UI-flow helpers
 // ===========================================================================
 
 // ---------------------------------------------------------------------------
@@ -327,18 +306,15 @@ export async function rename(
 /**
  * Delete a project via the Browse > Dashboards UI flow.
  *
- * Two trigger paths supported (per `projects.md` Context Menu Items section):
+ * Two trigger paths supported:
  *   - `right-click` (default): contextmenu on `[name="div-{slug}"]` tile
  *     → click `[name="div-Delete-Project"]` → DELETE confirmation.
  *   - `context-panel-dropdown`: single-click tile to populate Context Panel
  *     → click `.grok-prop-panel [name="icon-context-arrow-down"]` chevron
- *     → click `[name="div-Delete-Project"]` from the SAME menu (verified
- *       identical menu in Session B Sub 4 alt-path investigation)
+ *     → click `[name="div-Delete-Project"]` from the same menu
  *     → DELETE confirmation.
  *
- * Both paths terminate by clicking `[name="button-DELETE"]` (verified live
- * 2026-05-03; older `projects.md:178` claim of "no name= attribute" was
- * out-of-date and corrected via Prompt 1 Item 3.4).
+ * Both paths terminate by clicking `[name="button-DELETE"]`.
  *
  * Caller must be on Browse > Dashboards with the project tile visible
  * (search-filter applied if needed). Helper does NOT navigate to dashboards.
@@ -358,8 +334,7 @@ export async function deleteProjectViaContextMenu(
 
   if (mode === 'right-click') {
     // Dispatch contextmenu via DOM (Playwright's .click({button:'right'})
-    // sometimes misses Datagrok's overlay-wrapped tile; explicit dispatch
-    // matches the Session B Sub 1 + Session B Sub 4 verified pattern).
+    // sometimes misses Datagrok's overlay-wrapped tile).
     await page.evaluate((s) => {
       const el = document.querySelector(`[name="div-${s}"]`) as HTMLElement | null;
       if (!el) throw new Error(`tile [name="div-${s}"] not found`);
@@ -395,7 +370,7 @@ export async function deleteProjectViaContextMenu(
 
   // DELETE confirmation dialog. Filter by button-DELETE presence rather
   // than title text — server may render slightly different titles between
-  // builds, but the DELETE button selector is stable per Session B Sub 4.
+  // builds, but the DELETE button selector is stable.
   const confirmDialog = page.locator('.d4-dialog')
     .filter({has: page.locator('[name="button-DELETE"]')});
   await confirmDialog.waitFor({timeout: 15000});
@@ -410,15 +385,13 @@ export async function deleteProjectViaContextMenu(
 /**
  * Share a project via the right-click → Share dialog UI flow.
  *
- * Drives the Share dialog selectors documented in `projects.md` "Project
- * Dialog Selectors" section (added by Prompt 1 Item 3.2). Recipient input
- * has no `name=` attribute — located by placeholder text.
+ * Drives the Share dialog. The recipient input has no `name=` attribute —
+ * located by placeholder text.
  *
  * @param page - Playwright Page (on Browse > Dashboards with tile visible).
  * @param name - Project name.
  * @param options.recipient - User / group / email string typed into the
- *   recipient input (e.g. `'Test permission group'` — verified to exist on
- *   dev per Olena 2026-05-03).
+ *   recipient input (e.g. `'Test permission group'`).
  * @param options.accessLevel - Access level select; default `'View and use'`.
  * @param options.sendNotifications - Toggle Send-notifications checkbox
  *   (default: leave at dialog default).
@@ -434,11 +407,9 @@ export async function shareProjectViaContextMenu(
     message?: string;
   },
 ): Promise<void> {
-  // Tile slug rule (verified 2026-05-08, Datagrok dev): the tile's name=
-  // attribute uses the server-stored project name VERBATIM — PascalCase'd
-  // names are preserved as-is, kebab/lowercase names stay lowercase. The
-  // earlier `name.toLowerCase()` blanket-conversion missed PascalCase tiles.
-  // Try verbatim first, then lowercase as fallback for legacy callers.
+  // Tile slug rule: the tile's name= attribute uses the server-stored project
+  // name VERBATIM — PascalCase'd names are preserved as-is, kebab/lowercase
+  // names stay lowercase. Try verbatim first, then lowercase as a fallback.
   const candidates = [name, name.toLowerCase()];
   let slug = name;
   for (const cand of candidates) {
@@ -520,10 +491,10 @@ export async function shareProjectViaContextMenu(
  * Drive the Save Project dialog UI flow with a mode selection.
  *
  * Trigger: toolbar `[name="button-Save"]` (NOT context menu — Save Project
- * is not a tile-context-menu item per Session B Sub 1; it's a toolbar
- * action when a view is active).
+ * is not a tile-context-menu item; it's a toolbar action when a view is
+ * active).
  *
- * Modes (per `projects.md` "Save Project dialog" subsection):
+ * Modes:
  *   - `'original'`   → "Save original project" (overwrite)
  *   - `'copy'`       → "Save a copy" (new project; per-table Link/Clone
  *                       sub-option available via `perTableLinkOrClone`)
@@ -536,15 +507,11 @@ export async function shareProjectViaContextMenu(
  * this call, fetch by ID rather than by typed name.
  *
  * **"Copy of" default name (mode === 'copy' only)**: when `name` is OMITTED
- * for copy mode, the server applies a default name. Originally documented
- * as `"Copy of <sourceName>"` (display) / `"copyof<originalname>"` (URL slug)
- * but actual dev behavior 2026-05-04 derived the default from the active
- * table name (PascalCase + auto-index, e.g. `C1bSaveCopyTable_4`) — the
- * server-default-name policy is currently undocumented and varies by
- * scenario shape. Default-name path documented but not exercised by helper
- * test — see helpers/projects-spec.ts saveCopy softStep, which uses the
- * explicit-name path. Tests SHOULD provide an explicit `name` for
- * deterministic verification (id-based dapi.projects.find after save).
+ * for copy mode, the server applies a default name derived from the active
+ * table name (PascalCase + auto-index) — the server-default-name policy is
+ * undocumented and varies by scenario shape. Tests SHOULD provide an explicit
+ * `name` for deterministic verification (id-based dapi.projects.find after
+ * save).
  *
  * For modes other than `'copy'`, `name` is REQUIRED.
  *
@@ -582,13 +549,11 @@ export async function saveCopy(
   void options.sourceName; // documented context; not used in flow
 
   // Trigger Save Project dialog via toolbar SAVE button.
-  // Use `:visible` filter + JS-DOM fallback per the pattern in
-  // _helpers.ts:saveProjectViaDialog and projects-ui-smoke-spec.ts:172-183.
-  // The bare `[name="button-Save"]` matches hidden duplicates from inactive
-  // views (offsetParent=null) and Playwright's actionability check rejects
-  // them as "not visible" — surfaced after Bug B fix in D4.3 spec re-run
-  // 2026-05-06 PM where the toolbar SAVE button under reopen+addViewer flow
-  // resolved to a `dim` non-visible candidate first.
+  // Use a `:visible` filter: the bare `[name="button-Save"]` matches hidden
+  // duplicates from inactive views (offsetParent=null) and Playwright's
+  // actionability check rejects them as "not visible" — under a
+  // reopen+addViewer flow the toolbar SAVE button can resolve to a `dim`
+  // non-visible candidate first.
   const saveBtn = page.locator('button[name="button-Save"]:visible').first();
   await saveBtn.waitFor({timeout: 30_000, state: 'visible'});
   await page.waitForTimeout(500); // settle render
@@ -635,36 +600,25 @@ export async function saveCopy(
   }, modeLabels[options.mode]);
   await page.waitForTimeout(800); // let dialog adapt to mode change
 
-  // Name input — `input#name` (id-based, precise; verified by MCP recon
-  // 2026-05-06). Only one `input[type="text"].ui-input-editor` exists in the
-  // dialog so the prior `.first()` would also resolve correctly — the bug
-  // was not the selector but the keyboard-based fill: `keyboard.press
-  // ('Control+a')` does NOT cause select-all in this Dart-side dialog
-  // (synthetic and CDP-routed Ctrl+A keydowns alike are not honored by
-  // Dart's input handler — observed selectionEnd unchanged after press).
-  // The auto-populated 'Copy of <source>' value remained, then `keyboard.type`
-  // appended on top, and a downstream Dart-side trim/normalize dropped the
-  // typed suffix entirely (confirmed by D4.3 run: typed `demog-{ts}-link`,
-  // server stored `Demog{ts}` — `Link` segment lost).
+  // Name input — `input#name` (id-based, precise). Do NOT fill via the
+  // keyboard: `keyboard.press('Control+a')` does NOT cause select-all in this
+  // Dart-side dialog (synthetic and CDP-routed Ctrl+A keydowns alike are not
+  // honored by Dart's input handler). The auto-populated 'Copy of <source>'
+  // value would remain, `keyboard.type` would append on top, and a downstream
+  // Dart-side trim/normalize would drop the typed suffix entirely.
   //
   // Fix: native value setter + 'input'/'change' DOM events. The setter
   // bypasses React-style runtime guards and Dart's keyboard interception;
   // the dispatched events drive Dart's onChange listener so the new value
-  // is actually committed to the dialog's model. Verified end-to-end via
-  // MCP recon 2026-05-06: typed `recon-{ts}-link`, server stored
-  // `Recon{ts}Link` (correct PascalCase, suffix preserved). See
-  // .claude/plan/saveCopy-fix-report.md.
+  // is actually committed to the dialog's model.
   //
   // For mode='copy', if name is omitted, leave the dialog's default in
-  // place (server applies "Copy of <sourceName>" → PascalCase'd to e.g.
-  // "CopyOfRecon{ts}").
+  // place (server applies "Copy of <sourceName>" → PascalCase'd).
   if (options.name !== undefined) {
-    // Selector fallback chain: precise `input#name` first (verified via MCP
-    // recon), then the generic `input[type="text"].ui-input-editor` form
-    // (only one such input exists in the dialog when fully rendered).
-    // 15s timeout — observed as low as ~3s in MCP recon, but Playwright
-    // runs sometimes need more headroom for the dialog to fully render
-    // when chained from a fresh reopen flow.
+    // Selector fallback chain: precise `input#name` first, then the generic
+    // `input[type="text"].ui-input-editor` form (only one such input exists
+    // in the dialog when fully rendered). 15s timeout gives the dialog
+    // headroom to fully render when chained from a fresh reopen flow.
     const nameInput = dialog.locator('input#name, input[type="text"].ui-input-editor').first();
     await nameInput.waitFor({state: 'visible', timeout: 15000});
     await page.evaluate((newName) => {
@@ -710,11 +664,7 @@ export async function saveCopy(
   // update grok.shell.project to the newly-created copy after OK click — if
   // we sample shell.project.id immediately we still see the source's id.
   // Without this baseline we can't tell apart "copy didn't happen" from
-  // "Dart hasn't updated shell yet" (verified via D4.3 spec re-run
-  // 2026-05-06 PM: Browse > Dashboards showed both `demog-{ts}` original
-  // AND `demog-{ts}-link` copy as distinct entries server-side, but
-  // shell.project.id was still source's after the previous verification's
-  // first iteration).
+  // "Dart hasn't updated shell yet".
   const preOkSourceId = await page.evaluate(() => {
     const grok = (window as any).grok;
     return grok.shell.project?.id ?? null;
@@ -732,34 +682,26 @@ export async function saveCopy(
   // Verification — dual-strategy: shell.project update OR server-side name
   // match (PascalCase predicted from typed name).
   //
-  // Prior code compared `found.name === expected` where `expected` was the
-  // typed name. The server normalizes typed names to PascalCase per
-  // grok-browser/references/projects.md:64 — e.g. typed
-  // `demog-{ts}-link` is stored as `Demog{ts}Link`. Strict equality could
-  // therefore never hold for any caller using a kebab/snake/space-separated
-  // typed name; the only callers that bypassed this were ones already
-  // typing PascalCase (helpers/projects-spec.ts:360 explicitly types
-  // `'C1bSaveCopy' + Date.now()` for this reason).
+  // The server normalizes typed names to PascalCase — e.g. typed
+  // `demog-{ts}-link` is stored as `Demog{ts}Link` — so strict equality
+  // against the typed name never holds for kebab/snake/space-separated names.
   //
   // For mode='original' (overwrite): shell.project.id stays the same as
   // source; verify find(id) returns non-null.
   // For mode='copy' / mode='personal-view-customizations': the new copy
   // exists server-side immediately after OK click but `grok.shell.project`
-  // may lag for >15s in the Playwright/CDP harness (verified D4.3 spec
-  // re-run 2026-05-06 PM: server had `Demog{ts}Link` project with new id
-  // but shell.project.id stayed at source for the entire verification
-  // window). Fall back to a server-query for the predicted PascalCase
-  // name — that's the same form `dapi.projects.find(id).name` returns for
-  // dialog-saved projects.
+  // may lag for >15s in the Playwright/CDP harness (server has the new project
+  // id while shell.project.id stays at source). Fall back to a server-query
+  // for the predicted PascalCase name — the same form
+  // `dapi.projects.find(id).name` returns for dialog-saved projects.
   const expectIdChange = options.expectIdChange ?? (options.mode !== 'original');
   // Datagrok stores TWO name fields per project:
   //   `name`         — PascalCase-normalized internal form (e.g. `Demog{ts}Link`)
   //   `friendlyName` — typed name verbatim (e.g. `demog-{ts}-link`)
   // The dapi.projects.filter(`name = "X"`) operator does NOT do reliable
-  // exact-match on either column — verified live 2026-05-06 against dev
-  // (filter('name = "Demog1778091193605Link"') returned 0 even though the
-  // project existed). The reliable path is `filter('name like "<typed>"')`
-  // (no wildcards) which apparently matches against friendlyName and works
+  // exact-match on either column (filter('name = "...") can return 0 even
+  // when the project exists). The reliable path is `filter('name like
+  // "<typed>"')` (no wildcards) which matches against friendlyName and works
   // for exact and prefix matches alike.
   const verified = await page.evaluate(async ({preId, expectChange, typedName}: {preId: string | null; expectChange: boolean; typedName: string | null}) => {
     const grok = (window as any).grok;
@@ -801,7 +743,7 @@ export async function saveCopy(
 }
 
 // ===========================================================================
-// Phase B helpers — provenance-aware save + reopen lifecycle (added 2026-05-05)
+// Provenance-aware save + reopen lifecycle helpers
 // ===========================================================================
 
 // ---------------------------------------------------------------------------
@@ -835,17 +777,13 @@ export interface SavedProject {
  * await grok.dapi.projects.save(project);
  * ```
  *
- * The four calls our prior `saveProjectViaApi` (in section-local
- * `_helpers.ts`) skipped were the cause of save+reopen "succeeding" without
- * any data being re-materialized — the project entity persisted but neither
- * the dataframe bytes, the TableInfo, nor the addChild relations did.
+ * Skipping any of these calls causes save+reopen to "succeed" without any
+ * data being re-materialized — the project entity persists but neither the
+ * dataframe bytes, the TableInfo, nor the addChild relations do. With all
+ * calls in place, files / db_query / db_table / script sources reopen with
+ * the `.script` tag intact and the table re-executed server-side.
  *
- * Verified live 2026-05-05 against dev.datagrok.ai for files / db_query /
- * db_table / script source classes — all four reopened with `.script` tag
- * intact and table re-executed by Datagrok server-side. See
- * `.claude/diagnostics/mcp-capture-{files,db,scripts}.md`.
- *
- * Use after one of the `helpers.playwright.openers.openTableFrom*` calls
+ * Use after one of the `openTableFrom*` openers calls
  * has populated `grok.shell.tv` with a provenance-tagged DataFrame.
  *
  * @param page - Playwright Page (must have an active TableView).
@@ -912,8 +850,7 @@ export interface SavedAllTables {
  * sources (file + DB-table + query + script + derived, etc.).
  *
  * The active TableView's layout is saved alongside (one layout, attached to
- * the project). Per-table layouts are out of scope — see
- * `complex-rename-spec.ts` for the inline pattern this helper consolidates.
+ * the project). Per-table layouts are out of scope.
  *
  * Each table's `df.tags['.script']` provenance is preserved through
  * `dapi.tables.uploadDataFrame(df)` + `dapi.tables.save(tableInfo)`, enabling

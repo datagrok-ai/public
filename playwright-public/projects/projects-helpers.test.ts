@@ -1,7 +1,7 @@
 /**
- * Runnable tests for `helpers/projects.ts` C1a helpers.
+ * Runnable tests for the `helpers/projects.ts` helpers.
  *
- * Each test creates a fixture project named `c1a-<helperName>-<timestamp>`,
+ * Each test creates a fixture project, named with a per-session prefix,
  * exercises the helper, asserts the expected outcome, and deletes the
  * fixture in a `finally` block. All fixtures are cleaned up at the end via a
  * prefix sweep (`collectChainProducedProjects` self-test doubles as the
@@ -51,7 +51,7 @@ async function setupTableView(page: any, suffix: string): Promise<string> {
 }
 
 test('helpers.playwright.projects C1a — full suite', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -210,9 +210,9 @@ test('helpers.playwright.projects C1a — full suite', async ({page}) => {
 });
 
 // ===========================================================================
-// C1b suite — heavier UI helpers (4 helpers; helper #4 logoutAndLoginAs
-// lives in session-spec.ts). This suite covers helpers 1-3:
-// deleteProjectViaContextMenu, shareProjectViaContextMenu, saveCopy.
+// Heavier UI-helper suite: deleteProjectViaContextMenu,
+// shareProjectViaContextMenu, saveCopy. (logoutAndLoginAs is tested
+// separately in the session helpers spec.)
 // ===========================================================================
 
 const SESSION_PREFIX_C1B = 'c1b-helpers-' + Date.now() + '-';
@@ -231,8 +231,8 @@ async function createDashboardsFixture(page: any, name: string): Promise<void> {
     p.name = n;
     await grok.dapi.projects.save(p);
   }, name);
-  // Navigate to Dashboards via tree (per C1a Run #5 — URL navigation
-  // doesn't refresh server-side projects list).
+  // Navigate to Dashboards via tree — URL navigation doesn't refresh the
+  // server-side projects list.
   await page.evaluate(() => {
     const labels = Array.from(document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-node-label, .d4-tree-view-item'));
     const node = labels.find((el: any) => (el.textContent || '').trim() === 'Dashboards' && el.offsetParent !== null);
@@ -265,7 +265,7 @@ async function createDashboardsFixture(page: any, name: string): Promise<void> {
 }
 
 test('helpers.playwright.projects C1b — UI helpers suite', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -322,8 +322,8 @@ test('helpers.playwright.projects C1b — UI helpers suite', async ({page}) => {
         recipient: 'Test permission group',
         accessLevel: 'View and use',
       });
-      // Verification philosophy (per Olena 2026-05-04): test verifies via
-      // user-visible behavior, not internal API state. The helper's
+      // Verification philosophy: test verifies via user-visible behavior,
+      // not internal API state. The helper's
       // successful execution (no UI error during dialog flow + dialog
       // hidden after OK) is the primary signal that share was attempted.
       // Real recipient-side verification belongs to a downstream test that
@@ -355,8 +355,7 @@ test('helpers.playwright.projects C1b — UI helpers suite', async ({page}) => {
       // when user leaves name field empty in dialog) — not essential for
       // helper test coverage. Explicit name path is more deterministic
       // (server stores typed name verbatim modulo PascalCase normalization).
-      // Helper id-based verification confirms server stored expected name
-      // (per fix-2026-05-04-savecopy-explicit-name-path).
+      // Helper id-based verification confirms server stored expected name.
       const copyName = 'C1bSaveCopy' + Date.now();  // explicit PascalCase name to bypass server normalization
       fixtureNames.push(copyName);
       await saveCopy(page, {

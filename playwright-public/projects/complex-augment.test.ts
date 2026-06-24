@@ -1,9 +1,5 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.add-relation, projects.tree.add-entity-node]
-generated_from: complex-augment.md (Phase B canonical openers)
---- */
-// JS API addRelation primary path; UI drag-drop deferred per
-// b2-2026-05-03-drag-drop-ui-only-reclassification (covered by complex-ui.md).
+// Verifies augmenting a saved project with additional tables via the
+// addRelation/addLink JS API and reopening it with all tables intact.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -13,7 +9,7 @@ import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/pr
 test.use(projectsTestOptions);
 
 test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page}) => {
-  test.setTimeout(360_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const projectName = `augment-test-${Date.now()}`;
@@ -80,10 +76,11 @@ test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page
       expect(r.tables).toBeGreaterThan(0);
     });
   } finally {
-    if (saved)
+    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
+    if (s)
       await deleteProjectWithCleanup(page, {
-        projectId: saved.projectId,
-        tableInfoId: saved.tableInfoId,
+        projectId: s.projectId,
+        tableInfoId: s.tableInfoId,
       });
   }
 

@@ -1,35 +1,10 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.shell.open]
---- */
-// Selector sources (grok-browser/references):
-//   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
-//   projects.md:232 — SAVE ribbon button is the reliable Save Project trigger
-//   projects.md:28 — Preferred default is grok.dapi for verification
-//   projects.md:24 — Rename via JS API: t.name = '<new>' then dapi.save
+// Covers rename → reopen-verify flows. Targets the GROK-19212 regression
+// invariant ("project fails to open with 'Could not resolve table' after a
+// referenced table is renamed"). The table-rename path also exercises the
+// same reference-resolution code path as the github-3550 sister bug
+// (Query/Script rename invalidation).
 //
-// Wave 1b/2C complex-split: covers Step (project rename) sub-bullet of
-// complex.md scenario — specifically Steps 7-9 rename flows + Step 11
-// reopen-verify. Targets the project rename → reopen flow that surfaces
-// if reopen-after-rename behavior regresses (GROK-19212 regression
-// invariant — "project fails to open with 'Could not resolve table' after
-// a referenced table is renamed"; bug-library entry exists). Also touches
-// github-3550 territory (sister bug — Query/Script rename invalidation)
-// via the table-rename path, which exercises the same reference-resolution
-// code-path on reopen even though the bug was originally surfaced for
-// queries.
-//
-// Bug-focused slice satellite of complex.md per Decision 2.6 expanded
-// pattern 2 (orphan-without-its-own-parent-.md acceptable when the spec
-// self-documents via header cross-reference to parent .md + functionality
-// slice + GROK ticket). Parent canonical scenario: complex.md.
-//
-// Scope: rename existing table inside project + verify rename persists
-// on reopen (GROK-19212 invariant). Sub-bullets of complex.md NOT
-// covered here (Pivot, Aggregate, Join, Clone, Save-Copy modes,
-// multi-source coexistence, recipient-side share) belong to other
-// satellites of the complex.md decomposition.
-//
-// Scope (extended):
+// Scope:
 //   * Test 1 — TABLE rename (GROK-19212 invariant). Open 2 source tables +
 //     join, save, rename table, reopen, verify resolution.
 //   * Test 2 — QUERY rename (github-3550 invariant). Provision saved query
@@ -38,21 +13,8 @@ sub_features_covered: [projects.api.save, projects.shell.open]
 //   * Test 3 — SCRIPT rename (github-3550 sister invariant). Provision
 //     dataframe-output script, open it as project source, save, rename
 //     script via JS API, reopen, verify reference resolution.
-//
-// Tests 2 and 3 became feasible after introducing
-// helpers/openers.ts:provisionSystemDatagrokQuery and
-// helpers/openers.ts:provisionDataframeScript — previously the .md
-// described these renames but the spec couldn't run them without
-// env-provisioned fixtures. Now the test owns the query/script (it's
-// namespaced under the test user's login), so rename always succeeds.
-//
-// Scope reductions (kept):
-//   * Project-entity rename (via p.name = '<new>'; dapi.save(p)) was
-//     attempted in Wave 1b round 1 but failed to propagate on dev.
-//     Removed via Wave 1b hypothesis cycle 1; GROK-19212 invariant is
-//     independently verified via the table-rename + reopen flow.
-//   * Step 11 verification narrows to: project opens, tables/joined
-//     tables load, no error balloons.
+// Verification narrows to: project opens, tables/joined tables load, no
+// error balloons.
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {
@@ -79,7 +41,7 @@ async function closeAll(page: Page) {
 }
 
 test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-19212)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -230,9 +192,8 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
       expect(result.rowCount).toBeGreaterThan(0);
     });
 
-    // Step 9 project-entity rename intentionally NOT covered in Wave 1b
-    // round 2 — see header SR documentation. JS API setter rename behavior
-    // on dev needs separate investigation before adding back.
+    // Project-entity rename intentionally NOT covered — JS API setter rename
+    // behavior on dev needs separate investigation before adding back.
   } finally {
     await deleteProjectWithCleanup(page, {
       projectId: projectId ?? undefined,
@@ -254,7 +215,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
 // ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Query, reopen, verify reference resolution (github-3550)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -325,12 +286,14 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
       expect(isHappyPath || isGracefulFailure).toBe(true);
     });
   } finally {
-    if (saved)
+    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
+    if (s)
       await deleteProjectWithCleanup(page, {
-        projectId: saved.projectId,
-        tableInfoId: saved.tableInfoId,
+        projectId: s.projectId,
+        tableInfoId: s.tableInfoId,
       });
-    if (provisioned) await provisioned.cleanup();
+    const p = provisioned as ProvisionedQuery | null;
+    if (p) await p.cleanup();
     await closeAll(page);
   }
 
@@ -345,7 +308,7 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
 // ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Script, reopen, verify reference resolution', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -413,12 +376,14 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
       expect(isHappyPath || isGracefulFailure).toBe(true);
     });
   } finally {
-    if (saved)
+    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
+    if (s)
       await deleteProjectWithCleanup(page, {
-        projectId: saved.projectId,
-        tableInfoId: saved.tableInfoId,
+        projectId: s.projectId,
+        tableInfoId: s.tableInfoId,
       });
-    if (provisioned) await deleteProvisionedScript(page, provisioned.scriptId);
+    const p = provisioned as ProvisionedScript | null;
+    if (p) await deleteProvisionedScript(page, p.scriptId);
     await closeAll(page);
   }
 

@@ -44,7 +44,7 @@ test.skip(!!process.env.CI, 'headed-only manual-password flow; not for CI');
 
 test('helpers.playwright.session — logoutAndLoginAs end-to-end', async ({page}) => {
   // Long timeout — accommodates manual password entry windows (5 min each).
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

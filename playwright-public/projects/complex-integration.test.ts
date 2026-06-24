@@ -1,7 +1,3 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.api.namespaces, projects.add-relation, projects.add-link]
-generated_from: complex-integration.md (multi-source: file + DB-table + query + script)
---- */
 // Multi-source integration: file + ad-hoc DB table on System:Datagrok +
 // provisioned saved query on System:Datagrok + provisioned dataframe-output
 // script. All non-file prerequisites are created in-test via
@@ -59,7 +55,7 @@ async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCoun
 test.use(projectsTestOptions);
 
 test('Projects / Complex Integration: heterogeneous sources in one project', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -174,13 +170,16 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
       expect(r.tables).toBeGreaterThanOrEqual(4);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisionedQuery) await provisionedQuery.cleanup();
-    if (provisionedScript) await deleteProvisionedScript(page, provisionedScript.scriptId);
+    const pq = provisionedQuery as ProvisionedQuery | null;
+    if (pq) await pq.cleanup();
+    const ps = provisionedScript as ProvisionedScript | null;
+    if (ps) await deleteProvisionedScript(page, ps.scriptId);
   }
 
   if (stepErrors.length > 0) {

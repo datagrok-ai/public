@@ -16,7 +16,7 @@ const LOGIN = process.env.DATAGROK_LOGIN!;
 const PASSWORD = process.env.DATAGROK_PASSWORD!;
 
 test('Sticky Meta: persistence across copy / clone / reload, and delete', async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
 
   const suffix = H.uniqueSuffix();
   const schemaName = `PW_SM_Schema_${suffix}`;

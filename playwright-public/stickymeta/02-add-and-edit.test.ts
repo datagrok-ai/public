@@ -7,7 +7,7 @@ import * as H from './helpers';
 test.describe.configure({ mode: 'serial' });
 
 test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
 
   const suffix = H.uniqueSuffix();
   const schemaName = `PW_SM_Schema_${suffix}`;

@@ -1,9 +1,5 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.api.namespaces, projects.move.move-entity, projects.move.commit]
-generated_from: complex-move.md (Phase B canonical openers)
---- */
-// JS API path is primary; UI right-click `Move to` doesn't exist on dev,
-// drag-drop unautomatable — both UI paths captured in complex-ui.md Step 10.
+// Verifies moving a saved project to a different namespace/space via the
+// JS API and confirming the move committed.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -82,10 +78,11 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
       expect(r.ok).toBe(true);
     });
   } finally {
-    if (saved)
+    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
+    if (s)
       await deleteProjectWithCleanup(page, {
-        projectId: saved.projectId,
-        tableInfoId: saved.tableInfoId,
+        projectId: s.projectId,
+        tableInfoId: s.tableInfoId,
       });
     if (createdSpaceId) {
       await evalJs(page, `(async () => {

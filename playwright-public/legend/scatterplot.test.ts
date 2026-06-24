@@ -1,38 +1,20 @@
-/* ---
-sub_features_covered: [legend.column, legend.extra-column, legend.show-main-item-icons, legend.item.color-picker, legend.allow-item-coloring, legend.refresh.on-data-change, legend.item.click, legend.color-scale.numerical, legend.use-custom-color-coding]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: 9 atlas ids
-//   ui_coverage_responsibility: [scatterplot-color-marker-combined-legend, scatterplot-axis-change-legend-update,
-//     scatterplot-derived-color-formula-legend, grid-linear-color-coding-as-legend, grid-categorical-color-coding-modify-colors]
-//   ui_coverage_delegated_to: visibility-and-positioning.md
-//   related_bugs: [GROK-17438, GROK-17222, github-3132, GROK-17278, GROK-19083]
-//   strategy: chained_tests (Scenarios 1, 3, 5 carry [coverage_type: edge] markers post-SR)
-// Paired scenario: scatterplot.md (revision: migrated 2026-05-07)
+// Scatter plot legend: color + marker combined legend, axis-change updates, derived
+// color formulas, numerical color scale, and grid color coding (linear + categorical)
+// surfacing in the legend.
 //
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (legend host, picker icon, dialog buttons)
-//   .claude/skills/grok-browser/references/viewers/scatterplot.md (viewer-Scatter-plot root)
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated 2026-05-08 right-click + dialog DOM)
-//
-// Visual gap split (legend-ui.md §4, 2026-05-08): Scenario 1 step 10 numerical-formula
-// sub-bullet exercises a numerical color column. The scatter plot's [name="legend"]
-// element renders the gradient swatch to canvas without DOM children (target_layer:
-// ui-only). Spec body retains JS-API state assertions for the related flow
-// (colorColumnName + .color-coding-type round-trip).
+// Note: the scatter plot's [name="legend"] element renders the numerical gradient
+// swatch to canvas without DOM children, so numerical-color flows are verified via
+// JS-API state assertions (colorColumnName + .color-coding-type round-trip).
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
-// Validator B 2026-05-09: scatterplot exhibits 3x runtime variance (459s→1397s)
-// driven by transient dapi/FiltersGroup hangs in 1 of 3 runs. test.retry(1)
-// gives a single retry to absorb infra-level transient slowness, separating
-// real failures from dev-load flake. Combined with inline withTimeout wraps
-// on dapi.layouts.* and fg.updateOrAdd on high-cardinality columns.
+// One retry to absorb infra-level transient slowness (this suite shows large runtime
+// variance from transient dapi/FiltersGroup hangs), separating real failures from
+// dev-load flake. Combined with inline withTimeout wraps on dapi.layouts.* and
+// fg.updateOrAdd on high-cardinality columns.
 test.describe.configure({retries: 1});
 
 async function openSPGI(page: any): Promise<void> {
@@ -75,9 +57,9 @@ async function cleanupAll(page: any, layoutId?: string | null, projectId?: strin
   }, [layoutId ?? null, projectId ?? null]);
 }
 
-// scenario: 1. Color + Marker combined legend on Scatter plot [coverage_type: edge]
+// Scenario 1: Color + Marker combined legend on Scatter plot
 test('Legend scatterplot — Color + Marker combined', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await openSPGI(page);
@@ -109,10 +91,8 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
 
   // Scenario 1 step 5 cont: change first-available category color via picker dialog.
   // UI path: real Playwright `locator.click({button: 'right'})` (native pointer-event chain
-  // — headless-safe; synthetic dispatchEvent('contextmenu') is unreliable in headless run
-  // per Validator B 2026-05-08).
-  // JS-API fallback: setCategorical via the canonical column-helpers API
-  // (public/js-api/src/dataframe/column-helpers.ts L103-111) — equivalent to a successful
+  // — headless-safe; synthetic dispatchEvent('contextmenu') is unreliable in headless run).
+  // JS-API fallback: setCategorical via the canonical column-helpers API — equivalent to a successful
   // OK click of the picker dialog. Verification via JSON tag (deterministic).
   await softStep('Sc1 step 5: change category color via legend picker (UI + API fallback)', async () => {
     const targetCategory = await page.evaluate(() => {
@@ -180,9 +160,8 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
 
   // Scenario 1 steps 6-7: layout round-trip — verify color persists.
   // GROK-17278/GROK-17438 invariant baseline.
-  // dapi.layouts.* + tv.loadLayout wrapped in inline withTimeout — Validator B
-  // 2026-05-09 run 3 surfaced these calls hanging up to per-test 900s budget
-  // under transient dev slowness.
+  // dapi.layouts.* + tv.loadLayout wrapped in inline withTimeout — these calls can
+  // hang under transient dev slowness.
   let layoutId: string | null = null;
   await softStep('Sc1 steps 6-7: save+reapply layout, color persists', async () => {
     const res = await page.evaluate(async () => {
@@ -197,7 +176,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       const layout = tv.saveLayout();
       layout.name = 'ScatterCombined_' + Date.now();
       try {
-        const saved = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
+        const saved: any = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
         await new Promise(r => setTimeout(r, 1000));
         const found = await withTimeout((window as any).grok.dapi.layouts.find(saved.id), 15000, 'layouts.find');
         tv.loadLayout(found);
@@ -218,7 +197,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   });
 
   // Scenario 1 steps 8-9: project round-trip with FK graceful-degrade.
-  // Mirror color-consistency-spec.ts L254-309 — known FK on unsaved-dataframe projects.
+  // Known FK on unsaved-dataframe projects.
   let projectId: string | null = null;
   await softStep('Sc1 steps 8-9: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
@@ -254,7 +233,6 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   });
 
   // Scenario 1 step 10: categorical-formula color column → categorical legend.
-  // (Linear-formula sub-bullet split to legend-ui.md §4 — visual gradient swatch.)
   await softStep('Sc1 step 10: categorical formula → categorical legend', async () => {
     const count = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -302,9 +280,9 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });
 
-// scenario: 2. Legend updates on X-axis change with derived nullable columns
+// Scenario 2: Legend updates on X-axis change with derived nullable columns
 test('Legend scatterplot — axis change', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await openSPGI(page);
@@ -368,9 +346,9 @@ test('Legend scatterplot — axis change', async ({page}) => {
     throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });
 
-// scenario: 3. In-viewer filtering — multiple scatterplots with shared filter [coverage_type: edge]
+// Scenario 3: In-viewer filtering — multiple scatterplots with shared filter
 test('Legend scatterplot — in-viewer filter', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await openSPGI(page);
@@ -440,9 +418,9 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
     throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });
 
-// scenario: 4. Filter Panel filtering and click-to-filter on Scatter plot legend
+// Scenario 4: Filter Panel filtering and click-to-filter on Scatter plot legend
 test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await openSPGI(page);
@@ -466,9 +444,8 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
   });
 
   // Scenario 4 steps 5-6: Filter Panel narrows Primary Scaffold Name; legend reflects subset.
-  // Validator B 2026-05-09 run 1 surfaced fg.updateOrAdd hanging up to 600s budget
-  // when invoked with the high-cardinality 'Primary Scaffold Name' column (~100
-  // categories). Wrap with timeout + fall back to direct df.filter mutation for
+  // fg.updateOrAdd can hang on the high-cardinality 'Primary Scaffold Name' column
+  // (~100 categories). Wrap with timeout + fall back to direct df.filter mutation for
   // the post-condition equivalent.
   await softStep('Sc4 steps 5-6: Filter Panel narrows Primary Scaffold Name', async () => {
     const res = await page.evaluate(async () => {
@@ -569,9 +546,9 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
     throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });
 
-// scenario: 5. Color coding from grid — linear and categorical, with persistence [coverage_type: edge]
+// Scenario 5: Color coding from grid — linear and categorical, with persistence
 test('Legend scatterplot — grid color coding linear/categorical', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await openSPGI(page);
@@ -694,8 +671,8 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       };
     });
     expect(res.codingType).toBe('Categorical');
-    // Per `col.meta.colors.setCategorical({...})` positional bug
-    // (color-consistency-run.md L14): map iterates positionally and may leak.
+    // Per `col.meta.colors.setCategorical({...})` positional bug: map iterates
+    // positionally and may leak.
     // Assert metadata is not the same neutral grey (i.e. some color edit landed).
     expect(res.rOneMeta).not.toBe('0xff808080');
   });

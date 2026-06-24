@@ -34,7 +34,7 @@ test.describe.serial('EDA / PCA', () => {
   test.afterEach(async ({ page }) => { await resetShell(page); });
 
   test('PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale', async ({ page }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(300_000);
 
     await openDemoCsv(page, 'cars.csv');
     const before = (await currentColumnNames(page)).length;

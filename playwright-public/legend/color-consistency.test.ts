@@ -1,28 +1,10 @@
-/* ---
-sub_features_covered: [legend.use-custom-color-coding, legend.item.color-picker, legend.allow-item-coloring]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: 3 atlas ids
-//   ui_coverage_responsibility: [legend-color-propagation-across-viewers, grid-categorical-color-coding-as-legend-source]
-//   ui_coverage_delegated_to: visibility-and-positioning.md
-//   related_bugs: [GROK-17438, github-3132, GROK-17278]
-//   coverage_type: edge (file-level post-SR; persistence cycles test GROK-17278 atlas edge_case)
-// Paired scenario: color-consistency.md (revision: migrated 2026-05-07)
+// Legend color consistency: column color metadata is the single source of truth and
+// propagates to every viewer. Covers the color picker UI and cross-viewer propagation.
 //
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (legend host, picker icon, dialog buttons)
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated 2026-05-08)
-//
-// Scenario 2 picker UI is exercised on Histogram (not Bar chart as scenario text
-// reads). Reason: Bar chart's [name="legend"] block does not reliably render
-// from JS-API split config alone — it appears only after a column-color edit
-// has triggered a rebuild. Histogram exposes the same legend mechanism and is
-// covered by the same invariant (column color metadata = single source of
-// truth, propagates to every viewer). This satisfies Scenario 2's intent
-// (cross-viewer propagation from a legend-driven color edit) without a
-// flaky pre-warm step on Bar chart.
+// Scenario 2 picker UI is exercised on Histogram (not Bar chart): Bar chart's
+// [name="legend"] block does not reliably render from JS-API split config alone — it
+// appears only after a column-color edit has triggered a rebuild. Histogram exposes
+// the same legend mechanism and the same invariant, without a flaky pre-warm step.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -30,7 +12,8 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Legend color consistency', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
+  stepErrors.length = 0;
 
   await loginToDatagrok(page);
 
@@ -81,8 +64,8 @@ test('Legend color consistency', async ({page}) => {
 
   // Scenario 1, steps 1-2: enable categorical color coding, change two colors via grid.
   // Verification via DOM (`getComputedStyle` on legend items) — col.meta.colors.getColor(idx)
-  // exhibits a positional-vs-name lookup mismatch on this build (see
-  // color-consistency-run.md L14), so we trust the user-observable contract instead.
+  // exhibits a positional-vs-name lookup mismatch on this build, so we trust the
+  // user-observable contract instead.
   await softStep('Categorical color coding from grid: R_ONE=red, S_UNKN=green', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
@@ -145,11 +128,10 @@ test('Legend color consistency', async ({page}) => {
   // (native pointer-event chain — opens the picker dialog reliably in headless run,
   // unlike synthetic `dispatchEvent('contextmenu')` which Dart's pointer handler
   // dispatches inconsistently in headless mode).
-  // JS-API fallback: if the dialog does not open or the OK click does not commit
-  // (Validator B 2026-05-08 surfaced both failure modes on dev), set the picked
-  // color directly via `col.meta.colors.setCategorical` (matches the contract of
-  // a successful picker UI commit — `setCategorical` is what the OK handler calls
-  // internally, see public/js-api/src/dataframe/column-helpers.ts L103-111).
+  // JS-API fallback: if the dialog does not open or the OK click does not commit,
+  // set the picked color directly via `col.meta.colors.setCategorical` (matches the
+  // contract of a successful picker UI commit — `setCategorical` is what the OK
+  // handler calls internally).
   await softStep('Open color picker via legend, change R_ONE to blue', async () => {
     const item = page.locator('[name="viewer-Histogram"] [name="legend"] .d4-legend-item')
       .filter({has: page.locator('.d4-legend-value', {hasText: /^R_ONEx?$/})}).first();

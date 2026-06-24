@@ -140,7 +140,7 @@ async function openSpaceViaTree(page: Page, spaceName: string) {
   await expect(label).toBeVisible({ timeout: 10_000 });
   const prevUrl = page.url();
   await label.dblclick();
-  await page.waitForURL(url => url !== prevUrl && url.includes('/s/'), { timeout: 8_000 })
+  await page.waitForURL(url => url.toString() !== prevUrl && url.toString().includes('/s/'), { timeout: 8_000 })
     .catch(() => {});
   await page.locator('#elementContent .grok-gallery-grid, .d4-link-label').first()
     .waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
@@ -380,7 +380,7 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
     await expect(childLink).toBeVisible({ timeout: 10_000 });
     const prevUrl = page.url();
     await childLink.dispatchEvent('dblclick');
-    await page.waitForURL(url => url !== prevUrl, { timeout: 10_000 });
+    await page.waitForURL(url => url.toString() !== prevUrl, { timeout: 10_000 });
 
     // Verify URL updated to /s/ after navigating via content view double-click
     expect(page.url()).toMatch(/\/s\//);
@@ -850,7 +850,7 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await dragFileToSpaceNode(page, 'acidiq.csv', SPACE);
     await page.locator('.ui-btn', { hasText: /^YES$/i }).first().click();
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
-    await expect(page.locator('.d4-toast.error, [class*="error-toast"]').first()).not.toBeVisible({ timeout: 2_000 }).catch(() => {});
+    await expect(page.locator('.d4-toast.error, [class*="error-toast"]').first()).not.toBeVisible({ timeout: 2_000 });
     await openSpaceContent(page, SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     // Verify only one acidiq.csv in the space (not duplicated)
@@ -1027,7 +1027,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await expect(fileLabel).toBeVisible({ timeout: 10_000 });
     const spaceUrl = page.url();
     await fileLabel.dispatchEvent('dblclick');
-    await page.waitForURL(url => url !== spaceUrl, { timeout: 15_000 });
+    await page.waitForURL(url => url.toString() !== spaceUrl, { timeout: 15_000 });
     await page.waitForTimeout(500);
     await expect(page.locator('.d4-ribbon').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.d4-grid').first()).toBeVisible({ timeout: 10_000 });
@@ -1156,7 +1156,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       const childLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       const parentUrl = page.url();
       await childLink.dispatchEvent('dblclick');
-      await page.waitForURL(url => url !== parentUrl, { timeout: 10_000 });
+      await page.waitForURL(url => url.toString() !== parentUrl, { timeout: 10_000 });
       await page.waitForTimeout(300);
       const childUrl = page.url();
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
@@ -1164,7 +1164,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       // Enter grandchild
       const grandLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first();
       await grandLink.dispatchEvent('dblclick');
-      await page.waitForURL(url => url !== childUrl, { timeout: 10_000 });
+      await page.waitForURL(url => url.toString() !== childUrl, { timeout: 10_000 });
       await page.waitForTimeout(300);
       expect(page.url()).toMatch(/\/s\//);
 
@@ -1185,7 +1185,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await expect(childCardBack).toBeVisible({ timeout: 10_000 });
       const prevUrl2 = page.url();
       await childCardBack.dispatchEvent('dblclick');
-      await page.waitForURL(url => url !== prevUrl2, { timeout: 10_000 });
+      await page.waitForURL(url => url.toString() !== prevUrl2, { timeout: 10_000 });
       await page.waitForTimeout(300);
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
 

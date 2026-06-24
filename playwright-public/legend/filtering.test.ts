@@ -1,39 +1,18 @@
-/* ---
-sub_features_covered: [legend.refresh.on-data-change, legend.column, legend.show-nulls, legend.extra-column]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: integration
-//   sub_features_covered: 4 atlas ids
-//   ui_coverage_responsibility: [filter-panel-numerical-filter, filter-panel-categorical-filter,
-//     filter-panel-structure-filter, in-viewer-filter-property, bar-chart-onclick-filter,
-//     pie-chart-onclick-filter, trellis-onclick-filter, legend-row-source-property,
-//     bar-chart-stack-include-nulls]
-//   ui_coverage_delegated_to: visibility-and-positioning.md
-//   related_bugs: [GROK-17222]
-//   strategy: chained_tests (Scenario 9 carries [coverage_type: edge] marker post-SR)
-// Paired scenario: filtering.md (revision: migrated 2026-05-07)
+// Legend filtering: the legend reflects the filtered data set when filtered via the
+// Filter Panel (numerical / categorical / structure), in-viewer filter property, and
+// click-to-filter on Bar / Pie / Trellis viewers; also covers legend row source and
+// bar-chart stack include-nulls.
 //
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/filters.md (filter panel viewer, .d4-filter card,
-//     fg.updateOrAdd patterns, DG.FILTER_TYPE enum)
-//   .claude/skills/grok-browser/references/viewers.md (legend host [name="legend"], viewer
-//     containers [name="viewer-{Type}"])
-//   .claude/plan/legend-mcp-recon-2026-05-08-canvas-filter.md (MCP-validated 2026-05-08:
-//     Bar/Pie canvas dispatch coords, Trellis cell-DIV dispatch — events on inner canvas
-//     do NOT propagate to Trellis filter handler)
-//
-// Click-to-filter on Bar / Pie / Trellis viewers (Scenario 6.3-6.8):
-//   - Bar chart: real Playwright `locator.click({position})` on the viewer's canvas —
-//     delivers a native browser pointer event chain to the Dart d4 onClick=Filter handler.
-//   - Pie chart: same mechanism — `locator.click({position})` at canvas-relative slice coords.
+// Click-to-filter mechanisms:
+//   - Bar / Pie chart: real Playwright `locator.click({position})` on the viewer's
+//     canvas — delivers a native browser pointer event chain to the Dart d4
+//     onClick=Filter handler (at canvas-relative slice coords for Pie).
 //   - Trellis plot: synthetic PointerEvent + MouseEvent dispatch on the parent
 //     `.d4-trellis-plot-cell` DIV. Events on the inner-viewer canvas do NOT propagate
-//     to the Trellis filter handler (recon-validated 2026-05-08), so `locator.click`
-//     at the cell position is not viable — synthetic dispatch on the DIV is required.
-// Scatter zoom-filter (Scenario 6.1) uses JS API `sp.props.filter` with an x/y range
-// expression — the scenario explicitly sanctions this alternative to alt-drag canvas
-// synthesis (recon notes confirm alt-drag is brittle).
+//     to the Trellis filter handler, so `locator.click` at the cell position is not
+//     viable — synthetic dispatch on the DIV is required.
+//   - Scatter zoom-filter uses JS API `sp.props.filter` with an x/y range expression —
+//     an alternative to brittle alt-drag canvas synthesis.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -41,7 +20,8 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Legend filtering', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
+  stepErrors.length = 0;
 
   await loginToDatagrok(page);
 
@@ -202,13 +182,11 @@ test('Legend filtering', async ({page}) => {
   });
 
   // Scenario 6.1-6.2: Scatter zoom-filter via sp.props.filter numeric range.
-  // Scenario sanctions JS API path («or set sp.props.filter to an x/y range expression»);
-  // recon notes confirm alt-drag canvas synthesis is brittle and the alternative
-  // path is the recommended encoding here.
+  // JS API path (set sp.props.filter to an x/y range expression) — alt-drag canvas
+  // synthesis is brittle, so this is the recommended encoding here.
   // Note: in-viewer filter on a numerical column may collapse the legend block
-  // entirely when no categorical values remain in the visible subset (platform
-  // observation 2026-05-08 in headless run). Assert filter set + non-increasing
-  // legend item count; do not require afterItems > 0.
+  // entirely when no categorical values remain in the visible subset. Assert filter
+  // set + non-increasing legend item count; do not require afterItems > 0.
   await softStep('Scatter plot zoom-filter via sp.props.filter range expression', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -232,10 +210,9 @@ test('Legend filtering', async ({page}) => {
   // Scenario 6.3-6.4: Bar chart click-to-filter narrows to one category.
   // Real Playwright `locator.click({position})` on the Bar chart canvas — delivers
   // a native browser pointer event chain to the Dart d4 onClick=Filter handler.
-  // Bar layout is viewer-size-dependent: in wide charts the recon's recipe
-  // `60 + 0.5*(w-80)/nCats, h*0.6` lands on the leftmost bar; in narrow 7-viewer
-  // layouts (~140 px wide) bars stack short and `0.5w, 0.2h` lands on the tallest
-  // bar near the chart top (MCP-validated 2026-05-08). Try both positions and
+  // Bar layout is viewer-size-dependent: in wide charts `60 + 0.5*(w-80)/nCats, h*0.6`
+  // lands on the leftmost bar; in narrow 7-viewer layouts (~140 px wide) bars stack
+  // short and `0.5w, 0.2h` lands on the tallest bar near the chart top. Try both positions and
   // take whichever narrows the filter to exactly one category. Bar order is
   // data-dependent so the assertion is «narrowed to exactly one», not
   // «narrowed to a specific category».
@@ -328,8 +305,8 @@ test('Legend filtering', async ({page}) => {
 
   // Scenario 6.5-6.6: Pie chart click-to-filter narrows the dataset.
   // Same canvas-click mechanism as Bar chart, via `locator.click({position})` —
-  // coord recipe per recon notes (`canvasWidth * 0.45, canvasHeight * 0.4` lands
-  // on a slice for the SPGI Stereo Category distribution).
+  // `canvasWidth * 0.45, canvasHeight * 0.4` lands on a slice for the SPGI Stereo
+  // Category distribution.
   await softStep('Pie chart canvas click-to-filter narrows the dataset', async () => {
     const local = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -391,7 +368,7 @@ test('Legend filtering', async ({page}) => {
   });
 
   // Scenario 6.7-6.8: Trellis plot click-to-filter narrows the dataset.
-  // Per recon: dispatch synthetic PointerEvent + MouseEvent on the parent
+  // Dispatch synthetic PointerEvent + MouseEvent on the parent
   // `.d4-trellis-plot-cell` DIV. Inner-viewer canvas does NOT propagate the
   // click to the Trellis filter handler, so `page.mouse.click` at the cell
   // position is not viable — synthetic dispatch on the DIV is required.
@@ -431,8 +408,7 @@ test('Legend filtering', async ({page}) => {
   // Round-trip mechanics: save layout while click-to-filter narrowing from
   // Scenario 6 is active, reload, verify dataframe + viewers intact post-load.
   //
-  // Platform observation (MCP-validated 2026-05-08 on dev.datagrok.ai):
-  // click-to-filter narrowing is NOT preserved across layout save/load on
+  // Platform observation: click-to-filter narrowing is NOT preserved across layout save/load on
   // this build. `df.filter` is mutated directly by viewer onClick=Filter
   // handlers (no FiltersGroup entry), and `loadLayout` resets `df.filter`
   // to all-true. Filter Panel filters DO round-trip (Scenario 2 covers
@@ -488,7 +464,7 @@ test('Legend filtering', async ({page}) => {
     expect(res.Filtered).toBeGreaterThan(0);
   });
 
-  // Scenario 9 [coverage_type: edge]: Bar chart Stack with includeNulls=false —
+  // Scenario 9: Bar chart Stack with includeNulls=false —
   // legend should list ONLY stack categories still drawn (no ghost entries).
   await softStep('Bar chart stack edge case — includeNulls=false', async () => {
     const res = await page.evaluate(async () => {

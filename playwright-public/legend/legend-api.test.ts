@@ -1,30 +1,8 @@
-/* ---
-sub_features_covered: [legend.column, legend.extra-column, legend.refresh.on-data-change, legend.color-scale.numerical, legend.use-custom-color-coding, legend.show-nulls, legend.allow-item-coloring, legend.refresh.on-reset-filter]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: apitest
-//   pyramid_layer: integration
-//   sub_features_covered: 8 atlas ids
-//   ui_coverage_responsibility: [] (no DOM driving — apitest layer)
-//   related_bugs: []
-//   produced_from: atlas-driven
-// SR rationale (Section 4.5 scenario authority): apitest layer; FORBIDDEN
-// list per Section 4.1 includes DOM-driving calls (page.click | page.fill |
-// page.locator | page.hover | page.press | page.keyboard | page.mouse |
-// dlg.*). Spec body uses only grok.dapi.* + grok.shell.* + viewer.props.* +
-// col.tags.* + col.meta.colors.* + df.filter.* + tv.getFiltersGroup. No DOM
-// driving in body — paradigm pure per Decision 1.3. Cold-start race
-// tolerance (try/catch + null checks) from cycle charts-migrate-2026-05-07
-// lessons applied throughout.
-//
-// ApiSamples reference (per user feedback, see public/packages/ApiSamples/scripts):
-//   scripts/grid/color-coding/color-coding.js — setCategorical, setLinear
-//   scripts/grid/color-coding/get-cell-color.js — DG.Color.getCellColorHtml
-//   scripts/ui/viewers/filters/filter-group.js — tv.getFiltersGroup + fg.updateOrAdd
-//   scripts/data-frame/events/events.js — column metadata events
-//
-// Sister scenario: Charts/charts-api.{md,ts} (also target_layer: apitest).
-// Closes documented follow-up from modernize-legacy-specs.md §4.
+// Legend — JS API contract. Exercises the legend through the public JS API only
+// (grok.dapi.*, grok.shell.*, viewer.props.*, col.tags.*, col.meta.colors.*,
+// df.filter.*, tv.getFiltersGroup) with no DOM driving. Covers column/extra-column
+// legends, numerical color scale, custom color coding, show-nulls, item coloring,
+// and refresh on data change / reset filter.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -34,10 +12,7 @@ const demogPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:DemoFiles/SPGI.csv';
 
 test('Legend — JS API contract', async ({page}) => {
-  // Validator B 2026-05-09 run 2 timed out at 318s on Scenario 8 (300_000 budget too tight
-  // for 8 sequential dataset re-reads + viewer attaches). Bump to 600_000 — runs 1+3
-  // settled at 264s+285s, so 600s gives 2× headroom for transient dev slowness.
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const consoleErrors: string[] = [];
@@ -336,7 +311,7 @@ test('Legend — JS API contract', async ({page}) => {
     }, demogPath);
     expect(result.ok).toBe(true);
     if (result.echoed != null) expect(result.echoed).toBe('SEX_alt');
-    expect(result.cats.length).toBeGreaterThanOrEqual(2);
+    expect(result.cats!.length).toBeGreaterThanOrEqual(2);
     expect(result.cats).toEqual(expect.arrayContaining(['Male', 'Female']));
   });
 

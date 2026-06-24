@@ -3,9 +3,7 @@
 // written by ../e2e/global-setup.ts at suite start). Do NOT override
 // storageState here — a `path.resolve(__dirname, ...)` override breaks
 // under the CI runner's esbuild transpile path and the test lands on the
-// login page (build #45 page snapshot: "Login or Email / Token is empty").
-// Helpers transcribed from .claude/skills/grok-browser/references/projects.md
-// and .claude/skills/grok-browser/references/widgets/dialog.md.
+// login page ("Login or Email / Token is empty").
 import {Page, expect} from '@playwright/test';
 
 export const BASE_URL = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';

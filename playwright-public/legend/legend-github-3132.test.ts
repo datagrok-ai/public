@@ -1,42 +1,9 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.allow-item-coloring]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: 2 atlas ids (from bug.affects)
-//   ui_coverage_responsibility: [] (bug-focused; cross-cutting flow exercised by sibling
-//     visibility-and-positioning-spec.ts Sc 5)
-//   related_bugs: [github-3132]
-//   coverage_type: regression
-//   bug_id: github-3132
-//   bug_url: https://github.com/datagrok-ai/public/issues/3132
-//   reproduction_source: bug-library/legend.yaml#github-3132
-//   related_scenarios: chain YAML bug_focused_candidates[2].spans
-//     (visibility-and-positioning.md:Step 9, color-consistency.md:Step 4,
-//      scatterplot.md:Step 4)
-// Fix invariant: each color change made through the legend persists independently;
-// changing color B must NOT reset previously-applied color A.
-//
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135):
-//     - L118: [name="legend"] host
-//     - L130: right-click on .d4-legend-item opens picker dialog
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated 2026-05-08:
-//     dialog [name="dialog-{CATEGORY}"], swatch .d4-color-bar, [name="button-OK"])
-//
-// UI flow: real Playwright `locator.click({button: 'right'})` per fixed picker pattern
-// (validator-b-legend-section-postfix-2026-05-08); JS API fallback via setCategorical
-// per ApiSamples scripts/grid/color-coding/color-coding.js if UI flow times out.
-// Verification via JSON tag (deterministic; bypasses Dart positional getColor bug per
-// color-consistency-run.md L14).
-//
-// Bug reproduction (bug-library/legend.yaml#github-3132):
-//   1. Open a table
-//   2. Add a viewer with legend allowing color change (scatter / box / bar with stack / pie)
-//   3. Change one colour through the legend
-//   4. Change another colour through the legend — the FIRST changed colour resets to default
-// Expected: Each color change persists independently. Change B must not reset A.
+// github-3132: each color change made through the legend must persist independently;
+// changing color B must not reset previously-applied color A.
+// Bug reproduction: open a table, add a viewer with a color-changing legend (scatter /
+// box / bar with stack / pie), change one colour, then change another.
+// Expected: both changes persist; change B must not reset A (previously A reset to default).
+// Verification via JSON tag (deterministic; bypasses Dart positional getColor bug).
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -44,7 +11,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('github-3132: sequential legend color changes persist independently', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);

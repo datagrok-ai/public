@@ -179,7 +179,7 @@ test.describe.serial('Scripts: Layout', () => {
 
     // No error balloon
     const errorBalloon = page.locator('.d4-balloon-error');
-    await expect(errorBalloon).toHaveCount(0, { timeout: 3_000 }).catch(() => {});
+    await expect(errorBalloon).toHaveCount(0, { timeout: 3_000 });
   });
 
   // ──────────────────────────────────────────────────────────────────
@@ -204,7 +204,7 @@ test.describe.serial('Scripts: Layout', () => {
     await expect(page.locator('.d4-grid').first()).toBeVisible({ timeout: 30_000 });
 
     const errorBalloon = page.locator('.d4-balloon-error');
-    await expect(errorBalloon).toHaveCount(0, { timeout: 3_000 }).catch(() => {});
+    await expect(errorBalloon).toHaveCount(0, { timeout: 3_000 });
   });
 
   // ──────────────────────────────────────────────────────────────────

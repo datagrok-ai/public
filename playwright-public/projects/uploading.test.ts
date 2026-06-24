@@ -1,9 +1,5 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync]
-generated_from: uploading.md (8 cases × 2 sync states)
---- */
-// Source-matrix scenario covering uploading.md cases 1, 2, 3, 4, 5, 6, 8, 9
-// in both Sync ON and Sync OFF variants. All non-file prerequisites are
+// Source-matrix scenario covering project upload across several table-source
+// types in both Sync ON and Sync OFF variants. All non-file prerequisites are
 // created in-test via helpers/openers.ts — no Samples package or
 // env-provisioned DB connection is required.
 //
@@ -138,9 +134,10 @@ async function runCase1(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -149,13 +146,13 @@ async function runCase1(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 1: Files + Files (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase1(page, 'on');
 });
 
 test('Projects / Uploading / Case 1: Files + Files (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase1(page, 'off');
 });
@@ -203,25 +200,27 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
+    const pq = provisioned as ProvisionedQuery | null;
+    if (pq) await pq.cleanup();
   }
 
   throwOnStepErrors();
 }
 
 test('Projects / Uploading / Case 2: Query + Query (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase2(page, 'on');
 });
 
 test('Projects / Uploading / Case 2: Query + Query (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase2(page, 'off');
 });
@@ -267,25 +266,27 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
+    const pq = provisioned as ProvisionedQuery | null;
+    if (pq) await pq.cleanup();
   }
 
   throwOnStepErrors();
 }
 
 test('Projects / Uploading / Case 3: Query + File (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase3(page, 'on');
 });
 
 test('Projects / Uploading / Case 3: Query + File (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase3(page, 'off');
 });
@@ -338,9 +339,10 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
     if (fixture) await releaseSpaceFixture(page, fixture);
@@ -350,13 +352,13 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 4: Spaces + Spaces (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase4(page, 'on');
 });
 
 test('Projects / Uploading / Case 4: Spaces + Spaces (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase4(page, 'off');
 });
@@ -411,9 +413,10 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
     if (fixture) await releaseSpaceFixture(page, fixture);
@@ -423,13 +426,13 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 5: Spaces + File (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase5(page, 'on');
 });
 
 test('Projects / Uploading / Case 5: Spaces + File (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase5(page, 'off');
 });
@@ -488,12 +491,14 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
+    const pq = provisioned as ProvisionedQuery | null;
+    if (pq) await pq.cleanup();
     if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
@@ -501,13 +506,13 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 6: Spaces + Query (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase6(page, 'on');
 });
 
 test('Projects / Uploading / Case 6: Spaces + Query (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase6(page, 'off');
 });
@@ -547,9 +552,10 @@ async function runCase8(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -558,13 +564,13 @@ async function runCase8(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase8(page, 'on');
 });
 
 test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase8(page, 'off');
 });
@@ -609,9 +615,10 @@ async function runCase9(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    if (saved) {
-      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
-      for (const tableInfoId of saved.tableInfoIds)
+    const s = saved as SavedAllTables | null;
+    if (s) {
+      await deleteProjectWithCleanup(page, {projectId: s.projectId});
+      for (const tableInfoId of s.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -620,13 +627,13 @@ async function runCase9(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync ON)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase9(page, 'on');
 });
 
 test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync OFF)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   await runCase9(page, 'off');
 });

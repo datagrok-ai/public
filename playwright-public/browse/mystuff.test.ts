@@ -177,7 +177,7 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
 
       // 2. Set the //name: header line via CodeMirror's API and click Save.
       await page.evaluate((name) => {
-        const cm = document.querySelector('.CodeMirror');
+        const cm = document.querySelector('.CodeMirror') as any;
         const cur = cm.CodeMirror.getValue();
         cm.CodeMirror.setValue(cur.replace(/\/\/name:.*/, `//name: ${name}`));
       }, unique);

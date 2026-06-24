@@ -1,31 +1,8 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.shell.open]
---- */
-// Selector sources (grok-browser/references):
-//   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
-//   projects.md:232 — SAVE ribbon button is the reliable Save Project trigger
-//   projects.md:28 — Preferred default is grok.dapi for verification
-//
-// Wave 1b complex-split: covers Step 1 multi-source open + Join sub-bullet
-// + Step 2 Save with Data Sync ON of complex.md scenario. Targets the
-// GROK-19103 regression invariant ("join result silently saved as a
-// SEPARATE project that later fails to open"). Spec verifies that after
-// joining two source tables and saving the active project, exactly ONE
-// new project is created on the server — not two (the saved active
-// project plus a stray join-only project).
-//
-// Scope reductions (documented):
-//   * Sources are file-based (System:DemoFiles/demog.csv used twice with
-//     distinct names) rather than DB query result + DB table per the
-//     scenario sub-bullet. The GROK-19103 invariant ("join lands in
-//     active project, not stray") is independent of source type — the
-//     bug surfaces from the joinTables → save flow regardless of
-//     where source tables originate. File sources are env-resilient
-//     (no Postgres dependency).
-//   * Pivot / Aggregate / Clone-via-script sub-bullets of Step 1 are NOT
-//     covered here — those belong to a future cross-feature scenario
-//     about derived-table types. Only the Join sub-bullet that
-//     reproduces GROK-19103 is in scope.
+// Covers open + Join + Save with Data Sync ON. Targets the GROK-19103
+// regression invariant ("join result silently saved as a SEPARATE project
+// that later fails to open"). Verifies that after joining two source tables
+// and saving the active project, exactly ONE new project is created on the
+// server — not two (the saved active project plus a stray join-only project).
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs} from './_helpers';
@@ -54,7 +31,7 @@ async function openDemogFile(page: Page): Promise<void> {
 }
 
 test('Projects / Complex derived-tables: Join lands in active project (GROK-19103)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();

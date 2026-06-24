@@ -1,35 +1,34 @@
-/* ---
-sub_features_covered: [projects.upload, projects.api.save, projects.shell.open, projects.shell.share-via-context-menu, projects.api.search, projects.api.delete]
-generated_from: projects-ui-smoke.md (MCP re-verification on dev.datagrok.ai 2026-05-05) — Browse-tree right-click → Open, UI-driven Save / Share / Delete
-mcp_observations:
-  - Step 1 (Browse-tree right-click → Open) opens TableView with df.tags['.script'] set, SAVE button visible (offsetWidth>0)
-  - Step 2 SAVE dialog opens reliably; Data sync container [name="input-host-Data-sync"] renders as <div class="ui-input-bool-switch ui-input-root">; the actual switch is the inner <div class="ui-input-switch ui-input-switch-on"> — NO aria-checked, NO data-checked, NO inner <input type="checkbox">. ON-state detector: host.querySelector('.ui-input-switch')?.classList.contains('ui-input-switch-on'). Data sync is ON by default whenever df.tags['.script'] is set
-  - Save POST (formerly blocked by 'Type descriptor for type "dynamic" not found') succeeded in this run on dev — server returned the persisted project at /api/projects/{id} with status 200, projAfter.isDirty=false, auto-Share dialog appeared at t≈3s
-  - **Tile slug rule** is NOT simply `name.toLowerCase()`: a project named `UiSmokeMcp1778007012770` (PascalCase + digits, no hyphens) is stored as-is server-side and its tile name attr is `div-UiSmokeMcp...` (case preserved). Older projects with hyphens (`Demog-1778002967623`) get lowercased tile slugs. Robust fix: use grok.shell.project.name AFTER save (verbatim, no .toLowerCase()) for tile selectors
-  - Right-click context menu items match references/projects.md exactly. Two NEW items observed but not yet in references: div-Close, div-Close-Others
-  - Share dialog selectors verified: input[placeholder="User, group, or email"], [name="div-share-selector"] select.ui-input-editor with options ["View and use", "Full access"]
-  - Delete confirm dialog selectors verified: [name="button-DELETE"], [name="button-CANCEL"]
-  - grok.dapi.permissions API surface is {get, check, grant, revoke} — there is NO .find() method (prior spec used .find which silently threw). Use .get(entity) for view/edit grants, or skip server-side perm verification
---- */
-// Transcribed from MCP run on dev.datagrok.ai 2026-05-05 by /grok-debug-scenarios.
-// UI-only contract per scenario (no JS API substitution for Steps 2-11). Dataset
-// open (Step 1) uses Browse-tree right-click → "Open" context-menu — the
-// MCP-verified canonical flow that produces both a TableView with df.tags
-// ['.script'] set AND a clickable toolbar SAVE button. Synthetic dblclick on
-// the tree node and URL-direct /file/... goto were tried first and rejected:
-// dblclick was not delivered to the Dart click handler, URL-direct produced
-// offsetWidth=0 SAVE button (bug 2b).
+// UI smoke: open file → save with data sync → share → reopen → delete.
+// UI-only contract (no JS API substitution for the dialog steps). Dataset
+// open uses the Browse-tree right-click → "Open" context-menu — the flow
+// that produces both a TableView with df.tags['.script'] set AND a clickable
+// toolbar SAVE button. Synthetic dblclick on the tree node and URL-direct
+// /file/... goto don't work: dblclick isn't delivered to the Dart click
+// handler, and URL-direct yields an offsetWidth=0 SAVE button.
+//
+// Selector notes:
+//   - Data sync switch: [name="input-host-Data-sync"] has no aria/data-checked
+//     attribute; ON-state detector is
+//     host.querySelector('.ui-input-switch')?.classList.contains('ui-input-switch-on').
+//     Data sync is ON by default whenever df.tags['.script'] is set.
+//   - Tile slug is NOT name.toLowerCase(): names without hyphens are stored
+//     case-preserved server-side. Use grok.shell.project.name verbatim (no
+//     .toLowerCase()) for tile selectors.
+//   - Share dialog: input[placeholder="User, group, or email"],
+//     [name="div-share-selector"] with options "View and use" / "Full access".
+//   - Delete confirm: [name="button-DELETE"], [name="button-CANCEL"].
+//   - grok.dapi.permissions has {get, check, grant, revoke} — no .find().
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs} from './_helpers';
 
-// Bug 2b (toolbar SAVE button collapsed offsetWidth=0 after JS-API
-// openTableFromFile) was platform-fixed 2026-05-06. Bundled Chromium
-// is now sufficient — channel: 'chrome' override removed.
+// The toolbar SAVE button collapsing to offsetWidth=0 after JS-API
+// openTableFromFile was platform-fixed; bundled Chromium is now sufficient,
+// so the channel: 'chrome' override was removed.
 test.use(projectsTestOptions);
 
 test('Projects / UI Smoke: open file → save w/ data sync → share → reopen → delete', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const projectName = `UiSmoke${Date.now()}`;
@@ -42,7 +41,7 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   await page.goto('/browse', {waitUntil: 'domcontentloaded', timeout: 120_000});
   await page.locator('[name="Browse"]').first().waitFor({state: 'visible', timeout: 90_000});
   await page.waitForFunction(() => {
-    try { return !!(window.grok?.shell?.user?.login); } catch { return false; }
+    try { return !!((window as any).grok?.shell?.user?.login); } catch { return false; }
   }, {timeout: 60_000});
   await evalJs(page, `(() => {
     document.body.classList.add('selenium');
@@ -54,8 +53,8 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   await page.waitForTimeout(1500);
 
   // ---- Step 1: open demog.csv via Browse-tree right-click → Open (UI flow) ----
-  // MCP observation 2026-05-05: synthetic dblclick on the tree node was not
-  // delivered to the tree-view's Dart-side click handler in Playwright runs
+  // Synthetic dblclick on the tree node is not delivered to the tree-view's
+  // Dart-side click handler in Playwright runs
   // (URL stayed at /browse). The right-click → context-menu → "Open" path
   // navigates to /file/System.DemoFiles/demog.csv, materializes the TableView
   // with df.tags['.script']='Demog = OpenFile("System:DemoFiles/demog.csv")',
@@ -158,8 +157,8 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   });
 
   // ---- Step 2: Save Project with Data Sync ON (UI — SAVE ribbon button) ----
-  // MCP observation: SAVE is at `[name="button-Save"]`. The Step 1 right-click
-  // → Open path leaves it visible (offsetParent !== null) and clickable, unlike
+  // SAVE is at `[name="button-Save"]`. The Step 1 right-click → Open path
+  // leaves it visible (offsetParent !== null) and clickable, unlike
   // the URL-direct goto path which produces offsetWidth=0. Click it, then the
   // Save dialog opens with default mode "Save a copy" (for a file-derived
   // scratchpad). Data sync toggle is `[name="input-host-Data-sync"]` with
@@ -224,11 +223,9 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
       shareDlg.waitFor({timeout: 60_000}),
     ]).catch(() => {});
     // Verify save actually persisted, AND capture the server-stored name for
-    // downstream tile lookups. The 2026-05-05 MCP re-verification on dev
-    // confirmed Save POST works (the prior 'Type descriptor for type
-    // "dynamic" not found' exception did not reproduce). Server may normalize
-    // typed names (PascalCase rule for hyphen-separated inputs) — read back
-    // grok.shell.project.name and use that verbatim, no .toLowerCase().
+    // downstream tile lookups. Server may normalize typed names (PascalCase
+    // rule for hyphen-separated inputs) — read back grok.shell.project.name
+    // and use that verbatim, no .toLowerCase().
     const persisted = await evalJs<{onServer: boolean; clientId?: string; clientName?: string}>(page, `(async () => {
       const sp = grok.shell.project;
       const id = sp?.id;
@@ -263,10 +260,9 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   });
 
   // ---- Step 3: Cancel auto-Share dialog (UI) ----
-  // MCP observation: the auto-Share dialog appears AFTER successful save with
-  // title pattern `Share {ProjectName}`. CANCEL at `[name="button-CANCEL"]`.
-  // If save fails (Step 2 platform bug), this dialog never appears — softStep
-  // catches the missing-locator error.
+  // The auto-Share dialog appears AFTER successful save with title pattern
+  // `Share {ProjectName}`. CANCEL at `[name="button-CANCEL"]`. If save fails,
+  // this dialog never appears — softStep catches the missing-locator error.
   await softStep('Step 3: cancel auto-Share dialog', async () => {
     const shareDlg = page.locator('.d4-dialog').filter({hasText: new RegExp(`^Share ${actualName}`)});
     await shareDlg.waitFor({timeout: 30_000});
@@ -288,8 +284,8 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   });
 
   // ---- Step 4: Browse > Dashboards — assert tile visible ----
-  // MCP observation: `.grok-gallery-grid` renders the Dashboards view tiles;
-  // each tile has `name="div-{slug}"` (slug = lowercased project name).
+  // `.grok-gallery-grid` renders the Dashboards view tiles; each tile has
+  // `name="div-{slug}"` (slug = lowercased project name).
   await softStep('Step 4: navigate to Browse > Dashboards, assert tile visible', async () => {
     await page.goto('/projects');
     await page.locator('.grok-gallery-grid').waitFor({timeout: 30_000});
@@ -301,13 +297,11 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
   });
 
   // ---- Step 5-6: Right-click tile → Share → recipient → access level → OK ----
-  // MCP could not reach this — Step 2 blocked. Selectors per references/projects.md
-  // (verified 2026-05-03): context menu `[name="div-Share..."]`; Share dialog
-  // recipient input `input[placeholder="User, group, or email"]`; access-level
+  // Selectors: context menu `[name="div-Share..."]`; Share dialog recipient
+  // input `input[placeholder="User, group, or email"]`; access-level
   // `[name="div-share-selector"] select.ui-input-editor`; OK `[name="button-OK"]`.
-  // Recipient placeholder per scenario `<RECIPIENT_GROUP_USERNAME_TBD>` — until
-  // resolved at Automator stage, fall back to the qa-pw user's own group via
-  // grok.dapi.users.current().group; this lets the dialog flow run without a
+  // Recipient falls back to the current user's own group via
+  // grok.dapi.users.current().group, so the dialog flow runs without a
   // hardcoded second-user dependency.
   await softStep('Step 5-6: right-click tile → Share → fill recipient → OK', async () => {
     const tile = page.locator(`[name="div-${actualName}"]`);

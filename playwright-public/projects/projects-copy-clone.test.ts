@@ -1,28 +1,10 @@
-/* ---
-sub_features_covered: [projects.shell.open, projects.shell.share-via-context-menu, projects.api.save, projects.add-relation, projects.add-link]
-generated_from: projects-copy-clone.md (D4.3 UI-driven rewrite 2026-05-06 — replaces 2026-05-05 bundled-1-test reduction)
-ui_coverage_owned: [save-copy-with-link-dialog, save-copy-with-clone-dialog, save-personal-view-customizations-dialog, pcmdShareProject, share-dialog-recipients]
---- */
-// Full canonical implementation of `projects-copy-clone.md` Step 4 sub-flows
-// 4a / 4b / 4c / 4d + Step 5 re-share. UI-driven Save Project dialog mode
-// chooser — drives `[name="button-Save"]` toolbar → mode-radio (Save original
-// project / Save a copy / Save personal view customizations) → per-table
-// Link/Clone sub-choice (sub-flow 4b/4c) → name → OK. Per-mode reopen
-// verification per sub-flow. Sub-flow 4b carries the GROK-19750 invariant
-// assertion (after Save-Copy-with-Link the original project's table still
-// re-materializes on reopen).
-//
-// Rewrite rationale (2026-05-06): the prior 2026-05-05 version collapsed the
-// 4 sub-flows into a single test() block with 4 JS-API saves and only 2
-// reopens to mitigate a shell.tv race. That reduction violated the chain's
-// `ui_coverage_responsibility` (3 Save Copy mode dialogs MUST be UI-driven
-// per `projects-copy-clone.md` frontmatter). This rewrite restores per-mode
-// UI coverage and per-mode reopen verification while keeping the
-// `reopenProjectById` shell.tv-poll pattern that mitigated the original race.
-//
-// Step 5 re-share is UI-driven (right-click → Share dialog) per chain rev 3
-// `ui_coverage_plan.delegated_scenarios` — `share-project.md` delegates the
-// right-click Share UI surface here.
+// UI-driven Save Project dialog mode chooser: drives `[name="button-Save"]`
+// toolbar → mode-radio (Save original project / Save a copy / Save personal
+// view customizations) → per-table Link/Clone sub-choice → name → OK, with
+// per-mode reopen verification. The Save-Copy-with-Link sub-flow carries the
+// GROK-19750 invariant assertion (after Save-Copy-with-Link the original
+// project's table still re-materializes on reopen). The re-share step is
+// UI-driven via right-click → Share dialog.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -161,7 +143,7 @@ async function captureActiveProjectIds(
 }
 
 test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -181,9 +163,7 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
     // -------------------------------------------------------------------
     // Setup: create the baseline `<original>` project via JS API.
     // The 3-mode chooser in the Save Project dialog only appears when an
-    // existing project is being modified. JS API setup is the standard
-    // pattern for sibling specs (complex-save-copy-spec.ts:30) and is not
-    // part of the canonical Step 4 UI surface — Setup is upstream.
+    // existing project is being modified, so a baseline must exist first.
     // -------------------------------------------------------------------
     await softStep('Setup: open demog.csv with provenance + save baseline (JS API)', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');

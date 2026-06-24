@@ -1,10 +1,7 @@
 /**
  * Playwright openers for table sources (file, DB query, ad-hoc DB table, script).
  *
- * Namespace per helpers-candidates.yaml: `helpers.playwright.openers.*`.
  * Imported as: `import * as openers from '../helpers/openers';` (or named).
- *
- * Authoring cycle: Phase B 2026-05-05 — first openers module.
  *
  * ----------------------------------------------------------------------------
  * Why this module exists
@@ -35,13 +32,9 @@
  * file / re-running the query / re-running the script, depending on the
  * source class.
  *
- * Verified live against dev.datagrok.ai 2026-05-05 (qa-pw). MCP capture
- * findings + per-source `.script` regex patterns: see
- * `.claude/diagnostics/mcp-capture-{files,db,scripts}.md`.
- *
- * Reference: `public/packages/UITests/src/gui/gui-utils.ts:100-111` — the
- * platform's own `uploadProject` helper, which is the second half of the
- * lifecycle (save with provenance attached).
+ * Reference: `public/packages/UITests/src/gui/gui-utils.ts` — the platform's
+ * own `uploadProject` helper, which is the second half of the lifecycle (save
+ * with provenance attached).
  */
 
 import {Page} from '@playwright/test';
@@ -96,8 +89,7 @@ export const PROVENANCE_PATTERNS: Record<SourceClass, RegExp> = {
  * orphan dialog up, test #2's `openTableFromFile` can fail with
  * "did not produce a TableView" because click events get intercepted.
  *
- * Verified empirical pattern 2026-05-05 (Phase B re-runs): solo runs
- * pass, multi-test runs fail without this helper.
+ * Empirically, solo runs pass but multi-test runs fail without this helper.
  *
  * Idempotent — safe to call when shell is already clean.
  */
@@ -145,9 +137,8 @@ export async function openTableFromFile(
     // Normalize namespace separator: colon-form (`System:DemoFiles/...`) and
     // dot-form (`System.DemoFiles/...`) both open the same file, but the
     // resulting df.tags['.script'] differs and the colon form fails the
-    // subsequent UI Save Project POST on dev with `Type descriptor for
-    // type 'dynamic' not found` (verified live 2026-05-05). Dot form
-    // serializes cleanly through the Save dialog.
+    // subsequent UI Save Project POST with `Type descriptor for type
+    // 'dynamic' not found`. Dot form serializes cleanly through the Save dialog.
     const fullPathForOpen = p.replace(/^([^:/]+):/, '$1.');
     await fns[0].prepare({fullPath: fullPathForOpen}).call(undefined, undefined, {processed: false});
     // Settle: poll for shell.tv to be a TableView with addViewer + dataFrame
@@ -276,8 +267,7 @@ export async function openTableFromDbTable(
       const bare = parts.length > 1 ? parts[1] : parts[0];
       // Note: dapi.connections.filter `name = "X"` matches against the
       // fully-qualified server name and returns 0 for bare names. The
-      // canonical lookup field on dev is `shortName` — verified live
-      // 2026-05-05 (Phase B re-run). The same applies to dapi.queries.
+      // canonical lookup field is `shortName` (same applies to dapi.queries).
       const list = await grok.dapi.connections.filter(`shortName = "${bare}"`).list();
       conn = list.find((c: any) => c.nqName === o.connectionNqName) || list[0];
     }
@@ -461,7 +451,7 @@ export async function deleteProvisionedScript(
  *
  * Both UI gateways (Top menu Data → Aggregate Rows, OR toolbox →
  * Pivot Table viewer) end up calling `core:Aggregate` with auto-picked
- * defaults — verified live 2026-05-05. The resulting df carries
+ * defaults. The resulting df carries
  * `.script: 'Var = Aggregate("<baseName>", fields=[...], pivots=[...], ...)'`.
  *
  * Caller must have an active TableView (open a base via
@@ -656,8 +646,8 @@ export interface ProvisionedQuery {
  * a `DG.Func`. Used by lifecycle specs that need a deterministic Q-source
  * fixture without depending on the Samples package.
  *
- * Pattern reference: `Queries/new-sql-query-spec.ts:28-33` and
- * `core/client/xamgle/lib/src/tests/projects_layouts_test.dart:6-11`.
+ * Pattern reference:
+ * `core/client/xamgle/lib/src/tests/projects_layouts_test.dart`.
  *
  * **Caller is responsible for cleanup** — invoke `.cleanup()` in a `finally`
  * block to delete the saved query. Does NOT auto-delete prior runs.

@@ -1,47 +1,15 @@
-/* ---
-sub_features_covered: [legend.refresh.on-data-change, legend.column]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: 2 atlas ids (from bug.affects)
-//   ui_coverage_responsibility: []
-//   related_bugs: [GROK-17222]
-//   coverage_type: regression
-//   bug_id: GROK-17222
-//   bug_url: https://reddata.atlassian.net/browse/GROK-17222
-//   reproduction_source: bug-library/legend.yaml#GROK-17222
-//   related_scenarios: chain YAML bug_focused_candidates[1].spans
-//     (visibility-and-positioning.md:Step 6, filtering.md:Step 5,
-//      scatterplot.md:Step 5, line-chart.md:Step 3)
-// Fix invariant: legend reflects the current filtered state of data; legend categories
-// and item count must update under every filter trigger source — Filter Panel,
-// in-viewer filter, and click-to-filter on Pie + Bar charts.
-//
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135)
-//   .claude/skills/grok-browser/references/filters.md (filter panel, fg.updateOrAdd, DG.FILTER_TYPE)
-//   .claude/plan/legend-mcp-recon-2026-05-08-canvas-filter.md (MCP-validated 2026-05-08:
-//     Bar/Pie canvas dispatch coords, multi-position retry recipe)
-//
-// Filter trigger sources (4 from bug.reproduction):
-//   1. Filter Panel categorical filter on Stereo Category (fg.updateOrAdd CATEGORICAL)
-//   2. In-viewer Scatter filter via sp.props.filter range expression (recon-validated:
-//      alt-drag canvas synthesis is brittle; sp.props.filter is the sanctioned alternative)
+// GROK-17222: the legend must reflect the current filtered state of the data — its
+// categories and item count must update under every filter trigger source.
+// Filter trigger sources covered:
+//   1. Filter Panel categorical filter (fg.updateOrAdd CATEGORICAL)
+//   2. In-viewer Scatter filter via sp.props.filter range expression
+//      (alt-drag canvas synthesis is brittle; sp.props.filter is the alternative)
 //   3. Pie chart click-to-filter (canvas multi-position retry + JS-API fallback)
 //   4. Bar chart click-to-filter (canvas multi-position retry + JS-API fallback)
-// All inherited from filtering-spec.ts L242-393 (Validator B 2026-05-08 green).
-//
-// Bug reproduction (bug-library/legend.yaml#GROK-17222):
-//   1. Open SPGI
-//   2. Add a linechart
-//   3. Set Split to Series
-//   4. Filter Panel filter on Series — legend doesn't respond
-//   5. In-viewer scatterplot zoom-filter — same issue
-//   6. Pie chart click-to-filter — same issue
-//   7. Bar chart click-to-filter — same issue
-// Expected: Legend reflects current filtered state for all 4 trigger sources;
-// categories and colors update to match visible data.
+// Bug reproduction: open SPGI, add a line chart, set Split to Series, then filter via
+// each of the 4 sources above.
+// Expected: the legend reflects the filtered state for all 4 sources (previously it
+// did not respond); categories and colors update to match visible data.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -49,7 +17,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-17222: legend reflects filter state across 4 trigger sources', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -128,8 +96,8 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
     expect(res.filterCount).toBeGreaterThan(0);
   });
 
-  // Step 5 (bug repro): in-viewer Scatter filter via sp.props.filter range expression.
-  // Recon-sanctioned alternative to alt-drag canvas synthesis (filtering-spec.ts L210-228).
+  // Step 5 (bug repro): in-viewer Scatter filter via sp.props.filter range expression
+  // (alternative to brittle alt-drag canvas synthesis).
   await softStep('Step 5: in-viewer Scatter filter via sp.props.filter range', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -154,7 +122,6 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
   });
 
   // Step 6 (bug repro): Pie chart click-to-filter narrows the dataset → legend updates.
-  // Mirrors filtering-spec.ts L333-391 multi-position retry pattern.
   await softStep('Step 6: Pie chart click-to-filter narrows legend', async () => {
     const setup = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -223,7 +190,6 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
   });
 
   // Step 7 (bug repro): Bar chart click-to-filter narrows the dataset → legend updates.
-  // Mirrors filtering-spec.ts L242-330 multi-position retry pattern.
   await softStep('Step 7: Bar chart click-to-filter narrows legend', async () => {
     const setup = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;

@@ -1,45 +1,10 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.column]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: 2 atlas ids (from bug.affects)
-//   ui_coverage_responsibility: []
-//   related_bugs: [GROK-17278]
-//   coverage_type: regression
-//   bug_id: GROK-17278
-//   bug_url: https://reddata.atlassian.net/browse/GROK-17278
-//   reproduction_source: bug-library/legend.yaml#GROK-17278
-//   related_scenarios: chain YAML bug_focused_candidates[3].spans
-//     (visibility-and-positioning.md:Step 9, color-consistency.md:Step 6,
-//      scatterplot.md:Step 5, line-chart.md:Step 5)
-// Fix invariant: color customizations made through the legend serialize into BOTH
-// layout file and project state, restored exactly on reopen.
-//
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135)
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated picker DOM)
-//
-// UI flow: real Playwright `locator.click({button: 'right'})` (per
-// validator-b-legend-section-postfix-2026-05-08); JS-API fallback via setCategorical
-// per ApiSamples scripts/grid/color-coding/color-coding.js. Layout round-trip mirrors
-// line-chart-spec.ts L107-124 + color-consistency-spec.ts L243-260. Project
-// FK graceful-degrade pattern from color-consistency-spec.ts L267-318.
+// GROK-17278: color customizations made through the legend must serialize into both
+// the layout file and project state, and be restored exactly on reopen.
+// Bug reproduction: open SPGI, add a line chart, add a Split, change the color of a
+// legend category, save the layout, save the project, Close All, then reopen the
+// project / apply the layout.
+// Expected: the changed colors persist (previously they were lost on reopen).
 // Verification via JSON tag (deterministic; bypasses Dart positional getColor bug).
-//
-// Bug reproduction (bug-library/legend.yaml#GROK-17278):
-//   1. Open SPGI
-//   2. Add a linechart
-//   3. Add a Split
-//   4. Change color for a legend category
-//   5. Save the layout
-//   6. Save the project
-//   7. Close All
-//   8. Open the saved project — changed colors are not saved
-//   9. Apply the saved layout — changed colors are not saved
-// Expected: Color customizations through legend serialize into layout file AND project,
-// restored exactly on reopen.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -47,7 +12,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-17278: line chart legend color persists across layout + project round-trips', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -93,7 +58,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   });
 
   // Step 4: change colour for one legend category (R_ONE → blue) via legend picker.
-  // UI path + JS-API fallback (mirrors color-consistency-spec.ts L153-222).
+  // UI path + JS-API fallback.
   await softStep('Step 4: change R_ONE colour via legend picker (Line chart)', async () => {
     const dlgName = 'dialog-R-ONE';
     let okCommitted = false;
@@ -167,7 +132,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
       const layout = tv.saveLayout();
       layout.name = 'GROK17278_' + Date.now();
       try {
-        const saved = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
+        const saved: any = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
         await new Promise(r => setTimeout(r, 1000));
         const found = await withTimeout((window as any).grok.dapi.layouts.find(saved.id), 15000, 'layouts.find');
         tv.loadLayout(found);
@@ -195,7 +160,6 @@ test('GROK-17278: line chart legend color persists across layout + project round
   });
 
   // Steps 6-8: project save + closeAll + reopen. FK graceful-degrade.
-  // Mirrors color-consistency-spec.ts L267-318.
   let projectId: string | null = null;
   await softStep('Steps 6-8 + Step 8 invariant: project save+closeAll+reopen, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
@@ -253,7 +217,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
       }
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-    }, [layoutId, projectId]);
+    }, [layoutId, projectId] as [string | null, string | null]);
   });
 
   if (stepErrors.length > 0)

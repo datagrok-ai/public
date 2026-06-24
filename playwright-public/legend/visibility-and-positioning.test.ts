@@ -1,53 +1,18 @@
-/* ---
-sub_features_covered: [legend.visibility, legend.position, legend.column, legend.item.click, legend.item.cross-click, legend.item.color-picker, legend.allow-item-coloring, legend.splitter-resize, legend.mini-icon, legend.auto-show, legend.auto-position, legend.show-nulls, legend.corner.collapse]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: ui-smoke
-//   sub_features_covered: 13 atlas ids (full list above)
-//   ui_coverage_responsibility: 12 flows (pcmdLegendVisibility, pcmdLegendPosition,
-//     legend-color-picker-dialog, legend-column-property-selector,
-//     legend-resize-handle, legend-mini-icon-toggle, legend-corner-collapse-chevron,
-//     legend-item-click-filter, legend-item-cross-click, legend-no-value-swatch,
-//     layout-save-reapply, project-save-reopen) — section UI smoke (delegated_to: null)
-//   related_bugs: [GROK-17438, GROK-17222, github-3132, GROK-17278, GROK-19083, GROK-19041]
-// Paired scenario: visibility-and-positioning.md (revision: migrated 2026-05-07)
+// Legend visibility and positioning UI smoke: visibility/position, color picker dialog,
+// column selector, splitter resize, mini-icon and corner-collapse toggles, item click /
+// cross-click, no-value swatch, and layout/project save-reopen round-trips.
 //
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135):
-//     - L118: [name="legend"] host, [name="legend-splitter"] resize handle
-//     - L122: .d4-corner-legend container, .d4-corner-legend-icon collapsed mini-icon (L124)
-//     - L125: [name="icon-hide-corner-legend"] collapse-to-icon trigger
-//     - L130: [name="legend-icon-color-picker"] hover-revealed picker icon
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated 2026-05-08:
-//     right-click on .d4-legend-item opens dialog [name="dialog-{CATEGORY}"]; swatch via
-//     .d4-color-bar; commit via [name="button-OK"], cancel via [name="button-CANCEL"])
-//
-// UI-driven flows (Phase 2 rewrite per pyramid_layer: ui-smoke STRICT UI):
-//   1. legend-color-picker-dialog (Sc 5): hover + right-click + dialog OK/Cancel
-//   2. legend-resize-handle (Sc 3): page.locator('[name="legend-splitter"]').dragTo(...)
-//   3. legend-mini-icon-toggle (Sc 9 / Sc 10): .d4-corner-legend-icon click
-//   4. legend-corner-collapse-chevron (Sc 10): [name="icon-hide-corner-legend"] click
-//   5. legend-no-value-swatch (Sc 6): null-bearing column → null swatch + picker round-trip
-//
-// JS-API-acceptable (delegation per SR L29-47):
-//   - pcmdLegendVisibility / pcmdLegendPosition → legend-grok-17438-spec.ts (bug spec)
-//   - legend-column-property-selector → per-viewer specs (scatterplot.md, line-chart.md)
-//   - legend-item-click-filter / cross-click → legend-grok-17222-spec.ts
-//   - layout-save-reapply → Layout section's smoke (cross-section)
-//   - project-save-reopen → Projects section's smoke (cross-section)
-//
-// Platform-bug acknowledgments (per visibility-and-positioning-run.md):
-//   - Ctrl+click legend filter (Sc 4): NOT wired to df.filter on this build — assert
+// Platform / selector notes:
+//   - Ctrl+click legend filter is NOT wired to df.filter on this build — assert
 //     trueCount unchanged (negative baseline) instead of positive narrowing.
-//   - miniLegend property: NOT exposed on viewer.props — use legendPosition='LeftTop'
+//   - miniLegend property is NOT exposed on viewer.props — use legendPosition='LeftTop'
 //     + .d4-corner-legend-icon visibility as the mini-mode equivalent.
-//   - Project save FK (Sc 11): foreign-key constraint on unsaved-dataframe projects —
-//     graceful-degrade pattern (mirror color-consistency-spec.ts L254-309).
-//   - Bar / Line / Box default 'Auto' hides legend — must set legendVisibility='Always'
+//   - Project save hits a foreign-key constraint on unsaved-dataframe projects —
+//     graceful-degrade pattern.
+//   - Bar / Line / Box default 'Auto' hides the legend — set legendVisibility='Always'
 //     before legend-presence assertions.
 //   - "Primary Series Name" does not exist in SPGI — use "Primary Scaffold Name" for
-//     null-bearing column coverage (Sc 6).
+//     null-bearing column coverage.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -55,7 +20,8 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Legend visibility and positioning', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
+  stepErrors.length = 0;
 
   await loginToDatagrok(page);
 
@@ -122,8 +88,7 @@ test('Legend visibility and positioning', async ({page}) => {
     expect(legends).toBeGreaterThan(0);
   });
 
-  // Scenario 2 steps 1-4: redraw on column change (delegated UI flow — JS API path).
-  // ui-smoke-delegated-to: scatterplot-spec.ts (Sc 1 covers full Color column UI)
+  // Scenario 2 steps 1-4: redraw on column change (JS API path).
   await softStep('Sc2 steps 1-4: legend redraws on column change (Series ↔ Stereo Category)', async () => {
     const result = await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
@@ -180,8 +145,7 @@ test('Legend visibility and positioning', async ({page}) => {
 
   // Scenario 4 steps 1-4: legend item click + cross-click filter.
   // Platform observation: Ctrl+click on .d4-legend-item AND .d4-legend-cross do
-  // NOT update df.filter on this build (visibility-and-positioning-run.md L18).
-  // ui-smoke-delegated-to: legend-grok-17222-spec.ts (full click-to-filter UI)
+  // NOT update df.filter on this build.
   // Negative-baseline assertion: trueCount unchanged after Ctrl+click + cross-click.
   await softStep('Sc4 steps 1-4: Ctrl+click + cross-click (negative baseline; platform bug)', async () => {
     const before = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.trueCount);
@@ -340,7 +304,7 @@ test('Legend visibility and positioning', async ({page}) => {
   });
 
   // Scenario 6 steps 1-5: (no value) swatch on a null-bearing column.
-  // SPGI uses "Primary Scaffold Name" (run.md note — "Primary Series Name" doesn't exist).
+  // SPGI uses "Primary Scaffold Name" ("Primary Series Name" doesn't exist).
   await softStep('Sc6 steps 1-5: (no value) swatch on null-bearing column', async () => {
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -380,7 +344,6 @@ test('Legend visibility and positioning', async ({page}) => {
   });
 
   // Scenario 8 steps 1-6: Visibility=Always + Position=Auto + resize + persist.
-  // ui-smoke-delegated-to: legend-grok-17438-spec.ts (Visibility menu UI surface)
   await softStep('Sc8 steps 1-6: Visibility=Always + Position=Auto across viewers', async () => {
     const ok = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -452,7 +415,7 @@ test('Legend visibility and positioning', async ({page}) => {
   });
 
   // Scenario 10 steps 1-8: corner positions + (mini-mode equivalent) + chevron + persist.
-  // miniLegend property not exposed (run.md L17) — use legendPosition='LeftTop' +
+  // miniLegend property not exposed — use legendPosition='LeftTop' +
   // .d4-corner-legend-icon presence as the mini-mode equivalent.
   await softStep('Sc10 steps 1-4: corner positions LeftTop/LeftBottom/RightTop/RightBottom', async () => {
     const positions = await page.evaluate(async () => {
@@ -564,7 +527,7 @@ test('Legend visibility and positioning', async ({page}) => {
       if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch(_) {}
       (window as any).grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-    }, [layoutId1, layoutId2, layoutId3, projectId]);
+    }, [layoutId1, layoutId2, layoutId3, projectId] as [string | null, string | null, string | null, string | null]);
   });
 
   if (stepErrors.length > 0)

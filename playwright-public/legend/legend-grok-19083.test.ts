@@ -1,41 +1,8 @@
-/* ---
-sub_features_covered: [legend.show-main-item-icons, legend.column]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: 2 atlas ids (from bug.affects)
-//   ui_coverage_responsibility: []
-//   related_bugs: [GROK-19083]
-//   coverage_type: regression
-//   bug_id: GROK-19083
-//   bug_url: https://reddata.atlassian.net/browse/GROK-19083
-//   reproduction_source: bug-library/legend.yaml#GROK-19083
-//   related_scenarios: chain YAML bug_focused_candidates[4].spans
-//     (structure-rendering.md:Step 4, scatterplot.md:Step 8,
-//      visibility-and-positioning.md:Step 4, line-chart.md:Step 3)
-// Fix invariant: legend marker entries must react to "deselect markers" on the host
-// viewer; legend cannot fall out of sync with viewer-level visualization properties.
-//
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135):
-//     - L118: [name="legend"] host
-//   .claude/skills/grok-browser/references/viewers/scatterplot.md (Scatter plot
-//     viewer-Scatter-plot root, markersColumnName property)
-//
-// Setup: Scatter plot with Color=Series + Marker=Series (combined legend) per
-// scatterplot-spec.ts Sc 1 pattern. Bug-focused mutation: set markersColumnName=''
-// (deselect markers) → legend marker entries must update in sync (no stale glyphs).
-//
-// Bug reproduction (bug-library/legend.yaml#GROK-19083):
-//   1. Open demog and add a scatter plot
-//   2. Open properties
-//   3. Select a control column for markers — legend with two categories appears
-//   4. Set color to that control column — legend recolors
-//   5. Deselect markers (set markers to none) — markers still present on the legend
-//      but not on the viewer
-// Expected: Legend content must be consistent with what is actually rendered on the
-// viewer. When markers are deselected, marker entries should disappear from the legend.
+// GROK-19083: legend marker entries must stay in sync with markersColumnName.
+// Bug reproduction: open demog, add a scatter plot, set Marker=Series (legend gets
+// two categories), set Color to that column (legend recolors), then deselect markers
+// (set markers to none).
+// Expected: marker entries disappear from the legend, matching what the viewer renders.
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -43,13 +10,13 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-19083: legend marker entries sync with markersColumnName deselect', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
 
   // technical: open SPGI and add Scatter plot — SPGI Series has many categories
-  // suitable for combined Color+Marker legend (per scatterplot-spec.ts Sc 1 setup).
+  // suitable for a combined Color+Marker legend.
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;

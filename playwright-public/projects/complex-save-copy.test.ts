@@ -1,7 +1,4 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.api.files.sync, projects.add-relation]
-generated_from: complex-save-copy.md (Phase B canonical openers)
---- */
+// Verifies the Save Copy round-trip with data sync OFF and ON.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -11,7 +8,7 @@ import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/pr
 test.use(projectsTestOptions);
 
 test('Projects / Complex Save Copy: round-trip Save Copy with sync OFF/ON', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();

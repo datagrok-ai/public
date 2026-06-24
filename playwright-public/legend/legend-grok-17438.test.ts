@@ -1,43 +1,12 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.visibility, legend.splitter-resize]
---- */
-// Frontmatter extraction (Edit X7):
-//   target_layer: playwright
-//   pyramid_layer: bug-focused
-//   sub_features_covered: 3 atlas ids (from bug.affects)
-//   ui_coverage_responsibility: []
-//   related_bugs: [GROK-17438]
-//   coverage_type: regression
-//   bug_id: GROK-17438
-//   bug_url: https://reddata.atlassian.net/browse/GROK-17438
-//   reproduction_source: bug-library/legend.yaml#GROK-17438
-//   related_scenarios: chain YAML bug_focused_candidates[0].spans
-//     (visibility-and-positioning.md:Step 9, color-consistency.md:Step 5,
-//      scatterplot.md:Step 4)
-// Fix invariant: when color is changed on one viewer, the legend remains visible on
-// other viewers with the same legend; recovery paths (resize, set visibility=Always)
-// restore the legend if hidden.
-//
-// Selector sources (grok-browser/references):
-//   .claude/skills/grok-browser/references/viewers.md (Legend section L112-135):
-//     - L118: [name="legend"] host, [name="legend-splitter"] resize handle
-//     - L130: right-click on .d4-legend-item opens picker dialog
-//   .claude/plan/legend-mcp-recon-2026-05-08-color-picker.md (MCP-validated picker DOM)
-//
-// Setup: 3-viewer shared-legend layout (Histogram + Scatter + Bar all on Stereo Category).
-// UI flow: real Playwright `locator.click({button: 'right'})` on Histogram legend
-// (per validator-b-legend-section-postfix-2026-05-08); JS-API fallback via setCategorical.
-// Recovery exercise: visibility=Always + splitter-resize must each restore legend
-// visibility if it has been incorrectly hidden.
-//
-// Bug reproduction (bug-library/legend.yaml#GROK-17438):
-//   1. Open SPGI
-//   2. Open the layout — legend is present on each viewer
-//   3. Change any color on the scatterplot — the legend is hidden on viewers with same legend
-//   4. Try to resize the viewers — legend is still hidden
-//   5. Try to set legend visibility to always — legend is still hidden
-// Expected: When color is changed, legend remains visible on shared-legend viewers;
-// recovery paths (resize, visibility=Always) restore visibility.
+// GROK-17438: when a color is changed on one viewer, the legend must remain visible on
+// other viewers sharing the same legend; recovery paths (splitter resize, set
+// visibility=Always) must restore the legend if it has been hidden.
+// Setup: 3-viewer shared-legend layout (Histogram + Scatter + Bar on Stereo Category),
+// color changed via the Histogram legend picker (JS-API setCategorical fallback).
+// Bug reproduction: open SPGI + layout (legend on each viewer), change a color on the
+// scatterplot, then try resizing viewers and setting legend visibility to Always.
+// Expected: the legend stays visible on shared-legend viewers; the recovery paths
+// restore visibility (previously it stayed hidden).
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
@@ -45,7 +14,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-17438: legend stays visible across shared-legend viewers after color change', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -104,8 +73,7 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
       }
       return out;
     });
-    // Bar chart's legend may not appear until a color edit fires propagation
-    // (per legend-mcp-recon-2026-05-08-color-picker.md "Bar chart legend caveat" L74-94).
+    // Bar chart's legend may not appear until a color edit fires propagation.
     // At least 2 of 3 viewers must show legend in baseline (Histogram + Scatter reliably do).
     const present = Object.values(before).filter(Boolean).length;
     expect(present, 'at least 2 viewers show legend in baseline').toBeGreaterThanOrEqual(2);
