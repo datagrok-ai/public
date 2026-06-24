@@ -82,7 +82,18 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const df = gridCell.grid.dataFrame;
     const settings: FormSettings = getSettings(gridCell.gridColumn);
     const row = gridCell.cell.row.idx;
-    let cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
+    // Resolve each referenced data column to its grid column's display name: a grid-header
+    // rename sets GridColumn.customName without renaming the data column, so the data name is
+    // no longer a valid key for grid.cell() / GridColumnList.byName().
+    const gridColNameByData = new Map<string, string>();
+    const referenced = new Set(settings.columnNames);
+    for (let i = 0; i < gridCell.grid.columns.length && gridColNameByData.size < referenced.size; i++) {
+      const gc = gridCell.grid.columns.byIndex(i);
+      const dataName = gc?.column?.name;
+      if (dataName != null && referenced.has(dataName))
+        gridColNameByData.set(dataName, gc!.name);
+    }
+    let cols = df.columns.byNames(settings.columnNames).filter((c) => c != null && gridColNameByData.has(c.name));
     b ??= gridCell.bounds.inflate(-2, -2);
     const scene = new Scene(b);
 
@@ -95,7 +106,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
       const mode = settings.showColumnNames ?? 'Auto';
       const shouldShowMolLabels = mode === 'Always' || (mode === 'Auto' && molCols.length > 1);
       for (let i = 0; i < molCols.length; i++) {
-        const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
+        const dispName = gridColNameByData.get(molCols[i].name)!;
+        const cell = gridCell.grid.cell(dispName, gridCell.gridRow);
         let r = molCols.length === 1 ? molBox :
           new DG.Rect(molBox.x, molBox.y + (i * molBox.height / molCols.length), molBox.width, molBox.height / molCols.length);
         if (shouldShowMolLabels && r.height > 30) {
@@ -103,12 +115,12 @@ export class FormCellRenderer extends DG.GridCellRenderer {
           const fontSize = Math.min(11, Math.floor(labelHeight * 0.9));
           const labelR = r.getTop(labelHeight);
           const font = `${fontSize}px Roboto, Roboto Local`;
-          scene.elements.push(new LabelElement(labelR, fontSize, molCols[i].name, {horzAlign: 'center', color: 'lightgrey', font: font}));
+          scene.elements.push(new LabelElement(labelR, fontSize, dispName, {horzAlign: 'center', color: 'lightgrey', font: font}));
           r = r.cutTop(labelHeight);
         }
         const molEl = new GridCellElement(r, cell);
         if (!shouldShowMolLabels)
-          molEl.style!.tooltip = `${molCols[i].name}: ${molEl.style!.tooltip}`;
+          molEl.style!.tooltip = `${dispName}: ${molEl.style!.tooltip}`;
         scene.elements.push(molEl);
       }
     }
@@ -150,14 +162,15 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
-      const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
+      const dispName = gridColNameByData.get(col.name)!;
+      const cell = gridCell.grid.cell(dispName, gridCell.gridRow);
       cell.style.backColor = gridCell.grid.props.backColor;
       cell.style.textColor = getRenderColor(settings, gridCell.grid.props.cellTextColor, {column: col, colIdx: i, rowIdx: row});
 
       if (b.height < cols.length * 20 * 0.4 && !isTwoColumn) {
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
-        e.style!.tooltip = `${col.name}: ${e.style!.tooltip}`;
+        e.style!.tooltip = `${dispName}: ${e.style!.tooltip}`;
         scene.elements.push(e);
       } else {
         const layoutColIndex = Math.floor(i / rowsPerCol);
@@ -172,7 +185,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const isBoolTag = col.type === DG.TYPE.BOOL && boolMode === BoolColumnMode.Tags;
         if (showColumnNames && !isBoolTag) {
           const labelRect = new DG.Rect(intX, intY, columnNamesWidth, intH);
-          scene.elements.push(new LabelElement(labelRect, fontSize * 0.6, col.name,
+          scene.elements.push(new LabelElement(labelRect, fontSize * 0.6, dispName,
             {horzAlign: 'right', color: 'lightgrey', font: font}));
         }
 
@@ -185,7 +198,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const valueX = intX + columnNamesWidth + leftMargin;
         if (isBoolTag) {
           const tagRect = new DG.Rect(intX + 5, intY, effectiveWidth - 5, intH);
-          const tagText = `✓ ${col.name}`;
+          const tagText = `✓ ${dispName}`;
           scene.elements.push(new LabelElement(tagRect, fontSize * 0.6, tagText,
             {horzAlign: 'left', color: 'gray', font: font}));
         } else {
@@ -195,7 +208,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
             valueRect = new DG.Rect(valueX, intY - 5, showColumnNames ? 20 : effectiveWidth, intH);
           const valEl = new GridCellElement(valueRect, cell);
           if (!showColumnNames)
-            valEl.style!.tooltip = `${col.name}: ${valEl.style!.tooltip}`;
+            valEl.style!.tooltip = `${dispName}: ${valEl.style!.tooltip}`;
           scene.elements.push(valEl);
         }
       }
