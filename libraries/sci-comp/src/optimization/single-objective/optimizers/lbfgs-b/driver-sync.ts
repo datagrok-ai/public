@@ -1,47 +1,25 @@
-// @async-source: driver-sync.ts
-// @codegen-rename: runAsync=runSync
-// @codegen-rename: runLineSearchAsync=runLineSearch
-/**
- * Outer driver for L-BFGS-B.
- *
- * Implements §4 of the specification: Cauchy → subspace → Moré–Thuente
- * line search → curvature-gated memory update → convergence tests, with
- * a single memory-reset retry on line-search failure.
- *
- * Termination maps to `OptimizationResult.converged` as described in
- * §0.4 of the plan: only T1 (projected-gradient) and T2 (relative Δf)
- * set `converged = true`; all other exits (iteration/evaluation caps,
- * line-search abnormal termination, callback abort) return
- * `converged = false` with best-so-far point/value.
- *
- * `runSync` is generated from this file's `runAsync` via the async-to-sync
- * codegen; see `driver-sync.ts`. Do not write `runSync` here by hand.
- */
+/* eslint-disable */
+// GENERATED — do not edit by hand.
+// Run `npm run update-codegen` to regenerate.
+// Source: ./driver.ts
 import {BOUND_BOTH} from './types';
-import type {LBFGSBSettings} from './types';
-import type {OptimizationResult} from '../../types';
-import type {IterationCallback} from '../../types';
+import {LBFGSBSettings} from './types';
+import {OptimizationResult} from '../../types';
 import {BFGSMat} from './bfgs-mat';
 import {normalizeBounds, project, projectedGradient, maxFeasibleStep} from './bounds';
 import {makeCauchyWorkspace, cauchyPoint} from './cauchy';
 import {makeSubspaceWorkspace, subspaceMin} from './subspace';
-import {runLineSearchAsync} from './line-search';
+import {runLineSearch} from './line-search';
+import {CURVATURE_EPS, dot, finaliseResult, fireCallback} from './driver';
 
-/** Curvature-gate threshold: reject pair when `sᵀy ≤ CURVATURE_EPS · max(1, yᵀy)`. */
-export const CURVATURE_EPS = Number.EPSILON;
-
-/* ================================================================== */
-/*  Asynchronous path                                                  */
-/* ================================================================== */
-
-export async function runAsync(
-  fn: (x: Float64Array) => Promise<number>,
+export function runSync(
+  fn: (x: Float64Array) => number,
   x0: Float64Array,
   s: Required<Pick<LBFGSBSettings,
     'maxIterations' | 'tolerance' | 'historySize' | 'gradTolerance' |
     'maxFunctionEvaluations' | 'finiteDiffStep' | 'lineSearch'>>
     & Pick<LBFGSBSettings, 'bounds' | 'gradFn' | 'gradFnAsync' | 'onIteration'>,
-): Promise<OptimizationResult> {
+): OptimizationResult {
   const n = x0.length;
   const m = s.historySize;
   const maxIter = s.maxIterations;
@@ -51,7 +29,6 @@ export async function runAsync(
   const hFD = s.finiteDiffStep;
   const ls = s.lineSearch;
   const gradFn = s.gradFn;
-  const gradFnA = s.gradFnAsync; // @async-only
   const onIter = s.onIteration;
 
   const {lower, upper, nbd, anyFinite} = normalizeBounds(s.bounds, n);
@@ -89,12 +66,11 @@ export async function runAsync(
   const subspace = makeSubspaceWorkspace(n, m);
 
   let fEvalCount = 0;
-  const evalF = async (p: Float64Array): Promise<number> => {
+  const evalF = (p: Float64Array): number => {
     fEvalCount++;
     return fn(p);
   };
-  const evalGrad = async (p: Float64Array, out: Float64Array): Promise<void> => {
-    if (gradFnA) {await gradFnA(p, out); return;} // @async-only
+  const evalGrad = (p: Float64Array, out: Float64Array): void => {
     if (gradFn)
       gradFn(p, out);
     else {
@@ -102,19 +78,19 @@ export async function runAsync(
       for (let i = 0; i < n; i++) {
         const orig = p[i];
         p[i] = orig + hFD;
-        const fPlus = await evalF(p);
+        const fPlus = evalF(p);
         p[i] = orig - hFD;
-        const fMinus = await evalF(p);
+        const fMinus = evalF(p);
         p[i] = orig;
         out[i] = (fPlus - fMinus) / (2 * hFD);
       }
     }
   };
 
-  let fCur = await evalF(x);
+  let fCur = evalF(x);
   if (!Number.isFinite(fCur))
     throw new Error('L-BFGS-B: objective returned non-finite at x0');
-  await evalGrad(x, g);
+  evalGrad(x, g);
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(g[i]))
       throw new Error('L-BFGS-B: gradient contains non-finite at x0');
@@ -219,17 +195,17 @@ export async function runAsync(
       alpha0 = Math.min(1, stpMax);
 
     // ---- (g) Line search -------------------------------------------
-    const lsResult = await runLineSearchAsync(
-      async (alpha) => {
-        for (let i = 0; i < n; i++) xNew[i] = x[i] + alpha * d[i];
-        const f = await evalF(xNew);
-        if (!Number.isFinite(f)) return {phi: NaN, phiPrime: NaN};
-        await evalGrad(xNew, gNew);
-        return {phi: f, phiPrime: dot(gNew, d)};
-      },
-      fCur, slope, alpha0,
-      {ftol: ls.ftol!, gtol: ls.gtol!, xtol: ls.xtol!, maxSteps: ls.maxSteps!, stpMax},
-    );
+    const lsResult = runLineSearch(
+          (alpha) => {
+            for (let i = 0; i < n; i++) xNew[i] = x[i] + alpha * d[i];
+            const f = evalF(xNew);
+            if (!Number.isFinite(f)) return {phi: NaN, phiPrime: NaN};
+            evalGrad(xNew, gNew);
+            return {phi: f, phiPrime: dot(gNew, d)};
+          },
+          fCur, slope, alpha0,
+          {ftol: ls.ftol!, gtol: ls.gtol!, xtol: ls.xtol!, maxSteps: ls.maxSteps!, stpMax},
+        );
 
     if (!lsResult.ok) {
       if (retriedMemReset || mat.col === 0) break;
@@ -312,41 +288,4 @@ export async function runAsync(
   }
 
   return finaliseResult(bestX, bestValue, iteration, converged, costHistory, costLen);
-}
-
-/* ================================================================== */
-/*  Helpers                                                            */
-/* ================================================================== */
-
-export function dot(a: Float64Array, b: Float64Array): number {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
-  return s;
-}
-
-export function finaliseResult(
-  bestX: Float64Array,
-  bestValue: number,
-  iterations: number,
-  converged: boolean,
-  costHistory: Float64Array,
-  costLen: number,
-): OptimizationResult {
-  return {
-    point: bestX,
-    value: bestValue,
-    iterations,
-    converged,
-    costHistory: costHistory.subarray(0, costLen),
-  };
-}
-
-export function fireCallback(
-  cb: IterationCallback | undefined,
-  iteration: number,
-  bestValue: number,
-  bestPoint: Float64Array,
-  extra: Record<string, number>,
-): boolean {
-  return cb?.({iteration, bestValue, bestPoint, extra}) === true;
 }
