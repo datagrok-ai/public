@@ -319,6 +319,23 @@ function collectMeasurable(
     tBuf.push(time[i]);
     cBuf.push(conc[i]);
   }
+  // Drop the TRAILING run of non-positive (≤ 0) concentrations. A trailing
+  // zero is an unflagged below-LLOQ washout sample — common when a dataset
+  // encodes BLQ as conc=0 and carries no LLOQ/BLQ-flag column, so `blqMask`
+  // is all-zeros and the BLQ strategy never sees it. Such a point must NOT
+  // anchor the terminal: as `cLast` it is the λz extrapolation base, so
+  // `cLast = 0` blocks AUCinf/t½/CL/Vz even when λz is perfectly well-formed
+  // (the `cLast > 0` status gate), and in the AUClast trapezoid it adds a
+  // spurious tail-to-zero area. PKNCA's `conc.blq` default excludes trailing
+  // BLQ; this mirrors it. EMBEDDED zeros are intentionally KEPT — PKNCA
+  // set-zeros embedded BLQ into the trapezoid, and `lambdaZBestFit` already
+  // excludes all `conc ≤ 0` from the regression, so the fit is unaffected
+  // either way; only the trailing anchor is corrected here.
+  // (BUG-05 / GROK-20219; verified against PKNCA 0.12.1 rat-IV R005/R013.)
+  while (cBuf.length > 0 && cBuf[cBuf.length - 1] <= 0) {
+    cBuf.pop();
+    tBuf.pop();
+  }
   return {time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf)};
 }
 

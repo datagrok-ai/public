@@ -33,7 +33,7 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
     }
 
     if ((seqSh.getSplitted(sequence.cell.rowIndex)?.length ?? 100) > maxLength) {
-      errorText = 'Maximum number of monomers is ' + maxLength;
+      errorText = 'Maximum number of monomers for molecular conversion is ' + maxLength;
       return {errorText, mol: ''};
     }
     const singleValCol = DG.Column.fromStrings('singleVal', [sequence.value]);
@@ -87,8 +87,17 @@ export async function toAtomicLevelWidget(sequence: DG.SemanticValue): Promise<D
       molPanel = DG.Widget.fromRoot(acc.root);
     }
 
+    let width = 300;
+    let height = 300;
+    const tagW = Number.parseInt(sequence.cell.column.getTag('.toAtomicWidgetWidth') ?? '');
+    const tagH = Number.parseInt(sequence.cell.column.getTag('.toAtomicWidgetHeight') ?? '');
+    if (tagW && Number.isFinite(tagW))
+      width = tagW;
+    if (tagH && Number.isFinite(tagH))
+      height = tagH;
 
-    const root = grok.chem.drawMolecule(res.mol, 300, 300, false);
+
+    const root = grok.chem.drawMolecule(res.mol, width, height, false);
     root.style.cursor = 'pointer';
     ui.tooltip.bind(root, 'Click to expand');
     root.onclick = () => {

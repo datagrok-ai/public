@@ -3,10 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {delay} from 'rxjs/operators'
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
 import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -109,10 +108,12 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
+  pushNativeContext(prompt: string): void;
+  flushNativeContext(): string;
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
-  private root: HTMLElement;
+  readonly root: HTMLElement;
   protected view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
@@ -129,6 +130,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private wandButton: HTMLElement;
   private _rawRender: boolean = false;
   private _noPrompt: boolean = false;
+  private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
@@ -156,6 +158,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
+  private _loaderPauseTimer: number | null = null;
   private _sessionId: string;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
@@ -232,6 +235,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       } finally {
         ui.setUpdateIndicator(this.root, false);
       }
+      this.resetSession();
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
@@ -273,71 +277,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
     if (this._inline)
       this.root.classList.add('d4-ai-inline-mode');
-
-    this.setupSubscriptions();
-  }
-
-  protected setupSubscriptions() {
-    if (this._inline)
-      return;
-    let wasShown = false;
-    // Defer the dock/undock until after the view switch has settled.
-    const sub = grok.events.onCurrentViewChanged.pipe(delay(150)).subscribe(() => {
-      if (grok.shell.v != this.view) {
-        wasShown = this.isShown;
-        if (wasShown)
-          this.hide();
-      } else if (wasShown)
-        this.show();
-    });
-
-    const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
-      if (rv == this.view)
-        this.toggle();
-    });
-    const that = this;
-    function onKeyDownHandler(event: KeyboardEvent) {
-      if (grok.shell.v === that.view && event.ctrlKey && event.key === 'i') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        that.toggle();
-      }
-    }
-    document.addEventListener('keydown', onKeyDownHandler);
-
-    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-      if (view == this.view) {
-        sub.unsubscribe();
-        closeSub.unsubscribe();
-        this.hide();
-        this.dispose();
-        toggleSub.unsubscribe();
-        document.removeEventListener('keydown', onKeyDownHandler);
-      }
-    });
   }
 
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
 
-  show(focus: boolean = false) {
-    // Opening the AI panel steals focus from the active element (e.g., query editor)
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const aiContainer = grok.shell.windows.ai;
-    if (!aiContainer.contains(this.root))
-      aiContainer.appendChild(this.root);
-    grok.shell.windows.showAI = true;
+  activate(focus: boolean = false): void {
     this.renderEmptyState();
     if (focus)
       this.textArea.focus();
-    else
-      previouslyFocused?.focus();
-  }
-
-  hide() {
-    if (grok.shell.windows.ai.contains(this.root))
-      grok.shell.windows.showAI = false;
   }
 
   formatConversation() {
@@ -356,11 +305,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return copyToClipboard(this.formatConversation());
   }
 
-  toggle() {
-    this.isShown ? this.hide() : this.show(true);
-  }
-
   dispose() {
+    this.clearStreamingLoaderTimer();
     this.stopRecognition();
     this.root.remove();
     this._messages = [];
@@ -610,13 +556,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.runButtonTooltip = actionButtionValues.run;
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
+        this.clearStreamingLoaderTimer();
         loader.remove();
       }
     };
-  }
-
-  get isShown(): boolean {
-    return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
   }
 
   get rawRender(): boolean { return this._rawRender; }
@@ -636,6 +579,18 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
     this.resetSession();
     this.handleClear();
+  }
+
+  pushNativeContext(prompt: string): void {
+    this._pendingNativeContext.push(prompt);
+  }
+
+  flushNativeContext(): string {
+    if (this._pendingNativeContext.length === 0)
+      return '';
+    const items = `- "${this._pendingNativeContext.join('"\n- "')}"`;
+    this._pendingNativeContext = [];
+    return `[The user previously asked:]\n${items}\n\n`;
   }
 
   resetSession(): void {
@@ -665,20 +620,38 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
-      loader.style.display = 'none';
       this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
+      this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
       this._streamingMarkdownEl!.replaceWith(el);
       this._streamingMarkdownEl = el;
     }
+    this.refreshStreamingLoader(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
+  refreshStreamingLoader(loader: HTMLElement): void {
+    loader.style.display = 'none';
+    this.clearStreamingLoaderTimer();
+    this._loaderPauseTimer = window.setTimeout(() => {
+      loader.style.display = '';
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    }, 600);
+  }
+
+  clearStreamingLoaderTimer(): void {
+    if (this._loaderPauseTimer != null) {
+      clearTimeout(this._loaderPauseTimer);
+      this._loaderPauseTimer = null;
+    }
+  }
+
   async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
+    this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
@@ -698,6 +671,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected renderFinalContent(content: string): void {
+    this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
     renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
@@ -715,6 +689,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   clearStreaming(): void {
+    this.clearStreamingLoaderTimer();
     this._streamingContainer?.remove();
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
@@ -880,8 +855,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleClear() {
+    this.clearStreamingLoaderTimer();
     this._messages = [];
     this._uiMessages = [];
+    this._pendingNativeContext = [];
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
@@ -1213,18 +1190,6 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       const layout = DG.ViewLayout.fromViewState(viewState);
       this.tableView.loadLayout(layout, true);
     }
-  }
-}
-
-export class ShellAIPanel extends AIPanel {
-  protected get placeHolder() { return 'Ask AI anything...'; }
-
-  constructor() {
-    super('shell-ai-panel', null as any);
-  }
-
-  protected setupSubscriptions(): void {
-    // Shell panel is not tied to a view — no view-change tracking needed
   }
 }
 

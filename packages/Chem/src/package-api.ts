@@ -621,10 +621,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:ImportMol', { content });
   }
 
-  export async function oclCellRenderer(): Promise<any> {
-    return await grok.functions.call('Chem:OclCellRenderer', {});
-  }
-
   /**
   Sorts a molecular column by similarity
   */

@@ -1,8 +1,13 @@
 # compute-utils changelog
 
-## v.next
+## 1.46.3 (2026-06-16)
 
+* RFV: map the `diffstudiofacet` viewer type to the label `DiffStudio Facet` in `viewerTypesMapping`, so the facet viewer tab shows a proper name
 * GROK-14159/GROK-14160: Use grok.dapi.groups.currentUserGroups()/requestMembership() when available, falling back to raw fetch() on older API versions
+* Fitting: multithreaded (worker) fitting for Diff Studio models via `diff-grok-meta`
+* Excel export: fix overlapping charts in the exported workbook
+* GROK-19188: fix model URLs in the model catalog
+* Use type-only imports/exports in the public indexes to silence rspack warnings
 
 ## 1.46.2 (2026-06-05)
 

@@ -1,0 +1,216 @@
+[
+  {
+    "name": "Alkyl (C1–C8)",
+    "items": [
+      {"smiles": "C[*:1]", "label": "methyl"},
+      {"smiles": "CC[*:1]", "label": "ethyl"},
+      {"smiles": "CCC[*:1]", "label": "propyl"},
+      {"smiles": "CCCC[*:1]", "label": "butyl"},
+      {"smiles": "CCCCC[*:1]", "label": "pentyl"},
+      {"smiles": "CCCCCC[*:1]", "label": "hexyl"},
+      {"smiles": "CCCCCCC[*:1]", "label": "heptyl"},
+      {"smiles": "CCCCCCCC[*:1]", "label": "octyl"}
+    ]
+  },
+  {
+    "name": "Branched & cyclic alkyl",
+    "items": [
+      {"smiles": "CC(C)[*:1]", "label": "isopropyl"},
+      {"smiles": "CC(C)C[*:1]", "label": "isobutyl"},
+      {"smiles": "CCC(C)[*:1]", "label": "sec-butyl"},
+      {"smiles": "CC(C)(C)[*:1]", "label": "tert-butyl"},
+      {"smiles": "[*:1]C1CC1", "label": "cyclopropyl"},
+      {"smiles": "[*:1]C1CCC1", "label": "cyclobutyl"},
+      {"smiles": "[*:1]C1CCCC1", "label": "cyclopentyl"},
+      {"smiles": "[*:1]C1CCCCC1", "label": "cyclohexyl"}
+    ]
+  },
+  {
+    "name": "Halogens & fluorines",
+    "items": [
+      {"smiles": "F", "label": "fluoro"},
+      {"smiles": "Cl", "label": "chloro"},
+      {"smiles": "Br", "label": "bromo"},
+      {"smiles": "I", "label": "iodo"},
+      {"smiles": "FC(F)(F)[*:1]", "label": "trifluoromethyl"},
+      {"smiles": "FC(F)[*:1]", "label": "difluoromethyl"},
+      {"smiles": "FC[*:1]", "label": "fluoromethyl"},
+      {"smiles": "FC(F)(F)O[*:1]", "label": "trifluoromethoxy"},
+      {"smiles": "FC(F)O[*:1]", "label": "difluoromethoxy"}
+    ]
+  },
+  {
+    "name": "Polar / H-bonding",
+    "items": [
+      {"smiles": "O[*:1]", "label": "hydroxy"},
+      {"smiles": "N[*:1]", "label": "amino"},
+      {"smiles": "CO[*:1]", "label": "methoxy"},
+      {"smiles": "N#C[*:1]", "label": "cyano"},
+      {"smiles": "O=[N+]([O-])[*:1]", "label": "nitro"},
+      {"smiles": "OC(=O)[*:1]", "label": "carboxy"},
+      {"smiles": "NC(=O)[*:1]", "label": "carbamoyl"},
+      {"smiles": "CS(=O)(=O)[*:1]", "label": "methylsulfonyl"},
+      {"smiles": "NS(=O)(=O)[*:1]", "label": "sulfamoyl"},
+      {"smiles": "OCC[*:1]", "label": "2-hydroxyethyl"},
+      {"smiles": "COCC[*:1]", "label": "2-methoxyethyl"}
+    ]
+  },
+  {
+    "name": "Aryl",
+    "items": [
+      {"smiles": "[*:1]c1ccccc1", "label": "phenyl"},
+      {"smiles": "[*:1]Cc1ccccc1", "label": "benzyl"},
+      {"smiles": "[*:1]c1cccc2ccccc12", "label": "naphthalen-1-yl"},
+      {"smiles": "[*:1]c1ccc2ccccc2c1", "label": "naphthalen-2-yl"}
+    ]
+  },
+  {
+    "name": "5-membered heteroaryl",
+    "description": "Attachment position is in each label; isomers cover the common ones.",
+    "items": [
+      {"smiles": "[*:1]c1ccco1", "label": "furan-2-yl"},
+      {"smiles": "[*:1]c1ccoc1", "label": "furan-3-yl"},
+      {"smiles": "[*:1]c1cccs1", "label": "thiophen-2-yl"},
+      {"smiles": "[*:1]c1ccsc1", "label": "thiophen-3-yl"},
+      {"smiles": "[*:1]n1cccc1", "label": "pyrrol-1-yl"},
+      {"smiles": "[*:1]c1ccc[nH]1", "label": "pyrrol-2-yl"},
+      {"smiles": "[*:1]c1cc[nH]c1", "label": "pyrrol-3-yl"},
+      {"smiles": "[*:1]n1cccn1", "label": "pyrazol-1-yl"},
+      {"smiles": "[*:1]c1cc[nH]n1", "label": "pyrazol-3-yl"},
+      {"smiles": "[*:1]c1cn[nH]c1", "label": "pyrazol-4-yl"},
+      {"smiles": "[*:1]n1ccnc1", "label": "imidazol-1-yl"},
+      {"smiles": "[*:1]c1ncc[nH]1", "label": "imidazol-2-yl"},
+      {"smiles": "[*:1]c1c[nH]cn1", "label": "imidazol-4-yl"},
+      {"smiles": "[*:1]c1ncco1", "label": "oxazol-2-yl"},
+      {"smiles": "[*:1]c1cnco1", "label": "oxazol-5-yl"},
+      {"smiles": "[*:1]c1ccon1", "label": "isoxazol-3-yl"},
+      {"smiles": "[*:1]c1ccno1", "label": "isoxazol-5-yl"},
+      {"smiles": "[*:1]c1nccs1", "label": "thiazol-2-yl"},
+      {"smiles": "[*:1]c1cscn1", "label": "thiazol-4-yl"},
+      {"smiles": "[*:1]c1cncs1", "label": "thiazol-5-yl"},
+      {"smiles": "[*:1]n1cncn1", "label": "1,2,4-triazol-1-yl"},
+      {"smiles": "[*:1]c1nc[nH]n1", "label": "1,2,4-triazol-3-yl"},
+      {"smiles": "[*:1]n1ccnn1", "label": "1,2,3-triazol-1-yl"},
+      {"smiles": "[*:1]n1nccn1", "label": "1,2,3-triazol-2-yl"},
+      {"smiles": "[*:1]c1c[nH]nn1", "label": "1,2,3-triazol-4-yl"}
+    ]
+  },
+  {
+    "name": "6-membered heteroaryl",
+    "items": [
+      {"smiles": "[*:1]c1ccccn1", "label": "pyridin-2-yl"},
+      {"smiles": "[*:1]c1cccnc1", "label": "pyridin-3-yl"},
+      {"smiles": "[*:1]c1ccncc1", "label": "pyridin-4-yl"},
+      {"smiles": "[*:1]c1ncccn1", "label": "pyrimidin-2-yl"},
+      {"smiles": "[*:1]c1ccncn1", "label": "pyrimidin-4-yl"},
+      {"smiles": "[*:1]c1cncnc1", "label": "pyrimidin-5-yl"},
+      {"smiles": "[*:1]c1cnccn1", "label": "pyrazin-2-yl"},
+      {"smiles": "[*:1]c1cccnn1", "label": "pyridazin-3-yl"}
+    ]
+  },
+  {
+    "name": "Bicyclic heteroaryl",
+    "items": [
+      {"smiles": "[*:1]n1ccc2ccccc21", "label": "indol-1-yl"},
+      {"smiles": "[*:1]c1cc2ccccc2[nH]1", "label": "indol-2-yl"},
+      {"smiles": "[*:1]c1c[nH]c2ccccc12", "label": "indol-3-yl"},
+      {"smiles": "[*:1]c1ccc2[nH]ccc2c1", "label": "indol-5-yl"},
+      {"smiles": "[*:1]c1cc2ccccc2o1", "label": "benzofuran-2-yl"},
+      {"smiles": "[*:1]c1coc2ccccc12", "label": "benzofuran-3-yl"},
+      {"smiles": "[*:1]c1cc2ccccc2s1", "label": "benzothiophen-2-yl"},
+      {"smiles": "[*:1]c1csc2ccccc12", "label": "benzothiophen-3-yl"},
+      {"smiles": "[*:1]n1cnc2ccccc21", "label": "benzimidazol-1-yl"},
+      {"smiles": "[*:1]c1nc2ccccc2[nH]1", "label": "benzimidazol-2-yl"},
+      {"smiles": "[*:1]n1ncc2ccccc21", "label": "indazol-1-yl"},
+      {"smiles": "[*:1]c1n[nH]c2ccccc12", "label": "indazol-3-yl"},
+      {"smiles": "[*:1]c1nc2ccccc2o1", "label": "benzoxazol-2-yl"},
+      {"smiles": "[*:1]c1nc2ccccc2s1", "label": "benzothiazol-2-yl"},
+      {"smiles": "[*:1]c1ccc2ccccc2n1", "label": "quinolin-2-yl"},
+      {"smiles": "[*:1]c1cc2ccccc2nc1", "label": "quinolin-3-yl"},
+      {"smiles": "[*:1]c1ccc2ncccc2c1", "label": "quinolin-6-yl"},
+      {"smiles": "[*:1]c1cccc2cccnc12", "label": "quinolin-8-yl"},
+      {"smiles": "[*:1]c1nccc2ccccc12", "label": "isoquinolin-1-yl"},
+      {"smiles": "[*:1]c1cc2ccccc2cn1", "label": "isoquinolin-3-yl"},
+      {"smiles": "[*:1]c1nc2ccccc2cn1", "label": "quinazolin-2-yl"},
+      {"smiles": "[*:1]c1ncnc2ccccc12", "label": "quinazolin-4-yl"}
+    ]
+  },
+  {
+    "name": "Aliphatic amines",
+    "items": [
+      {"smiles": "CN(C)[*:1]", "label": "dimethylamino"},
+      {"smiles": "CN(C)C[*:1]", "label": "(dimethylamino)methyl"},
+      {"smiles": "CN(C)CC[*:1]", "label": "2-(dimethylamino)ethyl"},
+      {"smiles": "[*:1]N1CCC1", "label": "azetidin-1-yl"},
+      {"smiles": "[*:1]C1CNC1", "label": "azetidin-3-yl"},
+      {"smiles": "[*:1]N1CCCC1", "label": "pyrrolidin-1-yl"},
+      {"smiles": "[*:1]C1CCNC1", "label": "pyrrolidin-3-yl"},
+      {"smiles": "[*:1]N1CCCCC1", "label": "piperidin-1-yl"},
+      {"smiles": "[*:1]C1CCNCC1", "label": "piperidin-4-yl"},
+      {"smiles": "[*:1]N1CCNCC1", "label": "piperazin-1-yl"},
+      {"smiles": "CN1CCN([*:1])CC1", "label": "4-methylpiperazin-1-yl"},
+      {"smiles": "[*:1]N1CCOCC1", "label": "morpholin-4-yl"}
+    ]
+  },
+  {
+    "name": "Protecting groups (amine)",
+    "description": "Capping groups for an amine; the attachment point sits where the N would attach.",
+    "items": [
+      {"smiles": "[*:1]C(=O)OC(C)(C)C", "label": "Boc"},
+      {"smiles": "[*:1]C(=O)OCc1ccccc1", "label": "Cbz"},
+      {"smiles": "[*:1]C(=O)OCC1c2ccccc2-c2ccccc21", "label": "Fmoc"},
+      {"smiles": "[*:1]C(=O)OCC=C", "label": "Alloc"},
+      {"smiles": "[*:1]C(=O)OCC(Cl)(Cl)Cl", "label": "Troc"},
+      {"smiles": "[*:1]C(=O)C", "label": "acetyl"},
+      {"smiles": "[*:1]C(=O)C(F)(F)F", "label": "trifluoroacetyl"},
+      {"smiles": "[*:1]C(=O)c1ccccc1", "label": "benzoyl"},
+      {"smiles": "[*:1]S(=O)(=O)c1ccc(C)cc1", "label": "tosyl"},
+      {"smiles": "[*:1]S(=O)(=O)C", "label": "mesyl"},
+      {"smiles": "[*:1]Cc1ccccc1", "label": "benzyl"},
+      {"smiles": "[*:1]C(c1ccccc1)(c1ccccc1)c1ccccc1", "label": "trityl"}
+    ]
+  },
+  {
+    "name": "Protecting groups (alcohol)",
+    "description": "Capping groups for an alcohol/acid; the attachment point sits where the O would attach.",
+    "items": [
+      {"smiles": "[*:1][Si](C)(C)C", "label": "TMS"},
+      {"smiles": "[*:1][Si](C)(C)C(C)(C)C", "label": "TBS"},
+      {"smiles": "[*:1][Si](CC)(CC)CC", "label": "TES"},
+      {"smiles": "[*:1][Si](c1ccccc1)(c1ccccc1)C(C)(C)C", "label": "TBDPS"},
+      {"smiles": "[*:1][Si](C(C)C)(C(C)C)C(C)C", "label": "TIPS"},
+      {"smiles": "[*:1]Cc1ccccc1", "label": "benzyl"},
+      {"smiles": "[*:1]Cc1ccc(OC)cc1", "label": "PMB"},
+      {"smiles": "[*:1]COC", "label": "MOM"},
+      {"smiles": "[*:1]COCCOC", "label": "MEM"},
+      {"smiles": "[*:1]COCC[Si](C)(C)C", "label": "SEM"},
+      {"smiles": "[*:1]C1CCCCO1", "label": "THP"},
+      {"smiles": "[*:1]C(=O)C", "label": "acetyl"},
+      {"smiles": "[*:1]C(=O)c1ccccc1", "label": "benzoyl"},
+      {"smiles": "[*:1]C(=O)C(C)(C)C", "label": "pivaloyl"}
+    ]
+  },
+  {
+    "name": "Protecting groups (acid ester)",
+    "description": "Carboxylic-acid ester caps; the attachment point sits where the carboxyl O attaches.",
+    "items": [
+      {"smiles": "[*:1]C", "label": "methyl ester"},
+      {"smiles": "[*:1]CC", "label": "ethyl ester"},
+      {"smiles": "[*:1]C(C)(C)C", "label": "tert-butyl ester"},
+      {"smiles": "[*:1]Cc1ccccc1", "label": "benzyl ester"},
+      {"smiles": "[*:1]CC=C", "label": "allyl ester"}
+    ]
+  },
+  {
+    "name": "Protecting groups (thiol)",
+    "description": "Thiol caps; the attachment point sits where the S attaches.",
+    "items": [
+      {"smiles": "[*:1]C(c1ccccc1)(c1ccccc1)c1ccccc1", "label": "trityl"},
+      {"smiles": "[*:1]CNC(=O)C", "label": "acetamidomethyl (Acm)"},
+      {"smiles": "[*:1]Cc1ccccc1", "label": "benzyl"},
+      {"smiles": "[*:1]C(C)(C)C", "label": "tert-butyl"},
+      {"smiles": "[*:1]C(=O)C", "label": "acetyl (thioester)"},
+      {"smiles": "[*:1]SC(C)(C)C", "label": "tert-butyldisulfanyl"}
+    ]
+  }
+]

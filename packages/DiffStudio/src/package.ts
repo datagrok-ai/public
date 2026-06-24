@@ -6,16 +6,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
+import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
 
 export {Model} from './model';
-import {PK_PD_MODEL_INFO} from './demo/pk-pd';
-import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
-import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
-import {POLLUTION_MODEL_INFO} from './demo/pollution';
 
 import {DF_NAME} from './constants';
 import {PATH, TITLE, UI_TIME} from './ui-constants';
@@ -27,6 +24,29 @@ import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
 
 export const _package = new DG.Package();
+
+/** Default demo layout for `.ivp`-driven demos. */
+const DEMO_UI_OPTS = {inputsTabDockRatio: 0.17, graphsDockRatio: 0.85};
+
+/** Run a model shipped under `files/<modelFile>` as a Diff Studio demo — equations come from the
+ *  `.ivp` file (single source of truth). Help text is the companion `<helpFile>` readme when given,
+ *  otherwise it falls back to text derived from the model's `#description`. */
+async function runIvpDemo(modelFile: string, helpFile?: string): Promise<void> {
+  const equations = await _package.files.readAsText(modelFile);
+  let info = '';
+  if (helpFile) {
+    try {
+      info = await _package.files.readAsText(helpFile);
+    } catch {
+      // readme missing — fall back to #description below
+    }
+  }
+  if (!info) {
+    const descr = (/^#description:\s*(.+)$/m.exec(equations)?.[1] ?? '').trim();
+    info = `# Model\n${descr}\n\n# Try\nInteractive results update as you change the inputs.`;
+  }
+  await new Model({equations, uiOptions: DEMO_UI_OPTS, info}).runDemo();
+}
 
 //name: info
 export function info() {
@@ -72,6 +92,16 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object'}) problem: ODEs,
     @grok.decorators.param({type: 'object'}) options: Partial<SolverOptions>): DG.DataFrame {
     return solveIVP(problem, options);
+  }
+
+  @grok.decorators.func({
+    name: 'DiffStudio Facet',
+    description: 'Faceted grid of line charts, one per output variable, for Diff Studio solutions',
+    meta: {showInGallery: 'false', role: 'viewer'},
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
+  static diffStudioFacetViewer(): DG.JsViewer {
+    return new DiffStudioFacetViewer();
   }
 
   @grok.decorators.app({
@@ -196,13 +226,13 @@ export class PackageFunctions {
     name: 'Ball flight',
     description: 'Ball flight simulation',
     editor: 'Compute2:RichFunctionViewEditor',
-    sidebar: '@compute',
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
     icon: 'files/icons/ball.png',
     // @ts-expect-error
-    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
+    help: 'ball-flight.md',
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Help": {"dock-spawn-dock-ratio": 0.2, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Grid"}}',
     outputs: [
       {
         name: 'maxDist',
@@ -266,16 +296,6 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
-  @grok.decorators.model({
-    name: 'PK-PD',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    icon: 'files/icons/pkpd.png',
-  })
-  static async pkPdNew(): Promise<void> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.run();
-  }
-
   @grok.decorators.demo({
     name: 'PK-PD Simulation Demo',
     description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
@@ -286,19 +306,9 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.runDemo();
+    await runIvpDemo('models/pk-pd.ivp', 'models/pk-pd.md');
   }
 
-  @grok.decorators.model({
-    name: 'Bioreactor',
-    description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/_bioreactor.png',
-  })
-  static async BioreactorNew(): Promise<void> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.run();
-  }
 
   @grok.decorators.demo({
     name: 'Bioreactor Demo',
@@ -307,29 +317,9 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.runDemo();
+    await runIvpDemo('models/bioreactor.ivp', 'models/bioreactor.md');
   }
 
-  @grok.decorators.model({
-    name: 'Acid Production',
-    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
-    icon: 'files/icons/ga-production.png',
-  })
-  static async acidProduction(): Promise<void> {
-    const model = new Model(ACID_PRODUCTION_MODEL_INFO);
-    await model.run();
-  }
-
-  @grok.decorators.model({
-    name: 'Pollution',
-    description: 'The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection',
-    icon: 'files/icons/pollution.png',
-  })
-  static async pollution(): Promise<void> {
-    const model = new Model(POLLUTION_MODEL_INFO);
-    await model.run();
-  }
 
   @grok.decorators.func({
     description: 'Run model with Diff Studio UI',

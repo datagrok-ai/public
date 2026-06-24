@@ -11,13 +11,13 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
 import {getIvp2WebWorker, getPipelineCreator, getInputVector, applyPipeline, getOutputNames} from 'diff-grok';
 
-import {CONTROL_EXPR, MAX_LINE_CHART} from './constants';
+import {CONTROL_EXPR, LOOP, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT, MODEL_ICON,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
@@ -25,10 +25,11 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS, INCEPTION} from './scripting-tools';
 
 import {CallbackAction} from './solver-tools';
+import {buildFacetGrid} from './facet-grid';
 
 import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
   getCategoryWidget, getReducedTable, closeWindows,
-  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
+  removeTitle, noModels, removeTitleBar, getTryRunOptions,
   prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
   getCachedRecentModelsTableSync, isCachedRecentModelsFailed,
   prefetchMyModelFiles, invalidateMyModelFilesCache,
@@ -68,9 +69,6 @@ async function getCM() {
   }
   return _cm;
 }
-
-const COLORS = DG.Color.categoricalPalette;
-const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
 export enum EDITOR_STATE {
@@ -1960,7 +1958,11 @@ export class DiffStudio {
       return line.slice(1); // we ignore 1-st '&'
     };
 
-    // Inputs for argument
+    // Inputs for argument. Lookup keys use the script-form names (`_t0`/`_t1`/`_h`) so the values
+    // lookup matches the dataframe columns by the same names the model and RFV use.
+    const argLookupKey: Record<string, string> = {
+      initial: `_${ivp.arg.name}0`, final: `_${ivp.arg.name}1`, step: '_h',
+    };
     for (const key of ARG_INPUT_KEYS) {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
@@ -1976,7 +1978,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
-      saveInput(key, input);
+      saveInput(argLookupKey[key], input);
     }
 
     // Inputs for initial values
@@ -2031,7 +2033,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
-      saveInput(SCRIPTING.COUNT, input);
+      saveInput(LOOP.COUNT_NAME, input);
     }
 
     if (this.toRunWhenFormCreated)
@@ -2089,26 +2091,34 @@ export class DiffStudio {
       tableInputs.set(inpSetsNames[row], inputs);
     }
 
+    const applyLookup = (value: string) => {
+      this.toPreventSolving = true;
+
+      if (value === MISC.DEFAULT)
+        this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
+      else {
+        const colInputs = tableInputs.get(value);
+        // Match by exact name, then `_`-flexibly so a `_t0` input also accepts a legacy `t0` column.
+        this.inputByName.forEach((input, name) =>
+          input.value = colInputs.get(name) ?? colInputs.get(name.replace(/^_/, '')) ?? input.value);
+      }
+
+      this.toPreventSolving = false;
+      firstInput.value = firstInput.value;
+    };
+
     // create input for lookup table use
     const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
       items: choices,
       nullable: false,
       value: choices[0],
       tooltipText: lookupInfo.tooltip,
-      onValueChanged: (value) => {
-        this.toPreventSolving = true;
-
-        if (value === MISC.DEFAULT)
-          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
-        else {
-          const colInputs = tableInputs.get(value);
-          this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
-        }
-
-        this.toPreventSolving = false;
-        firstInput.value = firstInput.value;
-      },
+      onValueChanged: (value) => applyLookup(value),
     });
+
+    const initialValue = lookupChoiceInput.value;
+    if (this.startingInputs === null && initialValue !== null && initialValue !== MISC.DEFAULT)
+      applyLookup(initialValue);
 
     this.topCategory = lookupInfo.category;
     const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);
@@ -3375,69 +3385,8 @@ export class DiffStudio {
 
   /** Return div with facet grid plot */
   private getFacetPlot(): HTMLDivElement {
-    const cols = this.solutionTable.columns;
-    const colNames = cols.names();
-
-    const toShowSegments = colNames.includes(STAGE_COL_NAME);
-
-    const colsCount= cols.length - (toShowSegments ? 1 : 0);
-    const colsToShowCount = Math.min(MAX_FACET_GRAPHS_COUNT, colsCount - 1);
-    const maxInRow = getMaxGraphsInFacetGridRow(colsToShowCount);
-
-    const facetColumnPlots = new Array<DG.Viewer[]>(maxInRow);
-
-    this.facetPlots = [];
-
-    for (let i = 0; i < maxInRow; ++i)
-      facetColumnPlots[i] = [];
-
-    let idx = 0;
-    let color = 0;
-
-    for (let i = 1; i <= colsToShowCount; ++i) {
-      color = COLORS[(i - 1) % COLORS_COUNT];
-
-      const plot = DG.Viewer.lineChart(this.solutionTable, {
-        xColumnName: colNames[0],
-        yColumnNames: [colNames[i]],
-        autoLayout: true,
-        showXAxis: true,
-        showYAxis: true,
-        showXSelector: false,
-        showSplitSelector: false,
-        lineWidth: 2,
-        segmentColumnName: toShowSegments ? STAGE_COL_NAME : undefined,
-        lineColoringType: 'Custom',
-        lineColor: color,
-        markerColor: color,
-
-      });
-
-      this.facetPlots.push(plot);
-
-      facetColumnPlots[idx].push(plot);
-
-      ++idx;
-
-      if (idx === maxInRow)
-        idx = 0;
-    }
-
-    facetColumnPlots.forEach((col) => col[col.length - 1].setOptions({showXSelector: true}));
-
-    const rowsCount = facetColumnPlots[0].length;
-
-    const col2Roots = (col: DG.Viewer[]) => {
-      const roots = col.map((plot) => plot.root);
-      if (col.length < rowsCount)
-        roots.push(ui.div(''));
-
-      return roots;
-    };
-
-    const splitCols = facetColumnPlots.map((col) => ui.splitV(col2Roots(col)));
-    const facet = ui.splitH(splitCols);
-
-    return facet;
+    const {root, plots} = buildFacetGrid(this.solutionTable);
+    this.facetPlots = plots;
+    return root;
   } // getFacetPlot
 }; // DiffStudio

@@ -7,9 +7,10 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
@@ -48,12 +49,6 @@ interface StreamingOpts {
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
 
-interface StreamOnceResult {
-  errors: Array<{blockIndex: number; error: string}>;
-  /** Populated only on self-abort retry (errors non-empty) — the partial assistant
-   *  response that the next round will inline because the SDK session is dead. */
-  assistantText?: string;
-}
 
 export const RENDERED_EVENT = 'grokky-rendered';
 
@@ -248,8 +243,10 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const catalogs = allDbInfos.map((d) => d.name);
   const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
+  initAIWindow();
   const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  panel.show();
+  AIWindowManager.instance.register(v, panel);
+  AIWindowManager.instance.showPanel(panel, false);
 
   let sqlContext: SQLGenerationContext | null = null;
 
@@ -298,6 +295,7 @@ export async function runPromptWithLifecycle(
       // Built-in handler claimed the prompt — no AI response, just a green check next to it.
       session.session.markHandledNatively();
       session.endSession();
+      panel.pushNativeContext(prompt);
       return;
     }
   }
@@ -310,32 +308,6 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-// Auto-retry on mid-stream datagrok-exec failure.
-//
-// When an exec block fails, the chunk handler calls `client.abort(sessionId)` to stop
-// Claude from generating cascading-failure steps. The runtime drops the SDK session on
-// abort (see server.ts handleAbort) — once aborted, the SDK cannot resume the
-// conversation, so the next request starts a fresh session with no history.
-//
-// That means on retry we have to inline the lost context ourselves: the original user
-// prompt and the partial assistant response. `buildRetryPrompt` packages both, and
-// `streamOnce` only surfaces `assistantText` on the retry path (errors non-empty) so
-// non-retry exits don't carry conversation text needlessly.
-const MAX_AUTO_RETRIES = 2;
-
-function buildRetryPrompt(
-  userPrompt: string,
-  assistantResponse: string,
-  errors: Array<{blockIndex: number; error: string}>,
-): string {
-  const list = errors.map((e) => `- block #${e.blockIndex}: ${e.error}`).join('\n');
-  return `The user's original request was:\n\n---\n${userPrompt}\n---\n\n` +
-    `Your previous response was:\n\n${assistantResponse}\n\n---\n\n` +
-    `The following datagrok-exec block(s) failed:\n${list}\n\n` +
-    `Continue the task from where you left off. Emit corrected code for the failed block(s) ` +
-    `and any remaining steps. Do not repeat work that already succeeded above.`;
-}
-
 async function runClaudeStreaming(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
@@ -345,27 +317,8 @@ async function runClaudeStreaming(
   const session = existingSession ?? panel.startChatSession();
   if (!existingSession)
     session.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
-  let currentPrompt = userPrompt;
-  let retries = 0;
   try {
-    while (true) {
-      const {errors, assistantText} = await streamOnce(panel, currentPrompt, view, clientToolHandler, systemPromptMode, session);
-      if (errors.length === 0)
-        return;
-      if (retries >= MAX_AUTO_RETRIES) {
-        session.session.addUiMessage(`_Stopped after ${MAX_AUTO_RETRIES} auto-retries — exec is still failing. Try giving more context or a different approach._`, false, {system: true});
-        return;
-      }
-      retries++;
-      session.session.addUiMessage(`_Retrying after exec failure (${retries}/${MAX_AUTO_RETRIES})…_`, false, {system: true});
-      session.loader.style.display = '';
-      // The SDK session was self-aborted so it can't resume; inline the original prompt and
-      // the partial response into the next SDK message so Claude has the context. Engine
-      // history already contains both, so don't duplicate them there — just leave a marker.
-      currentPrompt = buildRetryPrompt(userPrompt, assistantText ?? '', errors);
-      const errSummary = errors.map((e) => `#${e.blockIndex}: ${e.error}`).join('; ');
-      session.session.addEngineMessage({role: 'user', content: [{type: 'text', text: `[auto-retry ${retries}/${MAX_AUTO_RETRIES} — ${errSummary}]`}]});
-    }
+    await streamOnce(panel, userPrompt, view, clientToolHandler, systemPromptMode, session);
   } finally {
     session.endSession();
   }
@@ -376,16 +329,14 @@ async function streamOnce(
   clientToolHandler: ((toolName: string, input: any) => Promise<string>) | undefined,
   systemPromptMode: string | undefined,
   chatSession: ReturnType<StreamingPanel['startChatSession']>,
-): Promise<StreamOnceResult> {
-  return new Promise<StreamOnceResult>(async (resolve) => {
+): Promise<void> {
+  return new Promise<void>(async (resolve) => {
     const sessionId = panel.sessionId;
     let accumulated = ''; // full markdown — kept for session history
-    let displayBuffer = ''; // what's shown during streaming (no exec, no entity content)
-    let finalBuffer = ''; // what's shown at finalize (no exec; entity stays so renderEntityBlocks finds it)
+    let displayBuffer = ''; // shown during streaming (entity chunks excluded from display, kept in finalBuffer)
+    let finalBuffer = ''; // entity chunks stay so renderEntityBlocks finds them at finalize
     let toolStatus = '';
-    let execBuffer = ''; // exec-tagged chunks accumulated until the closing fence arrives
     let nextBlockIndex = 0;
-    let midStreamError: {blockIndex: number; error: string} | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
 
@@ -401,43 +352,25 @@ async function streamOnce(
       panel.clearStreaming();
       grok.shell.error(msg);
       cleanup();
-      resolve({errors: []});
-    };
-
-    const finalizePartial = async () => {
-      if (!accumulated && !finalBuffer)
-        return;
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: accumulated}]});
-      await panel.finalizeStreaming(finalBuffer, accumulated, view);
+      resolve();
     };
 
     try {
       const client = ClaudeRuntimeClient.getInstance();
-      const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
+      const nativeCtx = panel.flushNativeContext();
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
+      const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       await client.ensureConnected();
 
-      forSession(client.onChunk, async (evt) => {
+      forSession(client.onChunk, (evt) => {
         accumulated += evt.content;
-        if (evt.kind !== 'exec' && evt.kind !== 'entity') {
+        if (evt.kind !== 'entity') {
           displayBuffer += evt.content;
           toolStatus = '';
           panel.updateStreaming(displayBuffer, chatSession.loader);
         }
-        if (evt.kind !== 'exec')
-          finalBuffer += evt.content;
-
-        if (midStreamError || evt.kind !== 'exec') return;
-        execBuffer += evt.content;
-        const m = /^```datagrok-exec\n([\s\S]*?)\n```\s*$/.exec(execBuffer);
-        if (!m) return;
-        execBuffer = '';
-        const {element, error} = await executeSingleBlock(m[1], view, nextBlockIndex++);
-        if (error) {
-          midStreamError = error;
-          client.abort(sessionId); // outer retry loop kicks in via resolved errors
-        } else if (element)
-          panel.appendStreamedElement(element);
+        finalBuffer += evt.content;
       });
 
       forSession(client.onToolActivity, (evt) => {
@@ -447,6 +380,9 @@ async function streamOnce(
       });
 
       forSession(client.onToolResult, (evt) => {
+        // datagrok_exec results are internal — Claude's prose is the user-facing feedback.
+        if (evt.toolName?.endsWith('datagrok_exec'))
+          return;
         toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
         panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
@@ -454,14 +390,12 @@ async function streamOnce(
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
-        // Mid-stream execution already ran every datagrok-exec block as it closed.
-        // finalBuffer is what gets rendered (exec stripped; entities kept for card rendering).
         const exec = accumulated || evt.content;
         const display = finalBuffer || evt.content;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
         await panel.finalizeStreaming(display, exec, view);
         cleanup();
-        resolve(midStreamError ? {errors: [midStreamError], assistantText: exec} : {errors: []});
+        resolve();
       });
 
       forSession(client.onError, (evt) => {
@@ -471,29 +405,32 @@ async function streamOnce(
 
       forSession(client.onAborted, async () => {
         panel.cancelInputRequest();
-        if (midStreamError) {
-          // Self-aborted after a mid-stream exec failure — keep the partial response visible
-          // so the user sees what ran before the failure, then let the outer loop retry.
-          await finalizePartial();
-          cleanup();
-          resolve({errors: [midStreamError], assistantText: accumulated});
-          return;
-        }
         panel.clearStreaming();
         chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
         cleanup();
-        resolve({errors: []});
+        resolve();
       });
 
       forSession(client.onInputRequest, async (evt) => {
+        // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
+        if (evt.toolName === 'datagrok_exec') {
+          const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (element)
+            panel.appendStreamedElement(element);
+          const result = error ?
+            {success: false, error: error.error} :
+            {success: true, ...(value != null ? {returnValue: value} : {})};
+          client.respondToInput(sessionId, evt.requestId, result);
+          return;
+        }
         // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
         const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
         if (clientToolHandler && mcpToolName !== evt.toolName) {
           try {
             const result = await clientToolHandler(mcpToolName, evt.input);
-            client.respondToInput(sessionId, result);
+            client.respondToInput(sessionId, evt.requestId, result);
           } catch (e: any) {
-            client.respondToInput(sessionId, `Error: ${e.message}`);
+            client.respondToInput(sessionId, evt.requestId, `Error: ${e.message}`);
           }
           return;
         }
@@ -505,7 +442,7 @@ async function streamOnce(
         panel.clearStreaming();
         const response = await panel.showInputRequest(evt.input);
         if (response) {
-          client.respondToInput(sessionId, response);
+          client.respondToInput(sessionId, evt.requestId, response);
           const answerText = Object.values(response.answers).join(', ');
           chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
         }
@@ -526,17 +463,18 @@ async function streamOnce(
       grok.shell.error(`Claude runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
       cleanup();
-      resolve({errors: []});
+      resolve();
     }
   });
 }
 
-let _shellAIPanel: ShellAIPanel | null = null;
+let _shellAIPanel: AIPanel | null = null;
 
-export function setupShellAIPanelUI(): void {
-  if (!grok.ai.config.configured) return;
+export function initAIWindow(): AIPanel | null {
+  if (!grok.ai.config.configured)
+    return null;
   if (!_shellAIPanel) {
-    _shellAIPanel = new ShellAIPanel();
+    _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
     _shellAIPanel.onRunRequest.subscribe(async (args) => {
       if (args.currentPrompt.prompt.trim() === '/noprompt') {
         _shellAIPanel!.enableNoPrompt();
@@ -544,8 +482,15 @@ export function setupShellAIPanelUI(): void {
       }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
+    AIWindowManager.instance.init(_shellAIPanel);
   }
-  _shellAIPanel.show();
+  return _shellAIPanel;
+}
+
+export function setupShellAIPanelUI(): void {
+  if (!initAIWindow())
+    return;
+  AIWindowManager.instance.show();
 }
 
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
@@ -557,12 +502,12 @@ export async function setupTableViewAIPanelUI() {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
     // setup ribbon panel icon
-    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
     // setup the panel itself
     const panel = new TVAIPanel(tableView);
-    panel.hide();
+    AIWindowManager.instance.register(tableView, panel);
 
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
@@ -586,11 +531,11 @@ export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
     if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
     const panel = new ScriptingAIPanel(scriptView);
-    panel.hide();
+    AIWindowManager.instance.register(scriptView, panel);
     panel.onRunRequest.subscribe(async (args) => {
       await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
     });
@@ -621,14 +566,17 @@ export function setupAgentScriptsUI(): void {
 
 async function runAgentScript(name: string): Promise<void> {
   try {
-    setupShellAIPanelUI();
-    _shellAIPanel!.resetSession();
+    const shell = initAIWindow();
+    if (!shell)
+      return;
+    AIWindowManager.instance.showPanel(shell);
+    shell.resetSession();
     const workflow = await _package.files.readAsText(`scripts/${name}.md`);
     const prompt =
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;
     const displayPrompt = `▶ Running workflow: ${name}`;
-    await runPromptWithLifecycle(_shellAIPanel!, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
+    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
   } catch (e: any) {
     grok.shell.error(`Failed to run ${name}: ${e.message}`);
   }

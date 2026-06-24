@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {finishSpec} from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -65,8 +66,5 @@ test('Chem: Similarity Search', async ({page}) => {
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

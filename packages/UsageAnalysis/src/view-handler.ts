@@ -9,6 +9,7 @@ import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
+import {ErrorsView} from './tabs/errors';
 import {ProjectsView} from "./tabs/projects";
 import {ClicksView} from './tabs/clicks';
 import {MetricsView} from './tabs/metrics';
@@ -26,7 +27,7 @@ export class ViewHandler {
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ProjectsView, MetricsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ErrorsView, ProjectsView, MetricsView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();

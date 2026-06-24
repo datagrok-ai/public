@@ -159,7 +159,7 @@ Notation enum (used by `convertMolNotation`, `convertMoleculeNotation`,
 | `detectSmiles(col: column, min: int)` | — | Heuristic — tags the column as `SMILES` / `Molecule` if enough cells parse. |
 | `getMolFileHandler(molString)` | — | Returns a low-level molfile parser handler. |
 | `getRdKitModule()` | — | Returns the raw RDKit-JS module (for advanced calls like `mol.get_descriptors()`). |
-| `chemCellRenderer` / `rdKitCellRenderer` / `oclCellRenderer` / `rdKitReactionRenderer` / `rdKitMixtureRenderer` | — | Cell renderers — call only via the grid system, not directly. |
+| `chemCellRenderer` / `rdKitCellRenderer` / `rdKitReactionRenderer` / `rdKitMixtureRenderer` | — | Cell renderers — call only via the grid system, not directly. |
 | `editMoleculeCell(cell)` | — | Pops a sketcher dialog bound to a grid cell. |
 | `openChemLibSketcher()` | — | Returns the OCL sketcher widget. |
 

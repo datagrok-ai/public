@@ -228,16 +228,18 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override async renderPreview(x: DG.Func): Promise<DG.View> {
+    const userGroups = await this.awaitUserGroups();
+    const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
+    // Return the editor view directly so the docked preview is the view RFV/TreeWizard controls;
+    // wrapping it in fromViewAsync makes a separate view the tracked preview, so pin() and the ribbon act on the wrong one.
+    if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
+      const call = x.prepare();
+      const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
+      return res.getOutputParamValue() as DG.View;
+    }
+
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
-      const userGroups = await this.awaitUserGroups();
-      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
-      if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
-        const call = x.prepare();
-        const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
-        const view = res.getOutputParamValue() as DG.View;
-        return view;
-      }
       const v = await super.renderPreview(x);
       v.name = (x.friendlyName ?? x.name) + ' preview';
 

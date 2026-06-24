@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,34 +12,7 @@ test('Filter panel — Chem and Bio', async ({page}) => {
   // === Part 1: Refresh with chem filter ===
 
   await softStep('Open spgi-100 and filter panel', async () => {
-    // Phase 2: Open dataset — do NOT open filters here
-    await page.evaluate(async () => {
-      document.body.classList.add('selenium');
-      grok.shell.settings.showFiltersIconsConstantly = true;
-      grok.shell.windows.simpleMode = true;
-      grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
-      const tv = grok.shell.addTableView(df);
-      await new Promise(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(resolve, 5000);
-      });
-      // Wait for Bio/Chem cell rendering + package filter registration
-      const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-        .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-      if (hasBioChem) {
-        for (let i = 0; i < 50; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-          await new Promise(r => setTimeout(r, 200));
-        }
-        await new Promise(r => setTimeout(r, 5000));
-      }
-    });
-    await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-    // Phase 3: Open filters after Grid is confirmed
-    await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-    await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
+    await v.openTable(page, {path: 'System:AppData/Chem/tests/spgi-100.csv', withFilterPanel: true});
   });
 
   await softStep('Draw CCC(N(C)C)=O in Structure filter', async () => {
@@ -97,8 +71,7 @@ test('Filter panel — Chem and Bio', async ({page}) => {
   });
 
   await softStep('Close All after chem test', async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-    await page.waitForTimeout(500);
+    await v.cleanupShell(page);
   });
 
   // === Part 2: Bio ===
@@ -164,12 +137,8 @@ test('Filter panel — Chem and Bio', async ({page}) => {
   });
 
   await softStep('Close All after bio test', async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-    await page.waitForTimeout(500);
+    await v.cleanupShell(page);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

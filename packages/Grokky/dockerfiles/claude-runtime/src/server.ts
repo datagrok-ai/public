@@ -1,10 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
-import {query} from '@anthropic-ai/claude-agent-sdk';
+import {query, createSdkMcpServer, tool as sdkTool} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
+import {z} from 'zod/v4';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
@@ -15,9 +17,11 @@ import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} fr
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
-type FenceMode = 'prose' | 'exec' | 'entity' | 'other';
+type FenceMode = 'prose' | 'entity' | 'other';
 interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
 const fenceStates = new Map<string, FenceState>();
+// Most-recent tool_use name per session, used to tag the matching tool_result (see F2 follow-up).
+const lastToolNames = new Map<string, string>();
 const FENCE_RE = /^```([\w-]*)\s*$/;
 
 const BASH_EXEC_PROMPT = `\
@@ -42,12 +46,22 @@ NEVER guess function names, parameter names, signatures, or JS API methods. RDKi
 
 For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
 
+## Knowledge graph — query it before you grep
+
+\`workspace/\` ships a queryable knowledge graph of the whole platform (packages, functions, scripts, queries, libraries, classes/methods, docs, changelog — and the edges between them). For ANY structural question ("what implements X?", "which package owns / tests / imports Y?", "where is Z documented?"), your FIRST action is a KG query, not Grep:
+
+\`\`\`bash
+python3 workspace/.kg/scripts/qq.py "MATCH (p:Package {name:'Chem'})-[:HAS_FEATURE]->(f:Feature) RETURN f.name LIMIT 10"
+\`\`\`
+
+First call self-installs the engine (~30s, one-time); after that, milliseconds. Read \`workspace/.kg/CLAUDE.md\` for the node/edge schema and query cookbook before composing non-trivial queries. Fall back only when the KG can't answer.
+
 ## Clarifying ambiguous requests
 
-You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
+You have the AskUserQuestion tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible.`;
 
-// Inlined into the system prompt. Only datagrok-exec is universal (the fenced-block
-// contract is needed for every response that emits code). Everything else is loaded
+// Inlined into the system prompt. datagrok-exec is universal — it defines the contract for the
+// datagrok_exec tool, which nearly every action-taking response uses. Everything else is loaded
 // on demand via the Skill tool — skills' description triggers handle routing.
 const INLINED_SKILL_NAMES = [
   'datagrok-exec',
@@ -146,10 +160,39 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
-function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
+// In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
+// awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
+// Created per handleMessage so the ws/sid/active closure stays current.
+function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery) {
+  const asResult = (o: unknown) => ({content: [{type: 'text' as const, text: JSON.stringify(o)}]});
+  return createSdkMcpServer({
+    name: 'datagrok-browser',
+    version: '1.0.0',
+    tools: [sdkTool(
+      'datagrok_exec',
+      'Run JavaScript in the Datagrok tab to perform an action (add viewer, filter, open file, ' +
+      'upload data, …). Returns {success, returnValue?, error?}. For informational questions ' +
+      '("how do I…", "what is…") answer in plain text — do NOT call this tool.',
+      {code: z.string().describe(
+        'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
+        'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
+      )},
+      async ({code}) => {
+        try {
+          return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
+        } catch (e: any) {
+          return asResult({success: false, error: e.message});
+        }
+      },
+    )],
+  });
+}
+
+function buildMcpServers(browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
   servers['datagrok-knowledge'] = createPackageKnowledgeServer(userId);
+  servers['datagrok-browser'] = browserExecServer;
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
@@ -165,13 +208,14 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string
 }
 
 function buildOptions(
+  browserExecServer: ReturnType<typeof createBrowserExecServer>,
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string,
   userId?: string,
   model?: ClaudeModel,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
+  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
   // Bash and 'none' modes are minimal — don't pull in output-format skills.
   const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
   return {
@@ -223,6 +267,7 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   search_code: (i) => `Search code: ${i.query ?? ''}`,
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
+  datagrok_exec: (i) => `Execute in browser${i.code ? ': ' + (i.code).slice(0, 60).replace(/\n/g, ' ') : ''}`,
 };
 
 function toolSummary(name: string, input: Record<string, unknown>): string {
@@ -256,8 +301,8 @@ function emit(ws: WsSender, msg: OutgoingMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-function kindOf(mode: FenceMode): 'exec' | 'entity' | undefined {
-  return mode === 'exec' || mode === 'entity' ? mode : undefined;
+function kindOf(mode: FenceMode): 'entity' | undefined {
+  return mode === 'entity' ? 'entity' : undefined;
 }
 
 function emitChunk(ws: WsSender, sid: string, content: string, mode: FenceMode): void {
@@ -291,9 +336,7 @@ function emitFiltered(ws: WsSender, sid: string, text: string): void {
 
       if (st.mode === 'prose') {
         const lang = fence[1];
-        st.mode = lang === 'datagrok-exec' ? 'exec' :
-          lang === 'datagrok-entities' ? 'entity' :
-          'other';
+        st.mode = lang === 'datagrok-entities' ? 'entity' : 'other';
         emitChunk(ws, sid, lines[i] + '\n', st.mode);
       } else {
         emitChunk(ws, sid, lines[i] + '\n', st.mode);
@@ -334,14 +377,16 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'assistant':
     for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use')
+      if (block.type === 'tool_use') {
+        lastToolNames.set(sid, block.name);
         emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
+      }
     }
     break;
   case 'user': {
     const content = extractResult(e);
     if (content)
-      emit(ws, {type: 'tool_result', sessionId: sid, content});
+      emit(ws, {type: 'tool_result', sessionId: sid, content, toolName: lastToolNames.get(sid)});
     break;
   }
   case 'stream_event':
@@ -367,7 +412,22 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
 interface ActiveQuery {
   abortController: AbortController;
   queryHandle: ReturnType<typeof query> | null;
-  pendingInputResolve: ((value: any) => void) | null;
+  // requestId → resolver, so parallel tool calls each await their own browser reply.
+  pendingInputs: Map<string, (value: any) => void>;
+}
+
+// Round-trips a tool call to the browser: emits input_request, resolves on the matching
+// input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
+function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any): Promise<any> {
+  const requestId = randomUUID();
+  emit(ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
+  return new Promise<any>((resolve, reject) => {
+    active.pendingInputs.set(requestId, resolve);
+    active.abortController.signal.addEventListener('abort', () => {
+      if (active.pendingInputs.delete(requestId))
+        reject(new Error('aborted'));
+    }, {once: true});
+  });
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
@@ -384,11 +444,15 @@ function unregisterActiveQuery(sid: string): void {
 
 function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
   const active = activeQueries.get(data.sessionId);
-  if (active?.pendingInputResolve) {
-    const resolve = active.pendingInputResolve;
-    active.pendingInputResolve = null;
-    resolve(data.value);
-  }
+  if (!active)
+    return;
+  // Correlate by requestId; fall back to the sole pending request for older clients that omit it.
+  const id = data.requestId ?? (active.pendingInputs.size === 1 ? active.pendingInputs.keys().next().value : undefined);
+  const resolve = id !== undefined ? active.pendingInputs.get(id) : undefined;
+  if (!resolve)
+    return;
+  active.pendingInputs.delete(id!);
+  resolve(data.value);
 }
 
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
@@ -403,7 +467,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
-  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
+  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputs: new Map()};
   registerActiveQuery(sid, active);
 
   const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
@@ -422,21 +486,15 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
   ]);
 
+  const browserExecServer = createBrowserExecServer(ws, sid, active);
+
   let gotResult = false;
-  const systemPromptMode = data.systemPromptMode ?? 'datagrok';
   try {
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
+    const opts = buildOptions(browserExecServer, existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
-        emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
-        const updatedInput = await new Promise<any>((resolve, reject) => {
-          active.pendingInputResolve = resolve;
-          abortController.signal.addEventListener('abort', () => {
-            active.pendingInputResolve = null;
-            reject(new Error('aborted'));
-          }, {once: true});
-        });
+        const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
         return {behavior: 'allow' as const, updatedInput};
       }
       return {behavior: 'allow' as const, updatedInput: input};
@@ -456,6 +514,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
     fenceStates.delete(sid);
+    lastToolNames.delete(sid);
     unregisterActiveQuery(sid);
   }
 }
@@ -469,6 +528,9 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
+  // Drop the SDK session: an aborted session can't be resumed. Leaving it here makes the
+  // next message resume a dead session, so the following turn would fail to continue.
+  sessions.delete(data.sessionId);
   flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
@@ -538,15 +600,82 @@ app.get('/ws', upgradeWebSocket(() => {
 app.notFound((c) => c.json({error: 'Not found'}, 404));
 app.onError((err, c) => c.json({error: String(err)}, 500));
 
+// Provider config arrives as container env, forwarded from the Grokky package credentials.
+// Here we translate those into the env vars the Claude Agent SDK (which wraps Claude Code) reads
+// at spawn. Field-name -> SDK-env mappings below mirror Claude Code's documented provider setup:
+//   Bedrock  -> CLAUDE_CODE_USE_BEDROCK + AWS_REGION + (AWS_BEARER_TOKEN_BEDROCK | AWS_* IAM creds)
+//              https://code.claude.com/docs/en/amazon-bedrock
+//   Foundry  -> CLAUDE_CODE_USE_FOUNDRY + ANTHROPIC_FOUNDRY_RESOURCE + (ANTHROPIC_FOUNDRY_API_KEY | Entra ID)
+//              https://code.claude.com/docs/en/microsoft-foundry
+//   Anthropic-> ANTHROPIC_API_KEY
+// The model aliases buildOptions() passes (sonnet/opus/haiku) resolve per provider via
+// ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL — Bedrock needs inference-profile ids, Foundry deployment names.
+// Translate the injected credential fields into the SDK provider env, collecting any
+// missing-required-credential problems so they surface in the container logs at startup.
+function applyProviderConfig(): void {
+  const e = process.env;
+  const problems: string[] = [];
+
+  const provider = e['provider'] || 'Anthropic';
+  if (provider === 'Bedrock') {
+    e['CLAUDE_CODE_USE_BEDROCK'] = '1';
+    if (e['region'])
+      e['AWS_REGION'] = e['region'];
+    if (e['awsBearerToken'])
+      e['AWS_BEARER_TOKEN_BEDROCK'] = e['awsBearerToken'];
+    if (e['awsAccessKeyId'])
+      e['AWS_ACCESS_KEY_ID'] = e['awsAccessKeyId'];
+    if (e['awsSecretAccessKey'])
+      e['AWS_SECRET_ACCESS_KEY'] = e['awsSecretAccessKey'];
+    if (e['awsSessionToken'])
+      e['AWS_SESSION_TOKEN'] = e['awsSessionToken'];
+    if (!e['awsBearerToken'] && !(e['awsAccessKeyId'] && e['awsSecretAccessKey']))
+      problems.push('Bedrock selected but no credentials — set awsBearerToken, or awsAccessKeyId + awsSecretAccessKey');
+  }
+  else if (provider === 'Microsoft Foundry') {
+    e['CLAUDE_CODE_USE_FOUNDRY'] = '1';
+    if (e['foundryResource'])
+      e['ANTHROPIC_FOUNDRY_RESOURCE'] = e['foundryResource'];
+    if (e['foundryApiKey'])
+      e['ANTHROPIC_FOUNDRY_API_KEY'] = e['foundryApiKey'];
+    if (!e['foundryResource'])
+      problems.push('Microsoft Foundry selected but foundryResource is missing — required to reach the endpoint');
+    if (!e['foundryApiKey'])
+      problems.push('Microsoft Foundry selected without foundryApiKey — falls back to Entra ID, which is not configured in this container');
+  }
+  else {
+    if (e['apiKey'])
+      e['ANTHROPIC_API_KEY'] = e['apiKey'];
+  }
+
+  if (e['opusModel'])
+    e['ANTHROPIC_DEFAULT_OPUS_MODEL'] = e['opusModel'];
+  if (e['sonnetModel'])
+    e['ANTHROPIC_DEFAULT_SONNET_MODEL'] = e['sonnetModel'];
+  if (e['haikuModel'])
+    e['ANTHROPIC_DEFAULT_HAIKU_MODEL'] = e['haikuModel'];
+
+  for (var p of problems)
+    console.warn(`[provider-config] ${p}`);
+}
+
+applyProviderConfig();
+
+const usingBedrock = process.env['CLAUDE_CODE_USE_BEDROCK'] === '1';
+const usingFoundry = process.env['CLAUDE_CODE_USE_FOUNDRY'] === '1';
 const hasApiKey = !!process.env['ANTHROPIC_API_KEY'];
 // Subscription auth requires the host's ~/.claude/.credentials.json to be mounted into the container at this path.
 const hasSubscription = fs.existsSync('/home/grok/.claude/.credentials.json');
-if (hasApiKey)
+if (usingBedrock)
+  console.log('Claude auth: using Amazon Bedrock');
+else if (usingFoundry)
+  console.log('Claude auth: using Microsoft Foundry');
+else if (hasApiKey)
   console.log('Claude auth: using ANTHROPIC_API_KEY');
 else if (hasSubscription)
   console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
 else
-  console.warn('Claude auth: no ANTHROPIC_API_KEY and no ~/.claude/.credentials.json — API calls will fail');
+  console.warn('Claude auth: no provider configured (no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);

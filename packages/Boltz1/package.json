@@ -10,6 +10,7 @@
   "description": "Integrates Datagrok with Boltz-1",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
+    "boltz-api": "0.46.2",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",

@@ -12,7 +12,7 @@
 
 import * as DG from 'datagrok-api/dg';
 
-import {HelmTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {_package} from '../package';
 

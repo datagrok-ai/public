@@ -132,6 +132,49 @@ describe('computeNca — partial fits', () => {
   });
 });
 
+describe('computeNca — trailing BLQ-as-zero (BUG-05 / GROK-20219)', () => {
+  // Rat-IV R005 (03 reference): clean log-linear terminal, but the last
+  // sample (t=24) is an unflagged below-LLOQ zero and the source dataset has
+  // no LLOQ/BLQ-flag column → blqMask is all-zeros. The trailing zero must not
+  // anchor the terminal. PKNCA 0.12.1 oracle: λz=0.2410, t½=2.8761, tlast=12,
+  // lambda.z.n.points=5 (status 'ok'). Before the fix this returned 'partial'
+  // (cLast=0) with an inflated AUClast (spurious t=12→24 tail-to-zero area).
+  const time = [0, 0.083, 0.25, 0.5, 1, 2, 4, 6, 8, 12, 24];
+  const conc =
+    [262.60, 261.55, 211.89, 239.18, 227.56, 145.58, 81.32, 54.93, 29.46, 13.07, 0.00];
+
+  it('trailing conc=0 (unflagged) → status "ok"; λz/t½ match PKNCA', () => {
+    const r = computeNca(ivInputs(time, conc, 0.1993), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(r.values.lambdaZ).toBeCloseTo(0.2410, 3);
+    expect(r.values.halfLife).toBeCloseTo(2.876, 2);
+    expect(Number.isFinite(r.values.aucInf)).toBe(true);
+    expect(r.values.aucInf).toBeGreaterThan(r.values.aucLast);
+  });
+
+  it('trailing zero ≡ truncating it (no spurious tail area, no cLast=0 gate)', () => {
+    const withZero = computeNca(ivInputs(time, conc, 0.1993), DEFAULT_RULES).values;
+    const truncated = computeNca(
+      ivInputs(time.slice(0, -1), conc.slice(0, -1), 0.1993), DEFAULT_RULES).values;
+    expect(withZero.aucLast).toBeCloseTo(truncated.aucLast, 9);
+    expect(withZero.aucInf).toBeCloseTo(truncated.aucInf, 9);
+    expect(withZero.lambdaZ).toBeCloseTo(truncated.lambdaZ, 9);
+  });
+
+  it('embedded zero is preserved — only the trailing run is dropped', () => {
+    // Single embedded zero mid-profile with a positive terminal tail: the
+    // terminal anchors on the positive tail (unaffected by the trim) and the
+    // profile still integrates. A blanket conc≤0 skip would drop the embedded
+    // point and silently change AUClast — this guards against that.
+    const t = [0, 1, 2, 4, 6, 8, 12];
+    const c = [0, 5.0, 3.0, 0.0, 1.2, 0.6, 0.3];
+    const r = computeNca(poInputs(t, c, 2.5), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(Number.isFinite(r.values.aucLast)).toBe(true);
+    expect(r.values.cl).toBeGreaterThan(0);
+  });
+});
+
 describe('computeNca — warnings', () => {
   it('emits AUC_EXTRAP_HIGH when %extrap > rules.extrapWarnPct', () => {
     // Short tail → high extrapolation. Profile decays slowly relative to

@@ -92,15 +92,15 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:TopPackageErrors', { date, users });
   }
 
-  export async function topErrorSources(date: string , users: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrorSources', { date, users });
+  export async function topErrorSources(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
   }
 
   export async function eventErrors(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:EventErrors', { date });
   }
 
-  export async function reportsCount(date: string , event_id: string ): Promise<number> {
+  export async function reportsCount(date: string , event_id: string ): Promise<{count: number, report_number: number}> {
     return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
   }
 
@@ -254,6 +254,10 @@ export namespace queries {
 
   export async function logTail(date: string , groups: any , packages: any ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:LogTail', { date, groups, packages });
+  }
+
+  export async function logEventParameters(eventId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
   }
 
   export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
@@ -432,16 +436,20 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
   }
 
-  export async function stressTestsDashboard(lastBuildsNum: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:StressTestsDashboard', { lastBuildsNum });
+  export async function stressTestsFailures(build: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsFailures', { build });
+  }
+
+  export async function stressTestsRaw(build: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsRaw', { build });
+  }
+
+  export async function stressTestsSummary(lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsSummary', { lastBuildsNum });
   }
 
   export async function benchmarks(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:Benchmarks', {});
-  }
-
-  export async function stressTests(batch_name: string | null): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:StressTests', { batch_name });
   }
 
   export async function lastBuildsBenchmarksCompare(): Promise<DG.DataFrame> {

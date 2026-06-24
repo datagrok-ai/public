@@ -506,6 +506,10 @@ export interface IScatterPlotSettings {
 
   showSizeSelector: boolean;
 
+  /// When a *Size* column is set, render rows with empty values using the
+  /// minimum marker size instead of hiding them.
+  showMarkersWithEmptySize: boolean;
+
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
@@ -742,6 +746,22 @@ export interface IScatterPlotSettings {
   regressionLineColor: number;
 
   regressionLineTransparency: number;
+
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Period: the number of points averaged at each position — Excel's trailing window of
+  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  movingAverageWindow: number;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  /// Orange by default, to contrast with the default blue markers.
+  movingAverageLineColor: number;
 
   annotationRegions: string;
 
@@ -2401,6 +2421,22 @@ export interface ILineChartSettings {
   regressionLineColor: number;
 
   regressionLineTransparency: number;
+
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Period: the number of points averaged at each position — Excel's trailing window of
+  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  movingAverageWindow: number;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  /// Orange by default, to contrast with the default blue markers.
+  movingAverageLineColor: number;
 
   annotationRegions: string;
 

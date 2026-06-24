@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.4.15 (2026-06-23)
+
+* Assign Clusters: optionally add per-cluster medoid columns — `Medoid Rank` (1 = most representative, enabling Top-N extraction) and `Avg Distance to Cluster` (each member's mean distance to the other cluster members). Computed per cluster without materializing the full distance matrix.
+
 ## 1.4.14 (2026-05-19)
 
 * GROK-20143 Demo: Heatmap: cells are editable due to incorrect demo setup

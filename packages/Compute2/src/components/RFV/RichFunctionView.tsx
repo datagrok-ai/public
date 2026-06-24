@@ -17,6 +17,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
 import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarsSection, ScalarState} from './ScalarsPanel';
@@ -144,6 +145,17 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   return [scalarValue, formattedScalarValue, units] as const;
 };
 
+// Stable identity per content so Vue skips re-applying `options` (and a redundant Dart setOptions) on rebuilds.
+const viewerConfigIdentity = new Map<string, Record<string, string | boolean>>();
+const stabilizeViewerConfig = (config: Record<string, string | boolean>) => {
+  const key = JSON.stringify(config);
+  const cached = viewerConfigIdentity.get(key);
+  if (cached)
+    return cached;
+  viewerConfigIdentity.set(key, config);
+  return config;
+};
+
 const tabToProperties = (fc: DG.FuncCall) => {
   const tabsToProps = getEmptyTabToProperties();
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
@@ -167,10 +179,11 @@ const tabToProperties = (fc: DG.FuncCall) => {
         map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
       );
       const df = useObservable(changes$);
+      const config = stabilizeViewerConfig(dfViewer);
       if (isOutput)
-        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config});
       else
-        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config});
     });
     return;
   };
@@ -263,7 +276,7 @@ export const RichFunctionView = Vue.defineComponent({
       type: Function as Vue.PropType<ViewersHook>,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
   },
@@ -541,20 +554,31 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const runSA = () => {
+    const pinView = () => {
+      if (props.view && !props.view.isPinned)
+        props.view.pin();
+    };
+
+    const runSA = async () => {
+      pinView();
       const ranges = getRanges('rangeSA');
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges});
+      const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+      const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup});
     };
 
     const runFitting = async () => {
       if (isFittingActive.value)
         return;
+      pinView();
       isFittingActive.value = true;
       try {
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
         const targets = getTargets();
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true});
+        const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+        const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
@@ -710,18 +734,27 @@ export const RichFunctionView = Vue.defineComponent({
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
+                    skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
-                    showRun.value &&
+                    showRun.value ?
                       <BigButton
                         isDisabled={!isRunnable.value || isRunning.value || props.isReadonly}
                         onClick={() => emit('runClicked')}
                       >
                         { isOutputOutdated.value ? runLabel.value : 'Rerun' }
-                      </BigButton>
+                      </BigButton> :
+                      (isOutputOutdated.value && !isRunnable.value && !isRunning.value) &&
+                        <div
+                          class='flex items-center justify-center w-full'
+                          style={{color: 'var(--red-3)', fontSize: '12px', gap: '6px', padding: '6px 0'}}
+                        >
+                          <IconFA name='exclamation-triangle' />
+                          <span>Fix invalid inputs to update results</span>
+                        </div>
                   }
                 </div>
               </div> }
@@ -776,9 +809,10 @@ export const RichFunctionView = Vue.defineComponent({
           }
           { !helpHidden.value ?
             <div
-              dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
+              {...(dockSpawnConfig.value['Help'] ?? {})}
+              dock-spawn-title='Help'
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
               key="__HELP__"
               ref={helpRef}
@@ -790,7 +824,7 @@ export const RichFunctionView = Vue.defineComponent({
             </div>: null
           }
         </DockManager>
-      </div>, [[ifOverlapping, isFittingActive.value]])
+      </div>, [[ifOverlapping, isFittingActive.value, 'Fitting is active, either close it or use Apply fitted parameters']])
     );
   },
 });

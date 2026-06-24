@@ -25,6 +25,21 @@ export function getCurrentUser(): Promise<unknown> {
   return request('GET', '/public/v1/users/current');
 }
 
+export function listConnections(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/connections${qs}`);
+}
+
+export function listGroups(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/groups${qs}`);
+}
+
+export function listUsers(filter?: string): Promise<unknown[]> {
+  const qs = filter ? `?text=${encodeURIComponent(filter)}` : '';
+  return request('GET', `/public/v1/users${qs}`);
+}
+
 // --- Projects ---
 
 export function listProjects(filter?: string): Promise<unknown[]> {

@@ -1,5 +1,6 @@
 import {test} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,20 +12,7 @@ test('Statistics viewer tests', async ({page}) => {
   await loginToDatagrok(page);
 
   // Setup + open dataset
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    (grok.shell.settings as any).showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise<void>(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    return { rows: df.rowCount };
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({ timeout: 30000 });
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
   // ── Add viewer ──────────────────────────────────────────────────────────────
 
@@ -94,7 +82,6 @@ test('Statistics viewer tests', async ({page}) => {
   // ── Statistics for categorical columns ────────────────────────────────────
 
   await softStep('Categorical: string columns SEX, RACE, DIS_POP have blank numeric stats', async () => {
-    // Verified via Open as table: min/max/avg/med/stdev blank for string cols
     const result = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       return ['SEX', 'RACE', 'DIS_POP'].map(name => {
@@ -348,7 +335,5 @@ test('Statistics viewer tests', async ({page}) => {
   });
 
   // ── Final check ───────────────────────────────────────────────────────────
-  if (stepErrors.length > 0) {
-    throw new Error('Step failures:\n' + stepErrors.map(e => `  [${e.step}]: ${e.error}`).join('\n'));
-  }
+  v.finishSpec();
 });

@@ -14,7 +14,6 @@ import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-r
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
-import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
@@ -175,7 +174,6 @@ export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
-let _renderers: Map<string, DG.GridCellRenderer>;
 let _initChemPromise: Promise<void> | null = null;
 
 let mpoTreeBrowserSub: Subscription | null = null;
@@ -204,7 +202,6 @@ async function initChemInt(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
-  _renderers = new Map();
 }
 
 export class PackageFunctions {
@@ -354,17 +351,6 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async chemCellRenderer(): Promise<DG.GridCellRenderer> {
-    const propertiesRenderer: string = _properties.Renderer ?? 'RDKit';
-    if (!_renderers.has(propertiesRenderer)) {
-      const renderFunctions = DG.Func.find({meta: {chemRendererName: propertiesRenderer}});
-      if (renderFunctions.length > 0) {
-        const r = await renderFunctions[0].apply();
-        _renderers.set(_properties.Renderer, r);
-        return r;
-      }
-    }
-
-    renderer.renderer = _renderers.get(propertiesRenderer)!;
     return renderer;
   }
 
@@ -1906,14 +1892,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'result', type: 'grid_cell_renderer'}],
-    meta: {chemRendererName: 'OpenChemLib'},
-  })
-  static async oclCellRenderer(): Promise<OCLCellRenderer> {
-    return new OCLCellRenderer();
-  }
-
-  @grok.decorators.func({
     name: 'Sort by similarity',
     description: 'Sorts a molecular column by similarity',
     meta: {action: 'Sort by similarity'},
@@ -2143,8 +2121,8 @@ export class PackageFunctions {
     fingerprint: string,
     @grok.decorators.param({type: 'int'}) limit: number,
     minScore: number): Promise<DG.DataFrame> {
-    const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
-      fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
+    const res = await chemSimilaritySearch(col, molecule, metricName, limit, minScore,
+      fingerprint as Fingerprint);
     return res ?? DG.DataFrame.create();
   }
 

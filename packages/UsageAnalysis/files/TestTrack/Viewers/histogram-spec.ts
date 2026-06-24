@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,402 +12,147 @@ test('Histogram tests', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // Phase 3: Add Histogram
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-histogram"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-Histogram"]').waitFor({timeout: 5000});
+  await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
   // #### Bins configuration
   await softStep('Bins configuration', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.valueColumnName = 'AGE';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.valueColumnName);
-
-      h.props.bins = 5;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.bins);
-
-      h.props.bins = 100;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.bins);
-
-      h.props.bins = 1;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.bins);
-
-      h.props.bins = 20;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.bins);
-
-      h.props.binWidthRatio = 1.0;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.binWidthRatio);
-
-      h.props.binWidthRatio = 0.3;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.binWidthRatio);
-
-      h.props.binWidthRatio = 0.8;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.binWidthRatio);
-
-      return r;
-    });
-    expect(result[0]).toBe('AGE');
-    expect(result[1]).toBe(5);
-    expect(result[2]).toBe(100);
-    expect(result[3]).toBe(1);
-    expect(result[4]).toBe(20);
-    expect(result[5]).toBe(1.0);
-    expect(result[6]).toBe(0.3);
-    expect(result[7]).toBe(0.8);
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {valueColumnName: 'AGE'}, read: 'valueColumnName'},
+      {set: {bins: 5}, read: 'bins'},
+      {set: {bins: 100}, read: 'bins'},
+      {set: {bins: 1}, read: 'bins'},
+      {set: {bins: 20}, read: 'bins'},
+      {set: {binWidthRatio: 1.0}, read: 'binWidthRatio'},
+      {set: {binWidthRatio: 0.3}, read: 'binWidthRatio'},
+      {set: {binWidthRatio: 0.8}, read: 'binWidthRatio'},
+    ]);
+    expect(result).toEqual(['AGE', 5, 100, 1, 20, 1.0, 0.3, 0.8]);
   });
 
   // #### Split column
   await softStep('Split column', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.splitColumnName = 'SEX';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(h.props.splitColumnName);
-
-      h.props.normalizeValues = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.normalizeValues);
-
-      h.props.normalizeValues = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.normalizeValues);
-
-      h.props.showMarkers = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showMarkers);
-
-      h.props.splineTension = 5;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splineTension);
-
-      h.props.splitColumnName = 'RACE';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(h.props.splitColumnName);
-
-      h.props.splitColumnName = '';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splitColumnName);
-
-      h.props.splitColumnName = 'SEX';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(h.props.splitColumnName);
-
-      h.props.splitStack = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splitStack);
-
-      h.props.showValues = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showValues);
-
-      h.props.splitStack = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splitStack);
-
-      h.props.showDistributionLines = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showDistributionLines);
-
-      h.props.showDistributionLines = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showDistributionLines);
-
-      return r;
-    });
-    expect(result[0]).toBe('SEX');
-    expect(result[1]).toBe(true);
-    expect(result[2]).toBe(false);
-    expect(result[3]).toBe(false);
-    expect(result[4]).toBe(5);
-    expect(result[5]).toBe('RACE');
-    expect(result[6]).toBe('');
-    expect(result[7]).toBe('SEX');
-    expect(result[8]).toBe(true);
-    expect(result[9]).toBe(true);
-    expect(result[10]).toBe(false);
-    expect(result[11]).toBe(true);
-    expect(result[12]).toBe(false);
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
+      {set: {normalizeValues: true}, read: 'normalizeValues'},
+      {set: {normalizeValues: false}, read: 'normalizeValues'},
+      {set: {showMarkers: false}, read: 'showMarkers'},
+      {set: {splineTension: 5}, read: 'splineTension'},
+      {set: {splitColumnName: 'RACE'}, wait: 500, read: 'splitColumnName'},
+      {set: {splitColumnName: ''}, read: 'splitColumnName'},
+      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
+      {set: {splitStack: true}, read: 'splitStack'},
+      {set: {showValues: true}, read: 'showValues'},
+      {set: {splitStack: false}, read: 'splitStack'},
+      {set: {showDistributionLines: true}, read: 'showDistributionLines'},
+      {set: {showDistributionLines: false}, read: 'showDistributionLines'},
+    ]);
+    expect(result).toEqual(['SEX', true, false, false, 5, 'RACE', '', 'SEX', true, true, false, true, false]);
   });
 
   // #### Color coding
   await softStep('Color coding', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.splitColumnName = '';
-      await new Promise(res => setTimeout(res, 300));
-
-      h.props.colorColumnName = 'WEIGHT';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.colorColumnName);
-
-      h.props.colorAggrType = 'min';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.colorAggrType);
-
-      h.props.colorAggrType = 'max';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.colorAggrType);
-
-      h.props.invertColorScheme = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.invertColorScheme);
-
-      h.props.invertColorScheme = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.invertColorScheme);
-
-      h.props.colorColumnName = '';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.colorColumnName);
-
-      return r;
-    });
-    expect(result[0]).toBe('WEIGHT');
-    expect(result[1]).toBe('min');
-    expect(result[2]).toBe('max');
-    expect(result[3]).toBe(true);
-    expect(result[4]).toBe(false);
-    expect(result[5]).toBe('');
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {splitColumnName: ''}},
+      {set: {colorColumnName: 'WEIGHT'}, read: 'colorColumnName'},
+      {set: {colorAggrType: 'min'}, read: 'colorAggrType'},
+      {set: {colorAggrType: 'max'}, read: 'colorAggrType'},
+      {set: {invertColorScheme: true}, read: 'invertColorScheme'},
+      {set: {invertColorScheme: false}, read: 'invertColorScheme'},
+      {set: {colorColumnName: ''}, read: 'colorColumnName'},
+    ]);
+    expect(result).toEqual(['WEIGHT', 'min', 'max', true, false, '']);
   });
 
   // #### Value range
   await softStep('Value range', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.valueColumnName = 'AGE';
-      await new Promise(res => setTimeout(res, 300));
-
-      h.props.valueMin = 30;
-      h.props.valueMax = 60;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({min: h.props.valueMin, max: h.props.valueMax});
-
-      h.props.valueMin = null;
-      h.props.valueMax = null;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({min: h.props.valueMin, max: h.props.valueMax});
-
-      h.props.showRangeInputs = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showRangeInputs);
-
-      h.props.showRangeInputs = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showRangeInputs);
-
-      // AMBIGUOUS: Step 6 involved typing values into range inputs via UI; skipped as canvas interaction
-      return r;
-    });
-    expect(result[0]).toEqual({min: 30, max: 60});
-    expect(result[1]).toEqual({min: null, max: null});
+    // AMBIGUOUS: typing values into range inputs via UI is skipped as canvas interaction
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {valueColumnName: 'AGE'}},
+      {set: {valueMin: 30, valueMax: 60}, read: ['valueMin', 'valueMax']},
+      {set: {valueMin: null, valueMax: null}, read: ['valueMin', 'valueMax']},
+      {set: {showRangeInputs: true}, read: 'showRangeInputs'},
+      {set: {showRangeInputs: false}, read: 'showRangeInputs'},
+    ]);
+    expect(result[0]).toEqual({valueMin: 30, valueMax: 60});
+    expect(result[1]).toEqual({valueMin: null, valueMax: null});
     expect(result[2]).toBe(true);
     expect(result[3]).toBe(false);
   });
 
   // #### Spline mode
   await softStep('Spline mode', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.spline = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.spline);
-
-      h.props.fillSpline = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.fillSpline);
-
-      h.props.fillSpline = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.fillSpline);
-
-      h.props.spline = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.spline);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {spline: true}, read: 'spline'},
+      {set: {fillSpline: true}, read: 'fillSpline'},
+      {set: {fillSpline: false}, read: 'fillSpline'},
+      {set: {spline: false}, read: 'spline'},
+    ]);
     expect(result).toEqual([true, true, false, false]);
   });
 
   // #### Appearance
   await softStep('Appearance', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.showXAxis = true;
-      h.props.showYAxis = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({x: h.props.showXAxis, y: h.props.showYAxis});
-
-      h.props.showXAxis = false;
-      h.props.showYAxis = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({x: h.props.showXAxis, y: h.props.showYAxis});
-
-      h.props.xAxisHeight = 30;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.xAxisHeight);
-
-      h.props.allowColumnSelection = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.allowColumnSelection);
-
-      h.props.showBinSelector = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showBinSelector);
-
-      h.props.showSplitSelector = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showSplitSelector);
-
-      h.props.showRangeSlider = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showRangeSlider);
-
-      // Re-enable all
-      h.props.showXAxis = true;
-      h.props.showYAxis = true;
-      h.props.allowColumnSelection = true;
-      h.props.showBinSelector = true;
-      h.props.showSplitSelector = true;
-      h.props.showRangeSlider = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({
-        x: h.props.showXAxis, y: h.props.showYAxis,
-        col: h.props.allowColumnSelection, bin: h.props.showBinSelector,
-        split: h.props.showSplitSelector, range: h.props.showRangeSlider,
-      });
-
-      return r;
-    });
-    expect(result[0]).toEqual({x: true, y: true});
-    expect(result[1]).toEqual({x: false, y: false});
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {showXAxis: true, showYAxis: true}, read: ['showXAxis', 'showYAxis']},
+      {set: {showXAxis: false, showYAxis: false}, read: ['showXAxis', 'showYAxis']},
+      {set: {xAxisHeight: 30}, read: 'xAxisHeight'},
+      {set: {allowColumnSelection: false}, read: 'allowColumnSelection'},
+      {set: {showBinSelector: false}, read: 'showBinSelector'},
+      {set: {showSplitSelector: false}, read: 'showSplitSelector'},
+      {set: {showRangeSlider: false}, read: 'showRangeSlider'},
+      {
+        set: {
+          showXAxis: true, showYAxis: true, allowColumnSelection: true,
+          showBinSelector: true, showSplitSelector: true, showRangeSlider: true,
+        },
+        read: ['showXAxis', 'showYAxis', 'allowColumnSelection', 'showBinSelector', 'showSplitSelector', 'showRangeSlider'],
+      },
+    ]);
+    expect(result[0]).toEqual({showXAxis: true, showYAxis: true});
+    expect(result[1]).toEqual({showXAxis: false, showYAxis: false});
     expect(result[2]).toBe(30);
     expect(result[3]).toBe(false);
     expect(result[4]).toBe(false);
     expect(result[5]).toBe(false);
     expect(result[6]).toBe(false);
-    expect(result[7]).toEqual({x: true, y: true, col: true, bin: true, split: true, range: true});
+    expect(result[7]).toEqual({
+      showXAxis: true, showYAxis: true, allowColumnSelection: true,
+      showBinSelector: true, showSplitSelector: true, showRangeSlider: true,
+    });
   });
 
   // #### Labels
   await softStep('Labels', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.splitColumnName = 'SEX';
-      await new Promise(res => setTimeout(res, 500));
-
-      h.props.legendVisibility = 'Never';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.legendVisibility);
-
-      h.props.legendVisibility = 'Always';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.legendVisibility);
-
-      h.props.legendPosition = 'RightTop';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.legendPosition);
-
-      h.props.splitColumnName = '';
-      await new Promise(res => setTimeout(res, 300));
-
-      h.props.showTitle = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showTitle);
-
-      h.props.title = 'Age Distribution';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.title);
-
-      h.props.description = 'Shows distribution of patient ages';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.description);
-
-      h.props.descriptionVisibilityMode = 'Always';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.descriptionVisibilityMode);
-
-      h.props.descriptionPosition = 'Bottom';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.descriptionPosition);
-
-      return r;
-    });
-    expect(result[0]).toBe('Never');
-    expect(result[1]).toBe('Always');
-    expect(result[2]).toBe('RightTop');
-    expect(result[3]).toBe(true);
-    expect(result[4]).toBe('Age Distribution');
-    expect(result[5]).toBe('Shows distribution of patient ages');
-    expect(result[6]).toBe('Always');
-    expect(result[7]).toBe('Bottom');
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {splitColumnName: 'SEX'}, wait: 500},
+      {set: {legendVisibility: 'Never'}, read: 'legendVisibility'},
+      {set: {legendVisibility: 'Always'}, read: 'legendVisibility'},
+      {set: {legendPosition: 'RightTop'}, read: 'legendPosition'},
+      {set: {splitColumnName: ''}},
+      {set: {showTitle: true}, read: 'showTitle'},
+      {set: {title: 'Age Distribution'}, read: 'title'},
+      {set: {description: 'Shows distribution of patient ages'}, read: 'description'},
+      {set: {descriptionVisibilityMode: 'Always'}, read: 'descriptionVisibilityMode'},
+      {set: {descriptionPosition: 'Bottom'}, read: 'descriptionPosition'},
+    ]);
+    expect(result).toEqual([
+      'Never', 'Always', 'RightTop', true, 'Age Distribution',
+      'Shows distribution of patient ages', 'Always', 'Bottom',
+    ]);
   });
 
   // #### Bin selection
   await softStep('Bin selection', async () => {
     // AMBIGUOUS: Most steps involve canvas clicks on specific bins which cannot be reliably automated.
     // Testing the property-based steps that were clearly observed.
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      h.props.splitColumnName = 'SEX';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(h.props.splitColumnName);
-
-      h.props.splitStack = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splitStack);
-
-      h.props.splitStack = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.splitStack);
-
-      return r;
-    });
-    expect(result[0]).toBe('SEX');
-    expect(result[1]).toBe(true);
-    expect(result[2]).toBe(false);
+    const result = await v.setViewerProps(page, 'Histogram', [
+      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
+      {set: {splitStack: true}, read: 'splitStack'},
+      {set: {splitStack: false}, read: 'splitStack'},
+    ]);
+    expect(result).toEqual(['SEX', true, false]);
   });
 
   // #### Filtering
@@ -632,8 +378,5 @@ test('Histogram tests', async ({page}) => {
     expect(result[3]).toBe('');
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

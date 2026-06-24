@@ -573,7 +573,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   /** Requests that `requester` be added as a member of `group`.
    *  An admin of `group` must approve before the membership takes effect. */
   async requestMembership(group: Group, requester: Group): Promise<void> {
-    return api.grok_Dapi_RequestMembership(group.id, requester.id);
+    return api.grok_GroupsDataSource_RequestMembership(group.id, requester.id);
   }
 }
 

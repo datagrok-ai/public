@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { spawn } from 'child_process';
 import path from 'path';
-import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
 import {getDevKey} from "../utils/test-utils";
 
@@ -26,9 +25,6 @@ export async function stressTests(args: StressTestArgs): Promise<boolean> {
     }
     const config = getDevKey(args.host);
     await testUtils.loadPackage('', 'ApiTests', args.host, args['skip-publish'], args['skip-build'], false, true);
-    process.stdout.write(`Building node...`);
-    await utils.runScript(`npm run build-node`, '');
-    process.stdout.write(` success!\n`);
     try {
         await run(config, args);
         return true;
@@ -40,9 +36,13 @@ export async function stressTests(args: StressTestArgs): Promise<boolean> {
 
 async function run(config: { url: string, key: string }, args: StressTestArgs): Promise<number> {
     const processArgs: string[] = [];
-    processArgs.push('-r');
-    processArgs.push('./tsconfig-paths-bootstrap.js');
-    processArgs.push('dist-node/package-test-node.js');
+    // Run the TypeScript runner directly via tsx (no build step); the asset/dayjs shims
+    // in node-test-loader let the browser-oriented sources load under Node.
+    processArgs.push('--import');
+    processArgs.push('tsx');
+    processArgs.push('--import');
+    processArgs.push('./node-test-loader/register.mjs');
+    processArgs.push('src/package-test-node.ts');
     processArgs.push(`--apiUrl=${config.url}`);
     processArgs.push(`--devKey=${config.key}`);
     if (args["concurrent-runs"])

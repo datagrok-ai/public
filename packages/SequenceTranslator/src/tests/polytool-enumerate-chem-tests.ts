@@ -7,20 +7,30 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {
+  addRGroupsFromSmiles,
   assembleMolecule,
+  BUILTIN_R_GROUP_TEMPLATES,
+  buildExportColumns,
   ChemEnumModes,
+  copyRGroupList,
   countForCore,
   enumerate,
   extractRNumbers,
+  invalidTemplateSmiles,
   makeCore,
   makeRGroup,
   moveStartRLabelToBranch,
   normalizeRLabels,
+  parseRGroupTemplates,
+  pickDefaultTargetR,
   pickFreeRingDigits,
   remapSingleRLabel,
+  rGroupTargetWarnings,
   substituteRLabelWithRingDigit,
+  uniqueKeepMask,
   validateParams,
 } from '../polytool/pt-chem-enum';
+import {parseChemEnumDefaults, serializeChemEnumState} from '../polytool/pt-chem-enum-settings';
 
 import {_package} from '../package-test';
 
@@ -31,6 +41,11 @@ function canon(smi: string, rdkit: RDModule): string {
     expect(mol.is_valid(), true, `RDKit rejected SMILES: ${smi}`);
     return mol.get_smiles();
   } finally { mol.delete(); }
+}
+
+/** Materializes a BitSet keep-mask into a plain boolean[] for element-wise comparison. */
+function maskBools(bs: DG.BitSet): boolean[] {
+  return Array.from({length: bs.length}, (_, i) => bs.get(i));
 }
 
 // ─── Regex / normalization / remap — no RDKit required ──────────────────────
@@ -227,6 +242,60 @@ category('PolyTool: ChemEnum: count & validate', () => {
   });
 });
 
+// ─── Output dedup keep-mask — no RDKit required ─────────────────────────────
+
+category('PolyTool: ChemEnum: dedup', () => {
+  test('keeps first occurrence, drops later duplicates', async () => {
+    expectArray(maskBools(uniqueKeepMask(['A', 'B', 'A', 'C', 'B'])), [true, true, false, true, false]);
+  });
+
+  test('blank and nullish entries are never collapsed', async () => {
+    // Empty/invalid rows (e.g. failed canonicalization) must each be kept, not merged into one.
+    expectArray(maskBools(uniqueKeepMask(['', '', 'A', null, 'A', undefined])), [true, true, true, true, false, true]);
+  });
+});
+
+// ─── Dedup actually shrinks the enumerated output (the "Remove duplicates" option) ──
+
+/** Enumerates, canonicalizes every product, and reports raw vs unique counts — mirrors executeEnumeration. */
+function enumeratedVsUnique(
+  cores: ReturnType<typeof makeCore>[], rGroups: Map<number, ReturnType<typeof makeRGroup>[]>, rdkit: RDModule,
+): {raw: number, unique: number} {
+  const results = enumerate({cores, rGroups, mode: ChemEnumModes.Cartesian}, rdkit)!;
+  const canonical = results.map((r) => canon(r.smiles, rdkit));
+  const unique = uniqueKeepMask(canonical).trueCount;
+  return {raw: results.length, unique};
+}
+
+category('PolyTool: ChemEnum: dedup reduces count', () => {
+  let rdkit: RDModule;
+
+  before(async () => { rdkit = await getRdKitModule(); });
+
+  test('duplicate cores: 6 enumerated collapse to 3 unique', async () => {
+    // Two byte-identical cores mean every product is generated twice over.
+    const cores = [makeCore('C[*:1]', 'dup-a'), makeCore('C[*:1]', 'dup-b')];
+    const r1 = [makeRGroup('O[*:1]', 1, 'a'), makeRGroup('S[*:1]', 1, 'b'), makeRGroup('N[*:1]', 1, 'c')];
+    const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
+    expect(raw, 6); // raw enumerated rows
+    expect(unique, 3); // after "Remove duplicates"
+    expect(unique < raw, true); // the count actually drops
+  });
+
+  test('structural dedup: equivalent R-group SMILES collapse to one molecule', async () => {
+    // Phenyl written aromatic vs kekulized is the SAME group — dedup is by canonical SMILES, not string.
+    const cores = [makeCore('C[*:1]', 'c')];
+    const r1 = [
+      makeRGroup('c1ccccc1[*:1]', 1, 'aromatic'),
+      makeRGroup('C1=CC=CC=C1[*:1]', 1, 'kekulized'),
+      makeRGroup('Cl[*:1]', 1, 'chloro'),
+    ];
+    const {raw, unique} = enumeratedVsUnique(cores, new Map([[1, r1]]), rdkit);
+    expect(raw, 3); // three R-groups → three enumerated rows
+    expect(unique, 2); // the two phenyls are one molecule
+  });
+});
+
 // ─── Assembly + full enumeration — needs RDKit ──────────────────────────────
 
 category('PolyTool: ChemEnum: assembly', () => {
@@ -404,5 +473,153 @@ category('PolyTool: ChemEnum: CSV fixtures', () => {
         expect(m.is_valid(), true, `invalid SMILES: ${r.smiles}`);
       } finally { m.delete(); }
     }
+  });
+});
+
+// ─── Copy R-group list to another slot ──────────────────────────────────────
+
+category('PolyTool: ChemEnum: copy R-group list', () => {
+  let rdkit: RDModule;
+  before(async () => { rdkit = await getRdKitModule(); });
+
+  const rg = (smi: string, n: number) => makeRGroup(smi, n, '', rdkit);
+
+  test('copyRGroupList re-labels to the target R#, appends/replaces, and no-ops on self-copy', async () => {
+    const m = new Map([[1, [rg('O[*:1]', 1), rg('N', 1)]]]); // a labeled group + a single atom
+    // Append into a new slot R2: the label is remapped [*:1]→[*:2]; the single atom keeps its
+    // token but is re-targeted; the source is left untouched; the new slot is created.
+    expect(copyRGroupList(m, 1, 2, 'append', rdkit), 2);
+    expect(m.get(2)![0].smiles, 'O[*:2]');
+    expect(m.get(2)![1].isSingleAtom, true);
+    expect(m.get(2)![1].smiles, 'N');
+    expect(m.get(2)![1].rNumber, 2);
+    expect(m.get(1)!.length, 2, 'source must be unchanged');
+    // Appending the same substituents again de-dupes (nothing new to add); replace overwrites.
+    expect(copyRGroupList(m, 1, 2, 'append', rdkit), 0);
+    expect(m.get(2)!.length, 2);
+    expect(copyRGroupList(m, 1, 2, 'replace', rdkit), 2);
+    expect(m.get(2)!.length, 2);
+    // Copying a slot onto itself does nothing.
+    expect(copyRGroupList(m, 1, 1, 'append', rdkit), 0);
+    expect(m.get(1)!.length, 2);
+  });
+
+  test('shipped r-group-templates.json parses, every SMILES is valid, and inserts re-labeled', async () => {
+    // The catalogue ships as a data file; parse it and check every SMILES is a valid R-group.
+    const text = await _package.files.readAsText('enumeration/r-group-templates/r-group-templates.json');
+    const templates = parseRGroupTemplates(text);
+    expect(templates.length > 0, true, 'no templates parsed from r-group-templates.json');
+    const bad = invalidTemplateSmiles(templates, rdkit);
+    expect(bad.length, 0, `invalid template SMILES: ${bad.join(', ')}`);
+    // The in-code fallback must be valid too (it's used when the file is unreadable).
+    expect(invalidTemplateSmiles(BUILTIN_R_GROUP_TEMPLATES, rdkit).length, 0);
+    // Insert the first template (alkyl C1–C8) into R2 — each lands re-labeled to [*:2].
+    const smiles = templates[0].items.map((it) => it.smiles);
+    const m = new Map<number, ReturnType<typeof makeRGroup>[]>();
+    const n = addRGroupsFromSmiles(m, smiles, 2, 'append', rdkit);
+    expect(n, smiles.length);
+    expect(m.get(2)!.length, smiles.length);
+    expect(m.get(2)!.every((g) => g.rNumber === 2 && g.error == null), true);
+    expect(m.get(2)![0].smiles, 'C[*:2]'); // methyl, re-labeled
+  });
+
+  test('addRGroupsFromSmiles: replace with an empty list clears the slot; append no-ops', async () => {
+    const m = new Map([[2, [rg('O[*:2]', 2)]]]);
+    expect(addRGroupsFromSmiles(m, [], 2, 'replace', rdkit), 0);
+    expect(m.has(2), false, 'replacing with nothing must delete the slot');
+    expect(addRGroupsFromSmiles(m, [], 5, 'append', rdkit), 0);
+    expect(m.has(5), false, 'appending nothing must not create an empty slot');
+  });
+
+  test('pickDefaultTargetR: free core slot, else lowest other, else exclude+1', async () => {
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 2]), 1), 2); // free core R# wins
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 3]), 1), 3); // non-contiguous core R#s
+    expect(pickDefaultTargetR(new Set([1, 2]), new Set([1, 2]), 1), 2); // no free slot → lowest other
+    expect(pickDefaultTargetR(new Set([1]), new Set(), 1), 2); // no cores → exclude + 1
+    expect(pickDefaultTargetR(new Set([1]), new Set([1, 2])), 2); // template form (no exclude)
+    expect(pickDefaultTargetR(new Set(), new Set()), 1); // empty → R1
+  });
+
+  test('rGroupTargetWarnings: flags invalid entries and an orphan target R#', async () => {
+    expectArray(rGroupTargetWarnings(2, 0, new Set([1, 2])), []); // clean copy into a used slot
+    expect(rGroupTargetWarnings(2, 3, new Set([1, 2])).length, 1); // invalid entries only
+    expect(rGroupTargetWarnings(5, 0, new Set([1, 2])).length, 1); // orphan target only
+    expect(rGroupTargetWarnings(5, 1, new Set([1, 2])).length, 2); // both
+    expectArray(rGroupTargetWarnings(5, 0, new Set()), []); // no cores → suppress orphan warning
+  });
+
+  test('buildExportColumns: Core + R# columns, errored entries filtered, padded equally', async () => {
+    const cores = [makeCore('C[*:1]N[*:2]', 'c', rdkit), makeCore('bad', 'e', rdkit)]; // 2nd errors
+    expect(cores[1].error != null, true);
+    const m = new Map([
+      [1, [rg('O[*:1]', 1), rg('C1CC[*:1]', 1)]], // 2nd is unparseable → filtered out
+      [2, [rg('N[*:2]', 2)]],
+    ]);
+    const cols = buildExportColumns(cores, m);
+    expectArray(cols.map((c) => c.name), ['Core', 'R1', 'R2']);
+    const valid = (name: string) => cols.find((c) => c.name === name)!.values.filter((v) => v !== '');
+    expect(valid('Core').length, 1, 'errored core dropped'); // only C[*:1]N[*:2]
+    expect(valid('R1').length, 1, 'invalid R1 entry dropped');
+    expect(valid('R1')[0], 'O[*:1]');
+    const len = cols[0].values.length;
+    expect(cols.every((c) => c.values.length === len), true, 'all columns padded to equal length');
+  });
+
+  test('end-to-end: copying R1→R2 matches defining R2 natively', async () => {
+    const core = makeCore('C[*:1]N[*:2]', 'c', rdkit);
+    const r1 = [rg('O[*:1]', 1), rg('S[*:1]', 1)];
+    // Copy path: populate R2 from R1 via the production helper.
+    const byNum = new Map([[1, r1]]);
+    copyRGroupList(byNum, 1, 2, 'append', rdkit);
+    const copied = enumerate({cores: [core], rGroups: byNum, mode: ChemEnumModes.Cartesian}, rdkit)!;
+    // Native path: R2 defined directly with [*:2] labels — must produce the same products.
+    const r2Native = [rg('O[*:2]', 2), rg('S[*:2]', 2)];
+    const native = enumerate(
+      {cores: [core], rGroups: new Map([[1, r1], [2, r2Native]]), mode: ChemEnumModes.Cartesian}, rdkit)!;
+
+    expect(copied.length, 4); // 2 × 2
+    const canonSet = (rs: typeof copied) => new Set(rs.map((r) => canon(r.smiles, rdkit)));
+    const copiedSet = canonSet(copied);
+    expect(copiedSet.size, 4, 'copied products should be 4 distinct structures');
+    for (const s of canonSet(native))
+      expect(copiedSet.has(s), true, `copied products missing native product ${s}`);
+    for (const r of copied)
+      expect(r.smiles.includes('[*:'), false, `residual R-label in result: ${r.smiles}`);
+    // The R2 result column shows each group re-labeled to its slot ([*:2]), not its source [*:1].
+    for (const r of copied) {
+      const r2 = r.rGroupSmilesByNum.get(2)!;
+      expect(r2.includes('[*:2]') && !r2.includes('[*:1]'), true, `R2 column not re-labeled: ${r2}`);
+    }
+  });
+});
+
+// ─── Package-settings defaults (de)serialization — no RDKit required ─────────
+
+category('PolyTool: ChemEnum: defaults', () => {
+  test('parse rejects null / blank / malformed / wrong-shape', async () => {
+    expect(parseChemEnumDefaults(null), null);
+    expect(parseChemEnumDefaults(''), null);
+    expect(parseChemEnumDefaults('not json'), null);
+    expect(parseChemEnumDefaults(JSON.stringify({rGroups: {}})), null); // no cores
+    expect(parseChemEnumDefaults(JSON.stringify({cores: []})), null); // no rGroups
+    expect(parseChemEnumDefaults(JSON.stringify({cores: [], rGroups: {}})), null); // empty cores must not block the CSV fallback
+  });
+
+  test('serialize → parse round-trips cores and R-groups', async () => {
+    // Original-SMILES only; serialization stores originalSmiles, so the cores/R-groups need no RDKit here.
+    const state = {
+      cores: [{originalSmiles: 'c1ccccc1[*:1]'} as any],
+      rGroupsByNum: new Map([[1, [{originalSmiles: 'C[*:1]'} as any]]]),
+      mode: ChemEnumModes.Cartesian,
+      appendToTable: null, removeDuplicates: true, tableName: 'X',
+    };
+    const entry = parseChemEnumDefaults(serializeChemEnumState(state));
+    if (entry === null) throw new Error('round-trip returned null');
+    expectArray(entry.cores, ['c1ccccc1[*:1]']);
+    expectArray(entry.rGroups['1'], ['C[*:1]']);
+    expect(entry.mode, ChemEnumModes.Cartesian);
+    // Output options (added by GROK-20223) are persisted into the defaults blob too.
+    expect(entry.removeDuplicates, true);
+    expect(entry.tableName, 'X');
   });
 });

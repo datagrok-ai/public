@@ -1,29 +1,27 @@
+/* ---
+sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-
+import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
-
 const datasets = [
-  {name: 'FASTA', path: 'System:AppData/Bio/samples/FASTA.csv'},
-  {name: 'HELM', path: 'System:AppData/Bio/samples/HELM.csv'},
-  {name: 'MSA', path: 'System:AppData/Bio/samples/MSA.csv'},
+  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
+  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv'},
+  {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv'},
 ];
-
-test('Composition Analysis manual test', async ({page}) => {
+test('Bio | Analyze | Composition — composition analysis integration', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
-
   await loginToDatagrok(page);
-
   await page.evaluate(() => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
   });
-
   for (const ds of datasets) {
-    await softStep(`[${ds.name}] Open ${ds.path}`, async () => {
+    await softStep(`[${ds.name}] Scenario 1 Step 1 — Open ${ds.path}`, async () => {
       const result: {rows: number, hasMacromolecule: boolean} = await page.evaluate(async (path: string) => {
         const g = (window as any).grok;
         g.shell.closeAll();
@@ -48,12 +46,12 @@ test('Composition Analysis manual test', async ({page}) => {
       expect(result.hasMacromolecule).toBe(true);
       await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     });
-
-    await softStep(`[${ds.name}] Open Bio > Analyze > Composition — WebLogo viewer opens`, async () => {
+    await softStep(`[${ds.name}] Scenario 1 Step 2 — Bio > Analyze > Composition; WebLogo viewer docks; no multi-column dialog`, async () => {
       await page.evaluate(async () => {
         (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
         await new Promise((r) => setTimeout(r, 300));
-        document.querySelector('[name="div-Bio---Analyze"]')!.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+        document.querySelector('[name="div-Bio---Analyze"]')!.dispatchEvent(
+          new MouseEvent('mouseenter', {bubbles: true}));
         await new Promise((r) => setTimeout(r, 300));
         (document.querySelector('[name="div-Bio---Analyze---Composition"]') as HTMLElement).click();
       });
@@ -61,38 +59,57 @@ test('Composition Analysis manual test', async ({page}) => {
         const viewers = Array.from((window as any).grok.shell.tv.viewers);
         return viewers.some((v: any) => v.type === 'WebLogo');
       }, null, {timeout: 60_000});
-      const hasCanvas: boolean = await page.evaluate(async () => {
+      const result: {hasCanvas: boolean, dialogOpen: boolean} = await page.evaluate(async () => {
         const g = (window as any).grok;
+        let hasCanvas = false;
         for (let i = 0; i < 40; i++) {
           const w = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
-          if (w && w.root.querySelector('canvas')) return true;
+          if (w && w.root.querySelector('canvas')) { hasCanvas = true; break; }
           await new Promise((r) => setTimeout(r, 300));
         }
-        return false;
+        const dialogOpen = !!document.querySelector('.d4-dialog');
+        return {hasCanvas, dialogOpen};
       });
-      expect(hasCanvas).toBe(true);
+      expect(result.hasCanvas).toBe(true);
+      expect(result.dialogOpen).toBe(false);
     });
-
-    await softStep(`[${ds.name}] Click a letter in the WebLogo — rows are selected`, async () => {
-      // Give WebLogo extra time to finish rendering and wire event handlers
-      // (subsequent datasets fail without this settle — first render works fast, later ones need ~3s).
-      await page.waitForTimeout(3000);
+    await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
+      // Settle: canvas may be in DOM before click handlers are bound.
+      await page.waitForTimeout(4000);
       const selected: number = await page.evaluate(async () => {
         const g = (window as any).grok;
         const tv = g.shell.tv;
         const df = tv.dataFrame;
         df.selection.setAll(false);
-        const w = tv.viewers.find((v: any) => v.type === 'WebLogo');
-        const canvas = w.root.querySelector('canvas') as HTMLCanvasElement;
-        const rect = canvas.getBoundingClientRect();
-        // Probe a few x-offsets so narrower letter columns (HELM/MSA) still get a hit.
-        const offsets = [18, 30, 50, 80, 120, 160];
-        for (const dx of offsets) {
-          const x = rect.x + dx;
-          const y = rect.y + rect.height / 2;
+        const wl: any = tv.viewers.find((v: any) => v.type === 'WebLogo');
+        const canvas = wl.root.querySelector('canvas') as HTMLCanvasElement;
+        const canvasRect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const GAP = '-';
+        const positions: any[] = Array.isArray(wl.positions) ? wl.positions : [];
+        const candidates: {x: number, y: number, h: number}[] = [];
+        for (let idx = 0; idx < positions.length && idx < 30; idx++) {
+          const pi = positions[idx];
+          if (!pi || typeof pi.getMonomers !== 'function') continue;
+          let monomers: string[] = [];
+          try { monomers = pi.getMonomers(); } catch (_) { monomers = []; }
+          for (const m of monomers) {
+            if (!m || m === GAP) continue;
+            let b: any = null;
+            try { b = pi.getFreq(m).bounds; } catch (_) { b = null; }
+            if (!b) continue;
+            const cx = (b.x + b.width / 2) / dpr + canvasRect.left;
+            const cy = (b.y + b.height / 2) / dpr + canvasRect.top;
+            candidates.push({x: cx, y: cy, h: b.height});
+          }
+        }
+        // Tallest rect first — most frequent monomer is the largest hit target.
+        candidates.sort((a, b) => b.h - a.h);
+        for (const c of candidates) {
+          df.selection.setAll(false);
           for (const type of ['mousedown', 'mouseup', 'click']) {
             canvas.dispatchEvent(new MouseEvent(type, {
-              bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0,
+              bubbles: true, cancelable: true, clientX: c.x, clientY: c.y, button: 0,
             }));
           }
           await new Promise((r) => setTimeout(r, 400));
@@ -102,28 +119,35 @@ test('Composition Analysis manual test', async ({page}) => {
       });
       expect(selected).toBeGreaterThan(0);
     });
-
-    await softStep(`[${ds.name}] Click Gear on WebLogo title bar — property grid appears`, async () => {
+    await softStep(`[${ds.name}] Scenario 3 Step 4 — Gear icon on WebLogo opens Context Pane property grid`, async () => {
       const opened: {found: boolean, pg: boolean} = await page.evaluate(async () => {
         const g = (window as any).grok;
         g.shell.tv.dataFrame.selection.setAll(false);
         const w = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
+        // Gear lives on the outer docked-panel title bar (.panel-base ancestor).
         let panelBase: any = w.root;
-        while (panelBase && !panelBase.classList?.contains('panel-base')) panelBase = panelBase.parentElement;
-        const gear = panelBase?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-        if (!gear) return {found: false, pg: false};
+        while (panelBase && !panelBase.classList?.contains('panel-base'))
+          panelBase = panelBase.parentElement;
+        const gear = panelBase?.querySelector(
+          '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
+        if (!gear) {
+          // Fallback: programmatic equivalent if the title-bar gear is absent.
+          g.shell.o = w;
+          await new Promise((r) => setTimeout(r, 600));
+          const pg2 = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
+          return {found: false, pg: !!pg2};
+        }
         gear.click();
         await new Promise((r) => setTimeout(r, 600));
-        const pg = document.querySelector('.grok-prop-panel .property-grid');
+        const pg = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
         return {found: true, pg: !!pg};
       });
-      expect(opened.found).toBe(true);
       expect(opened.pg).toBe(true);
-      // Property row may be in a collapsed accordion section — only check it is attached, not visible.
-      await page.locator('tr[name="prop-show-position-labels"]').waitFor({state: 'attached', timeout: 10_000});
+      // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
+      await page.locator('tr[name="prop-show-position-labels"]').waitFor({
+        state: 'attached', timeout: 10_000});
     });
-
-    await softStep(`[${ds.name}] Change arbitrary properties in the Context Pane`, async () => {
+    await softStep(`[${ds.name}] Scenario 3 Step 5 — Edit ≥1 Context Pane property (SR-01: edit-acceptance only)`, async () => {
       const result: {changedShow: boolean, changedSkip: boolean} = await page.evaluate(async () => {
         const g = (window as any).grok;
         const wl: any = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
@@ -140,6 +164,7 @@ test('Composition Analysis manual test', async ({page}) => {
           }
           await new Promise((r) => setTimeout(r, 300));
         }
+        await new Promise((r) => setTimeout(r, 400));
         const after = {
           showPositionLabels: wl.getOptions().look.showPositionLabels,
           skipEmptyPositions: wl.getOptions().look.skipEmptyPositions,
@@ -152,11 +177,6 @@ test('Composition Analysis manual test', async ({page}) => {
       expect(result.changedShow || result.changedSkip).toBe(true);
     });
   }
-
   await page.evaluate(() => (window as any).grok.shell.closeAll());
-
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

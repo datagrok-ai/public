@@ -25,12 +25,23 @@ async function getDuplicatePrefsFull(): Promise<DuplicateMonomerPreferencesShort
   if (!resStr)
     return {};
   // chunk will end with special suffix and just before it will have the number of the next chunk key
+  let iter = 1;
   while (resStr.endsWith(CHUNK_KEY_SUFFIX)) {
-    const nextChunkKey = `${DUPLICATE_MONOMER_PREFERENCES_KEY}${resStr.charAt(resStr.length - CHUNK_KEY_SUFFIX.length - 1)}`;
+    const nextChunkKeysCount = iter.toString().length;
+    const nextChunkIndex = new Array(nextChunkKeysCount).fill(0)
+      .reduce((acc: string, _, i) => acc + resStr.charAt(resStr.length - nextChunkKeysCount + i - CHUNK_KEY_SUFFIX.length), '');
+    const nextChunkKey = `${DUPLICATE_MONOMER_PREFERENCES_KEY}${nextChunkIndex}`;
     const nextChunkStr: string | undefined = (await grok.userSettings.getValue(LIB_STORAGE_NAME, nextChunkKey, true)) ?? '';
-    resStr = resStr.slice(0, resStr.length - CHUNK_KEY_SUFFIX.length - 1) + nextChunkStr;
+    resStr = resStr.slice(0, resStr.length - CHUNK_KEY_SUFFIX.length - nextChunkIndex.length) + nextChunkStr;
+    iter++;
   }
-  return JSON.parse(resStr);
+  try {
+    return JSON.parse(resStr);
+  } catch (err) {
+    console.error(`Failed to parse duplicateMonomerPreferences from user settings: ${err}`);
+    return {};
+  }
+
 }
 
 async function setDuplicatePrefsFull(value: DuplicateMonomerPreferencesShortHand): Promise<void> {
@@ -89,7 +100,6 @@ export async function setUserLibSettings(value: UserLibSettings): Promise<void> 
     }
     await setDuplicatePrefsFull(duplicatePrefsShortHand);
     //await grok.userSettings.add(LIB_STORAGE_NAME, DUPLICATE_MONOMER_PREFERENCES_KEY, JSON.stringify(duplicatePrefsShortHand), true);
-    value.duplicateMonomerPreferences = {}; // clear to reduce size
     await grok.userSettings.add(LIB_STORAGE_NAME, LIB_SETTINGS_KEY, JSON.stringify(value), true);
   });
   await userLibSettingsPromise;

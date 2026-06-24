@@ -6,7 +6,7 @@ import {Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
-import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
+import {catchError, debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -44,7 +44,13 @@ export const RFVApp = Vue.defineComponent({
       switchMap(([, isValid]) => {
         if (!isValid || currentCallState.value.isRunning)
           return of(null);
-        return from(run());
+        // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
+        return from(run()).pipe(
+          catchError((err) => {
+            grok.shell.error(err instanceof Error ? err.message : `${err}`);
+            return of(null);
+          }),
+        );
       }),
     ).subscribe();
 
@@ -154,7 +160,13 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.newId();
         await historyUtils.saveRun(currentFuncCall.value);
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
-        Vue.triggerRef(currentFuncCall);
+        // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
+        // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
+        // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
+        const fc = currentFuncCall.value;
+        const modelName = fc.func?.friendlyName ?? fc.func?.name;
+        setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
+        searchParams.id = fc.id;
       });
       dialog.show({center: true, width: 500});
     };

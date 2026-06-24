@@ -131,6 +131,7 @@ export class FunctionBrowser {
     const utilityNodes = [
       {name: 'Select Column', type: 'Utilities/Select Column', desc: 'Gets a column from a table by name'},
       {name: 'Select Columns', type: 'Utilities/Select Columns', desc: 'Gets multiple columns by names (comma-separated)'},
+      {name: 'Select Table', type: 'Utilities/Select Table', desc: 'Gets an open table by name via grok.shell.tableByName()'},
       {name: 'Add Table View', type: 'Utilities/Add Table View', desc: 'Opens a table in a new view via grok.shell.addTableView()'},
       {name: 'Log', type: 'Utilities/Log', desc: 'Logs a value to the browser console'},
       {name: 'Info', type: 'Utilities/Info', desc: 'Shows an info balloon via grok.shell.info()'},

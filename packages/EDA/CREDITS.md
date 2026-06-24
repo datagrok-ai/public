@@ -34,16 +34,20 @@ of `package.json`.
 > License for the specific language governing permissions and limitations
 > under the License.
 
-The full Apache-2.0 license text is available at the URL above. Copyright is
-held by *XGBoost contributors*.
+The full Apache-2.0 license text is reproduced in `THIRD_PARTY_LICENSES.txt`
+and available at the URL above. Copyright is held by *XGBoost contributors*
+(`Copyright (c) 2019 by Contributors`); upstream ships no NOTICE file.
 
-### EDA WASM (`wasm/EDA.wasm`)
+### sci-comp-ml (`wasm/sci_comp_ml_bg.wasm`)
 
-In-house C++ implementations of PCA, PLS, SVM, softmax classification,
-regression and a few utility kernels (`wasm/PCA/`, `wasm/PLS/`, `wasm/svm.h`,
-`wasm/softmax.h`, etc.). These sources are written by Datagrok and are
-covered by the repo-wide MIT umbrella; they are listed here only because the
-compiled artifact (`wasm/EDA.js` + `wasm/EDA.wasm`) is bundled.
+In-house Rust implementations of PCA (NIPALS), PLS1, softmax classification
+and linear regression / Elastic Net, compiled to WebAssembly with
+`wasm-pack`. The source lives in the separate `sci-comp-rust` repository and
+is covered by the repo-wide MIT umbrella; it is listed here because the
+compiled artifact (`wasm/sci_comp_ml.js` glue + `wasm/sci_comp_ml_bg.wasm`)
+is bundled. The numerical kernels use no external crates; the WASM-boundary
+dependencies (`wasm-bindgen`, `serde`, `serde-wasm-bindgen`, `js-sys`) are
+**MIT** or **MIT OR Apache-2.0** (MIT elected).
 
 ### @keckelt/tsne (1.0.x)
 
@@ -97,8 +101,8 @@ attribution; mark modifications, of which there are none).
 > License for the specific language governing permissions and limitations
 > under the License.
 
-The full Apache-2.0 license text is available at the URL above and in
-`node_modules/umap-js/LICENSE`.
+The full Apache-2.0 license text is reproduced in `THIRD_PARTY_LICENSES.txt`,
+available at the URL above and in `node_modules/umap-js/LICENSE`.
 
 ### jStat (1.9.x)
 
@@ -148,9 +152,9 @@ numbers — used inside the linear-method/PLS pipelines.
 > License for the specific language governing permissions and limitations
 > under the License.
 
-The full Apache-2.0 license text is available at the URL above. Upstream
-`node_modules/mathjs/LICENSE` does not ship a NOTICE file. Copyright is held by
-*Jos de Jong and contributors*.
+The full Apache-2.0 license text is reproduced in `THIRD_PARTY_LICENSES.txt`
+and available at the URL above. Upstream `node_modules/mathjs/LICENSE` does not
+ship a NOTICE file. Copyright is held by *Jos de Jong and contributors*.
 
 ---
 
@@ -179,6 +183,6 @@ which references `@ffmpeg-installer/ffmpeg` (LGPL-2.1) and
 as part of the published EDA plugin and impose no obligation on users of the
 plugin.
 
-`source-map-loader`, `worker-loader`, `css-loader`, `style-loader`, `ts-loader`
-(all MIT) and `@webgpu/types` (BSD-3-Clause) are build-time only and are not
-included in the runtime artifact.
+`source-map-loader`, `worker-loader`, `css-loader`, `style-loader`,
+`ts-loader`, `file-loader` (all MIT) and `@webgpu/types` (BSD-3-Clause) are
+build-time only and are not included in the runtime artifact.

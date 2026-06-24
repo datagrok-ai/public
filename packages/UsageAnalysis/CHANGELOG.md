@@ -2,7 +2,13 @@
 
 ## v.next
 
+* Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
+* GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)
+* GROK-12108: Usage Analysis: Errors tab
+* GROK-19820: Jira swagger: Removed three unused endpoints, keeping only `Jira Create Issue`
 * Metrics: Added Admin Metrics dashboard tab
+* TestTrack: Fixed node-expansion errors after the `Test Track`→`TestTrack` folder rename — the loader now skips `-run.md` run reports and `-spec.ts` files (filtered to `.md`) instead of parsing them as test cases, and guards against a null category node
+* GROK-16262: TestTrack: Removed the `Browse > Browse tree states` test case
 
 ## 2.5.1 (2026-05-21)
 

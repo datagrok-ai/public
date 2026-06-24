@@ -654,12 +654,19 @@ function getInputSpec(inp: Input): string {
 /** Return annotation line specifying viewers */
 function getViewersLine(ivp: IVP): string {
   const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
-  const multiAxis = (outputColsCount > MAX_LINE_CHART - 1) ? 'true' : 'false';
+  const isMultiVariable = outputColsCount > MAX_LINE_CHART - 1;
+
+  // For many variables, render the Diff Studio facet grid (one chart per variable) — the same
+  // view as the standalone app. Resolves only when the DiffStudio package is installed.
+  if (isMultiVariable) {
+    const segment = (ivp.updates) ? `, segmentColumnName: "${STAGE_COL_NAME}"` : '';
+    return `viewer: DiffStudio Facet(block: 100${segment}) | Grid(block: 100)`;
+  }
 
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
   // eslint-disable-next-line max-len
-  return `viewer: Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+  return `viewer: Line chart(block: 100, multiAxis: "false",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
 }
 
 /** Generate annotation lines */

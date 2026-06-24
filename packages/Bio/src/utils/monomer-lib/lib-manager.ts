@@ -219,6 +219,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
 
         this._monomerLib.updateLibs(libs, reload);
+        if (reload)
+          this._monomerLib.clearSmilesMonomerCache();
         this._initialLoadCompleted = true;
       } catch (err: any) {
         // WARNING: This function is not allowed to throw any exception,

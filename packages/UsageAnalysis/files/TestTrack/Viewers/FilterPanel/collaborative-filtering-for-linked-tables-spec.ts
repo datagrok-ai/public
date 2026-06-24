@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -9,7 +10,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Run linking script — open 3 tables and link them
   await softStep('1. Run JS script to link 3 tables', async () => {
     const result = await page.evaluate(async () => {
       document.body.classList.add('selenium');
@@ -56,7 +56,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.df3).toBe(224);
   });
 
-  // Step 2: Go to SPGI view, select 5 rows on top
   await softStep('2. Select 5 rows in SPGI', async () => {
     const result = await page.evaluate(async () => {
       for (const v of grok.shell.tableViews)
@@ -71,7 +70,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.selected).toBe(5);
   });
 
-  // Step 3: Switch to SPGI-linked1 — should contain 9 filtered rows
   await softStep('3. SPGI-linked1 should have 9 filtered rows', async () => {
     const result = await page.evaluate(async () => {
       for (const v of grok.shell.tableViews)
@@ -83,7 +81,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.filtered).toBe(9);
   });
 
-  // Step 4: Switch to SPGI-linked2 view
   await softStep('4. Switch to SPGI-linked2', async () => {
     const view = await page.evaluate(async () => {
       for (const v of grok.shell.tableViews)
@@ -94,7 +91,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(view).toBe('SPGI-linked2');
   });
 
-  // Step 5: Open the Filter Panel
   await softStep('5. Open Filter Panel on SPGI-linked2', async () => {
     const result = await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
@@ -104,7 +100,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.open).toBe(true);
   });
 
-  // Step 6: For link column 3, select 'v ii'
   await softStep('6. Filter link column 3 to v ii', async () => {
     const result = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
@@ -115,7 +110,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.filtered).toBeGreaterThan(0);
   });
 
-  // Step 7: Switch to SPGI-linked1 — should have 5 filtered rows
   await softStep('7. SPGI-linked1 should have 5 filtered rows', async () => {
     const result = await page.evaluate(async () => {
       for (const v of grok.shell.tableViews)
@@ -126,7 +120,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.filtered).toBe(5);
   });
 
-  // Step 8: Open Filter Panel on SPGI-linked1
   await softStep('8. Open Filter Panel on SPGI-linked1', async () => {
     const result = await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
@@ -136,7 +129,6 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
     expect(result.open).toBe(true);
   });
 
-  // Step 9: Filter PAMPA Classification to 'inconclusive' — 2 rows
   await softStep('9. PAMPA Classification = inconclusive — 2 rows', async () => {
     const result = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
@@ -148,10 +140,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
   });
 
   // Cleanup
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

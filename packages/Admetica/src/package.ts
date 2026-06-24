@@ -96,7 +96,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'description': 'Predicts ADMET properties and appends result columns.',
-    'top-menu': 'Chem | Admetica | Сalculate...',
+    'top-menu': 'Chem | Admetica | Calculate...',
     'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(

@@ -1,23 +1,15 @@
 import {test, expect} from '@playwright/test';
-import {baseUrl, login, password, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {baseUrl, loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
 test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
   test.setTimeout(300_000);
 
-  await page.goto(baseUrl);
-  await page.waitForTimeout(3000);
-  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
-  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
-    // Login form is plain HTML (not a Dart widget), so .fill() works and is more reliable
-    // than keyboard.type(), which silently drops characters on a fresh page on dev.
-    await loginInput.fill(login);
-    const pw = page.getByPlaceholder('Password').and(page.locator(':visible'));
-    await pw.fill(password);
-    await page.keyboard.press('Enter');
-  }
-  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+  // Canonical token-based login; the previous flow imported login/password
+  // from spec-login (which doesn't export them) and filled the HTML form
+  // manually, so the spec couldn't even compile against a fresh checkout.
+  await loginToDatagrok(page);
 
   await page.evaluate(() => {
     document.body.classList.add('selenium');
@@ -295,6 +287,14 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       ['verified', 'bool'],
       ['review_date', 'datetime'],
     ];
+    // Verified live against dev (2026-05-21 MCP recon): the Property-Type
+    // select serves options ['string', 'int', 'bool', 'double', 'datetime',
+    // 'string_list']. The previous flow set `sel.value = 'int' + dispatch
+    // input+change`, which updated the JS DOM but did NOT trip Datagrok's
+    // Dart-side listener — at save time the Dart model still held the empty
+    // default, so the saved schema came back with `type: undefined`.
+    // Fix: use Playwright's `selectOption` which fires the proper user-event
+    // chain (focus → mousedown → change) the Dart binding actually reads.
     for (let i = 0; i < props.length; i++) {
       const [name, type] = props[i];
       if (i > 0) {
@@ -306,14 +306,10 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       await row.click();
       await page.keyboard.press('Control+A');
       await page.keyboard.type(name, {delay: 10});
-      // Select element requires programmatic value + input/change dispatch.
-      await page.evaluate(({i, type}) => {
-        const selects = document.querySelectorAll('.d4-dialog table.d4-item-table select[name="input-Property-Type"]');
-        const sel = selects[i] as HTMLSelectElement;
-        sel.value = type;
-        sel.dispatchEvent(new Event('input', {bubbles: true}));
-        sel.dispatchEvent(new Event('change', {bubbles: true}));
-      }, {i, type});
+      // Property-Type select — use selectOption to fire user-event chain.
+      const typeSelect = page.locator(
+        '.d4-dialog table.d4-item-table select[name="input-Property-Type"]').nth(i);
+      await typeSelect.selectOption(type);
       await page.waitForTimeout(150);
     }
 
@@ -364,9 +360,20 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
         .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Edit schema');
       if (!dialog) return {dialog: false};
       const table = dialog.querySelector('table.d4-item-table');
-      const nameInputs = Array.from(table?.querySelectorAll('input[name="input-Name"]') || []) as HTMLInputElement[];
-      const selects = Array.from(table?.querySelectorAll('select[name="input-Property-Type"]') || []) as HTMLSelectElement[];
-      const rows = nameInputs.map((n, i) => ({name: n.value, type: selects[i]?.value}));
+      // Per MCP recon on dev 2026-05-21: the Edit dialog renders a property's
+      // type as a read-only <span> inside the second <td> of each row, not as
+      // a <select> (the type can't be changed after creation). Reading
+      // `select[name="input-Property-Type"]` would always return undefined.
+      // Read the trimmed text content of the type cell instead.
+      const propRows = Array.from(table?.querySelectorAll('tr') || []) as HTMLElement[];
+      // First <tr> is the header — skip it.
+      const dataRows = propRows.slice(1);
+      const rows = dataRows.map((tr) => {
+        const cells = tr.querySelectorAll('td');
+        const nameInput = cells[0]?.querySelector('input[name="input-Name"]') as HTMLInputElement | null;
+        const typeText = (cells[1]?.textContent || '').trim();
+        return {name: nameInput?.value ?? '', type: typeText};
+      });
       const assoc = dialog.querySelector('[name="div-Associated-with-"]')?.textContent?.trim();
       return {dialog: true, rows, assoc};
     });

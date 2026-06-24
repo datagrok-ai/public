@@ -27,3 +27,12 @@ where res.ugid = sg.id
 and res.event_time > now() at time zone 'utc' - interval '20 minutes'
 order by res.event_time
 --end
+
+--name: LogEventParameters
+--input: string eventId
+--connection: System:Datagrok
+select ep.name as param_name, epv.value
+from event_parameters ep, event_parameter_values epv
+where epv.event_id = @eventId
+  and epv.parameter_id = ep.id
+--end

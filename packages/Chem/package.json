@@ -15,16 +15,6 @@
   },
   "properties": [
     {
-      "name": "Renderer",
-      "propertyType": "string",
-      "choices": [
-        "RDKit",
-        "OpenChemLib"
-      ],
-      "defaultValue": "RDKit",
-      "nullable": false
-    },
-    {
       "name": "Sketcher",
       "propertyType": "string",
       "choices": [

@@ -365,7 +365,7 @@ test('Sticky meta: copy / clone / delete persistence', async ({page}) => {
     });
 
     await page.reload({waitUntil: 'domcontentloaded'});
-    await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+    await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 
     const res = await page.evaluate(async (state: any) => {
       // @ts-ignore
@@ -397,7 +397,7 @@ test('Sticky meta: copy / clone / delete persistence', async ({page}) => {
     await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
     await page.keyboard.type(password);
     await page.keyboard.press('Enter');
-    await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+    await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 
     // After a fresh session, read the metadata from the server.
     const res = await page.evaluate(async (state: any) => {
