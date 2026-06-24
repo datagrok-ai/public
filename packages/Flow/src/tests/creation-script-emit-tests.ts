@@ -3,7 +3,10 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
 import {buildCreationScriptGraph, applyGraphToEditor} from '../import/creation-script-importer';
-import {emitCreationScript, CreationScriptResult} from '../compiler/creation-script-emitter';
+import {
+  emitCreationScript, emitCreationScriptsForTables,
+  CreationScriptResult, PerTableResult,
+} from '../compiler/creation-script-emitter';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
 function chemAvailable(): boolean {
@@ -26,7 +29,26 @@ async function roundTrip(script: string): Promise<CreationScriptResult> {
   }
 }
 
+/** Import a creation script, then split it back into one script per table. */
+async function splitPerTable(script: string, varNames: string[]): Promise<PerTableResult> {
+  const e = makeEditor();
+  try {
+    const g = buildCreationScriptGraph(script);
+    await applyGraphToEditor(g, e.flow);
+    return emitCreationScriptsForTables(e.flow, varNames);
+  } finally {
+    destroyEditor(e);
+  }
+}
+
 const lines = (s: string): string[] => s.split('\n').filter((l) => l.trim() !== '');
+
+const TIMESTAMP_RE = /\s*\/\/\{"timestamp":\s*(\d+)\}\s*$/;
+/** Lines with the trailing `//{"timestamp": …}` comment stripped. */
+const stripTs = (s: string): string[] => lines(s).map((l) => l.replace(TIMESTAMP_RE, ''));
+/** Parsed timestamps, one per non-empty line. */
+const timestamps = (s: string): number[] =>
+  lines(s).map((l) => Number(TIMESTAMP_RE.exec(l)?.[1] ?? NaN));
 
 category('Flow: creation script emit', () => {
   before(async () => {
@@ -137,5 +159,68 @@ category('Flow: creation script emit', () => {
     expect(s.includes('"mol1K local.molecule"'), true, 'qualified column name preserved');
     expect(s.includes('ResolveColumn'), false, 'no ResolveColumn leaks');
     expect(s.includes('.col('), false, 'columns are names, not JS table.col(...)');
+  });
+
+  // ---------- per-table split (Save Creation Scripts) ----------
+
+  const TWO_TABLES = [
+    'A = OpenFile("a.csv")',
+    'AddNewColumn(A, "1", "x")',
+    'B = OpenFile("b.csv")',
+    'AddNewColumn(B, "2", "y")',
+  ].join('\n');
+
+  test('per-table: splits a combined script by owning variable', async () => {
+    const r = await splitPerTable(TWO_TABLES, ['A', 'B']);
+    expect(r.warnings.length, 0, r.warnings.join(' ; '));
+    expect(r.unassigned.length, 0, `unexpected unassigned lines: ${r.unassigned.join(' ; ')}`);
+    expect(r.tables.length, 2);
+
+    expect(r.tables[0].variableName, 'A');
+    expect(stripTs(r.tables[0].script).join('\n'),
+      ['A = OpenFile("a.csv")', 'AddNewColumn(A, "1", "x")'].join('\n'),
+      'table A keeps only its producer + mutator');
+
+    expect(r.tables[1].variableName, 'B');
+    expect(stripTs(r.tables[1].script).join('\n'),
+      ['B = OpenFile("b.csv")', 'AddNewColumn(B, "2", "y")'].join('\n'),
+      'table B keeps only its producer + mutator');
+  });
+
+  test('per-table: result is aligned to the requested order', async () => {
+    const r = await splitPerTable(TWO_TABLES, ['B', 'A']);
+    expect(r.tables.map((t) => t.variableName).join(','), 'B,A', 'order follows the request');
+    expect(stripTs(r.tables[0].script)[0], 'B = OpenFile("b.csv")', 'first tab is B');
+  });
+
+  test('per-table: every line carries a strictly increasing timestamp comment', async () => {
+    const r = await splitPerTable(TWO_TABLES, ['A', 'B']);
+    for (const t of r.tables) {
+      const ls = lines(t.script);
+      expect(ls.length, 2, `${t.variableName}: two lines`);
+      for (const l of ls)
+        expect(TIMESTAMP_RE.test(l), true, `line lacks a timestamp comment: ${l}`);
+      const ts = timestamps(t.script);
+      expect(ts.every((n) => Number.isFinite(n)), true, 'all timestamps parse');
+      for (let i = 1; i < ts.length; i++)
+        expect(ts[i] > ts[i - 1], true, `timestamps must increase: ${ts.join(', ')}`);
+    }
+  });
+
+  test('per-table: lines for an unrequested table fall into unassigned', async () => {
+    const r = await splitPerTable(TWO_TABLES, ['A']);
+    expect(r.tables.length, 1);
+    expect(r.tables[0].variableName, 'A');
+    expect(stripTs(r.tables[0].script).length, 2, 'A still fully built');
+    // B's producer + mutator belong to no requested table.
+    expect(r.unassigned.length, 2, `expected B's 2 lines unassigned, got: ${r.unassigned.join(' ; ')}`);
+    expect(r.unassigned.some((l) => l.includes('B = OpenFile("b.csv")')), true);
+  });
+
+  test('per-table: a requested table absent from the graph yields an empty script', async () => {
+    const r = await splitPerTable(TWO_TABLES, ['A', 'B', 'Missing']);
+    expect(r.tables.length, 3);
+    expect(r.tables[2].variableName, 'Missing');
+    expect(r.tables[2].script, '', 'no lines own the missing variable');
   });
 });
