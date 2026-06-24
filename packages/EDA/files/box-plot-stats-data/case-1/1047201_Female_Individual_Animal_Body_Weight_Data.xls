@@ -1,0 +1,2192 @@
+
+<html >
+	<head>
+		<style>
+		td, caption, th {
+			border-top:    .1pt solid windowtext;
+			border-right:  .1pt solid windowtext;
+			border-bottom: .1pt solid windowtext;
+			border-left:   .1pt solid windowtext;
+		}
+
+		table.dataTable td {
+			text-align: left;
+		}
+
+		td.xtext{
+			mso-number-format:'\@';/*force text in excel*/
+		}
+
+		</style>
+	</head>
+	<body>
+		<p>
+			<strong>
+				If this is the first time you are viewing this file, please choose 'Save As' from the 'File' menu
+				and resave this file as an Excel file type. This will greatly speed up future viewings of this file.
+			</strong>
+		</p>
+		 
+        <h1>
+            Short-Term Study
+            Body Weights
+        </h1>
+    
+	<h2>Study Information:</h2>
+	<table>
+		<tr><th scope="row" align="left">Chemical Name:</th> <td>p-Chloro-a,a,a-trifluorotoluene</td></tr>
+		<tr><th scope="row" align="left">CASRN:</th> <td>="98-56-6"</td></tr>
+		<tr><th scope="row" align="left">Study Number:</th> <td>C10472</td></tr>
+        
+		<tr><th scope="row" align="left">Exposure Route:</th> <td>RESPIRATORY EXPOSURE WHOLE BODY</td></tr>
+		<tr><th scope="row" align="left">TDMS Number:</th> <td>1047201</td></tr>
+		<tr><th scope="row" align="left">Sex:</th> <td>FEMALE</td></tr>
+		<tr><th scope="row" align="left">Strain and Species:</th> <td> HSD Rats</td></tr>
+	</table>
+	<br/>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Animal Number</th>
+				<th>Cage Number</th>
+				<th>Dose Group</th>
+				<th>Days On Study</th>
+				
+					<th>Week 1</th>
+				
+					<th>Week 3</th>
+				
+					<th>Week 4</th>
+				
+					<th>Week 5</th>
+				
+					<th>Week 6</th>
+				
+					<th>Week 7</th>
+				
+					<th>Week 8</th>
+				
+					<th>Week 9</th>
+				
+					<th>Week 10</th>
+				
+					<th>Week 11</th>
+				
+					<th>Week 12</th>
+				
+					<th>Week 13</th>
+				
+					<th>Week 14</th>
+				
+				<th>Removal Reason</th>
+			</tr>
+		</thead>
+		<tbody>
+			
+				<tr>
+					<td>101</td>
+					<td>3</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>145.8</td>
+						
+							<td>163.8</td>
+						
+							<td>180.7</td>
+						
+							<td>193.3</td>
+						
+							<td>202</td>
+						
+							<td>205.9</td>
+						
+							<td>215.1</td>
+						
+							<td>213.6</td>
+						
+							<td>223.4</td>
+						
+							<td>228</td>
+						
+							<td>236.2</td>
+						
+							<td>252.1</td>
+						
+							<td>248.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>102</td>
+					<td>3</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>147.9</td>
+						
+							<td>177.2</td>
+						
+							<td>195.1</td>
+						
+							<td>212.5</td>
+						
+							<td>218.9</td>
+						
+							<td>225.8</td>
+						
+							<td>234.5</td>
+						
+							<td>231.5</td>
+						
+							<td>240.2</td>
+						
+							<td>243.6</td>
+						
+							<td>245.1</td>
+						
+							<td>255</td>
+						
+							<td>249.4</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>103</td>
+					<td>3</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>159.2</td>
+						
+							<td>173.8</td>
+						
+							<td>188.8</td>
+						
+							<td>198.1</td>
+						
+							<td>214</td>
+						
+							<td>220.9</td>
+						
+							<td>229.3</td>
+						
+							<td>236</td>
+						
+							<td>241.1</td>
+						
+							<td>248.6</td>
+						
+							<td>246.9</td>
+						
+							<td>250.7</td>
+						
+							<td>255.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>104</td>
+					<td>3</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>137.8</td>
+						
+							<td>151.3</td>
+						
+							<td>167</td>
+						
+							<td>172.7</td>
+						
+							<td>188.4</td>
+						
+							<td>191.4</td>
+						
+							<td>200.5</td>
+						
+							<td>206.7</td>
+						
+							<td>204.3</td>
+						
+							<td>211.5</td>
+						
+							<td>213.4</td>
+						
+							<td>214.8</td>
+						
+							<td>216</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>105</td>
+					<td>3</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>140.6</td>
+						
+							<td>156.9</td>
+						
+							<td>172.8</td>
+						
+							<td>182.4</td>
+						
+							<td>191.7</td>
+						
+							<td>202</td>
+						
+							<td>207.9</td>
+						
+							<td>217.5</td>
+						
+							<td>221.1</td>
+						
+							<td>225.4</td>
+						
+							<td>234.8</td>
+						
+							<td>234.7</td>
+						
+							<td>239.1</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>106</td>
+					<td>4</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>144.8</td>
+						
+							<td>166.8</td>
+						
+							<td>187</td>
+						
+							<td>197.9</td>
+						
+							<td>199.7</td>
+						
+							<td>213.1</td>
+						
+							<td>216.1</td>
+						
+							<td>221.2</td>
+						
+							<td>223.6</td>
+						
+							<td>227.2</td>
+						
+							<td>233.4</td>
+						
+							<td>232.7</td>
+						
+							<td>235.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>107</td>
+					<td>4</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>139.7</td>
+						
+							<td>153.8</td>
+						
+							<td>163.3</td>
+						
+							<td>179.8</td>
+						
+							<td>185.1</td>
+						
+							<td>196</td>
+						
+							<td>204.4</td>
+						
+							<td>207.8</td>
+						
+							<td>213.4</td>
+						
+							<td>215.1</td>
+						
+							<td>218.5</td>
+						
+							<td>219.1</td>
+						
+							<td>219.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>108</td>
+					<td>4</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>157.6</td>
+						
+							<td>183.4</td>
+						
+							<td>198.5</td>
+						
+							<td>211.5</td>
+						
+							<td>228.4</td>
+						
+							<td>234.9</td>
+						
+							<td>242</td>
+						
+							<td>244.5</td>
+						
+							<td>254</td>
+						
+							<td>256.4</td>
+						
+							<td>257.2</td>
+						
+							<td>262.5</td>
+						
+							<td>265.1</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>109</td>
+					<td>4</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>141.1</td>
+						
+							<td>156.8</td>
+						
+							<td>171.9</td>
+						
+							<td>179.9</td>
+						
+							<td>191.1</td>
+						
+							<td>193.8</td>
+						
+							<td>206.3</td>
+						
+							<td>205.4</td>
+						
+							<td>212.5</td>
+						
+							<td>222.7</td>
+						
+							<td>222.1</td>
+						
+							<td>219.7</td>
+						
+							<td>226.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>110</td>
+					<td>4</td>
+					<td>Vehicle Control</td>
+					<td>94</td>
+					
+							<td>148.5</td>
+						
+							<td>163.4</td>
+						
+							<td>179.8</td>
+						
+							<td>189.6</td>
+						
+							<td>203.3</td>
+						
+							<td>211</td>
+						
+							<td>218.7</td>
+						
+							<td>222.1</td>
+						
+							<td>222.6</td>
+						
+							<td>233.6</td>
+						
+							<td>230.8</td>
+						
+							<td>233.2</td>
+						
+							<td>241.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>301</td>
+					<td>7</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>147.7</td>
+						
+							<td>162.3</td>
+						
+							<td>180.4</td>
+						
+							<td>192.5</td>
+						
+							<td>198.4</td>
+						
+							<td>211.3</td>
+						
+							<td>215.8</td>
+						
+							<td>218.1</td>
+						
+							<td>225.6</td>
+						
+							<td>230</td>
+						
+							<td>230.5</td>
+						
+							<td>234.5</td>
+						
+							<td>236.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>302</td>
+					<td>7</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>149.5</td>
+						
+							<td>163.6</td>
+						
+							<td>175.2</td>
+						
+							<td>194.6</td>
+						
+							<td>204.3</td>
+						
+							<td>211.5</td>
+						
+							<td>221.6</td>
+						
+							<td>225.8</td>
+						
+							<td>234.6</td>
+						
+							<td>246.3</td>
+						
+							<td>248.3</td>
+						
+							<td>253.8</td>
+						
+							<td>253.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>303</td>
+					<td>7</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>150.7</td>
+						
+							<td>172.4</td>
+						
+							<td>193.5</td>
+						
+							<td>208.7</td>
+						
+							<td>219.2</td>
+						
+							<td>228.3</td>
+						
+							<td>232.7</td>
+						
+							<td>239.8</td>
+						
+							<td>244.5</td>
+						
+							<td>251.1</td>
+						
+							<td>255.2</td>
+						
+							<td>252.7</td>
+						
+							<td>258.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>304</td>
+					<td>7</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>154.6</td>
+						
+							<td>173.6</td>
+						
+							<td>190</td>
+						
+							<td>204.8</td>
+						
+							<td>219.1</td>
+						
+							<td>218.6</td>
+						
+							<td>226.1</td>
+						
+							<td>233.2</td>
+						
+							<td>236.1</td>
+						
+							<td>243.3</td>
+						
+							<td>245.4</td>
+						
+							<td>247.4</td>
+						
+							<td>248.1</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>305</td>
+					<td>7</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>144.9</td>
+						
+							<td>158.8</td>
+						
+							<td>172</td>
+						
+							<td>192.3</td>
+						
+							<td>204.3</td>
+						
+							<td>213.3</td>
+						
+							<td>221.6</td>
+						
+							<td>226.4</td>
+						
+							<td>228.9</td>
+						
+							<td>233.4</td>
+						
+							<td>242.3</td>
+						
+							<td>249.5</td>
+						
+							<td>249.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>306</td>
+					<td>8</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>145.7</td>
+						
+							<td>168.2</td>
+						
+							<td>182.3</td>
+						
+							<td>192.7</td>
+						
+							<td>209.5</td>
+						
+							<td>215.2</td>
+						
+							<td>224.7</td>
+						
+							<td>228.1</td>
+						
+							<td>235.8</td>
+						
+							<td>244</td>
+						
+							<td>246.9</td>
+						
+							<td>253</td>
+						
+							<td>259.5</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>307</td>
+					<td>8</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>140.9</td>
+						
+							<td>158</td>
+						
+							<td>176.9</td>
+						
+							<td>187.5</td>
+						
+							<td>196.1</td>
+						
+							<td>201.3</td>
+						
+							<td>201</td>
+						
+							<td>213.5</td>
+						
+							<td>212.8</td>
+						
+							<td>216.9</td>
+						
+							<td>220.1</td>
+						
+							<td>217</td>
+						
+							<td>227.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>308</td>
+					<td>8</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>133</td>
+						
+							<td>145.5</td>
+						
+							<td>162.1</td>
+						
+							<td>174</td>
+						
+							<td>187.5</td>
+						
+							<td>194.8</td>
+						
+							<td>200.6</td>
+						
+							<td>205.9</td>
+						
+							<td>207.2</td>
+						
+							<td>213.3</td>
+						
+							<td>213.3</td>
+						
+							<td>218.6</td>
+						
+							<td>221.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>309</td>
+					<td>8</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>152.2</td>
+						
+							<td>171.4</td>
+						
+							<td>188.8</td>
+						
+							<td>208.1</td>
+						
+							<td>221</td>
+						
+							<td>232.7</td>
+						
+							<td>242.1</td>
+						
+							<td>250.2</td>
+						
+							<td>257.2</td>
+						
+							<td>263.3</td>
+						
+							<td>270.3</td>
+						
+							<td>272.6</td>
+						
+							<td>274.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>310</td>
+					<td>8</td>
+					<td>125ppm</td>
+					<td>94</td>
+					
+							<td>155.7</td>
+						
+							<td>171.2</td>
+						
+							<td>187.7</td>
+						
+							<td>202.7</td>
+						
+							<td>214.5</td>
+						
+							<td>222.3</td>
+						
+							<td>232.2</td>
+						
+							<td>239</td>
+						
+							<td>239.7</td>
+						
+							<td>243.8</td>
+						
+							<td>247.9</td>
+						
+							<td>254.5</td>
+						
+							<td>258.2</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>501</td>
+					<td>11</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>136.2</td>
+						
+							<td>146.9</td>
+						
+							<td>157.2</td>
+						
+							<td>170.4</td>
+						
+							<td>182.1</td>
+						
+							<td>189</td>
+						
+							<td>199.8</td>
+						
+							<td>200.6</td>
+						
+							<td>209.9</td>
+						
+							<td>215.8</td>
+						
+							<td>215.9</td>
+						
+							<td>219.4</td>
+						
+							<td>224.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>502</td>
+					<td>11</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>146.5</td>
+						
+							<td>167.6</td>
+						
+							<td>186.3</td>
+						
+							<td>205.6</td>
+						
+							<td>213.6</td>
+						
+							<td>215.1</td>
+						
+							<td>229.8</td>
+						
+							<td>236.8</td>
+						
+							<td>240.8</td>
+						
+							<td>246.3</td>
+						
+							<td>251.4</td>
+						
+							<td>256.5</td>
+						
+							<td>265.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>503</td>
+					<td>11</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>150.6</td>
+						
+							<td>169.7</td>
+						
+							<td>190</td>
+						
+							<td>200.3</td>
+						
+							<td>211</td>
+						
+							<td>219.9</td>
+						
+							<td>230.6</td>
+						
+							<td>236.5</td>
+						
+							<td>240.9</td>
+						
+							<td>253.4</td>
+						
+							<td>255.6</td>
+						
+							<td>262.7</td>
+						
+							<td>266.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>504</td>
+					<td>11</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>149.5</td>
+						
+							<td>177.4</td>
+						
+							<td>202.6</td>
+						
+							<td>222.1</td>
+						
+							<td>235.3</td>
+						
+							<td>242.4</td>
+						
+							<td>256</td>
+						
+							<td>263.5</td>
+						
+							<td>269.4</td>
+						
+							<td>271.5</td>
+						
+							<td>281</td>
+						
+							<td>280.3</td>
+						
+							<td>285</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>505</td>
+					<td>11</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>136.9</td>
+						
+							<td>155.7</td>
+						
+							<td>172.3</td>
+						
+							<td>192.9</td>
+						
+							<td>207.5</td>
+						
+							<td>216</td>
+						
+							<td>220.9</td>
+						
+							<td>228.3</td>
+						
+							<td>235</td>
+						
+							<td>243.6</td>
+						
+							<td>242.3</td>
+						
+							<td>249.3</td>
+						
+							<td>250.2</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>506</td>
+					<td>12</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>138.9</td>
+						
+							<td>161.7</td>
+						
+							<td>175.9</td>
+						
+							<td>186.1</td>
+						
+							<td>201.4</td>
+						
+							<td>204.7</td>
+						
+							<td>213.9</td>
+						
+							<td>219.4</td>
+						
+							<td>222.4</td>
+						
+							<td>230.3</td>
+						
+							<td>234.8</td>
+						
+							<td>243.2</td>
+						
+							<td>245.4</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>507</td>
+					<td>12</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>149.1</td>
+						
+							<td>166.4</td>
+						
+							<td>183.9</td>
+						
+							<td>195.5</td>
+						
+							<td>209.6</td>
+						
+							<td>213.7</td>
+						
+							<td>218.5</td>
+						
+							<td>227.7</td>
+						
+							<td>226.2</td>
+						
+							<td>235.2</td>
+						
+							<td>236.8</td>
+						
+							<td>238.4</td>
+						
+							<td>240.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>508</td>
+					<td>12</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>158.7</td>
+						
+							<td>179.1</td>
+						
+							<td>197.5</td>
+						
+							<td>207.4</td>
+						
+							<td>225.8</td>
+						
+							<td>230.2</td>
+						
+							<td>235.8</td>
+						
+							<td>243.4</td>
+						
+							<td>245.2</td>
+						
+							<td>252.8</td>
+						
+							<td>256.7</td>
+						
+							<td>258</td>
+						
+							<td>266.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>509</td>
+					<td>12</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>127.9</td>
+						
+							<td>154.1</td>
+						
+							<td>166</td>
+						
+							<td>184.4</td>
+						
+							<td>200.3</td>
+						
+							<td>207.8</td>
+						
+							<td>219.2</td>
+						
+							<td>225.1</td>
+						
+							<td>235.1</td>
+						
+							<td>234.2</td>
+						
+							<td>243.7</td>
+						
+							<td>242</td>
+						
+							<td>242</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>510</td>
+					<td>12</td>
+					<td>250ppm</td>
+					<td>94</td>
+					
+							<td>145.4</td>
+						
+							<td>161.2</td>
+						
+							<td>173.1</td>
+						
+							<td>190.5</td>
+						
+							<td>204.9</td>
+						
+							<td>215.1</td>
+						
+							<td>226.4</td>
+						
+							<td>229.7</td>
+						
+							<td>235.5</td>
+						
+							<td>247.7</td>
+						
+							<td>250.2</td>
+						
+							<td>258.7</td>
+						
+							<td>259.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>701</td>
+					<td>15</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>138.4</td>
+						
+							<td>157.1</td>
+						
+							<td>173.5</td>
+						
+							<td>192.6</td>
+						
+							<td>203</td>
+						
+							<td>213.8</td>
+						
+							<td>225.2</td>
+						
+							<td>231</td>
+						
+							<td>235.1</td>
+						
+							<td>244.8</td>
+						
+							<td>243.2</td>
+						
+							<td>247.1</td>
+						
+							<td>251.2</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>702</td>
+					<td>15</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>148</td>
+						
+							<td>170.5</td>
+						
+							<td>189.1</td>
+						
+							<td>205.2</td>
+						
+							<td>210.8</td>
+						
+							<td>226.1</td>
+						
+							<td>231.6</td>
+						
+							<td>235.6</td>
+						
+							<td>241.1</td>
+						
+							<td>248.4</td>
+						
+							<td>245</td>
+						
+							<td>251</td>
+						
+							<td>267.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>703</td>
+					<td>15</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>152.9</td>
+						
+							<td>171.8</td>
+						
+							<td>193.6</td>
+						
+							<td>208.2</td>
+						
+							<td>219.2</td>
+						
+							<td>234</td>
+						
+							<td>239.9</td>
+						
+							<td>250.8</td>
+						
+							<td>258.7</td>
+						
+							<td>258.7</td>
+						
+							<td>262.6</td>
+						
+							<td>267.6</td>
+						
+							<td>267.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>704</td>
+					<td>15</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>153.9</td>
+						
+							<td>177</td>
+						
+							<td>188.5</td>
+						
+							<td>202.1</td>
+						
+							<td>213.6</td>
+						
+							<td>217.3</td>
+						
+							<td>228.5</td>
+						
+							<td>237.6</td>
+						
+							<td>242.1</td>
+						
+							<td>247.1</td>
+						
+							<td>246.7</td>
+						
+							<td>271</td>
+						
+							<td>264.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>705</td>
+					<td>15</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>135.6</td>
+						
+							<td>149.4</td>
+						
+							<td>166.9</td>
+						
+							<td>192.3</td>
+						
+							<td>209</td>
+						
+							<td>218.8</td>
+						
+							<td>228.3</td>
+						
+							<td>236.6</td>
+						
+							<td>240.6</td>
+						
+							<td>244.1</td>
+						
+							<td>246.8</td>
+						
+							<td>250.5</td>
+						
+							<td>262.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>706</td>
+					<td>16</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>144.3</td>
+						
+							<td>174.3</td>
+						
+							<td>198.7</td>
+						
+							<td>218</td>
+						
+							<td>234</td>
+						
+							<td>244.6</td>
+						
+							<td>257.5</td>
+						
+							<td>263.7</td>
+						
+							<td>273.9</td>
+						
+							<td>280.6</td>
+						
+							<td>284.1</td>
+						
+							<td>286.7</td>
+						
+							<td>288.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>707</td>
+					<td>16</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>133.1</td>
+						
+							<td>151.5</td>
+						
+							<td>173.8</td>
+						
+							<td>187.1</td>
+						
+							<td>200.7</td>
+						
+							<td>212.5</td>
+						
+							<td>219</td>
+						
+							<td>222.7</td>
+						
+							<td>228.5</td>
+						
+							<td>237.9</td>
+						
+							<td>240.5</td>
+						
+							<td>241.3</td>
+						
+							<td>243.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>708</td>
+					<td>16</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>140.6</td>
+						
+							<td>160.5</td>
+						
+							<td>176.9</td>
+						
+							<td>193.3</td>
+						
+							<td>203.3</td>
+						
+							<td>209.5</td>
+						
+							<td>217.1</td>
+						
+							<td>222.6</td>
+						
+							<td>226.8</td>
+						
+							<td>230.5</td>
+						
+							<td>233.9</td>
+						
+							<td>247.2</td>
+						
+							<td>262.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>709</td>
+					<td>16</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>148.6</td>
+						
+							<td>170.6</td>
+						
+							<td>181.5</td>
+						
+							<td>195.7</td>
+						
+							<td>204.7</td>
+						
+							<td>211.5</td>
+						
+							<td>217.1</td>
+						
+							<td>220.9</td>
+						
+							<td>224.8</td>
+						
+							<td>227.3</td>
+						
+							<td>234.8</td>
+						
+							<td>238</td>
+						
+							<td>241.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>710</td>
+					<td>16</td>
+					<td>500ppm</td>
+					<td>94</td>
+					
+							<td>144.1</td>
+						
+							<td>160.6</td>
+						
+							<td>176.6</td>
+						
+							<td>192.5</td>
+						
+							<td>200</td>
+						
+							<td>205.6</td>
+						
+							<td>215.3</td>
+						
+							<td>217.2</td>
+						
+							<td>227.3</td>
+						
+							<td>238</td>
+						
+							<td>234.5</td>
+						
+							<td>238.1</td>
+						
+							<td>238.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>901</td>
+					<td>19</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>140.2</td>
+						
+							<td>166.7</td>
+						
+							<td>189.1</td>
+						
+							<td>199.2</td>
+						
+							<td>212</td>
+						
+							<td>218.4</td>
+						
+							<td>229.4</td>
+						
+							<td>236.1</td>
+						
+							<td>236.6</td>
+						
+							<td>252.3</td>
+						
+							<td>246</td>
+						
+							<td>255.1</td>
+						
+							<td>257.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>902</td>
+					<td>19</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>144.2</td>
+						
+							<td>167.2</td>
+						
+							<td>188.3</td>
+						
+							<td>197.2</td>
+						
+							<td>208</td>
+						
+							<td>214.3</td>
+						
+							<td>223.9</td>
+						
+							<td>228.3</td>
+						
+							<td>235.3</td>
+						
+							<td>250.5</td>
+						
+							<td>245.2</td>
+						
+							<td>245.6</td>
+						
+							<td>249.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>903</td>
+					<td>19</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>141.7</td>
+						
+							<td>163.7</td>
+						
+							<td>181.6</td>
+						
+							<td>195.3</td>
+						
+							<td>204.7</td>
+						
+							<td>210.3</td>
+						
+							<td>221.2</td>
+						
+							<td>230.5</td>
+						
+							<td>230.1</td>
+						
+							<td>244.3</td>
+						
+							<td>240.3</td>
+						
+							<td>242.6</td>
+						
+							<td>253.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>904</td>
+					<td>19</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>136.3</td>
+						
+							<td>154.1</td>
+						
+							<td>165.7</td>
+						
+							<td>177.2</td>
+						
+							<td>186.4</td>
+						
+							<td>193.9</td>
+						
+							<td>200</td>
+						
+							<td>206</td>
+						
+							<td>207.7</td>
+						
+							<td>214.8</td>
+						
+							<td>217.3</td>
+						
+							<td>225.5</td>
+						
+							<td>228.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>905</td>
+					<td>19</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>142.3</td>
+						
+							<td>173.6</td>
+						
+							<td>198.8</td>
+						
+							<td>218</td>
+						
+							<td>241.8</td>
+						
+							<td>243.4</td>
+						
+							<td>249.1</td>
+						
+							<td>271.3</td>
+						
+							<td>264.7</td>
+						
+							<td>267.3</td>
+						
+							<td>287.4</td>
+						
+							<td>276.8</td>
+						
+							<td>290.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>906</td>
+					<td>20</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>154.7</td>
+						
+							<td>183.7</td>
+						
+							<td>204.8</td>
+						
+							<td>217.4</td>
+						
+							<td>227.2</td>
+						
+							<td>262</td>
+						
+							<td>260.8</td>
+						
+							<td>272.8</td>
+						
+							<td>269.6</td>
+						
+							<td>280.5</td>
+						
+							<td>310.9</td>
+						
+							<td>295.9</td>
+						
+							<td>313.4</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>907</td>
+					<td>20</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>135.3</td>
+						
+							<td>161.5</td>
+						
+							<td>173.6</td>
+						
+							<td>189.8</td>
+						
+							<td>196.4</td>
+						
+							<td>207.5</td>
+						
+							<td>220.8</td>
+						
+							<td>226.8</td>
+						
+							<td>228.8</td>
+						
+							<td>233.8</td>
+						
+							<td>236.9</td>
+						
+							<td>243</td>
+						
+							<td>241.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>908</td>
+					<td>20</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>138.6</td>
+						
+							<td>171.2</td>
+						
+							<td>191.1</td>
+						
+							<td>199.9</td>
+						
+							<td>209.2</td>
+						
+							<td>215.3</td>
+						
+							<td>220.5</td>
+						
+							<td>226</td>
+						
+							<td>223.9</td>
+						
+							<td>231.9</td>
+						
+							<td>236.3</td>
+						
+							<td>240.6</td>
+						
+							<td>249.6</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>909</td>
+					<td>20</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>143.7</td>
+						
+							<td>177.5</td>
+						
+							<td>197.3</td>
+						
+							<td>211.5</td>
+						
+							<td>225.9</td>
+						
+							<td>240.4</td>
+						
+							<td>253.5</td>
+						
+							<td>258.1</td>
+						
+							<td>276.5</td>
+						
+							<td>276.1</td>
+						
+							<td>287.3</td>
+						
+							<td>295.3</td>
+						
+							<td>299.1</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>910</td>
+					<td>20</td>
+					<td>1000ppm</td>
+					<td>94</td>
+					
+							<td>145.4</td>
+						
+							<td>182.3</td>
+						
+							<td>194.3</td>
+						
+							<td>212</td>
+						
+							<td>223.3</td>
+						
+							<td>230.7</td>
+						
+							<td>241.7</td>
+						
+							<td>244.2</td>
+						
+							<td>256.3</td>
+						
+							<td>260.4</td>
+						
+							<td>264</td>
+						
+							<td>271.2</td>
+						
+							<td>282.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1101</td>
+					<td>23</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>129.9</td>
+						
+							<td>147.9</td>
+						
+							<td>166.4</td>
+						
+							<td>192.2</td>
+						
+							<td>214</td>
+						
+							<td>218</td>
+						
+							<td>241.1</td>
+						
+							<td>246.2</td>
+						
+							<td>252.4</td>
+						
+							<td>270</td>
+						
+							<td>277.7</td>
+						
+							<td>291.9</td>
+						
+							<td>298.2</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1102</td>
+					<td>23</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>122.1</td>
+						
+							<td>146.5</td>
+						
+							<td>158.2</td>
+						
+							<td>179.2</td>
+						
+							<td>182.1</td>
+						
+							<td>192.8</td>
+						
+							<td>220.2</td>
+						
+							<td>222.7</td>
+						
+							<td>221.3</td>
+						
+							<td>226.3</td>
+						
+							<td>246.2</td>
+						
+							<td>252.1</td>
+						
+							<td>267.7</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1103</td>
+					<td>23</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>123.7</td>
+						
+							<td>142.1</td>
+						
+							<td>171.4</td>
+						
+							<td>187.8</td>
+						
+							<td>206.3</td>
+						
+							<td>223.6</td>
+						
+							<td>251.4</td>
+						
+							<td>249.6</td>
+						
+							<td>258.4</td>
+						
+							<td>287.5</td>
+						
+							<td>285.3</td>
+						
+							<td>302.5</td>
+						
+							<td>307</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1104</td>
+					<td>23</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>125.7</td>
+						
+							<td>150.3</td>
+						
+							<td>168.8</td>
+						
+							<td>196.3</td>
+						
+							<td>204.7</td>
+						
+							<td>227.4</td>
+						
+							<td>244.9</td>
+						
+							<td>265</td>
+						
+							<td>278.6</td>
+						
+							<td>284.8</td>
+						
+							<td>304.2</td>
+						
+							<td>298</td>
+						
+							<td>317.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1105</td>
+					<td>23</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>127</td>
+						
+							<td>154.7</td>
+						
+							<td>188.8</td>
+						
+							<td>208.9</td>
+						
+							<td>213.7</td>
+						
+							<td>233.4</td>
+						
+							<td>249.2</td>
+						
+							<td>260.3</td>
+						
+							<td>283.9</td>
+						
+							<td>287.4</td>
+						
+							<td>299.3</td>
+						
+							<td>301.5</td>
+						
+							<td>319.8</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1106</td>
+					<td>24</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>122.1</td>
+						
+							<td>138</td>
+						
+							<td>161.5</td>
+						
+							<td>172.2</td>
+						
+							<td>183.4</td>
+						
+							<td>194.6</td>
+						
+							<td>211.3</td>
+						
+							<td>218.5</td>
+						
+							<td>227.6</td>
+						
+							<td>242.7</td>
+						
+							<td>241.8</td>
+						
+							<td>250.1</td>
+						
+							<td>252.3</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1107</td>
+					<td>24</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>133.4</td>
+						
+							<td>154.1</td>
+						
+							<td>180.2</td>
+						
+							<td>192.7</td>
+						
+							<td>220.7</td>
+						
+							<td>230.4</td>
+						
+							<td>251.3</td>
+						
+							<td>254.3</td>
+						
+							<td>268.2</td>
+						
+							<td>266.9</td>
+						
+							<td>284.9</td>
+						
+							<td>292.7</td>
+						
+							<td>305.9</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1108</td>
+					<td>24</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>138.6</td>
+						
+							<td>158.3</td>
+						
+							<td>186</td>
+						
+							<td>194.5</td>
+						
+							<td>204.5</td>
+						
+							<td>214.9</td>
+						
+							<td>236.6</td>
+						
+							<td>242</td>
+						
+							<td>243.2</td>
+						
+							<td>245.7</td>
+						
+							<td>262.5</td>
+						
+							<td>262.5</td>
+						
+							<td>277</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1109</td>
+					<td>24</td>
+					<td>2000ppm</td>
+					<td>45</td>
+					
+							<td>122.3</td>
+						
+							<td>142.7</td>
+						
+							<td>165.3</td>
+						
+							<td>185.9</td>
+						
+							<td>176.7</td>
+						
+							<td>135.9</td>
+						
+							<td></td>
+						
+							<td></td>
+						
+							<td></td>
+						
+							<td></td>
+						
+							<td></td>
+						
+							<td></td>
+						
+							<td></td>
+						
+					<td>Moribund Sacrifice</td>
+				</tr>
+			
+				<tr>
+					<td>1110</td>
+					<td>24</td>
+					<td>2000ppm</td>
+					<td>94</td>
+					
+							<td>125.2</td>
+						
+							<td>153.3</td>
+						
+							<td>181.9</td>
+						
+							<td>205.9</td>
+						
+							<td>216</td>
+						
+							<td>234.7</td>
+						
+							<td>239.6</td>
+						
+							<td>258.4</td>
+						
+							<td>253.9</td>
+						
+							<td>258.9</td>
+						
+							<td>277.3</td>
+						
+							<td>290.5</td>
+						
+							<td>301</td>
+						
+					<td>Terminal Sacrifice</td>
+				</tr>
+			
+		</tbody>
+	</table>
+	* All body weights in grams
+
+	</body>
+</html>

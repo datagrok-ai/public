@@ -1,0 +1,121 @@
+Animal,Sex,Dose_ppm,Dose_label,Days_on_study,Terminal_BW_g,Removal_reason,is_control
+101,F,0,Vehicle Control,94,248.8,Terminal Sacrifice,True
+102,F,0,Vehicle Control,94,249.4,Terminal Sacrifice,True
+103,F,0,Vehicle Control,94,255.6,Terminal Sacrifice,True
+104,F,0,Vehicle Control,94,216.0,Terminal Sacrifice,True
+105,F,0,Vehicle Control,94,239.1,Terminal Sacrifice,True
+106,F,0,Vehicle Control,94,235.3,Terminal Sacrifice,True
+107,F,0,Vehicle Control,94,219.6,Terminal Sacrifice,True
+108,F,0,Vehicle Control,94,265.1,Terminal Sacrifice,True
+109,F,0,Vehicle Control,94,226.3,Terminal Sacrifice,True
+110,F,0,Vehicle Control,94,241.7,Terminal Sacrifice,True
+301,F,125,125ppm,94,236.8,Terminal Sacrifice,False
+302,F,125,125ppm,94,253.7,Terminal Sacrifice,False
+303,F,125,125ppm,94,258.6,Terminal Sacrifice,False
+304,F,125,125ppm,94,248.1,Terminal Sacrifice,False
+305,F,125,125ppm,94,249.8,Terminal Sacrifice,False
+306,F,125,125ppm,94,259.5,Terminal Sacrifice,False
+307,F,125,125ppm,94,227.6,Terminal Sacrifice,False
+308,F,125,125ppm,94,221.3,Terminal Sacrifice,False
+309,F,125,125ppm,94,274.9,Terminal Sacrifice,False
+310,F,125,125ppm,94,258.2,Terminal Sacrifice,False
+501,F,250,250ppm,94,224.7,Terminal Sacrifice,False
+502,F,250,250ppm,94,265.3,Terminal Sacrifice,False
+503,F,250,250ppm,94,266.7,Terminal Sacrifice,False
+504,F,250,250ppm,94,285.0,Terminal Sacrifice,False
+505,F,250,250ppm,94,250.2,Terminal Sacrifice,False
+506,F,250,250ppm,94,245.4,Terminal Sacrifice,False
+507,F,250,250ppm,94,240.6,Terminal Sacrifice,False
+508,F,250,250ppm,94,266.6,Terminal Sacrifice,False
+509,F,250,250ppm,94,242.0,Terminal Sacrifice,False
+510,F,250,250ppm,94,259.8,Terminal Sacrifice,False
+701,F,500,500ppm,94,251.2,Terminal Sacrifice,False
+702,F,500,500ppm,94,267.9,Terminal Sacrifice,False
+703,F,500,500ppm,94,267.3,Terminal Sacrifice,False
+704,F,500,500ppm,94,264.6,Terminal Sacrifice,False
+705,F,500,500ppm,94,262.7,Terminal Sacrifice,False
+706,F,500,500ppm,94,288.8,Terminal Sacrifice,False
+707,F,500,500ppm,94,243.7,Terminal Sacrifice,False
+708,F,500,500ppm,94,262.6,Terminal Sacrifice,False
+709,F,500,500ppm,94,241.7,Terminal Sacrifice,False
+710,F,500,500ppm,94,238.7,Terminal Sacrifice,False
+901,F,1000,1000ppm,94,257.7,Terminal Sacrifice,False
+902,F,1000,1000ppm,94,249.3,Terminal Sacrifice,False
+903,F,1000,1000ppm,94,253.9,Terminal Sacrifice,False
+904,F,1000,1000ppm,94,228.6,Terminal Sacrifice,False
+905,F,1000,1000ppm,94,290.8,Terminal Sacrifice,False
+906,F,1000,1000ppm,94,313.4,Terminal Sacrifice,False
+907,F,1000,1000ppm,94,241.6,Terminal Sacrifice,False
+908,F,1000,1000ppm,94,249.6,Terminal Sacrifice,False
+909,F,1000,1000ppm,94,299.1,Terminal Sacrifice,False
+910,F,1000,1000ppm,94,282.9,Terminal Sacrifice,False
+1101,F,2000,2000ppm,94,298.2,Terminal Sacrifice,False
+1102,F,2000,2000ppm,94,267.7,Terminal Sacrifice,False
+1103,F,2000,2000ppm,94,307.0,Terminal Sacrifice,False
+1104,F,2000,2000ppm,94,317.9,Terminal Sacrifice,False
+1105,F,2000,2000ppm,94,319.8,Terminal Sacrifice,False
+1106,F,2000,2000ppm,94,252.3,Terminal Sacrifice,False
+1107,F,2000,2000ppm,94,305.9,Terminal Sacrifice,False
+1108,F,2000,2000ppm,94,277.0,Terminal Sacrifice,False
+1109,F,2000,2000ppm,45,,Moribund Sacrifice,False
+1110,F,2000,2000ppm,94,301.0,Terminal Sacrifice,False
+1,M,0,Vehicle Control,93,365.6,Terminal Sacrifice,True
+2,M,0,Vehicle Control,93,392.1,Terminal Sacrifice,True
+3,M,0,Vehicle Control,93,428.0,Terminal Sacrifice,True
+4,M,0,Vehicle Control,93,379.9,Terminal Sacrifice,True
+5,M,0,Vehicle Control,93,407.5,Terminal Sacrifice,True
+6,M,0,Vehicle Control,93,358.8,Terminal Sacrifice,True
+7,M,0,Vehicle Control,93,403.3,Terminal Sacrifice,True
+8,M,0,Vehicle Control,93,425.3,Terminal Sacrifice,True
+9,M,0,Vehicle Control,93,381.8,Terminal Sacrifice,True
+10,M,0,Vehicle Control,93,389.7,Terminal Sacrifice,True
+201,M,125,125ppm,93,397.8,Terminal Sacrifice,False
+202,M,125,125ppm,93,418.8,Terminal Sacrifice,False
+203,M,125,125ppm,93,440.4,Terminal Sacrifice,False
+204,M,125,125ppm,93,423.5,Terminal Sacrifice,False
+205,M,125,125ppm,93,419.2,Terminal Sacrifice,False
+206,M,125,125ppm,93,441.4,Terminal Sacrifice,False
+207,M,125,125ppm,93,444.8,Terminal Sacrifice,False
+208,M,125,125ppm,93,441.4,Terminal Sacrifice,False
+209,M,125,125ppm,93,412.6,Terminal Sacrifice,False
+210,M,125,125ppm,93,414.8,Terminal Sacrifice,False
+401,M,250,250ppm,93,387.5,Terminal Sacrifice,False
+402,M,250,250ppm,93,378.5,Terminal Sacrifice,False
+403,M,250,250ppm,93,464.9,Terminal Sacrifice,False
+404,M,250,250ppm,93,371.1,Terminal Sacrifice,False
+405,M,250,250ppm,93,409.7,Terminal Sacrifice,False
+406,M,250,250ppm,93,432.5,Terminal Sacrifice,False
+407,M,250,250ppm,93,437.7,Terminal Sacrifice,False
+408,M,250,250ppm,93,461.8,Terminal Sacrifice,False
+409,M,250,250ppm,93,386.6,Terminal Sacrifice,False
+410,M,250,250ppm,93,407.7,Terminal Sacrifice,False
+601,M,500,500ppm,93,453.4,Terminal Sacrifice,False
+602,M,500,500ppm,93,398.1,Terminal Sacrifice,False
+603,M,500,500ppm,93,377.1,Terminal Sacrifice,False
+604,M,500,500ppm,93,394.0,Terminal Sacrifice,False
+605,M,500,500ppm,93,432.8,Terminal Sacrifice,False
+606,M,500,500ppm,93,356.6,Terminal Sacrifice,False
+607,M,500,500ppm,93,474.5,Terminal Sacrifice,False
+608,M,500,500ppm,93,406.4,Terminal Sacrifice,False
+609,M,500,500ppm,93,403.3,Terminal Sacrifice,False
+610,M,500,500ppm,93,421.4,Terminal Sacrifice,False
+801,M,1000,1000ppm,93,415.8,Terminal Sacrifice,False
+802,M,1000,1000ppm,93,395.4,Terminal Sacrifice,False
+803,M,1000,1000ppm,93,383.0,Terminal Sacrifice,False
+804,M,1000,1000ppm,93,439.9,Terminal Sacrifice,False
+805,M,1000,1000ppm,93,355.2,Terminal Sacrifice,False
+806,M,1000,1000ppm,93,407.3,Terminal Sacrifice,False
+807,M,1000,1000ppm,93,406.9,Terminal Sacrifice,False
+808,M,1000,1000ppm,93,383.8,Terminal Sacrifice,False
+809,M,1000,1000ppm,93,413.8,Terminal Sacrifice,False
+810,M,1000,1000ppm,93,413.2,Terminal Sacrifice,False
+1001,M,2000,2000ppm,93,389.8,Terminal Sacrifice,False
+1002,M,2000,2000ppm,93,351.7,Terminal Sacrifice,False
+1003,M,2000,2000ppm,93,361.8,Terminal Sacrifice,False
+1004,M,2000,2000ppm,93,382.0,Terminal Sacrifice,False
+1005,M,2000,2000ppm,93,355.8,Terminal Sacrifice,False
+1006,M,2000,2000ppm,93,407.2,Terminal Sacrifice,False
+1007,M,2000,2000ppm,93,373.7,Terminal Sacrifice,False
+1008,M,2000,2000ppm,93,373.8,Terminal Sacrifice,False
+1009,M,2000,2000ppm,93,364.0,Terminal Sacrifice,False
+1010,M,2000,2000ppm,93,399.8,Terminal Sacrifice,False
