@@ -40,7 +40,7 @@ export function buildViewContext(view: DG.ViewBase): string {
   return '';
 }
 
-interface DgEntityRef {
+export interface DgEntityRef {
   type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space' | 'group' | 'user';
   name: string;
   id?: string;
@@ -85,22 +85,8 @@ function renderEntityRef(ref: DgEntityRef): HTMLElement | null {
   return placeholder;
 }
 
-export function renderEntityBlocks(container: HTMLElement): void {
-  for (const block of Array.from(container.querySelectorAll('code.language-datagrok-entities'))) {
-    const pre = block.parentElement;
-    if (!pre || pre.tagName !== 'PRE')
-      continue;
-    try {
-      const refs: DgEntityRef[] = JSON.parse(block.textContent ?? '[]');
-      if (!Array.isArray(refs) || refs.length === 0)
-        continue;
-      const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
-      if (cards.length === 0)
-        continue;
-      const cardsContainer = ui.divV(cards, 'grokky-entity-cards');
-      pre.replaceWith(cardsContainer);
-    } catch (e) {
-      console.warn('Failed to parse datagrok-entities block:', e);
-    }
-  }
+export function renderEntityRefList(refs: DgEntityRef[]): HTMLElement {
+  const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
+  return ui.divV(cards, 'grokky-entity-cards');
 }
+

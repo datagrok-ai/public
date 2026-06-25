@@ -14,10 +14,11 @@ import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
+
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
-type FenceMode = 'prose' | 'entity' | 'other';
+type FenceMode = 'prose' | 'other';
 interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
 const fenceStates = new Map<string, FenceState>();
 // Most-recent tool_use name per session, used to tag the matching tool_result (see F2 follow-up).
@@ -65,6 +66,7 @@ You have the AskUserQuestion tool available. Use it only when the **intent** its
 // on demand via the Skill tool — skills' description triggers handle routing.
 const INLINED_SKILL_NAMES = [
   'datagrok-exec',
+  'datagrok-entities',
 ];
 
 function loadInlinedSkills(): string {
@@ -168,23 +170,42 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
   return createSdkMcpServer({
     name: 'datagrok-browser',
     version: '1.0.0',
-    tools: [sdkTool(
-      'datagrok_exec',
-      'Run JavaScript in the Datagrok tab to perform an action (add viewer, filter, open file, ' +
-      'upload data, …). Returns {success, returnValue?, error?}. For informational questions ' +
-      '("how do I…", "what is…") answer in plain text — do NOT call this tool.',
-      {code: z.string().describe(
-        'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
-        'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
-      )},
-      async ({code}) => {
-        try {
-          return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
-        } catch (e: any) {
-          return asResult({success: false, error: e.message});
-        }
-      },
-    )],
+    tools: [
+      sdkTool(
+        'datagrok_exec',
+        'Run JavaScript in the Datagrok tab to perform an action (add viewer, filter, open file, ' +
+        'upload data, …). Returns {success, returnValue?, error?}. For informational questions ' +
+        '("how do I…", "what is…") answer in plain text — do NOT call this tool.',
+        {code: z.string().describe(
+          'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
+          'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
+        )},
+        async ({code}) => {
+          try {
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
+          } catch (e: any) {
+            return asResult({success: false, error: e.message});
+          }
+        },
+      ),
+      sdkTool(
+        'datagrok_show_entities',
+        'Display Datagrok entities (files, scripts, queries, connections, projects, spaces, groups, users) ' +
+        'as interactive cards in the chat. ALWAYS call this tool when you have entity data from an MCP result — ' +
+        'never list entities as plain text, markdown links, or a fenced block.',
+        {entities: z.array(z.any()).describe(
+          'Array of entity refs. Each entry must have: type (file|script|query|connection|project|space|group|user), name. ' +
+          'Files also need connector and path. Other types need id. Pass values from the MCP result exactly — never invent.',
+        )},
+        async ({entities}) => {
+          try {
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_show_entities', {entities}));
+          } catch (e: any) {
+            return asResult({success: false, error: e.message});
+          }
+        },
+      ),
+    ],
   });
 }
 
@@ -268,6 +289,7 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
   datagrok_exec: (i) => `Execute in browser${i.code ? ': ' + (i.code).slice(0, 60).replace(/\n/g, ' ') : ''}`,
+  datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
 function toolSummary(name: string, input: Record<string, unknown>): string {
@@ -301,13 +323,8 @@ function emit(ws: WsSender, msg: OutgoingMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-function kindOf(mode: FenceMode): 'entity' | undefined {
-  return mode === 'entity' ? 'entity' : undefined;
-}
-
-function emitChunk(ws: WsSender, sid: string, content: string, mode: FenceMode): void {
-  const kind = kindOf(mode);
-  emit(ws, {type: 'chunk', sessionId: sid, content, ...(kind ? {kind} : {})});
+function emitChunk(ws: WsSender, sid: string, content: string): void {
+  emit(ws, {type: 'chunk', sessionId: sid, content});
 }
 
 // Streams text from a Claude text_delta. Holds only the partial trailing line when it could
@@ -332,21 +349,15 @@ function emitFiltered(ws: WsSender, sid: string, text: string): void {
       if (!fence) continue;
 
       if (i > groupStart)
-        emitChunk(ws, sid, lines.slice(groupStart, i).join('\n') + '\n', groupMode);
+        emitChunk(ws, sid, lines.slice(groupStart, i).join('\n') + '\n');
 
-      if (st.mode === 'prose') {
-        const lang = fence[1];
-        st.mode = lang === 'datagrok-entities' ? 'entity' : 'other';
-        emitChunk(ws, sid, lines[i] + '\n', st.mode);
-      } else {
-        emitChunk(ws, sid, lines[i] + '\n', st.mode);
-        st.mode = 'prose';
-      }
+      emitChunk(ws, sid, lines[i] + '\n');
+      st.mode = st.mode === 'prose' ? 'other' : 'prose';
       groupStart = i + 1;
       groupMode = st.mode;
     }
     if (groupStart < lines.length)
-      emitChunk(ws, sid, lines.slice(groupStart).join('\n') + '\n', groupMode);
+      emitChunk(ws, sid, lines.slice(groupStart).join('\n') + '\n');
     st.lineInProgress = false;
   }
 
@@ -356,7 +367,7 @@ function emitFiltered(ws: WsSender, sid: string, text: string): void {
   if (!st.lineInProgress && partial.startsWith('`'))
     st.carry = partial;
   else {
-    emitChunk(ws, sid, partial, st.mode);
+    emitChunk(ws, sid, partial);
     st.lineInProgress = true;
   }
 }
@@ -364,7 +375,7 @@ function emitFiltered(ws: WsSender, sid: string, text: string): void {
 function flushFenceState(ws: WsSender, sid: string): void {
   const st = fenceStates.get(sid);
   if (st?.carry)
-    emitChunk(ws, sid, st.carry, st.mode);
+    emitChunk(ws, sid, st.carry);
   fenceStates.delete(sid);
 }
 

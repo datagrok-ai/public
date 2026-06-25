@@ -12,7 +12,7 @@ import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
-import {executeSingleBlock, renderEntityBlocks} from '../claude/exec-blocks';
+import {executeSingleBlock, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -97,7 +97,6 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     try {
       await opts.onFinal(evt, contentHost);
     } finally {
-      renderEntityBlocks(contentHost);
       signalRendered();
       stopListening();
     }
@@ -332,9 +331,7 @@ async function streamOnce(
 ): Promise<void> {
   return new Promise<void>(async (resolve) => {
     const sessionId = panel.sessionId;
-    let accumulated = ''; // full markdown — kept for session history
-    let displayBuffer = ''; // shown during streaming (entity chunks excluded from display, kept in finalBuffer)
-    let finalBuffer = ''; // entity chunks stay so renderEntityBlocks finds them at finalize
+    let accumulated = '';
     let toolStatus = '';
     let nextBlockIndex = 0;
     const subs: {unsubscribe: () => void}[] = [];
@@ -365,35 +362,30 @@ async function streamOnce(
 
       forSession(client.onChunk, (evt) => {
         accumulated += evt.content;
-        if (evt.kind !== 'entity') {
-          displayBuffer += evt.content;
-          toolStatus = '';
-          panel.updateStreaming(displayBuffer, chatSession.loader);
-        }
-        finalBuffer += evt.content;
+        toolStatus = '';
+        panel.updateStreaming(accumulated, chatSession.loader);
       });
 
       forSession(client.onToolActivity, (evt) => {
         toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
       forSession(client.onToolResult, (evt) => {
-        // datagrok_exec results are internal — Claude's prose is the user-facing feedback.
-        if (evt.toolName?.endsWith('datagrok_exec'))
+        // browser tool results are internal — Claude's prose is the user-facing feedback.
+        if (evt.toolName?.endsWith('datagrok_exec') || evt.toolName?.endsWith('datagrok_show_entities'))
           return;
         toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
       });
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
-        const exec = accumulated || evt.content;
-        const display = finalBuffer || evt.content;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
-        await panel.finalizeStreaming(display, exec, view);
+        const content = accumulated || evt.content;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: content}]});
+        await panel.finalizeStreaming(content, content, view);
         cleanup();
         resolve();
       });
@@ -423,6 +415,12 @@ async function streamOnce(
           client.respondToInput(sessionId, evt.requestId, result);
           return;
         }
+        // datagrok_show_entities: render entity cards immediately, no user interaction needed.
+        if (evt.toolName === 'datagrok_show_entities') {
+          panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
+          client.respondToInput(sessionId, evt.requestId, {success: true});
+          return;
+        }
         // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
         const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
         if (clientToolHandler && mcpToolName !== evt.toolName) {
@@ -436,8 +434,6 @@ async function streamOnce(
         }
         // Default: AskUserQuestion
         accumulated = '';
-        displayBuffer = '';
-        finalBuffer = '';
         toolStatus = '';
         panel.clearStreaming();
         const response = await panel.showInputRequest(evt.input);
