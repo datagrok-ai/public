@@ -609,15 +609,14 @@ export class FittingView {
 
       this.isFittingRunning = false;
       this.updateApplicabilityState();
+      this.updateAcceptIconState();
     }
   }, 'Run');
 
-  private acceptIcon = ui.iconFA('ballot-check', async () => {
+  private acceptIcon = ui.iconFA('check-double', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
-    if (choiceItems.length === 0) {
-      grok.shell.warning('No fittings');
+    if (choiceItems.length === 0) // disabled state: nothing to apply yet
       return;
-    }
     let chosenItem = 1;
     const input = ui.input.choice('Select fitting', {items: choiceItems, value: chosenItem, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
@@ -838,6 +837,7 @@ export class FittingView {
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
+      this.updateAcceptIconState();
       this.fittingSettingsDiv.hidden = true;
 
       this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
@@ -1292,6 +1292,22 @@ export class FittingView {
     } else
       this.runIcon.style.color = 'var(--grey-3)';
   } // updateRunIconStyle
+
+  /** Reflect fitting availability on the accept icon: green/enabled when there are fitted results
+   *  to apply, grey/disabled otherwise. Mirrors the run (play) icon convention. */
+  private updateAcceptIconState(): void {
+    if (this.currentFuncCalls.length > 0) {
+      this.acceptIcon.style.color = 'var(--green-2)';
+      ui.tooltip.bind(this.acceptIcon, 'Apply fitted parameters to the model');
+    } else {
+      this.acceptIcon.style.color = 'var(--grey-3)';
+      ui.tooltip.bind(this.acceptIcon, () => {
+        const label = ui.label('Run fitting first to apply parameters');
+        label.style.color = '#FF0000';
+        return label;
+      });
+    }
+  } // updateAcceptIconState
 
   private getInputValue(input: DG.InputBase) {
     return input.inputType === 'Choice' ? input.stringValue : input.value;
