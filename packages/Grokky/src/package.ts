@@ -109,9 +109,12 @@ export class PackageFunctions {
   static autostart() {
     if (grok.shell.windows.showAI)
       setupShellAIPanelUI();
+    let prevShowAI = grok.shell.windows.showAI;
     grok.shell.windows.onPanelVisibilityChanged.subscribe(() => {
-      if (grok.shell.windows.showAI)
+      const showAI = grok.shell.windows.showAI;
+      if (showAI && !prevShowAI)
         setupShellAIPanelUI();
+      prevShowAI = showAI;
     });
   }
 
