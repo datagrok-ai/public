@@ -11,6 +11,23 @@ import {ExecutionVisualizer} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
+import {ValueSummary} from './execution-state';
+
+/** A short, human data summary of a completed node's outputs for the status
+ *  line under the node — the first table ("1,204 × 8") or column ("1,204 values")
+ *  found, else nothing. Numbers are grouped with thousands separators. */
+function summarizeOutputs(outputs?: Record<string, ValueSummary>): string | undefined {
+  if (!outputs) return undefined;
+  const n = (v: number): string => v.toLocaleString('en-US');
+  for (const s of Object.values(outputs)) {
+    if (s?.type === 'dataframe' && typeof s.rows === 'number' && typeof s.cols === 'number')
+      return `${n(s.rows)} × ${n(s.cols)}`;
+  }
+  for (const s of Object.values(outputs)) {
+    if (s?.type === 'column' && typeof s.length === 'number') return `${n(s.length)} values`;
+  }
+  return undefined;
+}
 
 export class ExecutionController {
   state: ExecutionState;
@@ -111,7 +128,7 @@ export class ExecutionController {
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.completed, {
         endTime: event.timestamp, outputs: event.outputs,
       });
-      this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed);
+      this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-error':

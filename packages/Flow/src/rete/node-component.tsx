@@ -59,13 +59,18 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const titleColor = (node as unknown as {color?: string}).color;
   const titleStyle: React.CSSProperties = titleColor ? {background: titleColor} : {};
 
-  const onStatusClick = (e: React.MouseEvent): void => {
+  const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
+  const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
+
+  // Collapse is the caret's job now — the status dot is display-only, so
+  // clicking the run indicator never hides the node out from under you.
+  const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     toggleCollapsed(node.id);
   };
-  const onStatusPointerDown = (e: React.PointerEvent): void => {
-    // Prevent the AreaPlugin's drag handler from picking up the pointerdown
-    // when the user is just clicking the status dot to collapse.
+  const stopPointer = (e: React.PointerEvent): void => {
+    // Keep the AreaPlugin's node-drag handler from grabbing a click on a
+    // title-bar affordance (caret).
     e.stopPropagation();
   };
 
@@ -74,7 +79,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       className={`ff-node ff-node-${node.dgNodeType ?? 'func'}` + (collapsed ? ' ff-node-collapsed' : '')}
       data-node-id={node.id}
       data-selected={node.selected ? 'true' : 'false'}
-      data-status={(node as unknown as {dgStatus?: string}).dgStatus ?? 'idle'}
+      data-status={dgStatus}
     >
       {/* Execution-ordering ports — top corners (KNIME flow-variable style).
           exec-in (left) accepts "run after" predecessors; exec-out (right)
@@ -110,13 +115,23 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       <div className="ff-node-title" style={titleStyle} data-role={node.dgRole ?? ''}>
         <div
           className="ff-node-status"
-          data-status={(node as unknown as {dgStatus?: string}).dgStatus ?? 'idle'}
-          title={collapsed ? 'Expand node' : 'Collapse node'}
-          onPointerDown={onStatusPointerDown}
-          onClick={onStatusClick}
+          data-status={dgStatus}
+          title={statusText || 'Not run yet'}
         />
         <span className="ff-node-title-text">{node.label}</span>
+        <span
+          className="ff-node-caret"
+          title={collapsed ? 'Expand node' : 'Collapse node'}
+          onPointerDown={stopPointer}
+          onClick={onCaretClick}
+        >{collapsed ? '▸' : '▾'}</span>
       </div>
+
+      {/* Plain-language run status — shown collapsed too, so a folded node still
+          reports "Done · 1,204 × 8" at a glance. */}
+      {statusText && (
+        <div className="ff-node-statusline" data-status={dgStatus}>{statusText}</div>
+      )}
 
       {node.description && !collapsed && (
         <div className="ff-node-description" title={node.description}>{node.description}</div>

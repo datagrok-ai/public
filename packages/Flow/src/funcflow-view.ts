@@ -34,6 +34,14 @@ import {FlowSettings} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
+import {_package} from './package';
+
+/** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
+ *  scientist never faces a blank canvas. */
+const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
+  {label: 'Workflow demo', file: 'Workflow Demo.ffjson', desc: 'A sample multi-step data workflow.'},
+  {label: 'Sequence demo', file: 'Sequence demo.ffjson', desc: 'A bioinformatics sequence flow.'},
+];
 
 export class FuncFlowView extends DG.ViewBase {
   private flow!: FlowEditor;
@@ -41,6 +49,9 @@ export class FuncFlowView extends DG.ViewBase {
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
   private canvasContainer!: HTMLElement;
+  private startPanel!: HTMLElement;
+  private startBg!: HTMLElement;
+  private startBgRaf = 0;
   private statusBar!: HTMLElement;
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
@@ -98,6 +109,8 @@ export class FuncFlowView extends DG.ViewBase {
     });
 
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
+    this.startPanel = this.buildStartPanel();
+    this.canvasContainer.appendChild(this.startPanel);
 
     this.nodeCountLabel = ui.divText('Nodes: 0');
     this.linkCountLabel = ui.divText('Links: 0');
@@ -236,6 +249,7 @@ export class FuncFlowView extends DG.ViewBase {
       },
       onGraphChanged: () => {
         this.updateStatusBar();
+        this.updateStartPanelVisibility();
         this.executionController?.onGraphChanged();
       },
     });
@@ -255,6 +269,7 @@ export class FuncFlowView extends DG.ViewBase {
     };
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
+    this.updateStartPanelVisibility();
   }
 
   /** Set the overview minimap's collapsed state. Remembered and (re)applied when
@@ -367,73 +382,218 @@ export class FuncFlowView extends DG.ViewBase {
     return null;
   }
 
+  // ---------- start panel (U1: never open empty) ----------
+
+  /** A welcoming overlay shown over the empty canvas: pick a template, open a
+   *  saved flow, import from a table, or start blank — instead of a blank page. */
+  private buildStartPanel(): HTMLElement {
+    const title = ui.divText('Start a flow', 'funcflow-start-title');
+    const subtitle = ui.divText(
+      'Build a data pipeline by chaining functions — no code required.',
+      'funcflow-start-subtitle');
+
+    const cards = FLOW_TEMPLATES.map((t) => {
+      const card = ui.divV([
+        ui.divText(t.label, 'funcflow-start-card-title'),
+        ui.divText(t.desc, 'funcflow-start-card-desc'),
+      ], 'funcflow-start-card');
+      card.onclick = (): void => void this.loadTemplate(t.file);
+      ui.tooltip.bind(card, `Open the "${t.label}" template`);
+      return card;
+    });
+
+    const blankCard = ui.divV([
+      ui.divText('Blank canvas', 'funcflow-start-card-title'),
+      ui.divText('Start from scratch.', 'funcflow-start-card-desc'),
+    ], 'funcflow-start-card funcflow-start-card-blank');
+    blankCard.onclick = (): void => this.hideStartPanel();
+    cards.push(blankCard);
+
+    const actions = ui.divH([
+      ui.button('Open a flow…', () => void this.openFlow()),
+      ui.button('Import from a table…', () => this.importCreationScriptDialog()),
+    ], 'funcflow-start-actions');
+
+    const hint = ui.divText(
+      'Tip: double-click a function in the list on the left, or drag a file onto the canvas.',
+      'funcflow-start-hint');
+
+    const panel = ui.divV([
+      title, subtitle,
+      ui.divH(cards, 'funcflow-start-cards'),
+      actions, hint,
+    ], 'funcflow-start-panel');
+    return ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay');
+  }
+
+  /** Decorative animated backdrop host. The graph is drawn by
+   *  `renderStartBackground` at the container's *actual* size (re-run on resize)
+   *  so it fills any shape with no scaling distortion. */
+  private buildStartBackground(): HTMLElement {
+    this.startBg = ui.div([], 'funcflow-start-bg');
+    return this.startBg;
+  }
+
+  /** Lay a flowing-edges graph across the real container dimensions: nodes on a
+   *  jittered grid sized to W×H, connected left-to-right with horizontal-flow
+   *  beziers. Because the SVG viewBox equals the pixel size, dots stay round and
+   *  curves keep their shape on portrait, square, or ultrawide alike. The jitter
+   *  is deterministic, so resizing reflows smoothly instead of reshuffling. */
+  private renderStartBackground(): void {
+    if (!this.startBg) return;
+    const W = this.canvasContainer.clientWidth || 1200;
+    const H = this.canvasContainer.clientHeight || 800;
+    const COLORS = ['#FF9100', '#42A5F5', '#66BB6A', '#AB47BC', '#26C6DA', '#EC407A'];
+
+    // Stable pseudo-random in [0,1) from two integer seeds.
+    const rnd = (i: number, j: number): number => {
+      const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const cols = Math.min(8, Math.max(4, Math.round(W / 200)));
+    const rows = Math.min(6, Math.max(3, Math.round(H / 150)));
+    const cw = W / cols;
+    const ch = H / rows;
+    const nx = (c: number, r: number): number => (c + 0.5) * cw + (rnd(c, r) - 0.5) * cw * 0.55;
+    const ny = (c: number, r: number): number => (r + 0.5) * ch + (rnd(c + 9, r + 4) - 0.5) * ch * 0.55;
+
+    const paths: string[] = [];
+    const dots: string[] = [];
+    let k = 0;
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const ax = nx(c, r);
+        const ay = ny(c, r);
+        dots.push(`<circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="5.5" ` +
+          `fill="${COLORS[(c + r) % COLORS.length]}" stroke="#ffffff" stroke-width="2"/>`);
+        if (c >= cols - 1) continue;
+        // Right neighbor, plus an occasional diagonal branch — a flowing DAG.
+        const targets = [r];
+        if (rnd(c + 3, r + 7) > 0.5 && r + 1 < rows) targets.push(r + 1);
+        if (rnd(c + 5, r + 2) > 0.62 && r - 1 >= 0) targets.push(r - 1);
+        for (const tr of targets) {
+          const bx = nx(c + 1, tr);
+          const by = ny(c + 1, tr);
+          const mx = (ax + bx) / 2;
+          paths.push(`<path d="M${ax.toFixed(1)},${ay.toFixed(1)} ` +
+            `C${mx.toFixed(1)},${ay.toFixed(1)} ${mx.toFixed(1)},${by.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}" ` +
+            `stroke="${COLORS[k++ % COLORS.length]}"/>`);
+        }
+      }
+    }
+    this.startBg.innerHTML =
+      `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">` +
+      paths.join('') + dots.join('') + `</svg>`;
+  }
+
+  /** Draw the backdrop sized to the canvas, on the next frame so the container
+   *  is laid out. Done lazily each time the panel is shown (no resize tracking). */
+  private drawStartBackgroundSoon(): void {
+    if (this.startBgRaf) cancelAnimationFrame(this.startBgRaf);
+    this.startBgRaf = requestAnimationFrame(() => {
+      this.startBgRaf = 0;
+      this.renderStartBackground();
+    });
+  }
+
+  /** Show the start overlay (e.g. from the ribbon "Templates…" item). */
+  private showStartPanel(): void {
+    this.startPanel.style.display = 'flex';
+    this.drawStartBackgroundSoon();
+  }
+
+  private hideStartPanel(): void {
+    this.startPanel.style.display = 'none';
+  }
+
+  /** Hide the overlay only while the canvas has content; show it on an empty one. */
+  private updateStartPanelVisibility(): void {
+    const empty = !this.flow || this.flow.getNodeCount() === 0;
+    this.startPanel.style.display = empty ? 'flex' : 'none';
+    if (empty) this.drawStartBackgroundSoon();
+  }
+
+  /** Load a bundled template flow from the package `files/` folder. */
+  private async loadTemplate(file: string): Promise<void> {
+    try {
+      const json = await _package.files.readAsText(file);
+      await this.loadFromJson(json);
+      this.hideStartPanel();
+      await this.flow?.zoomToFit();
+      grok.shell.info(`Opened template: ${file.replace(/\.ffjson$/i, '')}`);
+    } catch (e: any) {
+      grok.shell.error(`Could not open template "${file}": ${e?.message ?? e}`);
+    }
+  }
+
   // ---------- ribbon ----------
 
   private setupRibbon(): void {
+    // Menu is grouped around what a scientist wants to do — Flow / Run / Edit /
+    // Arrange — with the script-and-code machinery tucked under "Advanced".
     this.ribbonMenu = DG.Menu.create()
-      .group('File')
-      .item('New Flow', () => void this.newFlow())
-      .item('Open Flow...', () => void this.openFlow())
-      .item('Save Flow...', () => this.saveFlow())
+      .group('Flow')
+      .item('New…', () => void this.newFlow())
+      .item('Open…', () => void this.openFlow())
+      .item('Save…', () => this.saveFlow())
       .separator()
-      .item('Import Creation Script...', () => this.importCreationScriptDialog())
+      .item('Templates…', () => this.showStartPanel())
+      .item('Settings…', () => this.editSettings())
+      .endGroup()
+      .group('Run')
+      .item('Run', () => this.runInstrumented())
+      .item('Debug (stop at breakpoints)', () => this.debugInstrumented())
+      .item('Continue', () => this.executionController?.continueBreakpoint())
+      .item('Stop', () => this.executionController?.stopRun())
       .separator()
-      .item('Export Settings...', () => this.editSettings())
+      .item('Clear run highlights', () => this.executionController?.resetVisuals())
       .endGroup()
       .group('Edit')
       .item('Undo', () => void this.flow?.undo())
       .item('Redo', () => void this.flow?.redo())
       .endGroup()
-      .group('View')
-      .item('Clean Layout', () => this.cleanLayout())
-      .item('Zoom to Fit', () => void this.flow?.zoomToFit())
-      .item('Zoom In', () => this.flow?.zoomIn())
-      .item('Zoom Out', () => this.flow?.zoomOut())
+      .group('Arrange')
+      .item('Tidy up layout', () => this.cleanLayout())
+      .item('Zoom to fit', () => void this.flow?.zoomToFit())
+      .item('Zoom in', () => this.flow?.zoomIn())
+      .item('Zoom out', () => this.flow?.zoomOut())
       .separator()
-      .item('Toggle Function Browser', () => this.toggleToolbox())
+      .item('Show/hide function list', () => this.toggleToolbox())
       .endGroup()
-      .group('Script')
-      .item('Run Script (Classic)', () => this.runScript())
-      .item('View Script', () => this.generateAndPreview())
-      .item('Copy Script to Clipboard', () => this.copyScriptToClipboard())
-      .item('Export as .js File', () => this.exportAsJs())
+      .group('Advanced')
+      .item('See the steps (generated script)…', () => this.generateAndPreview())
+      .item('Copy script', () => this.copyScriptToClipboard())
+      .item('Export as .js file', () => this.exportAsJs())
+      .item('Check for problems', () => this.showValidation())
       .separator()
-      .item('Compile to Creation Script...', () => this.compileToCreationScript())
+      .item('Run as plain script (no live view)', () => this.runScript())
       .separator()
-      .item('Validate Graph', () => this.showValidation())
-      .endGroup()
-      .group('Execution')
-      .item('Run', () => this.runInstrumented())
-      .item('Debug', () => this.debugInstrumented())
-      .item('Continue', () => this.executionController?.continueBreakpoint())
-      .item('Stop', () => this.executionController?.stopRun())
-      .separator()
-      .item('Reset Visuals', () => this.executionController?.resetVisuals())
+      .item('Import from a table’s history…', () => this.importCreationScriptDialog())
+      .item('Export as table-creation script…', () => this.compileToCreationScript())
       .endGroup();
 
     const panels: HTMLElement[][] = [
       [
-        ui.iconFA('play', () => this.runInstrumented(), 'Run'),
-        ui.iconFA('bug', () => this.debugInstrumented(), 'Debug'),
+        ui.iconFA('play', () => this.runInstrumented(), 'Run the flow'),
+        ui.iconFA('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)'),
         ui.iconFA('forward', () => this.executionController?.continueBreakpoint(), 'Continue'),
         ui.iconFA('stop', () => this.executionController?.stopRun(), 'Stop'),
       ],
       [
-        ui.iconFA('code', () => this.generateAndPreview(), 'View Script'),
-        ui.iconFA('stream', () => this.compileToCreationScript(), 'Compile to Creation Script'),
-        ui.iconFA('copy', () => this.copyScriptToClipboard(), 'Copy Script'),
-        ui.iconFA('download', () => this.exportAsJs(), 'Export .js'),
+        ui.iconFA('eye', () => this.generateAndPreview(), 'See the steps (generated script)'),
+        ui.iconFA('save', () => this.saveFlow(), 'Save / share this flow'),
+        ui.iconFA('folder-open', () => void this.openFlow(), 'Open a flow'),
       ],
       [
         ui.iconFA('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)'),
         ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
       ],
       [
-        ui.iconFA('sitemap', () => this.cleanLayout(), 'Clean Layout (arrange nodes)'),
-        ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom In'),
-        ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom Out'),
-        ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to Fit (double-click empty canvas)'),
-        ui.iconFA('list-ul', () => this.toggleToolbox(), 'Toggle Function Browser'),
+        ui.iconFA('sitemap', () => this.cleanLayout(), 'Tidy up layout'),
+        ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom in'),
+        ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom out'),
+        ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit (double-click empty canvas)'),
+        ui.iconFA('list-ul', () => this.toggleToolbox(), 'Show/hide function list'),
       ],
     ];
 
@@ -476,6 +636,7 @@ export class FuncFlowView extends DG.ViewBase {
     await this.flow.clear();
     this.propertyPanel.clear();
     this.updateStatusBar();
+    this.updateStartPanelVisibility();
     grok.shell.info('New flow created');
   }
 
