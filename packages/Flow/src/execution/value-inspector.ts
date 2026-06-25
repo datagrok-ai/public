@@ -17,11 +17,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
+import {setTid} from '../utils/test-ids';
 
 // ---------- property-panel side: status, duration, metadata ----------
 
 export function buildExecutionMeta(state: NodeExecState): HTMLElement {
-  const container = ui.div([], 'funcflow-value-inspector');
+  const container = setTid(ui.div([], 'funcflow-value-inspector'), 'value-inspector');
   container.appendChild(buildStatusBadge(state));
 
   if (state.outputs && Object.keys(state.outputs).length > 0) {
@@ -154,7 +155,7 @@ export function hasRenderablePreview(state: NodeExecState): boolean {
 }
 
 export function buildValuePreviews(state: NodeExecState): HTMLElement {
-  const container = ui.div([], 'funcflow-value-previews');
+  const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
   for (const [name, summary] of Object.entries(state.outputs)) {
     const preview = buildPreview(name, summary);
@@ -170,7 +171,7 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
   switch (summary.type) {
   case 'dataframe': {
     if (!summary.clone) return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     try {
       summary.clone.meta.detectSemanticTypes();
       const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
@@ -181,7 +182,7 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
   }
   case 'column': {
     if (!summary.sample || summary.sample.length === 0) return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const title = ui.divText(`${name}: ${summary.name ?? ''}`);
     title.style.cssText = 'font-size:12px;color:#444;margin-bottom:4px;';
     wrap.appendChild(title);
@@ -211,7 +212,7 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
   case 'graphics': {
     const imageData = summary.value as string;
     if (typeof imageData !== 'string') return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const img = ui.div([], {style: {
       width: '100%', minHeight: '200px',
       backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',

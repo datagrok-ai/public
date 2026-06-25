@@ -35,6 +35,7 @@ import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
 import {_package} from './package';
+import {setTid} from './utils/test-ids';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
@@ -109,21 +110,27 @@ export class FuncFlowView extends DG.ViewBase {
     });
 
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
+    setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();
     this.canvasContainer.appendChild(this.startPanel);
 
     this.nodeCountLabel = ui.divText('Nodes: 0');
     this.linkCountLabel = ui.divText('Links: 0');
     this.validationLabel = ui.divText('');
+    setTid(this.nodeCountLabel, 'statusbar-nodes');
+    setTid(this.linkCountLabel, 'statusbar-links');
+    setTid(this.validationLabel, 'statusbar-validation');
     ui.tooltip.bind(this.nodeCountLabel, 'Total number of nodes in the graph');
     ui.tooltip.bind(this.linkCountLabel, 'Total number of connections between nodes');
     this.statusBar = ui.div(
       [this.nodeCountLabel, this.linkCountLabel, this.validationLabel],
       'funcflow-status-bar',
     );
+    setTid(this.statusBar, 'statusbar');
 
-    const mainLayout = ui.div([this.canvasContainer], 'funcflow-root');
+    const mainLayout = setTid(ui.div([this.canvasContainer], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
+    setTid(this.root, 'view');
     this.root.appendChild(mainLayout);
     this.root.appendChild(this.statusBar);
     mainLayout.style.flex = '1';
@@ -212,7 +219,7 @@ export class FuncFlowView extends DG.ViewBase {
     const inner = buildPreview(name, summary);
     if (!inner) return;
 
-    const popup = ui.div([inner], 'ff-port-preview');
+    const popup = setTid(ui.div([inner], 'ff-port-preview'), 'port-preview');
     document.body.appendChild(popup);
     this.currentPortPopup = popup;
 
@@ -421,6 +428,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.divText(t.label, 'funcflow-start-card-title'),
         ui.divText(t.desc, 'funcflow-start-card-desc'),
       ], 'funcflow-start-card');
+      setTid(card, 'start-template', t.file.replace(/\.ffjson$/i, ''));
       card.onclick = (): void => void this.loadTemplate(t.file);
       ui.tooltip.bind(card, `Open the "${t.label}" template`);
       return card;
@@ -430,13 +438,15 @@ export class FuncFlowView extends DG.ViewBase {
       ui.divText('Blank canvas', 'funcflow-start-card-title'),
       ui.divText('Start from scratch.', 'funcflow-start-card-desc'),
     ], 'funcflow-start-card funcflow-start-card-blank');
+    setTid(blankCard, 'start-blank');
     blankCard.onclick = (): void => this.hideStartPanel();
     cards.push(blankCard);
 
-    const actions = ui.divH([
-      ui.button('Open a flow…', () => void this.openFlow()),
-      ui.button('Import from a table…', () => this.importCreationScriptDialog()),
-    ], 'funcflow-start-actions');
+    const openBtn = ui.button('Open a flow…', () => void this.openFlow());
+    const importBtn = ui.button('Import from a table…', () => this.importCreationScriptDialog());
+    setTid(openBtn, 'start-open');
+    setTid(importBtn, 'start-import');
+    const actions = ui.divH([openBtn, importBtn], 'funcflow-start-actions');
 
     const hint = ui.divText(
       'Tip: double-click a function in the list on the left, or drag a file onto the canvas.',
@@ -447,7 +457,8 @@ export class FuncFlowView extends DG.ViewBase {
       ui.divH(cards, 'funcflow-start-cards'),
       actions, hint,
     ], 'funcflow-start-panel');
-    return ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay');
+    setTid(panel, 'start-panel');
+    return setTid(ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay'), 'start-overlay');
   }
 
   /** Decorative animated backdrop host. The graph is drawn by
@@ -455,6 +466,7 @@ export class FuncFlowView extends DG.ViewBase {
    *  so it fills any shape with no scaling distortion. */
   private buildStartBackground(): HTMLElement {
     this.startBg = ui.div([], 'funcflow-start-bg');
+    setTid(this.startBg, 'start-bg');
     return this.startBg;
   }
 
@@ -596,36 +608,38 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Export as table-creation script…', () => this.compileToCreationScript())
       .endGroup();
 
+    const ribbonIcon = (icon: string, action: () => void, tooltip: string, id: string): HTMLElement =>
+      setTid(ui.iconFA(icon, action, tooltip), 'ribbon', id);
     const panels: HTMLElement[][] = [
       [
-        ui.iconFA('play', () => this.runInstrumented(), 'Run the flow'),
-        ui.iconFA('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)'),
-        ui.iconFA('forward', () => this.executionController?.continueBreakpoint(), 'Continue'),
-        ui.iconFA('stop', () => this.executionController?.stopRun(), 'Stop'),
+        ribbonIcon('play', () => this.runInstrumented(), 'Run the flow', 'run'),
+        ribbonIcon('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)', 'debug'),
+        ribbonIcon('forward', () => this.executionController?.continueBreakpoint(), 'Continue', 'continue'),
+        ribbonIcon('stop', () => this.executionController?.stopRun(), 'Stop', 'stop'),
       ],
       [
-        ui.iconFA('eye', () => this.generateAndPreview(), 'See the steps (generated script)'),
-        ui.iconFA('save', () => this.saveFlow(), 'Save / share this flow'),
-        ui.iconFA('folder-open', () => void this.openFlow(), 'Open a flow'),
+        ribbonIcon('eye', () => this.generateAndPreview(), 'See the steps (generated script)', 'view-script'),
+        ribbonIcon('save', () => this.saveFlow(), 'Save / share this flow', 'save'),
+        ribbonIcon('folder-open', () => void this.openFlow(), 'Open a flow', 'open'),
       ],
       [
-        ui.iconFA('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)'),
-        ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
+        ribbonIcon('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)', 'undo'),
+        ribbonIcon('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)', 'redo'),
       ],
       [
-        ui.iconFA('sitemap', () => this.cleanLayout(), 'Tidy up layout'),
-        ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom in'),
-        ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom out'),
-        ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit (double-click empty canvas)'),
-        ui.iconFA('list-ul', () => this.toggleToolbox(), 'Show/hide function list'),
+        ribbonIcon('sitemap', () => this.cleanLayout(), 'Tidy up layout', 'layout'),
+        ribbonIcon('search-plus', () => this.flow?.zoomIn(), 'Zoom in', 'zoom-in'),
+        ribbonIcon('search-minus', () => this.flow?.zoomOut(), 'Zoom out', 'zoom-out'),
+        ribbonIcon('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit', 'zoom-fit'),
+        ribbonIcon('list-ul', () => this.toggleToolbox(), 'Show/hide function list', 'toggle-browser'),
       ],
     ];
 
     // When editing tables' creation scripts, a prominent Save action that writes
     // a per-table creation script back to each table (leads the ribbon).
     if (this.tableInfos.length > 0) {
-      panels.unshift([ui.bigButton('Save', () => this.saveCreationScriptsDialog(),
-        'Review and save a creation script for each table')]);
+      panels.unshift([setTid(ui.bigButton('Save', () => this.saveCreationScriptsDialog(),
+        'Review and save a creation script for each table'), 'ribbon', 'save-creation-scripts')]);
     }
 
     this.setRibbonPanels(panels);

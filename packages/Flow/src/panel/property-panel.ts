@@ -12,6 +12,7 @@ import {FlowNode} from '../rete/scheme';
 import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
+import {setTid} from '../utils/test-ids';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
@@ -97,8 +98,8 @@ export class PropertyPanel {
 
   constructor(flow: FlowEditor) {
     this.flow = flow;
-    this.contentDiv = ui.div([], 'funcflow-property-content');
-    this.root = ui.divV([this.contentDiv], 'funcflow-property-panel');
+    this.contentDiv = setTid(ui.div([], 'funcflow-property-content'), 'property-content');
+    this.root = setTid(ui.divV([this.contentDiv], 'funcflow-property-panel'), 'property-panel');
   }
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
@@ -111,9 +112,9 @@ export class PropertyPanel {
       node.label = String(v ?? '');
       void this.flow.updateNode(node.id);
     });
-    const typeBadge = ui.div([], 'funcflow-type-badge');
+    const typeBadge = setTid(ui.div([], 'funcflow-type-badge'), 'property-type-badge');
     typeBadge.textContent = node.dgNodeType || 'function';
-    const titleRow = ui.div([titleInput, typeBadge], 'funcflow-title-row');
+    const titleRow = setTid(ui.div([titleInput, typeBadge], 'funcflow-title-row'), 'property-title-row');
     this.contentDiv.appendChild(titleRow);
 
     // Per-node description: rendered under the title in the canvas, and
@@ -426,9 +427,17 @@ export class PropertyPanel {
     return textarea;
   }
 
+  /** Stamp an input row with its test-id + a human-findable `data-param` (the
+   *  input/param name), so a specific field is addressable in the context panel. */
+  private propRow(el: HTMLElement, label: string): HTMLElement {
+    setTid(el, 'prop-input', label);
+    el.dataset.param = label;
+    return el;
+  }
+
   private createTextarea(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    return ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
   /** A column / column-list input laid out side by side with its table picker:
@@ -453,8 +462,8 @@ export class PropertyPanel {
         (v) => {associations[paramName] = v;}, 'Which table input this column refers to');
       cells.push(ui.div([select], 'funcflow-col-table-cell'));
     }
-    return ui.div([this.labelWithTooltip(paramName, colTip), ui.div(cells, 'funcflow-col-grid')],
-      'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(paramName, colTip), ui.div(cells, 'funcflow-col-grid')],
+      'funcflow-prop-row'), paramName);
   }
 
   private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string): HTMLElement {
@@ -468,7 +477,7 @@ export class PropertyPanel {
       if (!isNaN(parsed)) onChange(parsed);
     });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    return ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row'), label);
   }
 
   private createToggle(label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string): HTMLElement {
@@ -479,7 +488,7 @@ export class PropertyPanel {
     input.addEventListener('change', () => onChange(input.checked));
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
     const lbl = this.labelWithTooltip(label, inputTooltip);
-    return ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row');
+    return this.propRow(ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row'), label);
   }
 
   private buildSelectEl(value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLSelectElement {
@@ -498,7 +507,7 @@ export class PropertyPanel {
   }
 
   private createCombo(label: string, value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    return ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 }

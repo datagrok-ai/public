@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
+import {tid, setTid} from '../utils/test-ids';
 
 export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
@@ -127,11 +128,13 @@ export class FunctionBrowser {
     this.searchInput.type = 'text';
     this.searchInput.placeholder = 'Search functions...';
     this.searchInput.className = 'funcflow-search-input';
+    setTid(this.searchInput, 'browser-search');
     this.searchInput.addEventListener('input', () => this.render());
 
     // Group by selector
     this.groupBySelect = document.createElement('select');
     this.groupBySelect.className = 'funcflow-groupby-select';
+    setTid(this.groupBySelect, 'browser-groupby');
     const groupByLabels: Record<GroupByMode, string> = {
       category: 'what it does',
       role: 'role',
@@ -151,7 +154,7 @@ export class FunctionBrowser {
       this.render();
     });
 
-    this.treeContainer = ui.div([], 'funcflow-tree-container');
+    this.treeContainer = setTid(ui.div([], 'funcflow-tree-container'), 'browser-tree');
 
     const container = ui.divV([
       this.searchInput,
@@ -159,7 +162,7 @@ export class FunctionBrowser {
       this.treeContainer,
     ], 'funcflow-browser');
 
-    return container;
+    return setTid(container, 'browser');
   }
 
   render(): void {
@@ -278,6 +281,8 @@ export class FunctionBrowser {
     const header = ui.div([], 'funcflow-section-header');
     header.textContent = title;
     header.style.cursor = 'pointer';
+    header.dataset.section = title;
+    setTid(header, 'browser-section', title);
     if (tooltip)
       ui.tooltip.bind(header, tooltip);
 
@@ -285,6 +290,8 @@ export class FunctionBrowser {
     for (const node of nodes) {
       const item = ui.div([], 'funcflow-func-item');
       item.textContent = node.name;
+      item.dataset.testid = tid('browser-item', node.type);
+      item.dataset.nodeTypeName = node.type;   // e.g. "Inputs/Table Input"
       const tip = node.desc ?
         `${node.desc}. Double-click or drag to add` :
         `Double-click or drag to add ${node.name}`;
@@ -317,12 +324,18 @@ export class FunctionBrowser {
     const header = ui.div([], 'funcflow-section-header');
     header.textContent = `${category} (${items.length})`;
     header.style.cursor = 'pointer';
+    header.dataset.section = category;
+    setTid(header, 'browser-section', category);
 
     const content = ui.div([], 'funcflow-section-content');
 
     for (const info of items) {
       const item = ui.div([], 'funcflow-func-item');
       item.textContent = info.name;
+      item.dataset.testid = tid('browser-item', info.nodeTypeName);
+      item.dataset.nodeTypeName = info.nodeTypeName;     // registered factory name
+      item.dataset.func = info.func.name;                // the DG function it adds
+      if (info.packageName) item.dataset.package = info.packageName;
       let tip = info.func.description || info.name;
       if (info.packageName)
         tip += ` (${info.packageName})`;

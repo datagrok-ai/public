@@ -13,6 +13,7 @@ import './tests/minimap-tests';
 import './tests/creation-script-emit-tests';
 import './tests/function-browser-tests';
 import './tests/inspect-tests';
+import './tests/test-ids-tests';
 
 export let _package = new DG.Package();
 export { tests };

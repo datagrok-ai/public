@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Testability
+
+* **`data-testid` on every UI surface.** The canvas (nodes, sockets, status dot, caret, hints,
+  connections, edge counts), ribbon, start panel, function browser (sections + items), property
+  panel (per-input rows), minimap, suggestion menu, and output/value previews all carry stable
+  `data-testid` attributes for deterministic UI testing. Dynamic ids are generated from what the
+  element *is* (function name, param name, socket key) via [`utils/test-ids.ts`](src/utils/test-ids.ts)
+  (`tid`/`setTid`). See the **Test IDs** table in CLAUDE.md.
+
 ### Scientist-centered UX (Sprint 2)
 
 * **Inspect anywhere (slice-compile).** Right-click any output port → **"Run up to here & preview"**:

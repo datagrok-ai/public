@@ -486,6 +486,40 @@ The status circle is part of the title bar; CSS keyframes drive the pulse animat
 
 `serializeFlow(flow, settings)` produces the doc; `deserializeFlow(doc, flow)` clears and rebuilds. Unknown `typeName`s are skipped with a console warning. Connections referencing missing nodes are silently dropped.
 
+## Test IDs (`data-testid`)
+
+Every Flow UI surface carries a stable **`data-testid`** (the attribute Playwright's
+`getByTestId()` reads by default) so the canvas, panels, ribbon, and dynamic lists can be
+addressed deterministically from UI tests. Helper: [`utils/test-ids.ts`](src/utils/test-ids.ts) —
+`tid(...parts)` builds an `ff-`-namespaced, slugified value; `setTid(el, ...parts)` stamps a plain
+DOM element; React components pass `tid(...)` as a `data-testid` prop.
+
+Convention: `ff-<area>-<thing>[-<dynamic-slug>]`. Dynamic parts (a function name, a param name, a
+socket key, a node type) are slugified (`tidSlug`: lowercase, non-alphanumerics → `-`).
+
+**Semantic identity attributes** (alongside the generic test-id, for finding a *specific* element by
+its raw, un-slugified identity — the test-id `ff-node` is the same on every node):
+- **Canvas node**: `data-node-id` (UUID), `data-node-type` (input/output/utility/func),
+  `data-node-type-name` (registered type, e.g. `DG Functions/Data Sources/OpenFile`),
+  `data-func` (qualified function name), `data-node-label` (current title).
+- **Toolbox item / suggestion item**: `data-node-type-name`, `data-func`, `data-package`.
+- **Browser section**: `data-section` (raw title).
+- **Context-panel input row**: `data-param` (the input/param name).
+
+| Surface | Test ID(s) |
+|---|---|
+| View shell | `ff-view`, `ff-root`, `ff-canvas`, `ff-statusbar`(+`-nodes`/`-links`/`-validation`) |
+| Ribbon icons | `ff-ribbon-<action>` (`run`/`debug`/`continue`/`stop`/`view-script`/`save`/`open`/`undo`/`redo`/`layout`/`zoom-in`/`zoom-out`/`zoom-fit`/`toggle-browser`/`save-creation-scripts`) |
+| Start panel | `ff-start-overlay`, `ff-start-panel`, `ff-start-bg`, `ff-start-template-<file>`, `ff-start-blank`, `ff-start-open`, `ff-start-import` |
+| Function browser | `ff-browser`, `ff-browser-search`, `ff-browser-groupby`, `ff-browser-tree`, `ff-browser-section-<title>`, `ff-browser-item-<typeName>` |
+| Canvas node | `ff-node` (+ `data-node-id`, `data-node-type`), `ff-node-title`/`-title-text`/`-status`/`-caret`/`-statusline`/`-hint`/`-description`/`-body`, `ff-exec-in`/`ff-exec-out`, `ff-socket-input-<key>`/`ff-socket-output-<key>`, `ff-socket-<type>` |
+| Connections | `ff-connection`, `ff-edge-count`, `ff-waypoint-<i>` |
+| Property panel | `ff-property-panel`, `ff-property-content`, `ff-property-title-row`, `ff-property-type-badge`, `ff-prop-input-<label/param>` |
+| Editor extras | `ff-minimap`(+`-header`/`-toggle`), `ff-guide-overlay`, `ff-suggest-popup`/`-search`/`-list`, `ff-suggest-item-<typeName>`, `ff-hover-docs`, `ff-port-preview`, `ff-output-panel`, `ff-value-inspector`/`ff-value-previews`/`ff-preview-block-<name>` |
+
+When adding a UI element, give it a `data-testid` via the helper. Tests live in
+[tests/test-ids-tests.ts](src/tests/test-ids-tests.ts) (convention lock).
+
 ## UI Architecture
 
 ### Layout

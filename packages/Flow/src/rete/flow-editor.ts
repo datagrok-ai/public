@@ -25,6 +25,7 @@ import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
+import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
 import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
@@ -335,6 +336,7 @@ export class FlowEditor {
     if (this.container.style.position === '') this.container.style.position = 'relative';
     const overlay = document.createElement('div');
     overlay.className = 'ff-guide-overlay';
+    setTid(overlay, 'guide-overlay');
     this.guideOverlay = overlay;
     const v = document.createElement('div');
     v.className = 'ff-guide-v';
@@ -422,14 +424,17 @@ export class FlowEditor {
     const el = document.createElement('div');
     el.className = 'ff-minimap';
     el.dataset.collapsed = 'false';
+    setTid(el, 'minimap');
 
     const header = document.createElement('div');
     header.className = 'ff-minimap-header';
+    setTid(header, 'minimap-header');
     const title = document.createElement('span');
     title.className = 'ff-minimap-title';
     title.textContent = 'Overview';
     const toggle = document.createElement('span');
     toggle.className = 'ff-minimap-toggle';
+    setTid(toggle, 'minimap-toggle');
     toggle.title = 'Minimize';
     toggle.textContent = '▾';
     header.appendChild(title);
@@ -707,6 +712,7 @@ export class FlowEditor {
   private installHoverDocs(): void {
     const popup = document.createElement('div');
     popup.className = 'ff-hover-docs';
+    setTid(popup, 'hover-docs');
     popup.style.display = 'none';
     document.body.appendChild(popup);
     this.hoverDocsEl = popup;
@@ -1138,6 +1144,7 @@ export class FlowEditor {
 
       const popup = document.createElement('div');
       popup.className = 'ff-suggest-popup';
+      setTid(popup, 'suggest-popup');
       popup.style.left = `${clientX}px`;
       popup.style.top = `${clientY}px`;
 
@@ -1145,10 +1152,12 @@ export class FlowEditor {
       search.type = 'text';
       search.placeholder = 'Add node…';
       search.className = 'ff-suggest-search';
+      setTid(search, 'suggest-search');
       popup.appendChild(search);
 
       const list = document.createElement('div');
       list.className = 'ff-suggest-list';
+      setTid(list, 'suggest-list');
       popup.appendChild(list);
 
       let filtered = candidates;
@@ -1160,6 +1169,8 @@ export class FlowEditor {
           const row = document.createElement('div');
           row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
           row.textContent = c.label;
+          row.dataset.testid = tid('suggest-item', c.typeName);
+          row.dataset.nodeTypeName = c.typeName;
           if (c.isBuiltin) row.classList.add('ff-suggest-item-builtin');
           row.addEventListener('mouseenter', () => {
             activeIdx = i;

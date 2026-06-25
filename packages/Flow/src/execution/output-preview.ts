@@ -19,6 +19,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {NodeExecState} from './execution-state';
 import {buildValuePreviews, hasRenderablePreview} from './value-inspector';
+import {setTid} from '../utils/test-ids';
 
 export class OutputPreviewPanel {
   private rootNode: DG.DockNode | null = null;
@@ -50,9 +51,9 @@ export class OutputPreviewPanel {
       return;
     }
 
-    this.hostEl = ui.div([inner], {style: {
+    this.hostEl = setTid(ui.div([inner], {style: {
       width: '100%', height: '100%', overflow: 'auto',
-    }});
+    }}), 'output-panel');
     const refNode = this.viewRoot ?
       grok.shell.dockManager.findNode(this.viewRoot) ?? null :
       null;

@@ -18,6 +18,7 @@ const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, missingRequiredInputs} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
+import {tid} from '../utils/test-ids';
 
 interface NodeProps {
   data: FlowNode & {selected?: boolean};
@@ -84,7 +85,12 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   return (
     <div
       className={`ff-node ff-node-${node.dgNodeType ?? 'func'}` + (collapsed ? ' ff-node-collapsed' : '')}
+      data-testid={tid('node')}
       data-node-id={node.id}
+      data-node-type={node.dgNodeType ?? 'func'}
+      data-node-type-name={node.dgTypeName ?? ''}
+      data-func={node.dgFuncName ?? ''}
+      data-node-label={node.label}
       data-selected={node.selected ? 'true' : 'false'}
       data-status={dgStatus}
       data-attention={attention ? 'true' : 'false'}
@@ -94,7 +100,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           drives successors. Always rendered so edges stay attached even when
           the node is collapsed. */}
       <div className="ff-node-exec-row">
-        <span className="ff-exec-port ff-exec-in" title="Run after (order in)">
+        <span className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')} title="Run after (order in)">
           {execIn && (
             <RefSocket
               name="exec-in-socket"
@@ -106,7 +112,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             />
           )}
         </span>
-        <span className="ff-exec-port ff-exec-out" title="Run before (order out)">
+        <span className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')} title="Run before (order out)">
           {execOut && (
             <RefSocket
               name="exec-out-socket"
@@ -120,15 +126,17 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         </span>
       </div>
 
-      <div className="ff-node-title" style={titleStyle} data-role={node.dgRole ?? ''}>
+      <div className="ff-node-title" data-testid={tid('node-title')} style={titleStyle} data-role={node.dgRole ?? ''}>
         <div
           className="ff-node-status"
+          data-testid={tid('node-status')}
           data-status={dgStatus}
           title={statusText || 'Not run yet'}
         />
-        <span className="ff-node-title-text">{node.label}</span>
+        <span className="ff-node-title-text" data-testid={tid('node-title-text')}>{node.label}</span>
         <span
           className="ff-node-caret"
+          data-testid={tid('node-caret')}
           title={collapsed ? 'Expand node' : 'Collapse node'}
           onPointerDown={stopPointer}
           onClick={onCaretClick}
@@ -139,23 +147,23 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           a real run's status (Done/Running/Error) wins otherwise. Shown
           collapsed too, so a folded node still reports its state at a glance. */}
       {attention ? (
-        <div className="ff-node-hint" title={`Connect or set: ${needs.join(', ')}`}>
+        <div className="ff-node-hint" data-testid={tid('node-hint')} title={`Connect or set: ${needs.join(', ')}`}>
           Requires: {needs.join(', ')}
         </div>
       ) : statusText ? (
-        <div className="ff-node-statusline" data-status={dgStatus}>{statusText}</div>
+        <div className="ff-node-statusline" data-testid={tid('node-statusline')} data-status={dgStatus}>{statusText}</div>
       ) : null}
 
       {node.description && !collapsed && (
-        <div className="ff-node-description" title={node.description}>{node.description}</div>
+        <div className="ff-node-description" data-testid={tid('node-description')} title={node.description}>{node.description}</div>
       )}
 
       {!collapsed && (
-        <div className="ff-node-body">
+        <div className="ff-node-body" data-testid={tid('node-body')}>
           <div className="ff-node-io">
             <div className="ff-node-inputs">
               {inputs.map(([key, input]) => input && (
-                <div key={key} className="ff-socket-row ff-socket-row-input">
+                <div key={key} className="ff-socket-row ff-socket-row-input" data-testid={tid('socket-input', key)}>
                   <RefSocket
                     name="input-socket"
                     emit={props.emit}
@@ -177,6 +185,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
                     'ff-socket-row ff-socket-row-output' +
                     (idx < ptCount ? ' ff-socket-row-passthrough' : '')
                   }
+                  data-testid={tid('socket-output', key)}
                 >
                   <span className="ff-socket-label">{output.label ?? key}</span>
                   <RefSocket
@@ -254,6 +263,7 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   return (
     <div
       className="ff-socket"
+      data-testid={tid('socket', props.data.dgType)}
       style={{background: color, ['--socket-color' as never]: color}}
       title={props.data.dgType}
       data-type={props.data.dgType}
@@ -296,7 +306,8 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
   // unbounded SVG canvas.
   return (
     <svg
-      data-testid="connection"
+      data-testid={tid('connection')}
+      data-connection-id={props.data.id}
       style={{
         overflow: 'visible',
         position: 'absolute',
@@ -324,6 +335,7 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
           cy={wp.y}
           r={5}
           className="ff-waypoint"
+          data-testid={tid('waypoint', i)}
           data-connection-id={props.data.id}
           data-waypoint-index={i}
           style={{fill: color, stroke: '#fff', strokeWidth: 1.5, pointerEvents: 'auto', cursor: 'move'}}
@@ -332,6 +344,7 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
       {count && start && end && (
         <text
           className="ff-edge-count"
+          data-testid={tid('edge-count')}
           x={(start.x + end.x) / 2}
           y={(start.y + end.y) / 2 - 6}
           textAnchor="middle"
