@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-19013: Viewers Gallery: Bio/Peptide sequence viewers (WebLogo, VdRegions, Peptides viewers) and tree viewers (Dendrogram, PhylocanvasGL) are now disabled for incompatible datasets in the Add Viewer dialog
 * Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar
 * Add New Column dialog: Fixed TypeError when typing into the Name or Type input before CodeMirror finishes its async init
 
