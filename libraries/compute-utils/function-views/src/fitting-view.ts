@@ -729,6 +729,7 @@ export class FittingView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       targets?: Record<string, TargetDescription>,
       acceptMode?: boolean,
@@ -737,6 +738,7 @@ export class FittingView {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       targets: undefined,
       acceptMode: false,
@@ -767,6 +769,7 @@ export class FittingView {
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       targets?: Record<string, TargetDescription>,
       acceptMode?: boolean,
@@ -776,6 +779,7 @@ export class FittingView {
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       targets: undefined,
       acceptMode: false,
@@ -1005,7 +1009,7 @@ export class FittingView {
     const constIputs = new Map<string, DG.InputBase>();
     Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
 
-    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs, this.options.disableLookupDefault);
 
     return lookupElement;
   }
@@ -1101,10 +1105,18 @@ export class FittingView {
 
     //1. Inputs of the function
 
+    // The lookup choice input doubles as the scenario selector for the func input of the same
+    // name (e.g. `mode`); skip that input below so it is not rendered twice.
+    const lookupElement = await this.getLookupElement(inputsLookup);
+
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
       const propName = inputConfig.prop.name;
+
+      if (lookupElement !== null && propName === lookupElement.name)
+        return;
+
       const roots = [
         ...(inputConfig.isChangingInput ? [inputConfig.isChangingInput.root] : []),
         ...inputConfig.constForm.map((input) => input.root),
@@ -1120,7 +1132,6 @@ export class FittingView {
         inputsByCategories.set(category, roots);
     });
 
-    const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
 
     if (lookupElement !== null) {
