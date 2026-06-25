@@ -1432,7 +1432,7 @@ export function buildChemEnumPanel(
     countText.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:auto;align-self:center;';
     const previewHeaderRow = ui.divH([previewTitle, countText, errorBadge.root],
       {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
-    const previewCell = ui.divV([previewHeaderRow, previewHost], {style: {...growCellStyle, height: '100%'}});
+    const previewCell = ui.box(ui.divV([previewHeaderRow, previewHost], {style: {...growCellStyle, height: '100%'}}), {style: {width: '270px'}});
 
     // Ribbon group 1: Enumerate button — opens a popup to pick output options before running.
     const openRunDialog = () => {
