@@ -63,6 +63,19 @@ category('converters', async () => {
   test('Molfile V2000 to V3000', async () => {
     _testConvert(DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock);
   });
+  test('SMILES with absolute stereo to Molfile V2000 keeps chiral flag', async () => {
+    const chiralSmiles = 'CNC1=NC=NC2=C(NN=C12)C3=CN=C(N=C3)N4CC[C@H](C4)C(O)=O';
+    const molBlock = _convertMolNotation(chiralSmiles, DG.chem.Notation.Smiles,
+      DG.chem.Notation.MolBlock, PackageFunctions.getRdKitModule());
+    const countsLine = molBlock.replaceAll('\r', '').split('\n')[3];
+    expect(countsLine.substring(12, 15), '  1', `expected chiral flag 1 in counts line, got "${countsLine}"`);
+
+    const achiralSmiles = 'CN1C(=O)CN=C(C2CCCCC2)c2ccccc21';
+    const achiralMolBlock = _convertMolNotation(achiralSmiles, DG.chem.Notation.Smiles,
+      DG.chem.Notation.MolBlock, PackageFunctions.getRdKitModule());
+    const achiralCountsLine = achiralMolBlock.replaceAll('\r', '').split('\n')[3];
+    expect(achiralCountsLine.substring(12, 15), '  0', `expected chiral flag 0 for achiral, got "${achiralCountsLine}"`);
+  });
   test('Molfile V3000 to SMARTS', async () => {
     _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts);
   });
