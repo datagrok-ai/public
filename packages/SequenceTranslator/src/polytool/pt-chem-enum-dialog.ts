@@ -42,6 +42,9 @@ const DIALOG_TITLE = 'Markush Enumerator';
 const DEFAULT_TABLE_NAME = 'Markush enumeration';
 const DEFAULT_REMOVE_DUPLICATES = true;
 
+const OUTPUT_NEW_TABLE = 'New table';
+const OUTPUT_APPEND_TO = 'Append to…';
+
 /** Single source of truth for the result-table name: a trimmed user value, or the default when blank/missing. */
 function resolveTableName(raw: string | undefined): string {
   return raw?.trim() || DEFAULT_TABLE_NAME;
@@ -1254,10 +1257,10 @@ export function buildChemEnumPanel(
   // Output destination slot — swaps between tableNameInput and appendToTableInput.
   const outputSlot = ui.div([tableNameInput.root], {style: {minWidth: '0'}});
   const outputModeInput = ui.input.choice<string>('Output', {
-    value: 'New table', items: ['New table', 'Append to…'],
+    value: OUTPUT_NEW_TABLE, items: [OUTPUT_NEW_TABLE, OUTPUT_APPEND_TO],
     onValueChanged: (v) => {
       ui.empty(outputSlot);
-      if (v === 'Append to…') {
+      if (v === OUTPUT_APPEND_TO) {
         state.appendToTable = appendToTableInput.value ?? null;
         outputSlot.appendChild(appendToTableInput.root);
       } else {
@@ -1434,19 +1437,18 @@ export function buildChemEnumPanel(
     // Ribbon group 1: Enumerate button — opens a popup to pick output options before running.
     const openRunDialog = () => {
       const v = validateParams({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode});
-      const popupBody = ui.divV([outputModeInput.root, outputSlot, removeDuplicatesInput.root],
-        {style: {minWidth: '340px', gap: '4px'}});
-      if (!v.ok) {
-        popupBody.appendChild(ui.divText('Add at least one core and the required R-groups first.',
+      const children: HTMLElement[] = [outputModeInput.root, outputSlot, removeDuplicatesInput.root];
+      if (!v.ok)
+        children.push(ui.divText('Add at least one core and the required R-groups first.',
           {style: {color: 'var(--red-3)', fontSize: '11px', paddingTop: '4px'}}));
-      }
-      const dlg = ui.dialog({title: 'Enumerate'}).add(popupBody).onOK(() => executeEnumeration(state, rdkit));
+      const dlg = ui.dialog({title: 'Enumerate'}).add(ui.divV(children, {style: {minWidth: '340px', gap: '4px'}}))
+        .onOK(() => executeEnumeration(state, rdkit));
       dlg.show();
       const okBtn = dlg.getButton('OK') as HTMLButtonElement;
       if (okBtn) { okBtn.textContent = 'Run'; okBtn.disabled = !v.ok; }
     };
     const enumerateBtn = ui.bigButton('Enumerate', openRunDialog);
-    okButton = enumerateBtn as HTMLButtonElement;
+    okButton = enumerateBtn;
     appActionHost = enumerateBtn;
 
     // Ribbon group 2: mode selector.
