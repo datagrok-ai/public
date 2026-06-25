@@ -948,9 +948,6 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
   try {
     const rdkit = await getRdKitModule();
     const panel = buildChemEnumPanel(rdkit, null, 'app');
-    const runBtn = ui.bigButton('Enumerate', async () => { await panel.execute(); });
-    panel.bindActionButton(runBtn as HTMLButtonElement);
-    panel.appActionHost?.appendChild(runBtn);
 
     // Seed the panel so it never opens to an empty screen, in precedence order — the user's
     // most-recent history wins, else the admin-configured package-settings defaults, else the
@@ -1254,6 +1251,22 @@ export function buildChemEnumPanel(
   // Wider field so longer table names stay fully visible.
   tableNameInput.input.style.width = '250px';
 
+  // Output destination slot — swaps between tableNameInput and appendToTableInput.
+  const outputSlot = ui.div([tableNameInput.root], {style: {minWidth: '0'}});
+  const outputModeInput = ui.input.choice<string>('Output', {
+    value: 'New table', items: ['New table', 'Append to…'],
+    onValueChanged: (v) => {
+      ui.empty(outputSlot);
+      if (v === 'Append to…') {
+        state.appendToTable = appendToTableInput.value ?? null;
+        outputSlot.appendChild(appendToTableInput.root);
+      } else {
+        state.appendToTable = null;
+        outputSlot.appendChild(tableNameInput.root);
+      }
+    },
+  });
+
   let okButton: HTMLButtonElement | null = null;
 
   /** Collects positional error messages (no reference to internal ids). */
@@ -1418,8 +1431,23 @@ export function buildChemEnumPanel(
       {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
     const previewCell = ui.divV([previewHeaderRow, previewHost], {style: {...growCellStyle, height: '100%'}});
 
-    // Ribbon group 1: enumerate placeholder (filled by caller via appActionHost).
-    appActionHost = ui.div([], {style: {display: 'inline-flex', alignItems: 'center'}});
+    // Ribbon group 1: Enumerate button — opens a popup to pick output options before running.
+    const openRunDialog = () => {
+      const v = validateParams({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode});
+      const popupBody = ui.divV([outputModeInput.root, outputSlot, removeDuplicatesInput.root],
+        {style: {minWidth: '340px', gap: '4px'}});
+      if (!v.ok) {
+        popupBody.appendChild(ui.divText('Add at least one core and the required R-groups first.',
+          {style: {color: 'var(--red-3)', fontSize: '11px', paddingTop: '4px'}}));
+      }
+      const dlg = ui.dialog({title: 'Enumerate'}).add(popupBody).onOK(() => executeEnumeration(state, rdkit));
+      dlg.show();
+      const okBtn = dlg.getButton('OK') as HTMLButtonElement;
+      if (okBtn) { okBtn.textContent = 'Run'; okBtn.disabled = !v.ok; }
+    };
+    const enumerateBtn = ui.bigButton('Enumerate', openRunDialog);
+    okButton = enumerateBtn as HTMLButtonElement;
+    appActionHost = enumerateBtn;
 
     // Ribbon group 2: mode selector.
     // Ribbon group 3: history, export, clear all.
