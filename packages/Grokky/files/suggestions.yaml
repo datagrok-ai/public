@@ -73,7 +73,8 @@
         y: 'name~="affinity|ic50|potency"'
         c: 'name~="stage|class|status"'
 
-    - prompt: Show correlation matrix across numerical columns
+    - label: 'Show correlation matrix ({x:numerical}, …)'
+      prompt: Show correlation matrix across numerical columns
 
 - context: panel
   scope: global
@@ -93,4 +94,4 @@
     - label: 'JS: interactive sketcher with molecule properties'
       prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
     - label: 'Python: render Gasteiger partial charges'
-      prompt: 'Python: write a function that accepts a molecule and renders Gasteiger partial charges as a result'
+      prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'
