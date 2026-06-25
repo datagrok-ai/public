@@ -1523,10 +1523,9 @@ export function buildChemEnumPanel(
     ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
 
     const footer = ui.divV([
-      ui.divH([appendToTableInput.root, exportBtn],
-        {style: {alignItems: 'center', gap: '8px'}}),
+      appendToTableInput.root,
       removeDuplicatesInput.root,
-      tableNameInput.root,
+      ui.divH([tableNameInput.root, exportBtn], {style: {alignItems: 'center', gap: '8px'}}),
     ], {style: {padding: '2px 0'}});
 
     body = ui.divV([
