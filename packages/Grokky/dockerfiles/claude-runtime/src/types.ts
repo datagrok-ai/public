@@ -71,7 +71,6 @@ export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'tool_result'; sessionId: string; content: string; toolName?: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}

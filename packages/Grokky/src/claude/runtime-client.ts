@@ -10,7 +10,6 @@ export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type ToolResultEvent = {sessionId: string, content: string, toolName?: string};
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
@@ -26,7 +25,6 @@ export class ClaudeRuntimeClient {
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
-  public onToolResult = new rxjs.Subject<ToolResultEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
@@ -98,9 +96,6 @@ export class ClaudeRuntimeClient {
         break;
       case 'tool_activity':
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
-        break;
-      case 'tool_result':
-        this.onToolResult.next({sessionId: data.sessionId, content: data.content, toolName: data.toolName});
         break;
       case 'final':
         this.onFinal.next({
@@ -216,7 +211,6 @@ export class ClaudeRuntimeClient {
     }
     this.onChunk.complete();
     this.onToolActivity.complete();
-    this.onToolResult.complete();
     this.onFinal.complete();
     this.onError.complete();
     this.onAborted.complete();
@@ -225,7 +219,6 @@ export class ClaudeRuntimeClient {
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
-    this.onToolResult = new rxjs.Subject<ToolResultEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();

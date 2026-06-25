@@ -372,14 +372,6 @@ async function streamOnce(
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
-      forSession(client.onToolResult, (evt) => {
-        // browser tool results are internal — Claude's prose is the user-facing feedback.
-        if (evt.toolName?.endsWith('datagrok_exec') || evt.toolName?.endsWith('datagrok_show_entities'))
-          return;
-        toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
-      });
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();

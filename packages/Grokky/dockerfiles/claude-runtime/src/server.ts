@@ -21,9 +21,33 @@ const MAX_SESSIONS = 200;
 type FenceMode = 'prose' | 'other';
 interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
 const fenceStates = new Map<string, FenceState>();
-// Most-recent tool_use name per session, used to tag the matching tool_result (see F2 follow-up).
-const lastToolNames = new Map<string, string>();
 const FENCE_RE = /^```([\w-]*)\s*$/;
+
+const ENTITY_TYPE_MAP: Record<string, string> = {
+  project: 'project', dataquery: 'query', dataconnection: 'connection',
+  script: 'script', space: 'space', usergroup: 'group', group: 'group',
+  user: 'user', fileinfo: 'file', file: 'file',
+};
+
+const entityRefSchema = z.object({
+  '#type': z.string().optional(),
+  type: z.string().optional(),
+  name: z.string(),
+  id: z.string().optional(),
+  connector: z.string().optional(),
+  path: z.string().optional(),
+  isDirectory: z.boolean().optional(),
+}).transform((e) => {
+  const raw = (e['#type'] ?? e.type ?? '') as string;
+  return {
+    type: ENTITY_TYPE_MAP[raw.toLowerCase()] ?? raw.toLowerCase(),
+    name: e.name,
+    ...(e.id && {id: e.id}),
+    ...(e.connector && {connector: e.connector}),
+    ...(e.path && {path: e.path}),
+    ...(e.isDirectory !== undefined && {isDirectory: e.isDirectory}),
+  };
+});
 
 const BASH_EXEC_PROMPT = `\
 Execute the given shell command using the Bash tool. \
@@ -193,9 +217,13 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
         'Display Datagrok entities (files, scripts, queries, connections, projects, spaces, groups, users) ' +
         'as interactive cards in the chat. ALWAYS call this tool when you have entity data from an MCP result — ' +
         'never list entities as plain text, markdown links, or a fenced block.',
-        {entities: z.array(z.any()).describe(
-          'Array of entity refs. Each entry must have: type (file|script|query|connection|project|space|group|user), name. ' +
-          'Files also need connector and path. Other types need id. Pass values from the MCP result exactly — never invent.',
+        {entities: z.array(entityRefSchema).describe(
+          'Array of entity refs. Each entry: ' +
+          'type (file|script|query|connection|project|space|group|user) or the raw #type string from the MCP result — the tool normalizes it; ' +
+          'name (for users, use friendlyName); ' +
+          'id (required for all types except file); ' +
+          'connector + path (required for files; connector is the connection name, e.g. "System:DemoFiles"); ' +
+          'isDirectory (optional, files only). Pass all values from the MCP result exactly — never invent.',
         )},
         async ({entities}) => {
           try {
@@ -269,7 +297,7 @@ const toolFormatters: {[K in ToolName]: (i: ToolInputs[K]) => string} = {
   Read: (i) => `Read ${i.file_path ?? ''}`,
   Write: (i) => `Write ${i.file_path ?? ''}`,
   Edit: (i) => `Edit ${i.file_path ?? ''}`,
-  Bash: (i) => `Bash: ${(i.command ?? '').slice(0, 120)}`,
+  Bash: (_i) => 'Bash',
   Glob: (i) => `Glob ${i.pattern ?? ''} ${i.path ? 'in ' + i.path : ''}`.trim(),
   Grep: (i) => `Grep '${i.pattern ?? ''}' ${i.path ? 'in ' + i.path : ''}`.trim(),
   WebSearch: (i) => `WebSearch: ${i.query ?? ''}`,
@@ -288,7 +316,7 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   search_code: (i) => `Search code: ${i.query ?? ''}`,
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
-  datagrok_exec: (i) => `Execute in browser${i.code ? ': ' + (i.code).slice(0, 60).replace(/\n/g, ' ') : ''}`,
+  datagrok_exec: (_i) => 'Execute in browser',
   datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
@@ -302,17 +330,6 @@ function toolSummary(name: string, input: Record<string, unknown>): string {
     return mcp.replace(/_/g, ' ');
   }
   return name;
-}
-
-function extractResult(evt: any): string | null {
-  const r = evt.tool_use_result ?? evt.tool_result;
-  if (!r)
-    return null;
-  if (typeof r === 'string')
-    return r || null;
-  if (Array.isArray(r))
-    return r.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n') || null;
-  return null;
 }
 
 interface WsSender {
@@ -388,18 +405,10 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'assistant':
     for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use') {
-        lastToolNames.set(sid, block.name);
+      if (block.type === 'tool_use')
         emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
-      }
     }
     break;
-  case 'user': {
-    const content = extractResult(e);
-    if (content)
-      emit(ws, {type: 'tool_result', sessionId: sid, content, toolName: lastToolNames.get(sid)});
-    break;
-  }
   case 'stream_event':
     if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
       emitFiltered(ws, sid, e.event.delta.text);
@@ -525,7 +534,6 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
     fenceStates.delete(sid);
-    lastToolNames.delete(sid);
     unregisterActiveQuery(sid);
   }
 }
