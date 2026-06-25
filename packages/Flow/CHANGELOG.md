@@ -2,6 +2,21 @@
 
 ## v.next
 
+### Scientist-centered UX (Sprint 2)
+
+* **Inspect anywhere (slice-compile).** Right-click any output port → **"Run up to here & preview"**:
+  Flow compiles and runs just the slice needed to produce that node (the node + its upstream
+  ancestors, `sliceUpTo`), then opens its data — no full run and no Output node required.
+  `EmitOptions.onlyNodeIds` restricts emission to the slice; the controller focuses the node on
+  completion.
+* **"Needs input" hints.** Each node now shows a plain-language amber hint listing the structural
+  inputs (a table, a column) still to be connected or filled — continuous, pre-run, on the node
+  itself (`missingRequiredInputs` + `FuncNode.requiredInputs`). The status dot turns amber too.
+* **Row counts on wires.** After a run, each data connection is labelled at its midpoint with the
+  row/value count flowing through it (Make/n8n-style), cleared on edit / re-run.
+* **Function browser remembers its state.** The group-by mode and which sections you expanded are
+  persisted to `localStorage` and restored next time (`funcflow.browser.v1`).
+
 ### Scientist-centered UX (Sprint 1)
 
 * **Function browser — task-oriented & decluttered.** Default grouping is now **"what it does"**

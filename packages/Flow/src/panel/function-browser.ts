@@ -64,6 +64,15 @@ export interface FunctionBrowserCallbacks {
   onBuiltinNodeDoubleClick: (nodeTypeName: string) => void;
 }
 
+/** Persisted UI state for the browser (group mode + which sections the user
+ *  has expanded), so it reopens exactly as the user left it. */
+interface BrowserState {
+  groupBy: GroupByMode;
+  expanded: Record<string, boolean>;
+}
+const LS_KEY = 'funcflow.browser.v1';
+const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
+
 /** Left sidebar: searchable, groupable function catalog */
 export class FunctionBrowser {
   root: HTMLElement;
@@ -71,11 +80,45 @@ export class FunctionBrowser {
   private groupBySelect!: HTMLSelectElement;
   private treeContainer!: HTMLElement;
   private groupBy: GroupByMode = 'category';
+  /** Expanded-section memory, keyed `b:<title>` (built-ins) / `<mode>:<group>`. */
+  private expanded: Record<string, boolean> = {};
   private callbacks: FunctionBrowserCallbacks;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
     this.callbacks = callbacks;
+    this.loadState();
     this.root = this.buildUI();
+  }
+
+  // ---------- persistence (localStorage) ----------
+
+  private loadState(): void {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Partial<BrowserState>;
+      if (s.groupBy && VALID_MODES.includes(s.groupBy)) this.groupBy = s.groupBy;
+      if (s.expanded && typeof s.expanded === 'object') this.expanded = s.expanded;
+    } catch {/* corrupt/blocked storage — fall back to defaults */}
+  }
+
+  private saveState(): void {
+    try {
+      const state: BrowserState = {groupBy: this.groupBy, expanded: this.expanded};
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+    } catch {/* storage blocked/full — non-fatal */}
+  }
+
+  /** Whether a section should render expanded: forced open while searching,
+   *  otherwise remembered (default collapsed). */
+  private isExpanded(key: string, hasSearch: boolean): boolean {
+    if (hasSearch) return true;
+    return this.expanded[key] === true;
+  }
+
+  private setExpanded(key: string, value: boolean): void {
+    this.expanded[key] = value;
+    this.saveState();
   }
 
   private buildUI(): HTMLElement {
@@ -101,8 +144,10 @@ export class FunctionBrowser {
       option.textContent = `Group by: ${groupByLabels[opt]}`;
       this.groupBySelect.appendChild(option);
     }
+    this.groupBySelect.value = this.groupBy; // restore persisted mode
     this.groupBySelect.addEventListener('change', () => {
       this.groupBy = this.groupBySelect.value as GroupByMode;
+      this.saveState();
       this.render();
     });
 
@@ -224,12 +269,12 @@ export class FunctionBrowser {
         section.nodes;
       if (filtered.length === 0) continue;
 
-      const sectionEl = this.createBuiltinSection(section.title, filtered, section.collapsed, section.tip);
+      const sectionEl = this.createBuiltinSection(section.title, filtered, section.tip);
       this.treeContainer.appendChild(sectionEl);
     }
   }
 
-  private createBuiltinSection(title: string, nodes: {name: string; type: string; desc?: string}[], startCollapsed?: boolean, tooltip?: string): HTMLElement {
+  private createBuiltinSection(title: string, nodes: {name: string; type: string; desc?: string}[], tooltip?: string): HTMLElement {
     const header = ui.div([], 'funcflow-section-header');
     header.textContent = title;
     header.style.cursor = 'pointer';
@@ -251,8 +296,9 @@ export class FunctionBrowser {
       content.appendChild(item);
     }
 
+    const key = `b:${title}`;
     const hasSearch = !!this.searchInput.value;
-    let collapsed = hasSearch ? false : !!startCollapsed;
+    let collapsed = !this.isExpanded(key, hasSearch);
     if (collapsed) {
       content.style.display = 'none';
       header.classList.add('collapsed');
@@ -261,6 +307,7 @@ export class FunctionBrowser {
       collapsed = !collapsed;
       content.style.display = collapsed ? 'none' : 'block';
       header.classList.toggle('collapsed', collapsed);
+      if (!hasSearch) this.setExpanded(key, !collapsed); // remember explicit user toggles
     });
 
     return ui.divV([header, content]);
@@ -287,18 +334,16 @@ export class FunctionBrowser {
       content.appendChild(item);
     }
 
+    const key = `${this.groupBy}:${category}`;
     const hasSearch = !!this.searchInput.value;
-    let collapsed = !hasSearch;
-    if (collapsed) {
-      content.style.display = 'none';
-      header.classList.add('collapsed');
-    } else {
-      content.style.display = 'block';
-    }
+    let collapsed = !this.isExpanded(key, hasSearch);
+    content.style.display = collapsed ? 'none' : 'block';
+    header.classList.toggle('collapsed', collapsed);
     header.addEventListener('click', () => {
       collapsed = !collapsed;
       content.style.display = collapsed ? 'none' : 'block';
       header.classList.toggle('collapsed', collapsed);
+      if (!hasSearch) this.setExpanded(key, !collapsed);
     });
 
     return ui.divV([header, content]);

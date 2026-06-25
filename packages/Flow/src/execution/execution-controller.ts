@@ -11,7 +11,19 @@ import {ExecutionVisualizer} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
+import {sliceUpTo} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
+import {isExecKey} from '../rete/scheme';
+
+/** Short count label for a wire from a source output's summary — "1,204 rows"
+ *  for a table, "1,204" for a column. Null when there's nothing countable. */
+function connectionCountLabel(summary?: ValueSummary): string | null {
+  if (!summary) return null;
+  const n = (v: number): string => v.toLocaleString('en-US');
+  if (summary.type === 'dataframe' && typeof summary.rows === 'number') return `${n(summary.rows)} rows`;
+  if (summary.type === 'column' && typeof summary.length === 'number') return n(summary.length);
+  return null;
+}
 
 /** A short, human data summary of a completed node's outputs for the status
  *  line under the node — the first table ("1,204 × 8") or column ("1,204 values")
@@ -35,6 +47,9 @@ export class ExecutionController {
   private flow: FlowEditor;
   private subscription: {unsubscribe(): void} | null = null;
   private graphVersion = 0;
+  /** When set, the next run is a single-node preview; on completion we open
+   *  this node's data panel instead of the normal end-of-run behavior. */
+  private pendingPreviewNodeId: string | null = null;
   outputPreview: OutputPreviewPanel = new OutputPreviewPanel();
 
   /** Called when execution stops at a breakpoint (so the view can prompt Continue). */
@@ -58,12 +73,26 @@ export class ExecutionController {
     this.executeInstrumented(settings, true);
   }
 
-  private executeInstrumented(settings: ScriptSettings, debug: boolean): void {
-    const errors = validateGraph(this.flow);
-    if (errors.some((e) => e.severity === 'error')) {
-      const msgs = errors.filter((e) => e.severity === 'error').map((e) => e.message).join('\n');
-      grok.shell.error('Validation errors:\n' + msgs);
-      return;
+  /** Run only the slice needed to produce `targetNodeId`'s output (the node and
+   *  all its upstream ancestors), then open that node's data preview. The
+   *  "inspect anywhere" keystone — see any port's data without running the
+   *  whole graph or wiring an Output node. */
+  previewNodeData(targetNodeId: string, settings: ScriptSettings): void {
+    const slice = sliceUpTo(this.flow, targetNodeId);
+    this.executeInstrumented(settings, false, {onlyNodeIds: slice, focusNodeId: targetNodeId, skipValidation: true});
+  }
+
+  private executeInstrumented(
+    settings: ScriptSettings, debug: boolean,
+    opts?: {onlyNodeIds?: Set<string>; focusNodeId?: string; skipValidation?: boolean},
+  ): void {
+    if (!opts?.skipValidation) {
+      const errors = validateGraph(this.flow);
+      if (errors.some((e) => e.severity === 'error')) {
+        const msgs = errors.filter((e) => e.severity === 'error').map((e) => e.message).join('\n');
+        grok.shell.error('Validation errors:\n' + msgs);
+        return;
+      }
     }
 
     this.stopRun();
@@ -73,6 +102,8 @@ export class ExecutionController {
     const runId = crypto.randomUUID();
     this.state.startRun(runId, this.graphVersion);
     this.visualizer.resetAllNodes();
+    this.flow.clearConnectionLabels();
+    this.pendingPreviewNodeId = opts?.focusNodeId ?? null;
 
     const channel = `funcflow.exec.${runId}`;
     this.subscription = grok.events.onCustomEvent(channel).subscribe((event: ExecEvent) => {
@@ -84,6 +115,7 @@ export class ExecutionController {
       runId,
       enableBreakpoints: debug,
       haltOnError: true,
+      onlyNodeIds: opts?.onlyNodeIds,
     };
 
     try {
@@ -129,6 +161,7 @@ export class ExecutionController {
         endTime: event.timestamp, outputs: event.outputs,
       });
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
+      this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-error':
@@ -145,7 +178,17 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
-      this.onRunEnd?.(event.success === true);
+      if (this.pendingPreviewNodeId) {
+        const id = this.pendingPreviewNodeId;
+        this.pendingPreviewNodeId = null;
+        const node = this.flow.getNodeById(id);
+        if (node) {
+          void this.flow.selectNode(id);   // focuses the node + opens its panel via the view
+          this.showOutputsForNode(node);
+        }
+      } else {
+        this.onRunEnd?.(event.success === true);
+      }
       break;
     }
   }
@@ -163,12 +206,26 @@ export class ExecutionController {
     this.state.endRun();
   }
 
+  /** After a node completes, tag its outgoing data wires with the row/value
+   *  count flowing through them (Make/n8n-style on-edge counts). */
+  private labelOutgoingConnections(nodeId: string, outputs?: Record<string, ValueSummary>): void {
+    if (!outputs) return;
+    for (const c of this.flow.getConnections()) {
+      if (c.source !== nodeId) continue;
+      const key = String(c.sourceOutput);
+      if (isExecKey(key)) continue;
+      const label = connectionCountLabel(outputs[key]);
+      if (label) this.flow.setConnectionLabel(c.id, label);
+    }
+  }
+
   /** Bumped every time the graph changes; if results are stale, mark them so. */
   onGraphChanged(): void {
     this.graphVersion++;
     if (this.state.nodeStates.size > 0 && this.state.isStale(this.graphVersion)) {
       this.state.markAllStale();
       this.visualizer.markAllStale();
+      this.flow.clearConnectionLabels();
       // Stale values aren't worth previewing; close to avoid stale impressions.
       this.outputPreview.close();
     }
@@ -176,6 +233,7 @@ export class ExecutionController {
 
   resetVisuals(): void {
     this.visualizer.resetAllNodes();
+    this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.close();
   }

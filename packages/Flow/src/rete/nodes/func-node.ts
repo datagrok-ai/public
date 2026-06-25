@@ -15,7 +15,7 @@ import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
 import {dgTypeToSlotType, getNodeColors} from '../../types/type-map';
-import {getRole, getFuncQualifiedName, getFuncDisplayName} from '../../utils/dart-proxy-utils';
+import {getRole, getFuncQualifiedName, getFuncDisplayName, isInputOptional} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -98,6 +98,14 @@ export class FuncNode extends FlowNode {
       const slotType = dgTypeToSlotType(out.propertyType);
       this.addOutput(out.name, new ClassicPreset.Output(getSocket(slotType), out.name));
     }
+
+    // Structural inputs (a table / a column) that aren't optional must be
+    // satisfied for the node to do anything — drives the "Needs input" hint.
+    // Primitives are excluded: they always carry a default in `inputValues`.
+    const STRUCTURAL = ['dataframe', 'column', 'column_list'];
+    this.requiredInputs = funcInputs
+      .filter((p) => STRUCTURAL.includes(String(p.propertyType)) && !isInputOptional(p))
+      .map((p) => p.name);
   }
 
   /** Look up the underlying input name corresponding to a pass-through key. */

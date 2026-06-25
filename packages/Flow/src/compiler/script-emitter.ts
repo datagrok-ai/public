@@ -24,6 +24,10 @@ export interface EmitOptions {
   enableBreakpoints?: boolean;
   /** Halt execution on first error (default true). */
   haltOnError?: boolean;
+  /** When set, only compile/emit steps for these node ids (the rest are
+   *  dropped). Used to run a slice up to a target node — the set must be
+   *  closed under "ancestors" so no surviving step references a dropped one. */
+  onlyNodeIds?: Set<string>;
 }
 
 const PASSTHROUGH_SUFFIX = '__pt';
@@ -31,7 +35,8 @@ const PASSTHROUGH_SUFFIX = '__pt';
 export function emitScript(
   flow: FlowEditor, settings: ScriptSettings, options?: EmitOptions,
 ): string {
-  const steps = compileGraph(flow);
+  let steps = compileGraph(flow);
+  if (options?.onlyNodeIds) steps = steps.filter((s) => options.onlyNodeIds!.has(s.nodeId));
   const lines: string[] = [];
   const inst = options?.instrumented === true;
 

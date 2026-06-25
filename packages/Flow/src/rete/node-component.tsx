@@ -15,7 +15,7 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, missingRequiredInputs} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
 
@@ -62,6 +62,13 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
   const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
 
+  // Pre-run hint: structural inputs the user still has to provide. Shown only
+  // when the node hasn't successfully run (idle/stale), so a "Done"/"Error"
+  // status from a real run always takes precedence.
+  const needs = missingRequiredInputs(node, (key) => isConnected(node.id, 'input', key));
+  const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
+  const attention = idle && needs.length > 0;
+
   // Collapse is the caret's job now — the status dot is display-only, so
   // clicking the run indicator never hides the node out from under you.
   const onCaretClick = (e: React.MouseEvent): void => {
@@ -80,6 +87,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       data-node-id={node.id}
       data-selected={node.selected ? 'true' : 'false'}
       data-status={dgStatus}
+      data-attention={attention ? 'true' : 'false'}
     >
       {/* Execution-ordering ports — top corners (KNIME flow-variable style).
           exec-in (left) accepts "run after" predecessors; exec-out (right)
@@ -127,11 +135,16 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         >{collapsed ? '▸' : '▾'}</span>
       </div>
 
-      {/* Plain-language run status — shown collapsed too, so a folded node still
-          reports "Done · 1,204 × 8" at a glance. */}
-      {statusText && (
+      {/* Pre-run "Needs input" hint takes precedence over an idle/stale status;
+          a real run's status (Done/Running/Error) wins otherwise. Shown
+          collapsed too, so a folded node still reports its state at a glance. */}
+      {attention ? (
+        <div className="ff-node-hint" title={`Connect or set: ${needs.join(', ')}`}>
+          Requires: {needs.join(', ')}
+        </div>
+      ) : statusText ? (
         <div className="ff-node-statusline" data-status={dgStatus}>{statusText}</div>
-      )}
+      ) : null}
 
       {node.description && !collapsed && (
         <div className="ff-node-description" title={node.description}>{node.description}</div>
@@ -254,13 +267,14 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
  *  `setAttribute('stroke', ...)`). The color is stuffed into the connection
  *  payload by `FlowEditor` at construction time as `_color`. */
 interface ConnectionProps {
-  data: FlowScheme['Connection'] & {_color?: string};
+  data: FlowScheme['Connection'] & {_color?: string; _count?: string};
 }
 
 export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Element | null {
   const {path, start, end} = Presets.classic.useConnection();
   if (!path) return null;
   const color = props.data._color ?? '#8892a0';
+  const count = props.data._count;
 
   // Compute the actual path: if waypoints are present, chain
   // classicConnectionPath segments through start → waypoints → end. Without
@@ -315,6 +329,15 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
           style={{fill: color, stroke: '#fff', strokeWidth: 1.5, pointerEvents: 'auto', cursor: 'move'}}
         />
       ))}
+      {count && start && end && (
+        <text
+          className="ff-edge-count"
+          x={(start.x + end.x) / 2}
+          y={(start.y + end.y) / 2 - 6}
+          textAnchor="middle"
+          dominantBaseline="central"
+        >{count}</text>
+      )}
     </svg>
   );
 }

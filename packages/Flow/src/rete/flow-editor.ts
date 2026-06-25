@@ -1265,6 +1265,27 @@ export class FlowEditor {
     this.connectionStatuses.clear();
   }
 
+  /** Show (or clear, when `text` is null) a small data-count label at a
+   *  connection's midpoint — the row/value count flowing through it after a run.
+   *  Stuffed into the payload as `_count` and re-rendered, mirroring `_color`. */
+  setConnectionLabel(connectionId: string, text: string | null): void {
+    const conn = this.editor.getConnections().find((c) => c.id === connectionId) as
+      (FlowConnection & {_count?: string}) | undefined;
+    if (!conn) return;
+    conn._count = text ?? undefined;
+    void this.area.update('connection', connectionId);
+  }
+
+  /** Drop every wire's count label (between/after runs, or on edit). */
+  clearConnectionLabels(): void {
+    for (const c of this.editor.getConnections() as Array<FlowConnection & {_count?: string}>) {
+      if (c._count !== undefined) {
+        c._count = undefined;
+        void this.area.update('connection', c.id);
+      }
+    }
+  }
+
   // ---------- context menu + delete key ----------
 
   /** Right-click on a node or connection opens a `DG.Menu` popup with the

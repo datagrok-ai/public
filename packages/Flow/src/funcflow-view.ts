@@ -175,13 +175,24 @@ export class FuncFlowView extends DG.ViewBase {
       const summary = state?.outputs?.[outputKey];
 
       const menu = DG.Menu.popup();
-      if (summary && this.isPortPreviewable(summary)) {
+      if (summary && this.isPortPreviewable(summary))
         menu.item('View output', () => this.showPortPreview(rowEl, outputKey, summary));
-      } else {
-        menu.item('No output captured yet', () => {});
-      }
+      // Inspect-anywhere: run just the slice up to this node and preview it —
+      // no full run, no Output node required.
+      menu.item(summary ? 'Re-run up to here' : 'Run up to here & preview',
+        () => this.previewNodeData(nodeId));
       menu.show({causedBy: ev});
     }, true);
+  }
+
+  /** Run only the slice up to this node and open its data preview — the
+   *  "inspect anywhere" entry point from an output-port right-click. */
+  private previewNodeData(nodeId: string): void {
+    this.executionController?.previewNodeData(nodeId, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
   }
 
   private isPortPreviewable(summary: ValueSummary): boolean {
@@ -250,6 +261,7 @@ export class FuncFlowView extends DG.ViewBase {
       onGraphChanged: () => {
         this.updateStatusBar();
         this.updateStartPanelVisibility();
+        this.refreshNodeHints();
         this.executionController?.onGraphChanged();
       },
     });
@@ -270,6 +282,18 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
+  }
+
+  /** Re-render every node so the pre-run "Needs input" hint reflects the
+   *  current wiring (connections don't otherwise re-render their endpoints).
+   *  Cheap for the small graphs Flow targets; debounced via rAF. */
+  private hintRaf = 0;
+  private refreshNodeHints(): void {
+    if (!this.flow || this.hintRaf) return;
+    this.hintRaf = requestAnimationFrame(() => {
+      this.hintRaf = 0;
+      for (const n of this.flow.getNodes()) void this.flow.updateNode(n.id);
+    });
   }
 
   /** Set the overview minimap's collapsed state. Remembered and (re)applied when

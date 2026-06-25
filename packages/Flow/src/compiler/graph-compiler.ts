@@ -34,6 +34,24 @@ export interface CompiledStep {
 
 const PASSTHROUGH_SUFFIX = '__pt';
 
+/** Every node that must run to produce `targetId`'s output: the target plus all
+ *  its transitive predecessors (walking connections backward — data,
+ *  pass-through, and order edges alike). The set is closed under "ancestors",
+ *  so emitting only these steps yields a self-contained sub-script. */
+export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
+  const connections = flow.getConnections();
+  const result = new Set<string>();
+  const stack = [targetId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (result.has(id)) continue;
+    result.add(id);
+    for (const c of connections)
+      if (c.target === id) stack.push(c.source);
+  }
+  return result;
+}
+
 export function compileGraph(flow: FlowEditor): CompiledStep[] {
   const sortedIds = topologicalSort(flow);
   const connections = flow.getConnections();
