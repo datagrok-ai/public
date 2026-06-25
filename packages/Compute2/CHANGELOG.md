@@ -1,5 +1,10 @@
 # Compute2 changelog
 
+## 1.5.5 (2026-06-25)
+
+- RFV: don't duplicate the Diff Studio lookup "Default" scenario in Sensitivity Analysis and Fitting (pass `disableLookupDefault`)
+- Pick up compute-utils 1.46.4
+
 ## 1.5.4 (2026-06-16)
 
 - RFV: Help panel is dockable via `dockSpawnConfig['Help']`, so models can anchor it instead of it landing on the first chart

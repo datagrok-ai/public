@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.46.4 (2026-06-25)
+
+* Fitting/Sensitivity Analysis/Optimization: fix the lookup (scenario) input being duplicated when the model function declares an input with the same name as the lookup
+* Fitting/Sensitivity Analysis/Optimization: add `disableLookupDefault` option to omit the synthetic "Default" choice when the lookup table already provides its own default row
+* Fitting: gate the "Apply fitted parameters" icon on available results — grey/disabled until a fitting exists, green afterwards, with an explanatory tooltip; switch the glyph to `check-double`
+
 ## 1.46.3 (2026-06-16)
 
 * RFV: map the `diffstudiofacet` viewer type to the label `DiffStudio Facet` in `viewerTypesMapping`, so the facet viewer tab shows a proper name
