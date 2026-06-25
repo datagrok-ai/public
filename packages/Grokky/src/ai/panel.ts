@@ -664,6 +664,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public appendStreamedElement(el: HTMLElement): void {
     this.ensureResponseBlock();
     this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
   }
 
   public appendUiMessage(content: string): void {
@@ -679,7 +681,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._streamingMarkdownEl.replaceWith(markDown);
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-    } else {
+    } else if (content) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }

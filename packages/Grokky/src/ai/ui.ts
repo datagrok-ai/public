@@ -332,6 +332,7 @@ async function streamOnce(
   return new Promise<void>(async (resolve) => {
     const sessionId = panel.sessionId;
     let accumulated = '';
+    let segmentStart = 0;
     let toolStatus = '';
     let nextBlockIndex = 0;
     const subs: {unsubscribe: () => void}[] = [];
@@ -363,21 +364,22 @@ async function streamOnce(
       forSession(client.onChunk, (evt) => {
         accumulated += evt.content;
         toolStatus = '';
-        panel.updateStreaming(accumulated, chatSession.loader);
+        panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
       });
 
       forSession(client.onToolActivity, (evt) => {
         toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+        panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
-        const content = accumulated || evt.content;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: content}]});
-        await panel.finalizeStreaming(content, content, view);
+        const fullContent = accumulated || evt.content;
+        const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+        await panel.finalizeStreaming(segmentContent, fullContent, view);
         cleanup();
         resolve();
       });
@@ -399,8 +401,11 @@ async function streamOnce(
         // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
         if (evt.toolName === 'datagrok_exec') {
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
-          if (element)
+          if (element) {
             panel.appendStreamedElement(element);
+            segmentStart = accumulated.length;
+            toolStatus = '';
+          }
           const result = error ?
             {success: false, error: error.error} :
             {success: true, ...(value != null ? {returnValue: value} : {})};
@@ -410,6 +415,8 @@ async function streamOnce(
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.
         if (evt.toolName === 'datagrok_show_entities') {
           panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
+          segmentStart = accumulated.length;
+          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {success: true});
           return;
         }
@@ -426,6 +433,7 @@ async function streamOnce(
         }
         // Default: AskUserQuestion
         accumulated = '';
+        segmentStart = 0;
         toolStatus = '';
         panel.clearStreaming();
         const response = await panel.showInputRequest(evt.input);
