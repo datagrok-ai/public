@@ -199,6 +199,31 @@ UI: the **Compile to Creation Script** ribbon action (`stream` icon, and `Script
 Script...`) opens a dialog with the script, a copy button, and a warnings strip (`compileToCreationScript`
 in [funcflow-view.ts](src/funcflow-view.ts)).
 
+### Per-table split + Save (`creationScriptEditor`)
+
+When the view edits *specific tables'* creation scripts — the `openCreationScriptFlowDialog`
+(`meta.role: creationScriptEditor`) entry point passes `tableIds`, loaded into `DG.TableInfo[]` and
+handed to `new FuncFlowView(tableInfos)` — the combined cascade must be split back into **one creation
+script per table** and written to each.
+
+- `emitCreationScriptsForTables(flow, tableVarNames)` (in [creation-script-emitter.ts](src/compiler/creation-script-emitter.ts))
+  walks the graph **once** (shared with the single-script `emit()`), tagging every emitted line with its
+  **owner** — the table variable it builds/mutates: a producer's anchor/assignment name, or, for a bare
+  mutator, the variable resolved on its **first dataframe input** (`primaryTableOwner`). Lines are then
+  bucketed by owner; a line whose owner isn't a requested table goes to `unassigned`. For an imported
+  flow every line's owner is a real table variable, so the split is a clean partition.
+- **Owner ↔ table** match key is the table's `.VariableName` tag (`tableInfo.tags[DG.Tags.VariableName]`,
+  fallback `tableInfo.name`) — which equals the importer's `SetVar` variable names.
+- Each line is stamped with a `//{"timestamp": <ms>}` comment from a **single global counter**
+  (`Date.now()`, +1 ms per line) advanced in topological order across *all* tables — never per-table —
+  so the value also encodes which table Datagrok builds first (an earlier-built table's lines carry
+  smaller timestamps than a table that depends on it).
+- UI: a primary **Save** ribbon button (`ui.bigButton`, only present when `tableInfos` is non-empty)
+  opens `saveCreationScriptsDialog` — a horizontal `ui.tabControl`, one tab per table showing its
+  standalone script, and a Save (OK) action that calls `TableInfo.saveCreationScript(script)` for each.
+  An empty per-table script is legitimate (a table updated locally) and is shown plainly, not warned;
+  only genuine emitter warnings (JS-only nodes, serialization failures) surface in the dialog.
+
 ## Tests ([src/tests/](src/tests))
 
 `package-test.ts` imports the suites; run with `grok test --host localhost`. `test-utils.ts` provides
