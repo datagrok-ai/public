@@ -51,8 +51,9 @@ export const SEARCH_INPUT = 'input.power-search-search-everywhere-input';
 
 export const SPOTLIGHT_TAB = `${WIDGET_HOST}[widget-title="Spotlight"] .d4-tab-header`;
 // Spotlight's footer rotates a "<X> of the day" link — "Demo" on instances with demo
-// packages, "Tutorial"/"Video" otherwise (e.g. the CI Datlas has no demo apps). Match any.
-export const DEMO_OF_THE_DAY = /(Demo|Tutorial|Video) of the day/i;
+// packages, "Tutorial"/"Video"/"Tip" otherwise (e.g. the CI Datlas has no demo apps,
+// so it falls back to "Tip of the day"). Match any "<word> of the day" variant.
+export const DEMO_OF_THE_DAY = /\w+ of the day/i;
 export const TAB_SELECTED = /(^|\s)selected(\s|$)/;
 export const MARK_ALL_AS_READ = 'Mark all as read';
 
