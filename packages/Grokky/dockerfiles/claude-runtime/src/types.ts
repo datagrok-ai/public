@@ -22,6 +22,7 @@ export interface McpInputs {
   get_indexing_status: {path?: string};
   clear_index: {path?: string};
   datagrok_exec: {code?: string};
+  datagrok_show_entities: {entities?: any[]};
 }
 
 export type ToolName = keyof ToolInputs;
@@ -68,7 +69,7 @@ export interface SyncMessage {
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
 
 export type OutgoingMessage =
-  | {type: 'chunk'; sessionId: string; content: string; kind?: 'entity'}
+  | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'tool_result'; sessionId: string; content: string; toolName?: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any}

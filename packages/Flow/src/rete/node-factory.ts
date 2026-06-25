@@ -52,18 +52,47 @@ function register(name: string, factory: Factory): void {
 /** Tags that mark a function for exclusion from the catalog. */
 export const EXCLUDED_TAGS: string[] = [];
 
-/** Roles that mark a function for exclusion. */
+/** Roles that mark a function for exclusion.
+ *  Beyond the platform UI-extension roles, we drop roles that produce
+ *  context-panel UI fragments (panel / widgets / tooltip) and inline value
+ *  editors — none of which are pipeline steps a scientist would chain. */
 export const EXCLUDED_ROLES: string[] = [
   DG.FUNC_TYPES.APP, 'aiSearchProvider', 'antibodyNumbering', 'appTreeBrowser', 'canonicalizer',
   DG.FUNC_TYPES.CELL_RENDERER, 'dashboard', DG.FUNC_TYPES.FILE_VIEWER, DG.FUNC_TYPES.FILE_IMPORTER,
   DG.FUNC_TYPES.FILE_EXPORTER, DG.FUNC_TYPES.FILTER, DG.FUNC_TYPES.FOLDER_VIEWER, DG.FUNC_TYPES.MOLECULE_SKETCHER,
   'notationProviderConstructor', 'notationRefiner', 'packageSettingsEditor', 'searchProvider', 'semTypeDetector',
-  'semValueExtractor', 'valueEditor',
+  'semValueExtractor', 'valueEditor', 'editor', 'cellEditor', 'panel', 'widgets', 'tooltip',
 ];
 
-function shouldExcludeFunc(role: string | null, tags: string[]): boolean {
-  if (role && EXCLUDED_ROLES.includes(role)) return true;
+/** Whole packages that are dev / test / internal-telemetry only — never useful
+ *  in a user-facing flow. (Empirically the largest source of catalog noise:
+ *  Dbtests ~287, UsageAnalysis ~132, ApiTests ~36, … — see docs/func-catalog-snapshot.md.) */
+export const EXCLUDED_PACKAGES: string[] = [
+  'Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis',
+];
+
+/** A function is excluded when it is test scaffolding, lives in a dev/test
+ *  package, carries an excluded role/tag, or is a command/dialog wrapper that
+ *  takes a `funccall` (e.g. CmdAggregate, addNewColumnDialog) rather than data. */
+function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], pkgName: string): boolean {
+  if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
+
+  // Test scaffolding by name (TestData, testFunction, Pkg:test, …).
+  const nm = (func.name || '').toLowerCase();
+  if (nm === 'test' || nm.startsWith('test')) return true;
+
+  // Role may be a comma-joined list ("widgets,panel") — exclude if any part matches.
+  if (role) {
+    for (const r of role.split(',').map((s) => s.trim()))
+      if (r && EXCLUDED_ROLES.includes(r)) return true;
+  }
   for (const tag of tags) if (EXCLUDED_TAGS.includes(tag)) return true;
+
+  // Command / dialog wrappers operate on a FuncCall, not on data.
+  try {
+    if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
+  } catch { /* ignore introspection failures */ }
+
   return false;
 }
 
@@ -142,9 +171,9 @@ export function registerAllFunctions(): FuncInfo[] {
       if (func.inputs.length === 0 && func.outputs.length === 0) continue;
       const role = getRole(func);
       const tags = getTags(func);
-      if (shouldExcludeFunc(role, tags)) continue;
-
       const pkgName = getPackageName(func);
+      if (shouldExcludeFunc(func, role, tags, pkgName)) continue;
+
       const category = role || 'Uncategorized';
 
       let typeName = `DG Functions/${category}/${func.name}`;
@@ -271,9 +300,28 @@ function labelForTypeName(typeName: string): string {
   return parts[parts.length - 1];
 }
 
+/** The data-pipeline steps a scientist reaches for most. Used as a usage-proxy
+ *  to float common next-steps to the top of the drag-out suggestion menu (real
+ *  telemetry isn't available client-side). Matched on the simple function name,
+ *  lower-cased. */
+const COMMON_NEXT_FUNCS = new Set([
+  'jointables', 'linktables', 'addnewcolumn', 'addnewcolumnlist', 'aggregate',
+  'filterrows', 'extractrows', 'extractcolumns', 'pivot', 'unpivot', 'splitcolumn',
+  'addtableview', 'clonetable', 'renamecolumn', 'changecolumnstype',
+]);
+
+/** Simple (trailing) function name of a typeName, lower-cased — `DG Functions/
+ *  Transform/Pkg:JoinTables` → `jointables`. */
+function simpleFuncName(typeName: string): string {
+  const last = typeName.split('/').pop() ?? typeName;
+  return (last.split(':').pop() ?? last).toLowerCase();
+}
+
 /** All registered node types whose inputs include at least one slot
- *  type-compatible with `sourceType`. Used by the drag-output suggestion
- *  menu — Value Output is sorted first because dynamic accepts everything. */
+ *  type-compatible with `sourceType`. Used by the drag-output suggestion menu.
+ *  Ranked: Value Output first (dynamic accepts everything), then common
+ *  next-step functions, then the rest of the built-ins, then DG funcs
+ *  alphabetically — so the likely next node is one of the first offered. */
 export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeType[] {
   const matches: CompatibleNodeType[] = [];
   for (const typeName of FACTORIES.keys()) {
@@ -286,13 +334,12 @@ export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeT
       isBuiltin: !typeName.startsWith('DG Functions/'),
     });
   }
-  // Stable sort: Value Output first, then the rest of built-ins, then DG
-  // funcs alphabetically.
-  matches.sort((a, b) => {
-    if (a.typeName === 'Outputs/Value Output') return -1;
-    if (b.typeName === 'Outputs/Value Output') return 1;
-    if (a.isBuiltin !== b.isBuiltin) return a.isBuiltin ? -1 : 1;
-    return a.label.localeCompare(b.label);
-  });
+  // Lower rank number = higher in the list.
+  const rank = (t: CompatibleNodeType): number => {
+    if (t.typeName === 'Outputs/Value Output') return 0;
+    if (COMMON_NEXT_FUNCS.has(simpleFuncName(t.typeName))) return 1;
+    return t.isBuiltin ? 2 : 3;
+  };
+  matches.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
   return matches;
 }

@@ -55,8 +55,13 @@ export class FlowNode extends ClassicPreset.Node<
   dgTypeName?: string;
 
   /** When true the node renders as a single title bar with no body.
-   *  Toggled by clicking the status circle. */
+   *  Toggled by the caret in the title bar (the status dot is display-only). */
   collapsed = false;
+
+  /** Short, plain-language run status shown under the node title
+   *  (e.g. "Running…", "Done · 1,204 × 8", "Error"). Set by
+   *  `ExecutionVisualizer`; empty when idle. */
+  statusText = '';
 
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */

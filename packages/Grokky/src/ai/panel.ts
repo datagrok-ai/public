@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
-import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
+import {buildViewContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -673,7 +673,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected renderFinalContent(content: string): void {
     this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
-    renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
 
     if (this._streamingMarkdownEl) {

@@ -67,7 +67,6 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/rdkit-service/rdkit-service-worker-substructure.ts` | Substructure search worker                             |
 | `src/rdkit-service/rdkit-service-worker-similarity.ts`   | Fingerprint computation worker                         |
 | `src/open-chem/ocl-sketcher.ts`                          | OpenChemLib sketcher wrapper                           |
-| `src/open-chem/ocl-cell-renderer.ts`                     | OpenChemLib cell renderer                              |
 | `src/open-chem/sdf-importer.ts`                          | SDF file import                                        |
 | `src/open-chem/ocl-service/`                             | OCL property calculations in workers                   |
 | `src/docker/api.ts`                                      | Communication with chem-chem Docker container          |
@@ -137,7 +136,7 @@ All functions are registered through the `PackageFunctions` class using `@grok.d
 (`func`, `app`, `init`, `autostart`, `editor`, `fileExporter`). Examples by area:
 
 Core rendering: `chemCellRenderer`, `rdKitCellRenderer`, `rdKitReactionRenderer`,
-`rdKitMixtureRenderer`, `oclCellRenderer`
+`rdKitMixtureRenderer`
 
 Search: `getMorganFingerprints`, `getMorganFingerprint`, `getSimilarities`, `getDiversities`,
 `findSimilar`, `searchSubstructure`, `synthonSearchFunc`, `sortBySimilarity`,

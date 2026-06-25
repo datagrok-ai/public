@@ -818,12 +818,6 @@ export function importMol(content: string) : any {
   return PackageFunctions.importMol(content);
 }
 
-//output: grid_cell_renderer result
-//meta.chemRendererName: OpenChemLib
-export async function oclCellRenderer() : Promise<any> {
-  return await PackageFunctions.oclCellRenderer();
-}
-
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
 //input: semantic_value value { semType: Molecule }

@@ -11,27 +11,42 @@ category('Dapi: connection', () => {
   };
 
   test('Create, save, delete, share', async () => {
-    let dc = DG.DataConnection.create('Local DG Test', dcParams);
-    expect(dc.credentials.parameters['login'], dcParams.login);
-    expect(dc.credentials.parameters['password'], dcParams.password);
-    dc = await grok.dapi.connections.save(dc);
-    expect((dc.parameters as any)['schema'], null);
-    expect((dc.parameters as any)['db'], dcParams.db);
-    expect(dc.friendlyName, 'Local DG Test');
-    expect((await grok.dapi.connections.find(dc.id)).id, dc.id);
-    // changing credentials
-    dc.credentials.parameters['login'] = 'changed_login';
-    dc = await grok.dapi.connections.save(dc);
-    expect(dc.credentials.openParameters['login'], 'changed_login');
+    // Unique name + id per run, and clean up only THIS connection. A shared name
+    // ('Local DG Test') plus a category-wide cleanup made concurrent stress runs
+    // create same-named connections and cross-delete each other mid-operation,
+    // racing credential/permission setup -> transient "Insufficient privileges".
+    const dcName = `Local DG Test ${DG.Utils.randomString(8)}`;
+    let dc: _DG.DataConnection | null = DG.DataConnection.create(dcName, dcParams);
+    dc.newId();
+    try {
+      expect(dc.credentials.parameters['login'], dcParams.login);
+      expect(dc.credentials.parameters['password'], dcParams.password);
+      dc = await grok.dapi.connections.save(dc);
+      expect((dc.parameters as any)['schema'], null);
+      expect((dc.parameters as any)['db'], dcParams.db);
+      expect(dc.friendlyName, dcName);
+      expect((await grok.dapi.connections.find(dc.id)).id, dc.id);
+      // changing credentials
+      dc.credentials.parameters['login'] = 'changed_login';
+      dc = await grok.dapi.connections.save(dc);
+      expect(dc.credentials.openParameters['login'], 'changed_login');
 
-    // changing credentials forEntity
-    let credentials = await grok.dapi.credentials.forEntity(dc);
-    credentials.parameters['login'] = 'datagrok_dev';
-    credentials = await grok.dapi.credentials.save(credentials);
-    expect(credentials.openParameters['login'], 'datagrok_dev');
+      // changing credentials forEntity
+      let credentials = await grok.dapi.credentials.forEntity(dc);
+      credentials.parameters['login'] = 'datagrok_dev';
+      credentials = await grok.dapi.credentials.save(credentials);
+      expect(credentials.openParameters['login'], 'datagrok_dev');
 
-    await grok.dapi.connections.delete(dc);
-    expect(await grok.dapi.connections.find(dc.id) == undefined);
+      const dcId = dc.id;
+      await grok.dapi.connections.delete(dc);
+      dc = null;
+      expect(await grok.dapi.connections.find(dcId) == undefined);
+    } finally {
+      try {
+        if (dc)
+          await grok.dapi.connections.delete(dc);
+      } catch (_) {}
+    }
   }, {stressTest: true});
 
   test('JS postprocess', async () => {
@@ -66,7 +81,8 @@ FROM generate_series(1, 10) AS s(i);
   });
 
   after(async () => {
-    const connections: _DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
+    // Safety net for any leaked test connections (names are randomized per run).
+    const connections: _DG.DataConnection[] = await grok.dapi.connections.filter(`name like "Local DG Test%"`).list();
     for (const conn of connections) {
       try {
         await grok.dapi.connections.delete(conn);

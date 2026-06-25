@@ -3,24 +3,55 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
 
-export type GroupByMode = 'role' | 'tags' | 'package' | 'output';
+export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
-/** Bucket a function by what kind of value it produces.
- *  Visualization wins over Data Sources when both apply (a func that builds
- *  a viewer is more naturally found under "Visualization"). No-output funcs
- *  are treated as Transformations — they typically mutate their dataframe
- *  input in place (e.g. addNewColumn, fillNullValues). */
-function categorizeByOutput(func: DG.Func): string {
-  const outputs = func.outputs;
-  if (outputs.length === 0) return 'Transformations';
-  const types = outputs.map((o) => String(o.propertyType));
-  const has = (t: string): boolean => types.includes(t);
-  if (has('viewer') || has('view') || has('widget') || has('graphics')) return 'Visualization';
-  if (has('dataframe')) return 'Data Sources';
-  if (has('column') || has('column_list')) return 'Column Operations';
-  if (has('string') || has('int') || has('double') || has('bool') ||
-      has('datetime') || has('num')) return 'Compute';
-  return 'Utilities';
+/** The task-oriented categories, in the order a scientist meets a pipeline:
+ *  get data in → combine → reshape → derive columns → compute values →
+ *  visualize → everything else. Used both to bucket and to order the tree. */
+export const FUNC_CATEGORIES = [
+  'Data Sources',
+  'Combine Tables',
+  'Transform Tables',
+  'Column Operations',
+  'Compute Values',
+  'Visualize',
+  'Other',
+] as const;
+export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
+
+const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
+const SCALAR_TYPES = ['string', 'int', 'double', 'bool', 'datetime', 'num', 'bigint', 'qnum'];
+const COL_TYPES = ['column', 'column_list'];
+
+/** Bucket a function by **what it does**, derived from its input/output
+ *  signature (and role for viewers). The key distinctions, validated against
+ *  the live catalog (see docs/func-catalog-snapshot.md):
+ *  - **Data Sources** produce a table from *no* table input (OpenFile, DB
+ *    queries, generators). A join is NOT a data source — it consumes tables.
+ *  - **Combine Tables** take ≥2 tables (join / union / link / react).
+ *  - **Transform Tables** take exactly one table and return a table or mutate
+ *    it in place (filter, aggregate, pivot, sort, …).
+ *  - **Column Operations** emit a column / column list (AddNewColumn, descriptors).
+ *  - **Compute Values** emit a scalar (statistics, math, text, predicates).
+ *  - **Visualize** emit a viewer / view / widget / graphics.
+ *  - **Other** — expression/filter builders and dynamic helpers. */
+export function categorizeFunc(func: DG.Func, role: string | null): FuncCategory {
+  const outs = func.outputs.map((o) => String(o.propertyType));
+  const ins = func.inputs.map((i) => String(i.propertyType));
+  const has = (arr: string[], set: string[]): boolean => arr.some((t) => set.includes(t));
+
+  const dfIn = ins.filter((t) => t === 'dataframe').length;
+  const outDf = outs.includes('dataframe');
+  const noOut = outs.length === 0;
+  const roleHasViewer = !!role && role.split(',').some((r) => r.trim() === 'viewer');
+
+  if (has(outs, VIS_TYPES) || roleHasViewer) return 'Visualize';
+  if (dfIn >= 2) return 'Combine Tables';                          // join / union / link
+  if (outDf && dfIn === 0) return 'Data Sources';                  // produce a table from non-table inputs
+  if ((outDf && dfIn === 1) || (noOut && dfIn >= 1)) return 'Transform Tables';
+  if (has(outs, COL_TYPES)) return 'Column Operations';
+  if (has(outs, SCALAR_TYPES)) return 'Compute Values';
+  return 'Other';
 }
 
 /** MIME-ish key used to carry a node type name through HTML5 drag/drop.
@@ -39,7 +70,7 @@ export class FunctionBrowser {
   private searchInput!: HTMLInputElement;
   private groupBySelect!: HTMLSelectElement;
   private treeContainer!: HTMLElement;
-  private groupBy: GroupByMode = 'role';
+  private groupBy: GroupByMode = 'category';
   private callbacks: FunctionBrowserCallbacks;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
@@ -59,10 +90,10 @@ export class FunctionBrowser {
     this.groupBySelect = document.createElement('select');
     this.groupBySelect.className = 'funcflow-groupby-select';
     const groupByLabels: Record<GroupByMode, string> = {
+      category: 'what it does',
       role: 'role',
       tags: 'tags',
       package: 'package',
-      output: 'output (data sources / transformations / …)',
     };
     for (const opt of Object.keys(groupByLabels) as GroupByMode[]) {
       const option = document.createElement('option');
@@ -96,13 +127,24 @@ export class FunctionBrowser {
     const funcs = this.filterBySearch(getRegisteredFuncs());
     const grouped = this.groupFunctions(funcs);
 
-    const sortedKeys = Object.keys(grouped).sort();
+    const sortedKeys = this.orderGroupKeys(Object.keys(grouped));
     for (const category of sortedKeys) {
       const items = grouped[category];
       if (items.length === 0) continue;
       const section = this.createCollapsibleSection(category, items);
       this.treeContainer.appendChild(section);
     }
+  }
+
+  /** In "what it does" mode, order groups by the curated task sequence
+   *  (Data Sources first); in every other mode fall back to alphabetical. */
+  private orderGroupKeys(keys: string[]): string[] {
+    if (this.groupBy !== 'category') return keys.sort();
+    const idx = (k: string): number => {
+      const i = (FUNC_CATEGORIES as readonly string[]).indexOf(k);
+      return i === -1 ? FUNC_CATEGORIES.length : i;
+    };
+    return keys.sort((a, b) => idx(a) - idx(b) || a.localeCompare(b));
   }
 
   private renderBuiltinNodes(): void {
@@ -164,13 +206,16 @@ export class FunctionBrowser {
       {name: 'Breakpoint', type: 'Debug/Breakpoint', desc: 'Pauses execution in debug mode until Continue is clicked'},
     ];
 
+    // All built-in sections start collapsed: they are building-blocks a scientist
+    // reaches for deliberately, not the first thing to scan. The data-function
+    // categories below (Data Sources first) are what's expanded-ready instead.
     const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; collapsed?: boolean; tip?: string}[] = [
-      {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
-      {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
-      {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
+      {title: 'Inputs', nodes: inputNodes, collapsed: true, tip: 'Script input parameters (become //input: lines)'},
+      {title: 'Outputs', nodes: outputNodes, collapsed: true, tip: 'Script output parameters (become //output: lines)'},
+      {title: 'Constants', nodes: constantNodes, collapsed: true, tip: 'Constant literal values'},
       {title: 'Comparisons', nodes: comparisonNodes, collapsed: true, tip: 'Comparison and logical operators'},
-      {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
-      {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
+      {title: 'Utilities', nodes: utilityNodes, collapsed: true, tip: 'Helper operations (logging, type conversion, etc.)'},
+      {title: 'Debug', nodes: debugNodes, collapsed: true, tip: 'Debugging and execution control nodes'},
     ];
 
     for (const section of sections) {
@@ -302,8 +347,8 @@ export class FunctionBrowser {
       case 'package':
         keys = [f.packageName || 'Core'];
         break;
-      case 'output':
-        keys = [categorizeByOutput(f.func)];
+      case 'category':
+        keys = [categorizeFunc(f.func, f.role)];
         break;
       default:
         keys = ['Other'];

@@ -220,18 +220,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:Groups', {});
   }
 
-  /**
-   * @param {string} id
-   *   semType: user_id
-   */
   export async function userById(id: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserById', { id });
   }
 
-  /**
-   * @param {string} email
-   *   semType: email
-   */
   export async function userInfoByEmailPanel(email: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserInfoByEmailPanel', { email });
   }
@@ -432,18 +424,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:BenchmarkAnalysis', {});
   }
 
-  /**
-   * @param {string} instanceFilter
-   *   choices: ['', 'dev', 'release', 'public']
-   */
   export async function benchmarksDashboard(instanceFilter: string , lastBuildsNum: number , showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:BenchmarksDashboard', { instanceFilter, lastBuildsNum, showNotRun, showBenchmarks, showNotCiCd });
   }
 
-  /**
-   * @param {string} instanceFilter
-   *   choices: ['', 'dev', 'release', 'public', 'release-ec2']
-   */
   export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , versionFilter: string | null, packageFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, versionFilter, packageFilter, showNotRun, showBenchmarks, showNotCiCd });
   }
@@ -452,10 +436,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
   }
 
-  /**
-   * @param {string} build
-   *   choices: Query("select b.name from builds b where exists (select 1 from stress_tests s where s.build_name = b.name) order by b.build_date desc")
-   */
+  export async function stressTestsFailures(build: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsFailures', { build });
+  }
+
   export async function stressTestsRaw(build: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:StressTestsRaw', { build });
   }
@@ -623,8 +607,8 @@ export namespace funcs {
   }
 
   /**
-   * Creates JIRA ticket using current error log
-   */
+  Creates JIRA ticket using current error log
+  */
   export async function createJiraTicket(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
   }

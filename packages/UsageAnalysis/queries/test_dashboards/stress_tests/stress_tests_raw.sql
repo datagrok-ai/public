@@ -13,6 +13,7 @@ select
     s.concurrent_run,
     s.duration as ms,
     s.passed,
+    s.result as error,
     s.date_time as started
 from stress_tests s
 where s.build_name = (select name from selected) and not s.skipped

@@ -15,6 +15,11 @@ export class DiffStudioFacetViewer extends DG.JsViewer {
   segmentColumnName: string;
   maxGraphs: number;
 
+  /** Line charts of the currently mounted grid, reused across runs to avoid flicker. */
+  private plots: DG.Viewer[] = [];
+  /** Signature of the mounted grid's layout; a change forces a full rebuild. */
+  private layoutKey: string | null = null;
+
   constructor() {
     super();
     // The JsViewer root is a `ui-box` hosted inside a `display:block` <dg-viewer>; without a
@@ -42,14 +47,33 @@ export class DiffStudioFacetViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  /** Replace the grid contents from the current data frame and properties. */
+  /** Render the grid from the current data frame and properties. When the layout is unchanged
+   *  (same columns and config), the existing line charts are kept and only their data frame is
+   *  swapped — rebuilding from scratch on every run causes a visible flicker. */
   render(): void {
+    if (!this.dataFrame) {
+      ui.empty(this.root);
+      this.plots = [];
+      this.layoutKey = null;
+      return;
+    }
+
+    const key = [
+      this.dataFrame.columns.names().join('\t'),
+      this.xColumnName,
+      this.segmentColumnName,
+      this.maxGraphs,
+    ].join('|');
+
+    // Same layout as the mounted grid: reuse the charts, just point them at the new data.
+    if (this.layoutKey === key && this.plots.length > 0) {
+      this.plots.forEach((plot) => plot.dataFrame = this.dataFrame!);
+      return;
+    }
+
     ui.empty(this.root);
 
-    if (!this.dataFrame)
-      return;
-
-    const {root} = buildFacetGrid(this.dataFrame, {
+    const {root, plots} = buildFacetGrid(this.dataFrame, {
       xColumnName: this.xColumnName || undefined,
       segmentColumnName: this.segmentColumnName || undefined,
       maxGraphs: this.maxGraphs,
@@ -57,5 +81,8 @@ export class DiffStudioFacetViewer extends DG.JsViewer {
 
     root.classList.add('diff-studio-facet-grid');
     this.root.appendChild(root);
-  }
+
+    this.plots = plots;
+    this.layoutKey = key;
+  } // render
 }

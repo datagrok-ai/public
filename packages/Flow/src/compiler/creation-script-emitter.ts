@@ -54,6 +54,16 @@ type ArgValue =
   | {kind: 'funcCall'; call: DG.FuncCall}
   | {kind: 'skip'};
 
+/** A node's contribution to the script: an optional emitted line plus the
+ *  variable name it builds/mutates — the key used to split the script per table.
+ *  `owner` is null when the line belongs to no particular table (or there's no
+ *  line at all). */
+interface NodeEmission {
+  line: string | null;
+  owner: string | null;
+}
+const NONE: NodeEmission = {line: null, owner: null};
+
 /** Cached platform functions used to synthesize assignment / reference lines. */
 interface FuncCache {
   setVar: DG.Func | null;
@@ -70,6 +80,35 @@ export function emitCreationScript(flow: FlowEditor): CreationScriptResult {
   return new CreationScriptEmitter(flow).emit();
 }
 
+/** A single table's creation script, keyed by the variable name that builds it. */
+export interface TableCreationScript {
+  variableName: string;
+  /** Creation-script text; each line suffixed with a `//{"timestamp": …}`
+   *  comment (strictly increasing, so Datagrok preserves the execution order). */
+  script: string;
+}
+
+export interface PerTableResult {
+  /** One entry per requested variable name, in the same order. */
+  tables: TableCreationScript[];
+  /** Global warnings (JS-only nodes, serialization issues). */
+  warnings: string[];
+  /** Emitted lines that belonged to no requested table — an intermediate
+   *  variable or a table outside the requested set. Non-empty signals a graph
+   *  the per-table split couldn't fully attribute. */
+  unassigned: string[];
+}
+
+/** Compile the graph into a **separate creation script per table**, splitting the
+ *  combined cascade by the variable each line builds or mutates. `tableVarNames`
+ *  are the target tables' variable names (their `SetVar`/anchor names, e.g. from
+ *  `tableInfo.tags['.VariableName']`); the result is aligned to that order. */
+export function emitCreationScriptsForTables(
+  flow: FlowEditor, tableVarNames: string[],
+): PerTableResult {
+  return new CreationScriptEmitter(flow).emitPerTable(tableVarNames);
+}
+
 class CreationScriptEmitter {
   private readonly flow: FlowEditor;
   private readonly funcs: FuncCache;
@@ -84,6 +123,10 @@ class CreationScriptEmitter {
   /** producer nodeId → the variable name an anchoring SetVar gives it. */
   private readonly anchorName = new Map<string, string>();
   private readonly usedNames = new Set<string>();
+  /** Emitted lines in topological order, with the owning table variable. */
+  private readonly records: Array<{owner: string | null; line: string}> = [];
+  /** Guards `run()` against a second walk on the same instance. */
+  private walked = false;
 
   constructor(flow: FlowEditor) {
     this.flow = flow;
@@ -93,22 +136,55 @@ class CreationScriptEmitter {
     };
   }
 
-  emit(): CreationScriptResult {
+  /** Walk the graph once, populating `records` (line + owner per node) in
+   *  topological order. Idempotent — a second call is a no-op. */
+  private run(): void {
+    if (this.walked) return;
+    this.walked = true;
     const sorted = this.safeTopoSort();
-    if (sorted === null)
-      return {script: '', warnings: this.warnings};
-
+    if (sorted === null) return;
     this.indexConnections();
     this.computeAnchors();
-
-    const lines: string[] = [];
     for (const nodeId of sorted) {
       const node = this.flow.getNodeById(nodeId);
       if (!node) continue;
-      const line = this.emitNode(node);
-      if (line) lines.push(line);
+      const {line, owner} = this.emitNode(node);
+      if (line) this.records.push({owner, line});
     }
-    return {script: lines.join('\n'), warnings: this.warnings};
+  }
+
+  emit(): CreationScriptResult {
+    this.run();
+    return {script: this.records.map((r) => r.line).join('\n'), warnings: this.warnings};
+  }
+
+  /** Split the emitted lines by owning table variable and attach timestamps. A
+   *  line whose owner isn't in `tableVarNames` goes to `unassigned`.
+   *
+   *  Timestamps come from a **single global counter** advanced in topological
+   *  order across *all* tables — never per-table — because the value tells
+   *  Datagrok which table to build first: a line in an earlier-built table must
+   *  carry a smaller timestamp than any line in a table that depends on it. */
+  emitPerTable(tableVarNames: string[]): PerTableResult {
+    this.run();
+    const targets = new Set(tableVarNames);
+    const byOwner = new Map<string, string[]>();
+    const unassigned: string[] = [];
+    let ts = Date.now();
+    for (const {owner, line} of this.records) {
+      const stamped = `${line} //{"timestamp": ${ts++}}`;
+      if (owner !== null && targets.has(owner)) {
+        let arr = byOwner.get(owner);
+        if (!arr) byOwner.set(owner, arr = []);
+        arr.push(stamped);
+      } else
+        unassigned.push(stamped);
+    }
+    const tables = tableVarNames.map((variableName) => ({
+      variableName,
+      script: (byOwner.get(variableName) ?? []).join('\n'),
+    }));
+    return {tables, warnings: this.warnings, unassigned};
   }
 
   // ---------- setup ----------
@@ -174,7 +250,7 @@ class CreationScriptEmitter {
 
   // ---------- per-node emission ----------
 
-  private emitNode(node: FlowNode): string | null {
+  private emitNode(node: FlowNode): NodeEmission {
     switch (node.dgNodeType) {
     case 'input':
       return this.emitInput(node);
@@ -185,30 +261,30 @@ class CreationScriptEmitter {
     case 'func':
       return this.emitFunc(node);
     default:
-      return null;
+      return NONE;
     }
   }
 
   /** Input param node: its value is read from the run context by name — every
    *  output slot resolves to a bare GetVar reference. No emitted line. */
-  private emitInput(node: FlowNode): string | null {
+  private emitInput(node: FlowNode): NodeEmission {
     const paramName = String(node.properties['paramName'] ?? 'input');
     for (const key of dataOutputKeys(node))
       this.outExpr.set(`${node.id}:${key}`, {kind: 'var', name: paramName});
-    return null;
+    return NONE;
   }
 
   /** Output param node: name the result if it isn't already that variable. */
-  private emitOutput(node: FlowNode): string | null {
+  private emitOutput(node: FlowNode): NodeEmission {
     const paramName = String(node.properties['paramName'] ?? 'result');
     const firstInKey = dataInputKeys(node)[0] ?? 'value';
     const arg = this.resolveInput(node, firstInKey);
-    if (arg.kind === 'skip') return null;
-    if (arg.kind === 'var' && arg.name === paramName) return null;
-    return this.assignmentLine(paramName, arg);
+    if (arg.kind === 'skip') return NONE;
+    if (arg.kind === 'var' && arg.name === paramName) return NONE;
+    return {line: this.assignmentLine(paramName, arg), owner: paramName};
   }
 
-  private emitUtility(node: FlowNode): string | null {
+  private emitUtility(node: FlowNode): NodeEmission {
     const type = node.dgTypeName ?? '';
     const firstOut = dataOutputKeys(node)[0];
 
@@ -216,24 +292,24 @@ class CreationScriptEmitter {
     if (type === 'Debug/Breakpoint' || node.label === 'Breakpoint') {
       const arg = this.resolveInput(node, dataInputKeys(node)[0] ?? 'in');
       for (const key of dataOutputKeys(node)) this.outExpr.set(`${node.id}:${key}`, arg);
-      return null;
+      return NONE;
     }
 
     if (type === 'Utilities/Select Table') {
       this.setOut(node, firstOut, {kind: 'literal', value: String(node.properties['tableName'] ?? '')});
-      return null;
+      return NONE;
     }
     if (type === 'Utilities/Select Column') {
       this.setOut(node, firstOut, {kind: 'literal', value: String(node.properties['columnName'] ?? '')});
-      return null;
+      return NONE;
     }
     if (type === 'Utilities/Select Columns') {
       this.setOut(node, firstOut, {kind: 'literal', value: splitList(node.properties['columnNames'])});
-      return null;
+      return NONE;
     }
     if (type.startsWith('Constants/')) {
       this.setOut(node, firstOut, {kind: 'literal', value: constantValue(node)});
-      return null;
+      return NONE;
     }
 
     // Everything else (Log/Info/Warning/ToString/FromJSON/ToJSON/Add Table View
@@ -242,21 +318,21 @@ class CreationScriptEmitter {
       this.warnings.push(`Node "${node.label}" (${type || 'utility'}) has no creation-script equivalent — skipped`);
       for (const key of dataOutputKeys(node)) this.outExpr.set(`${node.id}:${key}`, {kind: 'skip'});
     }
-    return null;
+    return NONE;
   }
 
-  private emitFunc(node: FlowNode): string | null {
+  private emitFunc(node: FlowNode): NodeEmission {
     if (isSetVar(node)) return this.emitSetVarNode(node);
     if (isGetVar(node)) {
       const name = String(node.inputValues['variableName'] ?? '').trim();
       for (const key of dataOutputKeys(node)) this.setOut(node, key, {kind: 'var', name});
-      return null;
+      return NONE;
     }
 
     const func = node.dgFunc;
     if (!func) {
       this.warnings.push(`Func node "${node.label}" has no underlying function — skipped`);
-      return null;
+      return NONE;
     }
 
     const params = this.buildParams(node);
@@ -265,7 +341,7 @@ class CreationScriptEmitter {
       call = func.prepare(params);
     } catch (e) {
       this.warnings.push(`Could not prepare "${node.label}": ${(e as Error).message}`);
-      return null;
+      return NONE;
     }
     this.forwardPassthroughs(node);
 
@@ -279,8 +355,10 @@ class CreationScriptEmitter {
     const realConsumed = this.anchorName.has(node.id) ||
       realKeys.some((k) => (this.consumers.get(`${node.id}:${k}`)?.length ?? 0) > 0);
 
+    // Bare mutator: the line belongs to the table threaded through its primary
+    // dataframe input (e.g. `addChemPropertiesColumns(SPGI, …)` → owner SPGI).
     if (!realConsumed)
-      return safeToString(call, node, this.warnings);
+      return {line: safeToString(call, node, this.warnings), owner: this.primaryTableOwner(node)};
 
     // Producer: assign to a named variable; downstream uses a bare reference.
     const name = this.anchorName.get(node.id) ?? uniqueName(toCamelCase(node.label) || 'result', this.usedNames);
@@ -293,19 +371,34 @@ class CreationScriptEmitter {
     if (realKeys.length > 1)
       this.warnings.push(`Func "${node.label}" has multiple outputs — only the first is named in the assignment`);
 
-    // `Name = func(...)` via SetVar (handles the `=` and value recursion).
-    return this.assignmentLine(name, {kind: 'funcCall', call});
+    // `Name = func(...)` via SetVar (handles the `=` and value recursion). The
+    // line builds the named table.
+    return {line: this.assignmentLine(name, {kind: 'funcCall', call}), owner: name};
   }
 
-  private emitSetVarNode(node: FlowNode): string | null {
+  private emitSetVarNode(node: FlowNode): NodeEmission {
     const varName = String(node.inputValues['variableName'] ?? '').trim();
-    if (varName === '') return null;
+    if (varName === '') return NONE;
     const arg = this.resolveInput(node, 'value');
-    if (arg.kind === 'skip') return null;
+    if (arg.kind === 'skip') return NONE;
     // Already produced under this exact name (the common imported case) — the
     // producer line is enough, no redundant `Mol1K = Mol1K`.
-    if (arg.kind === 'var' && arg.name === varName) return null;
-    return this.assignmentLine(varName, arg);
+    if (arg.kind === 'var' && arg.name === varName) return NONE;
+    return {line: this.assignmentLine(varName, arg), owner: varName};
+  }
+
+  /** The table variable a bare call mutates: the variable reference resolved on
+   *  its first dataframe input. Null when that input isn't a variable (or the
+   *  func has no dataframe input) — the line then can't be attributed to a table. */
+  private primaryTableOwner(node: FlowNode): string | null {
+    const func = node.dgFunc;
+    if (!func) return null;
+    for (const param of func.inputs) {
+      if (slotTypeOf(node, param.name) !== 'dataframe') continue;
+      const arg = this.resolveInput(node, param.name);
+      return arg.kind === 'var' ? arg.name : null;
+    }
+    return null;
   }
 
   // ---------- helpers ----------

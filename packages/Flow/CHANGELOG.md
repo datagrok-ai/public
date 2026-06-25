@@ -2,6 +2,27 @@
 
 ## v.next
 
+### Scientist-centered UX (Sprint 1)
+
+* **Function browser — task-oriented & decluttered.** Default grouping is now **"what it does"**
+  (`categorizeFunc`): **Data Sources** (table out, no table in), **Combine Tables** (≥2 tables —
+  joins/links, *no longer* mis-filed as data sources), **Transform Tables**, **Column Operations**,
+  **Compute Values**, **Visualize**, **Other** — with **Data Sources first**. All built-in sections
+  (Inputs/Outputs/Constants/Comparisons/Utilities/Debug) now start **collapsed**.
+* **Catalog exclusions.** ~⅔ of the raw `DG.Func` firehose is hidden: dev/test/internal packages
+  (`Dbtests, ApiTests, UiTests, DevTools, Tutorials, ApiSamples, UsageAnalysis`), `test*` functions,
+  UI-fragment roles (`editor/cellEditor/panel/widgets/tooltip`), and `funccall` command/dialog wrappers.
+* **Start panel (U1).** An empty canvas now shows a welcome overlay — template cards (bundled demos),
+  Blank canvas, Open / Import buttons, and a discovery hint — instead of a blank page.
+* **Plain-language node status (U5).** Nodes show a short line under the title: *Running… / Done · 1,204 × 8
+  / Error / Out of date* (row×col from the captured output summary).
+* **Status dot un-overloaded (U7).** Collapse/expand moved to a dedicated caret; the run-status dot is
+  now display-only.
+* **De-jargoned ribbon (U8).** Menu regrouped to **Flow / Run / Edit / Arrange / Advanced**; script &
+  creation-script tools live under **Advanced**; friendlier labels and tooltips throughout.
+* **Smarter suggestions (U9).** The drag-out suggestion menu floats common next-step functions
+  (join/add-column/aggregate/filter/…) to the top.
+
 * FuncFlow view: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
 * Import flows from table-creation scripts: new `Flow:flowFromCreationScript` package function and a
   `File > Import Creation Script...` dialog (prefills from open tables that carry a creation script).
