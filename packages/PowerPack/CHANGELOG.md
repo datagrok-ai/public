@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Workspace: Pinned project now shows a live preview in the bottom pane (its views' grids with their saved layouts, like the app preview) instead of a blank panel; "Open" closes the preview-opened instance and opens all of its views in the main area, instead of only the first view with an "already open" balloon
 * GROK-19013: Viewers Gallery: Bio/Peptide sequence viewers (WebLogo, VdRegions, Peptides viewers) and tree viewers (Dendrogram, PhylocanvasGL) are now disabled for incompatible datasets in the Add Viewer dialog
 * Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar
 * Add New Column dialog: Fixed TypeError when typing into the Name or Type input before CodeMirror finishes its async init

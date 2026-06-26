@@ -1470,6 +1470,33 @@ body.dartium .power-pack-widgets-host.ui-div {
     height: 100%;
 }
 
+.pp-workspace-preview-view > .d4-tab-host,
+.pp-workspace-preview-grid > .d4-viewer,
+.pp-workspace-preview-grid > .d4-root {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.pp-workspace-preview-project {
+    flex: 1;
+    min-height: 320px;
+    overflow: hidden;
+    position: relative;
+}
+
+.pp-workspace-preview-project > .ui-box,
+.pp-workspace-preview-project .grok-wait,
+.pp-workspace-preview-project .d4-tab-host,
+.pp-workspace-preview-project .grok-table-view > .d4-root,
+.pp-workspace-preview-project .dock-container {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .pp-workspace-preview-error {
     color: var(--red-1);
 }
@@ -1487,23 +1514,6 @@ body.dartium .power-pack-widgets-host.ui-div {
     padding: 8px 0;
 }
 
-.pp-workspace-project-card {
-    padding: 8px 0;
-    display: flex;
-    justify-content: flex-start;
-}
-
-.pp-workspace-project-card > .grok-gallery-grid-item {
-    flex: 0 0 auto;
-    width: 240px;
-    max-width: 100%;
-}
-
-.pp-workspace-preview-project {
-    flex: 1;
-    min-height: 220px;
-    overflow: auto;
-}
 
 .pp-workspace-space-view {
     flex: 1;

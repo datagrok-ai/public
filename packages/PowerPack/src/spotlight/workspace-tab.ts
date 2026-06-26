@@ -63,6 +63,8 @@ export class WorkspaceTab {
   private activeSpaceView?: DG.SpaceView;
   /** Subscription on the embedded space view's selection event. */
   private activeSpaceSub?: rxjs.Subscription;
+  /** Project currently opened in preview mode for the bottom preview — closed when we move on / open it. */
+  private previewedProject?: DG.Project;
 
   constructor(spotlight: SpotlightWidget) {
     this.spotlight = spotlight;
@@ -233,7 +235,7 @@ export class WorkspaceTab {
     ui.bind(entity, row, {contextMenu: true});
 
     row.addEventListener('click', () => this.selectEntity(entity, row));
-    row.addEventListener('dblclick', () => openEntity(entity));
+    row.addEventListener('dblclick', () => this.open(entity));
 
     if (group) {
       const removeBtn = ui.icons.close(async () => {
@@ -268,7 +270,7 @@ export class WorkspaceTab {
       row.dataset.entityId = entity.id;
 
       row.addEventListener('click', () => this.selectEntity(entity, row));
-      row.addEventListener('dblclick', () => openEntity(entity));
+      row.addEventListener('dblclick', () => this.open(entity));
       ui.bind(entity, row, {contextMenu: true});
 
       const time = times[i];
@@ -300,6 +302,7 @@ export class WorkspaceTab {
     this.activePreviewToken = undefined;
     this.statusEl = undefined;
     this.detachSpaceView();
+    this.closePreviewedProject();
     clearWorkspacePreview();
     this.renderEmptyEditor();
   }
@@ -308,6 +311,37 @@ export class WorkspaceTab {
     this.activeSpaceSub?.unsubscribe();
     this.activeSpaceSub = undefined;
     this.activeSpaceView = undefined;
+  }
+
+  /** Closes the project opened in preview mode (if any), so a later open isn't seen as "already open". */
+  private closePreviewedProject(): void {
+    if (!this.previewedProject)
+      return;
+    const project = this.previewedProject;
+    this.previewedProject = undefined;
+    this.closeProject(project);
+  }
+
+  private closeProject(project?: DG.Project): void {
+    if (!project)
+      return;
+    try {
+      if (project.isOnServer) {
+        for (const child of project.children)
+          if (child instanceof DG.ViewInfo)
+            project.removeChild(child);
+      }
+      project.close();
+    }
+    catch (e) {
+      console.error('Failed to close project', e);
+    }
+  }
+
+  /** Opens an entity, first dropping any preview-opened project so a project opens fresh with all its views. */
+  private open(entity: DG.Entity): void {
+    this.closePreviewedProject();
+    openEntity(entity);
   }
 
   private renderEmptyEditor(message?: string): void {
@@ -326,13 +360,14 @@ export class WorkspaceTab {
     this.statusEl = undefined;
     this.activePreviewToken = undefined;
     this.detachSpaceView();
+    this.closePreviewedProject();
     clearWorkspacePreview();
 
     const title = ui.divH([
       entityIcon(entity),
       ui.span([entity.friendlyName]),
     ], 'pp-workspace-editor-title');
-    const openBtn = ui.button('Open', () => openEntity(entity));
+    const openBtn = ui.button('Open', () => this.open(entity));
     openBtn.classList.add('pp-workspace-editor-open');
     const header = ui.divH([title, openBtn], 'pp-workspace-editor-header');
     this.editorPane.appendChild(header);
@@ -371,7 +406,7 @@ export class WorkspaceTab {
     showWorkspacePreview(
       ui.div([ui.loader()], 'pp-workspace-preview-loader'),
       title,
-      () => openEntity(item),
+      () => this.open(item),
     );
 
     try {
@@ -383,14 +418,14 @@ export class WorkspaceTab {
         showWorkspacePreview(
           ui.div([view.root], 'pp-workspace-preview-view'),
           title,
-          () => openEntity(item),
+          () => this.open(item),
         );
       }
       else {
         showWorkspacePreview(
           ui.divText('No preview available.', 'pp-workspace-preview-text'),
           title,
-          () => openEntity(item),
+          () => this.open(item),
         );
       }
     }
@@ -406,43 +441,42 @@ export class WorkspaceTab {
   }
 
   private renderProjectEditor(project: DG.Project): void {
-    const handler = DG.ObjectHandler.forEntity(project);
-    const card = handler?.renderCard(project);
-    if (card instanceof HTMLElement) {
-      const wrap = ui.div([card], 'pp-workspace-project-card');
-      this.editorPane.appendChild(wrap);
-    }
-    else {
-      this.editorPane.appendChild(ui.divText(
-        'No card renderer available for this project.',
-        'pp-workspace-editor-hint',
-      ));
-    }
+    if (project.description)
+      this.editorPane.appendChild(ui.divText(project.description, 'pp-workspace-app-description'));
     this.renderProjectPreview(project);
   }
 
   private async renderProjectPreview(project: DG.Project): Promise<void> {
-    const token = (this.activePreviewToken = Symbol('preview'));
-
-    const loaderContent = ui.div([ui.loader()], 'pp-workspace-preview-loader');
-    showWorkspacePreview(loaderContent, project.friendlyName);
+    const token = (this.activePreviewToken = Symbol('project-preview'));
+    showWorkspacePreview(ui.div([ui.loader()], 'pp-workspace-preview-loader'), project.friendlyName);
 
     try {
       const handler = DG.ObjectHandler.forEntity(project);
-      const view: DG.View | undefined = await handler?.renderPreview(project);
-      if (token !== this.activePreviewToken)
-        return;
-      if (view?.root instanceof HTMLElement) {
-        const wrap = ui.div([view.root], 'pp-workspace-preview-project');
-        showWorkspacePreview(wrap, project.friendlyName, () => project.open());
+      const widget = await handler?.renderPreview(project);
+      let found: DG.Project | undefined;
+      for (let i = 0; i < 60; i++) {
+        if (token !== this.activePreviewToken)
+          break;
+        found = grok.shell.projects.find((p) => p.id === project.id);
+        if (found && found.children.some((c) => c instanceof DG.ViewInfo))
+          break;
+        await new Promise((r) => setTimeout(r, 250));
       }
-      else {
+      if (token !== this.activePreviewToken) {
+        this.closeProject(found);
+        return;
+      }
+      const opened = found ?? project;
+      this.previewedProject = opened;
+
+      const onOpen = (): void => this.open(opened);
+      const root = widget?.root;
+      if (root instanceof HTMLElement)
+        showWorkspacePreview(ui.div([root], 'pp-workspace-preview-project'), project.friendlyName, onOpen);
+      else
         showWorkspacePreview(
           ui.divText('No preview available for this project.', 'pp-workspace-preview-text'),
-          project.friendlyName,
-          () => project.open(),
-        );
-      }
+          project.friendlyName, onOpen);
     }
     catch (e: any) {
       if (token !== this.activePreviewToken)
@@ -451,6 +485,7 @@ export class WorkspaceTab {
       showWorkspacePreview(
         ui.divText(`Preview failed: ${e?.message ?? e}`, 'pp-workspace-preview-error'),
         project.friendlyName,
+        () => this.open(project),
       );
     }
   }
@@ -642,7 +677,7 @@ export class WorkspaceTab {
       if (token !== this.activePreviewToken)
         return;
       if (view?.root instanceof HTMLElement)
-        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-file'), file.friendlyName, () => openEntity(file));
+        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-file'), file.friendlyName, () => this.open(file));
       else
         showWorkspacePreview(ui.divText('No preview available.', 'pp-workspace-preview-text'), file.friendlyName);
     }
