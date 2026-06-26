@@ -141,22 +141,28 @@ function buildSystemPrompt(mode?: string): string {
   return DATAGROK_SYSTEM_PROMPT;
 }
 
-const sessions = new Map<string, string>();
+// forkNext is set on abort: the next turn forks off lastCleanUuid, dropping the aborted turn.
+interface SessionRecord {sdkId: string; lastCleanUuid?: string; forkNext?: boolean}
 
-function storeSession(clientId: string, sdkId: string): void {
+const sessions = new Map<string, SessionRecord>();
+
+// Last assistant uuid of the in-flight turn; committed to the record on a clean result.
+const pendingUuid = new Map<string, string>();
+
+function storeSession(clientId: string, sdkId: string, lastCleanUuid?: string): void {
   sessions.delete(clientId);
-  sessions.set(clientId, sdkId);
+  sessions.set(clientId, {sdkId, lastCleanUuid});
   if (sessions.size > MAX_SESSIONS)
     sessions.delete(sessions.keys().next().value!);
 }
 
-function getSession(clientId: string): string | undefined {
-  const sid = sessions.get(clientId);
-  if (sid !== undefined) {
+function getSession(clientId: string): SessionRecord | undefined {
+  const rec = sessions.get(clientId);
+  if (rec !== undefined) {
     sessions.delete(clientId);
-    sessions.set(clientId, sid);
+    sessions.set(clientId, rec);
   }
-  return sid;
+  return rec;
 }
 
 async function* promptStream(message: string) {
@@ -264,6 +270,7 @@ function buildOptions(
   systemPromptMode?: string, userDir?: string,
   userId?: string,
   model?: ClaudeModel,
+  forkSession?: boolean, resumeAt?: string,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
   const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
@@ -291,7 +298,8 @@ function buildOptions(
     hooks: {
       PreToolUse: [{hooks: [blockWorkspaceAccess]}],
     },
-    ...(resume ? {resume} : {}),
+    // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
+    ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
   };
 }
 
@@ -401,11 +409,9 @@ function flushFenceState(ws: WsSender, sid: string): void {
 function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   const e = event as any;
   switch (event.type) {
-  case 'system':
-    if (event.subtype === 'init' && e.session_id)
-      storeSession(sid, e.session_id);
-    break;
   case 'assistant':
+    if (e.uuid)
+      pendingUuid.set(sid, e.uuid);
     for (const block of e.message?.content ?? []) {
       if (block.type === 'tool_use')
         emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
@@ -423,9 +429,13 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'result':
     flushFenceState(ws, sid);
-    if (e.subtype === 'success')
+    if (e.subtype === 'success') {
+      // Commit the resume point only on clean completion — aborted turns never reach here.
+      if (e.session_id)
+        storeSession(sid, e.session_id, pendingUuid.get(sid));
+      pendingUuid.delete(sid);
       emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
-    else
+    } else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
     break;
   }
@@ -512,8 +522,9 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   let gotResult = false;
   try {
-    const existingSession = getSession(sid);
-    const opts = buildOptions(browserExecServer, existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
+    const rec = getSession(sid);
+    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model,
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
@@ -599,9 +610,10 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
-  // Drop the SDK session: an aborted session can't be resumed. Leaving it here makes the
-  // next message resume a dead session, so the following turn would fail to continue.
-  sessions.delete(data.sessionId);
+  const rec = sessions.get(data.sessionId);
+  if (rec)
+    rec.forkNext = true;
+  pendingUuid.delete(data.sessionId);
   flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
