@@ -32,6 +32,11 @@ Three short cases on real, open datasets showing that in a group comparison the 
 
 ![Case 3](case-3/cj16050_case3_box_vs_strip.png)
 
+*Data sources: NTP/CEBS (U.S. Government public domain), PHUSE phuse-scripts (MIT license). Details, source-file links, and the pipeline are in the README inside each folder.*
+
 ---
 
-*Data sources: NTP/CEBS (U.S. Government public domain), PHUSE phuse-scripts (MIT license). Details, source-file links, and the pipeline are in the README inside each folder.*
+## Further steps
+
+* [Research](report.md)
+* [Mockup](https://claude.ai/public/artifacts/ccffa3f2-3823-48d8-bfb3-dca8f7de84d9)

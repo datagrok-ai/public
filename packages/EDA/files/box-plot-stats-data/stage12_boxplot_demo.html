@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Box plot · structure-first (demo)</title>
+<style>
+  :root{
+    --ink:#14181c; --ink-2:#48535d; --ink-3:#8a96a0;
+    --line:#e2e6ea; --line-2:#eef1f4; --panel:#f7f9fa; --bg:#fff;
+    --accent:#1f6f8b; --accent-soft:#e6f0f3;
+    --adjust:#b5651d; --adjust-soft:#f6ece2;
+    --warn:#b4452f; --warn-soft:#fbecea; --amber-soft:#fbf3e0; --ok-soft:#eef6f0;
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 22px 56px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:23px;line-height:1.2;margin:.35em 0 .25em;letter-spacing:-.01em;font-weight:660}
+  .lede{color:var(--ink-2);max-width:80ch;margin:0 0 16px}
+  .lede b{color:var(--ink)}
+
+  .dsbar{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:14px;background:var(--panel)}
+  .dsbar .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding-left:4px}
+  .dsbar .seg{flex:1;display:flex;background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+  .dsbar .seg button{flex:1;font-family:var(--mono);font-size:12px;border:0;background:transparent;color:var(--ink-2);padding:7px 8px;border-radius:6px;cursor:pointer}
+  .dsbar .seg button.on{background:var(--ink);color:#fff;font-weight:600}
+
+  .app{display:grid;grid-template-columns:234px 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  @media(max-width:780px){.app{grid-template-columns:1fr}}
+  .rail{background:var(--panel);border-right:1px solid var(--line);padding:14px}
+  .rail-sec{padding:10px 2px;border-bottom:1px solid var(--line-2)}
+  .rail-sec:last-child{border-bottom:0}
+  .rail-h{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+  .rail-h .auto{color:var(--accent);text-transform:none;letter-spacing:0;font-size:9px;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+  .static{font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:600;background:#fff;border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+  select.dd{width:100%;font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:600;background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 8px;cursor:pointer;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a96a0'/></svg>");background-repeat:no-repeat;background-position:right 9px center}
+  select.dd:disabled{opacity:.45;cursor:not-allowed}
+  select.dd.adj{border-color:var(--adjust)}
+  .seg2{display:flex;background:#fff;border:1px solid var(--line);border-radius:7px;padding:2px;gap:2px}
+  .seg2.vert{flex-direction:column}
+  .seg2 button{flex:1;font-family:var(--mono);font-size:11px;border:0;background:transparent;color:var(--ink-2);padding:5px 6px;border-radius:5px;cursor:pointer;white-space:nowrap}
+  .seg2 button.on{background:var(--accent);color:#fff;font-weight:600}
+  .seg2.adj button.on{background:var(--adjust)}
+  .seg2 button:disabled{opacity:.35;cursor:not-allowed}
+  .hint{font-size:11px;color:var(--ink-3);margin-top:6px;line-height:1.4}
+  .hint.warn{color:#8a5a12}
+
+  .canvas{min-width:0;display:flex;flex-direction:column}
+  .banner{padding:11px 16px;font-size:13px;display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line)}
+  .banner .ic{font-size:15px;line-height:1.3;flex:0 0 auto}
+  .banner .bt{flex:1}.banner .bt b{font-weight:650}
+  .banner.neutral{background:#fff;color:var(--ink-2)}
+  .banner.caution{background:var(--warn-soft);color:#7a2e1f}
+  .banner.adjust{background:var(--adjust-soft);color:#6e3d12}
+  .banner.warn{background:var(--amber-soft);color:#6b4e00}
+  .banner.ok{background:var(--ok-soft);color:#2c5a3c}
+  .banner .mini{font-family:var(--mono);font-size:11px}
+  .plot{padding:14px 16px 6px}
+  .verdicts{display:flex;gap:8px;flex-wrap:wrap;padding:2px 16px 14px}
+  .vchip{font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+  .vchip b{color:var(--ink)}
+  .foot{margin-top:18px;font-size:12px;color:var(--ink-3);line-height:1.5}
+  .foot b{color:var(--ink-2)}
+  text{font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">structure-first core</div>
+  <h1>Box plot: split · covariate (ratio / regress-out / ANCOVA) · method</h1>
+  <p class="lede">One interface for both datasets. A covariate can be handled three mutually exclusive ways:
+    <b>Ratio</b> and <b>Regress-out</b> transform Y (then a normal test), while <b>ANCOVA</b> takes the covariate into the test itself —
+    so selecting ANCOVA disables the Ratio/Regress-out modes (otherwise it would double-correct). Switch the dataset at the top.</p>
+
+  <div class="dsbar">
+    <span class="lbl">Dataset</span>
+    <div class="seg" id="seg-ds">
+      <button data-v="tr594" class="on">TR-594 · rat body weight (Simpson)</button>
+      <button data-v="tox102">TOX-102 · mouse liver + covariate</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="rail">
+      <div class="rail-sec"><div class="rail-h">X · group</div><div class="static" id="x-lbl">Dose (ppm)</div></div>
+      <div class="rail-sec"><div class="rail-h">Y · value</div><div class="static" id="y-lbl">Terminal body weight</div></div>
+      <div class="rail-sec">
+        <div class="rail-h">Split / facet by</div>
+        <select class="dd" id="dd-split"><option value="Sex" selected>Sex</option><option value="none">— None —</option></select>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-h">Adjust by · covariate</div>
+        <select class="dd adj" id="dd-cov"></select>
+        <div class="seg2 adj" id="seg-mode" style="margin-top:7px">
+          <button data-v="ratio" class="on">Ratio</button>
+          <button data-v="regress">Regress-out</button>
+        </div>
+        <div class="hint warn" id="cov-hint">Ratio can mislead (Kronmal 1993); regress-out / ANCOVA are safer.</div>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-h">Method / test</div>
+        <select class="dd" id="dd-test">
+          <option value="dunnett">Dunnett — vs control</option>
+          <option value="ancova">ANCOVA — covariate-adjusted</option>
+        </select>
+        <div class="hint" id="test-hint"></div>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-h">Baseline</div>
+        <div class="seg2 vert" id="seg-base">
+          <button data-v="pooled">Pooled control</button>
+          <button data-v="matched" class="on">Matched · per stratum</button>
+        </div>
+        <div class="hint" id="base-hint">Each box vs the control of its own stratum.</div>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-h">Display <span class="auto" id="auto-tag">auto · N=10</span></div>
+        <div class="seg2 vert" id="seg-disp">
+          <button data-v="auto" class="on">Auto (box + points)</button>
+          <button data-v="box">Box only</button>
+          <button data-v="points">Points only</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="canvas">
+      <div class="banner neutral" id="banner"><span class="ic">●</span><div class="bt"></div></div>
+      <div class="plot"><div id="chart"></div></div>
+      <div class="verdicts" id="verdicts"></div>
+    </section>
+  </div>
+
+  <p class="foot"><b>Pipeline:</b> split → (adjust Y: ratio / regress-out) → box plot → test (Dunnett, or ANCOVA with the covariate and no Y transform).
+    Ratio/Regress-out and ANCOVA are mutually exclusive ways to handle a covariate. Simpson fires on actual divergence of strata
+    (present in TR-594, absent in TOX-102). <b>Sources:</b> NTP TR-594, TOX-102 (public domain).</p>
+</div>
+
+<script>
+const D1=[{"s":"F","d":0,"o":248.8},{"s":"F","d":0,"o":249.4},{"s":"F","d":0,"o":255.6},{"s":"F","d":0,"o":216.0},{"s":"F","d":0,"o":239.1},{"s":"F","d":0,"o":235.3},{"s":"F","d":0,"o":219.6},{"s":"F","d":0,"o":265.1},{"s":"F","d":0,"o":226.3},{"s":"F","d":0,"o":241.7},{"s":"F","d":125,"o":236.8},{"s":"F","d":125,"o":253.7},{"s":"F","d":125,"o":258.6},{"s":"F","d":125,"o":248.1},{"s":"F","d":125,"o":249.8},{"s":"F","d":125,"o":259.5},{"s":"F","d":125,"o":227.6},{"s":"F","d":125,"o":221.3},{"s":"F","d":125,"o":274.9},{"s":"F","d":125,"o":258.2},{"s":"F","d":250,"o":224.7},{"s":"F","d":250,"o":265.3},{"s":"F","d":250,"o":266.7},{"s":"F","d":250,"o":285.0},{"s":"F","d":250,"o":250.2},{"s":"F","d":250,"o":245.4},{"s":"F","d":250,"o":240.6},{"s":"F","d":250,"o":266.6},{"s":"F","d":250,"o":242.0},{"s":"F","d":250,"o":259.8},{"s":"F","d":500,"o":251.2},{"s":"F","d":500,"o":267.9},{"s":"F","d":500,"o":267.3},{"s":"F","d":500,"o":264.6},{"s":"F","d":500,"o":262.7},{"s":"F","d":500,"o":288.8},{"s":"F","d":500,"o":243.7},{"s":"F","d":500,"o":262.6},{"s":"F","d":500,"o":241.7},{"s":"F","d":500,"o":238.7},{"s":"F","d":1000,"o":257.7},{"s":"F","d":1000,"o":249.3},{"s":"F","d":1000,"o":253.9},{"s":"F","d":1000,"o":228.6},{"s":"F","d":1000,"o":290.8},{"s":"F","d":1000,"o":313.4},{"s":"F","d":1000,"o":241.6},{"s":"F","d":1000,"o":249.6},{"s":"F","d":1000,"o":299.1},{"s":"F","d":1000,"o":282.9},{"s":"F","d":2000,"o":298.2},{"s":"F","d":2000,"o":267.7},{"s":"F","d":2000,"o":307.0},{"s":"F","d":2000,"o":317.9},{"s":"F","d":2000,"o":319.8},{"s":"F","d":2000,"o":252.3},{"s":"F","d":2000,"o":305.9},{"s":"F","d":2000,"o":277.0},{"s":"F","d":2000,"o":301.0},{"s":"M","d":0,"o":365.6},{"s":"M","d":0,"o":392.1},{"s":"M","d":0,"o":428.0},{"s":"M","d":0,"o":379.9},{"s":"M","d":0,"o":407.5},{"s":"M","d":0,"o":358.8},{"s":"M","d":0,"o":403.3},{"s":"M","d":0,"o":425.3},{"s":"M","d":0,"o":381.8},{"s":"M","d":0,"o":389.7},{"s":"M","d":125,"o":397.8},{"s":"M","d":125,"o":418.8},{"s":"M","d":125,"o":440.4},{"s":"M","d":125,"o":423.5},{"s":"M","d":125,"o":419.2},{"s":"M","d":125,"o":441.4},{"s":"M","d":125,"o":444.8},{"s":"M","d":125,"o":441.4},{"s":"M","d":125,"o":412.6},{"s":"M","d":125,"o":414.8},{"s":"M","d":250,"o":387.5},{"s":"M","d":250,"o":378.5},{"s":"M","d":250,"o":464.9},{"s":"M","d":250,"o":371.1},{"s":"M","d":250,"o":409.7},{"s":"M","d":250,"o":432.5},{"s":"M","d":250,"o":437.7},{"s":"M","d":250,"o":461.8},{"s":"M","d":250,"o":386.6},{"s":"M","d":250,"o":407.7},{"s":"M","d":500,"o":453.4},{"s":"M","d":500,"o":398.1},{"s":"M","d":500,"o":377.1},{"s":"M","d":500,"o":394.0},{"s":"M","d":500,"o":432.8},{"s":"M","d":500,"o":356.6},{"s":"M","d":500,"o":474.5},{"s":"M","d":500,"o":406.4},{"s":"M","d":500,"o":403.3},{"s":"M","d":500,"o":421.4},{"s":"M","d":1000,"o":415.8},{"s":"M","d":1000,"o":395.4},{"s":"M","d":1000,"o":383.0},{"s":"M","d":1000,"o":439.9},{"s":"M","d":1000,"o":355.2},{"s":"M","d":1000,"o":407.3},{"s":"M","d":1000,"o":406.9},{"s":"M","d":1000,"o":383.8},{"s":"M","d":1000,"o":413.8},{"s":"M","d":1000,"o":413.2},{"s":"M","d":2000,"o":389.8},{"s":"M","d":2000,"o":351.7},{"s":"M","d":2000,"o":361.8},{"s":"M","d":2000,"o":382.0},{"s":"M","d":2000,"o":355.8},{"s":"M","d":2000,"o":407.2},{"s":"M","d":2000,"o":373.7},{"s":"M","d":2000,"o":373.8},{"s":"M","d":2000,"o":364.0},{"s":"M","d":2000,"o":399.8}];   // TR-594: {s,d,o}
+const D2=[{"s":"F","d":0,"o":1.44,"b":30.8},{"s":"F","d":0,"o":1.27,"b":29.4},{"s":"F","d":0,"o":1.4,"b":30.0},{"s":"F","d":0,"o":1.41,"b":30.1},{"s":"F","d":0,"o":1.16,"b":27.4},{"s":"F","d":0,"o":1.14,"b":25.1},{"s":"F","d":0,"o":1.3,"b":28.1},{"s":"F","d":0,"o":1.29,"b":27.2},{"s":"F","d":0,"o":1.45,"b":37.2},{"s":"F","d":0,"o":1.15,"b":26.1},{"s":"F","d":156,"o":1.18,"b":25.9},{"s":"F","d":156,"o":1.16,"b":27.5},{"s":"F","d":156,"o":1.48,"b":27.6},{"s":"F","d":156,"o":1.24,"b":27.7},{"s":"F","d":156,"o":1.36,"b":32.5},{"s":"F","d":156,"o":1.29,"b":28.6},{"s":"F","d":156,"o":1.34,"b":30.3},{"s":"F","d":156,"o":1.31,"b":28.0},{"s":"F","d":156,"o":1.42,"b":29.4},{"s":"F","d":156,"o":1.37,"b":26.9},{"s":"F","d":312,"o":1.47,"b":29.2},{"s":"F","d":312,"o":1.26,"b":28.8},{"s":"F","d":312,"o":1.29,"b":25.9},{"s":"F","d":312,"o":1.28,"b":27.6},{"s":"F","d":312,"o":1.17,"b":25.8},{"s":"F","d":312,"o":1.49,"b":31.8},{"s":"F","d":312,"o":1.33,"b":27.7},{"s":"F","d":312,"o":1.36,"b":27.3},{"s":"F","d":312,"o":1.4,"b":31.1},{"s":"F","d":312,"o":1.43,"b":27.2},{"s":"F","d":625,"o":1.63,"b":31.2},{"s":"F","d":625,"o":1.51,"b":30.9},{"s":"F","d":625,"o":1.24,"b":26.4},{"s":"F","d":625,"o":1.3,"b":26.7},{"s":"F","d":625,"o":1.28,"b":26.0},{"s":"F","d":625,"o":1.4,"b":29.2},{"s":"F","d":625,"o":1.39,"b":27.1},{"s":"F","d":625,"o":1.31,"b":27.9},{"s":"F","d":625,"o":1.86,"b":34.9},{"s":"F","d":625,"o":1.46,"b":35.7},{"s":"F","d":1250,"o":1.22,"b":25.1},{"s":"F","d":1250,"o":1.39,"b":30.0},{"s":"F","d":1250,"o":1.26,"b":26.6},{"s":"F","d":1250,"o":1.72,"b":31.0},{"s":"F","d":1250,"o":1.34,"b":27.4},{"s":"F","d":1250,"o":1.69,"b":30.4},{"s":"F","d":1250,"o":1.28,"b":23.8},{"s":"F","d":1250,"o":1.42,"b":30.0},{"s":"F","d":1250,"o":1.14,"b":23.7},{"s":"F","d":1250,"o":1.53,"b":27.5},{"s":"F","d":2500,"o":1.52,"b":26.9},{"s":"F","d":2500,"o":1.71,"b":30.6},{"s":"F","d":2500,"o":1.38,"b":26.4},{"s":"F","d":2500,"o":1.28,"b":24.9},{"s":"F","d":2500,"o":1.36,"b":25.8},{"s":"F","d":2500,"o":1.22,"b":23.4},{"s":"F","d":2500,"o":1.51,"b":29.6},{"s":"F","d":2500,"o":1.59,"b":27.3},{"s":"F","d":2500,"o":1.29,"b":25.8},{"s":"F","d":2500,"o":1.2,"b":24.3},{"s":"M","d":0,"o":1.33,"b":31.5},{"s":"M","d":0,"o":1.49,"b":35.8},{"s":"M","d":0,"o":1.77,"b":40.3},{"s":"M","d":0,"o":1.58,"b":34.0},{"s":"M","d":0,"o":1.39,"b":32.3},{"s":"M","d":0,"o":1.62,"b":37.7},{"s":"M","d":0,"o":1.64,"b":34.7},{"s":"M","d":0,"o":1.84,"b":41.4},{"s":"M","d":0,"o":1.47,"b":31.9},{"s":"M","d":0,"o":1.47,"b":32.9},{"s":"M","d":156,"o":1.81,"b":39.4},{"s":"M","d":156,"o":1.77,"b":39.2},{"s":"M","d":156,"o":1.57,"b":35.4},{"s":"M","d":156,"o":1.82,"b":38.3},{"s":"M","d":156,"o":1.44,"b":33.6},{"s":"M","d":156,"o":1.72,"b":38.5},{"s":"M","d":156,"o":1.45,"b":35.2},{"s":"M","d":156,"o":1.51,"b":35.6},{"s":"M","d":156,"o":1.87,"b":42.7},{"s":"M","d":156,"o":1.79,"b":40.2},{"s":"M","d":312,"o":1.69,"b":39.9},{"s":"M","d":312,"o":1.58,"b":34.6},{"s":"M","d":312,"o":1.82,"b":37.9},{"s":"M","d":312,"o":1.73,"b":36.9},{"s":"M","d":312,"o":1.71,"b":34.3},{"s":"M","d":312,"o":1.76,"b":39.4},{"s":"M","d":312,"o":1.71,"b":40.7},{"s":"M","d":312,"o":1.62,"b":32.0},{"s":"M","d":312,"o":1.5,"b":35.7},{"s":"M","d":312,"o":1.85,"b":42.6},{"s":"M","d":625,"o":1.72,"b":37.6},{"s":"M","d":625,"o":2.14,"b":44.9},{"s":"M","d":625,"o":1.71,"b":38.6},{"s":"M","d":625,"o":1.23,"b":30.6},{"s":"M","d":625,"o":1.68,"b":34.7},{"s":"M","d":625,"o":1.75,"b":40.4},{"s":"M","d":625,"o":1.73,"b":38.8},{"s":"M","d":625,"o":1.82,"b":35.7},{"s":"M","d":625,"o":1.59,"b":36.0},{"s":"M","d":625,"o":1.7,"b":34.5},{"s":"M","d":1250,"o":1.64,"b":36.1},{"s":"M","d":1250,"o":1.89,"b":38.5},{"s":"M","d":1250,"o":1.82,"b":35.8},{"s":"M","d":1250,"o":1.46,"b":34.3},{"s":"M","d":1250,"o":1.86,"b":41.1},{"s":"M","d":1250,"o":1.89,"b":38.6},{"s":"M","d":1250,"o":1.41,"b":33.4},{"s":"M","d":1250,"o":1.53,"b":32.2},{"s":"M","d":1250,"o":1.61,"b":31.5},{"s":"M","d":1250,"o":1.82,"b":39.1},{"s":"M","d":2500,"o":1.81,"b":37.5},{"s":"M","d":2500,"o":1.87,"b":36.6},{"s":"M","d":2500,"o":1.77,"b":34.3},{"s":"M","d":2500,"o":2.04,"b":36.9},{"s":"M","d":2500,"o":1.96,"b":38.5},{"s":"M","d":2500,"o":1.5,"b":33.6},{"s":"M","d":2500,"o":1.72,"b":33.0},{"s":"M","d":2500,"o":1.8,"b":37.7},{"s":"M","d":2500,"o":2.0,"b":35.0},{"s":"M","d":2500,"o":1.51,"b":30.6}];   // TOX-102: {s,d,o,b}
+[D1,D2].forEach(D=>D.forEach(r=>r.Sex=r.s));
+const DATASETS={
+  tr594:{ data:D1, doses:[0,125,250,500,1000,2000], x:'Dose (ppm)', y:'Terminal body weight (g)', dec:0,
+    cov:null, covLabel:null,
+    stars:{raw:{M:{125:'*'},F:{1000:'*',2000:'***'}}},
+    trend:{M:{p:'0.029',dir:'↓'},F:{p:'<0.0001',dir:'↑'}}, ancova:null },
+  tox102:{ data:D2, doses:[0,156,312,625,1250,2500], x:'Dose (mg/kg)', y:'Liver weight (g)', dec:2,
+    cov:'b', covLabel:'Body weight (TBW)',
+    stars:{ raw:{F:{2500:'*'},M:{2500:'*'}},
+            ratio:{F:{625:'*',1250:'***',2500:'***'},M:{2500:'***'}},
+            regress:{F:{625:'*',1250:'**',2500:'***'},M:{2500:'***'}},
+            adj:{F:{625:'*',1250:'**',2500:'***'},M:{2500:'***'}} },
+    trend:null, ancova:{F:'0.00025',M:'<0.0001'} }
+};
+const PAL={M:'#1f6f8b',F:'#b5651d',pool:'#5b6770'};
+let state={ds:'tr594',split:'Sex',cov:'none',mode:'ratio',test:'dunnett',base:'matched',disp:'auto'};
+
+const q=(a,p)=>{a=a.slice().sort((x,y)=>x-y);const n=a.length,i=(n-1)*p,lo=Math.floor(i),h=i-lo;return a[lo]+(a[lo+1]!==undefined?(a[lo+1]-a[lo])*h:0);};
+function quart(a){const q1=q(a,.25),med=q(a,.5),q3=q(a,.75),iqr=q3-q1,lf=q1-1.5*iqr,uf=q3+1.5*iqr;
+  const inl=a.filter(v=>v>=lf&&v<=uf);return{q1,med,q3,min:Math.min(...inl),max:Math.max(...inl)};}
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+function regline(rows){const xb=mean(rows.map(r=>r.b)),yb=mean(rows.map(r=>r.o));
+  let sxy=0,sxx=0;rows.forEach(r=>{sxy+=(r.b-xb)*(r.o-yb);sxx+=(r.b-xb)**2;});const sl=sxy/sxx;return{sl,ic:yb-sl*xb};}
+
+function DS(){return DATASETS[state.ds];}
+const hasCov=()=>!!DS().cov;
+const covPicked=()=>hasCov()&&state.cov!=='none';
+// Ratio/Regress-out transform Y; active only when covariate picked AND test is NOT ANCOVA
+const transformActive=()=>covPicked()&&state.test!=='ancova';
+const ancovaActive=()=>covPicked()&&state.test==='ancova';
+
+function levelsFor(){return state.split==='none'?['(all)']:[...new Set(DS().data.map(r=>r.Sex))].sort();}
+function rowsFor(lv){return state.split==='none'?DS().data:DS().data.filter(r=>r.Sex===lv);}
+function makeGetV(rows){
+  if(transformActive()){
+    if(state.mode==='ratio')return r=>r.o/r.b*100;
+    const L=regline(rows);return r=>r.o-(L.ic+L.sl*r.b);
+  }
+  return r=>r.o; // raw (no cov, or ANCOVA)
+}
+function yLabel(){ if(transformActive())return state.mode==='ratio'?'Y / covariate (%)':'Y adj. for covariate (residual)'; return DS().y; }
+function yDec(){ if(transformActive())return state.mode==='ratio'?1:2; return DS().dec; }
+function starKey(){ if(transformActive())return state.mode; if(ancovaActive())return 'adj'; return 'raw'; }
+
+function render(){
+  const ds=DS(),DOSES=ds.doses,levels=levelsFor();
+  const W=720,H=300,padL=52,padR=14,padT=20,padB=34;
+  const innerW=W-padL-padR,innerH=H-padT-padB;
+  const fGap=18,fw=(innerW-(levels.length-1)*fGap)/levels.length;
+  const showBox=state.disp!=='points',showPts=state.disp!=='box';
+
+  const facetData=levels.map(lv=>{const rows=rowsFor(lv);return{lv,rows,getV:makeGetV(rows)};});
+  let allV=[];facetData.forEach(fd=>fd.rows.forEach(r=>allV.push(fd.getV(r))));
+  let ymin=Math.min(...allV),ymax=Math.max(...allV);const pad=(ymax-ymin)*0.08;ymin-=pad;ymax+=pad;
+  const yPx=v=>padT+innerH*(1-(v-ymin)/(ymax-ymin));
+  const grandCtrl=mean(facetData.flatMap(fd=>fd.rows.filter(r=>r.d===0).map(fd.getV)));
+  const dec=yDec();
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">`;
+  const tk=4;for(let i=0;i<=tk;i++){const v=ymin+(ymax-ymin)*i/tk,y=yPx(v);
+    svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#eef1f4"/>`;
+    svg+=`<text x="${padL-6}" y="${y+3}" font-size="9" fill="#8a96a0" text-anchor="end">${v.toFixed(dec)}</text>`;}
+  svg+=`<text x="13" y="${padT+innerH/2}" font-size="9" fill="#48535d" transform="rotate(-90 13 ${padT+innerH/2})" text-anchor="middle">${yLabel()}</text>`;
+
+  const slopes=facetData.map(fd=>{const c=mean(fd.rows.filter(r=>r.d===0).map(fd.getV)),
+    hi=mean(fd.rows.filter(r=>r.d===DOSES[DOSES.length-1]).map(fd.getV));return{lv:fd.lv,c,rel:(hi-c)/Math.abs(c||1)};});
+
+  const sk=starKey();
+  facetData.forEach((fd,fi)=>{
+    const ox=padL+fi*(fw+fGap), c2=state.split==='none'?PAL.pool:PAL[fd.lv], soft=c2+'1a';
+    if(state.split!=='none'){const lab=fd.lv==='M'?'Males':'Females';
+      svg+=`<text x="${ox+fw/2}" y="${padT-7}" font-size="11" fill="${c2}" font-weight="700" text-anchor="middle">${lab}</text>`;}
+    const ownCtrl=mean(fd.rows.filter(r=>r.d===0).map(fd.getV));
+    const mism=(state.split!=='none'&&state.base==='pooled');
+    const refY=(state.split==='none')?yPx(grandCtrl):(state.base==='matched'?yPx(ownCtrl):yPx(grandCtrl));
+    const refC=mism?'#b4452f':c2;
+    svg+=`<line x1="${ox}" y1="${refY}" x2="${ox+fw}" y2="${refY}" stroke="${refC}" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>`;
+    svg+=`<text x="${ox+fw-2}" y="${refY-3}" font-size="8" fill="${refC}" text-anchor="end">${mism?'pooled ctrl':'control'}</text>`;
+    const bw=Math.min(30,(fw/DOSES.length)*0.6),gap=(fw-bw*DOSES.length)/(DOSES.length+1);
+    const stars=(state.split==='Sex'&&state.base==='matched')?((ds.stars[sk]||{})[fd.lv]||{}):{};
+    DOSES.forEach((d,di)=>{
+      const vals=fd.rows.filter(r=>r.d===d).map(fd.getV); if(!vals.length)return;
+      const cx=ox+gap*(di+1)+bw*di+bw/2, Q=quart(vals), isC=d===0;
+      if(showBox){
+        svg+=`<line x1="${cx}" y1="${yPx(Q.max)}" x2="${cx}" y2="${yPx(Q.min)}" stroke="${c2}" stroke-width="1"/>`;
+        svg+=`<rect x="${cx-bw/2}" y="${yPx(Q.q3)}" width="${bw}" height="${yPx(Q.q1)-yPx(Q.q3)}" rx="2" fill="${isC?soft:'#fff'}" stroke="${c2}" stroke-width="1.3"/>`;
+        svg+=`<line x1="${cx-bw/2}" y1="${yPx(Q.med)}" x2="${cx+bw/2}" y2="${yPx(Q.med)}" stroke="${c2}" stroke-width="1.6"/>`;
+      }
+      if(showPts)vals.forEach((v,k)=>{const jx=cx+((k*53%17)/17-0.5)*bw*0.8;
+        svg+=`<circle cx="${jx.toFixed(1)}" cy="${yPx(v).toFixed(1)}" r="2" fill="${c2}" opacity="${showBox?0.5:0.85}"/>`;});
+      if(stars[d])svg+=`<text x="${cx}" y="${yPx(Q.max)-7}" font-size="12" fill="${c2}" text-anchor="middle" font-weight="700">${stars[d]}</text>`;
+      svg+=`<text x="${cx}" y="${H-padB+13}" font-size="8" fill="#8a96a0" text-anchor="middle">${d}</text>`;
+    });
+    if(fi<levels.length-1)svg+=`<line x1="${ox+fw+fGap/2}" y1="${padT-2}" x2="${ox+fw+fGap/2}" y2="${padT+innerH}" stroke="#e2e6ea"/>`;
+  });
+  svg+=`<text x="${padL+innerW/2}" y="${H-4}" font-size="9" fill="#48535d" text-anchor="middle">${ds.x}</text></svg>`;
+  document.getElementById('chart').innerHTML=svg;
+
+  // ===== banner + verdicts =====
+  const banner=document.getElementById('banner'),verd=document.getElementById('verdicts');
+  const testBadge = ancovaActive()
+    ? `<span class="vchip" style="background:var(--accent-soft);border-color:#cfe3e9;color:var(--accent)">test: ANCOVA · covariate = ${ds.covLabel}</span>`
+    : `<span class="vchip" style="background:var(--accent-soft);border-color:#cfe3e9;color:var(--accent)">test: Dunnett vs control</span>`;
+  const sexChips=()=>{
+    if(state.split!=='Sex')return `<span class="vchip">Split = Sex for per-sex tests</span>`;
+    if(ancovaActive())return `<span class="vchip" style="border-color:#b5651d55">♀ Females: ANCOVA <b>p=${ds.ancova.F}</b></span><span class="vchip" style="border-color:#1f6f8b55">♂ Males: <b>p=${ds.ancova.M}</b></span>`;
+    if(ds.trend&&!transformActive())return `<span class="vchip" style="border-color:#1f6f8b55">♂ Males: <b>${ds.trend.M.dir} p=${ds.trend.M.p}</b></span><span class="vchip" style="border-color:#b5651d55">♀ Females: <b>${ds.trend.F.dir} p=${ds.trend.F.p}</b></span>`;
+    return slopes.map(s=>`<span class="vchip" style="border-color:${PAL[s.lv]}55">${s.lv}: Δ <b>${(s.rel*100).toFixed(0)}%</b></span>`).join('');
+  };
+
+  if(transformActive()&&state.mode==='ratio'){
+    banner.className='banner adjust';
+    banner.innerHTML=`<span class="ic">÷</span><div class="bt"><b>Ratio (Y / covariate):</b> Y is converted to a ratio; females now show a significant effect (from 625). <span class="mini">⚠ ratios can mislead (Kronmal) — cross-check with regress-out / ANCOVA.</span></div>`;
+    verd.innerHTML=sexChips()+testBadge;
+  } else if(transformActive()&&state.mode==='regress'){
+    banner.className='banner ok';
+    banner.innerHTML=`<span class="ic">✓</span><div class="bt"><b>Regress-out (residual on covariate):</b> Y is adjusted for body weight; the effect persists — a real organ effect, not an artifact.</div>`;
+    verd.innerHTML=sexChips()+testBadge;
+  } else if(ancovaActive()){
+    banner.className='banner ok';
+    banner.innerHTML=`<span class="ic">∑</span><div class="bt"><b>ANCOVA:</b> covariate "${ds.covLabel}" is handled inside the test (Y ~ group + covariate). Y is shown raw; the effect is significant after adjustment. <span class="mini">(Ratio/Regress-out disabled — otherwise double correction)</span></div>`;
+    verd.innerHTML=sexChips()+testBadge;
+  } else if(state.split==='none'){
+    banner.className='banner neutral';
+    banner.innerHTML=`<span class="ic" style="color:#5b6770">●</span><div class="bt"><b>Pooled across all data.</b> <span class="mini" style="color:#9a6a00">→ Split = Sex to check for subgroup effects.</span></div>`;
+    verd.innerHTML=`<span class="vchip">Pooled control ≈ <b>${grandCtrl.toFixed(dec)}</b></span>`+testBadge;
+  } else if(state.base==='pooled'){
+    banner.className='banner caution';
+    banner.innerHTML=`<span class="ic">●</span><div class="bt"><b>Baseline pooled across sexes:</b> the global control does not match the per-sex baseline. <span class="mini">→ Matched.</span></div>`;
+    verd.innerHTML=slopes.map(s=>`<span class="vchip" style="border-color:${PAL[s.lv]}55">${s.lv}: ctrl <b>${s.c.toFixed(dec)}</b></span>`).join('')+testBadge;
+  } else {
+    const diverge=Math.max(...slopes.map(s=>s.rel))>0.05 && Math.min(...slopes.map(s=>s.rel))<-0.02;
+    if(diverge){banner.className='banner warn';
+      banner.innerHTML=`<span class="ic">⚠</span><div class="bt"><b>Simpson's paradox:</b> no effect when pooled, but within sexes there are significant <b>opposite</b> trends. Pooling cancels them.</div>`;}
+    else{banner.className='banner ok';
+      banner.innerHTML=`<span class="ic">✓</span><div class="bt"><b>Strata agree:</b> sexes point the same way — no Simpson's paradox. <span class="mini">(the tool doesn't cry wolf)</span></div>`;}
+    verd.innerHTML=sexChips()+testBadge;
+  }
+
+  // ===== control availability =====
+  document.querySelectorAll('#seg-base button').forEach(b=>b.disabled=(state.split==='none'));
+  // Mode (ratio/regress) enabled only when a covariate is picked AND test != ANCOVA
+  const modeOn=transformActive();
+  document.getElementById('seg-mode').style.opacity=modeOn?1:.4;
+  document.querySelectorAll('#seg-mode button').forEach(b=>b.disabled=!modeOn);
+  // ANCOVA option only when a covariate is picked
+  document.querySelector('#dd-test option[value="ancova"]').disabled=!covPicked();
+  // hints
+  const ch=document.getElementById('cov-hint');
+  if(modeOn&&state.mode==='ratio'){ch.className='hint warn';ch.textContent='Ratio can mislead (Kronmal 1993); regress-out / ANCOVA are safer.';}
+  else{ch.className='hint';ch.textContent = !hasCov()?'This dataset has no numeric covariate.'
+      : !covPicked()?'Pick a covariate for adjustment (ratio/regress-out) or ANCOVA.'
+      : ancovaActive()?'ANCOVA handles the covariate in the test; Y is not transformed.'
+      : 'Regress-out: Y = residual after regressing on the covariate.';}
+  document.getElementById('test-hint').textContent = ancovaActive()
+    ? 'Covariate handled in the test — Ratio/Regress-out disabled.' : '';
+  document.getElementById('auto-tag').style.display=state.disp==='auto'?'inline':'none';
+}
+
+function syncDatasetUI(){
+  const ds=DS();
+  document.getElementById('x-lbl').textContent=ds.x;
+  document.getElementById('y-lbl').textContent=ds.y.replace(' (g)','');
+  const cov=document.getElementById('dd-cov');
+  cov.innerHTML=`<option value="none">— None —</option>`+(ds.cov?`<option value="${ds.cov}">${ds.covLabel}</option>`:``);
+  cov.disabled=!ds.cov; cov.value=state.cov;
+  document.getElementById('dd-test').value=state.test;
+  document.querySelectorAll('#seg-mode button').forEach(b=>b.classList.toggle('on',b.dataset.v===state.mode));
+}
+
+document.querySelectorAll('#seg-ds button').forEach(b=>b.onclick=()=>{
+  state.ds=b.dataset.v;state.cov='none';state.mode='ratio';state.test='dunnett';
+  document.querySelectorAll('#seg-ds button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  syncDatasetUI();render();});
+document.getElementById('dd-cov').onchange=e=>{state.cov=e.target.value;
+  if(state.cov==='none')state.test='dunnett';            // no covariate -> Dunnett
+  else if(state.test==='ancova'){/* keep ANCOVA */}      // covariate -> keep, modes stay off
+  document.getElementById('dd-test').value=state.test; render();};
+document.getElementById('dd-test').onchange=e=>{state.test=e.target.value;render();};
+document.getElementById('dd-split').onchange=e=>{state.split=e.target.value;render();};
+function wireSeg(id,key){document.querySelectorAll('#'+id+' button').forEach(b=>{
+  b.onclick=()=>{if(b.disabled)return;state[key]=b.dataset.v;
+    document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render();};});}
+wireSeg('seg-mode','mode');wireSeg('seg-base','base');wireSeg('seg-disp','disp');
+syncDatasetUI();render();
+</script>
+</body>
+</html>
