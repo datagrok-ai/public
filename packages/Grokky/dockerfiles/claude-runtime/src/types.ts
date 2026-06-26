@@ -66,7 +66,10 @@ export interface SyncMessage {
   packageName?: string;
 }
 
-export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
+export interface AuthStartMessage {type: 'auth_start'}
+export interface AuthCodeMessage {type: 'auth_code'; code: string}
+
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
@@ -75,4 +78,7 @@ export type OutgoingMessage =
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
+  | {type: 'auth_url'; url: string}
+  | {type: 'auth_done'}
+  | {type: 'auth_error'; message: string};

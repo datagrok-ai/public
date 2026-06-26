@@ -145,7 +145,6 @@
 .grokky-ai-search-tab-host {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .d4-ai-messages-accordion-pane pre {
@@ -489,5 +488,37 @@
   color: var(--grey-4);
   font-style: italic;
   margin: 8px 0;
+}
+
+.grokky-auth-widget {
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.grokky-auth-body {
+  padding: 12px;
+}
+
+.grokky-auth-body > * + * {
+  margin-top: 8px;
+}
+
+.grokky-auth-strip-pending {
+  padding: 8px 12px;
+  border-left: 3px solid #e6a817;
+  border-bottom: 1px solid var(--grey-2);
+  background: var(--grey-1);
+}
+
+.grokky-auth-strip-success {
+  padding: 8px 12px;
+  border-left: 3px solid var(--green-2);
+  background: var(--green-1);
+}
+
+.grokky-auth-error {
+  display: none;
 }
 

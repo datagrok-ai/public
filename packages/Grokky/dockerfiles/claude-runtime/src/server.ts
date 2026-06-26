@@ -1,5 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {spawn} from 'node:child_process';
+import type {ChildProcess} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
@@ -538,6 +540,56 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   }
 }
 
+let authProc: ChildProcess | null = null;
+let authWs: WsSender | null = null;
+
+function handleAuthStart(ws: WsSender): void {
+  if (authProc) {
+    emit(ws, {type: 'auth_error', message: 'Authentication already in progress'});
+    return;
+  }
+  authWs = ws;
+  authProc = spawn('claude', ['auth', 'login'], {
+    env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  let urlSent = false;
+  const onData = (data: Buffer) => {
+    if (urlSent)
+      return;
+    const text = data.toString();
+    const m = text.match(/https:\/\/claude\.com\/cai\/oauth[^\s]+/);
+    if (m) {
+      urlSent = true;
+      emit(ws, {type: 'auth_url', url: m[0]});
+    }
+  };
+  authProc.stdout?.on('data', onData);
+  authProc.stderr?.on('data', onData);
+
+  authProc.on('exit', (code) => {
+    authProc = authWs = null;
+    if (code === 0)
+      emit(ws, {type: 'auth_done'});
+    else
+      emit(ws, {type: 'auth_error', message: `claude auth login exited with code ${code}`});
+  });
+
+  authProc.on('error', (err: Error) => {
+    authProc = authWs = null;
+    emit(ws, {type: 'auth_error', message: err.message});
+  });
+}
+
+function handleAuthCode(ws: WsSender, code: string): void {
+  if (!authProc?.stdin) {
+    emit(ws, {type: 'auth_error', message: 'No authentication in progress'});
+    return;
+  }
+  authProc.stdin.write(code + '\n');
+}
+
 function handleAbort(ws: WsSender, data: AbortMessage): void {
   const active = activeQueries.get(data.sessionId);
   if (!active)
@@ -580,6 +632,16 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
+        return;
+      }
+
+      if (data.type === 'auth_start') {
+        handleAuthStart(sender);
+        return;
+      }
+
+      if (data.type === 'auth_code') {
+        handleAuthCode(sender, data.code ?? '');
         return;
       }
 

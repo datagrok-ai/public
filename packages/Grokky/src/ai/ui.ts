@@ -7,11 +7,12 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
+  copyToClipboard} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
@@ -307,6 +308,82 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
+function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
+  const errorDiv = ui.divText('', 'grokky-auth-error');
+
+  const submitBtn = ui.button('Submit', () => submitCode()) as HTMLButtonElement;
+  submitBtn.disabled = true;
+
+  const codeInput = ui.input.string('Authorization code', {
+    placeholder: 'Paste code here',
+    onValueChanged: () => {
+      submitBtn.disabled = !codeInput.value?.trim();
+      errorDiv.classList.add('grokky-auth-error');
+    },
+  });
+
+  const openLink = ui.link('Open authorization page', () => {
+    const sub = client.onAuthUrl.subscribe((evt) => {
+      window.open(evt.url, '_blank');
+      sub.unsubscribe();
+    });
+    client.startAuth();
+  });
+
+  const pendingStrip = ui.divV([
+    ui.divText('Session expired'),
+    ui.divText('Open the auth page and paste the code below'),
+  ], 'grokky-auth-strip-pending');
+
+  const successStrip = ui.divV([
+    ui.divText('Session renewed'),
+    ui.divText('Re-send your message to continue'),
+  ], 'grokky-auth-strip-success');
+  successStrip.style.display = 'none';
+
+  const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
+
+  const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
+
+  const subs: {unsubscribe: () => void}[] = [];
+  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
+
+  subs.push(
+    client.onAuthDone.subscribe(() => {
+      if (!widget.isConnected) {
+        cleanupSubs();
+        return;
+      }
+      pendingStrip.remove();
+      pendingBody.remove();
+      successStrip.style.display = '';
+      cleanupSubs();
+    }),
+    client.onAuthError.subscribe((evt) => {
+      if (!widget.isConnected) {
+        cleanupSubs();
+        return;
+      }
+      errorDiv.textContent = evt.message;
+      errorDiv.classList.remove('grokky-auth-error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+      codeInput.input.focus();
+    }),
+  );
+
+  function submitCode(): void {
+    const code = codeInput.value?.trim();
+    if (!code)
+      return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying…';
+    client.sendAuthCode(code);
+  }
+
+  return widget;
+}
+
 async function runClaudeStreaming(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
@@ -377,6 +454,13 @@ async function streamOnce(
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
         const fullContent = accumulated || evt.content;
+        if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
         await panel.finalizeStreaming(segmentContent, fullContent, view);
@@ -386,6 +470,13 @@ async function streamOnce(
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
+        if (/401|authentication|credentials|\/login/i.test(evt.message)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
         endWithError(`Claude: ${evt.message}`);
       });
 

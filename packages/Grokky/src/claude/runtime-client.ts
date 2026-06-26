@@ -14,6 +14,8 @@ export type FinalEvent = {sessionId: string, content: string, structured_output?
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
+export type AuthUrlEvent = {url: string};
+export type AuthErrorEvent = {message: string};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -31,6 +33,9 @@ export class ClaudeRuntimeClient {
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
+  public onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
+  public onAuthDone = new rxjs.Subject<void>();
+  public onAuthError = new rxjs.Subject<AuthErrorEvent>();
   private _skillNames: string[] | null = null;
 
   private constructor() {}
@@ -117,6 +122,15 @@ export class ClaudeRuntimeClient {
           this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
         this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
         break;
+      case 'auth_url':
+        this.onAuthUrl.next({url: data.url});
+        break;
+      case 'auth_done':
+        this.onAuthDone.next();
+        break;
+      case 'auth_error':
+        this.onAuthError.next({message: data.message});
+        break;
       }
     };
 
@@ -165,6 +179,16 @@ export class ClaudeRuntimeClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
+  }
+
+  startAuth(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
+    this.ws.send(JSON.stringify({type: 'auth_start'}));
+  }
+
+  sendAuthCode(code: string): void {
+    this.ws?.send(JSON.stringify({type: 'auth_code', code}));
   }
 
   respondToInput(sessionId: string, requestId: string, value: any): void {
@@ -217,6 +241,9 @@ export class ClaudeRuntimeClient {
     this.onInputRequest.complete();
     this.onSyncStatus.complete();
     this.onClose.complete();
+    this.onAuthUrl.complete();
+    this.onAuthDone.complete();
+    this.onAuthError.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
@@ -225,5 +252,8 @@ export class ClaudeRuntimeClient {
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
+    this.onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
+    this.onAuthDone = new rxjs.Subject<void>();
+    this.onAuthError = new rxjs.Subject<AuthErrorEvent>();
   }
 }
