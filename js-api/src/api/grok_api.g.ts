@@ -623,6 +623,7 @@ export interface IDartApi {
   grok_Project(): any;
   grok_Project_Get_IsLocal(p: any): any;
   grok_Project_Open(p: any, closeAll: Bool, openViews: Bool, createViews: Bool): Promise<any>;
+  grok_Project_Close(p: any): any;
   grok_Shell_Get_Projects(): any;
   grok_Project_AddTableView(p: any, t: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
