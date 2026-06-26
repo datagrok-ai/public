@@ -23,7 +23,7 @@ export interface Block {
 }
 
 // TODO: LLM-curated suggestions vs current human + view-agnostic heuristics?
-const SLOT = /\{(\w+):([^}]+)}/g;
+const SLOT = /\{(\w+)\.(\w+)}/g;
 let _cache: Block[] | null = null;
 
 async function load(): Promise<Block[]> {
@@ -32,36 +32,34 @@ async function load(): Promise<Block[]> {
   return _cache;
 }
 
-function colMatches(c: DG.Column, filter: string): boolean {
-  if (filter === 'numerical')
-    return c.isNumerical;
-  if (filter === 'categorical')
-    return c.isCategorical;
-  if (filter.startsWith('semType='))
-    return c.semType === filter.slice(8);
-  return false;
-}
-
 function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
-  const picked: Record<string, string> = {};
+  const pickedCols: Record<string, DG.Column> = {};
   const taken = new Set<string>();
   let cols: DG.Column[] | null = null;
 
   for (const [, name, filter] of `${s.label ?? ''}\n${s.prompt}`.matchAll(SLOT)) {
-    if (name in picked) continue;
+    if (name in pickedCols) continue;
     if (!df) return null;
     if (!cols) cols = df.columns.toList();
-    const candidates = cols.filter((c) => !taken.has(c.name) && colMatches(c, filter));
+    const candidates = cols.filter((c) => !taken.has(c.name) && !!c[filter as keyof DG.Column]);
     if (!candidates.length) return null;
 
     const prefer = s.prefer?.[name];
     const re = prefer ? new RegExp(prefer.match(/name~="([^"]+)"/)?.[1] ?? prefer, 'i') : null;
     const pick = (re && candidates.find((c) => re.test(c.name))) || candidates[0];
-    picked[name] = pick.name;
+    pickedCols[name] = pick;
     taken.add(pick.name);
   }
 
-  const fill = (t: string): string => t.replace(SLOT, (_, n) => picked[n]);
+  const fill = (t: string): string => t
+    .replace(/\{(\w+)((?:\.\w+)+)}/g, (_, n, path) => {
+      if (!path.includes('.', 1))
+        return pickedCols[n]?.name ?? '';
+      let val: any = pickedCols[n];
+      for (const key of path.slice(1).split('.'))
+        val = val?.[key];
+      return val ?? '';
+    });
   return {label: s.label ? fill(s.label) : undefined, prompt: fill(s.prompt)};
 }
 
