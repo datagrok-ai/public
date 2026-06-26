@@ -88,6 +88,11 @@ export class Project extends Entity {
     return api.grok_Project_Open(this.dart, options?.closeAll ?? false, openViews == 'all' || openViews == 'saved', openViews == 'all');
   }
 
+  /** Closes the project: removes its tables and views from the workspace. */
+  close(): void {
+    api.grok_Project_Close(this.dart);
+  }
+
   get links(): Entity[] {
     return toJs(api.grok_Project_GetRelations(this.dart, true));
   }
