@@ -1453,6 +1453,12 @@ body.dartium .power-pack-widgets-host.ui-div {
     color: #fff;
 }
 
+.pp-workspace-preview-app {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
 .pp-workspace-preview-grid,
 .pp-workspace-preview-view {
     flex: 1;

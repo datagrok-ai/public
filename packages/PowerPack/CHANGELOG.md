@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Workspace: Fixed "Open" on a pinned app (e.g. Demo) doing nothing — both the editor and the bottom-preview "Open" now launch the app (the preview button previously called `Func.apply()` and discarded the returned View)
+* Workspace: Fixed the bottom-preview "Open" opening an app in a background tab without focusing it — the click no longer bubbles to the Welcome view's activation handler (which reverted the current view back to Home), so the launched app becomes the active view
+* Workspace: App preview now fills the preview pane and scrolls instead of overflowing past it when the app's content is taller than the pane
 * Workspace: Pinned project now shows a live preview in the bottom pane (its views' grids with their saved layouts, like the app preview) instead of a blank panel; "Open" closes the preview-opened instance and opens all of its views in the main area, instead of only the first view with an "already open" balloon
 * GROK-19013: Viewers Gallery: Bio/Peptide sequence viewers (WebLogo, VdRegions, Peptides viewers) and tree viewers (Dendrogram, PhylocanvasGL) are now disabled for incompatible datasets in the Add Viewer dialog
 * Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar

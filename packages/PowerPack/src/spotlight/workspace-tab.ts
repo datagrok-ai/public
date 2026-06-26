@@ -26,10 +26,19 @@ function isRunnable(entity: DG.Entity): entity is DG.Func {
   return entity instanceof DG.Func && !isApp(entity);
 }
 
+/** Launches an app — apps return their View, which must be added to the shell to become visible. */
+async function openApp(func: DG.Func): Promise<void> {
+  const result = await func.apply();
+  if (result instanceof DG.ViewBase)
+    grok.shell.addView(result);
+}
+
 /** Opens an entity in the appropriate way. */
 function openEntity(entity: DG.Entity): void {
   if (entity instanceof DG.Project)
     entity.open();
+  else if (isApp(entity))
+    openApp(entity);
   else if (entity instanceof DG.Func)
     entity.apply();
   else if (entity instanceof DG.FileInfo) {
@@ -517,7 +526,7 @@ export class WorkspaceTab {
           detailsSlot.innerHTML = '';
           detailsSlot.appendChild(appHeader);
         }
-        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-app'), func.friendlyName, () => func.apply());
+        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-app'), func.friendlyName, () => this.open(func));
       }
       else
         showWorkspacePreview(ui.divText('No preview available.', 'pp-workspace-preview-text'), func.friendlyName);
