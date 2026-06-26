@@ -39,4 +39,48 @@ export namespace funcs {
   export async function boltz1App(): Promise<DG.View> {
     return await grok.functions.call('Boltz1:Boltz1App', {});
   }
+
+  export async function getBoltzStructureBindingConfigs(): Promise<any> {
+    return await grok.functions.call('Boltz1:GetBoltzStructureBindingConfigs', {});
+  }
+
+  export async function getBoltzSmDesignConfigs(): Promise<any> {
+    return await grok.functions.call('Boltz1:GetBoltzSmDesignConfigs', {});
+  }
+
+  export async function getBoltzSmScreenConfigs(): Promise<any> {
+    return await grok.functions.call('Boltz1:GetBoltzSmScreenConfigs', {});
+  }
+
+  export async function getBoltzProteinDesignConfigs(): Promise<any> {
+    return await grok.functions.call('Boltz1:GetBoltzProteinDesignConfigs', {});
+  }
+
+  export async function getBoltzProteinScreenConfigs(): Promise<any> {
+    return await grok.functions.call('Boltz1:GetBoltzProteinScreenConfigs', {});
+  }
+
+  export async function boltzStructureAndBinding(table: DG.DataFrame , ligands: DG.Column , config: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzStructureAndBinding', { table, ligands, config });
+  }
+
+  export async function boltzAdme(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzAdme', { table, molecules });
+  }
+
+  export async function boltzDesignSmallMolecules(config: string , numMolecules: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzDesignSmallMolecules', { config, numMolecules });
+  }
+
+  export async function boltzScreenSmallMolecules(table: DG.DataFrame , molecules: DG.Column , config: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzScreenSmallMolecules', { table, molecules, config });
+  }
+
+  export async function boltzDesignProteins(config: string , numProteins: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzDesignProteins', { config, numProteins });
+  }
+
+  export async function boltzScreenProteins(table: DG.DataFrame , proteins: DG.Column , config: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:BoltzScreenProteins', { table, proteins, config });
+  }
 }
