@@ -750,9 +750,14 @@ export interface IScatterPlotSettings {
   /// Moving (rolling) average line visibility.
   showMovingAverageLine: boolean;
 
-  /// Period: the number of points averaged at each position — Excel's trailing window of
-  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  /// Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an
+  /// *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*).
   movingAverageWindow: number;
+
+  /// Window unit (*Points*, a row count, by default):
+  /// * *Absolute* — a width in X-axis units, for a numeric X axis.
+  /// * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis.
+  movingAverageWindowUnit: string;
 
   /// Shades a ±1 standard deviation band around the line.
   showMovingAverageDeviation: boolean;
@@ -760,8 +765,9 @@ export interface IScatterPlotSettings {
   /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
   movingAveragePerCategory: boolean;
 
-  /// Orange by default, to contrast with the default blue markers.
   movingAverageLineColor: number;
+
+  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 
@@ -2425,9 +2431,14 @@ export interface ILineChartSettings {
   /// Moving (rolling) average line visibility.
   showMovingAverageLine: boolean;
 
-  /// Period: the number of points averaged at each position — Excel's trailing window of
-  /// the point and its predecessors (ordered by X). A count of rows, not a time unit.
+  /// Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an
+  /// *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*).
   movingAverageWindow: number;
+
+  /// Window unit (*Points*, a row count, by default):
+  /// * *Absolute* — a width in X-axis units, for a numeric X axis.
+  /// * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis.
+  movingAverageWindowUnit: string;
 
   /// Shades a ±1 standard deviation band around the line.
   showMovingAverageDeviation: boolean;
@@ -2435,8 +2446,9 @@ export interface ILineChartSettings {
   /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
   movingAveragePerCategory: boolean;
 
-  /// Orange by default, to contrast with the default blue markers.
   movingAverageLineColor: number;
+
+  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 

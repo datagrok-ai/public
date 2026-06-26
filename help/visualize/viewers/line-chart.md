@@ -187,7 +187,8 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
-| Moving Average Line Color | number | Orange by default, to contrast with the default blue markers. |
+| Moving Average Line Color | number |  |
+| Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
 | **Tooltip** | | |
@@ -214,7 +215,8 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Root Mean Square Error | boolean |  |
 | Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
 | Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
-| Moving Average Window | number | Period: the number of points averaged at each position — Excel''s trailing window of the point and its predecessors (ordered by X). A count of rows, not a time unit. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis. |
 | Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
 | Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 
