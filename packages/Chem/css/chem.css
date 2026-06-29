@@ -1253,3 +1253,8 @@
 .d4-grid .chem-descriptors-select-btn {
   display: none;
 }
+
+.chem-enumerator .d4-tab-content > * {
+  padding: 0 !important;
+  gap: 0 !important;
+}
