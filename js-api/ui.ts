@@ -522,7 +522,7 @@ export function tableFromProperties(items: any[], properties: Property[]) {
 
 /** Creates a visual table based on [items] and [renderer].
  * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
- * Because... What's a better way to make developers life miserable, right? 
+ * Because... What's a better way to make developers life miserable, right?
 */
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
@@ -1729,14 +1729,14 @@ export class EntityMetaDartProxy extends ObjectHandler {
 
   get type(): string { return api.grok_Meta_Get_Type(this.dart); }
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
-  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
+  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, toDart(x)); }
 
-  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, x); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, x); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
-  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
 }
 
 /**
