@@ -65,8 +65,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
-    let width = renderer.defaultWidth;
-    let height = renderer.defaultHeight;
+    const width = renderer.defaultWidth;
+    const height = renderer.defaultHeight;
 
     if (!width || !height)
       return this.getSize();
@@ -181,11 +181,12 @@ export class FormsViewer extends DG.JsViewer {
 
     setTimeout(() => {
       const grid = this.getGrid();
-      if (grid)
+      if (grid) {
         sub(grid.onRowsSorted, () => {
           setTimeout(() => this.render());
         });
-    })
+      }
+    });
 
     sub(this.dataFrame.onColumnsRemoved, () => {
       this.updateFieldsColumnNames();
@@ -268,8 +269,7 @@ export class FormsViewer extends DG.JsViewer {
           if (!this.sortByColumnName) {
             this.sortByColumnName = name;
             this.sortAscending = false;
-          }
-          else if (this.sortAscending)
+          } else if (this.sortAscending)
             this.sortByColumnName = undefined;
           else
             this.sortAscending = true;
@@ -334,7 +334,7 @@ export class FormsViewer extends DG.JsViewer {
             const ctx = canvas.getContext('2d')!;
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
+
             canvas.setAttribute('column', name);
 
             gridCell.render({context: ctx, bounds: new DG.Rect(0, 0, rendererSize.x, rendererSize.y)});
@@ -345,7 +345,6 @@ export class FormsViewer extends DG.JsViewer {
               this.inputClicked.next(name);
             };
             ui.tooltip.bind(resDiv, name);
-
           } else {
             const input = DG.InputBase.forColumn(col);
             if (input) {
@@ -371,8 +370,7 @@ export class FormsViewer extends DG.JsViewer {
                       input.input.style.color = `${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`;
                       input.input.style.backgroundColor = DG.Color.toHtml(color);
                     }
-                  }
-                  else {
+                  } else {
                     if (gc?.contentCellStyle?.textColor)
                       input.input.style.color = DG.Color.toHtml(gc!.contentCellStyle!.textColor);
 
@@ -380,7 +378,7 @@ export class FormsViewer extends DG.JsViewer {
                       input.input.style.backgroundColor = DG.Color.toHtml(gc!.contentCellStyle!.backColor);
                   }
 
-                  if (gc?.contentCellStyle?.horzAlign == "center" || gc?.contentCellStyle?.horzAlign == "right")
+                  if (gc?.contentCellStyle?.horzAlign == 'center' || gc?.contentCellStyle?.horzAlign == 'right')
                     input.input.style.textAlign = gc!.contentCellStyle.horzAlign!;
 
                   if (gc!.contentCellStyle?.font)
@@ -398,7 +396,7 @@ export class FormsViewer extends DG.JsViewer {
           }
         } catch (e) {
           console.error(e);
-         }
+        }
         return resDiv;
       }
       ), 'd4-multi-form-form');
@@ -412,17 +410,14 @@ export class FormsViewer extends DG.JsViewer {
       if (event.ctrlKey && event.shiftKey) {
         for (let i = 0; i <= row; i++)
           this.dataFrame.selection.set(i, false);
-      }
-      else {
+      } else {
         if (event.ctrlKey) {
           const currentSelection = this.dataFrame.selection.get(row);
           this.dataFrame.selection.set(row, !currentSelection);
-        }
-        else if (event.shiftKey) {
+        } else if (event.shiftKey) {
           for (let i = 0; i <= this.dataFrame.rowCount; i++)
             this.dataFrame.selection.set(i, i <= row);
-        }
-        else {
+        } else {
           if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
             this.dataFrame.currentRowIdx = row;
         }
