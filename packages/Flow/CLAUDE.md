@@ -236,7 +236,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
-| `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse |
+| `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse, hidden on empty canvas / shown once a node exists |
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
@@ -485,6 +485,35 @@ The status circle is part of the title bar; CSS keyframes drive the pulse animat
 ```
 
 `serializeFlow(flow, settings)` produces the doc; `deserializeFlow(doc, flow)` clears and rebuilds. Unknown `typeName`s are skipped with a console warning. Connections referencing missing nodes are silently dropped.
+
+## Guide system (tutorials + how-to) — [`src/guide/`](src/guide)
+
+Interactive, in-app onboarding. A non-invasive floating help button (`ff-help-fab`, bottom-left of
+the canvas), a ribbon icon, and the Start panel's **“Take a 2-minute tour”** button all launch
+guides: **tutorials** (multi-step) and **how-to questions** (single-answer). Each step highlights a
+**concrete** UI element (a browser item, a canvas node, a context-panel input row, a ribbon icon —
+never "the whole canvas") and **waits for the user's real action** before advancing — this is why
+the [Test IDs](#test-ids-data-testid) matter: targets are addressed by `data-testid`/`data-*`.
+
+The instruction card is **our own popup** (not `ui.hints.addHint`, whose injected ✕ collided with our
+Exit link and whose placement never flips to the side with room). `computePlacement` (pure,
+unit-tested) picks the best side and clamps fully on-screen; the card re-anchors on a timer and the
+target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used to jerk the whole UI).
+
+| File | Role |
+|---|---|
+| `guide-model.ts` | Types (`Guide`/`GuideStep`/`GuideContext`/`GuideHost`; a step may set `highlights` for multiple pulse targets) + DOM-light helpers: `poll`, `waitForClick`, `untilClick`, `untilNodeType`/`untilFuncNode`, `untilMore{Nodes,Connections}`, `untilSectionExpanded`, `untilValueContains`/`untilValueMatches`(space-insensitive)/`untilValueNonEmpty`, `untilNodeSelected`/`untilNodeSelectedOfFunc`, `untilNodeCollapsed`, `untilNodeRightOf`, `untilExists`; target resolvers `byTid`/`bySel`/`byNodeFunc`/`byNodeType`/`byBrowserFunc`/`byParam`(+`paramFieldSelector`)/`socketOf`; `copyToClipboard`/`prefillSearch`; and the pure `computePlacement`. |
+| `guide-runner.ts` | `GuideRunner` — runs one guide at a time: highlight → own positioned card → `Promise.race(action, exit)` → re-anchor timer + cleanup; single ✕ exits; Skip; completion card. |
+| `guide-content.ts` | The 4 tutorials (flagship `load-data-add-column` first — the Start-panel tour) + how-to questions (`TUTORIALS`, `QUESTIONS`). |
+| `guide-launcher.ts` | `createHelpButton` + `openGuideMenu` (DG.Menu with Tutorials / How do I…? groups). |
+
+The view ([funcflow-view.ts](src/funcflow-view.ts)) implements `GuideHost` (`getFlow`,
+`showFunctionBrowser`, `anchorEl = helpButton`), mounts the button, and wires the Start-panel tour to
+`TUTORIALS[0]`. Conditions, placement, and a live playthrough are tested in
+[tests/guide-tests.ts](src/tests/guide-tests.ts). **Adding a guide**: append a `Guide` to `TUTORIALS`
+or `QUESTIONS`; reuse the `until*` helpers and target a concrete element via `byTid`/`byNodeFunc`/
+`byBrowserFunc`/`byParam`. Concrete targets (params, demo file) should be verified empirically (e.g.
+`grok test --host localhost`) before being hard-coded.
 
 ## Test IDs (`data-testid`)
 

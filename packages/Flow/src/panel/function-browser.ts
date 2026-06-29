@@ -74,6 +74,31 @@ interface BrowserState {
 const LS_KEY = 'funcflow.browser.v1';
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
+/** Case- AND whitespace-insensitive substring match — so "openfile" matches
+ *  "Open File" and "table output" matches "TableOutput". */
+export function nameMatchesQuery(text: string, query: string): boolean {
+  if (!query) return true;
+  const t = (text || '').toLowerCase();
+  const q = query.toLowerCase();
+  return t.includes(q) || t.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
+}
+
+/** Whether a function matches a search query. Matches the display name AND the
+ *  raw function name / friendlyName — the toolbox shows the friendly name (e.g.
+ *  "Open File") but users search by the name they know (e.g. "OpenFile"), and
+ *  vice versa — all whitespace-insensitive; plus description, tags, role, pkg. */
+export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return nameMatchesQuery(f.name, q) ||
+    nameMatchesQuery(f.func.name || '', q) ||
+    nameMatchesQuery(f.func.friendlyName || '', q) ||
+    (f.func.description || '').toLowerCase().includes(q) ||
+    f.tags.some((t) => t.toLowerCase().includes(q)) ||
+    (f.role || '').toLowerCase().includes(q) ||
+    f.packageName.toLowerCase().includes(q);
+}
+
 /** Left sidebar: searchable, groupable function catalog */
 export class FunctionBrowser {
   root: HTMLElement;
@@ -268,7 +293,7 @@ export class FunctionBrowser {
 
     for (const section of sections) {
       const filtered = query ?
-        section.nodes.filter((n) => n.name.toLowerCase().includes(query)) :
+        section.nodes.filter((n) => nameMatchesQuery(n.name, query)) :
         section.nodes;
       if (filtered.length === 0) continue;
 
@@ -381,13 +406,7 @@ export class FunctionBrowser {
   private filterBySearch(funcs: FuncInfo[]): FuncInfo[] {
     const query = this.searchInput.value.toLowerCase();
     if (!query) return funcs;
-    return funcs.filter((f) => {
-      return f.name.toLowerCase().includes(query) ||
-        (f.func.description || '').toLowerCase().includes(query) ||
-        f.tags.some((t) => t.toLowerCase().includes(query)) ||
-        (f.role || '').toLowerCase().includes(query) ||
-        f.packageName.toLowerCase().includes(query);
-    });
+    return funcs.filter((f) => funcMatchesSearch(f, query));
   }
 
   private groupFunctions(funcs: FuncInfo[]): Record<string, FuncInfo[]> {

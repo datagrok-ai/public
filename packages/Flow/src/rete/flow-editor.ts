@@ -539,8 +539,18 @@ export class FlowEditor {
 
   /** Coalesce minimap redraws to one per frame — the area pipe fires many
    *  translate/render events during a single drag. */
+  /** Re-evaluate the overview after a graph edit (visibility + redraw). */
+  refreshMinimap(): void {
+    this.scheduleMinimapRedraw();
+  }
+
   private scheduleMinimapRedraw(): void {
-    if (!this.minimapEl || this.minimapRedrawScheduled) return;
+    if (!this.minimapEl) return;
+    // Nothing to overview on an empty canvas — hide the panel entirely (it
+    // reappears the moment the first node lands). Done before the collapsed/
+    // scheduled early-returns so an empty canvas hides regardless of either.
+    this.minimapEl.style.display = this.editor.getNodes().length === 0 ? 'none' : '';
+    if (this.minimapRedrawScheduled) return;
     if (this.minimapEl.dataset.collapsed === 'true') return;
     this.minimapRedrawScheduled = true;
     requestAnimationFrame(() => {

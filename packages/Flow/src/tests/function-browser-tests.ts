@@ -8,7 +8,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES,
 } from '../rete/node-factory';
-import {categorizeFunc, FUNC_CATEGORIES} from '../panel/function-browser';
+import {categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery} from '../panel/function-browser';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
 
@@ -66,6 +66,30 @@ category('Flow: function browser', () => {
       const cat = categorizeFunc(info.func, info.role);
       expect((FUNC_CATEGORIES as readonly string[]).includes(cat), true, `unknown category ${cat}`);
     }
+  });
+
+  test('search matches the raw func name even when the toolbox shows friendlyName', async () => {
+    // The bug: "OpenFile" returned nothing because the list shows "Open File".
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) {
+      expect(true, true, 'OpenFile not on this stand — skipped');
+      return;
+    }
+    expect(info.name !== info.func.name, true, 'display name differs from func name (Open File vs OpenFile)');
+    expect(funcMatchesSearch(info, 'openfile'), true, 'matches the raw function name');
+    expect(funcMatchesSearch(info, 'open file'), true, 'still matches the friendly/display name');
+    expect(funcMatchesSearch(info, 'open'), true, 'matches a shared prefix');
+    expect(funcMatchesSearch(info, 'zzzznope'), false, 'no false positive');
+  });
+
+  test('nameMatchesQuery is case- and whitespace-insensitive', async () => {
+    // Built-in items (e.g. "Table Output") are matched by display name, so the
+    // matcher must accept both spaced and unspaced queries.
+    expect(nameMatchesQuery('Table Output', 'tableoutput'), true, 'unspaced query');
+    expect(nameMatchesQuery('Table Output', 'table output'), true, 'spaced query');
+    expect(nameMatchesQuery('Open File', 'openfile'), true, 'unspaced');
+    expect(nameMatchesQuery('Open File', 'OPEN'), true, 'case-insensitive prefix');
+    expect(nameMatchesQuery('Table Output', 'value'), false, 'no false positive');
   });
 
   test('statusLabel renders plain-language status', async () => {

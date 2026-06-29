@@ -36,6 +36,10 @@ import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
 import {_package} from './package';
 import {setTid} from './utils/test-ids';
+import {GuideHost} from './guide/guide-model';
+import {GuideRunner} from './guide/guide-runner';
+import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
+import {TUTORIALS} from './guide/guide-content';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
@@ -53,6 +57,8 @@ export class FuncFlowView extends DG.ViewBase {
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
   private startBgRaf = 0;
+  private helpButton!: HTMLElement;
+  private readonly guideRunner = new GuideRunner();
   private statusBar!: HTMLElement;
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
@@ -113,6 +119,10 @@ export class FuncFlowView extends DG.ViewBase {
     setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();
     this.canvasContainer.appendChild(this.startPanel);
+
+    // Non-invasive floating help button (bottom-left) → tutorials & how-to menu.
+    this.helpButton = createHelpButton((ev) => openGuideMenu(this.guideHost, this.guideRunner, ev));
+    this.canvasContainer.appendChild(this.helpButton);
 
     this.nodeCountLabel = ui.divText('Nodes: 0');
     this.linkCountLabel = ui.divText('Links: 0');
@@ -269,6 +279,7 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateStatusBar();
         this.updateStartPanelVisibility();
         this.refreshNodeHints();
+        this.flow?.refreshMinimap();
         this.executionController?.onGraphChanged();
       },
     });
@@ -413,6 +424,22 @@ export class FuncFlowView extends DG.ViewBase {
     return null;
   }
 
+  // ---------- guide system (tutorials + how-to) ----------
+
+  /** What the interactive guides need from this view. */
+  private get guideHost(): GuideHost {
+    return {
+      getFlow: () => this.flow,
+      showFunctionBrowser: () => {
+        grok.shell.windows.showToolbox = true;
+        try {
+          this.functionBrowser.render();
+        } catch {/* not ready yet */}
+      },
+      anchorEl: this.helpButton,
+    };
+  }
+
   // ---------- start panel (U1: never open empty) ----------
 
   /** A welcoming overlay shown over the empty canvas: pick a template, open a
@@ -442,14 +469,24 @@ export class FuncFlowView extends DG.ViewBase {
     blankCard.onclick = (): void => this.hideStartPanel();
     cards.push(blankCard);
 
+    // Primary call-to-action: launch the hands-on tour (the first tutorial),
+    // which walks a newcomer through loading data and adding a column.
+    const tourBtn = ui.button('Take a 2-minute tour', () => {
+      this.hideStartPanel();
+      void this.guideRunner.run(TUTORIALS[0], this.guideHost);
+    });
+    tourBtn.classList.add('funcflow-start-tour');
+    ui.tooltip.bind(tourBtn, `Guided walkthrough: ${TUTORIALS[0].title}`);
+    setTid(tourBtn, 'start-tour');
+
     const openBtn = ui.button('Open a flow…', () => void this.openFlow());
     const importBtn = ui.button('Import from a table…', () => this.importCreationScriptDialog());
     setTid(openBtn, 'start-open');
     setTid(importBtn, 'start-import');
-    const actions = ui.divH([openBtn, importBtn], 'funcflow-start-actions');
+    const actions = ui.divH([tourBtn, openBtn, importBtn], 'funcflow-start-actions');
 
     const hint = ui.divText(
-      'Tip: double-click a function in the list on the left, or drag a file onto the canvas.',
+      'New here? Take the tour. Or: double-click a function in the list on the left, or drag a file onto the canvas.',
       'funcflow-start-hint');
 
     const panel = ui.divV([
@@ -632,6 +669,9 @@ export class FuncFlowView extends DG.ViewBase {
         ribbonIcon('search-minus', () => this.flow?.zoomOut(), 'Zoom out', 'zoom-out'),
         ribbonIcon('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit', 'zoom-fit'),
         ribbonIcon('list-ul', () => this.toggleToolbox(), 'Show/hide function list', 'toggle-browser'),
+      ],
+      [
+        ribbonIcon('graduation-cap', () => openGuideMenu(this.guideHost, this.guideRunner), 'Tutorials & help', 'help'),
       ],
     ];
 

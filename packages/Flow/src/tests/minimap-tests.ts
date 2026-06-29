@@ -27,6 +27,8 @@ category('Flow: minimap', () => {
   test('setMinimapCollapsed collapses and restores the minimap', async () => {
     const e = makeEditor();
     try {
+      // Needs a node — the overview is hidden on an empty canvas (below).
+      await addNode(e.flow, 'Constants/String', 0, 0);
       const mm = e.container.querySelector('.ff-minimap') as HTMLElement;
       expect(mm != null, true);
       expect(mm.dataset.collapsed, 'false', 'starts expanded');
@@ -34,8 +36,25 @@ category('Flow: minimap', () => {
       expect(mm.dataset.collapsed, 'true');
       e.flow.setMinimapCollapsed(false);
       expect(mm.dataset.collapsed, 'false');
-      // The minimap is never hidden outright — only minimized.
-      expect(mm.style.display !== 'none', true, 'minimap is always present');
+      // Collapse only minimizes to the header bar — it does not hide outright.
+      await until(() => mm.style.display !== 'none');
+      expect(mm.style.display !== 'none', true, 'present while the canvas has nodes');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('overview is hidden on an empty canvas, shown once a node is added', async () => {
+    const e = makeEditor();
+    try {
+      const mm = e.container.querySelector('.ff-minimap') as HTMLElement;
+      // Empty canvas: nothing to overview → hidden.
+      const hidden = await until(() => mm.style.display === 'none');
+      expect(hidden, true, 'hidden while empty');
+      // First node lands → it reappears.
+      await addNode(e.flow, 'Constants/String', 0, 0);
+      const shown = await until(() => mm.style.display !== 'none');
+      expect(shown, true, 'shown once a node exists');
     } finally {
       destroyEditor(e);
     }

@@ -2,6 +2,54 @@
 
 ## v.next
 
+### Guide system — concrete, well-placed, hands-on
+
+* **Tutorials are now concrete and end-to-end.** The flagship tutorial **“Load data and add a
+  column”** has the user *search* for each function (case/space-insensitive — "open file" or
+  "openfile"), opens a real dataset (`System:DemoFiles/demog.csv`, pasted from the clipboard into the
+  Open File node's **File path** field), drags **Add New Column** clear so it stops overlapping
+  (gated until it's actually moved right), **wires specific pins** (Open File's `result` → Add New
+  Column's `table`, both pins highlighted), names the column (`My New Column`, gated on that exact
+  text), pastes the formula `${AGE} * 12`, adds a **Table Output** and connects Add New Column's
+  `table →` pass-through to it, then runs. Every step highlights a *specific* element (browser item,
+  canvas node, socket pin, `data-param` input row, ribbon icon), never a vague "the canvas". All
+  targets/params/socket keys/the demo file were verified empirically against a live server.
+* **Steps can highlight several elements.** A step's optional `highlights` returns multiple targets,
+  each getting its own pulsing dot — used to light up *both* pins the user must connect.
+* **Function search matches the real name, case- and space-insensitively.** The toolbox shows the
+  friendly name ("Open File"), but searching "OpenFile"/"openfile"/"open file" — or "tableoutput" for
+  the built-in "Table Output" — now all match (`funcMatchesSearch`/`nameMatchesQuery`). Previously
+  "OpenFile" returned nothing because the list only matched the friendly name.
+* **Smart popup placement.** The instruction card is now our own element with a pure, unit-tested
+  placement function (`computePlacement`): it honors the preferred side when it fits, else flips to
+  the opposite, else picks whichever side has room, and **always clamps fully on-screen** — so a hint
+  on a bottom element opens *above* it, one on a far-left element opens to its *right*, and nothing
+  spills off the viewport. The card re-anchors on a timer (nodes re-render, the context panel shifts
+  layout, the user drags), and the old `scrollIntoView` that yanked the whole UID upward is gone.
+* **Single close affordance.** The platform `ui.hints.addHint` injected its own ✕ that overlapped our
+  Exit link; the card now owns one ✕ (top-right) that exits the guide. Targets get a clear pulsing
+  outline (`.ff-guide-target`) instead of the stray corner blob.
+* **Launch the tour from the Start panel.** A primary **“Take a 2-minute tour”** button on the empty-
+  canvas Start panel runs the flagship tutorial.
+* **More how-to answers**, including context-panel ones (“How do I add a calculated column?”, “How do
+  I edit a node's settings?”, “How do I bring data in?”), each highlighting a concrete element.
+
+### Empty-canvas overview
+
+* The **overview minimap is hidden on an empty canvas** (nothing to overview) and reappears the moment
+  the first node lands (`FlowEditor.refreshMinimap`, driven from `onGraphChanged`).
+
+### Interactive tutorials & how-to help
+
+* **Guide system.** A non-invasive floating help button (bottom-left) and a ribbon icon open a menu
+  of **4 multi-step tutorials** (Build your first flow · Find the right function · Organize your
+  canvas · See & reuse the generated script) and **14 how-to answers** (add/connect/run, preview a
+  node, change settings, delete, layout, categories, collapse, undo, save, view script, open,
+  navigate, bring data in). Each step **highlights the relevant element** (via `ui.hints`) and
+  **waits for the real action** — a click, a typed value, a node added/connected/collapsed — before
+  advancing, with Skip/Exit always available. Built on the new `data-testid`/`data-*` attributes.
+  Lives in [`src/guide/`](src/guide).
+
 ### Testability
 
 * **`data-testid` on every UI surface.** The canvas (nodes, sockets, status dot, caret, hints,
