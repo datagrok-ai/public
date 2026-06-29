@@ -309,6 +309,26 @@ category('ComputeUtils: Driver instance additional states', async () => {
     });
   });
 
+  test('Propagate nqName to an action step node state', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'myAction', type: 'action', nqName: 'LibTests:TestActionHelp'},
+      ],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(() => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const actionNode = tree.nodeTree.getNode([{idx: 1}]);
+      const state = (actionNode.getItem() as any).toState({disableNodesUUID: true});
+      expectDeepEqual(state.nqName, 'LibTests:TestActionHelp');
+      expectDeepEqual(state.isActionStep, true);
+    });
+  });
+
   test('Propagate consistency info to RO view state', async () => {
     const pconf = await getProcessedConfig(config1);
 
