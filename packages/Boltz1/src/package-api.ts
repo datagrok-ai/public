@@ -40,6 +40,13 @@ export namespace funcs {
     return await grok.functions.call('Boltz1:Boltz1App', {});
   }
 
+  /**
+  WDR5 protein-ligand complexes with Boltz-predicted affinity
+  */
+  export async function demoBoltz(): Promise<void> {
+    return await grok.functions.call('Boltz1:DemoBoltz', {});
+  }
+
   export async function getBoltzStructureBindingConfigs(): Promise<any> {
     return await grok.functions.call('Boltz1:GetBoltzStructureBindingConfigs', {});
   }

@@ -65,6 +65,14 @@ export async function boltz1App() : Promise<any> {
   return await PackageFunctions.boltz1App();
 }
 
+//name: Boltz Demo
+//description: WDR5 protein-ligand complexes with Boltz-predicted affinity
+//meta.demoPath: Bioinformatics | Boltz
+//meta.isDemoDashboard: true
+export async function demoBoltz() : Promise<void> {
+  await PackageFunctions.demoBoltz();
+}
+
 //output: list<string> result
 export async function getBoltzStructureBindingConfigs() : Promise<string[]> {
   return await PackageFunctions.getBoltzStructureBindingConfigs();

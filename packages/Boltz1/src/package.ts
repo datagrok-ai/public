@@ -6,7 +6,7 @@ import {BoltzService} from './utils/boltz-service';
 import {getInitializedService} from './utils/boltz-api-service';
 import {ADME_MODEL, BOLTZ_API_CONFIG_PATH, STRUCTURE_AND_BINDING_MODEL} from './utils/boltz-api-constants';
 import {scatterRows, toDataFrame} from './utils/boltz-api-utils';
-import {Boltz1AppView} from './demo/boltz-app';
+import {Boltz1AppView, openBoltzDemo} from './demo/boltz-app';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -89,7 +89,7 @@ export class PackageFunctions {
   static isApplicableBoltz(
     molecule: string,
   ): boolean {
-    return molecule.includes('confidence_score');
+    return molecule.includes('binding_confidence');
   }
 
   @grok.decorators.app({
@@ -98,6 +98,15 @@ export class PackageFunctions {
   })
   static async boltz1App(): Promise<DG.ViewBase> {
     return new Boltz1AppView().getView();
+  }
+
+  @grok.decorators.func({
+    name: 'Boltz Demo',
+    description: 'WDR5 protein-ligand complexes with Boltz-predicted affinity',
+    meta: {demoPath: 'Bioinformatics | Boltz', isDemoDashboard: 'true'},
+  })
+  static async demoBoltz(): Promise<void> {
+    await openBoltzDemo();
   }
 
   // --- Hosted API: config-listing helpers (used as choices providers) ---
