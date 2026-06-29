@@ -13,6 +13,12 @@ const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
+// Drop-in replacement for the standalone package's rdkit-helper. By the time the app function
+// runs, Chem's `init` handler has already initialized the RDKit module.
+async function getRdKit() {
+  return getRdKitModule();
+}
+
 // Sniff string columns and set semType so the grid renders reactions and molecules. We sample a
 // handful of non-empty values per column: presence of `>>` wins as ChemicalReaction; otherwise if
 // every sampled value looks like SMILES/SMARTS we mark the column as Molecule.
@@ -44,7 +50,7 @@ async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
     await df.meta.detectSemanticTypes();
     return df;
   } catch (e) {
-    _package.logger.warning(`Could not load bundled file ${name}: ${e}`);
+    console.warn(`Could not load bundled file ${name}: ${e}`);
     return null;
   }
 }
@@ -65,6 +71,14 @@ function pickFile(accept: string): Promise<File | null> {
   });
 }
 
+function downloadText(text: string, filename: string, mime = 'text/plain'): void {
+  const blob = new Blob([text], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function getStringColumn(df: DG.DataFrame, name: string): string[] {
   const col = df.col(name);
@@ -108,7 +122,7 @@ function makeColInput(
   label: string, table: DG.DataFrame | null, preferredName: string,
   filter: (c: DG.Column) => boolean, tooltip: string, nullable: boolean,
 ): DG.InputBase<DG.Column | null> {
-  const opts: ui.input.IColumnInputInitOptions<DG.Column> = {filter};
+  const opts: any = {filter};
   if (table) {
     opts.table = table;
     opts.nullable = nullable;
@@ -273,7 +287,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Both are bound to live factories so the rendered HTML reflects the current state every time
   // the user hovers over the icon; no proactive refresh is needed.
   const mkIcon = (): HTMLElement => {
-    const i = ui.icons.info(() => {});
+    const i = ui.iconFA('info-circle', () => {});
     i.style.marginLeft = '8px';
     i.style.color = 'var(--blue-2)';
     i.style.cursor = 'help';
@@ -283,7 +297,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const configInfoIcon = mkIcon();
 
   function buildAppHelp(): HTMLElement {
-    const card = ui.div([], {style: {fontSize: '12px', maxWidth: '520px', lineHeight: '1.5', padding: '4px 2px'}});
+    const card = ui.div();
+    card.style.fontSize = '12px';
+    card.style.maxWidth = '520px';
+    card.style.lineHeight = '1.5';
+    card.style.padding = '4px 2px';
     card.innerHTML = `
       <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">Chemical library enumeration</div>
       <p style="margin: 0 0 6px 0;">Generate a product library from reaction SMARTS templates and a set of starting materials. Each round can take products from the previous round and grow them further.</p>
@@ -327,18 +345,32 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const fmtNum = (n: number, hint = 'unlimited') => n < 0 ? hint : String(n);
     const yn = (b: boolean) => b ? 'Yes' : 'No';
 
-    const card = ui.div([], {style: {
-      fontSize: '12px', maxHeight: '500px', maxWidth: '440px',
-      overflow: 'auto', padding: '4px 2px', lineHeight: '1.5',
-    }});
-    const sectionTitle = (text: string) => ui.divText(text, {style: {
-      fontWeight: 'bold', marginTop: '8px', marginBottom: '2px',
-      paddingBottom: '2px', borderBottom: '1px solid var(--grey-3)',
-    }});
-    const row = (label: string, value: string) => ui.divH([
-      ui.divText(label, {style: {color: 'var(--grey-6)'}}),
-      ui.divText(value, {style: {color: 'var(--text-color)', textAlign: 'right'}}),
-    ], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
+    const card = ui.div();
+    card.style.fontSize = '12px';
+    card.style.maxHeight = '500px';
+    card.style.maxWidth = '440px';
+    card.style.overflow = 'auto';
+    card.style.padding = '4px 2px';
+    card.style.lineHeight = '1.5';
+
+    const sectionTitle = (text: string) => {
+      const h = ui.div();
+      h.textContent = text;
+      h.style.fontWeight = 'bold';
+      h.style.marginTop = '8px';
+      h.style.marginBottom = '2px';
+      h.style.paddingBottom = '2px';
+      h.style.borderBottom = '1px solid var(--grey-3)';
+      return h;
+    };
+    const row = (label: string, value: string) => {
+      const r = ui.divH([], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
+      const l = ui.div(); l.textContent = label; l.style.color = 'var(--grey-6)';
+      const v = ui.div(); v.textContent = value; v.style.color = 'var(--text-color)';
+      v.style.textAlign = 'right';
+      r.appendChild(l); r.appendChild(v);
+      return r;
+    };
 
     card.appendChild(sectionTitle('Enumeration'));
     card.appendChild(row('Rounds', String(en.num_rounds)));
@@ -409,8 +441,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const desired = v == null ? '' : String(v);
         if (el.value !== desired) el.value = desired;
       }
-    } catch (e) { _package.logger.debug(`setAndFire input refresh skipped: ${e}`); }
-    try {input.fireChanged();} catch (e) { _package.logger.debug(`fireChanged not available: ${e}`); }
+    } catch {/* ignore — non-textual inputs (column/table/bool/etc.) */}
+    try {input.fireChanged();} catch {/* ignore — older API versions */}
   };
 
   const syncConfigToQuickInputs = () => {
@@ -591,7 +623,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev !== subset && prev !== df)
-      try { grok.shell.closeTable(prev); } catch (e) { _package.logger.warning(`Could not close prev subset: ${e}`); }
+      try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
 
   // When the user picks a different table or uploads a new CSV through the table input control,
@@ -648,7 +680,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const saveYamlBtn = ui.button('Save YAML', () => {
     syncQuickInputsToConfig();
-    DG.Utils.download('enumerator-config.yaml', configToYaml(config), 'text/yaml');
+    downloadText(configToYaml(config), 'enumerator-config.yaml', 'text/yaml');
   });
   ui.tooltip.bind(saveYamlBtn, 'Download the current config as a YAML file.');
 
@@ -666,7 +698,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       await runFullEnumeration();
     } catch (e) {
       grok.shell.error(`Enumeration failed: ${e instanceof Error ? e.message : String(e)}`);
-      _package.logger.error(String(e));
+      console.error(e);
     } finally {
       runBtn.disabled = false;
       cancelBtn.style.display = 'none';
@@ -680,7 +712,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   async function runFullEnumeration(): Promise<void> {
     progressLabel.textContent = 'Loading RDKit…';
-    const rdkit = await getRdKitModule();
+    const rdkit = await getRdKit();
     const tDf = templatesInput.value!;
     const bDf = bbsInput.value!;
     const xDf = exclusionInput.value;
@@ -709,8 +741,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       grok.shell.info(`Enumeration done in ${elapsed}s — ${rows.length} rows.`);
     }
     if (warnings.length > 0) {
-      _package.logger.warning(`Enumeration warnings: ${warnings.join(', ')}`);
-      grok.shell.warning(`${warnings.length} warning(s); see the log for details.`);
+      console.warn('Enumeration warnings:', warnings);
+      grok.shell.warning(`${warnings.length} warning(s); see console for details.`);
     }
     if (rows.length > 0) grok.shell.addTableView(buildResultDataFrame(rows));
   }
@@ -1028,8 +1060,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       return;
     }
 
-    let rdkit: ReturnType<typeof getRdKitModule>;
-    try {rdkit = await getRdKitModule();} catch (e) {
+    let rdkit: any;
+    try {rdkit = await getRdKit();} catch (e) {
       previewStatus.textContent = '';
       showInPreview(ui.divText(`Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`,
         {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
@@ -1078,7 +1110,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       grid.props.rowHeight = 110;
     } catch (e) {
-      _package.logger.warning(`Preview grid styling failed: ${e}`);
+      console.warn('Preview grid styling failed:', e);
     }
     showInPreview(grid.root);
     applyGridColumnSizing(grid, false); // route is not the last column — skip extendLastColumn
