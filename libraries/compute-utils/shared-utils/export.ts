@@ -116,12 +116,14 @@ export const richFunctionViewReport = async (
       const scalarOutputs = func.outputs.filter((output) => isScalarType(output.propertyType));
 
       dfInputs.forEach((dfInput) => {
+        const currentDf = lastCall.inputs[dfInput.name];
+        if (isEmptyDf(currentDf))
+          return;
         const visibleTitle = dfInput.options.caption || dfInput.name;
         const currentDfSheet =
       exportWorkbook.worksheets.find((ws) => ws.name === getSheetName(visibleTitle, exportWorkbook)) ??
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
-        const currentDf = lastCall.inputs[dfInput.name];
         const validation = validationStates?.[dfInput.name];
         const consistency = consistencyStates?.[dfInput.name];
         dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
@@ -145,12 +147,14 @@ export const richFunctionViewReport = async (
       }
 
       dfOutputs.forEach((dfOutput) => {
+        const currentDf = lastCall.outputs[dfOutput.name];
+        if (isEmptyDf(currentDf))
+          return;
         const visibleTitle = dfOutput.options.caption || dfOutput.name;
         const currentDfSheet =
       exportWorkbook.worksheets.find((ws) => ws.name === getSheetName(visibleTitle, exportWorkbook)) ??
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
-        const currentDf = lastCall.outputs[dfOutput.name];
         const validation = validationStates?.[dfOutput.name];
         const consistency = consistencyStates?.[dfOutput.name];
         dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
@@ -175,6 +179,9 @@ export const richFunctionViewReport = async (
       }
 
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
+        const currentDf = lastCall.inputs[inputProp.name];
+        if (isEmptyDf(currentDf)) continue;
+
         const nonGridViewers = (dfToViewerMapping[inputProp.name] ?? [])
           .filter((viewer) => viewer && viewer.type !== DG.VIEWER.GRID)
           .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer!.type));
@@ -182,7 +189,6 @@ export const richFunctionViewReport = async (
         if (nonGridViewers.length === 0) continue;
 
         const visibleTitle = inputProp.options.caption || inputProp.name;
-        const currentDf = lastCall.inputs[inputProp.name];
 
         for (const [index, viewer] of nonGridViewers.entries()) {
           await plotToSheet(
@@ -195,6 +201,9 @@ export const richFunctionViewReport = async (
       }
 
       for (const outputProp of func.outputs.filter((prop) => isDataFrame(prop))) {
+        const currentDf = lastCall.outputs[outputProp.name];
+        if (isEmptyDf(currentDf)) continue;
+
         const nonGridViewers = (dfToViewerMapping[outputProp.name] ?? [])
           .filter((viewer) => viewer && viewer.type !== DG.VIEWER.GRID)
           .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer!.type));
@@ -202,7 +211,6 @@ export const richFunctionViewReport = async (
         if (nonGridViewers.length === 0) continue;
 
         const visibleTitle = outputProp.options.caption || outputProp.name;
-        const currentDf = lastCall.outputs[outputProp.name];
 
         for (const [index, viewer] of nonGridViewers.entries()) {
           if (!viewer)
@@ -361,6 +369,8 @@ const dfToSheet = (
 }
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+const isEmptyDf = (df?: DG.DataFrame) => !df || df.rowCount === 0;
 
 const configToViewer = async (df: DG.DataFrame | undefined, config: Record<string, any>) => {
   if (!df)
