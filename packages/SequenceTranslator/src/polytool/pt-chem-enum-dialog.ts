@@ -1125,10 +1125,7 @@ export function buildChemEnumPanel(
         el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
         return el;
       };
-      const strip = ui.divV([
-        ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
-        ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
-        ui.divText(String(list.length), {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}}),
+      const stripIcons = [
         stripIcon('pencil', `Draw an R${n} substituent`, () => {
           openRGroupSketchDialog(rdkit, '', n).then((rg) => {
             if (!rg) return;
@@ -1138,6 +1135,12 @@ export function buildChemEnumPanel(
         }),
         stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
         stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
+      ];
+      const strip = ui.divV([
+        ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
+        ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
+        ui.divText(String(list.length), {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}}),
+        ...stripIcons,
       ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
 
       const renderer = (i: number): HTMLElement => {
@@ -1183,6 +1186,8 @@ export function buildChemEnumPanel(
       applyHorizontalRowStyle(vv.root);
       vv.root.style.flex = '1 1 0';
       const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
+      // Strip icons stay hidden until the R# row is hovered.
+      ui.tools.setHoverVisibility(row, stripIcons);
       rGroupsHost.appendChild(row);
       rGroupsRenderers.set(n, {row, vv, header: strip});
     }
@@ -1365,21 +1370,19 @@ export function buildChemEnumPanel(
     const parts: HTMLElement[] = [
       ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
     ];
-    const iconBtn = (fa: string, text: string, onClick: () => void, tip: string): HTMLButtonElement => {
+    const iconBtn = (fa: string, onClick: () => void, tip: string): HTMLButtonElement => {
       const icon = ui.iconFA(fa);
-      icon.style.cssText = 'font-size:inherit;margin-right:3px;';
-      const btn = ui.button([icon, text], onClick, tip);
+      icon.style.cssText = 'font-size:inherit;';
+      const btn = ui.button([icon], onClick, tip);
       btn.style.marginLeft = '4px';
+      parts.push(btn);
       return btn;
     };
-    if (onDraw) parts.push(iconBtn('pencil', 'Draw', onDraw, `${label}: open sketcher`));
-    if (onImport) parts.push(iconBtn('folder-open', 'Import…', onImport, `${label}: pick a table + column`));
-    if (onTemplate) parts.push(iconBtn('swatchbook', 'Templates', onTemplate, `${label}: insert a ready-made set`));
+    if (onDraw) iconBtn('pencil', onDraw, `${label}: open sketcher`);
+    if (onImport) iconBtn('folder-open', onImport, 'Import data');
+    if (onTemplate) iconBtn('swatchbook', onTemplate, 'Employ templates');
     let clearBtn: HTMLButtonElement | undefined;
-    if (onClear) {
-      clearBtn = iconBtn('trash-alt', 'Remove all', onClear, `Remove all ${label.toLowerCase()}`);
-      parts.push(clearBtn);
-    }
+    if (onClear) clearBtn = iconBtn('trash-alt', onClear, `Remove all ${label.toLowerCase()}`);
     const root = ui.divH(parts, {style: {
       alignItems: 'center', justifyContent: 'flex-start',
       gap: '0', margin: '0 0 2px', flex: '0 0 auto',
