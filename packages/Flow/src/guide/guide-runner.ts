@@ -53,6 +53,12 @@ export class GuideRunner {
     // case where a step resolved instantly and a queued frame re-applied a
     // highlight after cleanup (see clearAllHighlights).
     GuideRunner.clearAllHighlights();
+    // Prerequisite steps declare `skipIf`: when already satisfied, skip silently
+    // (no card, no setup) — that's what makes "ensure X exists" steps invisible
+    // when X is already there.
+    try {
+      if (step.skipIf?.(ctx)) return 'next';
+    } catch {/* a throwing predicate counts as not-satisfied */}
     try {
       await step.setup?.(ctx);
     } catch { /* setup is best-effort */ }

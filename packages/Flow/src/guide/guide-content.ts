@@ -15,9 +15,9 @@ import {
   Guide, GuideStep, GuideContext,
   byTid, bySel, byNodeFunc, byNodeType, byBrowserFunc, byParam, paramFieldSelector, socketOf,
   untilClick, untilNodeType, untilMoreNodes, untilMoreConnections, untilFuncNode,
-  untilFewerNodes, untilValueContains, untilValueMatches, untilNodeRightOf,
-  untilNodeSelected, untilNodeSelectedOfFunc, untilNodeCollapsed,
-  untilExists, copyToClipboard, prefillSearch,
+  untilFewerNodes, untilValueContains, untilValueMatches, untilValueNonEmpty, untilNodeRightOf,
+  untilNodeSelected, untilNodeSelectedOfFunc, untilMoreCollapsed,
+  untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType,
 } from './guide-model';
 
 const DEMO_FILE = 'System:DemoFiles/demog.csv';
@@ -272,8 +272,8 @@ const organizeCanvas: Guide = {
       title: 'Collapse a node',
       text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it to just the title. ' +
         'Click ▸ to expand it again.',
-      target: bySel('.ff-node .ff-node-caret'),
-      until: untilNodeCollapsed(),
+      target: bySel('.ff-node:not(.ff-node-collapsed) .ff-node-caret'),
+      until: untilMoreCollapsed(),
     },
     {
       title: 'Tidy the layout',
@@ -355,132 +355,245 @@ export const TUTORIALS: Guide[] = [loadDataAddColumn, findFunctions, organizeCan
 
 // ============================ HOW-TO QUESTIONS ============================
 
-function q(id: string, title: string, step: GuideStep): Guide {
-  return {id, kind: 'question', title, summary: title, steps: [step]};
+function q(id: string, title: string, steps: GuideStep | GuideStep[]): Guide {
+  return {id, kind: 'question', title, summary: title, steps: Array.isArray(steps) ? steps : [steps]};
 }
 
+// ---- prerequisite step builders (skipped when already satisfied) ----
+
+/** Ensure a DG-function node exists (adds it via the browser if missing). */
+const ensureFuncNode = (funcName: string, friendly: string): GuideStep => ({
+  title: `First, add “${friendly}”`,
+  text: `This needs a “${friendly}” node. Double-click it (highlighted) to add one.`,
+  skipIf: hasFuncNode(funcName),
+  setup: findInBrowser(funcName),
+  target: byBrowserFunc(funcName),
+  until: untilFuncNode(funcName),
+});
+
+/** Ensure a built-in node (e.g. Table Input/Output) exists. */
+const ensureBuiltin = (typeName: string, friendly: string): GuideStep => ({
+  title: `First, add “${friendly}”`,
+  text: `This needs a “${friendly}” node. Double-click it (highlighted) to add one.`,
+  skipIf: hasNodeType(typeName),
+  setup: findInBrowser(friendly),
+  target: byTid('browser-item', typeName),
+  until: untilNodeType(typeName),
+});
+
+/** True once some Open File node has a non-empty path set. */
+const openFileHasPath = (ctx: GuideContext): boolean =>
+  (ctx.host.getFlow()?.getNodes() ?? []).some((n) =>
+    (n.dgFuncName ?? '').toLowerCase().includes('openfile') &&
+    !!String((n.inputValues ?? {})['fullPath'] ?? '').trim());
+
 export const QUESTIONS: Guide[] = [
-  q('how-add-data', 'How do I bring data in?', {
-    title: 'Add a data source',
-    text: `The “Open File” data source loads a file. We filtered the list to it and copied a demo ` +
-      `path (${DEMO_FILE}) to your clipboard — double-click Open File (highlighted) to add it, ` +
-      `then select it and paste the path into File path.`,
-    setup: async (ctx) => {
-      await findInBrowser('OpenFile')(ctx);
-      await copyToClipboard(DEMO_FILE);
-    },
-    target: byBrowserFunc('OpenFile'),
-    until: untilFuncNode('OpenFile'),
-  }),
-  q('how-add-column', 'How do I add a calculated column?', {
-    title: 'Add a calculated column',
-    text: 'Add the “Add New Column” function (highlighted), wire a table into it, then select it ' +
-      'and fill in the Name and Expression fields in the panel on the right (e.g. ${AGE} * 12).',
-    setup: findInBrowser('AddNewColumn'),
-    target: byBrowserFunc('AddNewColumn'),
-    until: untilFuncNode('AddNewColumn'),
-  }),
-  q('how-set-param', 'How do I edit a node\'s settings?', {
-    title: 'Edit a node in the context panel',
-    text: 'Click a node to select it — its parameters appear in the panel on the right, each as an ' +
-      'editable field. Type or paste values there.',
-    target: byTid('canvas'),
-    until: untilNodeSelected(),
-  }),
   q('how-add-function', 'How do I add a function?', {
     title: 'Add a function',
-    text: 'Open the list on the left, search or browse, then double-click a function (or drag it ' +
-      'onto the canvas).',
+    text: 'Open the function list on the left, type in the search box (highlighted) or browse a ' +
+      'category, then double-click a result — or drag it onto the canvas.',
     setup: (ctx) => ctx.host.showFunctionBrowser(),
     target: byTid('browser-search'),
     until: untilMoreNodes(),
   }),
-  q('how-connect', 'How do I connect two nodes?', {
-    title: 'Connect nodes',
-    text: 'Drag from a node\'s output dot (right side) to another node\'s input dot (left side). ' +
-      'Matching colors = compatible types.',
-    target: byTid('canvas'),
-    position: 'top',
-    until: untilMoreConnections(),
-  }),
-  q('how-run', 'How do I run my flow?', {
-    title: 'Run the flow',
-    text: 'Click Run (the ▶ icon, highlighted) in the ribbon. Nodes light up as they execute; each ' +
-      'reports its row/column counts.',
-    target: byTid('ribbon', 'run'),
-    position: 'bottom',
-    until: untilClick(byTid('ribbon', 'run')),
-  }),
-  q('how-preview', 'How do I preview a node\'s data?', {
-    title: 'Inspect any node',
-    text: 'Right-click a node\'s output dot and choose “Run up to here & preview”. Flow runs just ' +
-      'that slice and shows the data — no full run or output node needed.',
-    target: bySel('.ff-node .ff-socket-row-output'),
-    until: untilExists('[data-testid="ff-port-preview"], [data-testid="ff-output-panel"]'),
-  }),
-  q('how-delete', 'How do I delete a node?', {
-    title: 'Delete a node',
-    text: 'Select a node and press Delete (or Backspace), or right-click it and choose Delete.',
-    target: byTid('canvas'),
-    until: untilFewerNodes(),
-  }),
-  q('how-layout', 'How do I tidy up the layout?', {
-    title: 'Tidy the layout',
-    text: 'Click “Tidy up layout” (highlighted) in the ribbon to auto-arrange nodes left-to-right.',
-    target: byTid('ribbon', 'layout'),
-    position: 'bottom',
-    until: untilClick(byTid('ribbon', 'layout')),
-  }),
+  q('how-add-data', 'How do I bring data in?', [
+    {
+      title: 'Find a data source',
+      text: 'Data sources produce a table (from a file, query, or generator). Click the search box ' +
+        'and type open file.',
+      setup: openSearch,
+      target: byTid('browser-search'),
+      until: untilValueMatches(SEARCH_SEL, 'openfile'),
+    },
+    {
+      title: 'Add “Open File”',
+      text: `Double-click “Open File” (highlighted). Afterwards, select it and paste a path such as ` +
+        `${DEMO_FILE} into its File path field — or just drag a file from the Datagrok tree onto the canvas.`,
+      target: byBrowserFunc('OpenFile'),
+      until: untilFuncNode('OpenFile'),
+    },
+  ]),
+  q('how-add-column', 'How do I add a calculated column?', [
+    ensureFuncNode('AddNewColumn', 'Add New Column'),
+    {
+      title: 'Open its settings',
+      text: 'Click the “Add New Column” node (highlighted) so its fields open on the right. ' +
+        '(Wire a table into its table input so the formula has data to work on.)',
+      target: byNodeFunc('AddNewColumn'),
+      until: untilNodeSelectedOfFunc('AddNewColumn'),
+    },
+    {
+      title: 'Name the column',
+      text: 'Type a name into the Name field (highlighted).',
+      target: byParam('name'),
+      position: 'left',
+      until: untilValueNonEmpty(paramFieldSelector('name')),
+    },
+    {
+      title: 'Write the formula',
+      text: 'Type an expression into the Expression field — for example ${AGE} * 12, referencing ' +
+        'columns of the incoming table with ${ColumnName}.',
+      target: byParam('expression'),
+      position: 'left',
+      until: untilValueNonEmpty(paramFieldSelector('expression')),
+    },
+  ]),
+  q('how-set-param', 'How do I edit a node\'s settings?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Select the node',
+      text: 'Click a node (the highlighted Table Input). Its parameters open in the panel on the ' +
+        'right, each an editable field you can type or paste into.',
+      target: byNodeType('Inputs/Table Input'),
+      until: untilNodeSelected(),
+    },
+  ]),
+  q('how-connect', 'How do I connect two nodes?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    ensureBuiltin('Outputs/Table Output', 'Table Output'),
+    {
+      title: 'Drag between the dots',
+      text: 'Drag from the Table Input\'s output dot (right, highlighted) to the Table Output\'s ' +
+        'input dot (left, highlighted). Matching colors mean compatible types.',
+      target: byNodeType('Outputs/Table Output'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeType('Inputs/Table Input'), 'output', 'table')(ctx),
+        socketOf(byNodeType('Outputs/Table Output'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+  ]),
+  q('how-run', 'How do I run my flow?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Press Run',
+      text: 'Click Run (the ▶ icon, highlighted) in the ribbon. Nodes light up as they execute; each ' +
+        'reports its row × column counts underneath.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'run')),
+    },
+  ]),
+  q('how-preview', 'How do I preview a node\'s data?', [
+    ensureFuncNode('OpenFile', 'Open File'),
+    {
+      title: 'Select Open File',
+      text: 'Click the Open File node (highlighted) to open its settings.',
+      skipIf: openFileHasPath,
+      target: byNodeFunc('OpenFile'),
+      until: untilNodeSelectedOfFunc('OpenFile'),
+    },
+    {
+      title: 'Give it some data',
+      text: `Paste a demo path into the File path field (Ctrl+V): ${DEMO_FILE}`,
+      skipIf: openFileHasPath,
+      setup: putOnClipboard(DEMO_FILE),
+      target: byParam('fullPath'),
+      position: 'left',
+      until: untilValueContains(paramFieldSelector('fullPath'), 'demog.csv'),
+    },
+    {
+      title: 'Run up to here & preview',
+      text: 'Right-click Open File\'s result output dot (highlighted) and choose “Run up to here & ' +
+        'preview”. Flow runs just that slice and shows the data — no full run or output node needed.',
+      target: byNodeFunc('OpenFile'),
+      position: 'top',
+      highlights: (ctx) => [socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx)],
+      until: untilExists('[data-testid="ff-port-preview"], [data-testid="ff-output-panel"]'),
+    },
+  ]),
+  q('how-delete', 'How do I delete a node?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Delete it',
+      text: 'Click the node (highlighted) to select it, then press Delete or Backspace — or ' +
+        'right-click it and choose Delete.',
+      target: byNodeType('Inputs/Table Input'),
+      until: untilFewerNodes(),
+    },
+  ]),
+  q('how-layout', 'How do I tidy up the layout?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    ensureBuiltin('Outputs/Table Output', 'Table Output'),
+    {
+      title: 'Tidy the layout',
+      text: 'Click “Tidy up layout” (highlighted) in the ribbon to auto-arrange every node ' +
+        'left-to-right along the flow of data.',
+      target: byTid('ribbon', 'layout'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'layout')),
+    },
+  ]),
   q('how-categories', 'How do I find functions by category?', {
     title: 'Browse by category',
-    text: 'Use the “Group by” dropdown (highlighted). Functions bucket by what they do — Data ' +
-      'Sources, Combine Tables, Transform Tables, Column Operations, Compute Values, Visualize.',
+    text: 'Open the function list and use the “Group by” dropdown (highlighted). Functions bucket by ' +
+      'what they do — Data Sources, Combine Tables, Transform Tables, Column Operations, Compute ' +
+      'Values, Visualize — with Data Sources first. Click Finish when you\'ve seen it.',
     setup: (ctx) => ctx.host.showFunctionBrowser(),
     target: byTid('browser-groupby'),
   }),
-  q('how-collapse', 'How do I collapse a node?', {
-    title: 'Collapse a node',
-    text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it; click ▸ to expand. ' +
-      '(The status dot is just an indicator — it no longer collapses.)',
-    target: bySel('.ff-node .ff-node-caret'),
-    until: untilNodeCollapsed(),
-  }),
-  q('how-undo', 'How do I undo a change?', {
-    title: 'Undo',
-    text: 'Click Undo (highlighted) in the ribbon, or press Ctrl+Z. Redo is right next to it.',
-    target: byTid('ribbon', 'undo'),
-    position: 'bottom',
-    until: untilClick(byTid('ribbon', 'undo')),
-  }),
-  q('how-save', 'How do I save or share my flow?', {
-    title: 'Save / share',
-    text: 'Click Save (highlighted) to download a .ffjson file. Open it later from anywhere in ' +
-      'Datagrok to restore the flow.',
-    target: byTid('ribbon', 'save'),
-    position: 'bottom',
-    until: untilClick(byTid('ribbon', 'save')),
-  }),
-  q('how-view-script', 'How do I see the generated script?', {
-    title: 'See the script',
-    text: 'Click “See the steps” — the 👁 (eye) icon, highlighted. Your visual flow compiles to a ' +
-      'real, editable Datagrok script.',
-    target: byTid('ribbon', 'view-script'),
-    position: 'bottom',
-    until: untilClick(byTid('ribbon', 'view-script')),
-  }),
+  q('how-collapse', 'How do I collapse a node?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Click the caret',
+      text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it down to just the ' +
+        'title; click ▸ to expand it again. (The status dot is only an indicator — it no longer ' +
+        'collapses.)',
+      target: bySel('.ff-node:not(.ff-node-collapsed) .ff-node-caret'),
+      until: untilMoreCollapsed(),
+    },
+  ]),
+  q('how-undo', 'How do I undo a change?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Undo',
+      text: 'Click Undo (highlighted) in the ribbon, or press Ctrl+Z — this reverts the last edit ' +
+        '(e.g. adding that node). Redo sits right next to it.',
+      target: byTid('ribbon', 'undo'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'undo')),
+    },
+  ]),
+  q('how-save', 'How do I save or share my flow?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Save / share',
+      text: 'Click Save (highlighted) to download a .ffjson file. Open it later from anywhere in ' +
+        'Datagrok — or hand the file to a colleague — to restore the flow exactly.',
+      target: byTid('ribbon', 'save'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'save')),
+    },
+  ]),
+  q('how-view-script', 'How do I see the generated script?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'See the steps',
+      text: 'Click “See the steps” — the 👁 (eye) icon, highlighted. Your visual flow compiles to a ' +
+        'real, editable Datagrok script you can copy, export, or open in the Script editor.',
+      target: byTid('ribbon', 'view-script'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'view-script')),
+    },
+  ]),
   q('how-open', 'How do I open a saved flow?', {
     title: 'Open a flow',
-    text: 'Click the Open (folder) icon, highlighted, and pick a .ffjson file.',
+    text: 'Click the Open (folder) icon (highlighted) in the ribbon and pick a .ffjson file.',
     target: byTid('ribbon', 'open'),
     position: 'bottom',
     until: untilClick(byTid('ribbon', 'open')),
   }),
-  q('how-navigate', 'How do I navigate a large flow?', {
-    title: 'Navigate',
-    text: 'Use the overview (bottom-right, appears once you have nodes) — click or drag to move; ' +
-      'scroll to zoom; or use Zoom to fit in the ribbon.',
-    target: byTid('minimap'),
-    position: 'left',
-    until: untilClick(byTid('minimap')),
-  }),
+  q('how-navigate', 'How do I navigate a large flow?', [
+    ensureBuiltin('Inputs/Table Input', 'Table Input'),
+    {
+      title: 'Use the overview',
+      text: 'The overview (bottom-right, highlighted — it appears once you have nodes) shows the ' +
+        'whole graph. Click or drag inside it to move; scroll the canvas to zoom; or use Zoom to ' +
+        'fit in the ribbon.',
+      target: byTid('minimap'),
+      position: 'left',
+      until: untilClick(byTid('minimap')),
+    },
+  ]),
 ];

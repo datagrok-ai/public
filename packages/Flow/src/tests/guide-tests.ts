@@ -104,6 +104,29 @@ category('Flow: guide', () => {
     }
   });
 
+  test('a prerequisite step whose skipIf is satisfied is skipped (no hang)', async () => {
+    // The prereq's `until` never resolves; only skipIf lets the guide proceed.
+    const runner = new GuideRunner();
+    const guide: Guide = {
+      id: 'sk', kind: 'question', title: 'Q', summary: 's',
+      steps: [
+        {title: 'prereq', text: 'p', skipIf: () => true, until: () => new Promise<void>(() => { /* never */ })},
+        {title: 'answer', text: 'a'},
+      ],
+    };
+    try {
+      const p = runner.run(guide, fakeHost());
+      await new Promise((r) => setTimeout(r, 60));
+      const next = document.querySelector('[data-testid="ff-guide-next"]') as HTMLElement | null;
+      expect(!!next, true, 'reached the manual answer step — prereq was skipped, not stuck');
+      next?.click();
+      await p;
+    } finally {
+      runner.stop();
+      document.querySelectorAll('[data-testid="ff-guide-card"]').forEach((e) => e.remove());
+    }
+  });
+
   test('untilSectionExpanded reacts to the header collapsed class', async () => {
     const ac = new AbortController();
     const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};

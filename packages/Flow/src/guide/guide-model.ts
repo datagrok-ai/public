@@ -47,6 +47,10 @@ export interface GuideStep {
   position?: 'top' | 'bottom' | 'left' | 'right';
   /** Optional setup run before the step shows (e.g. open the toolbox). */
   setup?: (ctx: GuideContext) => void | Promise<void>;
+  /** If true at step start, the step is skipped entirely (no card, no setup).
+   *  Used for prerequisite steps that are only shown when their condition isn't
+   *  already satisfied. */
+  skipIf?: (ctx: GuideContext) => boolean;
   /** Resolves when the step's action is done. Omit for a manual "Next" step. */
   until?: (ctx: GuideContext) => Promise<void>;
 }
@@ -285,6 +289,34 @@ export function untilNodeSelected() {
 export function untilNodeCollapsed() {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => !!el('.ff-node.ff-node-collapsed'), ctx.signal);
+}
+
+/** Wait until *another* node becomes collapsed than were at step start — so it
+ *  detects the user's collapse action, not a node that was already collapsed. */
+export function untilMoreCollapsed() {
+  return (ctx: GuideContext): Promise<void> => {
+    const base = document.querySelectorAll('.ff-node.ff-node-collapsed').length;
+    return poll(() => document.querySelectorAll('.ff-node.ff-node-collapsed').length > base, ctx.signal);
+  };
+}
+
+// ---------- boolean predicates (for `skipIf` prerequisites) ----------
+
+/** Number of nodes currently on the canvas. */
+export function nodeCount(ctx: GuideContext): number {
+  return ctx.host.getFlow()?.getNodeCount() ?? 0;
+}
+
+/** Whether a node running the given DG function (substring, case-insensitive) exists. */
+export function hasFuncNode(funcName: string): (ctx: GuideContext) => boolean {
+  const lc = funcName.toLowerCase();
+  return (ctx) => (ctx.host.getFlow()?.getNodes() ?? [])
+    .some((n) => (n.dgFuncName ?? '').toLowerCase().includes(lc));
+}
+
+/** Whether a node of the given registered type name exists. */
+export function hasNodeType(typeName: string): (ctx: GuideContext) => boolean {
+  return (ctx) => (ctx.host.getFlow()?.getNodes() ?? []).some((n) => n.dgTypeName === typeName);
 }
 
 /** Wait until a node running the given DG function is selected (its settings

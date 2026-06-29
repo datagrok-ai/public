@@ -21,6 +21,14 @@
   the drag-out suggestion popup (was an ungated "tip" highlighting the whole canvas). *Organize your
   canvas* now adds two specific nodes (Table Input + Table Output), has the user **drag them apart so
   they don't overlap**, then collapse, tidy, **undo, redo**, navigate the overview, and zoom to fit.
+* **How-to answers now have prerequisites and action-based gates.** Each "How do I…?" first ensures
+  its preconditions are met — a step with `skipIf` silently adds the needed node(s) only when they're
+  missing (e.g. *How do I collapse a node?* adds a Table Input first; *How do I connect two nodes?*
+  adds a Table Input + Table Output and highlights the two specific pins; *How do I preview?* adds an
+  Open File and pastes the demo path so there's real data to preview). Gates now detect the *action*,
+  not pre-existing state: collapse waits for *another* node to fold (`untilMoreCollapsed`) instead of
+  resolving instantly if any collapsed node already existed. Highlights point at the exact element
+  (the specific node, pin, caret, or input row).
 * **The "All done" note auto-dismisses after 5s** (and on its Done button) so it never lingers.
 * **No lingering highlight.** A step whose condition was already satisfied could leave its orange
   highlight stuck (a queued frame re-applied it after cleanup). Fixed at the source (guarded/cancelled
