@@ -15,7 +15,8 @@ export type MMPFunctionParams = {
   activities: DG.ColumnList,
   diffTypes: MmpDiffTypes[],
   scalings: SCALING_METHODS[],
-  fragmentCutoff: number
+  fragmentCutoff: number,
+  runOnFilteredData: boolean
 }
 
 export class MmmpFunctionEditor {
@@ -27,13 +28,15 @@ export class MmmpFunctionEditor {
   cutoffInput = ui.input.float('Cutoff', {value: 0.4, min: 0, max: 1, nullable: false});
   activitiesParams: {[key: string]: {deltaType: string, scaling: string}} = {};
   activitiesParamsDiv = ui.divV([]);
-
+  runOnFilteredDataInput: DG.InputBase<boolean>;
   constructor() {
     this.tableInput =
         ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
           this.onTableInputChanged();
         }});
     this.onTableInputChanged();
+    this.runOnFilteredDataInput = ui.input.bool('Run On Filtered Data', {value: true,
+      tooltipText: 'If checked, MMP analysis will run on filtered data'});
   }
 
   onTableInputChanged() {
@@ -109,6 +112,7 @@ export class MmmpFunctionEditor {
       this.activitiesInputRoot,
       this.activitiesParamsDiv,
       this.cutoffInput,
+      this.runOnFilteredDataInput,
     ], {style: {minWidth: '320px'}});
   }
 
@@ -136,6 +140,7 @@ export class MmmpFunctionEditor {
       diffTypes: this.getDiffTypes(),
       scalings: this.getScalings(),
       fragmentCutoff: this.cutoffInput.value!,
+      runOnFilteredData: this.runOnFilteredDataInput.value!,
     };
   }
 }

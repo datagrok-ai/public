@@ -2284,13 +2284,19 @@ export class PackageFunctions {
     @grok.decorators.param({
       type: 'double',
       options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'},
-    }) fragmentCutoff: number = 0.4): Promise<void> {
+    }) fragmentCutoff: number = 0.4, @grok.decorators.param({options: {optional: true, nullable: true}}) runOnFilteredData: boolean = true): Promise<void> {
     if (activities.length < 1) {
       grok.shell.warning('MMP analysis requires at least one activity');
       return;
     }
 
     //workaround for functions which add viewers to tableView (can be run only on active table view)
+    if (runOnFilteredData && table?.filter.anyFalse) {
+      table = table.clone(table.filter);
+      table.name = (table.name ?? 'Table') + ' (Filtered)';
+      grok.shell.addTableView(table);
+    }
+
     checkCurrentView(table);
 
     const view = grok.shell.tv as DG.TableView;
