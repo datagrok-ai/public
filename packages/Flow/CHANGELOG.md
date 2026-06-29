@@ -16,6 +16,16 @@
   targets/params/socket keys/the demo file were verified empirically against a live server.
 * **Steps can highlight several elements.** A step's optional `highlights` returns multiple targets,
   each getting its own pulsing dot — used to light up *both* pins the user must connect.
+* **The other tutorials are concrete too.** *Find the right function* now adds **Join Tables** and the
+  final step highlights its `result` output and is gated on the user actually picking a function from
+  the drag-out suggestion popup (was an ungated "tip" highlighting the whole canvas). *Organize your
+  canvas* now adds two specific nodes (Table Input + Table Output), has the user **drag them apart so
+  they don't overlap**, then collapse, tidy, **undo, redo**, navigate the overview, and zoom to fit.
+* **The "All done" note auto-dismisses after 5s** (and on its Done button) so it never lingers.
+* **No lingering highlight.** A step whose condition was already satisfied could leave its orange
+  highlight stuck (a queued frame re-applied it after cleanup). Fixed at the source (guarded/cancelled
+  re-anchor frame) and hardened with `GuideRunner.clearAllHighlights()` on every step boundary and on
+  finish/exit.
 * **Function search matches the real name, case- and space-insensitively.** The toolbox shows the
   friendly name ("Open File"), but searching "OpenFile"/"openfile"/"open file" — or "tableoutput" for
   the built-in "Table Output" — now all match (`funcMatchesSearch`/`nameMatchesQuery`). Previously

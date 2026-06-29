@@ -220,7 +220,13 @@ export class GuideRunner {
   }
 
   private showCompletion(guide: Guide, host: GuideHost): void {
-    const done = ui.button('Done', () => card.remove(), 'Close');
+    GuideRunner.clearAllHighlights();
+    let timer = 0;
+    const close = (): void => {
+      window.clearTimeout(timer);
+      card.remove();
+    };
+    const done = ui.button('Done', close, 'Close');
     setTid(done, 'guide-done');
     const card = setTid(ui.divV([
       ui.divText('All done! 🎉', 'ff-guide-title'),
@@ -231,5 +237,7 @@ export class GuideRunner {
     card.style.zIndex = '5000';
     document.body.appendChild(card);
     this.place(card, host.anchorEl, 'top');
+    // Auto-dismiss so the "all done" note doesn't linger at the bottom.
+    timer = window.setTimeout(close, 5000);
   }
 }

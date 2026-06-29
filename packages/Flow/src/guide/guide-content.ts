@@ -17,7 +17,7 @@ import {
   untilClick, untilNodeType, untilMoreNodes, untilMoreConnections, untilFuncNode,
   untilFewerNodes, untilValueContains, untilValueMatches, untilNodeRightOf,
   untilNodeSelected, untilNodeSelectedOfFunc, untilNodeCollapsed,
-  untilNodeCountAtLeast, untilExists, copyToClipboard, prefillSearch,
+  untilExists, copyToClipboard, prefillSearch,
 } from './guide-model';
 
 const DEMO_FILE = 'System:DemoFiles/demog.csv';
@@ -218,22 +218,24 @@ const findFunctions: Guide = {
     },
     {
       title: 'Search by name',
-      text: 'Type “join” into the search box to filter the whole catalog to matching functions.',
+      text: 'Type join into the search box to filter the whole catalog down to matching functions.',
       target: byTid('browser-search'),
-      until: untilValueContains('[data-testid="ff-browser-search"]', 'join'),
+      until: untilValueMatches(SEARCH_SEL, 'join'),
     },
     {
-      title: 'Add a function',
-      text: 'Double-click any result to drop it on the canvas (or drag it where you want it).',
-      target: byTid('browser-tree'),
-      until: untilMoreNodes(),
+      title: 'Add “Join Tables”',
+      text: 'Double-click “Join Tables” (highlighted) to drop it on the canvas.',
+      target: byBrowserFunc('JoinTables'),
+      until: untilFuncNode('JoinTables'),
     },
     {
-      title: 'Tip: let Flow suggest the next step',
-      text: 'You can also drag from a node\'s output dot into empty canvas — Flow offers compatible ' +
-        'next functions, the common ones first. Click Finish.',
-      target: byTid('canvas'),
+      title: 'Let Flow suggest the next step',
+      text: 'Drag from Join Tables\' result output dot (highlighted) into empty canvas. Flow pops up ' +
+        'compatible next functions, common ones first — pick any one to add it, already connected.',
+      target: byNodeFunc('JoinTables'),
       position: 'top',
+      highlights: (ctx) => [socketOf(byNodeFunc('JoinTables'), 'output', 'result')(ctx)],
+      until: untilMoreNodes(),
     },
   ],
 };
@@ -242,20 +244,34 @@ const organizeCanvas: Guide = {
   id: 'organize-canvas',
   kind: 'tutorial',
   title: 'Organize your canvas',
-  summary: 'Collapse nodes, tidy the layout, and navigate with the overview.',
+  summary: 'Add nodes, move them apart, collapse, tidy, undo/redo, and navigate.',
   steps: [
     {
-      title: 'Add a couple of nodes',
-      text: 'Let\'s get something to arrange. Double-click two items in the function list so the ' +
-        'canvas has at least two nodes.',
-      setup: (ctx) => ctx.host.showFunctionBrowser(),
-      target: byTid('browser-tree'),
-      until: untilNodeCountAtLeast(2),
+      title: 'Add a Table Input',
+      text: 'Let\'s get something to arrange. Double-click “Table Input” (highlighted) to add it.',
+      setup: findInBrowser('Table Input'),
+      target: byTid('browser-item', 'Inputs/Table Input'),
+      until: untilNodeType('Inputs/Table Input'),
+    },
+    {
+      title: 'Add a Table Output',
+      text: 'Now double-click “Table Output” (highlighted). It lands in the center, on top of the ' +
+        'first node — we\'ll fix that next.',
+      setup: findInBrowser('Table Output'),
+      target: byTid('browser-item', TABLE_OUTPUT_TYPE),
+      until: untilNodeType(TABLE_OUTPUT_TYPE),
+    },
+    {
+      title: 'Move it apart',
+      text: 'Drag the “Table Output” node to the right until it no longer overlaps the Table Input.',
+      target: byNodeType(TABLE_OUTPUT_TYPE),
+      position: 'top',
+      until: untilNodeRightOf(byNodeType(TABLE_OUTPUT_TYPE), byNodeType('Inputs/Table Input'), 220),
     },
     {
       title: 'Collapse a node',
-      text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it down to just the ' +
-        'title. Click ▸ to expand it again.',
+      text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it to just the title. ' +
+        'Click ▸ to expand it again.',
       target: bySel('.ff-node .ff-node-caret'),
       until: untilNodeCollapsed(),
     },
@@ -265,6 +281,20 @@ const organizeCanvas: Guide = {
       target: byTid('ribbon', 'layout'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'layout')),
+    },
+    {
+      title: 'Undo it',
+      text: 'Changed your mind? Click Undo (highlighted) — or press Ctrl+Z — to revert the layout.',
+      target: byTid('ribbon', 'undo'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'undo')),
+    },
+    {
+      title: 'Redo it',
+      text: 'Click Redo (highlighted) to put it back. Undo/redo cover every edit.',
+      target: byTid('ribbon', 'redo'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'redo')),
     },
     {
       title: 'Use the overview',
