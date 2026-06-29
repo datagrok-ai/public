@@ -9,11 +9,22 @@ import '../../css/forms.css';
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
 const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
+const SAME_AS_GRID = 'Same as grid';
+
+const numberFormats: {[label: string]: string} = {
+  '3 significant digits': '3 significant digits',
+  'Scientific': 'scientific',
+  '2 digits after comma': '0.00',
+  '4 significant digits': '4 significant digits',
+  '3 digits after comma': '0.000',
+};
+
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
 
   rendererSize: 'small' | 'normal' | 'large';
   font: string;
+  numberFormat: string;
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -93,6 +104,7 @@ export class FormsViewer extends DG.JsViewer {
     this.sortAscending = false;
     this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
     this.font = this.string('font', 'normal normal 13px "Roboto"', {editor: 'font', description: 'Font for labels and values'});
+    this.numberFormat = this.string('numberFormat', SAME_AS_GRID, {choices: [SAME_AS_GRID, ...Object.keys(numberFormats)], description: 'Number format applied to numeric fields'});
 
     //fields
     this.indexes = [];
@@ -341,6 +353,9 @@ export class FormsViewer extends DG.JsViewer {
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
               input.input.style.font = this.font;
+              const fmt = numberFormats[this.numberFormat];
+              if (fmt && col.type === DG.TYPE.FLOAT)
+                input.format = fmt;
               input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 
