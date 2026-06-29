@@ -2,6 +2,29 @@
 
 ## v.next
 
+### Auto-summaries — the flow documents itself (U12)
+
+* **Every node shows a plain-language caption** when you haven't written your own description —
+  "Loads file demog.csv", "Adds column “AgeMonths” = ${AGE} * 12", "Computes MW, HBA, logP",
+  "Calculates logP", "Joins two tables (left)". Generated heuristically (`summarizeNode`) from, in
+  order: a built-in type summary, a **curated** function summary, or a humanized fallback from the
+  function's friendly name — so unknown functions still read as words, not `camelCase`.
+* **Curated definitions** in [`src/summary/summary-defs.ts`](src/summary/summary-defs.ts): ~80
+  high-traffic functions (core transforms/joins/columns, Chem properties/space/clustering, Bio
+  alignment/space/regions) + Flow's built-in nodes, chosen empirically from the live 800-function
+  catalog. Templates read the node's own inputs (file path, formula, enabled property flags, join
+  type, …) so the caption reflects what *this* node does.
+* **"Describe this flow…"** (ribbon → Advanced) summarizes the whole canvas, **grouping disjoint
+  subgraphs into separate numbered pipelines** (`summarizeFlow` over connected components). Each
+  pipeline is numbered in the **exact order the script executes** — it shares the compiler's
+  `topologicalSortNodes` (extracted as a pure core of the emitter's own sort), so the description and
+  the generated/run script are guaranteed to agree line-for-line — and every step lists **what feeds
+  it** — e.g. *"Joins two tables (inner) (← table1 from step 11, table2 from step 9)"* — so the
+  description reads as a real recipe, not a flat unordered list. The dialog renders each
+  pipeline as a card with a numbered, full-width (untruncated) step list. SetVar/GetVar plumbing nodes
+  get informative captions ("Stores result as “SPGI”").
+
+
 ### Guide system — concrete, well-placed, hands-on
 
 * **Tutorials are now concrete and end-to-end.** The flagship tutorial **“Load data and add a

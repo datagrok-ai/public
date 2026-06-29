@@ -3,55 +3,18 @@
   "name": "Sequence demo",
   "description": "Sequence conversion and calculations",
   "author": "admin",
-  "created": "2026-03-24T16:41:40.687Z",
-  "modified": "2026-03-24T16:41:40.688Z",
+  "created": "2026-06-29T14:50:15.434Z",
+  "modified": "2026-06-29T14:50:15.434Z",
   "nodes": [
     {
-      "id": "9",
-      "typeName": "DG Functions/Uncategorized/AddNewColumn",
-      "label": "AddNewColumn",
-      "pos": {
-        "x": 333,
-        "y": 542
-      },
-      "properties": {},
-      "inputValues": {
-        "expression": "${logs} / ${logp}",
-        "name": "logs / logp",
-        "type": "auto",
-        "treatAsString": false,
-        "subscribeOnChanges": true,
-        "errorBehavior": null
-      }
-    },
-    {
-      "id": "6",
-      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
-      "label": "addChemPropertiesColumns",
-      "pos": {
-        "x": 88,
-        "y": 546
-      },
-      "properties": {},
-      "inputValues": {
-        "MW": true,
-        "HBA": true,
-        "HBD": true,
-        "logP": true,
-        "logS": true,
-        "PSA": false,
-        "rotatableBonds": false,
-        "stereoCenters": false,
-        "moleculeCharge": false
-      }
-    },
-    {
-      "id": "1",
+      "id": "fa224887fb408ff0",
       "typeName": "DG Functions/Uncategorized/OpenFile",
       "label": "Open HELM File",
+      "description": "",
+      "collapsed": true,
       "pos": {
-        "x": 92,
-        "y": 366
+        "x": 40,
+        "y": 40
       },
       "properties": {},
       "inputValues": {
@@ -60,118 +23,120 @@
       }
     },
     {
-      "id": "4",
-      "typeName": "Utilities/Select Column",
-      "label": "Select Column",
-      "pos": {
-        "x": 93,
-        "y": 404
-      },
-      "properties": {
-        "columnName": "sequence"
-      },
-      "inputValues": {}
-    },
-    {
-      "id": "10",
+      "id": "7d7d09d2f3dc51c9",
       "typeName": "Outputs/Table Output",
       "label": "Table Output",
+      "description": "",
+      "collapsed": true,
       "pos": {
-        "x": 538,
-        "y": 457
+        "x": 927.5,
+        "y": 40
       },
       "properties": {
-        "paramName": "result",
-        "description": ""
+        "paramName": "result"
       },
       "inputValues": {}
     },
     {
-      "id": "8",
-      "typeName": "Utilities/Select Column",
-      "label": "Select Column",
-      "pos": {
-        "x": 351,
-        "y": 405
-      },
-      "properties": {
-        "columnName": "molfile(sequence)"
-      },
-      "inputValues": {}
-    },
-    {
-      "id": "5",
+      "id": "099f750057524583",
       "typeName": "DG Functions/Uncategorized/toAtomicLevel",
-      "label": "toAtomicLevel",
+      "label": "To Atomic Level",
+      "description": "",
+      "collapsed": true,
       "pos": {
-        "x": 352,
-        "y": 372
+        "x": 260,
+        "y": 40
+      },
+      "properties": {
+        "columnTables": {
+          "seqCol": "table"
+        }
+      },
+      "inputValues": {
+        "seqCol": "sequence",
+        "nonlinear": false,
+        "highlight": false
+      }
+    },
+    {
+      "id": "9295cfe4416e15c1",
+      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+      "label": "Chemical Properties",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 480,
+        "y": 40
+      },
+      "properties": {
+        "columnTables": {
+          "molecules": "table"
+        }
+      },
+      "inputValues": {
+        "molecules": "molfile(sequence)",
+        "MW": true,
+        "HBA": true,
+        "HBD": true,
+        "logP": true,
+        "logS": true,
+        "PSA": true,
+        "rotatableBonds": false,
+        "stereoCenters": false,
+        "moleculeCharge": false
+      }
+    },
+    {
+      "id": "2e0088155713cee1",
+      "typeName": "DG Functions/Uncategorized/AddNewColumn",
+      "label": "Add New Column",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 707.5,
+        "y": 40
       },
       "properties": {},
       "inputValues": {
-        "nonlinear": true,
-        "highlight": false
+        "expression": "${logs} / ${logp}",
+        "name": "logs / logp",
+        "type": "auto",
+        "treatAsString": false,
+        "subscribeOnChanges": true
       }
     }
   ],
   "connections": [
     {
-      "id": "2",
-      "source": "1",
+      "id": "7bf7ba83276e734c",
+      "source": "fa224887fb408ff0",
       "sourceOutput": "result",
-      "target": "4",
+      "target": "099f750057524583",
       "targetInput": "table"
     },
     {
-      "id": "4",
-      "source": "1",
-      "sourceOutput": "result",
-      "target": "5",
-      "targetInput": "table"
-    },
-    {
-      "id": "5",
-      "source": "4",
-      "sourceOutput": "column",
-      "target": "5",
-      "targetInput": "seqCol"
-    },
-    {
-      "id": "6",
-      "source": "5",
+      "id": "9872669d5adf6113",
+      "source": "099f750057524583",
       "sourceOutput": "table__pt",
-      "target": "6",
+      "target": "9295cfe4416e15c1",
       "targetInput": "table"
     },
     {
-      "id": "7",
-      "source": "5",
+      "id": "11c9bea3755b0b6e",
+      "source": "9295cfe4416e15c1",
       "sourceOutput": "table__pt",
-      "target": "8",
+      "target": "2e0088155713cee1",
       "targetInput": "table"
     },
     {
-      "id": "8",
-      "source": "8",
-      "sourceOutput": "column",
-      "target": "6",
-      "targetInput": "molecules"
-    },
-    {
-      "id": "9",
-      "source": "6",
+      "id": "5a8d7b8d3dbd7bf9",
+      "source": "2e0088155713cee1",
       "sourceOutput": "table__pt",
-      "target": "9",
-      "targetInput": "table"
-    },
-    {
-      "id": "10",
-      "source": "9",
-      "sourceOutput": "table__pt",
-      "target": "10",
+      "target": "7d7d09d2f3dc51c9",
       "targetInput": "table"
     }
   ],
+  "annotations": [],
   "metadata": {
     "settings": {
       "scriptName": "Sequence demo",

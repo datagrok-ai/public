@@ -19,6 +19,7 @@ import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, missingRequi
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
 import {tid} from '../utils/test-ids';
+import {summarizeNode} from '../summary/summary-generator';
 
 interface NodeProps {
   data: FlowNode & {selected?: boolean};
@@ -69,6 +70,11 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const needs = missingRequiredInputs(node, (key) => isConnected(node.id, 'input', key));
   const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
   const attention = idle && needs.length > 0;
+
+  // Auto-summary caption (U12), shown when the user hasn't written their own
+  // description. Computed once so the visible (CSS-ellipsized) text and the
+  // hover tooltip stay in sync — the tooltip reveals it in full when truncated.
+  const autoSummary = !node.description && !collapsed ? summarizeNode(node) : '';
 
   // Collapse is the caret's job now — the status dot is display-only, so
   // clicking the run indicator never hides the node out from under you.
@@ -156,6 +162,12 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
 
       {node.description && !collapsed && (
         <div className="ff-node-description" data-testid={tid('node-description')} title={node.description}>{node.description}</div>
+      )}
+
+      {/* Auto-generated plain-language caption — the flow documents itself
+          (U12). The title reveals the full text when CSS ellipsis truncates it. */}
+      {autoSummary && (
+        <div className="ff-node-summary" data-testid={tid('node-summary')} title={autoSummary}>{autoSummary}</div>
       )}
 
       {!collapsed && (

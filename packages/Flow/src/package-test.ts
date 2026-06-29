@@ -15,6 +15,7 @@ import './tests/function-browser-tests';
 import './tests/inspect-tests';
 import './tests/test-ids-tests';
 import './tests/guide-tests';
+import './tests/summary-tests';
 
 export let _package = new DG.Package();
 export { tests };

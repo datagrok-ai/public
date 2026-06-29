@@ -40,12 +40,13 @@ import {GuideHost} from './guide/guide-model';
 import {GuideRunner} from './guide/guide-runner';
 import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
 import {TUTORIALS} from './guide/guide-content';
+import {summarizeFlow} from './summary/summary-generator';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
   {label: 'Workflow demo', file: 'Workflow Demo.ffjson', desc: 'A sample multi-step data workflow.'},
-  {label: 'Sequence demo', file: 'Sequence demo.ffjson', desc: 'A bioinformatics sequence flow.'},
+  {label: 'Bio Molecules', file: 'Sequence demo.ffjson', desc: 'A Peptides conversion and calculation.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {
@@ -634,6 +635,7 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Show/hide function list', () => this.toggleToolbox())
       .endGroup()
       .group('Advanced')
+      .item('Describe this flow…', () => this.describeFlow())
       .item('See the steps (generated script)…', () => this.generateAndPreview())
       .item('Copy script', () => this.copyScriptToClipboard())
       .item('Export as .js file', () => this.exportAsJs())
@@ -1039,6 +1041,43 @@ export class FuncFlowView extends DG.ViewBase {
         void this.loadFromCreationScript(script);
       })
       .show({width: 560, height: 420});
+  }
+
+  /** Plain-language description of the whole flow: each disjoint pipeline shown
+   *  as its own card with a top-to-bottom, numbered list of node captions (full,
+   *  never truncated). */
+  private describeFlow(): void {
+    if (!this.flow) return;
+    const summary = summarizeFlow(this.flow.getNodes(), this.flow.getConnections());
+
+    if (summary.nodeCount === 0) {
+      ui.dialog({title: 'Flow summary'})
+        .add(ui.divText('This flow is empty — add some nodes first.'))
+        .show({width: 460, height: 220});
+      return;
+    }
+
+    const pipeWord = summary.pipelineCount === 1 ? 'pipeline' : 'independent pipelines';
+    const header = ui.divText(
+      `${summary.nodeCount} node${summary.nodeCount === 1 ? '' : 's'} in ` +
+      `${summary.pipelineCount} ${pipeWord}`, 'ff-flow-summary-header');
+
+    const cards = summary.pipelines.map((p, i) => {
+      const steps = p.steps.map((s) => {
+        const fromText = s.inputs.length === 0 ? '' :
+          '← ' + s.inputs.map((inp) => inp.key ? `${inp.key} from step ${inp.from}` : `step ${inp.from}`).join(', ');
+        const main = ui.divV([ui.divText(s.caption, 'ff-flow-step-text')], 'ff-flow-step-main');
+        if (fromText) main.appendChild(ui.divText(fromText, 'ff-flow-step-from'));
+        return ui.div([ui.divText(`${s.index}`, 'ff-flow-step-n'), main], 'ff-flow-step');
+      });
+      const title = summary.pipelineCount > 1 ?
+        [ui.divText(`Pipeline ${i + 1}`, 'ff-flow-pipe-title')] : [];
+      return ui.divV([...title, ui.divV(steps, 'ff-flow-steps')], 'ff-flow-pipe');
+    });
+
+    ui.dialog({title: 'Flow summary'})
+      .add(ui.divV([header, ...cards], 'ff-flow-summary'))
+      .show({width: 600, height: 460});
   }
 
   private showValidation(): void {
