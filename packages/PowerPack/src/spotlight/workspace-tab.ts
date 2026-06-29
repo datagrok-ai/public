@@ -15,15 +15,21 @@ import type {GroupFavorites} from './group-favorites';
 
 /** Returns the platform icon for an entity via its registered EntityMeta handler. */
 export function entityIcon(entity: DG.Entity): HTMLElement {
-  return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity.dart) ?? ui.iconFA('file');
+  return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity) ?? ui.iconFA('file');
 }
 
 export function isApp(entity: DG.Entity): entity is DG.Func {
   return entity instanceof DG.Func && entity.options['role'] === DG.FUNC_TYPES.APP;
 }
 
+/** A model — a Func with the `model` role/tag. Launched via `prepare().edit()`, not run directly. */
+export function isModel(entity: DG.Entity): entity is DG.Func {
+  return entity instanceof DG.Func &&
+    ((((entity.options['role'] as string) ?? '').split(',').includes('model')) || entity.hasTag('model'));
+}
+
 function isRunnable(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func && !isApp(entity);
+  return entity instanceof DG.Func && !isApp(entity) && !isModel(entity);
 }
 
 /** Launches an app — apps return their View, which must be added to the shell to become visible. */
@@ -33,12 +39,27 @@ async function openApp(func: DG.Func): Promise<void> {
     grok.shell.addView(result);
 }
 
+async function openModel(func: DG.Func): Promise<void> {
+  try {
+    await func.package?.load();
+  }
+  catch (e) {
+    console.error('Failed to load model package', e);
+  }
+  if (func.options['editor'])
+    func.prepare().edit();
+  else
+    await func.apply();
+}
+
 /** Opens an entity in the appropriate way. */
 function openEntity(entity: DG.Entity): void {
   if (entity instanceof DG.Project)
     entity.open();
   else if (isApp(entity))
     openApp(entity);
+  else if (isModel(entity))
+    openModel(entity);
   else if (entity instanceof DG.Func)
     entity.apply();
   else if (entity instanceof DG.FileInfo) {
@@ -383,6 +404,8 @@ export class WorkspaceTab {
 
     if (isApp(entity))
       this.renderAppEditor(entity);
+    else if (isModel(entity))
+      this.renderModelEditor(entity);
     else if (isRunnable(entity))
       this.renderRunnableEditor(entity);
     else if (entity instanceof DG.Project && entity.isSpace)
@@ -538,6 +561,39 @@ export class WorkspaceTab {
       showWorkspacePreview(
         ui.divText(`Preview failed: ${e?.message ?? e}`, 'pp-workspace-preview-error'),
         func.friendlyName,
+      );
+    }
+  }
+
+  private renderModelEditor(func: DG.Func): void {
+    if (func.description)
+      this.editorPane.appendChild(ui.divText(func.description, 'pp-workspace-app-description'));
+    this.renderModelPreview(func);
+  }
+
+  /** Renders the model's own preview (from the model-catalog handler) — not the generic Func runner, which
+   * would auto-run the model and fail. "Open" launches the model via `prepare().edit()`. */
+  private async renderModelPreview(func: DG.Func): Promise<void> {
+    const token = (this.activePreviewToken = Symbol('model-preview'));
+    showWorkspacePreview(ui.div([ui.loader()], 'pp-workspace-preview-loader'), func.friendlyName);
+    try {
+      const handler = DG.ObjectHandler.forEntity(func);
+      const view: DG.View | undefined = await handler?.renderPreview(func);
+      if (token !== this.activePreviewToken)
+        return;
+      if (view?.root instanceof HTMLElement)
+        showWorkspacePreview(ui.div([view.root], 'pp-workspace-preview-view'), func.friendlyName, () => this.open(func));
+      else
+        showWorkspacePreview(ui.divText('No preview available.', 'pp-workspace-preview-text'), func.friendlyName, () => this.open(func));
+    }
+    catch (e: any) {
+      if (token !== this.activePreviewToken)
+        return;
+      console.error('Workspace model preview failed', e);
+      showWorkspacePreview(
+        ui.divText(`Preview failed: ${e?.message ?? e}`, 'pp-workspace-preview-error'),
+        func.friendlyName,
+        () => this.open(func),
       );
     }
   }

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Workspace: Pinned predictive models now render their own preview and launch via `prepare().edit()` on "Open", instead of being treated as a generic Func (which auto-ran them and failed)
+* Workspace: Pinned predictive models (and other JS-handler entities) now render in the list instead of throwing and breaking the whole section — `entityIcon` passes the JS entity to the handler, and `EntityMetaDartProxy` (js-api) now converts it for Dart-backed handlers (`renderIcon`/`renderMarkup`/`renderTooltip`/`getCaption`/etc. now `toDart` their argument, like `isApplicable` already did)
 * Workspace: Fixed "Open" on a pinned app (e.g. Demo) doing nothing — both the editor and the bottom-preview "Open" now launch the app (the preview button previously called `Func.apply()` and discarded the returned View)
 * Workspace: Fixed the bottom-preview "Open" opening an app in a background tab without focusing it — the click no longer bubbles to the Welcome view's activation handler (which reverted the current view back to Home), so the launched app becomes the active view
 * Workspace: App preview now fills the preview pane and scrolls instead of overflowing past it when the app's content is taller than the pane
