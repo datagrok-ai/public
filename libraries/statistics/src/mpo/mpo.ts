@@ -147,7 +147,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
 /// into the final score, column-major into per-row accumulators.
 export function reduceMpo(
   maps: ColumnDesirability[], hoisted: HoistedColumn[], aggregation: WeightedAggregation, rowCount: number,
-): Float64Array {
+): {scores: Float64Array, minPositive: number} {
   const aggCode = AGG_CODE[aggregation];
   if (aggCode === undefined)
     throw new Error(`Unknown aggregation type: ${aggregation}`);
@@ -212,6 +212,7 @@ export function reduceMpo(
     }
   }
 
+  let minPositive = Infinity;
   for (let i = 0; i < rowCount; ++i) {
     if (bail[i] || cnt[i] === 0)
       out[i] = DG.FLOAT_NULL;
@@ -221,8 +222,10 @@ export function reduceMpo(
       out[i] = Math.pow(acc1[i], 1 / acc2![i]); // (Π sᵏ^wᵏ)^(1/Σw) ≡ Π sᵏ^(wᵏ/Σw)
     else
       out[i] = acc1[i];
+    if (out[i] > 0 && out[i] !== DG.FLOAT_NULL && out[i] < minPositive)
+      minPositive = out[i];
   }
-  return out;
+  return {scores: out, minPositive};
 }
 
 /// Builds the per-property desirability output columns from the mapping results (state 1/2 rows → null).
@@ -279,7 +282,9 @@ export class MpoCalculator {
       maps.push(m);
     }
 
-    resultColumn.setRawData(reduceMpo(maps, hoisted, aggregation, rowCount)); // notify=true: refreshes viewers
+    const {scores, minPositive} = reduceMpo(maps, hoisted, aggregation, rowCount);
+    resultColumn.setRawData(scores); // notify=true: refreshes viewers
+    resultColumn.meta.format = minPositive < 1e-5 ? 'scientific' : '0.00000';
 
     const desirabilityColumns = createDesirabilityColumns ?
       buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;
