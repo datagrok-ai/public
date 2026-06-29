@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export * from './package.g';
 
 import {FuncFlowView} from './funcflow-view';
+import { getFilesBrowser } from './utils/files-browser-tree';
 
 export const _package = new DG.Package();
 
@@ -93,5 +94,10 @@ export class PackageFunctions {
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
+  }
+
+  @grok.decorators.func()
+  static testDialog() {
+    ui.dialog().add(getFilesBrowser(() => {}, () => {}).root).show();
   }
 }
