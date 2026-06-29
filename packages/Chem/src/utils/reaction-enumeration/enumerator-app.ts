@@ -258,24 +258,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
     'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
-  const minCInput = ui.input.int('Min carbon atoms', {value: config.products_specs.min_num_carbon_atoms});
-  minCInput.setTooltip('Minimum number of carbon atoms a product must have to pass. Set -1 to disable.');
-
-  const maxCInput = ui.input.int('Max carbon atoms', {value: config.products_specs.max_num_carbon_atoms});
-  maxCInput.setTooltip('Maximum number of carbon atoms a product may have. Set -1 to disable.');
-
-  const maxCombosInput = ui.input.int('Max combinations / template',
-    {value: config.max_num_combinations_per_template});
-  maxCombosInput.setTooltip(
-    'Per template, per round: cap on how many reactant combinations are actually run. If the ' +
-    'cartesian product of matching BBs across slots exceeds this, the enumerator runs the first ' +
-    'N combos and stops. Set -1 to disable.');
-
-  const maxComponentsInput = ui.input.int('Max # components', {value: config.max_num_components, min: 1});
-  maxComponentsInput.setTooltip(
-    'Templates whose reaction SMARTS have more reactant slots than this are skipped. Default 4 ' +
-    'covers all templates in the bundled set.');
-
   // True while we're pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires
   // onChanged, which triggers refreshTooltip → syncQuickInputsToConfig — and that read-back
   // happens MID-loop while only some inputs have been updated, overwriting config with the stale
@@ -291,7 +273,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Both are bound to live factories so the rendered HTML reflects the current state every time
   // the user hovers over the icon; no proactive refresh is needed.
   const mkIcon = (): HTMLElement => {
-    const i = ui.iconFA('info-circle', () => {});
+    const i = ui.icons.info(() => {});
     i.style.marginLeft = '8px';
     i.style.color = 'var(--blue-2)';
     i.style.cursor = 'help';
@@ -327,12 +309,21 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return card;
   }
 
+  function currentMode(): 'depth' | 'breadth' | 'reagents' {
+    return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
+  }
+  const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
+
   function buildConfigCard(): HTMLElement {
     const en = config.enumeration;
     const ps = config.products_specs;
-    const reagentsActive = reagentsInput.value != null;
-    const modeLabel = reagentsActive ? 'Reagents (linear chain extension with reagents in other slots)' :
-      en.depth_first ? 'Depth-first (linear chain extension)' : 'Breadth-first (convergent allowed)';
+    const mode = reagentsInput.value != null ? 'reagents' : (en.depth_first ? 'depth' : 'breadth');
+    const MODE_DESC = {
+      depth: '(linear chain extension)',
+      breadth: '(convergent allowed)',
+      reagents: '(with reagents in other slots)',
+    } as const;
+    const modeLabel = `${MODE_LABEL[mode]} ${MODE_DESC[mode]}`;
     const fmtNum = (n: number, hint = 'unlimited') => n < 0 ? hint : String(n);
     const yn = (b: boolean) => b ? 'Yes' : 'No';
 
@@ -392,10 +383,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const syncQuickInputsToConfig = () => {
     config.enumeration.num_rounds = numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!depthFirstInput.value;
-    config.products_specs.min_num_carbon_atoms = minCInput.value ?? -1;
-    config.products_specs.max_num_carbon_atoms = maxCInput.value ?? -1;
-    config.max_num_combinations_per_template = maxCombosInput.value ?? config.max_num_combinations_per_template;
-    config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
     // Column inputs hold a Column object; persist its name in the YAML config. If the input has no
     // selection, keep the previous config value so YAML round-trip stays stable.
     config.enumeration.smarts_col = smartsColInput.value?.name ?? config.enumeration.smarts_col;
@@ -422,8 +409,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const desired = v == null ? '' : String(v);
         if (el.value !== desired) el.value = desired;
       }
-    } catch {/* ignore — non-textual inputs (column/table/bool/etc.) */}
-    try {input.fireChanged();} catch {/* ignore — older API versions */}
+    } catch (e) { _package.logger.debug(`setAndFire input refresh skipped: ${e}`); }
+    try {input.fireChanged();} catch (e) { _package.logger.debug(`fireChanged not available: ${e}`); }
   };
 
   const syncConfigToQuickInputs = () => {
@@ -431,10 +418,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       setAndFire(numRoundsInput, config.enumeration.num_rounds);
       setAndFire(depthFirstInput, config.enumeration.depth_first);
-      setAndFire(minCInput, config.products_specs.min_num_carbon_atoms);
-      setAndFire(maxCInput, config.products_specs.max_num_carbon_atoms);
-      setAndFire(maxCombosInput, config.max_num_combinations_per_template);
-      setAndFire(maxComponentsInput, config.max_num_components);
       // For column inputs, look up the column object by name on the currently-selected table.
       const tDf = templatesInput.value;
       if (tDf) {
@@ -489,8 +472,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const rounds = numRoundsInput.value ?? 0;
     if (rounds < 1) return 'Number of rounds must be at least 1.';
 
-    const maxComp = maxComponentsInput.value ?? 0;
-    if (maxComp < 1) return 'Max # components must be at least 1.';
+    if (config.max_num_components < 1) return 'Max # components must be at least 1.';
 
     return null;
   }
@@ -516,9 +498,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const bbsState: SubsetState = {prev: null, suppress: false};
   const reagentsState: SubsetState = {prev: null, suppress: false};
 
-  const templatesGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
-  const bbsGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
-  const reagentsGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
+  const templatesGridHost = ui.div([]);
+  const bbsGridHost = ui.div([]);
+  const reagentsGridHost = ui.div([]);
 
   // Nullable refs to tab row-count badges — null until tabs are built; closures use optional chaining.
   type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
@@ -538,7 +520,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
       if (extendLast && grid.props.hasProperty('extendLastColumn'))
-        grid.props.set('extendLastColumn', true as unknown as object);
+        (grid.props as any).extendLastColumn = true;
     } catch { /* setColumnsWidthType not available on older Dart builds */ }
   }
 
@@ -576,7 +558,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     grok.shell.addTable(df);
     setSuppress(true);
     try {
-      try {(input as any).value = null;} catch {/* nullable: false rejects */}
+      try {input.value = null;} catch {/* nullable: false rejects */}
       input.value = df;
     } finally {setSuppress(false);}
   }
@@ -638,7 +620,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   [smartsColInput, blockingColInput, rxnNameColInput, bbColInput, reagentsColInput,
     exclusionInput, exclusionColInput, numRoundsInput, depthFirstInput,
-    minCInput, maxCInput, maxCombosInput, maxComponentsInput,
   ].forEach((inp) => wireValidation(inp));
 
   // ---- Buttons ----
@@ -667,7 +648,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const saveYamlBtn = ui.button('Save YAML', () => {
     syncQuickInputsToConfig();
-    DG.Utils.download('enumerator-config.yaml', configToYaml(config));
+    DG.Utils.download('enumerator-config.yaml', configToYaml(config), 'text/yaml');
   });
   ui.tooltip.bind(saveYamlBtn, 'Download the current config as a YAML file.');
 
@@ -738,11 +719,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Top-level: cfgRibbon (chips + run, auto), main content (fills), validation (auto).
   // The main content is a horizontal split: inputs on the left, side grids on the right.
   // The view title + info icon live in the view ribbon (setRibbonPanels).
-
-  function currentMode(): 'depth' | 'breadth' | 'reagents' {
-    return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
-  }
-  const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
 
   type StratCard = {root: HTMLElement; icon: HTMLElement};
 
@@ -933,13 +909,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   chipBbs.onclick = () => openAccPaneExclusive(accBbsPane);
   chipCombine.onclick = () => openAccPaneExclusive(accCombinePane);
 
-  const panelHeader = (hint: string, subsetBtn: HTMLElement, status?: HTMLElement): HTMLElement => {
+  const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
     const hintEl = ui.divText(hint, {style: {
       fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px',
     }});
     const children: HTMLElement[] = [hintEl];
     if (status) children.push(status);
-    children.push(subsetBtn);
+    if (subsetBtn) children.push(subsetBtn);
     return ui.div(children, {style: {
       display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
       padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)', background: 'var(--grey-1)',
@@ -990,12 +966,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const PREVIEW_TARGET_ROWS = 20;
   const PREVIEW_MAX_COMBOS_PER_TEMPLATE = 3;
   const PREVIEW_MAX_ROUNDS = 2;
-  const previewHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
+  const previewHost = ui.div([]);
   const previewStatus = ui.divText('',
     {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
   const previewHeader = panelHeader(
     'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of products.',
-    ui.div([]),
+    undefined,
     previewStatus);
   const previewPanel = tabPanel(
     previewHeader,
