@@ -160,11 +160,20 @@ export class PackageFunctions {
         binding: {type: 'ligand_protein_binding', binder_chain_id: ligandChain},
       },
     })));
-    return toDataFrame(jobs.map((j) => ({
+    const complexes = await Promise.all(jobs.map(async (j) => {
+      const url = j.output?.best_sample?.structure?.url;
+      return url ? await (await grok.dapi.fetchProxy(url)).text() : '';
+    }));
+    const result = toDataFrame(jobs.map((j) => ({
       ...j.output?.best_sample?.metrics,
       binding_confidence: j.output?.binding_metrics?.binding_confidence,
       optimization_score: (j.output?.binding_metrics as any)?.optimization_score,
     })));
+    const complexCol = DG.Column.fromStrings('Complex', complexes);
+    complexCol.semType = DG.SEMTYPE.MOLECULE3D;
+    complexCol.setTag(DG.TAGS.CELL_RENDERER, DG.SEMTYPE.MOLECULE3D);
+    result.columns.add(complexCol);
+    return result;
   }
 
   @grok.decorators.func({
