@@ -3,8 +3,8 @@
   "friendlyName": "Ketcher Sketcher",
   "version": "2.4.7",
   "author": {
-    "name": "Maria Dolotova",
-    "email": "mdolotova@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
   "repository": {
