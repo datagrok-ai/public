@@ -74,6 +74,62 @@ category('Flow: column picker', () => {
     }
   });
 
+  test('viewer column options get a picker that resolves the viewer table input', async () => {
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const viewer = await addNode(e.flow, 'Viewers/Scatter Plot');
+      const reqs: ColumnPickRequest[] = [];
+      panel.onPickColumns = (r) => reqs.push(r);
+      panel.showNode(viewer);
+
+      // Query by the case-preserving data-param (the test-id slug is lowercased).
+      const btn = panel.root.querySelector('[data-param="X"] .funcflow-col-pick') as HTMLElement | null;
+      expect(!!btn, true, 'the X column option has a picker');
+      btn!.click();
+      expect(reqs.length, 1);
+      expect(reqs[0].paramName, 'X');
+      expect(reqs[0].isList, false, 'a viewer axis is a single column');
+      expect(reqs[0].tableParam, 'table', 'resolves against the viewer’s table input');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('Select Columns / Select Column utilities get column pickers', async () => {
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const many = await addNode(e.flow, 'Utilities/Select Columns');
+      const reqsMany: ColumnPickRequest[] = [];
+      panel.onPickColumns = (r) => reqsMany.push(r);
+      panel.showNode(many);
+      const manyBtn = panel.root.querySelector('[data-param="columnNames"] .funcflow-col-pick') as HTMLElement | null;
+      expect(!!manyBtn, true, 'Select Columns has a picker');
+      manyBtn!.click();
+      expect(reqsMany[0].paramName, 'columnNames');
+      expect(reqsMany[0].isList, true, 'Select Columns is a list');
+      expect(reqsMany[0].tableParam, 'table');
+
+      const one = await addNode(e.flow, 'Utilities/Select Column');
+      const reqsOne: ColumnPickRequest[] = [];
+      panel.onPickColumns = (r) => reqsOne.push(r);
+      panel.showNode(one);
+      const oneBtn = panel.root.querySelector('[data-param="columnName"] .funcflow-col-pick') as HTMLElement | null;
+      expect(!!oneBtn, true, 'Select Column has a picker');
+      oneBtn!.click();
+      expect(reqsOne[0].paramName, 'columnName');
+      expect(reqsOne[0].isList, false);
+      expect(reqsOne[0].tableParam, 'table');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
   test('no picker is rendered when the panel has no onPickColumns handler', async () => {
     const typeName = joinTablesTypeName();
     if (!typeName) return;

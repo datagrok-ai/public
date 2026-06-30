@@ -29,6 +29,10 @@
   *actual* upstream table, so you choose from a list instead of recalling column names. For
   multi-table funcs (Join Tables: `keys1`/`keys2`/`values1`/`values2`) each column resolves against
   its own table input (`keys1`→`table1`, `keys2`→`table2`), and the picker uses the right one.
+* The picker now extends to **every** node with a column field, not just DG functions: **viewer
+  nodes** (X/Y/Color/Size axis columns, picking from the wired table) and the **Select Column /
+  Select Columns** utilities. One shared `createColumnFieldRow` drives all of them — any node with a
+  column-valued field plus a dataframe input gets the picker for free.
 * Three cases, handled automatically: the table input isn't connected → a hint to connect one; it's
   connected and already run → pick immediately from its captured output; connected but not yet
   computed → offer to **run the flow up to that point**, then pick from the produced table
