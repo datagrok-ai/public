@@ -50,6 +50,9 @@ export class ExecutionController {
   /** When set, the next run is a single-node preview; on completion we open
    *  this node's data panel instead of the normal end-of-run behavior. */
   private pendingPreviewNodeId: string | null = null;
+  /** When set, the next run is a headless slice (column picker); on completion
+   *  we invoke this and skip the preview / end-of-run UI entirely. */
+  private pendingOnComplete: (() => void) | null = null;
   outputPreview: OutputPreviewPanel = new OutputPreviewPanel();
 
   /** Called when execution stops at a breakpoint (so the view can prompt Continue). */
@@ -82,9 +85,41 @@ export class ExecutionController {
     this.executeInstrumented(settings, false, {onlyNodeIds: slice, focusNodeId: targetNodeId, skipValidation: true});
   }
 
+  /** First captured dataframe clone among a node's outputs, or null. Lets the
+   *  column picker read an upstream table that has already been run without
+   *  re-running it. Only a *fresh* (completed, non-stale) result is reused — a
+   *  graph edit marks nodes stale, so an edited upstream is recomputed rather
+   *  than picked from an outdated table. (Heuristic "first dataframe": real
+   *  catalog nodes that feed a table input emit a single table.) */
+  cloneForNode(nodeId: string): DG.DataFrame | null {
+    const st = this.state.getNodeState(nodeId);
+    if (!st?.outputs || st.status !== NodeExecStatus.completed) return null;
+    for (const s of Object.values(st.outputs))
+      if (s.type === 'dataframe' && s.clone) return s.clone as DG.DataFrame;
+    return null;
+  }
+
+  /** Run the slice up to `sourceNodeId` (and its ancestors) headlessly, then
+   *  resolve with the first dataframe clone captured for that node — used by the
+   *  column picker when an input's table is connected but not yet computed.
+   *  Runs in `preserveState` mode so it only (re)computes this slice and leaves
+   *  every other node's already-captured result intact: picking a key for one
+   *  table doesn't wipe another table's result, and a later pick against the
+   *  same table reuses the cached table instead of re-running it. */
+  produceTableForNode(sourceNodeId: string, settings: ScriptSettings): Promise<DG.DataFrame | null> {
+    return new Promise((resolve) => {
+      const slice = sliceUpTo(this.flow, sourceNodeId);
+      this.executeInstrumented(settings, false, {
+        onlyNodeIds: slice, skipValidation: true, preserveState: true,
+        onComplete: () => resolve(this.cloneForNode(sourceNodeId)),
+      });
+    });
+  }
+
   private executeInstrumented(
     settings: ScriptSettings, debug: boolean,
-    opts?: {onlyNodeIds?: Set<string>; focusNodeId?: string; skipValidation?: boolean},
+    opts?: {onlyNodeIds?: Set<string>; focusNodeId?: string; skipValidation?: boolean;
+      onComplete?: () => void; preserveState?: boolean},
   ): void {
     if (!opts?.skipValidation) {
       const errors = validateGraph(this.flow);
@@ -96,14 +131,24 @@ export class ExecutionController {
     }
 
     this.stopRun();
-    // A new run invalidates anything we were showing.
-    this.outputPreview.close();
 
     const runId = crypto.randomUUID();
-    this.state.startRun(runId, this.graphVersion);
-    this.visualizer.resetAllNodes();
-    this.flow.clearConnectionLabels();
+    if (opts?.preserveState) {
+      // Headless slice (column picker): keep prior node states, visuals,
+      // connection labels and the output panel — only the slice's nodes get
+      // recomputed and re-highlighted; everything else stays as it was.
+      this.state.runId = runId;
+      this.state.isRunning = true;
+      this.state.graphVersionAtRun = this.graphVersion;
+    } else {
+      // A new full run invalidates anything we were showing.
+      this.outputPreview.close();
+      this.state.startRun(runId, this.graphVersion);
+      this.visualizer.resetAllNodes();
+      this.flow.clearConnectionLabels();
+    }
     this.pendingPreviewNodeId = opts?.focusNodeId ?? null;
+    this.pendingOnComplete = opts?.onComplete ?? null;
 
     const channel = `funcflow.exec.${runId}`;
     this.subscription = grok.events.onCustomEvent(channel).subscribe((event: ExecEvent) => {
@@ -136,6 +181,13 @@ export class ExecutionController {
     } catch (e: any) {
       grok.shell.error(`Script generation failed: ${e.message}`);
       this.stopRun();
+      // A headless slice run (column picker) is awaiting completion — release it
+      // so the caller's promise resolves (with null, since nothing was captured).
+      if (this.pendingOnComplete) {
+        const cb = this.pendingOnComplete;
+        this.pendingOnComplete = null;
+        cb();
+      }
     }
   }
 
@@ -178,7 +230,12 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
-      if (this.pendingPreviewNodeId) {
+      if (this.pendingOnComplete) {
+        const cb = this.pendingOnComplete;
+        this.pendingOnComplete = null;
+        this.pendingPreviewNodeId = null;
+        cb();
+      } else if (this.pendingPreviewNodeId) {
         const id = this.pendingPreviewNodeId;
         this.pendingPreviewNodeId = null;
         const node = this.flow.getNodeById(id);

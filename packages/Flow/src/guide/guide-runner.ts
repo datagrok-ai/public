@@ -9,7 +9,9 @@
  *  targets near a viewport edge (it never flips to the side with room). */
 
 import * as ui from 'datagrok-api/ui';
-import {Guide, GuideStep, GuideContext, GuideHost, isAborted, Side, computePlacement} from './guide-model';
+import {
+  Guide, GuideStep, GuideContext, GuideHost, isAborted, Side, computePlacement, openDialogEl,
+} from './guide-model';
 import {setTid} from '../utils/test-ids';
 
 type StepOutcome = 'next' | 'exit';
@@ -136,6 +138,10 @@ export class GuideRunner {
       if (finished) return; // a queued frame must never re-highlight after cleanup
       syncHighlights();
       this.place(card, anchorOf(), step.position);
+      // Never sit on top of a platform dialog (z-index 3000): while one is open,
+      // drop the card just below it so the dialog stays interactive (the step's
+      // target re-anchors beside the dialog, so the card is still visible).
+      card.style.zIndex = openDialogEl() ? '2900' : '5000';
     };
     reanchor();
     const timer = window.setInterval(reanchor, 250);

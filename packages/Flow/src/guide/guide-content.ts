@@ -13,11 +13,11 @@
 
 import {
   Guide, GuideStep, GuideContext,
-  byTid, bySel, byNodeFunc, byNodeType, byBrowserFunc, byParam, paramFieldSelector, socketOf,
-  byFileTreeConn, byFileTreeFile,
+  byTid, bySel, byNodeFunc, byNodeFuncNth, byNodeType, byBrowserFunc, byParam, paramFieldSelector, socketOf,
+  byFileTreeConn, byFileTreeFile, preferDialog, openDialogEl,
   untilClick, untilNodeType, untilMoreNodes, untilMoreConnections, untilFuncNode,
   untilFewerNodes, untilValueContains, untilValueMatches, untilValueNonEmpty, untilNodeRightOf,
-  untilNodeSelected, untilNodeSelectedOfFunc, untilMoreCollapsed,
+  untilNodeSelected, untilNodeSelectedOfFunc, untilMoreCollapsed, untilColumnCountAtLeast,
   untilFileTreeConnExpanded, untilScrolledIntoView, untilFuncNodeWithInput, isScrolledIntoView,
   untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType,
 } from './guide-model';
@@ -36,6 +36,11 @@ const TABLE_OUTPUT_TYPE = 'Outputs/Table Output';
 const DEMO_CONN = 'Demo';
 const DEMOG_FILE = 'demog.csv';
 const DEMOG_FILE_SEL = '[data-testid="ff-files-file-demog-csv"]';
+// System:DemoFiles/demog.csv has 11 columns (USUBJID, AGE, SEX, RACE, DIS_POP,
+// HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY) and USUBJID is its key —
+// the join how-to gates on selecting USUBJID and on picking every column.
+const DEMOG_KEY = 'USUBJID';
+const DEMOG_COLUMN_COUNT = 11;
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
@@ -836,6 +841,252 @@ export const QUESTIONS: Guide[] = [
       target: byTid('minimap'),
       position: 'left',
       until: untilClick(byTid('minimap')),
+    },
+  ]),
+  q('how-visualize', 'How do I add visualization nodes?', [
+    ...loadDemogViaFiles(openFileHasPath),
+    {
+      title: 'Add a Scatter Plot',
+      text: 'In the toolbox search box type scatter, then double-click “Scatter Plot” (highlighted) ' +
+        'under Viewers to add a scatter-plot node.',
+      skipIf: hasNodeType('Viewers/Scatter Plot'),
+      setup: findInBrowser('Scatter Plot'),
+      target: byTid('browser-item', 'Viewers/Scatter Plot'),
+      until: untilNodeType('Viewers/Scatter Plot'),
+    },
+    {
+      title: 'Move it clear of Open File',
+      text: 'Drag the “Scatter Plot” node to the right until it no longer overlaps Open File.',
+      target: byNodeType('Viewers/Scatter Plot'),
+      position: 'top',
+      until: untilNodeRightOf(byNodeType('Viewers/Scatter Plot'), byNodeFunc('OpenFile'), 200),
+    },
+    {
+      title: 'Feed data into the chart',
+      text: 'Drag from Open File\'s result output dot (highlighted) to the Scatter Plot\'s table ' +
+        'input dot (highlighted).',
+      target: byNodeType('Viewers/Scatter Plot'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeType('Viewers/Scatter Plot'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Open the chart\'s options',
+      text: 'Click the “Scatter Plot” node so its options open in the panel on the right.',
+      target: byNodeType('Viewers/Scatter Plot'),
+      until: untilNodeSelected(),
+    },
+    {
+      title: 'Choose the X column',
+      text: 'Type age into the X field — that becomes the horizontal axis. (You can also wire a ' +
+        'column straight into the X socket on the node.)',
+      target: byParam('X'),
+      position: 'left',
+      until: untilValueContains(paramFieldSelector('X'), 'age'),
+    },
+    {
+      title: 'Choose the Y column',
+      text: 'Type height into the Y field for the vertical axis.',
+      target: byParam('Y'),
+      position: 'left',
+      until: untilValueContains(paramFieldSelector('Y'), 'height'),
+    },
+    {
+      title: 'Add a Bar Chart',
+      text: 'Now search bar and double-click “Bar Chart” (highlighted) — every viewer type exposes ' +
+        'its own options.',
+      skipIf: hasNodeType('Viewers/Bar Chart'),
+      setup: findInBrowser('Bar Chart'),
+      target: byTid('browser-item', 'Viewers/Bar Chart'),
+      until: untilNodeType('Viewers/Bar Chart'),
+    },
+    {
+      title: 'Wire the Bar Chart up',
+      text: 'Drag the Bar Chart clear if it overlaps, then drag from Open File\'s result output dot ' +
+        '(highlighted) to its table input dot (highlighted).',
+      target: byNodeType('Viewers/Bar Chart'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeType('Viewers/Bar Chart'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Add a Pie Chart',
+      text: 'Finally search pie and double-click “Pie Chart” (highlighted).',
+      skipIf: hasNodeType('Viewers/Pie Chart'),
+      setup: findInBrowser('Pie Chart'),
+      target: byTid('browser-item', 'Viewers/Pie Chart'),
+      until: untilNodeType('Viewers/Pie Chart'),
+    },
+    {
+      title: 'Wire the Pie Chart up',
+      text: 'Drag the Pie Chart clear if needed, then drag from Open File\'s result output dot to its ' +
+        'table input dot (highlighted).',
+      target: byNodeType('Viewers/Pie Chart'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeType('Viewers/Pie Chart'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Run to see the charts',
+      text: 'Click Run (the ▶ icon). Then click any viewer node to render it in the bottom preview ' +
+        'panel — use the gear in a chart\'s corner to fine-tune every setting.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'run')),
+    },
+  ]),
+  q('how-join', 'How do I join two tables?', [
+    ...loadDemogViaFiles(openFileHasPath),
+    {
+      title: 'Open the Demo connection',
+      text: `Make sure the “${DEMO_CONN}” connection is expanded — double-click it (highlighted) if ` +
+        'it isn\'t.',
+      setup: openFiles,
+      target: byFileTreeConn(DEMO_CONN),
+      until: untilFileTreeConnExpanded(DEMO_CONN),
+    },
+    {
+      title: 'Scroll to demog.csv',
+      text: `Scroll the Files list down until “${DEMOG_FILE}” comes into view again (it sits below the ` +
+        'folders).',
+      setup: openFiles,
+      // Highlight the whole Files pane while the file is off-screen, then snap to
+      // the file once it's visible (same pattern as the data-loading steps).
+      target: (ctx) => demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx),
+      highlights: (ctx) => [demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx)],
+      until: untilScrolledIntoView(DEMOG_FILE_SEL),
+    },
+    {
+      title: 'Add the second table',
+      text: `Double-click “${DEMOG_FILE}” (highlighted) to drop a second Open File node — we'll join ` +
+        'the two tables.',
+      target: byFileTreeFile(DEMOG_FILE),
+      until: untilMoreNodes(),
+    },
+    {
+      title: 'Add Join Tables',
+      text: 'Search join and double-click “Join Tables” (highlighted) to add it.',
+      skipIf: hasFuncNode('JoinTables'),
+      setup: findInBrowser('join'),
+      target: byBrowserFunc('JoinTables'),
+      until: untilFuncNode('JoinTables'),
+    },
+    {
+      title: 'Move it into open space',
+      text: 'Drag the “Join Tables” node clear of the Open File nodes so you can wire both tables ' +
+        'into it.',
+      target: byNodeFunc('JoinTables'),
+      position: 'top',
+      until: untilNodeRightOf(byNodeFunc('JoinTables'), byNodeFunc('OpenFile'), 180),
+    },
+    {
+      title: 'Connect the first table',
+      text: 'Drag from the first Open File node\'s result output dot (highlighted) to Join Tables\' ' +
+        'table1 input dot (highlighted).',
+      target: byNodeFunc('JoinTables'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFuncNth('OpenFile', 0), 'output', 'result')(ctx),
+        socketOf(byNodeFunc('JoinTables'), 'input', 'table1')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Connect the second table',
+      text: 'Now drag from the second Open File node\'s result output dot (highlighted) to Join ' +
+        'Tables\' table2 input dot (highlighted).',
+      target: byNodeFunc('JoinTables'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFuncNth('OpenFile', 1), 'output', 'result')(ctx),
+        socketOf(byNodeFunc('JoinTables'), 'input', 'table2')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Open Join Tables\' settings',
+      text: 'Click the “Join Tables” node. On the right you\'ll see keys1, keys2, values1 and values2 ' +
+        '— the columns to match on, and the columns to carry over from each table.',
+      target: byNodeFunc('JoinTables'),
+      until: untilNodeSelectedOfFunc('JoinTables'),
+    },
+    {
+      title: `Pick the first key — ${DEMOG_KEY}`,
+      text: `Next to keys1, click the list icon (highlighted). Flow loads the real columns from the ` +
+        `first table (running the flow up to that point if needed). In the dialog, select the ` +
+        `${DEMOG_KEY} column and click OK.`,
+      // While the dialog is open it sits behind the card — re-anchor the card to
+      // the dialog (and stop pulsing the now-hidden icon) so it's not obscured.
+      target: preferDialog(byTid('prop-pick-columns', 'keys1')),
+      highlights: (ctx) => openDialogEl() ? [] : [byTid('prop-pick-columns', 'keys1')(ctx)],
+      position: 'left',
+      until: untilValueContains(paramFieldSelector('keys1'), DEMOG_KEY),
+    },
+    {
+      title: `Pick the matching key — ${DEMOG_KEY}`,
+      text: `Do the same for keys2 — click its list icon (highlighted) and select ${DEMOG_KEY} from ` +
+        'the second table, then OK. Matching keys are what the join lines up rows on.',
+      target: preferDialog(byTid('prop-pick-columns', 'keys2')),
+      highlights: (ctx) => openDialogEl() ? [] : [byTid('prop-pick-columns', 'keys2')(ctx)],
+      position: 'left',
+      until: untilValueContains(paramFieldSelector('keys2'), DEMOG_KEY),
+    },
+    {
+      title: 'Choose what to carry over — values1',
+      text: 'values1 and values2 are required too — the columns to bring from each table. Click the ' +
+        'list icon next to values1 (highlighted) and select every column (use the header checkbox to ' +
+        'select all), then OK.',
+      target: preferDialog(byTid('prop-pick-columns', 'values1')),
+      highlights: (ctx) => openDialogEl() ? [] : [byTid('prop-pick-columns', 'values1')(ctx)],
+      position: 'left',
+      until: untilColumnCountAtLeast(paramFieldSelector('values1'), DEMOG_COLUMN_COUNT),
+    },
+    {
+      title: 'And from the second table — values2',
+      text: 'Finally, click the list icon next to values2 (highlighted) and select all of the second ' +
+        'table\'s columns, then OK.',
+      target: preferDialog(byTid('prop-pick-columns', 'values2')),
+      highlights: (ctx) => openDialogEl() ? [] : [byTid('prop-pick-columns', 'values2')(ctx)],
+      position: 'left',
+      until: untilColumnCountAtLeast(paramFieldSelector('values2'), DEMOG_COLUMN_COUNT),
+    },
+    {
+      title: 'Mark the result',
+      text: 'Search table output and double-click “Table Output” (highlighted) to capture the joined ' +
+        'table.',
+      skipIf: hasNodeType(TABLE_OUTPUT_TYPE),
+      setup: findInBrowser('Table Output'),
+      target: byTid('browser-item', TABLE_OUTPUT_TYPE),
+      until: untilNodeType(TABLE_OUTPUT_TYPE),
+    },
+    {
+      title: 'Wire up the result',
+      text: 'Drag from Join Tables\' result output dot (highlighted) to the Table Output\'s input dot ' +
+        '(highlighted).',
+      target: byNodeType(TABLE_OUTPUT_TYPE),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('JoinTables'), 'output', 'result')(ctx),
+        socketOf(byNodeType(TABLE_OUTPUT_TYPE), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Run the join',
+      text: 'Click Run (the ▶ icon). Click the Table Output (or Join Tables) node to preview the ' +
+        'joined table in the bottom panel.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'run')),
     },
   ]),
 ];

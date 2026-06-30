@@ -2,6 +2,31 @@
 
 ## v.next
 
+### Pick columns from a list — no typing names from memory
+
+* Every `column` / `column_list` input on a function node now has a **picker icon** in the context
+  panel (next to the field). Clicking it opens a real **column / columns dialog** seeded by the
+  *actual* upstream table, so you choose from a list instead of recalling column names. For
+  multi-table funcs (Join Tables: `keys1`/`keys2`/`values1`/`values2`) each column resolves against
+  its own table input (`keys1`→`table1`, `keys2`→`table2`), and the picker uses the right one.
+* Three cases, handled automatically: the table input isn't connected → a hint to connect one; it's
+  connected and already run → pick immediately from its captured output; connected but not yet
+  computed → offer to **run the flow up to that point**, then pick from the produced table
+  (`ExecutionController.produceTableForNode` runs a headless slice and returns the live `DataFrame`).
+* The slice run is **additive** (`preserveState`): it only (re)computes its own slice and leaves every
+  other node's captured result intact — so picking `keys1` for table1 and then `keys2` for table2 no
+  longer wipes table1, and a later pick against the same table reuses the cached result instead of
+  re-running it. Reuse is limited to *fresh* (completed, non-stale) results — a graph edit still forces
+  a recompute.
+* New **how-to: “How do I add visualization nodes?”** — loads demog and wires it into Scatter Plot,
+  Bar Chart, and Pie Chart, changing columns along the way.
+* New **how-to: “How do I join two tables?”** — adds two demog tables and an output, wires up Join
+  Tables, and uses the column picker to fill `keys1`/`keys2` (both `USUBJID`) and `values1`/`values2`
+  (all columns) without typing. The two source tables get distinct, ordered socket highlights
+  (`byNodeFuncNth`), and the column-pick steps **re-anchor the hint card to the open dialog**
+  (`preferDialog`/`openDialogEl`) — previously the dialog was hidden behind the card (z-index 3000 vs
+  5000). The guide card now also drops below any open platform dialog so it can never block it.
+
 ### Node colors by what they do
 
 * Function nodes with no DG role (the gray majority — Join Tables, Add New Column, chemical

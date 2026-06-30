@@ -638,6 +638,25 @@
   width: 100%;
 }
 
+/* Column chooser icon — a compact trailing cell that opens the picker dialog. */
+.funcflow-col-pick-cell {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.funcflow-col-pick {
+  cursor: pointer;
+  color: var(--blue-1, #1f8fff);
+  font-size: 14px;
+  padding: 2px;
+}
+
+.funcflow-col-pick:hover {
+  color: var(--blue-2, #0a6ed1);
+}
+
 .funcflow-prop-toggle-row {
   flex-direction: row !important;
   align-items: center;

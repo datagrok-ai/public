@@ -13,6 +13,7 @@ import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
+import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
@@ -95,6 +96,11 @@ export class PropertyPanel {
   root: HTMLElement;
   private contentDiv: HTMLElement;
   private flow: FlowEditor;
+
+  /** Set by the view: opens a column / columns picker dialog for a func-node
+   *  column input, seeded by the upstream table (running the flow up to that
+   *  point if needed). When unset, the picker icon is not rendered. */
+  onPickColumns?: (req: ColumnPickRequest) => void;
 
   constructor(flow: FlowEditor) {
     this.flow = flow;
@@ -491,6 +497,11 @@ export class PropertyPanel {
     const textarea = this.buildTextareaEl(String(node.inputValues[paramName] ?? ''),
       (v) => {node.inputValues[paramName] = v;}, colTip);
 
+    // Which dataframe input this column resolves against: fixed for a single
+    // dataframe input, or chosen per-row for multi-table funcs (JoinTables:
+    // keys1→table1, keys2→table2). Read live so the picker uses the current pick.
+    let getTableParam = (): string => dataframeParams[0];
+
     const cells: HTMLElement[] = [ui.div([textarea], 'funcflow-col-input-cell')];
     if (dataframeParams.length >= 2) {
       if (!node.properties['columnTables']) node.properties['columnTables'] = {};
@@ -498,8 +509,31 @@ export class PropertyPanel {
       const current = associations[paramName] ?? dataframeParams[0];
       const select = this.buildSelectEl(current, dataframeParams,
         (v) => {associations[paramName] = v;}, 'Which table input this column refers to');
+      getTableParam = (): string => select.value || dataframeParams[0];
       cells.push(ui.div([select], 'funcflow-col-table-cell'));
     }
+
+    // Column chooser — opens a dialog seeded by the upstream table (running the
+    // flow up to that point if needed) so users pick from a real column list.
+    if (this.onPickColumns) {
+      const pickBtn = ui.iconFA('list', () => {
+        this.onPickColumns!({
+          nodeId: node.id, paramName, isList,
+          tableParam: getTableParam(),
+          current: String(node.inputValues[paramName] ?? ''),
+          apply: (value: string) => {
+            textarea.value = value;
+            node.inputValues[paramName] = value;
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+          },
+        });
+      }, isList ? 'Choose columns from the connected table' : 'Choose a column from the connected table');
+      setTid(pickBtn, 'prop-pick-columns', paramName);
+      pickBtn.classList.add('funcflow-col-pick');
+      cells.push(ui.div([pickBtn], 'funcflow-col-pick-cell'));
+    }
+
     return this.propRow(ui.div([this.labelWithTooltip(paramName, colTip), ui.div(cells, 'funcflow-col-grid')],
       'funcflow-prop-row'), paramName);
   }

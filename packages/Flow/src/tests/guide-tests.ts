@@ -5,8 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   poll, waitForClick, isAborted, untilSectionExpanded, computePlacement,
-  byNodeFunc, byParam, paramFieldSelector, untilValueContains, untilValueMatches,
+  byNodeFunc, byNodeFuncNth, byParam, paramFieldSelector, untilValueContains, untilValueMatches,
   byFileTreeConn, byFileTreeFile, untilFileTreeConnExpanded, untilFuncNodeWithInput,
+  untilColumnCountAtLeast, preferDialog, openDialogEl,
   GuideContext, GuideHost,
 } from '../guide/guide-model';
 import {getFilesBrowser} from '../utils/files-browser-tree';
@@ -79,6 +80,65 @@ category('Flow: guide', () => {
     } finally {
       ac.abort();
       input.remove();
+    }
+  });
+
+  test('untilColumnCountAtLeast counts comma-separated picks', async () => {
+    const ac = new AbortController();
+    const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};
+    const input = document.createElement('input');
+    input.setAttribute('data-param', 'values1');
+    document.body.appendChild(input);
+    try {
+      const p = untilColumnCountAtLeast('input[data-param="values1"]', 3)(ctx);
+      input.value = 'a, b';                       // 2 — not yet
+      setTimeout(() => {input.value = 'a, b, c';}, 30); // 3 — satisfies
+      await p;
+      expect(true, true, 'resolved at 3 columns');
+    } finally {
+      ac.abort();
+      input.remove();
+    }
+  });
+
+  test('preferDialog / openDialogEl re-anchor to an open dialog', async () => {
+    const fallback = document.createElement('div');
+    fallback.id = 'fallback-target';
+    const resolver = (): HTMLElement => fallback;
+    const ctx: GuideContext = {host: fakeHost(), signal: new AbortController().signal};
+    // No dialog → falls back to the resolver's element.
+    expect(openDialogEl(), null, 'no dialog initially');
+    expect(preferDialog(resolver)(ctx), fallback, 'falls back without a dialog');
+    // Simulate an open Datagrok dialog.
+    const dlg = document.createElement('div');
+    dlg.className = 'd4-dialog';
+    document.body.appendChild(dlg);
+    try {
+      expect(openDialogEl(), dlg, 'finds the open dialog');
+      expect(preferDialog(resolver)(ctx), dlg, 'prefers the dialog over the fallback');
+    } finally {
+      dlg.remove();
+    }
+  });
+
+  test('byNodeFuncNth targets the n-th node of a function', async () => {
+    const ctx: GuideContext = {host: fakeHost(), signal: new AbortController().signal};
+    const mk = (fn: string): HTMLElement => {
+      const n = document.createElement('div');
+      n.className = 'ff-node';
+      n.dataset.func = fn;
+      document.body.appendChild(n);
+      return n;
+    };
+    const a = mk('OpenFile');
+    const b = mk('OpenFile');
+    const c = mk('JoinTables');
+    try {
+      expect(byNodeFuncNth('OpenFile', 0)(ctx), a, 'first OpenFile');
+      expect(byNodeFuncNth('OpenFile', 1)(ctx), b, 'second OpenFile');
+      expect(byNodeFuncNth('OpenFile', 2)(ctx), null, 'no third OpenFile');
+    } finally {
+      [a, b, c].forEach((e) => e.remove());
     }
   });
 

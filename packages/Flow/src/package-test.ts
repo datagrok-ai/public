@@ -19,6 +19,7 @@ import './tests/summary-tests';
 import './tests/files-tree-tests';
 import './tests/execution-preview-tests';
 import './tests/viewer-tests';
+import './tests/column-picker-tests';
 
 export let _package = new DG.Package();
 export { tests };

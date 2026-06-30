@@ -19,6 +19,7 @@ import {FlowEditor} from './rete/flow-editor';
 import {FlowNode} from './rete/scheme';
 import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
+import {ColumnPicker} from './panel/column-picker';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
   createNode, FuncInfo,
@@ -336,6 +337,15 @@ export class FuncFlowView extends DG.ViewBase {
     this.propertyPanel = new PropertyPanel(this.flow);
     this.executionController = new ExecutionController(this.flow);
     this.executionController.outputPreview.setViewRoot(this.root);
+
+    // Column inputs (column / column_list) get a picker dialog seeded by the
+    // upstream table — running the flow up to that point on demand if needed.
+    const columnPicker = new ColumnPicker(this.flow, this.executionController, () => ({
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    }));
+    this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
     this.executionController.onBreakpointHit = () => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };

@@ -97,6 +97,31 @@ export function byNodeType(typeName: string): (ctx: GuideContext) => HTMLElement
     .find((n) => n.dataset.nodeTypeName === typeName) ?? null;
 }
 
+/** Target the `index`-th canvas node running a given DG function (DOM order ≈
+ *  creation order). Used to disambiguate two identical nodes — e.g. two demog
+ *  Open File nodes feeding `table1` / `table2` of a join. */
+export function byNodeFuncNth(funcName: string, index: number): (ctx: GuideContext) => HTMLElement | null {
+  const lc = funcName.toLowerCase();
+  return () => (Array.from(document.querySelectorAll('.ff-node')) as HTMLElement[])
+    .filter((n) => (n.dataset.func ?? '').toLowerCase() === lc)[index] ?? null;
+}
+
+/** The top-most open Datagrok dialog (`.d4-dialog`), or null. The guide card
+ *  sits above dialogs (z-index 5000 vs 3000), so a step whose action opens a
+ *  dialog must re-anchor to it — otherwise the dialog is hidden behind the card. */
+export function openDialogEl(): HTMLElement | null {
+  const dialogs = Array.from(document.querySelectorAll('.d4-dialog')) as HTMLElement[];
+  return dialogs.length ? dialogs[dialogs.length - 1] : null;
+}
+
+/** Wrap a target resolver so the card anchors to an open dialog when there is
+ *  one (keeping it beside the dialog, not on top of it), else to `resolver`. */
+export function preferDialog(
+  resolver: (ctx: GuideContext) => HTMLElement | null,
+): (ctx: GuideContext) => HTMLElement | null {
+  return (ctx) => openDialogEl() ?? resolver(ctx);
+}
+
 /** Target a function-browser item by the DG function it adds (`data-func`). */
 export function byBrowserFunc(funcName: string): (ctx: GuideContext) => HTMLElement | null {
   const lc = funcName.toLowerCase();
@@ -419,6 +444,18 @@ export function untilFuncNodeWithInput(funcName: string, inputKey: string, subst
     poll(() => (ctx.host.getFlow()?.getNodes() ?? []).some((n) =>
       (n.dgFuncName ?? '').toLowerCase().includes(lcFn) &&
       String((n.inputValues ?? {})[inputKey] ?? '').toLowerCase().includes(lcSub)), ctx.signal);
+}
+
+/** Wait until the comma-separated value of `selector` lists at least `n`
+ *  entries — i.e. the user picked at least `n` columns (a `column_list` field). */
+export function untilColumnCountAtLeast(selector: string, n: number) {
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => {
+      const node = el(selector) as HTMLInputElement | null;
+      if (!node) return false;
+      const tokens = (node.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+      return tokens.length >= n;
+    }, ctx.signal);
 }
 
 /** Wait until the input/textarea matching `selector` has a non-empty value. */
