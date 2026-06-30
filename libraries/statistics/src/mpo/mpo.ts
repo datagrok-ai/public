@@ -18,6 +18,12 @@ export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalD
   return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
 }
 
+export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
+
+export function isMpoNumericColumn(col: DG.Column): boolean {
+  return MPO_NUMERIC_TYPES.has(col.type);
+}
+
 export function createDefaultCategorical(
   weight = 1,
   categories?: {name: string; desirability: number}[],

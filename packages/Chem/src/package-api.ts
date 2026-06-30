@@ -738,7 +738,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:MMPEditor', { call });
   }
 
-  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number , runOnFilteredData: boolean ): Promise<void> {
+  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number , runOnFilteredData?: boolean | null): Promise<void> {
     return await grok.functions.call('Chem:MmpAnalysis', { table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData });
   }
 

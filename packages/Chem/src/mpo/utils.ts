@@ -13,6 +13,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  isMpoNumericColumn,
   migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
@@ -54,7 +55,7 @@ export enum MpoUploadConflictAction {
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
 export const MPO_PROFILES_NAME = 'MPO Profiles';
-export const MAX_MPO_PROPERTIES = 20;
+export const MAX_MPO_PROPERTIES = 10;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -244,6 +245,8 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
   const props: {[key: string]: PropertyDesirability} = {};
   let count = 0;
   for (const col of df.columns.numerical) {
+    if (!isMpoNumericColumn(col))
+      continue;
     if (count >= MAX_MPO_PROPERTIES)
       break;
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
@@ -260,6 +263,8 @@ export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFra
 
   const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
   for (const col of df.columns.numerical) {
+    if (!isMpoNumericColumn(col))
+      continue;
     if (Object.keys(merged.properties).length >= MAX_MPO_PROPERTIES)
       break;
     if (!existingLower.has(col.name.toLowerCase()))

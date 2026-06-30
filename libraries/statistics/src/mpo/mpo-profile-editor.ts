@@ -6,7 +6,7 @@ import {Subject, Subscription} from 'rxjs';
 import {
   DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
   DesirabilityProfile, PropertyDesirability, WeightedAggregation,
-  createDefaultCategorical, createDefaultNumerical, isNumerical, migrateDesirability,
+  createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
@@ -18,6 +18,10 @@ import {MPO_SCORE_CHANGED_EVENT} from './utils';
 
 const MAX_CATEGORICAL_CATEGORIES = 20;
 const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
+
+function isMpoEligibleColumn(c: DG.Column): boolean {
+  return c.isCategorical ? c.categories.length <= MAX_CATEGORICAL_CATEGORIES : isMpoNumericColumn(c);
+}
 
 export class MpoProfileEditor {
   readonly root = ui.div([]);
@@ -341,7 +345,7 @@ export class MpoProfileEditor {
       table: this.dataFrame,
       nullable: true,
       value: matchedCol ?? undefined,
-      filter: (c: DG.Column) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES,
+      filter: (c: DG.Column) => isMpoEligibleColumn(c),
       onValueChanged: (v: DG.Column | null) => {
         if (isPopupOpen()) {
           pending = {value: v};
@@ -365,14 +369,14 @@ export class MpoProfileEditor {
     if (!this.dataFrame)
       return [];
     return Array.from(this.dataFrame.columns)
-      .filter((c) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES)
+      .filter((c) => isMpoEligibleColumn(c))
       .map((c) => c.name);
   }
 
   private getNumericalColumnNames(): string[] {
     if (!this.dataFrame)
       return [];
-    return Array.from(this.dataFrame.columns.numerical).map((c) => c.name);
+    return Array.from(this.dataFrame.columns).filter((c) => isMpoNumericColumn(c)).map((c) => c.name);
   }
 
   private resolveColumn(name: string): DG.Column | null {
