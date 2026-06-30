@@ -1,5 +1,9 @@
 # Bio changelog
 
+## v.next
+
+* GROK-19794: MSA dialog: Fixed misaligned Alignment Parameters gap inputs (now share the dialog form's label alignment and width)
+
 ## 2.28.2 (2026-06-22)
 
 * Migrated to the standalone HELM Web Editor (`@datagrok-libraries/hwe`), replacing the legacy `helm-web-editor` / `js-draw-lite` dependencies; fixed HELM substructure filter editor sizing.
