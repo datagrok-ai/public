@@ -1258,3 +1258,33 @@
   padding: 0 !important;
   gap: 0 !important;
 }
+
+/* Accordion pane content fills available panel width when splitter is dragged */
+.chem-enumerator .d4-accordion-pane-content > .d4-flex-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.chem-enumerator .d4-accordion-pane-content .d4-build-root,
+.chem-enumerator .d4-accordion-pane-content .ui-input-root {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chem-enumerator .d4-accordion-pane-content .ui-input-editor {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.d4-ribbon:has(~ .chem-enumerator-view) {
+  background: var(--white);
+}
+
+.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item > :hover:not(button):not(.ui-btn) {
+  background: transparent;
+}
+
+.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-separator {
+  display: none;
+}
+

@@ -13,12 +13,6 @@ const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
-// Drop-in replacement for the standalone package's rdkit-helper. By the time the app function
-// runs, Chem's `init` handler has already initialized the RDKit module.
-async function getRdKit() {
-  return getRdKitModule();
-}
-
 // Sniff string columns and set semType so the grid renders reactions and molecules. We sample a
 // handful of non-empty values per column: presence of `>>` wins as ChemicalReaction; otherwise if
 // every sampled value looks like SMILES/SMARTS we mark the column as Molecule.
@@ -69,15 +63,6 @@ function pickFile(accept: string): Promise<File | null> {
     };
     input.click();
   });
-}
-
-function downloadText(text: string, filename: string, mime = 'text/plain'): void {
-  const blob = new Blob([text], {type: mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 function getStringColumn(df: DG.DataFrame, name: string): string[] {
@@ -297,11 +282,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const configInfoIcon = mkIcon();
 
   function buildAppHelp(): HTMLElement {
-    const card = ui.div();
-    card.style.fontSize = '12px';
-    card.style.maxWidth = '520px';
-    card.style.lineHeight = '1.5';
-    card.style.padding = '4px 2px';
+    const card = ui.div([], {style: {fontSize: '12px', maxWidth: '520px', lineHeight: '1.5', padding: '4px 2px'}});
     card.innerHTML = `
       <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">Chemical library enumeration</div>
       <p style="margin: 0 0 6px 0;">Generate a product library from reaction SMARTS templates and a set of starting materials. Each round can take products from the previous round and grow them further.</p>
@@ -345,32 +326,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const fmtNum = (n: number, hint = 'unlimited') => n < 0 ? hint : String(n);
     const yn = (b: boolean) => b ? 'Yes' : 'No';
 
-    const card = ui.div();
-    card.style.fontSize = '12px';
-    card.style.maxHeight = '500px';
-    card.style.maxWidth = '440px';
-    card.style.overflow = 'auto';
-    card.style.padding = '4px 2px';
-    card.style.lineHeight = '1.5';
+    const card = ui.div([], {style: {fontSize: '12px', maxHeight: '500px', maxWidth: '440px', overflow: 'auto', padding: '4px 2px', lineHeight: '1.5'}});
 
-    const sectionTitle = (text: string) => {
-      const h = ui.div();
-      h.textContent = text;
-      h.style.fontWeight = 'bold';
-      h.style.marginTop = '8px';
-      h.style.marginBottom = '2px';
-      h.style.paddingBottom = '2px';
-      h.style.borderBottom = '1px solid var(--grey-3)';
-      return h;
-    };
-    const row = (label: string, value: string) => {
-      const r = ui.divH([], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
-      const l = ui.div(); l.textContent = label; l.style.color = 'var(--grey-6)';
-      const v = ui.div(); v.textContent = value; v.style.color = 'var(--text-color)';
-      v.style.textAlign = 'right';
-      r.appendChild(l); r.appendChild(v);
-      return r;
-    };
+    const sectionTitle = (text: string) =>
+      ui.divText(text, {style: {fontWeight: 'bold', marginTop: '8px', marginBottom: '2px', paddingBottom: '2px', borderBottom: '1px solid var(--grey-3)'}});
+    const row = (label: string, value: string) => ui.divH([
+      ui.divText(label, {style: {color: 'var(--grey-6)'}}),
+      ui.divText(value, {style: {color: 'var(--text-color)', textAlign: 'right'}}),
+    ], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
 
     card.appendChild(sectionTitle('Enumeration'));
     card.appendChild(row('Rounds', String(en.num_rounds)));
@@ -680,7 +643,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const saveYamlBtn = ui.button('Save YAML', () => {
     syncQuickInputsToConfig();
-    downloadText(configToYaml(config), 'enumerator-config.yaml', 'text/yaml');
+    DG.Utils.download('enumerator-config.yaml', configToYaml(config), 'text/yaml');
   });
   ui.tooltip.bind(saveYamlBtn, 'Download the current config as a YAML file.');
 
@@ -712,7 +675,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   async function runFullEnumeration(): Promise<void> {
     progressLabel.textContent = 'Loading RDKit…';
-    const rdkit = await getRdKit();
+    const rdkit = await getRdKitModule();
     const tDf = templatesInput.value!;
     const bDf = bbsInput.value!;
     const xDf = exclusionInput.value;
@@ -829,32 +792,52 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let reagentsPane: DG.TabPane | undefined;
 
   const accordion = ui.accordion();
-  const accReactionsPane = accordion.addPane('Reactions',
-    () => ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody]), true);
-  const accBbsPane = accordion.addPane('Building blocks',
-    () => ui.form([bbsInput, bbColInput]), false);
-  const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
-    ui.divH([
-      ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
-      configInfoIcon,
-    ], {style: {alignItems: 'center', gap: '4px'}}),
-    ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
-    ui.form([numRoundsInput]),
-    editConfigBtn,
-    yamlRow,
-  ], {style: {gap: '8px'}}), false);
+  accordion.root.style.cssText = 'width:100%;min-width:0';
+  const accReactionsPane = accordion.addPane('Reactions', () => {
+    const nextToBlocks = ui.button('Next →', () => openAccPaneExclusive(accBbsPane));
+    nextToBlocks.style.cssText = 'align-self:flex-end;margin-top:6px';
+    return ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, nextToBlocks]);
+  }, true);
+  const accBbsPane = accordion.addPane('Building blocks', () => {
+    const nextToCombine = ui.button('Next →', () => openAccPaneExclusive(accCombinePane));
+    nextToCombine.style.cssText = 'align-self:flex-end;margin-top:6px';
+    return ui.divV([ui.form([bbsInput, bbColInput]), nextToCombine]);
+  }, false);
+  const accCombinePane = accordion.addPane('How to combine', () => {
+    const nextToExtras = ui.button('Next →', () => openAccPaneExclusive(accExtrasPane));
+    nextToExtras.style.cssText = 'align-self:flex-end;margin-top:6px';
+    return ui.divV([
+      ui.divH([
+        ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
+        configInfoIcon,
+      ], {style: {alignItems: 'center', gap: '4px'}}),
+      ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
+      ui.form([numRoundsInput]),
+      editConfigBtn,
+      yamlRow,
+      nextToExtras,
+    ], {style: {gap: '8px'}});
+  }, false);
   const accExtrasPane = accordion.addPane('Extras (optional)',
     () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
   const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accExtrasPane];
 
-  const nextBtn = ui.button('Next →', () => {
-    const next = (accPanes.findIndex((p) => p.expanded) + 1) % accPanes.length;
-    openAccPaneExclusive(accPanes[next]);
-  });
-  const sectionNav = ui.divH([nextBtn], {style: {justifyContent: 'flex-end', padding: '8px 8px 2px'}});
+  // Subtitle spans injected into each pane header — updated by refreshCfgRibbon().
+  const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    const sub = document.createElement('span');
+    sub.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:6px;overflow:hidden;' +
+      'text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;pointer-events:none';
+    header?.appendChild(sub);
+    return sub;
+  };
+  const subReactions = injectPaneSub(accReactionsPane);
+  const subBbs = injectPaneSub(accBbsPane);
+  const subCombine = injectPaneSub(accCombinePane);
+  const subExtras = injectPaneSub(accExtrasPane);
 
   // Left pane scrolls vertically if it overflows so the action bar stays visible.
-  const leftPane = ui.divV([accordion.root, sectionNav],
+  const leftPane = ui.divV([accordion.root],
     {style: {minWidth: '320px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
@@ -862,8 +845,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const chip = ui.divText(text, {style: {
       padding: '2px 9px', borderRadius: '10px', border: '1px solid var(--grey-3)',
       color: 'var(--grey-6)', cursor: 'pointer', fontSize: '11px',
-      minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      display: 'flex', alignItems: 'center',
+      height: 'auto', alignSelf: 'center',
     }});
     chip.onmouseenter = () => {
       chip.style.background = 'var(--blue-1, #e9f3fb)'; chip.style.borderColor = 'var(--blue-2)';
@@ -877,26 +859,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const chipReactions = cfgChipEl('');
   const chipBbs = cfgChipEl('');
   const chipCombine = cfgChipEl('');
-  const cfgEstEl = ui.divText('', {style: {
-    marginLeft: 'auto', fontSize: '11px', color: 'var(--grey-5)', flexShrink: '0',
-  }});
+  const cfgEstEl = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-5)', pointerEvents: 'none'}});
   const ribbonArrow = ui.iconFA('arrow-right');
-  ribbonArrow.style.cssText = 'color:var(--grey-4);font-size:10px;flex-shrink:0';
-  const cfgRibbon = ui.divH([
-    chipReactions,
-    ribbonArrow,
-    chipBbs,
-    ui.divText('|', {style: {color: 'var(--grey-3)', margin: '0 2px', flexShrink: '0'}}),
-    chipCombine,
-    cfgEstEl,
-    ui.div([], {style: {flex: '1 1 auto'}}),
-    progressLabel,
-    cancelBtn,
-    runBtn,
-  ], {style: {
-    padding: '0 4px',
-    alignItems: 'center', gap: '6px', flexWrap: 'nowrap',
-  }});
+  ribbonArrow.style.cssText = 'color:var(--grey-4);font-size:10px;pointer-events:none';
+  const runGroup = ui.divH([runBtn, cancelBtn, progressLabel],
+    {style: {alignItems: 'center', gap: '6px'}});
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value;
@@ -911,6 +878,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     chipCombine.textContent = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
     cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
+    subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
+    subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
+    subCombine.textContent = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
+    subExtras.textContent = reagentsInput.value != null ? 'Reagents added' : '';
   }
   // === Exclusive accordion + Next button ===
 
@@ -927,7 +898,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function openAccPaneExclusive(pane: DG.AccordionPane): void {
     accPanes.forEach((p) => { p.expanded = p === pane; });
     switchTabForAccPane(pane);
-    nextBtn.style.display = accPanes.indexOf(pane) < accPanes.length - 1 ? '' : 'none';
   }
 
   // Wire native pane-header clicks for exclusive-open (Dart toggles pane.expanded first,
@@ -941,6 +911,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   chipBbs.onclick = () => openAccPaneExclusive(accBbsPane);
   chipCombine.onclick = () => openAccPaneExclusive(accCombinePane);
 
+  openAccPaneExclusive(accReactionsPane);
+
   const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
     const hintEl = ui.divText(hint, {style: {
       fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px',
@@ -950,7 +922,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (subsetBtn) children.push(subsetBtn);
     return ui.div(children, {style: {
       display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
-      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)', background: 'var(--grey-1)',
+      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)',
     }});
   };
 
@@ -1060,8 +1032,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       return;
     }
 
-    let rdkit: any;
-    try {rdkit = await getRdKit();} catch (e) {
+    let rdkit: ReturnType<typeof getRdKitModule>;
+    try {rdkit = await getRdKitModule();} catch (e) {
       previewStatus.textContent = '';
       showInPreview(ui.divText(`Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`,
         {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
@@ -1177,7 +1149,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
     classes: 'chem-enumerator'});
 
-  view.setRibbonPanels([[appInfoIcon], [cfgRibbon]]);
+  view.root.classList.add('chem-enumerator-view');
+  view.setRibbonPanels([[appInfoIcon], [runGroup], [chipReactions], [ribbonArrow], [chipBbs], [chipCombine], [cfgEstEl]]);
   view.append(root);
 
   // Mount the initial grids and run validation once everything is wired up.
