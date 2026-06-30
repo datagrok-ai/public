@@ -14,7 +14,7 @@ import {ClassicPreset} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
-import {dgTypeToSlotType, getNodeColors, categorizeBySignature} from '../../types/type-map';
+import {dgTypeToSlotType, getNodeColors, categorizeBySignature, isStringListType} from '../../types/type-map';
 import {getRole, getFuncQualifiedName, getFuncDisplayName, isInputOptional} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
@@ -86,6 +86,11 @@ export class FuncNode extends FlowNode {
         if (!this.properties['columnTables']) this.properties['columnTables'] = {};
         (this.properties['columnTables'] as Record<string, string>)[inp.name] =
           defaultTableParam(inp.name, dataframeParams);
+      } else if (isStringListType(inp.propertyType)) {
+        // string_list / list<string> are editable inline as a comma-separated
+        // string; the compiler turns the value into a JS array of trimmed,
+        // non-empty strings (so users needn't wire a String List Input node).
+        this.inputValues[inp.name] = '';
       }
     }
 

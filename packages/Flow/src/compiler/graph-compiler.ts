@@ -12,6 +12,7 @@ import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
+import {stringListToArrayLiteral} from '../types/type-map';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
@@ -164,6 +165,13 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
       const slotType = slotTypeOf(node, key);
       if (slotType === 'column' || slotType === 'column_list') continue; // pass 2
       const val = node.inputValues[key];
+      if (slotType === 'string_list') {
+        // Comma-separated → JS array of trimmed, non-empty strings. Empty → omit
+        // so the function falls back to its own default (don't force `[]`).
+        const lit = stringListToArrayLiteral(val);
+        if (lit !== '[]') inputMap.set(key, lit);
+        continue;
+      }
       if (val !== undefined)
         inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
     }

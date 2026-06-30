@@ -126,8 +126,27 @@ export function areTypesCompatible(outputType: string, inputType: string): boole
 }
 
 export function dgTypeToSlotType(dgType: string): string {
+  // `list<string>` is just the parametrized spelling of `string_list` — fold it
+  // so the socket type (and everything keyed off it) is the same.
+  if (dgType === 'list<string>') return 'string_list';
   const mapped = DG_TYPE_MAP[dgType];
   return mapped ? mapped.slotType : dgType;
+}
+
+/** A comma-separated string-list input — editable inline like a column-list
+ *  (the value is a comma-separated string; the compiler turns it into a JS
+ *  array of trimmed, non-empty strings). `list<string>` is the same as
+ *  `string_list`; plain `list` (which may hold non-strings) is intentionally
+ *  excluded. Matches either a raw DG `propertyType` or a resolved slot type. */
+export function isStringListType(dgType: string): boolean {
+  return dgType === 'string_list' || dgType === 'list<string>';
+}
+
+/** Comma-separated string → JS array literal of trimmed, non-empty strings
+ *  (`"a, b ,c"` → `["a", "b", "c"]`, empty → `[]`). Shared by the compilers. */
+export function stringListToArrayLiteral(value: unknown): string {
+  const items = String(value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  return `[${items.map((s) => JSON.stringify(s)).join(', ')}]`;
 }
 
 export function getSlotColor(slotType: string): string {

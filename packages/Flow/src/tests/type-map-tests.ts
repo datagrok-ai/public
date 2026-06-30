@@ -1,6 +1,9 @@
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
-import {areTypesCompatible, dgTypeToSlotType, getSlotColor, DG_TYPE_MAP} from '../types/type-map';
+import {
+  areTypesCompatible, dgTypeToSlotType, getSlotColor, DG_TYPE_MAP,
+  isStringListType, stringListToArrayLiteral,
+} from '../types/type-map';
 
 category('Flow: type-map', () => {
   test('identical types are compatible', async () => {
@@ -26,6 +29,27 @@ category('Flow: type-map', () => {
   test('list and string_list interconvert', async () => {
     expect(areTypesCompatible('list', 'string_list'), true);
     expect(areTypesCompatible('string_list', 'list'), true);
+  });
+
+  test('list<string> folds to the string_list slot type', async () => {
+    expect(dgTypeToSlotType('list<string>'), 'string_list');
+    expect(dgTypeToSlotType('string_list'), 'string_list');
+  });
+
+  test('isStringListType matches string_list / list<string> only', async () => {
+    expect(isStringListType('string_list'), true);
+    expect(isStringListType('list<string>'), true);
+    expect(isStringListType('list'), false, 'plain list (may be non-strings) is excluded');
+    expect(isStringListType('num_list'), false);
+    expect(isStringListType('column_list'), false);
+  });
+
+  test('stringListToArrayLiteral trims, drops empties, JSON-quotes', async () => {
+    expect(stringListToArrayLiteral(' a, b ,, c '), '["a", "b", "c"]');
+    expect(stringListToArrayLiteral(''), '[]');
+    expect(stringListToArrayLiteral('   '), '[]');
+    expect(stringListToArrayLiteral('x'), '["x"]');
+    expect(stringListToArrayLiteral('a "q", b'), '["a \\"q\\"", "b"]', 'inner quotes escaped');
   });
 
   test('incompatible types are rejected', async () => {

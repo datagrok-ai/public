@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Edit string-list inputs inline
+
+* `string_list` (and its `list<string>` spelling, which DG folds to the same thing) inputs are now
+  **editable in the context panel** as a comma-separated text field — like column lists. The compiler
+  trims each entry, drops blanks, and passes a real JS array to the function (`"a, b ,, c"` →
+  `["a", "b"]`... → `["a", "b", "c"]`); an empty field is omitted so the function keeps its own
+  default. Round-trips through creation-script import/emit, and a wired `String List Input` / `List`
+  node still works for the connected case. Plain `list` (which may hold non-strings) is left as-is.
+
 ### Easier wiring — compatible-target highlighting + drop-on-node
 
 * **Drag from a pin to see where it can go.** While you drag a connection from a socket, the canvas

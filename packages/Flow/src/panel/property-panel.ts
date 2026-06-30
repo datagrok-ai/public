@@ -227,6 +227,12 @@ export class PropertyPanel {
           case 'column_list':
             content.appendChild(this.createColumnRow(node, inp.name, true, dataframeParams, tip));
             break;
+          case 'string_list':
+            // Comma-separated; the compiler trims and turns it into an array.
+            // (`list<string>` arrives here as `string_list` — DG normalizes it.)
+            content.appendChild(this.createTextarea(inp.name, String(node.inputValues[inp.name] ?? ''),
+              (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`));
+            break;
           }
         }
         return content;
