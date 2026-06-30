@@ -56,7 +56,7 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
 /// weight). Validates the MpoCalculator cache so editing one curve only recomputes that column.
 export function desirabilityKey(d: PropertyDesirability): string {
   return isNumerical(d) ?
-    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -92,6 +92,7 @@ export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): Hoi
 export function mapColumnDesirability(h: HoistedColumn, rowCount: number): ColumnDesirability {
   const {raw, valNull, isCat, cats, catScore} = h;
   const line = isCat ? null : (h.template as NumericalDesirability).line;
+  const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
   const segN = line ? line.length : 0;
   const loX = segN ? line![0][0] : 0;
   const hiX = segN ? line![segN - 1][0] : 0;
@@ -127,6 +128,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
     // Inlined desirabilityScore over the column's line.
     const x = raw[i];
     let score = 0;
+    let matched = false;
     if (segN !== 0 && x >= loX && x <= hiX) {
       for (let k = 0; k < segN - 1; ++k) {
         const x1 = line![k][0];
@@ -134,11 +136,13 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
         if (x >= x1 && x <= x2) {
           const y1 = line![k][1];
           score = x1 === x2 ? y1 : y1 + (line![k + 1][1] - y1) * (x - x1) / (x2 - x1);
+          matched = true;
           break;
         }
       }
     }
-    D[i] = score;
+    // Out-of-range / no matching segment always scores 0, regardless of inversion; only the defined curve flips.
+    D[i] = matched ? (inv ? 1 - score : score) : 0;
   }
   return {D, state};
 }

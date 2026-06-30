@@ -39,6 +39,7 @@ class CoordMapper {
     private maxX: number,
     private width: number,
     private height: number,
+    private inverted = false,
   ) {
     this.plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
     this.plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
@@ -47,8 +48,9 @@ class CoordMapper {
   }
 
   toCanvasCoords(p: Point): {x: number, y: number} {
+    const yDisp = this.inverted ? 1 - p[1] : p[1];
     const canvasX = EDITOR_PADDING.left + (p[0] - this.minX) * this.scaleX;
-    const canvasY = EDITOR_PADDING.top + this.plotHeight - (p[1] * this.scaleY);
+    const canvasY = EDITOR_PADDING.top + this.plotHeight - (yDisp * this.scaleY);
 
     return {x: canvasX, y: canvasY};
   }
@@ -59,6 +61,8 @@ class CoordMapper {
 
     dataX = Math.max(this.minX, Math.min(this.maxX, dataX));
     dataY = Math.max(0, Math.min(1, dataY));
+    if (this.inverted)
+      dataY = 1 - dataY;
 
     return {x: dataX, y: dataY};
   }
@@ -184,7 +188,7 @@ export class MpoDesirabilityLineEditor {
       this.pointsGroup!.destroyChildren();
       const konvaPoints: number[] = [];
 
-      const mapper = new CoordMapper(minX, maxX, this._width, this._height);
+      const mapper = new CoordMapper(minX, maxX, this._width, this._height, !!this._prop.inverted);
       const sortedIndices = [...this._prop.line.keys()]
         .sort((a, b) => this._prop.line[a][0] - this._prop.line[b][0]);
       const sortedLine = sortedIndices.map((idx) => this._prop.line[idx]);
@@ -333,7 +337,7 @@ export class MpoDesirabilityLineEditor {
       if (!this.isInPlotArea(pos, this.stage!.width(), this.stage!.height()))
         return;
 
-      const mapper = new CoordMapper(minX, maxX, this.stage!.width(), this.stage!.height());
+      const mapper = new CoordMapper(minX, maxX, this.stage!.width(), this.stage!.height(), !!this._prop.inverted);
       const dataCoords = mapper.toDataCoords(pos.x, pos.y);
 
       this._prop.line.push([dataCoords.x, dataCoords.y]);
@@ -635,7 +639,7 @@ export class MpoDesirabilityLineEditor {
 
     const minX = this.getMinX();
     const maxX = this.getMaxX();
-    const mapper = new CoordMapper(minX, maxX, width, height);
+    const mapper = new CoordMapper(minX, maxX, width, height, !!this._prop.inverted);
 
     let x = (minX + maxX) / 2;
     let y = 0.5;
@@ -689,7 +693,7 @@ export class MpoDesirabilityLineEditor {
   private showPointEditor(dataIndex: number, clientX: number, clientY: number): void {
     const point = this._prop.line[dataIndex];
     const xInput = ui.input.float('X', {value: point[0], min: this.getMinX(), max: this.getMaxX(), format: '#0.00', step: 0.01});
-    const yInput = ui.input.float('Y', {value: point[1], min: 0, max: 1, format: '#0.00', step: 0.01});
+    const yInput = ui.input.float('Y', {value: this._prop.inverted ? 1 - point[1] : point[1], min: 0, max: 1, format: '#0.00', step: 0.01});
 
     const close = () => {
       content.removeEventListener('keydown', onKey);
@@ -701,7 +705,7 @@ export class MpoDesirabilityLineEditor {
       const y = yInput.value;
       if (x == null || y == null || isNaN(x) || isNaN(y))
         return;
-      this._prop.line[dataIndex] = [x, y];
+      this._prop.line[dataIndex] = [x, this._prop.inverted ? 1 - y : y];
       this.redrawAll();
     };
 

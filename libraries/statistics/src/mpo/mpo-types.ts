@@ -21,6 +21,7 @@ type BasePropertyDesirability = {
 export type NumericalDesirability = BasePropertyDesirability & {
   functionType: 'numerical';
   line: DesirabilityLine;
+  inverted?: boolean; /// when true, desirability = 1 - d(x): lower-is-better / avoid-target
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
 
