@@ -46,6 +46,13 @@ export async function previewRtf(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewRtf(file);
 }
 
+//input: string latex 
+//input: bool displayMode 
+//output: string result
+export function renderMath(latex: string, displayMode: boolean) : string {
+  return PackageFunctions.renderMath(latex, displayMode);
+}
+
 //input: file file 
 //output: view result
 //meta.role: fileViewer
