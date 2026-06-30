@@ -33,6 +33,11 @@
   nodes** (X/Y/Color/Size axis columns, picking from the wired table) and the **Select Column /
   Select Columns** utilities. One shared `createColumnFieldRow` drives all of them — any node with a
   column-valued field plus a dataframe input gets the picker for free.
+* **Fixed:** the picker (and "inspect anywhere") failed for a table reached through a node's
+  passthrough output when that node's *real* output isn't a table — e.g. a Scatter Plot wired to
+  AddNewColumn's "table →" passthrough (AddNewColumn returns a *column*). The instrumented run now
+  captures the threaded, post-execution table (`<input> (modified)`) whenever the node has no real
+  dataframe output, so the picker can read it instead of erroring with "no table produced".
 * Three cases, handled automatically: the table input isn't connected → a hint to connect one; it's
   connected and already run → pick immediately from its captured output; connected but not yet
   computed → offer to **run the flow up to that point**, then pick from the produced table

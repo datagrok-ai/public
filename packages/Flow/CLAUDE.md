@@ -466,7 +466,7 @@ Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run
 
 **Variable hoisting**: when wrapping `let x = ...`, the declaration is hoisted before `try` and only the assignment goes inside, so downstream nodes can reference `x`.
 
-**In-place mutating function support**: when a func node has dataframe input(s) but **zero real outputs**, the wrapper emits a synthetic output entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the modified table is previewable.
+**In-place / threaded table capture**: when a func node has a dataframe input but **no real *dataframe* output**, the wrapper emits a synthetic entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the post-execution table is previewable. This covers both a pure in-place mutator (no outputs at all) AND a node whose real output isn't a table but still threads one through its passthrough — e.g. AddNewColumn returns a *column*, yet a viewer / the column picker wired to its `table →` passthrough needs that modified table (it's keyed off `!hasDataframeOutput`, not zero-outputs, so `cloneForNode` finds it).
 
 **SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the docked output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
 

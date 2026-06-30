@@ -9,12 +9,15 @@ import {PropertyPanel} from '../panel/property-panel';
 import {ColumnPickRequest} from '../panel/column-picker';
 import {ExecutionController} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
+import {emitScript} from '../compiler/script-emitter';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
-/** Registered factory name for JoinTables, or null if absent on this server. */
+/** Registered factory name for a function by name, or null if absent. */
+function funcTypeName(name: string): string | null {
+  return getRegisteredFuncs().find((f) => f.func.name === name)?.nodeTypeName ?? null;
+}
 function joinTablesTypeName(): string | null {
-  const info = getRegisteredFuncs().find((f) => f.func.name === 'JoinTables');
-  return info?.nodeTypeName ?? null;
+  return funcTypeName('JoinTables');
 }
 
 category('Flow: column picker', () => {
@@ -126,6 +129,37 @@ category('Flow: column picker', () => {
       expect(reqsOne[0].tableParam, 'table');
     } finally {
       panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('a viewer wired to a passthrough table can resolve its columns', async () => {
+    // Repro: Table Input → AddNewColumn → (table → passthrough) → Scatter Plot.
+    // AddNewColumn's real output is a *column*, so the threaded (modified) table
+    // wasn't captured and the picker found nothing ("no table produced"). The
+    // instrumented run must now summarize it so cloneForNode can read it.
+    const addCol = funcTypeName('AddNewColumn');
+    if (!addCol) return;
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input');
+      const anc = await addNode(e.flow, addCol);
+      const viewer = await addNode(e.flow, 'Viewers/Scatter Plot');
+      await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
+      await e.flow.addConnectionByKeys(anc.id, 'table__pt', viewer.id, 'table');
+
+      // The picker resolves the viewer's table to AddNewColumn's passthrough.
+      const ref = e.flow.getInputSource(viewer.id, 'table');
+      expect(ref?.node.id, anc.id, 'table source is the AddNewColumn node');
+      expect(ref?.outputKey, 'table__pt', 'via its passthrough output');
+
+      // The instrumented emit must capture the modified table even though the
+      // node's real output is a column — that's what cloneForNode reads.
+      const inst = emitScript(e.flow, {name: 'T', description: '', tags: []},
+        {instrumented: true, runId: 'r1'});
+      expect(/'table \(modified\)': __ff_summarize\(/.test(inst), true,
+        'AddNewColumn captures its modified table for the picker');
+    } finally {
       destroyEditor(e);
     }
   });
