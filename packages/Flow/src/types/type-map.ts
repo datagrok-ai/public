@@ -52,6 +52,44 @@ export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
 export const DEFAULT_NODE_COLOR = '#BDBDBD';
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 
+// ---- categorize a function by what it does (shared by the browser + coloring) ----
+
+const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
+const SCALAR_TYPES = ['string', 'int', 'double', 'bool', 'datetime', 'num', 'bigint', 'qnum'];
+const COL_TYPES = ['column', 'column_list'];
+
+/** Bucket a function by its input/output signature (and viewer role). Pure —
+ *  operates on the lists of DG property-type strings, so it's shared by the
+ *  function browser's grouping AND the node title-bar coloring. */
+export function categorizeBySignature(ins: string[], outs: string[], role: string | null): string {
+  const has = (arr: string[], set: string[]): boolean => arr.some((t) => set.includes(t));
+  const dfIn = ins.filter((t) => t === 'dataframe').length;
+  const outDf = outs.includes('dataframe');
+  const noOut = outs.length === 0;
+  const roleHasViewer = !!role && role.split(',').some((r) => r.trim() === 'viewer');
+
+  if (has(outs, VIS_TYPES) || roleHasViewer) return 'Visualize';
+  if (dfIn >= 2) return 'Combine Tables';
+  if (outDf && dfIn === 0) return 'Data Sources';
+  if ((outDf && dfIn === 1) || (noOut && dfIn >= 1)) return 'Transform Tables';
+  if (has(outs, COL_TYPES)) return 'Column Operations';
+  if (has(outs, SCALAR_TYPES)) return 'Compute Values';
+  return 'Other';
+}
+
+/** Title-bar color per task category — so a function with no role (most of them:
+ *  JoinTables, AddNewColumn, chem properties, …) still reads its job from color
+ *  instead of all being gray. */
+export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> = {
+  'Data Sources': {color: '#FF8A65', bgcolor: '#ffffff'},      // orange — bring data in
+  'Combine Tables': {color: '#BA68C8', bgcolor: '#ffffff'},    // purple — join/union
+  'Transform Tables': {color: '#4DB6AC', bgcolor: '#ffffff'},  // teal — reshape
+  'Column Operations': {color: '#5C9DED', bgcolor: '#ffffff'}, // blue — derive columns
+  'Compute Values': {color: '#9CCC65', bgcolor: '#ffffff'},    // green — scalars
+  'Visualize': {color: '#4DD0E1', bgcolor: '#ffffff'},         // cyan — viewers
+  'Other': {color: '#90A4AE', bgcolor: '#ffffff'},             // blue-gray — the rest
+};
+
 /** Per-function title-bar colors, keyed by simple function name
  *  (case-insensitive). Checked before role-based coloring, so specific
  *  functions can be visually pinned regardless of their role. Add an entry to
@@ -97,11 +135,16 @@ export function getSlotColor(slotType: string): string {
   return mapped ? mapped.color : '#95A5A6';
 }
 
-export function getNodeColors(role: string | null, funcName?: string): {color: string; bgcolor: string} {
+export function getNodeColors(
+  role: string | null, funcName?: string, category?: string,
+): {color: string; bgcolor: string} {
   if (funcName) {
     const override = FUNC_NAME_COLORS[funcName.toLowerCase()];
     if (override) return override;
   }
   if (role && ROLE_COLORS[role]) return ROLE_COLORS[role];
+  // Fall back to the task category — gives role-less functions (the gray
+  // majority) a color that reflects what they do.
+  if (category && CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
   return {color: DEFAULT_NODE_COLOR, bgcolor: DEFAULT_NODE_BGCOLOR};
 }

@@ -14,7 +14,7 @@ import {ClassicPreset} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
-import {dgTypeToSlotType, getNodeColors} from '../../types/type-map';
+import {dgTypeToSlotType, getNodeColors, categorizeBySignature} from '../../types/type-map';
 import {getRole, getFuncQualifiedName, getFuncDisplayName, isInputOptional} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
@@ -41,7 +41,11 @@ export function defaultTableParam(columnParam: string, dataframeParams: string[]
 export class FuncNode extends FlowNode {
   constructor(func: DG.Func) {
     const role = getRole(func);
-    const colors = getNodeColors(role, func.name);
+    const category = categorizeBySignature(
+      func.inputs.map((p) => String(p.propertyType)),
+      func.outputs.map((p) => String(p.propertyType)),
+      role);
+    const colors = getNodeColors(role, func.name, category);
     const qualifiedName = getFuncQualifiedName(func);
     const displayName = getFuncDisplayName(func) || func.name;
 

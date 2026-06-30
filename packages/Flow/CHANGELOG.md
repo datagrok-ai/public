@@ -2,6 +2,37 @@
 
 ## v.next
 
+### Node colors by what they do
+
+* Function nodes with no DG role (the gray majority — Join Tables, Add New Column, chemical
+  properties, …) now take a **title-bar color from their task category** (Data Sources / Combine /
+  Transform / Column Operations / Compute Values / Visualize / Other) via `CATEGORY_COLORS`, so the
+  canvas reads at a glance. Precedence is unchanged where it matters: a pinned function color
+  (`FUNC_NAME_COLORS`) > an explicit role color (`ROLE_COLORS`) > the category color > gray. The
+  browser's `categorizeFunc` and the coloring now share one `categorizeBySignature`.
+
+### Viewers & Widgets — first-class visualization in the toolbox
+
+* **Viewers pane** with **manually-built viewer nodes** that don't need a TableView lifecycle. Wire a
+  table into a viewer node, run, and the live `DG.Viewer` renders in the preview panel. Core charts
+  (Scatter Plot, Histogram, Line/Bar/Pie/Box, Heat Map, Grid, Trellis, Network) come from the
+  `DataFrame.plot` namespace; non-core package viewers (Radar, Sunburst, Word cloud, Scaffold Tree, …)
+  are discovered via `DG.Func.find({meta:{role:'viewer'}})` and built generically. Emits
+  `let v = await table.plot.fromType('<Type>', {}); v.setOptions(<look>);`.
+* **Edit any setting, persistently.** Each viewer node exposes a few high-value options (X/Y/Color/Size
+  columns, title) in the context panel; for everything else, click **“Edit settings”** on the preview —
+  Flow does `grok.shell.o = viewer` (Datagrok renders the full settings editor) and **captures every
+  change back onto the node** (debounced `onPropertyValueChanged` → `getOptions().look` minus `#type`),
+  so a re-run reproduces the exact look.
+* **Widgets pane** collects every function that produces a `widget` (info panels, search widgets, …),
+  grouped out of the categories.
+* **The default viewer *functions* are gone** from the catalog — they required a TableView and are
+  replaced by the viewer nodes above.
+* **Clear-search ✕** at the right edge of the toolbox search box.
+* **Big catalog cleanup:** functions whose I/O is **only scalars** (string/number/bool/dynamic — ~250
+  math/string helpers) are hidden, along with viewer/view-producing functions. The catalog drops from
+  ~786 to a far more navigable set focused on data-flow steps.
+
 ### Visualize results — widgets & viewers in the preview panel
 
 * **A node whose output is a `widget` or `viewer` now renders live** in the bottom preview panel.

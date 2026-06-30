@@ -95,6 +95,11 @@ export function emitScript(
         if (inst && options?.enableBreakpoints) lines.push(...emitBreakpointCode(step));
         continue;
       }
+      // Viewer nodes: `await table.plot.fromType(type, {}); v.setOptions(look)`.
+      if (step.properties['viewerType']) {
+        lines.push(...emitViewerStep(step, inst, options));
+        continue;
+      }
       const code = emitUtilityStep(step);
       if (!code) continue;
       if (inst)
@@ -284,6 +289,75 @@ function emitUtilityStep(step: CompiledStep): string | null {
   default:
     return `// Unknown utility: ${step.funcName}`;
   }
+}
+
+// ---------- viewer nodes ----------
+
+/** Non-empty look options, ready to pass to `setOptions` (drops blank values
+ *  the user typed-then-cleared, and any leftover `#type` tag). */
+function cleanViewerLook(look: unknown): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (look && typeof look === 'object') {
+    for (const [k, v] of Object.entries(look as Record<string, unknown>)) {
+      if (k === '#type') continue;
+      if (v === '' || v === null || v === undefined) continue;
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/** The `setOptions(...)` object literal for a viewer step: each connected
+ *  `column` option contributes `"<lookKey>": (<colExpr>).name` (a connected
+ *  column wins over the panel value); the rest come from the stored look. */
+function buildViewerOptions(step: CompiledStep): string {
+  const specs = (step.properties['viewerOptionSpecs'] as Array<{key: string; kind: string}> | undefined) ?? [];
+  const entries: string[] = [];
+  const connected = new Set<string>();
+  for (const s of specs) {
+    if (s.kind !== 'column') continue;
+    const expr = step.inputs.get(s.key);
+    if (expr && expr !== 'undefined') {
+      entries.push(`${JSON.stringify(s.key)}: (${expr}).name`);
+      connected.add(s.key);
+    }
+  }
+  for (const [k, val] of Object.entries(cleanViewerLook(step.properties['viewerLook']))) {
+    if (connected.has(k)) continue; // a wired column overrides the typed value
+    entries.push(`${JSON.stringify(k)}: ${JSON.stringify(val)}`);
+  }
+  return entries.length ? `{${entries.join(', ')}}` : '';
+}
+
+/** A viewer node → `let v = await <table>.plot.fromType('<Type>', {});` plus a
+ *  `v.setOptions(<options>)` when options (typed or wired) are set. */
+function emitViewerStep(step: CompiledStep, inst: boolean, options?: EmitOptions): string[] {
+  const tableExpr = step.inputs.get('table');
+  if (!tableExpr || tableExpr === 'undefined') return []; // no table wired — nothing to plot
+  const type = String(step.properties['viewerType']);
+  const optsLiteral = buildViewerOptions(step);
+  const v = step.variableName;
+  const create = `await ${tableExpr}.plot.fromType(${JSON.stringify(type)}, {})`;
+  const setOpts = optsLiteral ? `${v}.setOptions(${optsLiteral});` : '';
+
+  if (!inst) {
+    const lines = [`let ${v} = ${create};`];
+    if (setOpts) lines.push(setOpts);
+    return lines;
+  }
+
+  const lines = [`__ff_emit('node-start', '${step.nodeId}');`, `let ${v};`, 'try {'];
+  lines.push(`  ${v} = ${create};`);
+  if (setOpts) lines.push(`  ${setOpts}`);
+  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs:{${v}: __ff_summarize(${v}, 'viewer')}});`);
+  lines.push('} catch (__ff_err) {');
+  lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
+  if (options?.haltOnError !== false) {
+    lines.push(`  __ff_emit('run-complete', '', {success: false});`);
+    lines.push('  throw __ff_err;');
+  }
+  lines.push('}');
+  return lines;
 }
 
 // ---------- instrumentation helpers ----------

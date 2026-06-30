@@ -161,11 +161,13 @@ export function hasRenderablePreview(state: NodeExecState): boolean {
   return false;
 }
 
-export function buildValuePreviews(state: NodeExecState): HTMLElement {
+export function buildValuePreviews(
+  state: NodeExecState, onEditViewer?: (viewer: unknown) => void,
+): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
   for (const [name, summary] of Object.entries(state.outputs)) {
-    const preview = buildPreview(name, summary);
+    const preview = buildPreview(name, summary, onEditViewer);
     if (preview) container.appendChild(preview);
   }
   return container;
@@ -174,7 +176,9 @@ export function buildValuePreviews(state: NodeExecState): HTMLElement {
 /** A single rich preview for one output value. Returns null for primitives /
  *  null / object — those don't merit dedicating space in the docked panel.
  *  Exported because the per-port "View output" popup uses it directly. */
-export function buildPreview(name: string, summary: ValueSummary): HTMLElement | null {
+export function buildPreview(
+  name: string, summary: ValueSummary, onEditViewer?: (viewer: unknown) => void,
+): HTMLElement | null {
   switch (summary.type) {
   case 'dataframe': {
     if (!summary.clone) return null;
@@ -237,9 +241,19 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
     const obj = summary.value as {root?: HTMLElement} | undefined;
     if (!obj?.root || !(obj.root instanceof Element)) return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+    wrap.style.position = 'relative';
     obj.root.style.width = '100%';
     if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
     wrap.appendChild(obj.root);
+    // A viewer's full settings are editable live: a small gear in the top-right
+    // corner (overlaid — no vertical space) hands the viewer to the host
+    // (→ grok.shell.o = viewer), which captures changes back onto the node.
+    if (summary.type === 'viewer' && onEditViewer) {
+      const gear = setTid(ui.iconFA('cog', () => onEditViewer(obj),
+        'Edit viewer settings'), 'viewer-edit');
+      gear.classList.add('ff-viewer-edit-gear');
+      wrap.appendChild(gear);
+    }
     return wrap;
   }
   default:

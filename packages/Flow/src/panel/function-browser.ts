@@ -1,9 +1,19 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
+import {FuncInfo, getRegisteredFuncs, VIEWER_NODE_TYPES} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
+import {categorizeBySignature} from '../types/type-map';
+
+/** Whether a function's output is a widget (→ the Widgets pane, not a category). */
+export function funcOutputsWidget(f: FuncInfo): boolean {
+  try {
+    return f.func.outputs.some((o) => String(o.propertyType) === 'widget');
+  } catch {
+    return false;
+  }
+}
 
 export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
@@ -21,13 +31,10 @@ export const FUNC_CATEGORIES = [
 ] as const;
 export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
 
-const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
-const SCALAR_TYPES = ['string', 'int', 'double', 'bool', 'datetime', 'num', 'bigint', 'qnum'];
-const COL_TYPES = ['column', 'column_list'];
-
 /** Bucket a function by **what it does**, derived from its input/output
- *  signature (and role for viewers). The key distinctions, validated against
- *  the live catalog (see docs/func-catalog-snapshot.md):
+ *  signature (and role for viewers) — delegates to the shared
+ *  `categorizeBySignature` (the same logic that colors node title bars). The
+ *  key distinctions, validated against the live catalog:
  *  - **Data Sources** produce a table from *no* table input (OpenFile, DB
  *    queries, generators). A join is NOT a data source — it consumes tables.
  *  - **Combine Tables** take ≥2 tables (join / union / link / react).
@@ -38,22 +45,10 @@ const COL_TYPES = ['column', 'column_list'];
  *  - **Visualize** emit a viewer / view / widget / graphics.
  *  - **Other** — expression/filter builders and dynamic helpers. */
 export function categorizeFunc(func: DG.Func, role: string | null): FuncCategory {
-  const outs = func.outputs.map((o) => String(o.propertyType));
-  const ins = func.inputs.map((i) => String(i.propertyType));
-  const has = (arr: string[], set: string[]): boolean => arr.some((t) => set.includes(t));
-
-  const dfIn = ins.filter((t) => t === 'dataframe').length;
-  const outDf = outs.includes('dataframe');
-  const noOut = outs.length === 0;
-  const roleHasViewer = !!role && role.split(',').some((r) => r.trim() === 'viewer');
-
-  if (has(outs, VIS_TYPES) || roleHasViewer) return 'Visualize';
-  if (dfIn >= 2) return 'Combine Tables';                          // join / union / link
-  if (outDf && dfIn === 0) return 'Data Sources';                  // produce a table from non-table inputs
-  if ((outDf && dfIn === 1) || (noOut && dfIn >= 1)) return 'Transform Tables';
-  if (has(outs, COL_TYPES)) return 'Column Operations';
-  if (has(outs, SCALAR_TYPES)) return 'Compute Values';
-  return 'Other';
+  return categorizeBySignature(
+    func.inputs.map((i) => String(i.propertyType)),
+    func.outputs.map((o) => String(o.propertyType)),
+    role) as FuncCategory;
 }
 
 /** MIME-ish key used to carry a node type name through HTML5 drag/drop.
@@ -174,6 +169,24 @@ export class FunctionBrowser {
     setTid(this.searchInput, 'browser-search');
     this.searchInput.addEventListener('input', () => this.render());
 
+    // Clear (✕) affordance at the right edge of the search box — shown only
+    // while there's text to clear.
+    const clearBtn = document.createElement('span');
+    clearBtn.className = 'funcflow-search-clear';
+    clearBtn.innerHTML = '&times;';
+    ui.tooltip.bind(clearBtn, 'Clear search');
+    setTid(clearBtn, 'browser-search-clear');
+    const syncClear = (): void => {clearBtn.style.display = this.searchInput.value ? 'flex' : 'none';};
+    clearBtn.addEventListener('click', () => {
+      this.searchInput.value = '';
+      this.searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+      this.searchInput.focus();
+      syncClear();
+    });
+    this.searchInput.addEventListener('input', syncClear);
+    syncClear();
+    const searchWrap = ui.div([this.searchInput, clearBtn], 'funcflow-search-wrap');
+
     // Group by selector
     this.groupBySelect = document.createElement('select');
     this.groupBySelect.className = 'funcflow-groupby-select';
@@ -200,7 +213,7 @@ export class FunctionBrowser {
     this.treeContainer = setTid(ui.div([], 'funcflow-tree-container'), 'browser-tree');
 
     const container = ui.divV([
-      this.searchInput,
+      searchWrap,
       this.groupBySelect,
       this.treeContainer,
     ], 'funcflow-browser');
@@ -211,17 +224,21 @@ export class FunctionBrowser {
   render(): void {
     this.treeContainer.innerHTML = '';
 
-    // KNIME-style Files browser (open by default) and Queries pane lead the
-    // toolbox, before the building-block built-ins and the function categories.
+    // KNIME-style Files browser (open by default), then Queries / Viewers /
+    // Widgets panes lead the toolbox, before the building-block built-ins and
+    // the function categories.
     this.renderFilesSection();
     this.renderQueriesSection();
+    this.renderViewersSection();
+    this.renderWidgetsSection();
 
     // Add built-in nodes section
     this.renderBuiltinNodes();
 
-    // Add DG function nodes — queries are excluded here; they live in the
-    // Queries pane (grouped by connection), regardless of the group-by mode.
-    const funcs = this.filterBySearch(getRegisteredFuncs().filter((f) => !(f.func instanceof DG.DataQuery)));
+    // Add DG function nodes — queries, widget-producers, and (already-excluded)
+    // viewer functions don't appear here; they live in their dedicated panes.
+    const funcs = this.filterBySearch(getRegisteredFuncs()
+      .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
     const grouped = this.groupFunctions(funcs);
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped));
@@ -330,6 +347,50 @@ export class FunctionBrowser {
       'Queries', content, 'b:Queries', false,
       'Database queries, grouped by data connection. Double-click or drag to add.');
     setTid(section, 'browser-queries');
+    this.treeContainer.appendChild(section);
+  }
+
+  /** The Viewers pane — manually-built viewer nodes (core charts first, then
+   *  discovered package viewers). Each adds a `Viewers/<label>` node. */
+  private renderViewersSection(): void {
+    const query = this.searchInput.value.toLowerCase();
+    const types = query ? VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
+    if (types.length === 0) return;
+
+    const content = ui.div([], 'funcflow-section-content');
+    for (const vt of types) {
+      const item = ui.div([], 'funcflow-func-item');
+      item.textContent = vt.label;
+      item.dataset.testid = tid('browser-item', vt.nodeTypeName);
+      item.dataset.nodeTypeName = vt.nodeTypeName;
+      ui.tooltip.bind(item, `Add a ${vt.label} viewer. Wire a table in, then run. Double-click or drag.`);
+      item.addEventListener('dblclick', () => this.callbacks.onBuiltinNodeDoubleClick(vt.nodeTypeName));
+      this.makeItemDraggable(item, vt.nodeTypeName);
+      content.appendChild(item);
+    }
+    const section = this.createSection(
+      'Viewers', content, 'b:Viewers', false,
+      'Charts and viewers. Wire a table into one and run to see it in the preview panel.');
+    setTid(section, 'browser-viewers');
+    this.treeContainer.appendChild(section);
+  }
+
+  /** The Widgets pane — functions that produce a widget (info panels, search
+   *  widgets, …), kept out of the categories. */
+  private renderWidgetsSection(): void {
+    const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
+    const query = this.searchInput.value.toLowerCase();
+    const matching = query ? widgets.filter((f) => funcMatchesSearch(f, query)) : widgets;
+    if (matching.length === 0) return;
+    matching.sort((a, b) => a.name.localeCompare(b.name));
+
+    const content = ui.div([], 'funcflow-section-content');
+    for (const info of matching)
+      content.appendChild(this.createFuncItem(info));
+    const section = this.createSection(
+      'Widgets', content, 'b:Widgets', false,
+      'Functions that produce a widget. Double-click or drag to add.');
+    setTid(section, 'browser-widgets');
     this.treeContainer.appendChild(section);
   }
 

@@ -129,7 +129,8 @@ export class PropertyPanel {
     if (node.dgFunc) this.addFuncNodePanes(acc, node);
     if (node.dgNodeType === 'input') this.addInputNodePane(acc, node);
     if (node.dgNodeType === 'output') this.addOutputNodePane(acc, node);
-    if (node.dgNodeType === 'utility') this.addUtilityNodePane(acc, node);
+    if (node.properties['viewerType']) this.addViewerNodePane(acc, node);
+    else if (node.dgNodeType === 'utility') this.addUtilityNodePane(acc, node);
 
     this.addConnectionsPane(acc, node);
 
@@ -289,6 +290,43 @@ export class PropertyPanel {
         content.appendChild(this.createCombo('Output Type', String(node.properties['outputType'] ?? 'dynamic'),
           OUTPUT_TYPE_VALUES, (v) => {node.properties['outputType'] = v;}));
       }
+      return content;
+    }, true);
+  }
+
+  /** Viewer node: the curated, exposed look options (column choices, title).
+   *  Everything else is edited live via the preview's "Edit settings" button. */
+  private addViewerNodePane(acc: DG.Accordion, node: FlowNode): void {
+    if (!node.properties['viewerLook'] || typeof node.properties['viewerLook'] !== 'object')
+      node.properties['viewerLook'] = {};
+    const look = node.properties['viewerLook'] as Record<string, unknown>;
+    const specs = (node.properties['viewerOptionSpecs'] as Array<{key: string; label: string; kind: string}>) ?? [];
+
+    acc.addPane('Viewer', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
+      content.appendChild(ui.div([ui.label('Type'),
+        ui.divText(String(node.properties['viewerType']))], 'funcflow-prop-row'));
+      for (const o of specs) {
+        // A column option can also be wired in (a column socket). When connected,
+        // the wired column wins — show it as connected rather than an editor.
+        if (o.kind === 'column' && this.flow.isInputConnected(node.id, o.key)) {
+          const row = ui.div([ui.divText(`${o.label}: connected`)], 'funcflow-prop-row');
+          ui.tooltip.bind(row, 'A column is wired into this option; its name is used.');
+          content.appendChild(row);
+          continue;
+        }
+        const tip = o.kind === 'column' ? 'Column name (or wire a column into the socket)' : undefined;
+        content.appendChild(this.createTextarea(o.label, String(look[o.key] ?? ''), (v) => {
+          const s = String(v ?? '').trim();
+          if (s) look[o.key] = s;
+          else delete look[o.key];
+          void this.flow.updateNode(node.id);
+        }, tip));
+      }
+      const note = ui.divText('Run the flow, then click the viewer in the preview panel and use ' +
+        '“Edit settings” to change every other setting — your changes are saved on the node.');
+      note.style.cssText = 'font-size:11px;color:#888;margin-top:6px;line-height:1.4;';
+      content.appendChild(note);
       return content;
     }, true);
   }

@@ -204,6 +204,51 @@ export class FuncFlowView extends DG.ViewBase {
     }, true);
   }
 
+  /** Live subscription capturing a viewer's option changes into its node. */
+  private viewerEditSub: {unsubscribe(): void} | undefined;
+
+  /** Show a live viewer in the context panel and persist its option changes
+   *  onto the node. `grok.shell.o = viewer` makes Datagrok render the viewer's
+   *  full settings editor; we debounce `onPropertyValueChanged`, read
+   *  `getOptions().look` (dropping the `#type` tag), and store it as the node's
+   *  `viewerLook` so a re-run reproduces the exact look. */
+  private editViewer(nodeId: string, viewer: unknown): void {
+    const v = viewer as {
+      root?: HTMLElement;
+      getOptions?: () => {look?: unknown};
+      onPropertyValueChanged?: unknown;
+    };
+    grok.shell.o = v as object;
+
+    this.viewerEditSub?.unsubscribe();
+    this.viewerEditSub = undefined;
+
+    const capture = (): void => {
+      try {
+        const node = this.flow?.getNodeById(nodeId);
+        if (!node) return;
+        let look = v.getOptions?.().look as Record<string, unknown> | string | undefined;
+        if (typeof look === 'string') look = JSON.parse(look) as Record<string, unknown>;
+        if (!look || typeof look !== 'object') return;
+        const clean: Record<string, unknown> = {};
+        for (const [k, val] of Object.entries(look))
+          if (k !== '#type') clean[k] = val;
+        node.properties['viewerLook'] = clean;
+        void this.flow.updateNode(node.id);
+      } catch (e) {
+        console.warn('FuncFlow: failed to capture viewer options', e);
+      }
+    };
+
+    try {
+      const obs = v.onPropertyValueChanged as {subscribe(cb: () => void): {unsubscribe(): void}} | undefined;
+      if (obs)
+        this.viewerEditSub = DG.debounce(obs as any, 300).subscribe(() => capture());
+    } catch (e) {
+      console.warn('FuncFlow: viewer onPropertyValueChanged unavailable', e);
+    }
+  }
+
   /** Run only the slice up to this node and open its data preview — the
    *  "inspect anywhere" entry point from an output-port right-click. */
   private previewNodeData(nodeId: string): void {
@@ -309,6 +354,11 @@ export class FuncFlowView extends DG.ViewBase {
       if (grok.shell.v !== this)
         this.executionController?.outputPreview.close();
     }));
+
+    // "Edit settings" on a viewer preview → show the live viewer in the context
+    // panel (Datagrok renders its full settings editor) and capture every change
+    // back into the node's stored options, so a re-run reproduces the look.
+    this.executionController.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
@@ -483,23 +533,30 @@ export class FuncFlowView extends DG.ViewBase {
 
     // Primary call-to-action: launch the hands-on tour (the first tutorial),
     // which walks a newcomer through loading data and adding a column.
-    const tourBtn = ui.button('Take a 2-minute tour', () => {
+    const firstFlowBtn = ui.button('Create your first flow', () => {
       this.hideStartPanel();
       void this.guideRunner.run(TUTORIALS[0], this.guideHost);
     });
-    tourBtn.classList.add('funcflow-start-tour');
-    ui.tooltip.bind(tourBtn, `Guided walkthrough: ${TUTORIALS[0].title}`);
-    setTid(tourBtn, 'start-tour');
+    firstFlowBtn.classList.add('funcflow-start-tour');
+    ui.tooltip.bind(firstFlowBtn, `Hands-on: ${TUTORIALS[0].title}`);
+    setTid(firstFlowBtn, 'start-first-flow');
 
     const openBtn = ui.button('Open a flow…', () => void this.openFlow());
-    const importBtn = ui.button('Import from a table…', () => this.importCreationScriptDialog());
     setTid(openBtn, 'start-open');
-    setTid(importBtn, 'start-import');
-    const actions = ui.divH([tourBtn, openBtn, importBtn], 'funcflow-start-actions');
+    const actions = ui.divH([firstFlowBtn, openBtn], 'funcflow-start-actions');
 
-    const hint = ui.divText(
-      'New here? Take the tour. Or: double-click a function in the list on the left, or drag a file onto the canvas.',
-      'funcflow-start-hint');
+    // Discovery hint, with an actionable link that launches the interface tour.
+    const interfaceTour = TUTORIALS.find((t) => t.id === 'interface-tour');
+    const tourLink = ui.link('take a tour of the interface', () => {
+      this.hideStartPanel();
+      if (interfaceTour) void this.guideRunner.run(interfaceTour, this.guideHost);
+    }, 'Walk through every part of the UI — toolbox, ribbon, canvas, and context panel');
+    setTid(tourLink, 'start-ui-tour');
+    const hint = ui.div([], 'funcflow-start-hint');
+    hint.appendChild(document.createTextNode('New here? Create your first flow above, or '));
+    hint.appendChild(tourLink);
+    hint.appendChild(document.createTextNode(
+      '. You can also double-click a function in the list on the left, or drag a file onto the canvas.'));
 
     const panel = ui.divV([
       title, subtitle,

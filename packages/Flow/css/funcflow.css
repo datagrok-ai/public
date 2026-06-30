@@ -36,6 +36,33 @@
   box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.15);
 }
 
+/* Clear-search (✕) affordance, overlaid at the right edge of the search box. */
+.funcflow-search-wrap {
+  position: relative;
+}
+
+.funcflow-search-clear {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #999;
+  font-size: 15px;
+  line-height: 1;
+  user-select: none;
+}
+
+.funcflow-search-clear:hover {
+  color: #444;
+  background: var(--grey-1, #eee);
+}
+
 .funcflow-groupby-select {
   width: calc(100% - 16px);
   margin: 0 8px 8px 8px;
@@ -441,6 +468,29 @@
 }
 
 /* Per-port "View Output" floating popover — anchored next to the port. */
+/* Gear overlay on a viewer preview — top-right corner, no vertical footprint. */
+.ff-viewer-edit-gear {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #607d8b;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ff-viewer-edit-gear:hover {
+  color: #1976d2;
+  background: #fff;
+}
+
 .ff-port-preview {
   position: fixed;
   z-index: 10001;

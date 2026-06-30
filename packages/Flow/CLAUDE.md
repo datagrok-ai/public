@@ -25,6 +25,7 @@ src/
 │       ├── utility-nodes.ts      # 9 helpers + 5 constants (ConstString has inline InputControl)
 │       ├── comparison-nodes.ts   # 10 ops
 │       ├── breakpoint-node.ts    # Debug pause node
+│       ├── viewer-node.ts        # Manual viewer nodes (table.plot.fromType + setOptions)
 │       └── func-node.ts          # Dynamic node factory per DG.Func, builds pass-through outputs
 ├── compiler/
 │   ├── topological-sort.ts       # Kahn's, component-by-component (top-y first), y/x-stable
@@ -244,6 +245,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, …), category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable |
+| `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
 | `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, warn-and-skip for JS-only nodes (needs a live backend) |
 
@@ -336,7 +338,33 @@ Become `//output:` annotation lines.
 
 ### Comparison Nodes ([rete/nodes/comparison-nodes.ts](src/rete/nodes/comparison-nodes.ts))
 
-`==`, `!=`, `>`, `>=`, `<`, `<=`, `Contains`, `Starts With`, `Ends With`, `Is Null`.
+`==`, `!=`, `>`, `>=`, `<`, `<=`, `Contains`, `Starts With`, `Ends With`, `Is Null`. **Hidden from the
+toolbox for now** (still registered so saved flows load).
+
+### Viewer Nodes ([rete/nodes/viewer-node.ts](src/rete/nodes/viewer-node.ts))
+
+Manual nodes that build a Datagrok viewer from a wired table — **replacing the default viewer
+*functions*** (which need a `TableView` lifecycle). A `ViewerNode` is `dgNodeType:'utility'` (so the
+compiler's utility path resolves its `table` input) carrying `properties.viewerType` (a `DG.VIEWER`
+value), `properties.viewerLook` (the accumulated options, look keys minus `#type`), and
+`properties.viewerOptionSpecs` (the curated fields the panel renders). Output socket type is `viewer`.
+
+- **Registration** ([node-factory.ts](src/rete/node-factory.ts)): `CORE_VIEWER_SPECS` register
+  synchronously in `registerBuiltinNodes` (so saved viewer flows always deserialize); non-core package
+  viewers (`DG.Func.find({meta:{role:'viewer'}})`, by `friendlyName ?? name`) register in
+  `registerAllFunctions` via `registerDiscoveredViewers`. Both populate `VIEWER_NODE_TYPES` (the
+  Viewers pane). Type name = `Viewers/<label>`.
+- **Emit** ([script-emitter.ts](src/compiler/script-emitter.ts) `emitViewerStep`, dispatched in the
+  utility branch on `properties.viewerType`): `let v = await <table>.plot.fromType('<Type>', {});` then
+  `v.setOptions(<cleanViewerLook>)` (empty values dropped). Async `fromType` is **awaited**; the
+  instrumented path summarizes `v` as a `'viewer'`. No table wired → emits nothing.
+- **Live editing**: the preview's **“Edit settings”** button (added by `buildPreview` when an
+  `onEditViewer` callback is threaded through `OutputPreviewPanel`) calls
+  `FuncFlowView.editViewer(nodeId, viewer)` → `grok.shell.o = viewer` + a `DG.debounce(viewer
+  .onPropertyValueChanged, 300)` subscription that writes `getOptions().look` (minus `#type`) back into
+  `node.properties.viewerLook`. The property panel's `addViewerNodePane` edits the curated subset
+  directly. (Empirically: `fromType`/`scatter` are async; passing a look to `fromType` throws —
+  `setOptions` is the only reliable applier.)
 
 ### Function Nodes ([rete/nodes/func-node.ts](src/rete/nodes/func-node.ts))
 
@@ -375,8 +403,9 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 ## Type System (`types/type-map.ts`)
 
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
-- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName)` checks this **before** role coloring, so specific functions can be pinned regardless of role (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
+- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName, category?)` checks this **first** (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
+- `CATEGORY_COLORS`: task-category → title-bar color, the **fallback after role** so the role-less majority (JoinTables, AddNewColumn, chem properties, …) is colored by what it does instead of all gray. `FuncNode` computes the category via `categorizeBySignature` (shared with the browser's `categorizeFunc`) and passes it to `getNodeColors`. Precedence: func-name → role → category → default gray.
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
 `TypedSocket` ([rete/sockets.ts](src/rete/sockets.ts)) is one-instance-per-DG-type (cached), so reference equality holds. Its `isCompatibleWith` method is consulted at connection-pick time by `ClassicFlow.canMakeConnection`, which rejects incompatible drops before they enter the editor's data layer.
@@ -555,7 +584,7 @@ its raw, un-slugified identity — the test-id `ff-node` is the same on every no
 |---|---|
 | View shell | `ff-view`, `ff-root`, `ff-canvas`, `ff-statusbar`(+`-nodes`/`-links`/`-validation`) |
 | Ribbon icons | `ff-ribbon-<action>` (`run`/`debug`/`continue`/`stop`/`view-script`/`save`/`open`/`undo`/`redo`/`layout`/`zoom-in`/`zoom-out`/`zoom-fit`/`toggle-browser`/`save-creation-scripts`) |
-| Start panel | `ff-start-overlay`, `ff-start-panel`, `ff-start-bg`, `ff-start-template-<file>`, `ff-start-blank`, `ff-start-open`, `ff-start-import` |
+| Start panel | `ff-start-overlay`, `ff-start-panel`, `ff-start-bg`, `ff-start-template-<file>`, `ff-start-blank`, `ff-start-open`, `ff-start-first-flow` (flagship build tutorial), `ff-start-ui-tour` (hint link → interface tour) |
 | Function browser | `ff-browser`, `ff-browser-search`, `ff-browser-groupby`, `ff-browser-tree`, `ff-browser-section-<title>`, `ff-browser-item-<typeName>` |
 | Files / Queries panes | `ff-browser-files`, `ff-browser-queries`, `ff-browser-query-conn-<conn>` (+ `data-query-conn`); tree rows `ff-files-conn-<name>` / `ff-files-folder-<name>` / `ff-files-file-<name>` (+ `data-conn`/`data-folder`/`data-file`/`data-file-path`) |
 | Canvas node | `ff-node` (+ `data-node-id`, `data-node-type`), `ff-node-title`/`-title-text`/`-status`/`-caret`/`-statusline`/`-hint`/`-description`/`-body`, `ff-exec-in`/`ff-exec-out`, `ff-socket-input-<key>`/`ff-socket-output-<key>`, `ff-socket-<type>` |
@@ -611,7 +640,11 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
   category list** and grouped into one sub-accordion **per connection** (`queryConnectionName` =
   `connection.friendlyName ?? connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`),
   **regardless of the group-by mode**.
-- Search input + Group-by selector. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`.
+- **Viewers pane** (`ff-browser-viewers`): the manual **viewer nodes** (`VIEWER_NODE_TYPES`, core charts
+  first, then discovered package viewers) — see [Viewer Nodes](#viewer-nodes-retenodesviewer-nodets).
+- **Widgets pane** (`ff-browser-widgets`): functions whose output is a `widget` (`funcOutputsWidget`),
+  also kept out of the categories.
+- Search input (with a **clear ✕**, `ff-browser-search-clear`) + Group-by selector. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`.
 - **`categorizeFunc(func, role)`** buckets by **input/output signature** (validated against the live catalog — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md)). `FUNC_CATEGORIES` is also the **tree order** (Data Sources first):
   - **Data Sources** — outputs a table, **0 table inputs** (OpenFile, DB queries). A join is *not* a data source.
   - **Combine Tables** — **≥2 table inputs** (JoinTables, LinkTables).
@@ -625,7 +658,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 ### Catalog exclusions ([node-factory.ts](src/rete/node-factory.ts))
 
-`shouldExcludeFunc(func, role, tags, pkgName)` drops ~⅔ of the raw catalog (firehose → ~800 usable nodes). Excluded when **any**: package ∈ `EXCLUDED_PACKAGES` (`Dbtests, ApiTests, UiTests, DevTools, Tutorials, ApiSamples, UsageAnalysis`); name is/starts-with `test`; role (comma-split) ∈ `EXCLUDED_ROLES` (now also `editor, cellEditor, panel, widgets, tooltip`); tag ∈ `EXCLUDED_TAGS`; it takes a **`funccall` input** (command/dialog wrapper); or it **outputs a `view`** (a whole TableView/ViewBase — can't be composed or previewed). Locked in by [tests/function-browser-tests.ts](src/tests/function-browser-tests.ts).
+`shouldExcludeFunc(func, role, tags, pkgName)` drops ~⅔ of the raw catalog (firehose → ~800 usable nodes). Excluded when **any**: package ∈ `EXCLUDED_PACKAGES` (`Dbtests, ApiTests, UiTests, DevTools, Tutorials, ApiSamples, UsageAnalysis`); name is/starts-with `test`; role (comma-split) ∈ `EXCLUDED_ROLES` (now also `editor, cellEditor, panel, widgets, tooltip`); tag ∈ `EXCLUDED_TAGS`; it takes a **`funccall` input** (command/dialog wrapper); it **outputs a `view` or `viewer`** (a whole TableView/ViewBase — replaced by the manual viewer nodes); or it is **primitive-only** (every input AND output is a scalar in `PRIMITIVE_TYPES` = string/int/double/bool/dynamic/num — ~250 math/string helpers). Locked in by [tests/function-browser-tests.ts](src/tests/function-browser-tests.ts).
 
 ### Theme (CSS)
 
@@ -653,7 +686,7 @@ Spotfire-inspired light theme:
 - **Pan-to-new-node**: `addNodeAtCenter` calls `panToNode(id)` after one rAF, translating the AreaPlugin so the freshly-added node is at viewport center.
 - **Overview minimap** (bottom-right): a screen-space SVG overlay built by `FlowEditor.installMinimap` (sibling of the guide overlay in `this.container`, *not* in the transformed canvas). Draws each node as a small rect (title color) plus the current viewport rectangle; click/drag pans (centers the viewport on the clicked graph point). Redraws are rAF-coalesced via `scheduleMinimapRedraw`, hooked into the area pipe (`translated`/`zoomed`/`render`/`nodetranslated`) and graph-change events. **Clicking anywhere on the header** minimizes it to the title bar (`data-collapsed`; the chevron is just an affordance). It's always present — there's no hide-entirely option. `FlowEditor.setMinimapCollapsed(bool)` sets the state programmatically; `FuncFlowView.setMinimapCollapsed(bool)` queues it until the (async) editor exists — used by `openCreationScriptFlowDialog`, which opens minimized in the dialog and expands on **Open In Editor**. The fit transform is stashed on the svg `data-*` so click→canvas mapping reuses it. rect-select and double-click-to-fit skip `.ff-minimap`.
 - **Drag-out suggestion menu**: pointerdown on `.ff-socket-row-output .ff-socket` records the source slot; if pointerup lands on empty canvas (not a node, not a socket) AND no connection was created in between, [`openSuggestionMenu`](src/rete/flow-editor.ts) opens a searchable popup of every node type whose first input is type-compatible with the dragged source. **Ranked** (U9): Value Output first, then common next-step funcs (`COMMON_NEXT_FUNCS` — Join, AddNewColumn, Aggregate, Filter, …), then other built-ins, then DG funcs alphabetically. Selecting an item creates the node at the drop point and auto-connects the source to its first compatible input. Compatible-types lookup is cached per node type — see `findNodeTypesAcceptingInput` / `_sampleInputTypesCache` in `node-factory.ts`.
-- **Start panel** (U1): an overlay over the empty canvas ([`buildStartPanel`](src/funcflow-view.ts)) — template cards (bundled `files/*.ffjson` via `_package.files.readAsText`), a Blank-canvas card, **Open a flow…** / **Import from a table…** buttons, and a discovery hint. `updateStartPanelVisibility()` shows it whenever `getNodeCount() === 0` (hooked into `onGraphChanged`, `initEditor`, `newFlow`); the ribbon **Flow › Templates…** re-opens it. Never face a blank page.
+- **Start panel** (U1): an overlay over the empty canvas ([`buildStartPanel`](src/funcflow-view.ts)) — template cards (bundled `files/*.ffjson` via `_package.files.readAsText`), a Blank-canvas card, a **Create your first flow** button (runs the flagship `load-data-add-column` tutorial), an **Open a flow…** button, and a discovery hint whose inline link launches the **interface tour**. (Importing a table's creation script is still available from the ribbon's Flow menu.) `updateStartPanelVisibility()` shows it whenever `getNodeCount() === 0` (hooked into `onGraphChanged`, `initEditor`, `newFlow`); the ribbon **Flow › Templates…** re-opens it. Never face a blank page.
 
 ## Key Dependencies
 

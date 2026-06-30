@@ -28,7 +28,12 @@ import {
   LessThanNode, LessOrEqualNode, ContainsNode, StartsWithNode, EndsWithNode, IsNullNode,
 } from './nodes/comparison-nodes';
 import {BreakpointNode} from './nodes/breakpoint-node';
+import {ViewerNode, CORE_VIEWER_SPECS, genericViewerSpec, VIEWER_TYPE_PREFIX, ViewerSpec} from './nodes/viewer-node';
 import {getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName} from '../utils/dart-proxy-utils';
+
+/** Scalar property types — a function whose inputs AND outputs are *only* these
+ *  is pure scalar plumbing (math/string helpers), not a data-flow step → hidden. */
+const PRIMITIVE_TYPES = new Set<string>(['string', 'int', 'double', 'bool', 'dynamic', 'num']);
 
 export interface FuncInfo {
   func: DG.Func;
@@ -95,11 +100,36 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
 
   // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
   // widget) can't be previewed or composed in a flow — drop them.
+  // Viewer-producing functions are likewise dropped: they need a TableView
+  // lifecycle and are replaced by the manual viewer nodes (the Viewers pane).
   try {
-    if (func.outputs.some((p) => String(p.propertyType) === 'view')) return true;
+    if (func.outputs.some((p) => {
+      const t = String(p.propertyType);
+      return t === 'view' || t === 'viewer';
+    })) return true;
+  } catch { /* ignore introspection failures */ }
+
+  // Primitive-only helpers: every input AND output is a scalar (string / number /
+  // bool / dynamic) — not a data-flow step. Hidden to cut catalog noise.
+  try {
+    const allPrim = (props: DG.Property[]): boolean =>
+      props.every((p) => PRIMITIVE_TYPES.has(String(p.propertyType)));
+    if (allPrim(func.inputs) && allPrim(func.outputs)) return true;
   } catch { /* ignore introspection failures */ }
 
   return false;
+}
+
+/** Viewer node types for the Viewers toolbox pane (core first, then discovered
+ *  package viewers). Populated by `registerBuiltinNodes` + `registerAllFunctions`. */
+export interface ViewerNodeType {label: string; nodeTypeName: string; core: boolean;}
+export const VIEWER_NODE_TYPES: ViewerNodeType[] = [];
+
+function registerViewerSpec(spec: ViewerSpec, core: boolean): void {
+  const typeName = `${VIEWER_TYPE_PREFIX}${spec.label}`;
+  if (FACTORIES.has(typeName)) return;
+  register(typeName, () => new ViewerNode(spec));
+  VIEWER_NODE_TYPES.push({label: spec.label, nodeTypeName: typeName, core});
 }
 
 export function registerBuiltinNodes(): void {
@@ -158,6 +188,29 @@ export function registerBuiltinNodes(): void {
 
   // Debug
   register('Debug/Breakpoint', () => new BreakpointNode());
+
+  // Core viewers (sync — no catalog lookup — so saved flows with viewer nodes
+  // always deserialize, even before `registerAllFunctions` runs).
+  for (const spec of CORE_VIEWER_SPECS) registerViewerSpec(spec, true);
+}
+
+/** Discover non-core package viewers (role=viewer) and register a generic
+ *  viewer node per distinct friendly name. Idempotent; needs the live catalog. */
+function registerDiscoveredViewers(): void {
+  try {
+    const taken = new Set(VIEWER_NODE_TYPES.map((v) => v.label.toLowerCase()));
+    const found: string[] = [];
+    for (const f of DG.Func.find({meta: {role: 'viewer'}})) {
+      const name = String((f as DG.Func).friendlyName ?? f.name ?? '').trim();
+      if (!name || taken.has(name.toLowerCase())) continue;
+      taken.add(name.toLowerCase());
+      found.push(name);
+    }
+    for (const name of found.sort((a, b) => a.localeCompare(b)))
+      registerViewerSpec(genericViewerSpec(name, name), false);
+  } catch (e) {
+    console.warn('FuncFlow: viewer discovery failed', e);
+  }
 }
 
 let funcsRegistered = false;
@@ -167,6 +220,8 @@ let funcsRegistered = false;
 export function registerAllFunctions(): FuncInfo[] {
   if (funcsRegistered) return funcRegistry;
   funcsRegistered = true;
+
+  registerDiscoveredViewers();
 
   const allFuncs = DG.Func.find({});
   funcRegistry = [];

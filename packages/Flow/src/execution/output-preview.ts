@@ -26,6 +26,10 @@ export class OutputPreviewPanel {
   private hostEl: HTMLElement | null = null;
   private viewRoot: HTMLElement | null = null;
 
+  /** Called when the user clicks "Edit settings" on a viewer preview — the host
+   *  shows the viewer in the context panel and captures its option changes. */
+  onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
+
   /** Set the Flow view root so the panel docks relative to it (bottom edge). */
   setViewRoot(root: HTMLElement): void {
     this.viewRoot = root;
@@ -42,7 +46,7 @@ export class OutputPreviewPanel {
     // something *renderable*: DataFrame grid, column sample, graphics image.
     if (!hasRenderablePreview(state)) return;
 
-    const inner = buildValuePreviews(state);
+    const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
     inner.style.padding = '8px 12px';
 
     // Reuse the open dock — but only if it's still actually docked. The user may
