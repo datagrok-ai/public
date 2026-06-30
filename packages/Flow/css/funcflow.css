@@ -1109,6 +1109,33 @@
   transform: scale(1.25);
 }
 
+/* ---- Connect mode: while dragging from a pin, dim the canvas and light up
+   only the sockets/nodes a compatible connection can land on. ---- */
+.ff-connecting .ff-node {
+  opacity: 0.32;
+  transition: opacity 0.12s, box-shadow 0.12s;
+}
+
+/* The drag origin stays fully visible. */
+.ff-connecting .ff-node.ff-node-source {
+  opacity: 1;
+}
+
+/* A node with at least one compatible target socket: full opacity + green ring. */
+.ff-connecting .ff-node.ff-node-compat {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #2e9e44, 0 4px 16px rgba(46, 158, 68, 0.35);
+}
+
+/* The compatible socket dots themselves — green fill + glow so the eye lands
+   on exactly where the connection can go. */
+.ff-connecting .ff-socket-compat .ff-socket {
+  background: #2e9e44 !important;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #2e9e44, 0 0 7px 2px rgba(46, 158, 68, 0.7);
+  opacity: 1;
+}
+
 /* Pass-through: dashed ring in the type color (the React `<FlowSocketComponent>`
    sets `--socket-color` inline). White fill so it reads as "not filled in". */
 .ff-socket-row-passthrough .ff-socket {

@@ -2,6 +2,17 @@
 
 ## v.next
 
+### Easier wiring — compatible-target highlighting + drop-on-node
+
+* **Drag from a pin to see where it can go.** While you drag a connection from a socket, the canvas
+  dims and only the sockets (and their nodes) that can legally accept it — compatible type, opposite
+  side — light up green. Works from an output pin (lights compatible inputs) and from the tail of an
+  existing connection (lights compatible outputs); the drag origin stays bright.
+* **Drop on the node, not just the tiny pin.** When you drop an output drag anywhere on a node that
+  has a single compatible, unwired input, Flow connects to it — no more pixel-hunting for the dot.
+  Nodes with zero or several candidates still require aiming at a specific pin; empty-canvas drops
+  still open the suggestion menu. Bonus: this works even on collapsed nodes (whose pins aren't drawn).
+
 ### Pick columns from a list — no typing names from memory
 
 * Every `column` / `column_list` input on a function node now has a **picker icon** in the context
