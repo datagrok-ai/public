@@ -93,6 +93,12 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
     if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
   } catch { /* ignore introspection failures */ }
 
+  // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
+  // widget) can't be previewed or composed in a flow — drop them.
+  try {
+    if (func.outputs.some((p) => String(p.propertyType) === 'view')) return true;
+  } catch { /* ignore introspection failures */ }
+
   return false;
 }
 

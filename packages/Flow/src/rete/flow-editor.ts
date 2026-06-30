@@ -33,6 +33,9 @@ export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
   onGraphChanged?: () => void;
+  /** Run the slice up to this node and preview its output ("inspect anywhere").
+   *  Wired from the node's right-click menu in addition to the output-port menu. */
+  onPreviewNode?: (nodeId: string) => void;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -1342,7 +1345,12 @@ export class FlowEditor {
   }
 
   private showNodeContextMenu(event: MouseEvent, node: FlowNode): void {
-    DG.Menu.popup()
+    const menu = DG.Menu.popup();
+    if (this.callbacks.onPreviewNode) {
+      menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id))
+        .separator();
+    }
+    menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
       .item('Duplicate', () => void this.duplicateNode(node.id))
       .separator()

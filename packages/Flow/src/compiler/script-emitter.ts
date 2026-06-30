@@ -301,6 +301,11 @@ function emitPreamble(runId: string): string[] {
     '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5)};',
     '  if (declaredType === \'graphics\' && typeof v === \'string\')',
     '    return {type:\'graphics\', value:v};',
+    // A Viewer or Widget has a live DOM `.root`. The instrumented run is in the
+    // same browser tab, so the event carries the object by reference (like the
+    // DataFrame clone above) — keep it so the panel can mount `.root` directly.
+    '  if (v.root != null && typeof Element !== \'undefined\' && v.root instanceof Element)',
+    '    return {type: declaredType === \'viewer\' ? \'viewer\' : \'widget\', value:v};',
     '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
     '  return {type:\'primitive\', value:v};',
     '}',

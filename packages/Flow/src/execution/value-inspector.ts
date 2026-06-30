@@ -125,6 +125,12 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
   case 'graphics':
     row.appendChild(ui.divText(`${name}: Graphics`));
     break;
+  case 'widget':
+  case 'viewer':
+    // The live object renders in the docked panel; here just name its kind
+    // (was "[object Object]" when it fell through to the generic object case).
+    row.appendChild(ui.divText(`${name}: ${summary.type}`));
+    break;
   case 'primitive':
     row.appendChild(ui.divText(`${name} = ${JSON.stringify(summary.value)}`));
     break;
@@ -150,6 +156,7 @@ export function hasRenderablePreview(state: NodeExecState): boolean {
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
+    if ((summary.type === 'widget' || summary.type === 'viewer') && summary.value?.root instanceof Element) return true;
   }
   return false;
 }
@@ -221,6 +228,18 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
     if (imageData.startsWith('<svg')) img.innerHTML = imageData;
     else img.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
     wrap.appendChild(img);
+    return wrap;
+  }
+  case 'widget':
+  case 'viewer': {
+    // The live DG.Widget / DG.Viewer captured during the run — mount its root
+    // directly. Its root isn't attached anywhere else, so this just adopts it.
+    const obj = summary.value as {root?: HTMLElement} | undefined;
+    if (!obj?.root || !(obj.root instanceof Element)) return null;
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+    obj.root.style.width = '100%';
+    if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
+    wrap.appendChild(obj.root);
     return wrap;
   }
   default:

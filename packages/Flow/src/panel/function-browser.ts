@@ -375,19 +375,6 @@ export class FunctionBrowser {
       {name: 'Boolean', type: 'Constants/Boolean', desc: 'A constant true/false value'},
       {name: 'List', type: 'Constants/List', desc: 'A constant list of comma-separated values'},
     ];
-    const comparisonNodes = [
-      {name: 'Equals (==)', type: 'Comparisons/Equals (==)', desc: 'Tests if two values are equal'},
-      {name: 'Not Equals (!=)', type: 'Comparisons/Not Equals (!=)', desc: 'Tests if two values are not equal'},
-      {name: 'Greater Than (>)', type: 'Comparisons/Greater Than (>)', desc: 'Tests if left is greater than right'},
-      {name: 'Greater Or Equal (>=)', type: 'Comparisons/Greater Or Equal (>=)', desc: 'Tests if left is greater than or equal to right'},
-      {name: 'Less Than (<)', type: 'Comparisons/Less Than (<)', desc: 'Tests if left is less than right'},
-      {name: 'Less Or Equal (<=)', type: 'Comparisons/Less Or Equal (<=)', desc: 'Tests if left is less than or equal to right'},
-      {name: 'Contains', type: 'Comparisons/Contains', desc: 'Tests if a string contains a substring'},
-      {name: 'Starts With', type: 'Comparisons/Starts With', desc: 'Tests if a string starts with a prefix'},
-      {name: 'Ends With', type: 'Comparisons/Ends With', desc: 'Tests if a string ends with a suffix'},
-      {name: 'Is Null', type: 'Comparisons/Is Null', desc: 'Tests if a value is null or undefined'},
-    ];
-
     const debugNodes = [
       {name: 'Breakpoint', type: 'Debug/Breakpoint', desc: 'Pauses execution in debug mode until Continue is clicked'},
     ];
@@ -399,7 +386,6 @@ export class FunctionBrowser {
       {title: 'Inputs', nodes: inputNodes, collapsed: true, tip: 'Script input parameters (become //input: lines)'},
       {title: 'Outputs', nodes: outputNodes, collapsed: true, tip: 'Script output parameters (become //output: lines)'},
       {title: 'Constants', nodes: constantNodes, collapsed: true, tip: 'Constant literal values'},
-      {title: 'Comparisons', nodes: comparisonNodes, collapsed: true, tip: 'Comparison and logical operators'},
       {title: 'Utilities', nodes: utilityNodes, collapsed: true, tip: 'Helper operations (logging, type conversion, etc.)'},
       {title: 'Debug', nodes: debugNodes, collapsed: true, tip: 'Debugging and execution control nodes'},
     ];

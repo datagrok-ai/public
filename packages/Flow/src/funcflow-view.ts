@@ -218,6 +218,7 @@ export class FuncFlowView extends DG.ViewBase {
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
+    if ((summary.type === 'widget' || summary.type === 'viewer') && summary.value?.root instanceof Element) return true;
     return false;
   }
 
@@ -284,6 +285,7 @@ export class FuncFlowView extends DG.ViewBase {
         this.flow?.refreshMinimap();
         this.executionController?.onGraphChanged();
       },
+      onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);
@@ -299,6 +301,14 @@ export class FuncFlowView extends DG.ViewBase {
       // bottom-docked panel with the captured value (if any).
       this.autoSelectFirstOutputNode();
     };
+
+    // The bottom-docked output panel belongs to this view — when the user
+    // navigates to another view it would otherwise linger. Close it whenever
+    // the active view is no longer us. (Clicking a node reopens it later.)
+    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v !== this)
+        this.executionController?.outputPreview.close();
+    }));
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();

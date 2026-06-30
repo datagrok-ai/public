@@ -456,7 +456,7 @@ const interfaceTour: Guide = {
     {
       title: 'Built-in building blocks',
       text: 'Below the data, collapsible sections hold the wiring blocks: Inputs, Outputs, Constants, ' +
-        'Comparisons, Utilities, and Debug. Click a header to expand it.',
+        'Utilities, and Debug. Click a header to expand it.',
       target: byTid('browser-section', 'Inputs'),
     },
     {

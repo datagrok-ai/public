@@ -38,6 +38,12 @@ category('Flow: function browser', () => {
       try {return f.func.inputs.some((p) => String(p.propertyType) === 'funccall');} catch {return false;}
     });
     expect(funccallWrappers.length, 0, 'funccall-wrapper funcs leaked');
+
+    // No view-producing functions (a whole TableView can't be composed/previewed).
+    const viewOutputs = funcs.filter((f) => {
+      try {return f.func.outputs.some((p) => String(p.propertyType) === 'view');} catch {return false;}
+    });
+    expect(viewOutputs.length, 0, `view-output funcs leaked: ${viewOutputs.map((f) => f.func.name).slice(0, 5).join(',')}`);
   });
 
   test('categorizeFunc places funcs by what they do', async () => {

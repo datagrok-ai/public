@@ -45,10 +45,24 @@ export class OutputPreviewPanel {
     const inner = buildValuePreviews(state);
     inner.style.padding = '8px 12px';
 
+    // Reuse the open dock — but only if it's still actually docked. The user may
+    // have manually closed the panel (the dock manager won't tell us), leaving
+    // our refs stale; if so, drop them and re-dock below so the click reopens it.
     if (this.hostEl && this.rootNode) {
-      this.hostEl.innerHTML = '';
-      this.hostEl.appendChild(inner);
-      return;
+      const stillDocked = (() => {
+        try {
+          return !!grok.shell.dockManager.findNode(this.hostEl);
+        } catch {
+          return false;
+        }
+      })();
+      if (stillDocked) {
+        this.hostEl.innerHTML = '';
+        this.hostEl.appendChild(inner);
+        return;
+      }
+      this.hostEl = null;
+      this.rootNode = null;
     }
 
     this.hostEl = setTid(ui.div([inner], {style: {

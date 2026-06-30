@@ -2,6 +2,23 @@
 
 ## v.next
 
+### Visualize results — widgets & viewers in the preview panel
+
+* **A node whose output is a `widget` or `viewer` now renders live** in the bottom preview panel.
+  The instrumented run captures the actual object by reference (same in-tab mechanism as the
+  DataFrame clones), and clicking the node mounts its `.root` in the docked panel.
+* **Context panel** no longer shows `[object Object]` for a widget/viewer output under Execution —
+  it now reads plainly `widget` / `viewer` (the live preview is in the docked panel).
+* **The docked preview behaves like it belongs to the view:** switching to another view closes it
+  (via `grok.events.onCurrentViewChanged` + a `grok.shell.v === this` check), and if you manually
+  close it then click another previewable node (results still fresh), it **reopens** — the panel
+  re-checks whether its dock is still alive before reusing it.
+* **“Run up to here & preview” is now on the node's right-click menu**, not just the output port's —
+  the more discoverable, intuitive place for it.
+* **Catalog cleanup:** functions whose output is a whole **view** are filtered out (they can't be
+  composed or previewed), and the **Comparisons** built-in group is hidden from the toolbox for now
+  (still registered, so existing flows keep loading).
+
 ### KNIME-style Files & Queries in the toolbox
 
 * **Files pane (open by default), first in the toolbox.** A real file browser (the shared
