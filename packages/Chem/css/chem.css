@@ -1276,15 +1276,90 @@
   min-width: 0;
 }
 
+/* The platform lays out views as: .d4-ribbon ~ view.root (.chem-enumerator-view).
+   These :has(~ .chem-enumerator-view) rules scope ribbon overrides to this view only. */
 .d4-ribbon:has(~ .chem-enumerator-view) {
   background: var(--white);
 }
 
-.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item > :hover:not(button):not(.ui-btn) {
-  background: transparent;
+.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item:hover {
+  background: transparent !important;
+}
+
+.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item > :hover:not(button):not(.ui-btn):not(.chem-enum-chip) {
+  background: transparent !important;
 }
 
 .d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-separator {
   display: none;
+}
+
+.chem-enum-accordion {
+  width: 100%;
+  min-width: 0;
+}
+
+.chem-enum-pane-subtitle {
+  font-size: 11px;
+  color: var(--grey-5);
+  margin-left: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.chem-enum-next-btn {
+  align-self: flex-end;
+  margin-top: 6px;
+}
+
+.chem-enum-chip {
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--grey-3);
+  color: var(--grey-6);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px } */
+.d4-ribbon-item > .chem-enum-chip {
+  height: auto !important;
+  align-self: center;
+}
+
+.chem-enum-chip:hover {
+  background: #e9f3fb;
+  border-color: var(--blue-2);
+}
+
+.chem-enum-chip--err {
+  background: var(--red-1);
+  border-color: var(--red-3);
+}
+
+.chem-enum-ribbon-arrow {
+  color: var(--grey-4);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.chem-enum-cfg-est {
+  font-size: 11px;
+  color: var(--grey-5);
+  pointer-events: none;
+}
+
+.chem-enum-tab-badge {
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--grey-2);
+  color: var(--grey-6);
+  font-size: 10px;
+  vertical-align: middle;
 }
 

@@ -791,33 +791,29 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
+  const mkNextBtn = (target: DG.AccordionPane): HTMLElement => {
+    const btn = ui.button('Next →', () => openAccPaneExclusive(target));
+    btn.classList.add('chem-enum-next-btn');
+    return btn;
+  };
+
   const accordion = ui.accordion();
-  accordion.root.style.cssText = 'width:100%;min-width:0';
-  const accReactionsPane = accordion.addPane('Reactions', () => {
-    const nextToBlocks = ui.button('Next →', () => openAccPaneExclusive(accBbsPane));
-    nextToBlocks.style.cssText = 'align-self:flex-end;margin-top:6px';
-    return ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, nextToBlocks]);
-  }, true);
-  const accBbsPane = accordion.addPane('Building blocks', () => {
-    const nextToCombine = ui.button('Next →', () => openAccPaneExclusive(accCombinePane));
-    nextToCombine.style.cssText = 'align-self:flex-end;margin-top:6px';
-    return ui.divV([ui.form([bbsInput, bbColInput]), nextToCombine]);
-  }, false);
-  const accCombinePane = accordion.addPane('How to combine', () => {
-    const nextToExtras = ui.button('Next →', () => openAccPaneExclusive(accExtrasPane));
-    nextToExtras.style.cssText = 'align-self:flex-end;margin-top:6px';
-    return ui.divV([
-      ui.divH([
-        ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
-        configInfoIcon,
-      ], {style: {alignItems: 'center', gap: '4px'}}),
-      ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
-      ui.form([numRoundsInput]),
-      editConfigBtn,
-      yamlRow,
-      nextToExtras,
-    ], {style: {gap: '8px'}});
-  }, false);
+  accordion.root.classList.add('chem-enum-accordion');
+  const accReactionsPane = accordion.addPane('Reactions', () =>
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(accBbsPane)]), true);
+  const accBbsPane = accordion.addPane('Building blocks', () =>
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(accCombinePane)]), false);
+  const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
+    ui.divH([
+      ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
+      configInfoIcon,
+    ], {style: {alignItems: 'center', gap: '4px'}}),
+    ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
+    ui.form([numRoundsInput]),
+    editConfigBtn,
+    yamlRow,
+    mkNextBtn(accExtrasPane),
+  ], {style: {gap: '8px'}}), false);
   const accExtrasPane = accordion.addPane('Extras (optional)',
     () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
   const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accExtrasPane];
@@ -826,8 +822,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
     const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
     const sub = document.createElement('span');
-    sub.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:6px;overflow:hidden;' +
-      'text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;pointer-events:none';
+    sub.className = 'chem-enum-pane-subtitle';
     header?.appendChild(sub);
     return sub;
   };
@@ -842,48 +837,38 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
   const cfgChipEl = (text: string): HTMLElement => {
-    const chip = ui.divText(text, {style: {
-      padding: '2px 9px', borderRadius: '10px', border: '1px solid var(--grey-3)',
-      color: 'var(--grey-6)', cursor: 'pointer', fontSize: '11px',
-      height: 'auto', alignSelf: 'center',
-    }});
-    chip.onmouseenter = () => {
-      chip.style.background = 'var(--blue-1, #e9f3fb)'; chip.style.borderColor = 'var(--blue-2)';
-    };
-    chip.onmouseleave = () => {
-      chip.style.background = chip.dataset.err ? 'var(--red-1)' : '';
-      chip.style.borderColor = chip.dataset.err ? 'var(--red-2)' : 'var(--grey-3)';
-    };
+    const chip = ui.divText(text);
+    chip.className = 'chem-enum-chip';
     return chip;
   };
   const chipReactions = cfgChipEl('');
   const chipBbs = cfgChipEl('');
   const chipCombine = cfgChipEl('');
-  const cfgEstEl = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-5)', pointerEvents: 'none'}});
+  const cfgEstEl = ui.divText('');
+  cfgEstEl.className = 'chem-enum-cfg-est';
   const ribbonArrow = ui.iconFA('arrow-right');
-  ribbonArrow.style.cssText = 'color:var(--grey-4);font-size:10px;pointer-events:none';
+  ribbonArrow.classList.add('chem-enum-ribbon-arrow');
   const runGroup = ui.divH([runBtn, cancelBtn, progressLabel],
     {style: {alignItems: 'center', gap: '6px'}});
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value;
+    const combineText = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
     const setChip = (chip: HTMLElement, text: string, err: boolean): void => {
       chip.textContent = text;
-      chip.dataset.err = err ? '1' : '';
-      chip.style.background = err ? 'var(--red-1)' : '';
-      chip.style.borderColor = err ? 'var(--red-2)' : 'var(--grey-3)';
+      chip.classList.toggle('chem-enum-chip--err', err);
     };
     setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
     setChip(chipBbs, bDf ? `${bDf.rowCount} Building Blocks` : 'No Building Blocks table', !bDf || !bbColInput.value);
-    chipCombine.textContent = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
+    chipCombine.textContent = combineText;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
     cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
     subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
     subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
-    subCombine.textContent = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
+    subCombine.textContent = combineText;
     subExtras.textContent = reagentsInput.value != null ? 'Reagents added' : '';
   }
-  // === Exclusive accordion + Next button ===
+  // === Exclusive accordion ===
 
   function switchTabForAccPane(pane: DG.AccordionPane): void {
     if (pane === accReactionsPane && templatesPane) {
@@ -1103,8 +1088,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Row-count badges on each data tab header — updated whenever the underlying grid changes.
   const makeTabBadge = (): TabBadge => {
     const el = document.createElement('span');
-    el.style.cssText = 'margin-left:5px;padding:1px 6px;border-radius:10px;' +
-      'background:var(--grey-2);color:var(--grey-6);font-size:10px;vertical-align:middle;';
+    el.className = 'chem-enum-tab-badge';
     return {el, refresh: (n: number | null) => {
       el.textContent = n != null ? String(n) : '';
       el.style.display = n != null ? '' : 'none';
