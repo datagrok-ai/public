@@ -1,5 +1,12 @@
 # Compute2 changelog
 
+## 1.5.6 (2026-06-30)
+
+- Use the G7 float format for form inputs on platforms with js-api >= 1.27.7; rendering and export keep `#0.###` and honor per-field format overrides
+- Skip empty dataframes when exporting to Excel instead of producing blank tabs
+- Enable help files for action steps via `nqName`
+- Pick up compute-utils 1.46.5
+
 ## 1.5.5 (2026-06-25)
 
 - RFV: don't duplicate the Diff Studio lookup "Default" scenario in Sensitivity Analysis and Fitting (pass `disableLookupDefault`)
