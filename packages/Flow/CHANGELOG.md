@@ -28,6 +28,16 @@
   already satisfied. While scrolling, the highlight tints the **whole Files pane** (not the
   still-off-screen target row) and snaps to the file only once it's actually in view.
 
+### New tutorial — “Tour the interface”
+
+* A guided walkthrough of **every UI control**: each toolbox pane (search, group-by, Files, Queries,
+  built-in blocks, function categories), each ribbon group (run/debug/stop, view-script, save/open,
+  undo/redo, layout, zoom, toggle-toolbox, help), the canvas + a node's anatomy (title, caret, status
+  dot, sockets), the overview and status bar, and the context panel (title row, type badge,
+  parameters). Mostly read-and-Next steps; selecting a node is interactive. A sample Table Input node
+  is **auto-added as a prerequisite** so the canvas/panel sections always have something concrete to
+  point at.
+
 ### Auto-summaries — the flow documents itself (U12)
 
 * **Every node shows a plain-language caption** when you haven't written your own description —

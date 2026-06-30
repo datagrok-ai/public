@@ -21,6 +21,9 @@ import {
   untilFileTreeConnExpanded, untilScrolledIntoView, untilFuncNodeWithInput, isScrolledIntoView,
   untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType,
 } from './guide-model';
+import {createNode} from '../rete/node-factory';
+
+const TOUR_NODE_TYPE = 'Inputs/Table Input';
 
 const DEMO_FORMULA = '${AGE} * 12';
 const NEW_COL_NAME = 'My New Column';
@@ -390,7 +393,239 @@ const reuseScript: Guide = {
   ],
 };
 
-export const TUTORIALS: Guide[] = [loadDataAddColumn, findFunctions, organizeCanvas, reuseScript];
+/** Ensure a sample node exists on the canvas so the canvas / context-panel parts
+ *  of the interface tour have something concrete to point at. Added silently and
+ *  programmatically (no detour to hunt for it in the toolbox). */
+const ensureTourNode = async (ctx: GuideContext): Promise<void> => {
+  const flow = ctx.host.getFlow();
+  if (!flow) return;
+  if (flow.getNodes().some((n) => n.dgTypeName === TOUR_NODE_TYPE)) return;
+  const node = createNode(TOUR_NODE_TYPE);
+  if (node) await flow.addNodeAtCenter(node);
+};
+
+/** A guided tour of the whole interface: every toolbox pane, every ribbon group,
+ *  the canvas + a node's anatomy, the overview/status bar, and the context panel.
+ *  Mostly "read & click Next" steps; a couple are interactive (selecting a node).
+ *  A sample node is auto-added as a prerequisite for the canvas/panel sections. */
+const interfaceTour: Guide = {
+  id: 'interface-tour',
+  kind: 'tutorial',
+  title: 'Tour the interface',
+  summary: 'Meet every control: toolbox, ribbon, canvas, and context panel.',
+  steps: [
+    {
+      title: 'A tour of Flow\'s interface',
+      text: 'We\'ll walk through every part of the screen — the toolbox, the ribbon, the canvas, and ' +
+        'the context panel — and what each control does. Click Next to begin.',
+      setup: (ctx) => ctx.host.showFunctionBrowser(),
+    },
+
+    // ---------------- Toolbox (left) ----------------
+    {
+      title: 'The toolbox',
+      text: 'On the left is the toolbox — your palette of building blocks. Files, queries, built-in ' +
+        'nodes, and every Datagrok function live here. Drag or double-click anything to add it.',
+      setup: (ctx) => ctx.host.showFunctionBrowser(),
+      target: byTid('browser'),
+    },
+    {
+      title: 'Search',
+      text: 'Type here to filter the whole catalog by name — it matches both the display name ' +
+        '(“Open File”) and the raw name (“OpenFile”).',
+      target: byTid('browser-search'),
+    },
+    {
+      title: 'Group by',
+      text: 'Choose how functions are organized: by what they do (default), by role, by tags, or by ' +
+        'package.',
+      target: byTid('browser-groupby'),
+    },
+    {
+      title: 'Files',
+      text: 'A file browser of your data connections. Expand a connection, then double-click — or drag ' +
+        '— a file onto the canvas to load it as an Open File node.',
+      target: byTid('browser-files'),
+    },
+    {
+      title: 'Queries',
+      text: 'Database queries, grouped into sub-sections by their data connection. Double-click or drag ' +
+        'one to add it as a node.',
+      target: byTid('browser-queries'),
+    },
+    {
+      title: 'Built-in building blocks',
+      text: 'Below the data, collapsible sections hold the wiring blocks: Inputs, Outputs, Constants, ' +
+        'Comparisons, Utilities, and Debug. Click a header to expand it.',
+      target: byTid('browser-section', 'Inputs'),
+    },
+    {
+      title: 'Functions by category',
+      text: 'Then come Datagrok\'s functions, grouped by what they do — Data Sources, Combine Tables, ' +
+        'Transform Tables, Column Operations, Compute Values, Visualize — Data Sources first.',
+      target: byTid('browser-section', 'Data Sources'),
+    },
+
+    // ---------------- Ribbon (top) ----------------
+    {
+      title: 'Run',
+      text: 'The ▶ Run button executes your flow with live visualization — each node lights up as it ' +
+        'runs and reports its row × column counts.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+    },
+    {
+      title: 'Debug, Continue, Stop',
+      text: 'Next to Run: Debug (🐞) runs but pauses at Breakpoint nodes, Continue (▶▶) resumes, and ' +
+        'Stop (■) halts a run.',
+      target: byTid('ribbon', 'debug'),
+      position: 'bottom',
+    },
+    {
+      title: 'See the script',
+      text: 'The 👁 eye opens the real, readable Datagrok script your flow compiles to — copy it, export ' +
+        'a .js file, or open it in the Script editor. Flow is a glass box.',
+      target: byTid('ribbon', 'view-script'),
+      position: 'bottom',
+    },
+    {
+      title: 'Save & Open',
+      text: 'Save (💾) downloads your flow as a .ffjson file; Open (📂, just right of it) loads one back. ' +
+        'Share the file with a colleague to hand off the whole flow.',
+      target: byTid('ribbon', 'save'),
+      position: 'bottom',
+    },
+    {
+      title: 'Undo & Redo',
+      text: 'Undo (↶) and Redo (↷) cover every edit — adding, moving, connecting, deleting. Ctrl+Z / ' +
+        'Ctrl+Shift+Z work too.',
+      target: byTid('ribbon', 'undo'),
+      position: 'bottom',
+    },
+    {
+      title: 'Tidy up layout',
+      text: 'This auto-arranges the whole graph left-to-right along the flow of data — a one-click clean ' +
+        'layout.',
+      target: byTid('ribbon', 'layout'),
+      position: 'bottom',
+    },
+    {
+      title: 'Zoom',
+      text: 'Zoom in (🔍+), zoom out (🔍−), and Zoom to fit (⤢) — the last frames the entire flow in the ' +
+        'viewport. You can also scroll to zoom and drag to pan.',
+      target: byTid('ribbon', 'zoom-fit'),
+      position: 'bottom',
+    },
+    {
+      title: 'Show / hide the toolbox',
+      text: 'Toggles the toolbox panel, giving the canvas more room when you don\'t need the catalog.',
+      target: byTid('ribbon', 'toggle-browser'),
+      position: 'bottom',
+    },
+    {
+      title: 'Help & tutorials',
+      text: 'The 🎓 cap (and the floating help button) opens this menu of tutorials and how-to answers ' +
+        'anytime.',
+      target: byTid('ribbon', 'help'),
+      position: 'bottom',
+    },
+
+    // ---------------- Canvas + node anatomy (needs a node) ----------------
+    {
+      title: 'The canvas',
+      text: 'The center is the canvas, where your flow lives. Drag empty space to pan, scroll to zoom, ' +
+        'and drag a node to move it. We added a sample node so you can see its parts.',
+      setup: ensureTourNode,
+      target: byTid('canvas'),
+      position: 'top',
+    },
+    {
+      title: 'A node\'s title bar',
+      text: 'Every node shows a colored title bar — the color encodes its role. Below it, a plain-language ' +
+        'summary tells you what the node does.',
+      target: bySel('.ff-node [data-testid="ff-node-title"]'),
+      position: 'right',
+    },
+    {
+      title: 'Collapse / expand',
+      text: 'The ▾ caret folds a node down to just its title (and back). Handy for tidying a busy canvas.',
+      target: bySel('.ff-node [data-testid="ff-node-caret"]'),
+      position: 'right',
+    },
+    {
+      title: 'Status indicator',
+      text: 'This dot shows the node\'s run state — idle, running, done, or error — and turns amber when a ' +
+        'required input is still missing.',
+      target: bySel('.ff-node [data-testid="ff-node-status"]'),
+      position: 'right',
+    },
+    {
+      title: 'Sockets',
+      text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
+        'compatible (same-colored) dots to connect nodes. The small gray squares at the corners are ' +
+        'execution-order ports.',
+      target: bySel('.ff-node .ff-socket'),
+      position: 'right',
+    },
+    {
+      title: 'The overview',
+      text: 'Bottom-right is the overview (minimap) — it appears once you have nodes and shows the whole ' +
+        'graph. Click or drag inside it to jump around; click its header to minimize it.',
+      target: byTid('minimap'),
+      position: 'left',
+    },
+    {
+      title: 'The status bar',
+      text: 'Along the bottom, the status bar reports your node and connection counts and any validation ' +
+        'problems with the flow.',
+      target: byTid('statusbar'),
+      position: 'top',
+    },
+
+    // ---------------- Context panel (right) ----------------
+    {
+      title: 'Open a node\'s settings',
+      text: 'Click the sample node on the canvas (highlighted). Its settings open in the context panel ' +
+        'on the right.',
+      setup: ensureTourNode,
+      target: byNodeType(TOUR_NODE_TYPE),
+      until: untilNodeSelected(),
+    },
+    {
+      title: 'The context panel',
+      text: 'On the right, the context panel edits whatever node is selected — its name, type, and every ' +
+        'parameter.',
+      target: byTid('property-panel'),
+      position: 'left',
+    },
+    {
+      title: 'Rename a node',
+      text: 'The title row lets you rename the node — the new name flows through to the generated script.',
+      target: byTid('property-title-row'),
+      position: 'left',
+    },
+    {
+      title: 'Node type',
+      text: 'This badge shows the node\'s kind (input, output, utility, or function).',
+      target: byTid('property-type-badge'),
+      position: 'left',
+    },
+    {
+      title: 'Parameters',
+      text: 'Below, each of the node\'s parameters is an editable field you can type or paste into. ' +
+        'Function nodes also show a Connections pane listing how each input/output is wired.',
+      target: byTid('property-content'),
+      position: 'left',
+    },
+    {
+      title: 'That\'s the whole interface! 🎉',
+      text: 'Toolbox to add, ribbon to act, canvas to compose, context panel to configure. Try the ' +
+        '“Load data and add a column” tutorial next to build a real flow.',
+    },
+  ],
+};
+
+export const TUTORIALS: Guide[] = [loadDataAddColumn, findFunctions, organizeCanvas, reuseScript, interfaceTour];
 
 // ============================ HOW-TO QUESTIONS ============================
 

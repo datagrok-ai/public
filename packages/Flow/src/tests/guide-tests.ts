@@ -182,8 +182,8 @@ category('Flow: guide', () => {
     }
   });
 
-  test('content: 4 tutorials, 10+ questions, unique ids, every step has text', async () => {
-    expect(TUTORIALS.length, 4);
+  test('content: 5 tutorials, 10+ questions, unique ids, every step has text', async () => {
+    expect(TUTORIALS.length, 5);
     expect(QUESTIONS.length >= 10, true, `expected 10+ questions, got ${QUESTIONS.length}`);
 
     const all = [...TUTORIALS, ...QUESTIONS];
