@@ -146,7 +146,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
-| Show Selected Rows | boolean | When true, selected points and line segments are highlighted using the selected rows color. When false, they keep their regular color coding. |
+| Show Selected Rows | boolean | When checked, selected points and line segments are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **SPC** | | |
 | Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |

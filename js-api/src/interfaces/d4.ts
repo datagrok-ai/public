@@ -589,8 +589,8 @@ export interface IScatterPlotSettings {
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
+  /// When checked, selected markers are highlighted using the selected rows color.
+  /// When unchecked, selected markers use their regular color coding.
   showSelectedRows: boolean;
 
   /// When true, clicking on the background (no point hit) clears the current selection.
@@ -1166,8 +1166,8 @@ export interface IBoxPlotSettings {
 
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected points are highlighted using the selected rows color.
-  /// When false, selected points use their regular color coding.
+  /// When checked, selected points are highlighted using the selected rows color.
+  /// When unchecked, selected points use their regular color coding.
   showSelectedRows: boolean;
 
   statistics: Array<string>;
@@ -2167,8 +2167,8 @@ export interface ILineChartSettings {
   /// Example: "Split by" = "SEX" and you hover over the "Male" category in the filter.
   showMouseOverCategory: boolean;
 
-  /// When true, selected points and line segments are highlighted using the selected rows color.
-  /// When false, they keep their regular color coding.
+  /// When checked, selected points and line segments are highlighted using the selected rows color.
+  /// When unchecked, they keep their regular color coding.
   showSelectedRows: boolean;
 
   overviewAggrType: string;
@@ -2781,6 +2781,10 @@ export interface INetworkDiagramSettings {
 
   hoverColor: number;
 
+  /// When checked, selected nodes and edges are highlighted using the selected rows color.
+  /// When unchecked, they keep their regular color coding.
+  showSelectedRows: boolean;
+
   edgeLinearColorScheme: Array<number>;
 
   edgeCategoricalColorScheme: Array<number>;
@@ -2903,8 +2907,8 @@ export interface IPcPlotSettings {
   /// Either all lines are shown or only current line, mouse over line, selected ones.
   showAllLines: boolean;
 
-  /// When true, selected lines are highlighted using the selected rows color.
-  /// When false, selected lines use their regular color coding.
+  /// When checked, selected lines are highlighted using the selected rows color.
+  /// When unchecked, selected lines use their regular color coding.
   showSelectedRows: boolean;
 
   /// Whether the in-chart filters are visible
@@ -3384,8 +3388,8 @@ export interface IScatterPlot3dSettings {
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
+  /// When checked, selected markers are highlighted using the selected rows color.
+  /// When unchecked, selected markers use their regular color coding.
   showSelectedRows: boolean;
 
   markerType: string;
@@ -3630,6 +3634,10 @@ export interface ITileViewerSettings {
 
   tilesFont: string;
 
+  /// When checked, selected tiles are highlighted using the selected rows color.
+  /// When unchecked, selected tiles keep their regular appearance.
+  showSelectedRows: boolean;
+
   lanes: Array<string>;
 
   /// Determines the rows shown on the plot.
@@ -3690,6 +3698,10 @@ export interface ITreeMapSettings {
   sizeAggrType: string;
 
   defaultColor: number;
+
+  /// When checked, selected rows are highlighted using the selected rows color.
+  /// When unchecked, cells keep their regular color coding.
+  showSelectedRows: boolean;
 
   showColumnSelectionPanel: boolean;
 

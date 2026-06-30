@@ -81,6 +81,8 @@ example, you can:
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected rows are highlighted using the selected rows color. When unchecked, cells keep their regular color coding. |
 | **Data** | | |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |

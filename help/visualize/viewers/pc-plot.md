@@ -57,7 +57,7 @@ General:
 | Show Mouse Over Line | boolean |  |
 | Show Mouse Over Row Group | boolean |  |
 | Show All Lines | boolean | Either all lines are shown or only current line, mouse over line, selected ones. |
-| Show Selected Rows | boolean | When true, selected lines are highlighted using the selected rows color. When false, selected lines use their regular color coding. |
+| Show Selected Rows | boolean | When checked, selected lines are highlighted using the selected rows color. When unchecked, selected lines use their regular color coding. |
 | **General** | | |
 | Show Filters | boolean | Whether the in-chart filters are visible |
 | Back Color | number |  |
