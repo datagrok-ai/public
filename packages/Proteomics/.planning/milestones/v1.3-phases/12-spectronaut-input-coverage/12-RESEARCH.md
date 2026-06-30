@@ -1,0 +1,17 @@
+## Open Questions (RESOLVED)
+
+1. **Should the existing Spectronaut tests run through the streaming path, the text path, or both?**
+   - What we know: D-01 will route all current synthetic fixtures (they carry `PEP.StrippedSequence`) to the streaming path. Existing 19 tests assert on `parseSpectronautText` directly.
+   - What's unclear: whether to keep the tests calling `parseSpectronautText` (text path) and add *new* streaming tests, or parameterize so both paths are asserted equal.
+   - Recommendation: Keep existing tests on `parseSpectronautText` (locks the text path), AND add a focused equivalence test asserting `parseSpectronautStream(fixture)` produces a DataFrame equal (rows, sample cols, tags, groups) to `parseSpectronautText(fixture)` — plus the duckdb golden test (D-04). This locks both paths and their equivalence without rewriting 19 tests.
+   - RESOLVED: 12-03 keeps the existing 19 tests on the `parseSpectronautText` path unchanged and adds new streaming tests alongside them — a per-cell streaming-vs-text numeric equivalence test (within 1e-3) and a streaming-vs-duckdb-golden test pinned to the JSON sidecar. Both paths and their equivalence are locked without rewriting any of the 19.
+
+2. **Flip-stripped SQL vs. non-DMD/WT fixture for the golden oracle (D-04)?**
+   - What we know: the committed `tools/spectronaut-aggregate.sql` (manual fallback) should retain the documented reference-only flip; the golden oracle must not flip.
+   - What's unclear: maintain two SQL files (one with, one without flip) vs. one SQL + a fixture that avoids `DMD`/`WT`.
+   - Recommendation: One committed SQL (with the flip, loudly documented as reference-only — it *is* the manual fallback). Design the synthetic fixture with conditions like `CondA`/`CondB` (the existing `makeLongFormatTsv` default) so the flip is a structural no-op; the same committed SQL then serves both as fallback and as the test oracle. Document this coupling in `files/demo/README.md`.
+   - RESOLVED: 12-01 commits a single `tools/spectronaut-aggregate.sql` retaining the loudly-documented reference-file-only DMD↔WT flip; the synthetic fixture uses `CondA`/`CondB` so the flip is a structural no-op and the same script doubles as the D-04 golden oracle. (The two unused `any_value("PG.Genes")`/`any_value("PG.ProteinAccessions")` SELECT terms are dropped from the committed copy — the package's Spectronaut data does not carry them and `pivotSpectronaut`/`aggToPivotResult` never consume them, so they are not part of the parity contract; the divergence from `/tmp` is recorded in a comment in the committed SQL and in `files/demo/README.md`.)
+
+3. **Yield cadence (Claude's discretion per D-02) — lines vs. bytes vs. time?**
+   - Recommendation: yield every ~16 ms of wall-clock work (track `performance.now()` since last yield) rather than a fixed line count, so responsiveness is stable regardless of row width. A fixed line count (~200k) is an acceptable simpler fallback. Either satisfies the acceptance criterion; this is explicitly delegated to planning/implementation.
+   - RESOLVED: ~16 ms wall-clock yield cadence (track `performance.now()` since last yield), Claude's discretion per D-02; a fixed ~200k line count remains an acceptable simpler fallback. Either satisfies the responsiveness acceptance criterion.
