@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Observable} from 'rxjs';
+import {getDefaultFloatFormat} from '@datagrok-libraries/utils/src/format-version-utils';
 import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 
 //
@@ -99,13 +100,14 @@ export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
   return arg?.setStatus && isFuncCallInput(arg);
 }
 
-export const DEFAULT_FLOAT_FORMAT = '#0.###';
+export {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
 
 export function applyDefaultFloatFormats(call: DG.FuncCall): void {
+  const format = getDefaultFloatFormat();
   for (const param of call.inputParams.values()) {
     const prop = param.property as any;
     if (prop?.propertyType === DG.TYPE.FLOAT && !prop.format)
-      prop.format = DEFAULT_FLOAT_FORMAT;
+      prop.format = format;
   }
 }
 

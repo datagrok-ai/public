@@ -139,7 +139,7 @@ export const richFunctionViewReport = async (
             caption: scalarInput.options['caption'] ?? scalarInput.name,
             value: lastCall.inputs[scalarInput.name] ?? '',
             units: scalarInput.options['units'] ?? '',
-            format: scalarInput.format,
+            format: scalarInput.format || DEFAULT_FLOAT_FORMAT,
           })),
           validationStates,
           consistencyStates,
@@ -310,8 +310,11 @@ const getValidationString = (data?: ValidationResult) => {
 const getConsistencyString = (data?: ConsistencyInfo) => {
   if (data == null)
     return '';
-  if (data.inconsistent && (data.restriction === 'disabled' || data.restriction === 'restricted'))
-    return `Inconsistent: value should be ${String(data.assignedValue)}`;
+  if (data.inconsistent && (data.restriction === 'disabled' || data.restriction === 'restricted')) {
+    const v = data.assignedValue;
+    const formatted = (typeof v === 'number' && Number.isFinite(v)) ? DG.format(v, DEFAULT_FLOAT_FORMAT) : String(v);
+    return `Inconsistent: value should be ${formatted}`;
+  }
   return;
 };
 
