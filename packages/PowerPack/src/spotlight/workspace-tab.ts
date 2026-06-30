@@ -52,6 +52,16 @@ async function openModel(func: DG.Func): Promise<void> {
     await func.apply();
 }
 
+/** Opens an entity's own view via its handler — the query's run view (TableView with its input form), a
+ * connection's queries browser, a file's preview, etc. — the same view the Browse tree opens. */
+async function openEntityView(entity: DG.Entity): Promise<void> {
+  const view = await DG.ObjectHandler.forEntity(entity)?.renderPreview(entity);
+  if (view?.root)
+    grok.shell.addView(view);
+  else
+    grok.shell.o = entity;
+}
+
 /** Opens an entity in the appropriate way. */
 function openEntity(entity: DG.Entity): void {
   if (entity instanceof DG.Project)
@@ -60,17 +70,8 @@ function openEntity(entity: DG.Entity): void {
     openApp(entity);
   else if (isModel(entity))
     openModel(entity);
-  else if (entity instanceof DG.Func)
-    entity.apply();
-  else if (entity instanceof DG.FileInfo) {
-    const handler = DG.ObjectHandler.forEntity(entity);
-    if (handler)
-      handler.renderPreview(entity).then((view) => { if (view?.root) grok.shell.addView(view); }).catch(() => { grok.shell.o = entity; });
-    else
-      grok.shell.o = entity;
-  }
   else
-    grok.shell.o = entity;
+    openEntityView(entity);
 }
 
 
@@ -374,6 +375,17 @@ export class WorkspaceTab {
     openEntity(entity);
   }
 
+  /** The function's own result views (e.g. a query's TableView with its saved layout), or [] if not run. */
+  private resultViews(fc: DG.FuncCall): DG.ViewBase[] {
+    try {
+      return fc.getResultViews() ?? [];
+    }
+    catch (e) {
+      console.warn('FuncCall.getResultViews threw', e);
+      return [];
+    }
+  }
+
   private renderEmptyEditor(message?: string): void {
     this.editorPane.innerHTML = '';
     this.statusEl = undefined;
@@ -670,13 +682,7 @@ export class WorkspaceTab {
 
   private renderPreviewResult(fc: DG.FuncCall): void {
     // Prefer the function's own result views (e.g. a query's TableView with its saved layout applied).
-    let views: DG.ViewBase[] = [];
-    try {
-      views = fc.getResultViews() ?? [];
-    }
-    catch (e) {
-      console.warn('FuncCall.getResultViews threw', e);
-    }
+    const views = this.resultViews(fc);
 
     if (views.length === 1) {
       const v = views[0];

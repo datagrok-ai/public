@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Workspace: Fixed the editor-header "Open" doing nothing for a pinned query/function or data connection — it now opens the entity's own view the way the Browse tree does (a query's run view, a connection's queries browser) via the handler's `renderPreview`, consistently for all entity types, instead of `Func.apply()` (which ran with empty inputs and added no view) or only setting the context object. Running the query and viewing its table result stays on Run / the bottom-preview "Open"
 * Workspace: Pinned predictive models now render their own preview and launch via `prepare().edit()` on "Open", instead of being treated as a generic Func (which auto-ran them and failed)
 * Workspace: Pinned predictive models (and other JS-handler entities) now render in the list instead of throwing and breaking the whole section — `entityIcon` passes the JS entity to the handler, and `EntityMetaDartProxy` (js-api) now converts it for Dart-backed handlers (`renderIcon`/`renderMarkup`/`renderTooltip`/`getCaption`/etc. now `toDart` their argument, like `isApplicable` already did)
 * Workspace: Fixed "Open" on a pinned app (e.g. Demo) doing nothing — both the editor and the bottom-preview "Open" now launch the app (the preview button previously called `Func.apply()` and discarded the returned View)
