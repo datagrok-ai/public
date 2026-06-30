@@ -114,6 +114,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.functionBrowser = new FunctionBrowser({
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
+      onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
     });
 
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');

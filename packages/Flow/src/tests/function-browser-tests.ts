@@ -8,7 +8,10 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES,
 } from '../rete/node-factory';
-import {categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery} from '../panel/function-browser';
+import {
+  categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery,
+  queryConnectionName, FunctionBrowser,
+} from '../panel/function-browser';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
 
@@ -90,6 +93,44 @@ category('Flow: function browser', () => {
     expect(nameMatchesQuery('Open File', 'openfile'), true, 'unspaced');
     expect(nameMatchesQuery('Open File', 'OPEN'), true, 'case-insensitive prefix');
     expect(nameMatchesQuery('Table Output', 'value'), false, 'no false positive');
+  });
+
+  test('queries are grouped by connection and kept out of the categories', async () => {
+    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    if (queries.length === 0) {
+      expect(true, true, 'no queries on this stand — skipped');
+      return;
+    }
+    // Every query reports a non-empty connection name (the grouping key).
+    for (const q of queries.slice(0, 20))
+      expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
+
+    const browser = new FunctionBrowser({
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+    });
+    document.body.appendChild(browser.root);
+    try {
+      browser.render();
+
+      // The Files pane (open by default) and the Queries pane both exist.
+      expect(!!browser.root.querySelector('[data-testid="ff-browser-files"]'), true, 'Files pane present');
+      const queriesPane = browser.root.querySelector('[data-testid="ff-browser-queries"]') as HTMLElement | null;
+      expect(!!queriesPane, true, 'Queries pane present');
+
+      // At least one per-connection sub-section, each tagged with its connection.
+      const connSections = browser.root.querySelectorAll('[data-testid^="ff-browser-query-conn"]');
+      expect(connSections.length > 0, true, 'queries split into per-connection sub-sections');
+      expect((connSections[0] as HTMLElement).dataset.queryConn != null, true, 'sub-section carries data-query-conn');
+
+      // A known query lives INSIDE the Queries pane and NOT in any category section.
+      const sample = queries[0];
+      const items = Array.from(browser.root.querySelectorAll(`[data-func="${sample.func.name}"]`)) as HTMLElement[];
+      expect(items.length > 0, true, `query ${sample.func.name} appears in the toolbox`);
+      for (const it of items)
+        expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries pane`);
+    } finally {
+      browser.root.remove();
+    }
   });
 
   test('statusLabel renders plain-language status', async () => {

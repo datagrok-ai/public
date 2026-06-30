@@ -14,19 +14,86 @@
 import {
   Guide, GuideStep, GuideContext,
   byTid, bySel, byNodeFunc, byNodeType, byBrowserFunc, byParam, paramFieldSelector, socketOf,
+  byFileTreeConn, byFileTreeFile,
   untilClick, untilNodeType, untilMoreNodes, untilMoreConnections, untilFuncNode,
   untilFewerNodes, untilValueContains, untilValueMatches, untilValueNonEmpty, untilNodeRightOf,
   untilNodeSelected, untilNodeSelectedOfFunc, untilMoreCollapsed,
+  untilFileTreeConnExpanded, untilScrolledIntoView, untilFuncNodeWithInput, isScrolledIntoView,
   untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType,
 } from './guide-model';
 
-const DEMO_FILE = 'System:DemoFiles/demog.csv';
 const DEMO_FORMULA = '${AGE} * 12';
 const NEW_COL_NAME = 'My New Column';
 const SEARCH_SEL = '[data-testid="ff-browser-search"]';
 const TABLE_OUTPUT_TYPE = 'Outputs/Table Output';
 
+// The KNIME-style Files browser: scientists bring data in by grabbing a file
+// from a connection, not by typing a path. We steer every "load data" step to
+// the Demo connection's demog.csv (top-level, below the folders → needs a scroll).
+const DEMO_CONN = 'Demo';
+const DEMOG_FILE = 'demog.csv';
+const DEMOG_FILE_SEL = '[data-testid="ff-files-file-demog-csv"]';
+
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Reveal the toolbox and make sure the Files pane is expanded (click its header
+ *  if a previous session left it collapsed). */
+const openFiles = async (ctx: GuideContext): Promise<void> => {
+  ctx.host.showFunctionBrowser();
+  await delay(80);
+  const header = document.querySelector(
+    '[data-testid="ff-browser-files"] .funcflow-section-header') as HTMLElement | null;
+  if (header?.classList.contains('collapsed')) header.click();
+};
+
+/** True once demog.csv exists in the Files tree AND is scrolled into view. */
+const demogVisible = (ctx: GuideContext): boolean => {
+  const fileEl = byFileTreeFile(DEMOG_FILE)(ctx);
+  return !!fileEl && isScrolledIntoView(fileEl);
+};
+
+/** The reusable "bring data in from the Files browser" sequence: open Files →
+ *  expand the Demo connection → scroll to demog.csv → double-click / drag it.
+ *  Ends with an OpenFile node already pointing at the file (no path typing).
+ *  Pass `skipIf` to skip the whole sequence when data is already loaded. */
+const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[] => {
+  const steps: GuideStep[] = [
+    {
+      title: 'Open the Files browser',
+      text: 'In the toolbox on the left, the Files pane lists your data connections — this is the ' +
+        'easiest way to bring data in. Click Next.',
+      setup: openFiles,
+      target: byTid('browser-files'),
+    },
+    {
+      title: 'Open the Demo connection',
+      text: `Double-click the “${DEMO_CONN}” connection (highlighted) — or click its ▸ triangle — to ` +
+        'expand it and list its files.',
+      setup: openFiles,
+      target: byFileTreeConn(DEMO_CONN),
+      until: untilFileTreeConnExpanded(DEMO_CONN),
+    },
+    {
+      title: 'Scroll to demog.csv',
+      text: `The files are listed below the folders. Scroll the Files list down until “${DEMOG_FILE}” ` +
+        'comes into view.',
+      // Highlight the whole Files pane while scrolling (the file itself is off-screen
+      // and would otherwise pulse over unrelated rows); switch to the file only once
+      // it's actually in view.
+      target: (ctx) => demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx),
+      highlights: (ctx) => [demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx)],
+      until: untilScrolledIntoView(DEMOG_FILE_SEL),
+    },
+    {
+      title: 'Add it to the canvas',
+      text: `Double-click “${DEMOG_FILE}” (highlighted) — or drag it onto the canvas — to drop an ` +
+        'Open File node already pointing at that file. No path typing needed.',
+      target: byFileTreeFile(DEMOG_FILE),
+      until: untilFuncNodeWithInput('OpenFile', 'fullPath', 'demog'),
+    },
+  ];
+  return skipIf ? steps.map((s) => ({...s, skipIf})) : steps;
+};
 
 /** Reveal the function list with a cleared search box, so the user types the
  *  query themselves (the tour gates on what they type). */
@@ -64,35 +131,7 @@ const loadDataAddColumn: Guide = {
       text: 'In a few minutes you\'ll load a demographics dataset, compute a new column, send it to ' +
         'an output, and run the flow. Click Next to start.',
     },
-    {
-      title: 'Search for “Open File”',
-      text: 'Click the search box and type open file (or openfile) to find the data source that ' +
-        'loads a file.',
-      setup: openSearch,
-      target: byTid('browser-search'),
-      until: untilValueMatches(SEARCH_SEL, 'openfile'),
-    },
-    {
-      title: 'Add the Open File node',
-      text: 'Double-click “Open File” (highlighted) to drop it on the canvas.',
-      target: byBrowserFunc('OpenFile'),
-      until: untilFuncNode('OpenFile'),
-    },
-    {
-      title: 'Select the Open File node',
-      text: 'Click the “Open File” node on the canvas. Its settings open in the panel on the right.',
-      target: byNodeFunc('OpenFile'),
-      until: untilNodeSelectedOfFunc('OpenFile'),
-    },
-    {
-      title: 'Paste the file path',
-      text: `We copied a demo path to your clipboard. Click the File path field and paste it ` +
-        `(Ctrl+V): ${DEMO_FILE}`,
-      setup: putOnClipboard(DEMO_FILE),
-      target: byParam('fullPath'),
-      position: 'left',
-      until: untilValueContains(paramFieldSelector('fullPath'), 'demog.csv'),
-    },
+    ...loadDemogViaFiles(),
     {
       title: 'Search for “Add New Column”',
       text: 'Click the search box and type add new column (or addnewcolumn) — the function that ' +
@@ -396,23 +435,7 @@ export const QUESTIONS: Guide[] = [
     target: byTid('browser-search'),
     until: untilMoreNodes(),
   }),
-  q('how-add-data', 'How do I bring data in?', [
-    {
-      title: 'Find a data source',
-      text: 'Data sources produce a table (from a file, query, or generator). Click the search box ' +
-        'and type open file.',
-      setup: openSearch,
-      target: byTid('browser-search'),
-      until: untilValueMatches(SEARCH_SEL, 'openfile'),
-    },
-    {
-      title: 'Add “Open File”',
-      text: `Double-click “Open File” (highlighted). Afterwards, select it and paste a path such as ` +
-        `${DEMO_FILE} into its File path field — or just drag a file from the Datagrok tree onto the canvas.`,
-      target: byBrowserFunc('OpenFile'),
-      until: untilFuncNode('OpenFile'),
-    },
-  ]),
+  q('how-add-data', 'How do I bring data in?', loadDemogViaFiles()),
   q('how-add-column', 'How do I add a calculated column?', [
     ensureFuncNode('AddNewColumn', 'Add New Column'),
     {
@@ -476,23 +499,7 @@ export const QUESTIONS: Guide[] = [
     },
   ]),
   q('how-preview', 'How do I preview a node\'s data?', [
-    ensureFuncNode('OpenFile', 'Open File'),
-    {
-      title: 'Select Open File',
-      text: 'Click the Open File node (highlighted) to open its settings.',
-      skipIf: openFileHasPath,
-      target: byNodeFunc('OpenFile'),
-      until: untilNodeSelectedOfFunc('OpenFile'),
-    },
-    {
-      title: 'Give it some data',
-      text: `Paste a demo path into the File path field (Ctrl+V): ${DEMO_FILE}`,
-      skipIf: openFileHasPath,
-      setup: putOnClipboard(DEMO_FILE),
-      target: byParam('fullPath'),
-      position: 'left',
-      until: untilValueContains(paramFieldSelector('fullPath'), 'demog.csv'),
-    },
+    ...loadDemogViaFiles(openFileHasPath),
     {
       title: 'Run up to here & preview',
       text: 'Right-click Open File\'s result output dot (highlighted) and choose “Run up to here & ' +

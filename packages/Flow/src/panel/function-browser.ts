@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
+import {getFilesBrowser} from '../utils/files-browser-tree';
 
 export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
@@ -63,6 +64,20 @@ export const FF_DRAG_MIME = 'application/x-funcflow-node';
 export interface FunctionBrowserCallbacks {
   onFunctionDoubleClick: (funcInfo: FuncInfo) => void;
   onBuiltinNodeDoubleClick: (nodeTypeName: string) => void;
+  /** Double-click (or Enter) on a file in the Files tree → add an OpenFile node. */
+  onFileDoubleClick: (file: DG.FileInfo) => void;
+}
+
+/** Connection display name for a query func, used to group queries in the
+ *  Queries pane (`friendlyName` falls back to `name`). */
+export function queryConnectionName(f: FuncInfo): string {
+  if (!(f.func instanceof DG.DataQuery)) return '';
+  try {
+    const conn = (f.func as DG.DataQuery).connection as DG.DataConnection | null;
+    return (conn?.friendlyName ?? conn?.name ?? 'Other') || 'Other';
+  } catch {
+    return 'Other';
+  }
 }
 
 /** Persisted UI state for the browser (group mode + which sections the user
@@ -109,6 +124,9 @@ export class FunctionBrowser {
   /** Expanded-section memory, keyed `b:<title>` (built-ins) / `<mode>:<group>`. */
   private expanded: Record<string, boolean> = {};
   private callbacks: FunctionBrowserCallbacks;
+  /** The Files tree (KNIME-style file browser). Built lazily once and reused
+   *  across renders so its expanded state and scroll position survive a search. */
+  private filesTreeRoot?: HTMLElement;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
     this.callbacks = callbacks;
@@ -193,11 +211,17 @@ export class FunctionBrowser {
   render(): void {
     this.treeContainer.innerHTML = '';
 
-    // Add built-in nodes section first
+    // KNIME-style Files browser (open by default) and Queries pane lead the
+    // toolbox, before the building-block built-ins and the function categories.
+    this.renderFilesSection();
+    this.renderQueriesSection();
+
+    // Add built-in nodes section
     this.renderBuiltinNodes();
 
-    // Add DG function nodes
-    const funcs = this.filterBySearch(getRegisteredFuncs());
+    // Add DG function nodes — queries are excluded here; they live in the
+    // Queries pane (grouped by connection), regardless of the group-by mode.
+    const funcs = this.filterBySearch(getRegisteredFuncs().filter((f) => !(f.func instanceof DG.DataQuery)));
     const grouped = this.groupFunctions(funcs);
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped));
@@ -218,6 +242,95 @@ export class FunctionBrowser {
       return i === -1 ? FUNC_CATEGORIES.length : i;
     };
     return keys.sort((a, b) => idx(a) - idx(b) || a.localeCompare(b));
+  }
+
+  /** A persisted, collapsible section wrapping arbitrary content (used by the
+   *  Files and Queries panes). `key` is the localStorage expand key; while a
+   *  search is active the section is forced open. */
+  private createSection(
+    title: string, content: HTMLElement, key: string, defaultExpanded: boolean, tip?: string,
+  ): HTMLElement {
+    const header = ui.div([], 'funcflow-section-header');
+    header.textContent = title;
+    header.style.cursor = 'pointer';
+    header.dataset.section = title;
+    setTid(header, 'browser-section', title);
+    if (tip) ui.tooltip.bind(header, tip);
+
+    const hasSearch = !!this.searchInput.value;
+    // Default state differs per pane (Files open, Queries closed) until the
+    // user toggles it; thereafter the remembered value wins.
+    const remembered = this.expanded[key];
+    let collapsed = hasSearch ? false : (remembered === undefined ? !defaultExpanded : !remembered);
+    content.style.display = collapsed ? 'none' : 'block';
+    header.classList.toggle('collapsed', collapsed);
+    header.addEventListener('click', () => {
+      collapsed = !collapsed;
+      content.style.display = collapsed ? 'none' : 'block';
+      header.classList.toggle('collapsed', collapsed);
+      if (!hasSearch) this.setExpanded(key, !collapsed);
+    });
+    return ui.divV([header, content]);
+  }
+
+  /** The KNIME-style Files browser — built once, reused across renders so its
+   *  expanded folders and scroll position survive a search keystroke. */
+  private getFilesTreeRoot(): HTMLElement {
+    if (!this.filesTreeRoot) {
+      const tree = getFilesBrowser(
+        () => {},                                                  // selection: no-op
+        (f) => this.callbacks.onFileDoubleClick(f),                // dbl-click / Enter → OpenFile node
+        'funcflow.files.v1');
+      this.filesTreeRoot = tree.root;
+    }
+    return this.filesTreeRoot;
+  }
+
+  private renderFilesSection(): void {
+    const content = ui.div([this.getFilesTreeRoot()], 'funcflow-section-content');
+    const section = this.createSection(
+      'Files', content, 'b:Files', true,
+      'Browse data files. Double-click or drag a file onto the canvas to load it.');
+    setTid(section, 'browser-files');
+    this.treeContainer.appendChild(section);
+  }
+
+  private renderQueriesSection(): void {
+    // Group every registered query by its connection (friendlyName ?? name).
+    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    const query = this.searchInput.value.toLowerCase();
+    const matching = query ? queries.filter((f) => funcMatchesSearch(f, query)) : queries;
+    if (matching.length === 0) return;
+
+    const byConn = new Map<string, FuncInfo[]>();
+    for (const f of matching) {
+      const conn = queryConnectionName(f);
+      let arr = byConn.get(conn);
+      if (!arr) byConn.set(conn, arr = []);
+      arr.push(f);
+    }
+
+    const content = ui.div([], 'funcflow-section-content funcflow-subsections');
+    for (const conn of [...byConn.keys()].sort((a, b) => a.localeCompare(b))) {
+      const items = byConn.get(conn)!;
+      items.sort((a, b) => a.name.localeCompare(b.name));
+      const subContent = ui.div([], 'funcflow-section-content');
+      for (const info of items)
+        subContent.appendChild(this.createFuncItem(info));
+      const sub = this.createSection(
+        `${conn} (${items.length})`, subContent, `q:${conn}`, false,
+        `Queries from the “${conn}” connection`);
+      sub.classList.add('funcflow-subsection');
+      sub.dataset.queryConn = conn;
+      setTid(sub, 'browser-query-conn', conn);
+      content.appendChild(sub);
+    }
+
+    const section = this.createSection(
+      'Queries', content, 'b:Queries', false,
+      'Database queries, grouped by data connection. Double-click or drag to add.');
+    setTid(section, 'browser-queries');
+    this.treeContainer.appendChild(section);
   }
 
   private renderBuiltinNodes(): void {
@@ -345,6 +458,26 @@ export class FunctionBrowser {
     return ui.divV([header, content]);
   }
 
+  /** One draggable, double-clickable catalog row for a DG function. Shared by
+   *  the category sections and the Queries pane. */
+  private createFuncItem(info: FuncInfo): HTMLElement {
+    const item = ui.div([], 'funcflow-func-item');
+    item.textContent = info.name;
+    item.dataset.testid = tid('browser-item', info.nodeTypeName);
+    item.dataset.nodeTypeName = info.nodeTypeName;     // registered factory name
+    item.dataset.func = info.func.name;                // the DG function it adds
+    if (info.packageName) item.dataset.package = info.packageName;
+    let tip = info.func.description || info.name;
+    if (info.packageName)
+      tip += ` (${info.packageName})`;
+    ui.tooltip.bind(item, tip);
+    item.addEventListener('dblclick', () => {
+      this.callbacks.onFunctionDoubleClick(info);
+    });
+    this.makeItemDraggable(item, info.nodeTypeName);
+    return item;
+  }
+
   private createCollapsibleSection(category: string, items: FuncInfo[]): HTMLElement {
     const header = ui.div([], 'funcflow-section-header');
     header.textContent = `${category} (${items.length})`;
@@ -354,23 +487,8 @@ export class FunctionBrowser {
 
     const content = ui.div([], 'funcflow-section-content');
 
-    for (const info of items) {
-      const item = ui.div([], 'funcflow-func-item');
-      item.textContent = info.name;
-      item.dataset.testid = tid('browser-item', info.nodeTypeName);
-      item.dataset.nodeTypeName = info.nodeTypeName;     // registered factory name
-      item.dataset.func = info.func.name;                // the DG function it adds
-      if (info.packageName) item.dataset.package = info.packageName;
-      let tip = info.func.description || info.name;
-      if (info.packageName)
-        tip += ` (${info.packageName})`;
-      ui.tooltip.bind(item, tip);
-      item.addEventListener('dblclick', () => {
-        this.callbacks.onFunctionDoubleClick(info);
-      });
-      this.makeItemDraggable(item, info.nodeTypeName);
-      content.appendChild(item);
-    }
+    for (const info of items)
+      content.appendChild(this.createFuncItem(info));
 
     const key = `${this.groupBy}:${category}`;
     const hasSearch = !!this.searchInput.value;

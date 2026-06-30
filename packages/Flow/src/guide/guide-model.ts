@@ -128,6 +128,25 @@ export function paramFieldSelector(paramName: string): string {
   return `[data-param="${cssEscape(paramName)}"] textarea, [data-param="${cssEscape(paramName)}"] input`;
 }
 
+// ---------- Files tree (KNIME-style browser) resolvers ----------
+
+/** The connection row in the Files tree (e.g. 'Demo'), addressed by its test-id. */
+export function byFileTreeConn(connName: string): (ctx: GuideContext) => HTMLElement | null {
+  return byTid('files-conn', connName);
+}
+
+/** The expand triangle inside a connection row — what the user clicks (or
+ *  double-clicks the row) to open it. */
+export function byFileTreeConnTri(connName: string): (ctx: GuideContext) => HTMLElement | null {
+  const sel = `[data-testid="${tid('files-conn', connName)}"] .d4-tree-view-tri`;
+  return () => el(sel);
+}
+
+/** A file row in the Files tree (e.g. 'demog.csv'), addressed by its test-id. */
+export function byFileTreeFile(fileName: string): (ctx: GuideContext) => HTMLElement | null {
+  return byTid('files-file', fileName);
+}
+
 // ---------- low-level waits ----------
 
 class AbortedError extends Error {
@@ -354,6 +373,52 @@ export function untilNodeRightOf(
       if (!a || !b) return false;
       return a.getBoundingClientRect().left - b.getBoundingClientRect().left >= minDx;
     }, ctx.signal);
+}
+
+/** Wait until a connection row in the Files tree is expanded (its triangle has
+ *  the `d4-tree-view-tri-expanded` class). */
+export function untilFileTreeConnExpanded(connName: string) {
+  const sel = `[data-testid="${tid('files-conn', connName)}"] .d4-tree-view-tri-expanded`;
+  return (ctx: GuideContext): Promise<void> => poll(() => !!el(sel), ctx.signal);
+}
+
+/** True when `node` is currently scrolled into view within its nearest vertical
+ *  scroll container (and on-screen). Used to gate a "scroll until X is visible"
+ *  step. */
+export function isScrolledIntoView(node: HTMLElement): boolean {
+  const r = node.getBoundingClientRect();
+  if (r.height === 0 || r.bottom <= 0 || r.top >= window.innerHeight) return false;
+  let p = node.parentElement;
+  while (p) {
+    const oy = getComputedStyle(p).overflowY;
+    if (/(auto|scroll|hidden)/.test(oy) && p.scrollHeight > p.clientHeight + 1) {
+      const pr = p.getBoundingClientRect();
+      return r.top >= pr.top - 2 && r.bottom <= pr.bottom + 2;
+    }
+    p = p.parentElement;
+  }
+  return true; // no scroll container — viewport visibility already checked
+}
+
+/** Wait until the element matching `selector` exists AND is scrolled into view. */
+export function untilScrolledIntoView(selector: string) {
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => {
+      const node = el(selector);
+      return !!node && isScrolledIntoView(node);
+    }, ctx.signal);
+}
+
+/** Wait until a node running `funcName` has its `inputKey` input value set to a
+ *  string containing `substr` (case-insensitive) — e.g. an OpenFile node whose
+ *  `fullPath` now points at demog.csv. */
+export function untilFuncNodeWithInput(funcName: string, inputKey: string, substr: string) {
+  const lcFn = funcName.toLowerCase();
+  const lcSub = substr.toLowerCase();
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => (ctx.host.getFlow()?.getNodes() ?? []).some((n) =>
+      (n.dgFuncName ?? '').toLowerCase().includes(lcFn) &&
+      String((n.inputValues ?? {})[inputKey] ?? '').toLowerCase().includes(lcSub)), ctx.signal);
 }
 
 /** Wait until the input/textarea matching `selector` has a non-empty value. */

@@ -2,8 +2,26 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {setTid} from './test-ids';
 
 type FileArgFunc = (f: DG.FileInfo) => void;
+
+// Stable, addressable test-ids on every tree row so tutorials and UI tests can
+// target a specific connection / folder / file by its name (e.g. the Demo
+// connection's expander, or the demog.csv file).
+const stampConnection = (root: HTMLElement, name: string): void => {
+  setTid(root, 'files-conn', name);
+  root.dataset.conn = name;
+};
+const stampFolder = (root: HTMLElement, name: string): void => {
+  setTid(root, 'files-folder', name);
+  root.dataset.folder = name;
+};
+const stampFile = (root: HTMLElement, f: DG.FileInfo): void => {
+  setTid(root, 'files-file', f.fileName);
+  root.dataset.file = f.fileName;
+  root.dataset.filePath = f.fullPath;
+};
 
 /** Hierarchical snapshot of which groups are expanded, keyed by node key (see `nodeKey`). */
 interface ExpandedState {
@@ -57,7 +75,7 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
 
   const renderFileLabel = (f: DG.FileInfo): HTMLElement => {
     const oh = DG.ObjectHandler.forEntity(f);
-    return ui.divH([...(oh ? [oh.renderIcon(f)] : []), ui.divText(f.fileName)], {style: {alignItems: 'center', gap: '4px'}});
+    return ui.divH([...(oh ? [oh.renderIcon(f.dart)] : []), ui.divText(f.fileName)], {style: {alignItems: 'center', gap: '4px'}});
   };
 
   // Lazily populates a group's children once. The promise is cached per Dart node handle so
@@ -78,10 +96,17 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
       const files = await listContent(group.value);
       sortFiles(files);
       for (const f of files) {
-        if (f.isDirectory)
-          group.group(renderFileLabel(f), f, false); // folders start collapsed
-        else
-          group.item(renderFileLabel(f), f);
+        if (f.isDirectory) {
+          const sub = group.group(renderFileLabel(f), f, false); // folders start collapsed
+          stampFolder(sub.root, f.fileName);
+        } else {
+          const item = group.item(renderFileLabel(f), f);
+          stampFile(item.root, f);
+          ui.makeDraggable(item.root, {
+            getDragObject: () => f,
+            getDragCaption: () => f.friendlyName,
+          });
+        }
       }
     } catch (e) {
       grok.shell.error('Failed to list files. Check console for details');
@@ -179,7 +204,8 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
 
       for (const dc of dataConnections) {
         const oh = DG.ObjectHandler.forEntity(dc.con);
-        tree.group(ui.divH([...(oh ? [oh.renderIcon(dc.con)] : []), ui.divText(dc.name)], {style: {alignItems: 'center', gap: '4px'}}), dc.con, false);
+        const g = tree.group(ui.divH([...(oh ? [oh.renderIcon(dc.con.dart)] : []), ui.divText(dc.name)], {style: {alignItems: 'center', gap: '4px'}}), dc.con, false);
+        stampConnection(g.root, dc.name);
       }
 
       await restoreExpandedState();
@@ -191,5 +217,9 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
   };
 
   processTree();
+  tree.root.style.maxHeight = '300px';
+  tree.root.style.minWidth = '200px';
+  tree.root.style.minHeight = '50px';
+  tree.root.classList.add('d4-tree-view-sticky');
   return tree;
 }

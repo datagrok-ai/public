@@ -2,6 +2,32 @@
 
 ## v.next
 
+### KNIME-style Files & Queries in the toolbox
+
+* **Files pane (open by default), first in the toolbox.** A real file browser (the shared
+  `getFilesBrowser` tree) listing every file connection and its folders/files. **Drag a file onto the
+  canvas** — or **double-click it** — to drop an `OpenFile` node already pointing at it (no path
+  typing). Its expanded folders and scroll position survive a search keystroke (the tree is built once
+  and reused).
+* **Queries pane, grouped by connection.** Every `DG.DataQuery` is collected here into one
+  sub-accordion **per data connection** (`connection.friendlyName ?? connection.name`) — Chembl,
+  Chembl Sql, Unichem, Biologics, … — **regardless of the “Group by” mode**. Queries are **removed
+  from the Data Sources category** so the catalog isn't drowned by hundreds of DB queries. The
+  per-connection sub-accordions are visually nested (indent + left accent rail + lighter headers +
+  card shadow) so the hierarchy reads clearly as a level below the top sections.
+* **Name-based test-ids on every tree row** — `ff-files-conn-<name>` / `ff-files-folder-<name>` /
+  `ff-files-file-<name>` (+ raw `data-conn` / `data-folder` / `data-file` / `data-file-path`), and
+  `ff-browser-files` / `ff-browser-queries` / `ff-browser-query-conn-<name>` on the panes — so a
+  specific connection, folder, or file (e.g. the Demo connection's demog.csv) is addressable from
+  guides and UI tests.
+* **Guides now teach the real data-loading gesture.** The flagship tutorial and the
+  “How do I bring data in?” / “preview a node's data?” how-tos no longer paste a path string — they
+  walk the user through the Files browser: **open Files → expand the Demo connection → scroll to
+  demog.csv → double-click / drag it**, each step properly gated (`untilFileTreeConnExpanded`,
+  `untilScrolledIntoView`, `untilFuncNodeWithInput`). Prerequisites are detected and skipped when
+  already satisfied. While scrolling, the highlight tints the **whole Files pane** (not the
+  still-off-screen target row) and snaps to the file only once it's actually in view.
+
 ### Auto-summaries — the flow documents itself (U12)
 
 * **Every node shows a plain-language caption** when you haven't written your own description —

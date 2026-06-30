@@ -1,12 +1,15 @@
 /** Tests for the in-app guide system: the pure condition helpers (poll, click,
  *  section-expanded) and content integrity of the tutorials/questions. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import * as DG from 'datagrok-api/dg';
 
 import {
   poll, waitForClick, isAborted, untilSectionExpanded, computePlacement,
   byNodeFunc, byParam, paramFieldSelector, untilValueContains, untilValueMatches,
+  byFileTreeConn, byFileTreeFile, untilFileTreeConnExpanded, untilFuncNodeWithInput,
   GuideContext, GuideHost,
 } from '../guide/guide-model';
+import {getFilesBrowser} from '../utils/files-browser-tree';
 import {TUTORIALS, QUESTIONS} from '../guide/guide-content';
 import {GuideRunner} from '../guide/guide-runner';
 import {Guide} from '../guide/guide-model';
@@ -249,6 +252,47 @@ category('Flow: guide playthrough', () => {
     } finally {
       ac.abort();
       destroyEditor(e);
+    }
+  });
+
+  test('Files-tree data-load workflow: connection expand + file targeting + node-with-input gate', async () => {
+    const reg = getRegisteredFuncs().find((r) => r.func.name === 'OpenFile');
+    if (!reg) {
+      expect(true, true, 'OpenFile not on this stand — skipped');
+      return;
+    }
+    const tree = getFilesBrowser(() => {}, () => {}, undefined);
+    document.body.appendChild(tree.root);
+    const e = makeEditor();
+    const ac = new AbortController();
+    const host: GuideHost = {getFlow: () => e.flow, showFunctionBrowser: () => {}, anchorEl: e.container};
+    const ctx: GuideContext = {host, signal: ac.signal};
+    try {
+      // The Demo connection row is resolvable by the guide helper.
+      const demoOk = await until(() => byFileTreeConn('Demo')(ctx) !== null, 8000);
+      expect(demoOk, true, 'Demo connection resolvable by byFileTreeConn');
+
+      // Expanding it loads its files; the "connection expanded" gate then fires.
+      const demoGroup = tree.children.find((c): c is DG.TreeViewGroup =>
+        c instanceof DG.TreeViewGroup && (c.root as HTMLElement).dataset.conn === 'Demo')!;
+      demoGroup.expanded = true;
+      await untilFileTreeConnExpanded('Demo')(ctx);
+      expect(true, true, 'untilFileTreeConnExpanded resolved');
+
+      // demog.csv becomes targetable by byFileTreeFile.
+      const fileOk = await until(() => byFileTreeFile('demog.csv')(ctx) !== null, 8000);
+      expect(fileOk, true, 'demog.csv resolvable by byFileTreeFile');
+
+      // Adding an OpenFile node carrying that path satisfies the node-with-input gate.
+      const node = createNode(reg.nodeTypeName)!;
+      node.inputValues['fullPath'] = 'System:DemoFiles/demog.csv';
+      await e.flow.addNodeAt(node, 0, 0);
+      await untilFuncNodeWithInput('OpenFile', 'fullPath', 'demog')(ctx);
+      expect(true, true, 'untilFuncNodeWithInput resolved');
+    } finally {
+      ac.abort();
+      destroyEditor(e);
+      tree.root.remove();
     }
   });
 });

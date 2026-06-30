@@ -16,6 +16,7 @@ import './tests/inspect-tests';
 import './tests/test-ids-tests';
 import './tests/guide-tests';
 import './tests/summary-tests';
+import './tests/files-tree-tests';
 
 export let _package = new DG.Package();
 export { tests };

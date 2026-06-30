@@ -241,7 +241,8 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
-| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, …), category order, `statusLabel` |
+| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, …), category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
+| `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
 | `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, warn-and-skip for JS-only nodes (needs a live backend) |
 
@@ -502,7 +503,7 @@ target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used t
 
 | File | Role |
 |---|---|
-| `guide-model.ts` | Types (`Guide`/`GuideStep`/`GuideContext`/`GuideHost`; a step may set `highlights` for multiple pulse targets and `skipIf` to skip a satisfied prerequisite) + DOM-light helpers: `poll`, `waitForClick`, `untilClick`, `untilNodeType`/`untilFuncNode`, `untilMore{Nodes,Connections}`, `untilMoreCollapsed`(delta), `untilSectionExpanded`, `untilValueContains`/`untilValueMatches`(space-insensitive)/`untilValueNonEmpty`, `untilNodeSelected`/`untilNodeSelectedOfFunc`, `untilNodeRightOf`, `untilExists`; predicates `hasFuncNode`/`hasNodeType`/`nodeCount`; target resolvers `byTid`/`bySel`/`byNodeFunc`/`byNodeType`/`byBrowserFunc`/`byParam`(+`paramFieldSelector`)/`socketOf`; `copyToClipboard`/`prefillSearch`; and the pure `computePlacement`. |
+| `guide-model.ts` | Types (`Guide`/`GuideStep`/`GuideContext`/`GuideHost`; a step may set `highlights` for multiple pulse targets and `skipIf` to skip a satisfied prerequisite) + DOM-light helpers: `poll`, `waitForClick`, `untilClick`, `untilNodeType`/`untilFuncNode`, `untilMore{Nodes,Connections}`, `untilMoreCollapsed`(delta), `untilSectionExpanded`, `untilValueContains`/`untilValueMatches`(space-insensitive)/`untilValueNonEmpty`, `untilNodeSelected`/`untilNodeSelectedOfFunc`, `untilNodeRightOf`, `untilExists`; **Files-tree** resolvers `byFileTreeConn`/`byFileTreeConnTri`/`byFileTreeFile` + gates `untilFileTreeConnExpanded`/`untilScrolledIntoView`/`untilFuncNodeWithInput`; predicates `hasFuncNode`/`hasNodeType`/`nodeCount`; target resolvers `byTid`/`bySel`/`byNodeFunc`/`byNodeType`/`byBrowserFunc`/`byParam`(+`paramFieldSelector`)/`socketOf`; `copyToClipboard`/`prefillSearch`; and the pure `computePlacement`. |
 | `guide-runner.ts` | `GuideRunner` — runs one guide at a time: highlight → own positioned card → `Promise.race(action, exit)` → re-anchor timer + cleanup; single ✕ exits; Skip; completion card. |
 | `guide-content.ts` | The 4 tutorials (flagship `load-data-add-column` first — the Start-panel tour) + how-to questions (`TUTORIALS`, `QUESTIONS`). |
 | `guide-launcher.ts` | `createHelpButton` + `openGuideMenu` (DG.Menu with Tutorials / How do I…? groups). |
@@ -555,6 +556,7 @@ its raw, un-slugified identity — the test-id `ff-node` is the same on every no
 | Ribbon icons | `ff-ribbon-<action>` (`run`/`debug`/`continue`/`stop`/`view-script`/`save`/`open`/`undo`/`redo`/`layout`/`zoom-in`/`zoom-out`/`zoom-fit`/`toggle-browser`/`save-creation-scripts`) |
 | Start panel | `ff-start-overlay`, `ff-start-panel`, `ff-start-bg`, `ff-start-template-<file>`, `ff-start-blank`, `ff-start-open`, `ff-start-import` |
 | Function browser | `ff-browser`, `ff-browser-search`, `ff-browser-groupby`, `ff-browser-tree`, `ff-browser-section-<title>`, `ff-browser-item-<typeName>` |
+| Files / Queries panes | `ff-browser-files`, `ff-browser-queries`, `ff-browser-query-conn-<conn>` (+ `data-query-conn`); tree rows `ff-files-conn-<name>` / `ff-files-folder-<name>` / `ff-files-file-<name>` (+ `data-conn`/`data-folder`/`data-file`/`data-file-path`) |
 | Canvas node | `ff-node` (+ `data-node-id`, `data-node-type`), `ff-node-title`/`-title-text`/`-status`/`-caret`/`-statusline`/`-hint`/`-description`/`-body`, `ff-exec-in`/`ff-exec-out`, `ff-socket-input-<key>`/`ff-socket-output-<key>`, `ff-socket-<type>` |
 | Connections | `ff-connection`, `ff-edge-count`, `ff-waypoint-<i>` |
 | Property panel | `ff-property-panel`, `ff-property-content`, `ff-property-title-row`, `ff-property-type-badge`, `ff-prop-input-<label/param>` |
@@ -596,6 +598,18 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 ### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))
 
+- **Files pane** (first, `ff-browser-files`, expanded by default): the KNIME-style file browser
+  ([utils/files-browser-tree.ts](src/utils/files-browser-tree.ts), `getFilesBrowser`) listing every
+  file connection + its folders/files. Built **once** and reused across renders (so expanded folders /
+  scroll survive a search keystroke). **Double-click or drag a file → an `OpenFile` node** pre-set to
+  that file (`onFileDoubleClick` callback → `addOpenFileNode`; drag uses the existing `DG.FileInfo`
+  droppable). Every row carries a name-based `data-testid` (`ff-files-conn-<name>` /
+  `ff-files-folder-<name>` / `ff-files-file-<name>`) plus raw `data-conn`/`data-folder`/`data-file`/
+  `data-file-path` attributes.
+- **Queries pane** (`ff-browser-queries`): every `DG.DataQuery` from the registry, **excluded from the
+  category list** and grouped into one sub-accordion **per connection** (`queryConnectionName` =
+  `connection.friendlyName ?? connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`),
+  **regardless of the group-by mode**.
 - Search input + Group-by selector. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`.
 - **`categorizeFunc(func, role)`** buckets by **input/output signature** (validated against the live catalog — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md)). `FUNC_CATEGORIES` is also the **tree order** (Data Sources first):
   - **Data Sources** — outputs a table, **0 table inputs** (OpenFile, DB queries). A join is *not* a data source.

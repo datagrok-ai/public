@@ -98,6 +98,6 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static testDialog() {
-    ui.dialog().add(getFilesBrowser(() => {}, () => {}).root).show();
+    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
   }
 }

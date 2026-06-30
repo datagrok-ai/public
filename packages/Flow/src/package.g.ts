@@ -34,3 +34,8 @@ export async function flowFromCreationScript(script: string) : Promise<any> {
 export async function openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean) : Promise<any> {
   return await PackageFunctions.openCreationScriptFlowDialog(script, tableIds, show);
 }
+
+//name: testDialog
+export function testDialog() : void {
+  PackageFunctions.testDialog();
+}
