@@ -60,6 +60,28 @@ export async function loginToDatagrok(page: Page): Promise<void> {
   await injectToken(page, token);
 }
 
+// Direct file-browse URL for a dataset (dot-namespaced relPath, e.g.
+// System.AppData/Helm/samples/HELM.csv). Ported 1:1 from TestTrack spec-login.
+export function fileBrowseUrl(relPath: string): string {
+  return `${baseUrl}/file/${relPath}?browse=files`;
+}
+
+// Authenticate, then navigate DIRECTLY to the dataset's file-browse URL so the
+// platform and the dataset open in a SINGLE navigation. Waits for the preloader
+// to clear and the grid viewer to attach. Ported 1:1 from TestTrack spec-login.
+export async function loginAndOpenFile(page: Page, relPath: string): Promise<void> {
+  const token = process.env.DATAGROK_AUTH_TOKEN;
+  if (!token || token.length === 0)
+    throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
+  await page.goto(baseUrl + '/oauth/');
+  const u = new URL(baseUrl);
+  await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
+  await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
+  await page.goto(fileBrowseUrl(relPath));
+  await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60_000});
+}
+
 // Resolve the second-user token: env first (DATAGROK_AUTH_TOKEN_2, which the CI runner exports after
 // provisioning the `test2` user), else exchange a second-user dev key (DATAGROK_DEV_KEY_2) for a token.
 // Throws when neither is available — a two-user spec MUST NOT silently pass without its second user.
