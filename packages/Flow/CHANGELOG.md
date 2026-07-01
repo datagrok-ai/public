@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Column-output preview shows the column as a grid
+
+* A node whose real output is a **column** now previews that column as a **one-column DataFrame
+  grid** — the instrumented run captures a `DG.DataFrame.fromColumns([col.clone()])` and the docked
+  preview renders it like any table (with semantic types detected). Previously it showed a small
+  text sample **and** the threaded "table (modified)" passthrough grid; that passthrough table is now
+  **suppressed** in the preview when a column is output (it's still captured for the column picker /
+  inspect). Falls back to the text sample if no DataFrame was captured.
+
 ### Native Datagrok inputs in the context panel
 
 * Primitive function parameters (`string`, `int`, `double`/`num`, `qnum`, `datetime`, `bool`) are now

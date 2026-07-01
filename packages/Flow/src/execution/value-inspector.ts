@@ -154,7 +154,7 @@ export function hasRenderablePreview(state: NodeExecState): boolean {
   if (!state.outputs) return false;
   for (const summary of Object.values(state.outputs)) {
     if (summary.type === 'dataframe' && summary.clone) return true;
-    if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
+    if (summary.type === 'column' && (summary.clone || (Array.isArray(summary.sample) && summary.sample.length > 0))) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
     if ((summary.type === 'widget' || summary.type === 'viewer') && summary.value?.root instanceof Element) return true;
   }
@@ -166,7 +166,14 @@ export function buildValuePreviews(
 ): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
-  for (const [name, summary] of Object.entries(state.outputs)) {
+  const entries = Object.entries(state.outputs);
+  // When the node's real output is a column, its preview is that column rendered
+  // as a one-column DataFrame — so suppress the threaded "<input> (modified)"
+  // passthrough table (it's kept in the state for the column picker / inspect,
+  // but here it's redundant with, and noisier than, the column itself).
+  const hasColumnOutput = entries.some(([, s]) => s.type === 'column');
+  for (const [name, summary] of entries) {
+    if (hasColumnOutput && summary.type === 'dataframe' && name.endsWith('(modified)')) continue;
     const preview = buildPreview(name, summary, onEditViewer);
     if (preview) container.appendChild(preview);
   }
@@ -192,6 +199,18 @@ export function buildPreview(
     return wrap;
   }
   case 'column': {
+    // Preferred: the instrumented run captured a one-column DataFrame clone
+    // built from the output column — render it as a real grid.
+    if (summary.clone) {
+      const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+      try {
+        (summary.clone as DG.DataFrame).meta.detectSemanticTypes();
+        const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
+        grid.root.style.cssText = 'width:100%;min-height:350px;';
+        wrap.appendChild(grid.root);
+        return wrap;
+      } catch { /* grid failed — fall back to the text sample below */ }
+    }
     if (!summary.sample || summary.sample.length === 0) return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const title = ui.divText(`${name}: ${summary.name ?? ''}`);

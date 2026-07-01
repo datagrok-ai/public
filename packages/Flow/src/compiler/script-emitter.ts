@@ -411,8 +411,14 @@ function emitPreamble(runId: string): string[] {
     '  if (v.rowCount !== undefined && v.columns !== undefined)',
     '    return {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length,',
     '      colNames:v.columns.names(), clone:v.clone()};',
-    '  if (v.length !== undefined && v.name !== undefined && v.toList)',
-    '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5)};',
+    '  if (v.length !== undefined && v.name !== undefined && v.toList) {',
+    // Capture a one-column DataFrame (from a clone, so a later in-place mutation
+    // of the source table can't change it) — the preview renders this as a grid
+    // instead of a tiny text sample.
+    '    var __ff_cdf = null;',
+    '    try { __ff_cdf = DG.DataFrame.fromColumns([v.clone()]); } catch (e) {}',
+    '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5), clone:__ff_cdf};',
+    '  }',
     '  if (declaredType === \'graphics\' && typeof v === \'string\')',
     '    return {type:\'graphics\', value:v};',
     // A Viewer or Widget has a live DOM `.root`. The instrumented run is in the
