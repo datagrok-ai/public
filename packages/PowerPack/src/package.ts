@@ -10,10 +10,11 @@ import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/form
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
-import {appSearch, connectionsSearch,
+import {appSearch, connectionsSearch, demosSearch,
   dockerSearch, entitySimilaritySearch, filesSearch, functionSearch, groupsSearch,
-  helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
-  scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+  helpSearch, jsSamplesSearch, modelsSearch, notebooksSearch, pdbSearch, pluginsSearch,
+  pubChemSearch, querySearch, scriptsSearch, spacesSearch, usersSearch,
+  wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {CronInput} from './widgets/cron-input';
 import {HtmlWidget} from './widgets/html-widget';
@@ -228,6 +229,9 @@ export class PackageFunctions {
       }, {
         name: 'Scripts', description: 'Scripts Search', options: {relatedViewName: 'scripts'},
         search: (s: string) => scriptsSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Demos', description: 'Demos Search',
+        search: (s: string) => demosSearch(s).then((r) => ({priority: 10, results: r})),
       },
       {
         name: 'Similarity Search', description: 'Entity Similarity Search',
@@ -282,6 +286,18 @@ export class PackageFunctions {
             {suggestionText: 'New users yesterday', priority: 24},
             {suggestionText: 'New user last 7 days', priority: 23}] : null,
         search: (s: string) => newUsersSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Spaces', description: 'Spaces Search', options: {relatedViewName: 'spaces'},
+        search: (s) => spacesSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Plugins', description: 'Plugins Search', options: {relatedViewName: 'plugins'},
+        search: (s) => pluginsSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Notebooks', description: 'Notebooks Search', options: {relatedViewName: 'notebooks'},
+        search: (s) => notebooksSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Models', description: 'Models Search', options: {relatedViewName: 'models'},
+        search: (s) => modelsSearch(s).then((r) => ({priority: 10, results: r})),
       },
 
       ],

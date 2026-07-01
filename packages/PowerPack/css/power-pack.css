@@ -40,6 +40,21 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
 }
 
+/* Collapse advanced category panels behind the "Show advanced" button */
+.power-search-lists-host.power-search-collapsed .power-pack-search-advanced {
+    display: none;
+}
+
+.power-search-lists-host.power-search-collapsed.power-search-show-advanced .power-pack-search-advanced {
+    display: flex;
+}
+
+.power-pack-search-show-advanced {
+    align-self: flex-start;
+    height: fit-content;
+    margin: 8px 0 0 4px;
+}
+
 .power-pack-widget-host > .d4-dialog-header > i {
     visibility: hidden;
 }
