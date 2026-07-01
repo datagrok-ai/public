@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
   DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, HoistedColumn, MpoResult,
-  NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
+  MpoScale, NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
@@ -12,6 +12,23 @@ export * from './mpo-types';
 
 export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
   return p.functionType === 'numerical';
+}
+
+export const toScale = (x: number, log: boolean): number => log ? Math.log10(x) : x;
+export const fromScale = (u: number, log: boolean): number => log ? Math.pow(10, u) : u;
+
+export function domainMaxX(d: NumericalDesirability): number {
+  const max = d.max ?? (d.line.length ? Math.max(...d.line.map((p) => p[0])) : 1);
+  return (d.scale === MpoScale.Log && max <= 0) ? 1 : max;
+}
+
+export function domainMinX(d: NumericalDesirability): number {
+  const min = d.min ?? (d.line.length ? Math.min(...d.line.map((p) => p[0])) : 0);
+  if (d.scale === MpoScale.Log && min <= 0) {
+    const max = domainMaxX(d);
+    return max > 0 ? max / 1000 : 1e-3;
+  }
+  return min;
 }
 
 export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
@@ -61,8 +78,9 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
 /// Fingerprint of a property's value→desirability mapping (line/categories + missing-value handling, but NOT
 /// weight). Validates the MpoCalculator cache so editing one curve only recomputes that column.
 export function desirabilityKey(d: PropertyDesirability): string {
+  const dom = isNumerical(d) && d.scale === MpoScale.Log ? `|${d.min ?? ''}|${d.max ?? ''}` : '';
   return isNumerical(d) ?
-    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}` :
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}|${d.scale === MpoScale.Log ? 'log' : 'lin'}${dom}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -99,9 +117,12 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   const {raw, valNull, isCat, cats, catScore} = h;
   const line = isCat ? null : (h.template as NumericalDesirability).line;
   const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
+  const log = !isCat && (h.template as NumericalDesirability).scale === MpoScale.Log;
+  const floorX = log ? domainMinX(h.template as NumericalDesirability) : 0;
+  const xs = log && line ? line.map((p) => Math.log10(Math.max(floorX, p[0]))) : null;
   const segN = line ? line.length : 0;
-  const loX = segN ? line![0][0] : 0;
-  const hiX = segN ? line![segN - 1][0] : 0;
+  const loX = segN ? (log ? xs![0] : line![0][0]) : 0;
+  const hiX = segN ? (log ? xs![segN - 1] : line![segN - 1][0]) : 0;
   const mv = h.template.missingValues;
   // The RowState a missing value resolves to (Bail/Skip mark the row; Contribute means substitute defaultScore).
   const missState = !mv || mv.strategy === 'exclude' ? RowState.Bail :
@@ -112,7 +133,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
   let state: Uint8Array | null = null; // lazily allocated on the first skip/bail row
 
   for (let i = 0; i < rowCount; ++i) {
-    if (raw[i] === valNull) {
+    if (raw[i] === valNull || (log && raw[i] <= 0)) {
       if (missState !== RowState.Contribute) {
         (state ??= new Uint8Array(rowCount))[i] = missState;
         D[i] = NaN;
@@ -132,13 +153,13 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
       continue;
     }
     // Inlined desirabilityScore over the column's line.
-    const x = raw[i];
+    const x = log ? Math.log10(raw[i]) : raw[i];
     let score = 0;
     let matched = false;
     if (segN !== 0 && x >= loX && x <= hiX) {
       for (let k = 0; k < segN - 1; ++k) {
-        const x1 = line![k][0];
-        const x2 = line![k + 1][0];
+        const x1 = log ? xs![k] : line![k][0];
+        const x2 = log ? xs![k + 1] : line![k + 1][0];
         if (x >= x1 && x <= x2) {
           const y1 = line![k][1];
           score = x1 === x2 ? y1 : y1 + (line![k + 1][1] - y1) * (x - x1) / (x2 - x1);

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
-  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode,
+  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale,
   createDefaultCategorical, createDefaultNumerical, isNumerical,
 } from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
@@ -89,7 +89,6 @@ export class DesirabilityModeDialog {
     const subs: Subscription[] = [];
 
     let modeInputRoot: HTMLElement | undefined;
-    let invertRoot: HTMLElement | undefined;
 
     const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
       if (v === this.prop.functionType)
@@ -145,8 +144,12 @@ export class DesirabilityModeDialog {
       }
 
       const syncInputs = () => {
-        for (const cfg of configs)
-          inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
+        for (const cfg of configs) {
+          const inp = inputs.get(cfg.key)!;
+          inp.notify = false;
+          inp.value = prop[cfg.key] ?? cfg.fallback();
+          inp.notify = true;
+        }
       };
 
       inputs.get('min')!.setTooltip('Minimum property value');
@@ -180,18 +183,50 @@ export class DesirabilityModeDialog {
           this.onUpdate({line} as any);
       }));
 
-      const invertInput = ui.input.toggle('Invert', {value: !!prop.inverted, onValueChanged: (v) => {
-        prop.inverted = v;
-        this.onUpdate({inverted: v} as any);
-        previewEditor.redrawAll(false);
-      }});
-      invertInput.setTooltip('Invert desirability (d → 1 − d). Lower-is-better for ramps/sigmoids; ' +
-        'turns a Gaussian target into an avoided range.');
+      const updateScaleLabels = () => {
+        inputs.get('sigma')!.caption = prop.scale === MpoScale.Log ? 'Sigma (dec)' : 'Sigma';
+        inputs.get('k')!.caption = prop.scale === MpoScale.Log ? 'k (per dec)' : 'k';
+      };
+      updateScaleLabels();
+
+      const noPositives = !!this.mappedCol?.isNumerical && this.mappedCol.max <= 0;
+
+      const curveToggle = (content: string | HTMLElement, active: boolean, tooltipMsg: string, onToggle: (on: boolean) => void) => {
+        const btn = ui.div(content, 'statistics-mpo-curve-btn');
+        btn.classList.toggle('statistics-mpo-toggle-on', active);
+        btn.onclick = () => {
+          const on = !btn.classList.contains('statistics-mpo-toggle-on');
+          btn.classList.toggle('statistics-mpo-toggle-on', on);
+          onToggle(on);
+        };
+        ui.tooltip.bind(btn, tooltipMsg);
+        return btn;
+      };
+
+      const toolbar: HTMLElement[] = [];
+      if (!noPositives) {
+        toolbar.push(curveToggle('log₁₀', prop.scale === MpoScale.Log,
+          'Log₁₀ axis — for values spanning orders of magnitude',
+          (on) => {
+            prop.scale = on ? MpoScale.Log : MpoScale.Linear;
+            updateScaleLabels();
+            this.onUpdate({scale: prop.scale} as any);
+            previewEditor.redrawAll(false);
+            syncInputs();
+          }));
+      }
+      toolbar.push(curveToggle(ui.iconFA('arrows-alt-v'), !!prop.inverted,
+        'Invert desirability (d → 1 − d)',
+        (on) => {
+          prop.inverted = on;
+          this.onUpdate({inverted: on} as any);
+          previewEditor.redrawAll(false);
+        }));
 
       modeInputRoot = modeInput.root;
-      invertRoot = invertInput.root;
       previewEditor.root.classList.add('statistics-mpo-plot');
-      contentPanel.append(previewEditor.root, sectionHeader('PARAMETERS'), paramForm);
+      contentPanel.append(ui.divH([previewEditor.root, ui.divV(toolbar)], 'statistics-mpo-plot-wrap'),
+        sectionHeader('PARAMETERS'), paramForm);
     };
 
     const buildCategoricalContent = () => {
@@ -213,7 +248,6 @@ export class DesirabilityModeDialog {
       dispose();
       ui.empty(contentPanel);
       modeInputRoot = undefined;
-      invertRoot = undefined;
 
       if (isNumerical(this.prop))
         buildNumericalContent();
@@ -225,8 +259,6 @@ export class DesirabilityModeDialog {
         headerItems.push(typeInput.root);
       if (modeInputRoot)
         headerItems.push(modeInputRoot);
-      if (invertRoot)
-        headerItems.push(invertRoot);
       if (headerItems.length > 0)
         contentPanel.prepend(ui.divH(headerItems, 'statistics-mpo-dialog-header-row'));
 
