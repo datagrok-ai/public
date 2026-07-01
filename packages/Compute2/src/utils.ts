@@ -346,3 +346,24 @@ export function applyDefaultGridFloatFormat(viewer: DG.Viewer | undefined, type:
     gc!.format = DEFAULT_FLOAT_FORMAT;
   }
 }
+
+// Guards result-dependent actions (export/save) shared by RFV and RFVApp. Returns true when the
+// action may proceed; otherwise surfaces a shell message explaining why the results aren't ready.
+export function canUseResults(
+  state: {isRunning?: boolean, runError?: unknown, isOutputOutdated?: boolean} | undefined,
+  action: string,
+): boolean {
+  if (state?.isRunning) {
+    grok.shell.warning(`The model is still running — wait for it to finish before ${action}.`);
+    return false;
+  }
+  if (state?.runError) {
+    grok.shell.error(`The last run finished with an error — fix the inputs and rerun before ${action}.`);
+    return false;
+  }
+  if (state?.isOutputOutdated) {
+    grok.shell.warning(`Results are outdated — run the model to update them before ${action}.`);
+    return false;
+  }
+  return true;
+}
