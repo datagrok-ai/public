@@ -1275,3 +1275,96 @@
 .d4-grid .chem-descriptors-select-btn {
   display: none;
 }
+
+.chem-enumerator .d4-tab-content > * {
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+/* Accordion pane content fills available panel width when splitter is dragged */
+.chem-enumerator .d4-accordion-pane-content > .d4-flex-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.chem-enumerator .d4-accordion-pane-content .d4-build-root,
+.chem-enumerator .d4-accordion-pane-content .ui-input-root {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chem-enumerator .d4-accordion-pane-content .ui-input-editor {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+
+.chem-enum-accordion {
+  width: 100%;
+  min-width: 0;
+}
+
+.chem-enum-pane-subtitle {
+  font-size: 11px;
+  color: var(--grey-5);
+  margin-left: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.chem-enum-next-btn {
+  align-self: flex-end;
+  margin-top: 6px;
+}
+
+.chem-enum-chip {
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--grey-3);
+  color: var(--grey-6);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px } */
+.d4-ribbon-item > .chem-enum-chip {
+  height: auto !important;
+  align-self: center;
+}
+
+.chem-enum-chip:hover {
+  background: #e9f3fb;
+  border-color: var(--blue-2);
+}
+
+.chem-enum-chip--err {
+  background: var(--red-1);
+  border-color: var(--red-3);
+}
+
+.chem-enum-ribbon-arrow {
+  color: var(--grey-4);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.chem-enum-cfg-est {
+  font-size: 11px;
+  color: var(--grey-5);
+  pointer-events: none;
+}
+
+.chem-enum-tab-badge {
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--grey-2);
+  color: var(--grey-6);
+  font-size: 10px;
+  vertical-align: middle;
+}
+

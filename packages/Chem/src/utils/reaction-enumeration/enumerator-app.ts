@@ -13,12 +13,6 @@ const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
-// Drop-in replacement for the standalone package's rdkit-helper. By the time the app function
-// runs, Chem's `init` handler has already initialized the RDKit module.
-async function getRdKit() {
-  return getRdKitModule();
-}
-
 // Sniff string columns and set semType so the grid renders reactions and molecules. We sample a
 // handful of non-empty values per column: presence of `>>` wins as ChemicalReaction; otherwise if
 // every sampled value looks like SMILES/SMARTS we mark the column as Molecule.
@@ -69,15 +63,6 @@ function pickFile(accept: string): Promise<File | null> {
     };
     input.click();
   });
-}
-
-function downloadText(text: string, filename: string, mime = 'text/plain'): void {
-  const blob = new Blob([text], {type: mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 function getStringColumn(df: DG.DataFrame, name: string): string[] {
@@ -139,8 +124,8 @@ function makeColInput(
 function bindColToTable(
   colInput: DG.InputBase<DG.Column | null>, tableInput: DG.InputBase<DG.DataFrame | null>,
   getPreferredName: () => string, filter: (c: DG.Column) => boolean,
-): void {
-  tableInput.onChanged.subscribe(() => {
+) {
+  return tableInput.onChanged.subscribe(() => {
     const t = tableInput.value;
     if (!t) return;
     ui.input.setColumnInputTable(colInput, t, filter);
@@ -248,15 +233,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // Re-bind column inputs whenever the parent table changes. Preserves the column input identity
   // (so form layout stays valid) and re-selects the preferred column name in the new table.
-  bindColToTable(smartsColInput, templatesInput, () => config.enumeration.smarts_col, isStringCol);
-  bindColToTable(blockingColInput, templatesInput,
-    () => config.enumeration.reactant_blocking_groups_per_template_column, isStringCol);
-  bindColToTable(rxnNameColInput, templatesInput, () => config.enumeration.reaction_name_col, isStringCol);
-  bindColToTable(bbColInput, bbsInput, () => config.enumeration.bb_smiles_column, isStringCol);
-  bindColToTable(reagentsColInput, reagentsInput,
-    () => config.enumeration.reagent_smiles_column, isStringCol);
-  bindColToTable(exclusionColInput, exclusionInput,
-    () => config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol);
+  view.subs.push(
+    bindColToTable(smartsColInput, templatesInput, () => config.enumeration.smarts_col, isStringCol),
+    bindColToTable(blockingColInput, templatesInput,
+      () => config.enumeration.reactant_blocking_groups_per_template_column, isStringCol),
+    bindColToTable(rxnNameColInput, templatesInput, () => config.enumeration.reaction_name_col, isStringCol),
+    bindColToTable(bbColInput, bbsInput, () => config.enumeration.bb_smiles_column, isStringCol),
+    bindColToTable(reagentsColInput, reagentsInput,
+      () => config.enumeration.reagent_smiles_column, isStringCol),
+    bindColToTable(exclusionColInput, exclusionInput,
+      () => config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol),
+  );
 
   // ---- CONFIG inputs ----
   const numRoundsInput = ui.input.int('Number of rounds', {value: config.enumeration.num_rounds, min: 1});
@@ -269,24 +256,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     'When checked, each round-r > 1 step must combine EXACTLY ONE round-(r-1) product with original ' +
     'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
     'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
-
-  const minCInput = ui.input.int('Min carbon atoms', {value: config.products_specs.min_num_carbon_atoms});
-  minCInput.setTooltip('Minimum number of carbon atoms a product must have to pass. Set -1 to disable.');
-
-  const maxCInput = ui.input.int('Max carbon atoms', {value: config.products_specs.max_num_carbon_atoms});
-  maxCInput.setTooltip('Maximum number of carbon atoms a product may have. Set -1 to disable.');
-
-  const maxCombosInput = ui.input.int('Max combinations / template',
-    {value: config.max_num_combinations_per_template});
-  maxCombosInput.setTooltip(
-    'Per template, per round: cap on how many reactant combinations are actually run. If the ' +
-    'cartesian product of matching BBs across slots exceeds this, the enumerator runs the first ' +
-    'N combos and stops. Set -1 to disable.');
-
-  const maxComponentsInput = ui.input.int('Max # components', {value: config.max_num_components, min: 1});
-  maxComponentsInput.setTooltip(
-    'Templates whose reaction SMARTS have more reactant slots than this are skipped. Default 4 ' +
-    'covers all templates in the bundled set.');
 
   // True while we're pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires
   // onChanged, which triggers refreshTooltip → syncQuickInputsToConfig — and that read-back
@@ -313,11 +282,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const configInfoIcon = mkIcon();
 
   function buildAppHelp(): HTMLElement {
-    const card = ui.div();
-    card.style.fontSize = '12px';
-    card.style.maxWidth = '520px';
-    card.style.lineHeight = '1.5';
-    card.style.padding = '4px 2px';
+    const card = ui.div([], {style: {fontSize: '12px', maxWidth: '520px', lineHeight: '1.5', padding: '4px 2px'}});
     card.innerHTML = `
       <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">Chemical library enumeration</div>
       <p style="margin: 0 0 6px 0;">Generate a product library from reaction SMARTS templates and a set of starting materials. Each round can take products from the previous round and grow them further.</p>
@@ -343,42 +308,32 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return card;
   }
 
+  function currentMode(): 'depth' | 'breadth' | 'reagents' {
+    return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
+  }
+  const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
+
   function buildConfigCard(): HTMLElement {
-    if (!pushingConfigToInputs) syncQuickInputsToConfig();
     const en = config.enumeration;
     const ps = config.products_specs;
-    const reagentsActive = reagentsInput.value != null;
-    const modeLabel = reagentsActive ? 'Reagents (linear chain extension with reagents in other slots)' :
-      en.depth_first ? 'Depth-first (linear chain extension)' : 'Breadth-first (convergent allowed)';
+    const mode = reagentsInput.value != null ? 'reagents' : (en.depth_first ? 'depth' : 'breadth');
+    const MODE_DESC = {
+      depth: '(linear chain extension)',
+      breadth: '(convergent allowed)',
+      reagents: '(with reagents in other slots)',
+    } as const;
+    const modeLabel = `${MODE_LABEL[mode]} ${MODE_DESC[mode]}`;
     const fmtNum = (n: number, hint = 'unlimited') => n < 0 ? hint : String(n);
     const yn = (b: boolean) => b ? 'Yes' : 'No';
 
-    const card = ui.div();
-    card.style.fontSize = '12px';
-    card.style.maxHeight = '500px';
-    card.style.maxWidth = '440px';
-    card.style.overflow = 'auto';
-    card.style.padding = '4px 2px';
-    card.style.lineHeight = '1.5';
+    const card = ui.div([], {style: {fontSize: '12px', maxHeight: '500px', maxWidth: '440px', overflow: 'auto', padding: '4px 2px', lineHeight: '1.5'}});
 
-    const sectionTitle = (text: string) => {
-      const h = ui.div();
-      h.textContent = text;
-      h.style.fontWeight = 'bold';
-      h.style.marginTop = '8px';
-      h.style.marginBottom = '2px';
-      h.style.paddingBottom = '2px';
-      h.style.borderBottom = '1px solid var(--grey-3)';
-      return h;
-    };
-    const row = (label: string, value: string) => {
-      const r = ui.divH([], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
-      const l = ui.div(); l.textContent = label; l.style.color = 'var(--grey-6)';
-      const v = ui.div(); v.textContent = value; v.style.color = 'var(--text-color)';
-      v.style.textAlign = 'right';
-      r.appendChild(l); r.appendChild(v);
-      return r;
-    };
+    const sectionTitle = (text: string) =>
+      ui.divText(text, {style: {fontWeight: 'bold', marginTop: '8px', marginBottom: '2px', paddingBottom: '2px', borderBottom: '1px solid var(--grey-3)'}});
+    const row = (label: string, value: string) => ui.divH([
+      ui.divText(label, {style: {color: 'var(--grey-6)'}}),
+      ui.divText(value, {style: {color: 'var(--text-color)', textAlign: 'right'}}),
+    ], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
 
     card.appendChild(sectionTitle('Enumeration'));
     card.appendChild(row('Rounds', String(en.num_rounds)));
@@ -420,20 +375,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ui.tooltip.bind(appInfoIcon, () => buildAppHelp());
   ui.tooltip.bind(configInfoIcon, () => buildConfigCard());
 
-  // Kept for back-compat with existing call sites — the tooltip is bound to live factories so
-  // hovering always shows up-to-date state; no rebind is needed. We still sync inputs → config
-  // so callers that rely on that side effect keep working.
-  const refreshTooltip = (): void => {
-    if (!pushingConfigToInputs) syncQuickInputsToConfig();
-  };
-
   const syncQuickInputsToConfig = () => {
     config.enumeration.num_rounds = numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!depthFirstInput.value;
-    config.products_specs.min_num_carbon_atoms = minCInput.value ?? -1;
-    config.products_specs.max_num_carbon_atoms = maxCInput.value ?? -1;
-    config.max_num_combinations_per_template = maxCombosInput.value ?? config.max_num_combinations_per_template;
-    config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
     // Column inputs hold a Column object; persist its name in the YAML config. If the input has no
     // selection, keep the previous config value so YAML round-trip stays stable.
     config.enumeration.smarts_col = smartsColInput.value?.name ?? config.enumeration.smarts_col;
@@ -469,10 +413,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       setAndFire(numRoundsInput, config.enumeration.num_rounds);
       setAndFire(depthFirstInput, config.enumeration.depth_first);
-      setAndFire(minCInput, config.products_specs.min_num_carbon_atoms);
-      setAndFire(maxCInput, config.products_specs.max_num_carbon_atoms);
-      setAndFire(maxCombosInput, config.max_num_combinations_per_template);
-      setAndFire(maxComponentsInput, config.max_num_components);
       // For column inputs, look up the column object by name on the currently-selected table.
       const tDf = templatesInput.value;
       if (tDf) {
@@ -504,7 +444,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
 
   // ---- Validation ----
-  const validationDiv = ui.divText('', {style: {color: 'var(--red-3)', fontSize: '12px', minHeight: '16px', flex: '0 0 auto'}});
+  const validationDiv = ui.divText('', {style: {color: 'var(--red-3)', fontSize: '12px', flex: '0 0 auto'}});
 
   function validate(): string | null {
     syncQuickInputsToConfig();
@@ -527,18 +467,19 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const rounds = numRoundsInput.value ?? 0;
     if (rounds < 1) return 'Number of rounds must be at least 1.';
 
-    const maxComp = maxComponentsInput.value ?? 0;
-    if (maxComp < 1) return 'Max # components must be at least 1.';
+    if (config.max_num_components < 1) return 'Max # components must be at least 1.';
 
     return null;
   }
 
   function refreshValidation(): void {
+    refreshCfgRibbon();
+    refreshStrategyCards();
     const err = validate();
     validationDiv.textContent = err ?? '';
     runBtn.disabled = err != null;
   }
-  refreshTooltip();
+  if (!pushingConfigToInputs) syncQuickInputsToConfig();
 
   // ---- Side grids with explicit selection-driven subsetting ----
   // Each side grid renders the DataFrame currently held in the corresponding table input. The
@@ -547,76 +488,60 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // table input is a choice widget backed by the workspace tables list — values not registered
   // are silently rejected and the input snaps back), set it as the input value, and remount the
   // grid against the subset. Previous subsets we created are closed to keep the workspace tidy.
-  let suppressTemplatesChange = false;
-  let suppressBbsChange = false;
-  let suppressReagentsChange = false;
-  let prevTemplatesSubset: DG.DataFrame | null = null;
-  let prevBbsSubset: DG.DataFrame | null = null;
-  let prevReagentsSubset: DG.DataFrame | null = null;
+  type SubsetState = {prev: DG.DataFrame | null; suppress: boolean};
+  const templatesState: SubsetState = {prev: null, suppress: false};
+  const bbsState: SubsetState = {prev: null, suppress: false};
+  const reagentsState: SubsetState = {prev: null, suppress: false};
 
-  const templatesGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
-  const bbsGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
-  const reagentsGridHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
+  const templatesGridHost = ui.div([]);
+  const bbsGridHost = ui.div([]);
+  const reagentsGridHost = ui.div([]);
 
-  const templatesSubsetStatus = ui.divText('',
-    {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
-  const bbsSubsetStatus = ui.divText('',
-    {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
-  const reagentsSubsetStatus = ui.divText('',
-    {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
+  // Nullable refs to tab row-count badges — null until tabs are built; closures use optional chaining.
+  type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
+  let templatesBadge: TabBadge | null = null;
+  let bbsBadge: TabBadge | null = null;
+  let reagentsBadge: TabBadge | null = null;
 
-  function updateTemplatesStatus(): void {
-    const cur = templatesInput.value;
-    templatesSubsetStatus.textContent = cur ? `${cur.rowCount} rows` : '';
-  }
-  function updateBbsStatus(): void {
-    const cur = bbsInput.value;
-    bbsSubsetStatus.textContent = cur ? `${cur.rowCount} rows` : '';
-  }
-  function updateReagentsStatus(): void {
-    const cur = reagentsInput.value;
-    reagentsSubsetStatus.textContent = cur ? `${cur.rowCount} rows` : '';
-  }
+  const GRID_ROW_HEIGHT = 75;
+  const reagentsEmptyEl = ui.divText(
+    'No reagents file selected. Pick one in the Data section to enable reagents-mode ' +
+    'enumeration (every step uses exactly one BB / earlier product plus reagents in the ' +
+    'remaining slots).',
+    {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}},
+  );
 
-  function mountTemplatesGrid(): void {
-    templatesGridHost.innerHTML = '';
-    const df = templatesInput.value;
-    if (!df) {updateTemplatesStatus(); return;}
-    const grid = DG.Viewer.grid(df);
-    grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
-    templatesGridHost.appendChild(grid.root);
-    updateTemplatesStatus();
+  function applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
+    try {
+      grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+      if (extendLast && grid.props.hasProperty('extendLastColumn'))
+        (grid.props as any).extendLastColumn = true;
+    } catch { /* setColumnsWidthType not available on older Dart builds */ }
   }
 
-  function mountBbsGrid(): void {
-    bbsGridHost.innerHTML = '';
-    const df = bbsInput.value;
-    if (!df) {updateBbsStatus(); return;}
-    const grid = DG.Viewer.grid(df);
-    grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
-    bbsGridHost.appendChild(grid.root);
-    updateBbsStatus();
-  }
-
-  function mountReagentsGrid(): void {
-    reagentsGridHost.innerHTML = '';
-    const df = reagentsInput.value;
+  function mountGrid(
+    host: HTMLElement, input: DG.InputBase<DG.DataFrame | null>,
+    badge: TabBadge | null, emptyEl?: HTMLElement,
+  ): void {
+    host.innerHTML = '';
+    const df = input.value;
     if (!df) {
-      reagentsGridHost.appendChild(ui.divText('No reagents file selected. Pick one in the Data ' +
-        'section to enable reagents-mode enumeration (every step uses exactly one BB / earlier ' +
-        'product plus reagents in the remaining slots).',
-      {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
-      updateReagentsStatus();
+      if (emptyEl) host.appendChild(emptyEl);
+      badge?.refresh(null);
       return;
     }
     const grid = DG.Viewer.grid(df);
+    grid.props.rowHeight = GRID_ROW_HEIGHT;
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
-    reagentsGridHost.appendChild(grid.root);
-    updateReagentsStatus();
+    host.appendChild(grid.root);
+    applyGridColumnSizing(grid);
+    badge?.refresh(df.rowCount);
   }
+
+  const mountTemplates = (): void => mountGrid(templatesGridHost, templatesInput, templatesBadge);
+  const mountBbs = (): void => mountGrid(bbsGridHost, bbsInput, bbsBadge);
+  const mountReagents = (): void => mountGrid(reagentsGridHost, reagentsInput, reagentsBadge, reagentsEmptyEl);
 
   // ui.input.table is a Dart-side ChoiceInput whose items list is the workspace tables. Setting
   // .value to a DataFrame that's not in that list is silently rejected (the input snaps back to
@@ -628,17 +553,23 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     grok.shell.addTable(df);
     setSuppress(true);
     try {
-      try {(input as any).value = null;} catch {/* nullable: false rejects */}
+      try {input.value = null;} catch {/* nullable: false rejects */}
       input.value = df;
     } finally {setSuppress(false);}
   }
 
-  function subsetTemplatesBySelection(): void {
-    const df = templatesInput.value;
-    if (!df) return;
+  function subsetBySelection(
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState,
+    mountFn: () => void, gridLabel: string, noTableMsg?: string,
+  ): void {
+    const df = input.value;
+    if (!df) {
+      if (noTableMsg) grok.shell.info(noTableMsg);
+      return;
+    }
     const sel = df.selection;
     if (sel.trueCount === 0) {
-      grok.shell.info('Select rows in the reaction templates grid first (Ctrl/Shift+click).');
+      grok.shell.info(`Select rows in the ${gridLabel} first (Ctrl/Shift+click).`);
       return;
     }
     if (sel.trueCount === df.rowCount) {
@@ -648,116 +579,52 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const subset = df.clone(sel);
     subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
     detectChemSemTypes(subset);
-
-    const prev = prevTemplatesSubset;
-    prevTemplatesSubset = subset;
-    assignTableInput(templatesInput, subset, (v) => {suppressTemplatesChange = v;});
-    mountTemplatesGrid();
+    const prev = state.prev;
+    state.prev = subset;
+    assignTableInput(input, subset, (v) => { state.suppress = v; });
+    mountFn();
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev !== subset && prev !== df)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
 
-  function subsetBbsBySelection(): void {
-    const df = bbsInput.value;
-    if (!df) return;
-    const sel = df.selection;
-    if (sel.trueCount === 0) {
-      grok.shell.info('Select rows in the building blocks grid first (Ctrl/Shift+click).');
-      return;
-    }
-    if (sel.trueCount === df.rowCount) {
-      grok.shell.info('All rows are selected — nothing to subset.');
-      return;
-    }
-    const subset = df.clone(sel);
-    subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
-    detectChemSemTypes(subset);
-
-    const prev = prevBbsSubset;
-    prevBbsSubset = subset;
-    assignTableInput(bbsInput, subset, (v) => {suppressBbsChange = v;});
-    mountBbsGrid();
-    refreshValidation();
-    if (prev && prev !== subset && prev !== df)
-      try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
-  }
-
-  function subsetReagentsBySelection(): void {
-    const df = reagentsInput.value;
-    if (!df) {
-      grok.shell.info('No reagents file selected.');
-      return;
-    }
-    const sel = df.selection;
-    if (sel.trueCount === 0) {
-      grok.shell.info('Select rows in the reagents grid first (Ctrl/Shift+click).');
-      return;
-    }
-    if (sel.trueCount === df.rowCount) {
-      grok.shell.info('All rows are selected — nothing to subset.');
-      return;
-    }
-    const subset = df.clone(sel);
-    subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
-    detectChemSemTypes(subset);
-
-    const prev = prevReagentsSubset;
-    prevReagentsSubset = subset;
-    assignTableInput(reagentsInput, subset, (v) => {suppressReagentsChange = v;});
-    mountReagentsGrid();
-    refreshValidation();
-    if (prev && prev !== subset && prev !== df)
-      try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
-  }
-
   // When the user picks a different table or uploads a new CSV through the table input control,
   // detect chem semtypes (if needed) and re-mount the side grid. Programmatic value sets (our own
-  // subset path) are guarded by `suppressTemplatesChange` / `suppressBbsChange`.
-  templatesInput.onChanged.subscribe(() => {
-    if (suppressTemplatesChange) return;
-    const df = templatesInput.value;
-    if (df) detectChemSemTypes(df);
-    mountTemplatesGrid();
-    refreshValidation();
-  });
-  bbsInput.onChanged.subscribe(() => {
-    if (suppressBbsChange) return;
-    const df = bbsInput.value;
-    if (df) detectChemSemTypes(df);
-    mountBbsGrid();
-    refreshValidation();
-  });
-  reagentsInput.onChanged.subscribe(() => {
-    if (suppressReagentsChange) return;
-    const df = reagentsInput.value;
-    if (df) detectChemSemTypes(df);
-    mountReagentsGrid();
-    refreshValidation();
-    updateModeSummary();
-  });
+  // subset path) are guarded by `templatesState.suppress` / `bbsState.suppress`.
+  const wireTableInput = (
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void,
+  ): void => {
+    view.subs.push(input.onChanged.subscribe(() => {
+      if (state.suppress) return;
+      const df = input.value;
+      if (df) detectChemSemTypes(df);
+      mountFn();
+      refreshValidation();
+    }));
+  };
+  wireTableInput(templatesInput, templatesState, mountTemplates);
+  wireTableInput(bbsInput, bbsState, mountBbs);
+  wireTableInput(reagentsInput, reagentsState, mountReagents);
 
   // Re-validate on every input change so the Run button stays accurate.
-  const wireValidation = <T>(input: DG.InputBase<T>) => input.onChanged.subscribe(() => {
-    refreshTooltip();
-    refreshValidation();
-  });
-  wireValidation(smartsColInput); wireValidation(blockingColInput); wireValidation(rxnNameColInput);
-  wireValidation(bbColInput); wireValidation(reagentsColInput);
-  wireValidation(exclusionInput); wireValidation(exclusionColInput);
-  wireValidation(numRoundsInput); wireValidation(depthFirstInput);
-  wireValidation(minCInput); wireValidation(maxCInput);
-  wireValidation(maxCombosInput); wireValidation(maxComponentsInput);
-  depthFirstInput.onChanged.subscribe(() => updateModeSummary());
+  const wireValidation = (input: DG.InputBase<unknown>): void => {
+    view.subs.push(input.onChanged.subscribe(() => {
+      refreshValidation();
+    }));
+  };
+  [smartsColInput, blockingColInput, rxnNameColInput, bbColInput, reagentsColInput,
+    exclusionInput, exclusionColInput, numRoundsInput, depthFirstInput,
+  ].forEach((inp) => wireValidation(inp));
 
   // ---- Buttons ----
-  const editConfigBtn = ui.button('Edit all parameters', async () => {
+  const editConfigBtn = ui.button('Advanced limits & product filters', async () => {
     syncQuickInputsToConfig();
     const updated = await openConfigDialog(config);
-    if (updated) {config = updated; syncConfigToQuickInputs(); refreshTooltip(); refreshValidation();}
+    if (updated) {config = updated; syncConfigToQuickInputs(); refreshValidation();}
   });
-  ui.tooltip.bind(editConfigBtn, 'Open the full config form (every YAML field).');
+  ui.tooltip.bind(editConfigBtn,
+    'Caps (components, combinations, routes per compound) and product filters — every config field.');
 
   const loadYamlBtn = ui.button('Load YAML…', async () => {
     const f = await pickFile('.yaml,.yml');
@@ -766,7 +633,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       const text = await f.text();
       config = configFromYaml(text);
       syncConfigToQuickInputs();
-      refreshTooltip();
       refreshValidation();
       grok.shell.info(`Loaded config from ${f.name}.`);
     } catch (e) {
@@ -777,14 +643,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const saveYamlBtn = ui.button('Save YAML', () => {
     syncQuickInputsToConfig();
-    downloadText(configToYaml(config), 'enumerator-config.yaml', 'text/yaml');
+    DG.Utils.download('enumerator-config.yaml', configToYaml(config), 'text/yaml');
   });
   ui.tooltip.bind(saveYamlBtn, 'Download the current config as a YAML file.');
 
   // ---- Run / Cancel ----
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
-  const runBtn = ui.bigButton('Run enumeration', async () => {
+  const runBtn = ui.bigButton('Enumerate', async () => {
     if (validate() != null) return;
     syncQuickInputsToConfig();
     cancelled = false;
@@ -802,14 +668,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       progressLabel.textContent = '';
     }
   });
-  ui.tooltip.bind(runBtn, 'Run the full enumeration with the current config and add the result to the workspace.');
+  ui.tooltip.bind(runBtn, 'Run enumeration with the current config and add the result to the workspace.');
 
   const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
   cancelBtn.style.display = 'none';
 
   async function runFullEnumeration(): Promise<void> {
     progressLabel.textContent = 'Loading RDKit…';
-    const rdkit = await getRdKit();
+    const rdkit = await getRdKitModule();
     const tDf = templatesInput.value!;
     const bDf = bbsInput.value!;
     const xDf = exclusionInput.value;
@@ -832,10 +698,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     });
     const elapsed = ((performance.now() - start) / 1000).toFixed(1);
 
-    if (cancelled)
+    if (cancelled) {
       grok.shell.warning(`Enumeration cancelled. Partial results: ${rows.length} rows.`);
-    else
+    } else {
       grok.shell.info(`Enumeration done in ${elapsed}s — ${rows.length} rows.`);
+    }
     if (warnings.length > 0) {
       console.warn('Enumeration warnings:', warnings);
       grok.shell.warning(`${warnings.length} warning(s); see console for details.`);
@@ -844,121 +711,242 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   // ---- Layout ----
-  // Top-level: header (auto), main content (fills), validation (auto), action bar (auto).
+  // Top-level: cfgRibbon (chips + run, auto), main content (fills), validation (auto).
   // The main content is a horizontal split: inputs on the left, side grids on the right.
-  const headerRow = ui.divH([
-    ui.divText('Chemical library enumeration', {style: {fontSize: '16px', fontWeight: 'bold'}}),
-    appInfoIcon,
-  ], {style: {alignItems: 'center', flex: '0 0 auto', marginBottom: '8px'}});
+  // The view title + info icon live in the view ribbon (setRibbonPanels).
 
-  // Three labelled sub-sections inside the Data column, each grouping the inputs that drive
-  // one logical part of the run: reactions, starting materials, and the optional extras.
-  // An optional trailing element (typically an info icon) renders inline with the title.
-  const sectionHeader = (text: string, trailing?: HTMLElement): HTMLElement => {
-    const t = ui.divText(text, {style: {fontWeight: 'bold', fontSize: '13px',
-      color: 'var(--text-color)'}});
-    if (!trailing) {
-      t.style.marginTop = '10px';
-      t.style.marginBottom = '4px';
-      t.style.flex = '0 0 auto';
-      return t;
-    }
-    return ui.divH([t, trailing],
-      {style: {alignItems: 'center', marginTop: '10px', marginBottom: '4px', flex: '0 0 auto'}});
+  type StratCard = {root: HTMLElement; icon: HTMLElement};
+
+  const applyStratCardStyle = (card: StratCard, mode: string, cur: string, enabled: boolean): void => {
+    const sel = cur === mode;
+    card.root.style.border = sel ? '2px solid var(--blue-2)' : '1px solid var(--grey-3)';
+    card.root.style.opacity = enabled ? '1' : '0.5';
+    card.root.style.cursor = enabled ? 'pointer' : 'not-allowed';
+    card.icon.style.color = sel ? 'var(--blue-2)' : 'var(--grey-5)';
   };
 
-  const dataSection = ui.divV([
-    sectionHeader('Select Reactions'),
-    ui.form([templatesInput, smartsColInput, blockingColInput, rxnNameColInput]),
-    sectionHeader('Select Starting Materials'),
-    ui.form([bbsInput, bbColInput]),
-    sectionHeader('Additional settings'),
-    ui.form([exclusionInput, exclusionColInput, reagentsInput, reagentsColInput]),
-  ], {style: {flex: '0 0 auto'}});
+  // Strategy cards replace the depth-first checkbox: three explicit choices. depth/breadth drive the
+  // hidden `depthFirstInput` (so all existing sync/validation keeps working); the reagents card is
+  // active only when a reagents file is selected in Extras (reagents-mode follows its presence).
+  const buildStratCard = (icon: string, title: string, desc: string): StratCard => {
+    const ic = ui.iconFA(icon);
+    ic.style.marginTop = '2px';
+    const root = ui.divH([ic, ui.divV([
+      ui.divText(title, {style: {fontWeight: 'bold', fontSize: '12px'}}),
+      ui.divText(desc, {style: {fontSize: '11px', color: 'var(--grey-6)', lineHeight: '1.3'}}),
+    ], {style: {gap: '1px'}})], {style: {gap: '8px', alignItems: 'flex-start', padding: '8px 10px',
+      border: '1px solid var(--grey-3)', borderRadius: '4px', cursor: 'pointer'}});
+    return {root, icon: ic};
+  };
+  const stratDepthCard = buildStratCard('arrow-right', 'Depth-first',
+    'Grow each product with original blocks — linear chains.');
+  const stratBreadthCard = buildStratCard('sitemap', 'Breadth-first',
+    'Combine any earlier products — convergent routes.');
+  const stratReagentsCard = buildStratCard('flask', 'Reagents mode',
+    'One block per step + reagents in remaining slots. Needs a reagents file.');
 
-  const configButtonsRow = ui.divH([editConfigBtn, loadYamlBtn, saveYamlBtn],
-    {style: {gap: '8px', alignItems: 'center', marginTop: '6px', flex: '0 0 auto', flexWrap: 'wrap'}});
+  function refreshStrategyCards(): void {
+    const cur = currentMode();
+    const hasReagents = cur === 'reagents';
+    applyStratCardStyle(stratDepthCard, 'depth', cur, !hasReagents);
+    applyStratCardStyle(stratBreadthCard, 'breadth', cur, !hasReagents);
+    applyStratCardStyle(stratReagentsCard, 'reagents', cur, hasReagents);
+  }
+  stratDepthCard.root.onclick = (): void => {
+    if (reagentsInput.value != null) return;
+    setAndFire(depthFirstInput, true);
+  };
+  stratBreadthCard.root.onclick = (): void => {
+    if (reagentsInput.value != null) return;
+    setAndFire(depthFirstInput, false);
+  };
+  stratReagentsCard.root.onclick = (): void => {
+    if (reagentsInput.value == null) {
+      grok.shell.warning('Add a reagents file in “Extras” to switch to reagents mode.');
+    }
+  };
 
-  // Plain-English summary of what the enumerator will do given the current selections — refreshed
-  // whenever the reagents file or the depth-first toggle changes.
-  const modeSummary = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-6)',
-    marginTop: '6px', padding: '6px 8px', background: 'var(--grey-1)', borderRadius: '4px',
-    border: '1px solid var(--grey-2)', flex: '0 0 auto', lineHeight: '1.4'}});
+  // "Map columns" hides the optional template columns (blocking + reaction name) until needed.
+  const mapColsBody = ui.form([blockingColInput, rxnNameColInput]);
+  mapColsBody.style.display = 'none';
+  const mapColsChevron = ui.iconFA('chevron-right');
+  mapColsChevron.style.transition = 'transform 0.15s';
+  const mapColsLink = ui.divH([mapColsChevron, ui.span([' Map columns (optional)'])],
+    {style: {fontSize: '12px', color: 'var(--blue-2)', cursor: 'pointer', marginTop: '2px',
+      gap: '2px', alignItems: 'center'}});
+  let mapColsOpen = false;
+  mapColsLink.onclick = (): void => {
+    mapColsOpen = !mapColsOpen;
+    mapColsBody.style.display = mapColsOpen ? '' : 'none';
+    mapColsChevron.style.transform = mapColsOpen ? 'rotate(90deg)' : '';
+  };
 
-  function updateModeSummary(): void {
-    const hasReagents = reagentsInput.value != null;
-    if (hasReagents) {
-      modeSummary.textContent = 'Reagents mode: each step combines EXACTLY ONE building block (or ' +
-        'a product from an earlier round) with reagents in every remaining slot. Builds derivatives ' +
-        'of each BB across rounds. Depth-first / breadth-first toggle is ignored.';
-    } else if (depthFirstInput.value) {
-      modeSummary.textContent = 'Depth-first mode: round 1 combines original BBs; round R > 1 ' +
-        'extends each round-(R-1) product with original BBs (one prev-round product per step — ' +
-        'linear chains, no convergent merging).';
-    } else {
-      modeSummary.textContent = 'Breadth-first mode: each round may combine any products from ' +
-        'earlier rounds with BBs (convergent routes possible — the search space grows quickly).';
+  editConfigBtn.style.width = '100%';
+  const yamlRow = ui.divH([loadYamlBtn, saveYamlBtn],
+    {style: {gap: '8px', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap'}});
+
+  // Right-pane tab references — assigned when tabs are built; used by section-open handlers for
+  // context-sensitive tab switching. Declared here so openAccPaneExclusive can close over them.
+  let templatesPane: DG.TabPane | undefined;
+  let bbsPane: DG.TabPane | undefined;
+  let reagentsPane: DG.TabPane | undefined;
+
+  const mkNextBtn = (getTarget: () => DG.AccordionPane): HTMLElement => {
+    const btn = ui.button('Next →', () => openAccPaneExclusive(getTarget()));
+    btn.classList.add('chem-enum-next-btn');
+    return btn;
+  };
+
+  const accordion = ui.accordion();
+  accordion.root.classList.add('chem-enum-accordion');
+  const accReactionsPane = accordion.addPane('Reactions', () =>
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(() => accBbsPane)]), true);
+  const accBbsPane = accordion.addPane('Building blocks', () =>
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accCombinePane)]), false);
+  const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
+    ui.divH([
+      ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
+      configInfoIcon,
+    ], {style: {alignItems: 'center', gap: '4px'}}),
+    ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
+    ui.form([numRoundsInput]),
+    editConfigBtn,
+    yamlRow,
+    mkNextBtn(() => accExtrasPane),
+  ], {style: {gap: '8px'}}), false);
+  const accExtrasPane = accordion.addPane('Extras (optional)',
+    () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
+  const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accExtrasPane];
+
+  // Subtitle spans injected into each pane header — updated by refreshCfgRibbon().
+  const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    const sub = document.createElement('span');
+    sub.className = 'chem-enum-pane-subtitle';
+    header?.appendChild(sub);
+    return sub;
+  };
+  const subReactions = injectPaneSub(accReactionsPane);
+  const subBbs = injectPaneSub(accBbsPane);
+  const subCombine = injectPaneSub(accCombinePane);
+  const subExtras = injectPaneSub(accExtrasPane);
+
+  // Left pane scrolls vertically if it overflows so the action bar stays visible.
+  const leftPane = ui.divV([accordion.root],
+    {style: {minWidth: '320px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
+
+  // === Config-summary ribbon (shown above the right-pane tabs) ===
+  const cfgChipEl = (text: string): HTMLElement => {
+    const chip = ui.divText(text);
+    chip.className = 'chem-enum-chip';
+    return chip;
+  };
+  const chipReactions = cfgChipEl('');
+  const chipBbs = cfgChipEl('');
+  const chipCombine = cfgChipEl('');
+  const cfgEstEl = ui.divText('');
+  cfgEstEl.className = 'chem-enum-cfg-est';
+  const ribbonArrow = ui.iconFA('arrow-right');
+  ribbonArrow.classList.add('chem-enum-ribbon-arrow');
+  const runGroup = ui.divH([runBtn, cancelBtn, progressLabel],
+    {style: {alignItems: 'center', gap: '6px'}});
+
+  function refreshCfgRibbon(): void {
+    const tDf = templatesInput.value; const bDf = bbsInput.value;
+    const combineText = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
+    const setChip = (chip: HTMLElement, text: string, err: boolean): void => {
+      chip.textContent = text;
+      chip.classList.toggle('chem-enum-chip--err', err);
+    };
+    setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
+    setChip(chipBbs, bDf ? `${bDf.rowCount} Building Blocks` : 'No Building Blocks table', !bDf || !bbColInput.value);
+    chipCombine.textContent = combineText;
+    const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
+    cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
+    subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
+    subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
+    subCombine.textContent = combineText;
+    subExtras.textContent = reagentsInput.value != null ? 'Reagents added' : '';
+  }
+  // === Exclusive accordion ===
+
+  function switchTabForAccPane(pane: DG.AccordionPane): void {
+    if (pane === accReactionsPane && templatesPane) {
+      tabs.currentPane = templatesPane;
+    } else if (pane === accBbsPane && bbsPane) {
+      tabs.currentPane = bbsPane;
+    } else if (pane === accExtrasPane && reagentsPane && reagentsInput.value != null) {
+      tabs.currentPane = reagentsPane;
     }
   }
 
-  const configSection = ui.divV([
-    sectionHeader('Enumeration options', configInfoIcon),
-    ui.form([numRoundsInput, depthFirstInput, maxComponentsInput, minCInput, maxCInput, maxCombosInput]),
-    configButtonsRow,
-    modeSummary,
-  ], {style: {flex: '0 0 auto', marginTop: '8px'}});
+  function openAccPaneExclusive(pane: DG.AccordionPane): void {
+    accPanes.forEach((p) => { p.expanded = p === pane; });
+    switchTabForAccPane(pane);
+  }
 
-  // Left pane scrolls vertically if it overflows so the action bar stays visible.
-  const leftPane = ui.divV([dataSection, configSection],
-    {style: {minWidth: '320px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
+  // Wire native pane-header clicks for exclusive-open (Dart toggles pane.expanded first,
+  // then our listener fires and collapses the others).
+  accPanes.forEach((pane) => {
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    header?.addEventListener('click', () => { if (pane.expanded) openAccPaneExclusive(pane); });
+  });
 
-  const selectionHint = (text: string) => ui.divText(text,
-    {style: {fontSize: '11px', color: 'var(--grey-5)', marginBottom: '4px', flex: '0 0 auto'}});
+  chipReactions.onclick = () => openAccPaneExclusive(accReactionsPane);
+  chipBbs.onclick = () => openAccPaneExclusive(accBbsPane);
+  chipCombine.onclick = () => openAccPaneExclusive(accCombinePane);
 
-  const panelHeader = (title: string, subsetBtn: HTMLElement, status: HTMLElement) =>
-    ui.divH([
-      ui.divText(title, {style: {fontWeight: 'bold', fontSize: '13px'}}),
-      ui.div([], {style: {flex: '1 1 auto'}}),
-      status, subsetBtn,
-    ], {style: {alignItems: 'center', gap: '8px', flex: '0 0 auto', marginBottom: '4px'}});
+  openAccPaneExclusive(accReactionsPane);
 
-  const templatesSubsetBtn = ui.button('Subset by selection', () => subsetTemplatesBySelection());
+  const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
+    const hintEl = ui.divText(hint, {style: {
+      fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px',
+    }});
+    const children: HTMLElement[] = [hintEl];
+    if (status) children.push(status);
+    if (subsetBtn) children.push(subsetBtn);
+    return ui.div(children, {style: {
+      display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
+      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)',
+    }});
+  };
+
+  const templatesSubsetBtn = ui.button('Subset by selection', () =>
+    subsetBySelection(templatesInput, templatesState, mountTemplates, 'reaction templates grid'));
   ui.tooltip.bind(templatesSubsetBtn, 'Replace the reaction templates with only the rows currently ' +
     'selected in the grid. To restore the full set, reload the table from the input on the left.');
 
-  const bbsSubsetBtn = ui.button('Subset by selection', () => subsetBbsBySelection());
+  const bbsSubsetBtn = ui.button('Subset by selection', () =>
+    subsetBySelection(bbsInput, bbsState, mountBbs, 'building blocks grid'));
   ui.tooltip.bind(bbsSubsetBtn, 'Replace the building blocks with only the rows currently selected ' +
     'in the grid. To restore the full set, reload the table from the input on the left.');
 
-  const reagentsSubsetBtn = ui.button('Subset by selection', () => subsetReagentsBySelection());
+  const reagentsSubsetBtn = ui.button('Subset by selection', () =>
+    subsetBySelection(reagentsInput, reagentsState, mountReagents, 'reagents grid', 'No reagents file selected.'));
   ui.tooltip.bind(reagentsSubsetBtn, 'Replace the reagents with only the rows currently selected ' +
     'in the grid. To restore the full set, reload the table from the input on the left.');
 
-  const tabPanel = (header: HTMLElement, hint: string, gridHost: HTMLElement): HTMLElement =>
-    ui.divV([
-      header,
-      selectionHint(hint),
-      gridHost,
-    ], {style: {height: '100%', display: 'flex', flexDirection: 'column', padding: '8px',
-      background: 'var(--white)', boxSizing: 'border-box'}});
+  const tabPanel = (header: HTMLElement, gridHost: HTMLElement): HTMLElement => {
+    // display:flex on the host turns the grid's inline-flex outer display into a block-level
+    // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
+    gridHost.style.cssText += ';position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden';
+    const fade = ui.div([], {style: {
+      position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
+      background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
+    }});
+    gridHost.appendChild(fade);
+    return ui.div([header, gridHost], {style: {
+      height: '100%', display: 'flex', flexDirection: 'column',
+      background: 'var(--white)', boxSizing: 'border-box', overflow: 'hidden',
+    }});
+  };
 
-  const templatesPanel = tabPanel(
-    panelHeader('Reaction templates', templatesSubsetBtn, templatesSubsetStatus),
-    'Select rows (Ctrl/Shift+click) and click "Subset by selection" to enumerate only the ' +
-      'chosen templates.',
-    templatesGridHost);
+  const subsetHint = (what: string) =>
+    `Select rows (Ctrl/Shift+click) and click "Subset by selection" to enumerate only chosen ${what}.`;
 
-  const bbsPanel = tabPanel(
-    panelHeader('Building blocks', bbsSubsetBtn, bbsSubsetStatus),
-    'Select rows (Ctrl/Shift+click) and click "Subset by selection" to enumerate only the ' +
-      'chosen building blocks.',
-    bbsGridHost);
-
-  const reagentsPanel = tabPanel(
-    panelHeader('Reagents', reagentsSubsetBtn, reagentsSubsetStatus),
-    'Select rows (Ctrl/Shift+click) and click "Subset by selection" to enumerate only the ' +
-      'chosen reagents.',
-    reagentsGridHost);
+  const templatesPanel = tabPanel(panelHeader(subsetHint('templates'), templatesSubsetBtn), templatesGridHost);
+  const bbsPanel = tabPanel(panelHeader(subsetHint('building blocks'), bbsSubsetBtn), bbsGridHost);
+  const reagentsPanel = tabPanel(panelHeader(subsetHint('reagents'), reagentsSubsetBtn), reagentsGridHost);
 
   // ---- Preview tab (lazy) ----
   // Same idea as the old persistent preview: build inputs, run a budgeted enumerate, show the
@@ -967,18 +955,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const PREVIEW_TARGET_ROWS = 20;
   const PREVIEW_MAX_COMBOS_PER_TEMPLATE = 3;
   const PREVIEW_MAX_ROUNDS = 2;
-  const previewHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', overflow: 'hidden'}});
+  const previewHost = ui.div([]);
   const previewStatus = ui.divText('',
     {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
-  const previewHeader = ui.divH([
-    ui.divText('Sample products', {style: {fontWeight: 'bold', fontSize: '13px'}}),
-    ui.div([], {style: {flex: '1 1 auto'}}),
-    previewStatus,
-  ], {style: {alignItems: 'center', gap: '8px', flex: '0 0 auto', marginBottom: '4px'}});
+  const previewHeader = panelHeader(
+    'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of products.',
+    undefined,
+    previewStatus);
   const previewPanel = tabPanel(
     previewHeader,
-    'Quick preview — runs a small subset of the enumeration (≤ 2 rounds, ≤ 3 combos / template) ' +
-      'to give a flavour of the products before kicking off the full run.',
     previewHost);
 
   let previewRunId = 0;
@@ -1032,8 +1017,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       return;
     }
 
-    let rdkit: any;
-    try {rdkit = await getRdKit();} catch (e) {
+    let rdkit: ReturnType<typeof getRdKitModule>;
+    try {rdkit = await getRdKitModule();} catch (e) {
       previewStatus.textContent = '';
       showInPreview(ui.divText(`Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`,
         {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
@@ -1081,13 +1066,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     grid.root.style.height = '100%';
     try {
       grid.props.rowHeight = 110;
-      const setW = (n: string, w: number) => {const c = grid.col(n); if (c) c.width = w;};
-      setW('product', 180); setW('route', 460); setW('reaction_name', 140);
-      setW('round', 56); setW('n_routes', 70); setW('template', 280);
     } catch (e) {
       console.warn('Preview grid styling failed:', e);
     }
     showInPreview(grid.root);
+    applyGridColumnSizing(grid, false); // route is not the last column — skip extendLastColumn
     previewStatus.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
   }
@@ -1097,42 +1080,66 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // alive across switches. The preview tab additionally listens on onTabChanged to re-run whenever
   // the user comes back to it (so it picks up edits made on the left while another tab was shown).
   const tabs = ui.tabControl(null, false);
-  tabs.addPane('Reaction templates', () => templatesPanel);
-  tabs.addPane('Building blocks', () => bbsPanel);
-  tabs.addPane('Reagents', () => reagentsPanel);
+  tabs.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
+  templatesPane = tabs.addPane('Reaction templates', () => templatesPanel);
+  bbsPane = tabs.addPane('Building blocks', () => bbsPanel);
+  reagentsPane = tabs.addPane('Reagents', () => reagentsPanel);
   tabs.addPane('Preview', () => previewPanel);
+  // Row-count badges on each data tab header — updated whenever the underlying grid changes.
+  const makeTabBadge = (): TabBadge => {
+    const el = document.createElement('span');
+    el.className = 'chem-enum-tab-badge';
+    return {el, refresh: (n: number | null) => {
+      el.textContent = n != null ? String(n) : '';
+      el.style.display = n != null ? '' : 'none';
+    }};
+  };
+  templatesBadge = makeTabBadge();
+  bbsBadge = makeTabBadge();
+  reagentsBadge = makeTabBadge();
+  templatesPane.header.appendChild(templatesBadge.el);
+  bbsPane.header.appendChild(bbsBadge.el);
+  reagentsPane.header.appendChild(reagentsBadge.el);
 
-  tabs.onTabChanged.subscribe(() => {
+  view.subs.push(tabs.onTabChanged.subscribe(() => {
     if (tabs.currentPane?.name === 'Preview') refreshPreview();
-  });
+  }));
 
-  const rightPane = tabs.root;
-  // rightPane.style.flex = '1 1 0';
-  // rightPane.style.minWidth = '0';
+  const rightPane = ui.divV([tabs.root], {style: {height: '100%', overflow: 'hidden'}});
 
   // Resizable horizontal split — drag the divider to rebalance inputs vs side grids.
   const mainRow = ui.splitH([leftPane, rightPane],
     {style: {flex: '1 1 0', minHeight: '0', width: '100%'}}, true);
-
-  // Bottom action bar — Run/Cancel pinned at the bottom; config buttons live with the config form.
-  const actionBar = ui.divH([runBtn, cancelBtn, progressLabel],
-    {style: {gap: '8px', alignItems: 'center', marginTop: '10px', flex: '0 0 auto'}});
+  // Initial split ~38/62: right pane gets more space for the grids.
+  // Must target the wrapper boxes (mainRow.children[0/2]) — direct flex children of the split
+  // container — because spliterResize() reads their flexGrow during drag to compute sumFlexGrow.
+  requestAnimationFrame(() => {
+    const splitLeft = mainRow.children[0] as HTMLElement;
+    const splitRight = mainRow.children[2] as HTMLElement;
+    if (splitLeft && splitRight) {
+      const total = splitLeft.clientWidth + splitRight.clientWidth;
+      if (total > 0) {
+        splitLeft.style.width = Math.round(total * 0.38) + 'px';
+        splitLeft.style.flexGrow = '0.38';
+        splitRight.style.width = Math.round(total * 0.62) + 'px';
+        splitRight.style.flexGrow = '0.62';
+      }
+    }
+  });
 
   const root = ui.divV([
-    headerRow,
     mainRow,
     validationDiv,
-    actionBar,
-  ], {style: {padding: '16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'}});
+  ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
+    classes: 'chem-enumerator'});
 
+  view.setRibbonPanels([[appInfoIcon, runGroup, chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl]]);
   view.append(root);
 
-  // Mount the initial grids, populate the mode summary, and run validation once everything is
-  // wired up.
-  mountTemplatesGrid();
-  mountBbsGrid();
-  mountReagentsGrid();
-  updateModeSummary();
+  // Mount the initial grids and run validation once everything is wired up.
+  mountTemplates();
+  mountBbs();
+  mountReagents();
   refreshValidation();
   return view;
 }
