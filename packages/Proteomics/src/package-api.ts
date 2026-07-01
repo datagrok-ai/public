@@ -115,9 +115,6 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:EnrichmentCharts', {});
   }
 
-  /**
-   * Proteomics analysis workflow demo
-   */
   export async function proteomicsDemo(): Promise<void> {
     return await grok.functions.call('Proteomics:ProteomicsDemo', {});
   }

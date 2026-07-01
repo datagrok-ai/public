@@ -109,9 +109,9 @@ export async function enrichmentCharts() : Promise<void> {
 }
 
 //name: Proteomics Demo
-//description: Proteomics analysis workflow demo
 //tags: demo
-//meta.path: Proteomics
+//meta.demoPath: Proteomics | Differential Expression
+//meta.isDemoDashboard: true
 export async function proteomicsDemo() : Promise<void> {
   await PackageFunctions.proteomicsDemo();
 }

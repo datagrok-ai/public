@@ -136,17 +136,39 @@ export function openQcDashboard(df: DG.DataFrame): void {
       categoryColumnName: 'Sample',
     } as any);
 
-    // 13. Dock layout -- arrange viewers in a tiled grid
-    // Top row: MA plot + MA trend + CV plot
-    // Bottom row: Correlation + Missing heatmap + Missing bar + Box plot
+    // 13. Dock layout -- two themed tab stacks so every chart stays full-size.
+    // Seven heterogeneous QC charts can't all be legible tiled at once (chaining
+    // them RIGHT squeezes the last ones to nothing), so group by QC theme and tab
+    // within each region (DOCK_TYPE.FILL): the active chart fills the whole
+    // region instead of being cramped.
+    //   * Top-right region  -- per-protein diagnostics: MA / MA trend / CV
+    //   * Bottom-right region -- per-sample QC: correlation / distributions / missingness
+    // The data grid keeps the left quarter.
     const dm = tv.dockManager;
-    const maNode = dm.dock(maPlot, DG.DOCK_TYPE.RIGHT, null, 'MA Plot', 0.5);
-    dm.dock(maTrend, DG.DOCK_TYPE.DOWN, maNode, 'MA Trend', 0.3);
-    dm.dock(cvPlot, DG.DOCK_TYPE.RIGHT, maNode, 'CV Plot', 0.5);
-    const corrNode = dm.dock(corrPlot, DG.DOCK_TYPE.DOWN, null, 'Sample Correlation', 0.4);
-    const missGridNode = dm.dock(missGrid, DG.DOCK_TYPE.RIGHT, corrNode, 'Missing Values', 0.5);
-    const missBarNode = dm.dock(missBar, DG.DOCK_TYPE.RIGHT, missGridNode, 'Missing % per Sample', 0.5);
-    dm.dock(boxPlot, DG.DOCK_TYPE.RIGHT, missBarNode, 'Intensity Distributions', 0.5);
+
+    // Per-protein stack (top-right). RIGHT of root at 0.75 leaves the grid a quarter.
+    const protNode = dm.dock(maPlot, DG.DOCK_TYPE.RIGHT, null, 'MA Plot', 0.75);
+    dm.dock(maTrend, DG.DOCK_TYPE.FILL, protNode, 'MA Trend');
+    dm.dock(cvPlot, DG.DOCK_TYPE.FILL, protNode, 'CV Plot');
+
+    // Per-sample stack (bottom-right), splitting the right region in half vertically.
+    const sampleNode = dm.dock(corrPlot, DG.DOCK_TYPE.DOWN, protNode, 'Sample Correlation', 0.5);
+    dm.dock(boxPlot, DG.DOCK_TYPE.FILL, sampleNode, 'Intensity Distributions');
+    dm.dock(missBar, DG.DOCK_TYPE.FILL, sampleNode, 'Missing % per Sample');
+    dm.dock(missGrid, DG.DOCK_TYPE.FILL, sampleNode, 'Missing Values');
+
+    // FILL docking activates the LAST-docked tab; make each stack default to its
+    // headline chart instead (MA Plot / Sample Correlation). setActiveChild lives
+    // on the parent tab container. Best-effort — a layout that isn't tabbed (e.g.
+    // a future single-viewer variant) simply keeps its default active tab.
+    const activateTab = (v: DG.Viewer): void => {
+      try {
+        const node = dm.findNode(v.root);
+        if (node?.parent) node.parent.container.setActiveChild(node.container);
+      } catch { /* best-effort */ }
+    };
+    activateTab(maPlot);
+    activateTab(corrPlot);
   } finally {
     pi.close();
   }

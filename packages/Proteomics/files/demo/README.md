@@ -17,6 +17,7 @@ results are checkable against the truth, not just plausible.
 | `proteinGroups.txt` | MaxQuant `proteinGroups.txt` | DDA | A fast, tiny MaxQuant import / UI smoke test |
 | `fragpipe-smoke-test.tsv` | FragPipe `combined_protein.tsv` | DDA | The FragPipe path + UniProt panel (real accessions) with an engineered volcano |
 | `spectronaut-hye-mix.tsv` | Spectronaut report (long) | DIA | Long-format DIA import and the three-species (HYE) ground-truth story |
+| `spectronaut-hye-demo.tsv` | Spectronaut report (long, slim) | DIA | **The registered `Proteomics Demo`** — the full pipeline's richest endpoint, run end to end |
 | `spectronaut-hye-candidates.tsv` | Spectronaut Candidates | DIA | The pre-computed-DE shortcut (straight to volcano/enrichment) |
 | `spectronaut-hye-precursor*.{tsv,json}` | Spectronaut precursor / aggregated | DIA | Streaming-aggregation import and its golden-file equivalence tests |
 
@@ -95,6 +96,44 @@ Native Spectronaut DIA-MS long-format report from a three-species spike-in exper
 is a peptide precursor measurement across runs. Human, yeast, and *E. coli* proteins are mixed at
 known ratios between conditions A and B, providing ground-truth differential abundance. Useful for
 testing long-format import and DIA-specific workflows.
+
+## spectronaut-hye-demo.tsv
+
+| Property | Value |
+|----------|-------|
+| **Format** | Spectronaut report (long, tab-separated) — slimmed to the 7 columns the parser reads |
+| **Source** | **Derived** from `spectronaut-hye-mix.tsv`: kept `R.FileName, R.Condition, R.Replicate, PG.ProteinGroups, PG.Organisms, PG.IBAQ, EG.Qvalue`, and scaled `PG.IBAQ` ×1000 into realistic intensity magnitudes. |
+| **Organism** | Human / Yeast / *E. coli* three-species mix |
+| **Proteins** | 93 protein groups |
+| **Samples** | 8 runs (HYE mix A and HYE mix B, 4 replicates each) |
+| **Quantification** | PG.IBAQ (scaled to realistic magnitude) |
+| **Columns** | 7 |
+| **Signal** | client-side Welch t-test + BH FDR yields ~45 significant (E. coli 27 + yeast 17 + human 1), log2FC up to ≈ 2.5 |
+| **Size** | 1.1 MB |
+
+Backs the package's single registered **`Proteomics Demo`** (`meta.demoPath: Bioinformatics |
+Proteomics Differential Expression`). The demo imports this file and runs the whole pipeline —
+import → impute → differential expression → volcano + heatmap — landing on the richest analysis
+endpoint with no R environment and no manual steps. It also opens a **QC dashboard** on a second
+tab and pre-selects the top-significant protein so its **UniProt** entry is already showing in the
+context panel. Enrichment is intentionally excluded: g:Profiler enrichment assumes one organism,
+and this is a three-species mix, so it would only map the human subset and mislead.
+
+Why a separate file rather than reusing `spectronaut-hye-mix.tsv`: that fixture's `PG.IBAQ`
+values were scaled *down* for size (max ≈ 34 k), which lands them in the ambiguous band where the
+parser's log2-vs-raw heuristic (`detectLog2Status`) wrongly concludes the data is already
+log2-transformed and skips the transform — producing meaningless linear "fold changes" (± thousands).
+Scaling every intensity by a constant leaves fold-changes and significance **unchanged** (log2FC is
+a difference of logs) but restores realistic magnitudes so the parser log2-transforms correctly.
+The result is the textbook HYE outcome: the two spiked species (E. coli, yeast) separate on the
+volcano while the constant human background stays flat. Regenerate with:
+
+```
+awk -F'\t' 'BEGIN{OFS="\t"; split("R.FileName,R.Condition,R.Replicate,PG.ProteinGroups,PG.Organisms,PG.IBAQ,EG.Qvalue", w, ",")}
+NR==1{for(i=1;i<=NF;i++)h[$i]=i; s=""; for(k=1;k<=length(w);k++)s=s (k>1?OFS:"") w[k]; print s; next}
+{o=""; for(k=1;k<=length(w);k++){c=w[k]; v=(c in h)?$(h[c]):""; if(c=="PG.IBAQ"&&v!=""&&v!="NA"&&v!="NaN")v=v*1000; o=o (k>1?OFS:"") v} print o}' \
+  spectronaut-hye-mix.tsv > spectronaut-hye-demo.tsv
+```
 
 ## spectronaut-hye-candidates.tsv
 
