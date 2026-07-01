@@ -260,6 +260,15 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
+  /** Re-run just this node using upstream values captured from a prior run. */
+  private rerunNode(nodeId: string): void {
+    this.executionController?.rerunNode(nodeId, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
+  }
+
   private isPortPreviewable(summary: ValueSummary): boolean {
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
@@ -332,6 +341,8 @@ export class FuncFlowView extends DG.ViewBase {
         this.executionController?.onGraphChanged();
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
+      onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
+      canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);

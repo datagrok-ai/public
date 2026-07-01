@@ -36,6 +36,11 @@ export interface FlowEditorCallbacks {
   /** Run the slice up to this node and preview its output ("inspect anywhere").
    *  Wired from the node's right-click menu in addition to the output-port menu. */
   onPreviewNode?: (nodeId: string) => void;
+  /** Re-run just this node using values captured from a prior run (no upstream
+   *  re-run). Offered in the node menu only when `canRerunNode` returns true. */
+  onRerunNode?: (nodeId: string) => void;
+  /** Whether the "Rerun this node only" menu item should be shown for a node. */
+  canRerunNode?: (nodeId: string) => boolean;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -1448,10 +1453,16 @@ export class FlowEditor {
 
   private showNodeContextMenu(event: MouseEvent, node: FlowNode): void {
     const menu = DG.Menu.popup();
+    let hasRunItem = false;
     if (this.callbacks.onPreviewNode) {
-      menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id))
-        .separator();
+      menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id));
+      hasRunItem = true;
     }
+    if (this.callbacks.onRerunNode && this.callbacks.canRerunNode?.(node.id)) {
+      menu.item('Rerun this node only', () => this.callbacks.onRerunNode!(node.id));
+      hasRunItem = true;
+    }
+    if (hasRunItem) menu.separator();
     menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
       .item('Duplicate', () => void this.duplicateNode(node.id))

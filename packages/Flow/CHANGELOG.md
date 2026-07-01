@@ -2,6 +2,18 @@
 
 ## v.next
 
+### Rerun a single node
+
+* Right-click a node → **“Rerun this node only”** re-executes just that node using the values its
+  upstream already produced — no re-running the whole slice. The option appears only when the node's
+  required inputs are all connected or filled AND every connected input has a captured value from a
+  prior run. Under the hood, an instrumented run stashes each node's live outputs into a tab-global
+  registry (`__ff_stash`); the single-node re-run compiles with `liveExternalInputs`, so connections
+  from outside the one-node slice resolve to `_ffLive(nodeId, outputKey)` registry reads instead of
+  re-running upstream. Works for function, viewer, and utility nodes (a viewer wired to a
+  passthrough table re-plots from the captured modified table). The registry is cleared on a fresh
+  full run and on any structural graph change, so the option is offered only when the values are valid.
+
 ### Edit string-list inputs inline
 
 * `string_list` (and its `list<string>` spelling, which DG folds to the same thing) inputs are now

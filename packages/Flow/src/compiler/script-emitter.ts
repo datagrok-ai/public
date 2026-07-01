@@ -6,7 +6,7 @@
  *     events for live execution visualization. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode} from '../rete/scheme';
+import {FlowNode, isExecKey} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 
 export interface ScriptSettings {
@@ -28,6 +28,10 @@ export interface EmitOptions {
    *  dropped). Used to run a slice up to a target node — the set must be
    *  closed under "ancestors" so no surviving step references a dropped one. */
   onlyNodeIds?: Set<string>;
+  /** With `onlyNodeIds`, resolve connections whose source is *outside* the set
+   *  to `_ffLive(...)` registry reads instead of in-script variables — so a
+   *  single node can be re-run using values captured from a prior run. */
+  liveExternalInputs?: boolean;
 }
 
 const PASSTHROUGH_SUFFIX = '__pt';
@@ -35,7 +39,8 @@ const PASSTHROUGH_SUFFIX = '__pt';
 export function emitScript(
   flow: FlowEditor, settings: ScriptSettings, options?: EmitOptions,
 ): string {
-  let steps = compileGraph(flow);
+  const liveBoundary = options?.liveExternalInputs && options.onlyNodeIds ? options.onlyNodeIds : undefined;
+  let steps = compileGraph(flow, liveBoundary);
   if (options?.onlyNodeIds) steps = steps.filter((s) => options.onlyNodeIds!.has(s.nodeId));
   const lines: string[] = [];
   const inst = options?.instrumented === true;
@@ -72,8 +77,19 @@ export function emitScript(
   if (inst) lines.push(...emitPreamble(options!.runId!));
 
   // -------- body --------
+  // Stash a step's live output values into the registry (instrumented only), so
+  // a later single-node re-run can read them via `_ffLive`.
+  const stash = (step: CompiledStep): void => {
+    if (!inst) return;
+    const line = stashLine(step, flow.getNodeById(step.nodeId));
+    if (line) lines.push(line);
+  };
+
   for (const step of steps) {
-    if (step.nodeType === 'input') continue;
+    if (step.nodeType === 'input') {
+      stash(step); // param values are in body scope (declared by //input headers)
+      continue;
+    }
 
     if (step.nodeType === 'output') {
       const inputKey = Array.from(step.inputs.keys())[0] ?? 'value';
@@ -98,6 +114,7 @@ export function emitScript(
       // Viewer nodes: `await table.plot.fromType(type, {}); v.setOptions(look)`.
       if (step.properties['viewerType']) {
         lines.push(...emitViewerStep(step, inst, options));
+        stash(step);
         continue;
       }
       const code = emitUtilityStep(step);
@@ -106,6 +123,7 @@ export function emitScript(
         lines.push(...wrapInstrumented(code, step, options!, {outputExpr: step.variableName}));
       else
         lines.push(code);
+      stash(step);
       continue;
     }
 
@@ -123,11 +141,33 @@ export function emitScript(
 
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
+    stash(step);
   }
 
   if (inst) lines.push(`__ff_emit('run-complete', '', {success: true});`);
 
   return lines.join('\n');
+}
+
+/** `__ff_stash('<nodeId>', {<outputKey>: <valueExpr>, ...})` for a step's live
+ *  outputs — real outputs (→ their variable) and dataframe passthroughs (→ the
+ *  threaded, post-execution input value). Keyed by output socket key so a re-run
+ *  can look up exactly the output a downstream connection reads. Null when the
+ *  step produces nothing worth stashing (e.g. an Output node). */
+function stashLine(step: CompiledStep, node: FlowNode | undefined): string | null {
+  const entries: string[] = [];
+  for (const [key, varName] of step.outputs)
+    entries.push(`${JSON.stringify(key)}: ${varName}`);
+  if (node) {
+    for (const key of Object.keys(node.outputs)) {
+      if (isExecKey(key) || !key.endsWith(PASSTHROUGH_SUFFIX)) continue;
+      const inName = key.slice(0, -PASSTHROUGH_SUFFIX.length);
+      const inExpr = step.inputs.get(inName);
+      if (inExpr && inExpr !== 'undefined') entries.push(`${JSON.stringify(key)}: ${inExpr}`);
+    }
+  }
+  if (entries.length === 0) return null;
+  return `__ff_stash(${JSON.stringify(step.nodeId)}, {${entries.join(', ')}});`;
 }
 
 function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
@@ -386,6 +426,17 @@ function emitPreamble(runId: string): string[] {
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
+    // Live-value registry (on the tab global): each node stashes its outputs so a
+    // later single-node re-run can read them without re-running upstream.
+    '  function __ff_stash(nodeId, map) {',
+    '    (globalThis.__ffFlowLive = globalThis.__ffFlowLive || {})[nodeId] = map;',
+    '  }',
+    '  function _ffLive(nodeId, key) {',
+    '    var vals = globalThis.__ffFlowLive && globalThis.__ffFlowLive[nodeId];',
+    '    if (!vals || !(key in vals))',
+    '      throw new Error(\'Flow: no captured value for \' + nodeId + \':\' + key + \' — run the flow first.\');',
+    '    return vals[key];',
+    '  }',
     `__ff_emit('run-start', '');`,
     '',
   ];

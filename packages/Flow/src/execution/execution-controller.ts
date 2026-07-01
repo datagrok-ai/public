@@ -13,7 +13,7 @@ import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitte
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
-import {isExecKey} from '../rete/scheme';
+import {isExecKey, missingRequiredInputs} from '../rete/scheme';
 
 /** Short count label for a wire from a source output's summary — "1,204 rows"
  *  for a table, "1,204" for a column. Null when there's nothing countable. */
@@ -116,10 +116,52 @@ export class ExecutionController {
     });
   }
 
+  /** Whether a captured value exists for a node's output (from a prior run) — the
+   *  live-value registry the instrumented run populates via `__ff_stash`. */
+  hasLiveValue(nodeId: string, outputKey: string): boolean {
+    const reg = (globalThis as {__ffFlowLive?: Record<string, Record<string, unknown>>}).__ffFlowLive;
+    return !!(reg && reg[nodeId] && outputKey in reg[nodeId]);
+  }
+
+  private clearLiveRegistry(): void {
+    (globalThis as {__ffFlowLive?: unknown}).__ffFlowLive = {};
+  }
+
+  /** Whether "Rerun this node only" should be offered: it's a compute node whose
+   *  required inputs are all satisfied AND every connected input already has a
+   *  captured upstream value (so it can run without re-running upstream). */
+  canRerunNode(nodeId: string): boolean {
+    const node = this.flow.getNodeById(nodeId);
+    if (!node) return false;
+    // Inputs/outputs have nothing to recompute on their own.
+    if (node.dgNodeType !== 'func' && node.dgNodeType !== 'utility') return false;
+    if (missingRequiredInputs(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
+    let anyConnected = false;
+    for (const key of Object.keys(node.inputs)) {
+      if (isExecKey(key)) continue;
+      const src = this.flow.getInputSource(nodeId, key);
+      if (!src) continue;
+      anyConnected = true;
+      if (!this.hasLiveValue(src.node.id, src.outputKey)) return false;
+    }
+    return anyConnected;
+  }
+
+  /** Re-run just this node using upstream values captured from a prior run — its
+   *  connected inputs resolve to `_ffLive(...)` registry reads, so nothing
+   *  upstream re-executes. Preserves every other node's state; opens this node's
+   *  preview on completion. */
+  rerunNode(nodeId: string, settings: ScriptSettings): void {
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: new Set([nodeId]), focusNodeId: nodeId,
+      skipValidation: true, preserveState: true, liveExternalInputs: true,
+    });
+  }
+
   private executeInstrumented(
     settings: ScriptSettings, debug: boolean,
     opts?: {onlyNodeIds?: Set<string>; focusNodeId?: string; skipValidation?: boolean;
-      onComplete?: () => void; preserveState?: boolean},
+      onComplete?: () => void; preserveState?: boolean; liveExternalInputs?: boolean},
   ): void {
     if (!opts?.skipValidation) {
       const errors = validateGraph(this.flow);
@@ -141,11 +183,13 @@ export class ExecutionController {
       this.state.isRunning = true;
       this.state.graphVersionAtRun = this.graphVersion;
     } else {
-      // A new full run invalidates anything we were showing.
+      // A new full/slice run invalidates anything we were showing — and the
+      // captured live values (they're recomputed by this run's `__ff_stash`).
       this.outputPreview.close();
       this.state.startRun(runId, this.graphVersion);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
+      this.clearLiveRegistry();
     }
     this.pendingPreviewNodeId = opts?.focusNodeId ?? null;
     this.pendingOnComplete = opts?.onComplete ?? null;
@@ -161,6 +205,7 @@ export class ExecutionController {
       enableBreakpoints: debug,
       haltOnError: true,
       onlyNodeIds: opts?.onlyNodeIds,
+      liveExternalInputs: opts?.liveExternalInputs,
     };
 
     try {
@@ -285,6 +330,9 @@ export class ExecutionController {
       this.flow.clearConnectionLabels();
       // Stale values aren't worth previewing; close to avoid stale impressions.
       this.outputPreview.close();
+      // A structural change invalidates captured values — disable single-node
+      // re-run (which reads them) until a fresh run repopulates the registry.
+      this.clearLiveRegistry();
     }
   }
 
@@ -293,6 +341,7 @@ export class ExecutionController {
     this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.close();
+    this.clearLiveRegistry();
   }
 
   dispose(): void {
