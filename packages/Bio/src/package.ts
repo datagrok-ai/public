@@ -470,11 +470,11 @@ export class PackageFunctions {
 
   // -- Top menu --
 
-  @grok.decorators.func({name: 'getRegion', description: 'Gets a new column with sequences of the region between start and end'})
+  @grok.decorators.func({name: 'Get Region', description: 'Extracts a sub-region of each macromolecule sequence into a new column between the given start and end positions'})
   static getRegion(
     @grok.decorators.param({type: 'column'})sequence: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {optional: true}}) start: string | undefined,
-    @grok.decorators.param({type: 'string', options: {optional: true}}) end: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Start position name (inclusive) empty means the sequence start'}}) start: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'End position name (inclusive) empty means the sequence end'}}) end: string | undefined,
     @grok.decorators.param({type: 'string', options: {optional: true, description: 'Name of the column to be created'}}) name: string | undefined): DG.Column<string> {
     return getRegionDo(sequence,
       start ?? null, end ?? null, name ?? null);
@@ -543,11 +543,11 @@ export class PackageFunctions {
   })
   static async activityCliffs(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
-    @grok.decorators.param({type: 'string', options: {semType: 'Macromolecule', description: 'Input data table'}}) molecules: DG.Column<string>,
-      activities: DG.Column,
+    @grok.decorators.param({type: 'string', options: {semType: 'Macromolecule', description: 'Macromolecule sequence column'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({options: {description: 'Numeric activity column to look for cliffs in'}}) activities: DG.Column,
     @grok.decorators.param({options: {initialValue: '80', description: 'Similarity cutoff'}}) similarity: number,
-    @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
-    @grok.decorators.param({type: 'string', options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance']}}) similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
+    @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE'], description: 'Dimensionality reduction method for the 2D projection'}}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string', options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance'], description: 'Sequence distance metric'}}) similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
     @grok.decorators.param({type: 'func'}) preprocessingFunction: DG.Func,
     @grok.decorators.param({type: 'object', options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
     @grok.decorators.param({options: {optional: true}}) demo?: boolean): Promise<DG.Viewer | undefined> {
@@ -989,13 +989,13 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Multiple Sequence Alignment',
-    description: 'Multiple sequence alignment',
+    description: 'Aligns a set of macromolecule sequences adding a new aligned (gapped) sequence column',
     meta: {domain: 'bio'}
   })
   static async alignSequences(
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string> | null = null,
-    @grok.decorators.param({type: 'column'}) clustersCol: DG.Column | null = null,
-    @grok.decorators.param({type: 'object', options: {optional: true}}) options?: any
+    @grok.decorators.param({type: 'column', options: {description: 'Optional cluster column sequences are aligned separately within each cluster'}}) clustersCol: DG.Column | null = null,
+    @grok.decorators.param({type: 'object', options: {optional: true, description: 'Alignment options (engine method gap penalties selected-rows-only etc.)'}}) options?: any
   ): Promise<DG.Column<string>> {
     return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
   }
@@ -1008,9 +1008,9 @@ export class PackageFunctions {
   })
   static async pepseaMsa(
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {choices: ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'], initialValue: 'mafft --auto'}}) method: string = 'mafft --auto',
-    @grok.decorators.param({type: 'double', options: {initialValue: '1.53'}}) gapOpen: number = 1.53,
-    @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
+    @grok.decorators.param({type: 'string', options: {choices: ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'], initialValue: 'mafft --auto', description: 'MAFFT alignment strategy'}}) method: string = 'mafft --auto',
+    @grok.decorators.param({type: 'double', options: {initialValue: '1.53', description: 'Gap opening penalty'}}) gapOpen: number = 1.53,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0', description: 'Gap extension penalty'}}) gapExtend: number = 0,
   ): Promise<DG.Column<string>> {
     return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
   }
@@ -1224,6 +1224,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Split to Monomers',
+    description: 'Splits a macromolecule column into per-position monomer columns one column per sequence position',
     'top-menu': 'Bio | Transform | Split to Monomers...',
     editor: 'Bio:SplitToMonomersEditor',
   })
@@ -1681,11 +1682,14 @@ export class PackageFunctions {
     return _package.seqHelper;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    name: 'HELM to Molecule',
+    description: 'Converts a column of HELM sequences to atomic-level molecules (V3000 molblocks)',
+  })
   static async getMolFromHelm(
     df: DG.DataFrame,
-    @grok.decorators.param({type: 'column'})helmCol: DG.Column<string>,
-    @grok.decorators.param({options: {initialValue: 'true'}})
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', description: 'Column of HELM sequences to convert'}})helmCol: DG.Column<string>,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Preserve monomer stereochemistry using the chirality engine'}})
     chiralityEngine: boolean = true
   ): Promise<DG.Column<string>> {
     return getMolColumnFromHelm(df, helmCol, chiralityEngine, _package.monomerLib);

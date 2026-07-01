@@ -255,7 +255,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | MCL...',
-    'name': 'MCLClustering',
+    'name': 'MCL Clustering',
     'description': 'Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.',
     'editor': 'EDA:GetMCLEditor',
     'outputs': [],
@@ -263,16 +263,16 @@ export class PackageFunctions {
   static async MCLClustering(
     df: DG.DataFrame,
     cols: DG.Column[],
-    @grok.decorators.param({'type': 'list<string>'}) metrics: KnownMetrics[],
-    weights: number[],
-    @grok.decorators.param({'type': 'string'}) aggregationMethod: DistanceAggregationMethod,
-    @grok.decorators.param({'type': 'list<func>'}) preprocessingFuncs: any[],
-    @grok.decorators.param({'type': 'object'}) preprocessingFuncArgs: any[],
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '80'}}) threshold: number = 80,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '10'}}) maxIterations: number = 10,
-    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false'}}) useWebGPU: boolean = false,
-    @grok.decorators.param({'type': 'double', 'options': {'initialValue': '2'}}) inflate: number = 0,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '5'}}) minClusterSize: number = 5): Promise<MCLViewer> {
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Distance metric per column used to measure similarity between rows.'}}) metrics: KnownMetrics[],
+    @grok.decorators.param({'options': {'description': 'Relative weight of each column when combining per-column distances.'}}) weights: number[],
+    @grok.decorators.param({'type': 'string', 'options': {'description': 'How per-column distances are aggregated into a single distance.'}}) aggregationMethod: DistanceAggregationMethod,
+    @grok.decorators.param({'type': 'list<func>', 'options': {'description': 'Preprocessing function applied to each column before distances are computed.'}}) preprocessingFuncs: any[],
+    @grok.decorators.param({'type': 'object', 'options': {'description': 'Arguments passed to the preprocessing functions.'}}) preprocessingFuncArgs: any[],
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '80', 'description': 'Similarity threshold (percentile): edges below it are dropped before clustering.'}}) threshold: number = 80,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '10', 'description': 'Maximum number of expansion/inflation iterations.'}}) maxIterations: number = 10,
+    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false', 'description': 'Run the computation on the GPU via WebGPU when available.'}}) useWebGPU: boolean = false,
+    @grok.decorators.param({'type': 'double', 'options': {'initialValue': '2', 'description': 'Inflation factor controlling cluster granularity: higher values yield more, smaller clusters.'}}) inflate: number = 0,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '5', 'description': 'Clusters smaller than this are merged into noise.'}}) minClusterSize: number = 5): Promise<MCLViewer> {
     const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
     const serializedOptions: string = JSON.stringify({
       cols: cols.map((col) => col.name),
@@ -304,6 +304,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'name': 'PLS',
     'outputs': [{'name': 'plsResults', 'type': 'object'}],
     'description': 'Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.',
   })
@@ -432,11 +433,12 @@ export class PackageFunctions {
       'mlname': 'Linear Regression',
       'mlrole': 'apply',
     },
-    'name': 'applyLinearRegression',
+    'name': 'Apply Linear Regression',
+    'description': 'Predict the target for a table using a trained linear regression model.',
   })
   static applyLinearRegression(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
     const params = new Float32Array((model as Uint8Array).buffer);
     return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
@@ -502,11 +504,12 @@ export class PackageFunctions {
       'mlname': 'Softmax',
       'mlrole': 'apply',
     },
-    'name': 'applySoftmax',
+    'name': 'Apply Softmax',
+    'description': 'Classify the rows of a table using a trained softmax (multinomial logistic regression) model.',
   })
   static applySoftmax(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
     const unpackedModel = new SoftmaxClassifier(undefined, model);
 
@@ -572,11 +575,12 @@ export class PackageFunctions {
       'mlname': 'PLS Regression',
       'mlrole': 'apply',
     },
-    'name': 'applyPLSRegression',
+    'name': 'Apply PLS Regression',
+    'description': 'Predict the target for a table using a trained partial least squares (PLS) regression model.',
   })
   static applyPLSRegression(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): DG.DataFrame {
     const unpackedModel = new PlsModel(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }
@@ -658,11 +662,12 @@ export class PackageFunctions {
       'mlname': 'XGBoost',
       'mlrole': 'apply',
     },
-    'name': 'applyXGBooster',
+    'name': 'Apply XGBoost',
+    'description': 'Predict the target for a table using a trained XGBoost gradient-boosting model.',
   })
   static applyXGBooster(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): DG.DataFrame {
     const unpackedModel = new XGBooster(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }
@@ -752,11 +757,11 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'generatePmpoDataset',
-    'description': 'Generates syntethetic dataset oriented on the pMPO modeling',
+    'name': 'Generate pMPO Dataset',
+    'description': 'Generate a synthetic dataset oriented on probabilistic multi-parameter optimization (pMPO) modeling.',
     'outputs': [{name: 'Synthetic', type: 'dataframe'}],
   })
-  static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
+  static async generatePmpoDataset(@grok.decorators.param({'type': 'int', 'options': {'description': 'Number of rows (samples) to generate.'}}) samples: number): Promise<DG.DataFrame> {
     const df = await getSynteticPmpoData(samples, false);
     df.name = 'Synthetic';
     return df;

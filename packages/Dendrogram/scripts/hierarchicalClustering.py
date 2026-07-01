@@ -1,5 +1,6 @@
 #name: hierarchicalClusteringScript
-#description: Returns the newick representation of the tree for given dataset
+#friendlyName: Hierarchical Clustering
+#description: Cluster rows of the input table hierarchically and return the tree in Newick format.
 #language: python
 #input: dataframe data [Input data table]
 #input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']} [Distance metric]

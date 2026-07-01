@@ -355,7 +355,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'getMorganFingerprints',
+    name: 'Morgan Fingerprints',
+    description: 'Computes Morgan (circular) fingerprints for a column of molecules.',
     meta: {vectorFunc: 'true'},
   })
   static async getMorganFingerprints(
@@ -385,7 +386,10 @@ export class PackageFunctions {
     return DG.BitSet.fromBytes(bitArray.getRawData().buffer as ArrayBuffer, bitArray.length);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    name: 'Similarities',
+    description: 'Computes Tanimoto similarity scores between a query molecule and each molecule in a column.',
+  })
   static async getSimilarities(
     molStringsColumn: DG.Column,
     molString: string): Promise<DG.DataFrame> {
@@ -398,10 +402,13 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    name: 'Diversities',
+    description: 'Selects a diverse representative subset of molecules from a column.',
+  })
   static async getDiversities(
     molStringsColumn: DG.Column,
-    @grok.decorators.param({type: 'int'}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int', options: {description: 'Maximum number of diverse molecules to return'}}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
     try {
       const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
@@ -411,12 +418,15 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    name: 'Find Similar',
+    description: 'Finds the molecules most similar to a query molecule ranked by Tanimoto similarity.',
+  })
   static async findSimilar(
     molStringsColumn: DG.Column,
     molString: string,
-    @grok.decorators.param({type: 'int'}) limit: number = Number.MAX_VALUE,
-    @grok.decorators.param({type: 'int'}) cutoff: number = 0.0): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int', options: {description: 'Maximum number of hits to return'}}) limit: number = Number.MAX_VALUE,
+    @grok.decorators.param({type: 'int', options: {description: 'Minimum similarity score for a molecule to be returned'}}) cutoff: number = 0.0): Promise<DG.DataFrame> {
     assure.notNull(molStringsColumn, 'molStringsColumn');
     assure.notNull(molString, 'molString');
     assure.notNull(limit, 'limit');
@@ -430,11 +440,14 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    name: 'Substructure Search',
+    description: 'Finds molecules that contain the query substructure.',
+  })
   static async searchSubstructure(
     molStringsColumn: DG.Column,
     molString: string,
-    molBlockFailover: string): Promise<DG.Column<any>> {
+    @grok.decorators.param({options: {description: 'Molblock used as a fallback query when the SMILES/SMARTS query cannot be parsed'}}) molBlockFailover: string): Promise<DG.Column<any>> {
     assure.notNull(molStringsColumn, 'molStringsColumn');
     assure.notNull(molString, 'molString');
     assure.notNull(molBlockFailover, 'molBlockFailover');
@@ -567,12 +580,13 @@ export class PackageFunctions {
 
   //vector function to run in add new column dialog
   @grok.decorators.func({
-    name: 'getDescriptors',
+    name: 'Chemical Descriptors',
+    description: 'Computes molecular descriptors for a column of molecules.',
     meta: {vectorFunc: 'true'},
   })
   static async getDescriptors(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) selected?: string[],
+    @grok.decorators.param({type: 'list<string>', options: {optional: true, description: 'Descriptors to compute. all are computed when empty'}}) selected?: string[],
   ): Promise<DG.DataFrame> {
     if (!selected || selected.length === 0)
       selected = await getSelected();
@@ -989,7 +1003,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'runElementalAnalysis',
+    name: 'Elemental Analysis',
+    description: 'Counts atoms of each chemical element in the molecules and adds them as columns.',
     outputs: [{name: 'res', type: 'list'}],
     meta: {role: 'transform'},
   })
@@ -1033,16 +1048,18 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'R-Group Decomposition',
+    description: 'Decomposes molecules into a common core and R-groups at the specified attachment points.',
     outputs: [{name: 'result', type: 'object'}],
     meta: {role: 'transform'},
   })
   static async rGroupDecomposition(
     df: DG.DataFrame,
     molColName: string,
-    core: string,
-    rGroupName: string,
+    @grok.decorators.param({options: {description: 'Core scaffold (SMILES/SMARTS) with R-group attachment points'}}) core: string,
+    @grok.decorators.param({options: {description: 'Prefix for the generated R-group column names'}}) rGroupName: string,
     rGroupMatchingStrategy: string,
-    @grok.decorators.param({options: {optional: true, initialValue: 'false'}}) onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
+    @grok.decorators.param({options: {optional: true, initialValue: 'false', description: 'Match R-groups only at the marked attachment points'}}) onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
     const params: RGroupParams = {
       molColName: molColName,
       core: core,
@@ -1236,7 +1253,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'getInchis',
+    name: 'InChI',
+    description: 'Computes the InChI identifier for each molecule.',
     meta: {vectorFunc: 'true'},
   })
   static getInchis(
@@ -1258,7 +1276,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'getInchiKeys',
+    name: 'InChI Keys',
+    description: 'Computes the hashed InChI key for each molecule.',
     meta: {vectorFunc: 'true'},
   })
   static getInchiKeys(
@@ -1672,7 +1691,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'convertMolNotation',
-    description: 'RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000',
+    description: 'RDKit-based conversion for SMILES SMARTS InChi Molfile V2000 and Molfile V3000',
     outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
     meta: {role: 'unitConverter'},
   })
@@ -1686,6 +1705,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Convert Notation...',
     'name': 'Convert Notation',
+    'description': 'Converts molecules between SMILES, SMARTS, and Molblock notations.',
     'meta': {'role': 'transform'},
   })
   static async convertNotation(
@@ -1864,7 +1884,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({
-    description: 'Opens smi file',
+    description: 'Opens MOL2 file',
     ext: 'mol2',
   })
   static importMol2(
@@ -2110,7 +2130,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'chemSimilaritySearch',
+    name: 'Chemical Similarity Search',
+    description: 'Returns molecules from a column ranked by similarity to a query molecule.',
     outputs: [{name: 'result', type: 'dataframe'}],
   })
   static async callChemSimilaritySearch(
@@ -2128,7 +2149,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    name: 'chemDiversitySearch',
+    name: 'Chemical Diversity Search',
+    description: 'Returns a diverse representative subset of molecules from a column.',
     outputs: [{name: 'result', type: 'dataframe'}],
   })
   static async callChemDiversitySearch(
@@ -2171,7 +2193,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'getProperties',
+    name: 'Chemical Properties',
+    description: 'Computes chemical properties (MW HBA HBD logP etc.) for a column of molecules.',
     meta: {vectorFunc: 'true'},
   })
   static async getProperties(
@@ -2195,6 +2218,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Toxicity Risks...',
     'name': 'Toxicity Risks',
+    'description': 'Predicts toxicity risks (mutagenicity, tumorigenicity, irritating and reproductive effects) and adds them as columns.',
     'meta': {'role': 'hitTriageFunction,transform'},
   })
   static async addChemRisksColumns(
@@ -2219,7 +2243,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    name: 'getToxicityRisks',
+    name: 'Toxicity Risks',
+    description: 'Predicts toxicity risks (mutagenicity, tumorigenicity, irritating and reproductive effects) for a column of molecules.',
     meta: {vectorFunc: 'true'},
   })
   static async getToxicityRisks(
@@ -2272,6 +2297,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Matched Molecular Pairs',
+    'description': 'Finds pairs of molecules differing by a single fragment and relates the change to activity.',
     'editor': 'Chem:MMPEditor',
     'top-menu': 'Chem | Analyze | Matched Molecular Pairs...',
   })
@@ -2434,6 +2460,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Names To Smiles',
+    'description': 'Resolves chemical names to SMILES structures and adds them as a column.',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'meta': {'role': 'transform'},
   })
@@ -2549,8 +2576,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'trainChemprop',
-    description: 'To be added',
+    name: 'Train Chemprop',
+    description: 'Trains a Chemprop message-passing neural network model on molecular structures.',
     meta: {mlname: 'Chemprop', mlrole: 'train'},
     outputs: [{name: 'model', type: 'dynamic'}],
   })
@@ -2643,6 +2670,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'Apply Chemprop',
+    description: 'Runs predictions on molecules using a trained Chemprop model.',
     meta: {mlname: 'Chemprop', mlrole: 'apply'},
     outputs: [{name: 'data_out', type: 'dataframe'}],
   })
@@ -2733,13 +2762,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'MPO Score',
+    description: 'Computes a multi-parameter optimization (MPO) desirability score from the selected property columns.',
     meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
   })
   static mpoCalculate(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
-    profileName: string,
+    @grok.decorators.param({options: {description: 'Name of the MPO profile defining per-property desirability functions and weights'}}) profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
     createDesirabilityColumns: boolean = false,
   ): DG.DataFrame | null {

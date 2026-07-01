@@ -13,7 +13,7 @@ export namespace scripts {
   }
 
   /**
-  Converts molecules to HELM notation based on monomer library
+  Converts molecules to HELM notation by matching atoms against a monomer library
   */
   export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
@@ -148,7 +148,7 @@ export namespace funcs {
   }
 
   /**
-  Gets a new column with sequences of the region between start and end
+  Extracts a sub-region of each macromolecule sequence into a new column between the given start and end positions
   */
   export async function getRegion(sequence: DG.Column , start?: string , end?: string , name?: string ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetRegion', { sequence, start, end, name });
@@ -271,7 +271,7 @@ export namespace funcs {
   }
 
   /**
-  Multiple sequence alignment
+  Aligns a set of macromolecule sequences adding a new aligned (gapped) sequence column
   */
   export async function alignSequences(sequenceCol: DG.Column , clustersCol: DG.Column , options?: any ): Promise<DG.Column> {
     return await grok.functions.call('Bio:AlignSequences', { sequenceCol, clustersCol, options });
@@ -335,6 +335,9 @@ export namespace funcs {
     return await grok.functions.call('Bio:TestDetectMacromolecule', { path });
   }
 
+  /**
+  Splits a macromolecule column into per-position monomer columns one column per sequence position
+  */
   export async function splitToMonomersTopMenu(table: DG.DataFrame , sequence: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:SplitToMonomersTopMenu', { table, sequence });
   }
@@ -538,6 +541,9 @@ export namespace funcs {
     return await grok.functions.call('Bio:GetSeqHelper', {});
   }
 
+  /**
+  Converts a column of HELM sequences to atomic-level molecules (V3000 molblocks)
+  */
   export async function getMolFromHelm(df: DG.DataFrame , helmCol: DG.Column , chiralityEngine: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetMolFromHelm', { df, helmCol, chiralityEngine });
   }

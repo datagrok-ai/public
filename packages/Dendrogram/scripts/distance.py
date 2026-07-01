@@ -1,8 +1,9 @@
 #name: distanceScript
-#description: Returns distance matrix condensed
+#friendlyName: Distance Matrix
+#description: Compute a condensed pairwise distance matrix between rows of the input table.
 #language: python
 #input: dataframe data [Input data table]
-#input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']} [Distance]
+#input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']} [Distance metric]
 #output: dataframe result
 
 import numpy as np

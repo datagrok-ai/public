@@ -1,8 +1,8 @@
 --name: compound activity details for @target
---friendlyName: Browse | Compound activity details for @target
+--friendlyName: Browse | Compound Activity For Target
 --description: Retrieves compound activity details including assay descriptions, standard measurements, and publication references for a specified ChEMBL target.
 --connection: Chembl
---input: string target = "CHEMBL1827"
+--input: string target = "CHEMBL1827" [ChEMBL target identifier, e.g. CHEMBL1827]
 --meta.searchPattern: "compound activity details for target ${target}"
 --meta.cache: true
 --meta.localCache: true

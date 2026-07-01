@@ -1,9 +1,10 @@
 #language: python
 #name: molToHelmConverterPy
-#description: Converts molecules to HELM notation based on monomer library
-#input: dataframe moleculesDataframe
-#input: column moleculesColumn {semType: Molecule}
-#input: file libraryFile
+#friendlyName: Molecules to HELM
+#description: Converts molecules to HELM notation by matching atoms against a monomer library
+#input: dataframe moleculesDataframe [Table containing the molecules to convert]
+#input: column moleculesColumn {semType: Molecule} [Column of molecules to convert to HELM]
+#input: file libraryFile [Monomer library JSON used to match substructures to monomers]
 #output: dataframe result_helm {action:join(moleculesDataframe)} [Sequences, in HELM format]
 molListToProcess = moleculesDataframe[moleculesColumn].tolist()
 import pandas as pd

@@ -105,7 +105,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Databases | Chemspace',
-    'description': 'Chemspace Samples',
+    'description': 'Finds similar and substructure matches for a molecule in the Chemspace catalog.',
     'condition': 'true',
     meta: {role: 'widgets'},
   })
@@ -163,12 +163,12 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Chemspace Prices',
-    'description': 'Chemspace Prices',
+    'description': 'Shows vendor prices and pack sizes for a Chemspace compound.',
     'condition': 'true',
     meta: {role: 'widgets'},
   })
   static async pricesPanel(
-    @grok.decorators.param({'options': {'semType': 'chemspace-id'}}) id: string): Promise<DG.Widget> {
+    @grok.decorators.param({'options': {'semType': 'chemspace-id', 'description': 'Chemspace compound id (e.g. CSCS00000000000)'}}) id: string): Promise<DG.Widget> {
     let prices: HTMLDivElement | null = null;
     const resData = ui.div([ui.loader()]);
     const updatePrices = (categoryToData: { [key: string]: HTMLDivElement },
@@ -246,13 +246,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'name': 'Get Chemspace Ids',
+    'description': 'Adds a column of Chemspace compound ids matched by exact structure for each molecule.',
     'meta': {
       'vectorFunc': 'true',
     },
   })
   static async getChemspaceIds(
     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'Molecule'}}) molColumn: DG.Column,
-      shipToCountry: string): Promise<DG.Column> {
+    @grok.decorators.param({'options': {'description': 'Destination country for pricing and availability'}}) shipToCountry: string): Promise<DG.Column> {
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace ids for ${molColumn.name}...`);
     try {
       await getApiToken();
@@ -289,11 +291,13 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    'name': 'Get Chemspace Prices',
+    'description': 'Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.',
     outputs: [{name: 'res', type: 'dataframe', options: {action: 'join(data)'}}],
   })
   static async getChemspacePrices(data: DG.DataFrame,
-     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id'}}) idsColumn: DG.Column,
-    shipToCountry: string): Promise<DG.DataFrame> {
+     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id', 'description': 'Column of Chemspace compound ids to price'}}) idsColumn: DG.Column,
+    @grok.decorators.param({'options': {'description': 'Destination country for pricing and availability'}}) shipToCountry: string): Promise<DG.DataFrame> {
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace prices for ${idsColumn.name}...`);
     try {
       await getApiToken();

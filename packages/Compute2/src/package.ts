@@ -237,11 +237,15 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    name: 'Start Workflow',
+    description: 'Launch a compute workflow (pipeline) by its qualified name and open its editor.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static async StartWorkflow(
-    nqName: string,
-    version: string,
-    @grok.decorators.param({'type': 'object'}) instanceConfig?: PipelineInstanceConfig) {
+    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to launch'}}) nqName: string,
+    @grok.decorators.param({options: {description: 'Workflow version to run'}}) version: string,
+    @grok.decorators.param({'type': 'object', options: {description: 'Optional initial pipeline configuration'}}) instanceConfig?: PipelineInstanceConfig) {
     const func = DG.Func.byName(nqName);
     // @ts-ignore-next-line
     const {promise, resolve} = Promise.withResolvers();
@@ -253,9 +257,13 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    name: 'Run Optimizer',
+    description: 'Run parameter optimization (fitting) for a model and return the resulting function calls.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static async RunOptimizer(
-    @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
+    @grok.decorators.param({'type': 'object', options: {description: 'Optimizer parameters: target function, variables, and objective'}}) params: OptimizerParams,
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
@@ -298,6 +306,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'Mock Pipeline 1',
+    description: 'Sample static two-step workflow configuration used for testing the workflow engine.',
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -330,6 +340,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'Mock Pipeline 2',
+    description: 'Sample sequential workflow configuration with links, actions, and validators for testing.',
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })

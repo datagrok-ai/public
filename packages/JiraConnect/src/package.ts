@@ -71,9 +71,13 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}})
-  static async getJiraField( @grok.decorators.param({type:'column<string>'})  ticketColumn: DG.Column,
-    field: string): Promise<DG.Column | undefined> {
+  @grok.decorators.func({
+    meta: {vectorFunc: 'true'},
+    name: 'Get Jira Field',
+    description: 'Fetches a field value from Jira for each ticket key in a column',
+  })
+  static async getJiraField( @grok.decorators.param({type:'column<string>', options: {description: 'Column of Jira ticket keys (e.g. PROJ-123)'}})  ticketColumn: DG.Column,
+    @grok.decorators.param({options: {description: 'Field path to extract, colon-separated for nested fields (e.g. status:name)'}}) field: string): Promise<DG.Column | undefined> {
   
     const jiraCreds = await getJiraCreds();
     if (!jiraCreds)

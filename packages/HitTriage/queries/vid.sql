@@ -1,10 +1,11 @@
 --name: addMolecule
+--friendlyName: Add Molecule
 --description: Add a molecule to the dictionary. Returns VID for new or existing molecule.
 --connection: HitTriage:hitdesign
---input: string canonicalSmiles
---input: string appName
---input: string campaignId
---input: string createdBy
+--input: string canonicalSmiles [Canonical SMILES of the molecule to register]
+--input: string appName [Application the campaign belongs to]
+--input: string campaignId [Campaign the molecule is added to]
+--input: string createdBy [User registering the molecule]
 WITH existing AS (
     SELECT vid FROM hitdesign.vid_dictionary WHERE mh_string = @canonicalSmiles
 ),
@@ -26,12 +27,13 @@ SELECT vid FROM all_vids;
 --end
 
 --name: addMolecules
+--friendlyName: Add Molecules
 --description: Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules.
 --connection: HitTriage:hitdesign
---input: list<string> smiles
---input: string appName
---input: string campaignId
---input: string createdBy
+--input: list<string> smiles [Canonical SMILES of the molecules to register]
+--input: string appName [Application the campaign belongs to]
+--input: string campaignId [Campaign the molecules are added to]
+--input: string createdBy [User registering the molecules]
 WITH input_order AS (
     SELECT s AS mh_string, ROW_NUMBER() OVER () AS ord
     FROM UNNEST(@smiles) AS s
@@ -69,19 +71,21 @@ ORDER BY i.ord;
 --end
 
 --name: getMoleculeByVid
+--friendlyName: Get Molecule by VID
 --description: Get a molecule's canonical SMILES by its VID.
 --connection: HitTriage:hitdesign
---input: string vid
+--input: string vid [Virtual ID (e.g. V000001) to look up]
 SELECT mh_string
 FROM hitdesign.vid_dictionary
 WHERE vid = @vid;
 --end
 
 --name: getCampaignsByVid
+--friendlyName: Get Campaigns by VID
 --description: Get all campaigns and creators for a given VID.
 --connection: HitTriage:hitdesign
---input: string vid
---input: string appName {optional: true; nullable: true;}
+--input: string vid [Virtual ID (e.g. V000001) to look up]
+--input: string appName {optional: true; nullable: true;} [Restrict results to this application]
 SELECT campaign_id, created_by, app_name
 FROM hitdesign.campaign_vids
 WHERE 
