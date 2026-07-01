@@ -45,6 +45,14 @@ const UTILITY_PROP_TOOLTIPS: Record<string, Record<string, string>> = {
   'List': {value: 'Comma-separated list of values'},
 };
 
+/** Primitive func-input types edited with a native Datagrok input (built from
+ *  the property via `ui.input.forProperty`, which honours the declared type,
+ *  numeric range, choices, and nullability). Structural (column/column_list)
+ *  and `string_list` inputs are handled separately. */
+const PRIMITIVE_INPUT_TYPES: ReadonlySet<string> = new Set([
+  'string', 'int', 'double', 'num', 'qnum', 'datetime', 'bool',
+]);
+
 const TYPE_FILTER_VALUES = ['', 'numerical', 'categorical', 'string', 'int', 'double', 'bool'];
 const SEMTYPE_VALUES = ['', 'Molecule', 'Macromolecule'];
 const OUTPUT_TYPE_VALUES = [
@@ -182,7 +190,7 @@ export class PropertyPanel {
     if (func.inputs.length > 0) {
       const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
       acc.addPane('Input Parameters', () => {
-        const content = ui.div([], 'funcflow-accordion-content');
+        const content = ui.div([], 'funcflow-accordion-content ui-form');
         for (const inp of func.inputs) {
           const tip = buildFuncInputTooltip(inp);
           const isEditable = inp.name in node.inputValues;
@@ -198,46 +206,20 @@ export class PropertyPanel {
             content.appendChild(row);
             continue;
           }
-          switch (inp.propertyType) {
-          case 'string': {
-            // When the property declares `choices`, render a combo (with a
-            // leading empty option when nullable) instead of a free-text field.
-            const current = String(node.inputValues[inp.name] ?? '');
-            const options = stringChoiceOptions(propertyChoices(inp), Boolean(inp.nullable), current);
-            if (options) {
-              content.appendChild(this.createCombo(inp.name, current, options,
-                (v) => {node.inputValues[inp.name] = v;}, tip));
-            } else {
-              content.appendChild(this.createTextarea(inp.name, current,
-                (v) => {node.inputValues[inp.name] = v;}, tip));
-            }
-            break;
-          }
-          case 'int':
-            content.appendChild(this.createNumberInput(inp.name, Number(node.inputValues[inp.name] ?? 0),
-              (v) => {node.inputValues[inp.name] = Math.round(v);}, 0, 1, tip));
-            break;
-          case 'double':
-          case 'num':
-            content.appendChild(this.createNumberInput(inp.name, Number(node.inputValues[inp.name] ?? 0),
-              (v) => {node.inputValues[inp.name] = v;}, 3, 0.1, tip));
-            break;
-          case 'bool':
-            content.appendChild(this.createToggle(inp.name, Boolean(node.inputValues[inp.name]),
-              (v) => {node.inputValues[inp.name] = v;}, tip));
-            break;
-          case 'column':
-            content.appendChild(this.createColumnRow(node, inp.name, false, dataframeParams, tip));
-            break;
-          case 'column_list':
-            content.appendChild(this.createColumnRow(node, inp.name, true, dataframeParams, tip));
-            break;
-          case 'string_list':
-            // Comma-separated; the compiler trims and turns it into an array.
-            // (`list<string>` arrives here as `string_list` — DG normalizes it.)
-            content.appendChild(this.createTextarea(inp.name, String(node.inputValues[inp.name] ?? ''),
+          const pt = String(inp.propertyType);
+          if (pt === 'column' || pt === 'column_list') {
+            content.appendChild(this.createColumnRow(node, inp.name, pt === 'column_list', dataframeParams, tip));
+          } else if (pt === 'string_list') {
+            // Comma-separated string (native DG input, to match the primitives);
+            // the compiler trims and turns it into an array. (`list<string>`
+            // arrives here as `string_list` — DG normalizes it.)
+            content.appendChild(this.createStringInput(inp.name, String(node.inputValues[inp.name] ?? ''),
               (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`));
-            break;
+          } else if (PRIMITIVE_INPUT_TYPES.has(pt)) {
+            // A native Datagrok input built straight from the property — it
+            // honours the declared type, numeric range, choices, and nullability
+            // (choice-bearing strings render as a combo automatically).
+            content.appendChild(this.createPropertyInput(inp, node, tip));
           }
         }
         return content;
@@ -524,6 +506,33 @@ export class PropertyPanel {
       this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
+  /** A native Datagrok input for a primitive func parameter, built from the
+   *  property so it honours the declared type, numeric range, choices, and
+   *  nullability — replacing the bespoke combo/number/toggle wiring. Edits are
+   *  written back to the node's `inputValues`; the caption comes from the
+   *  property. The row (not the DG root) carries the `data-param` / test-id so
+   *  the field stays addressable by name. */
+  private createPropertyInput(param: DG.Property, node: FlowNode, inputTooltip: string): HTMLElement {
+    const input = ui.input.forProperty(param, null, {
+      value: node.inputValues[param.name],
+      tooltipText: inputTooltip,
+      onValueChanged: (v) => {node.inputValues[param.name] = v;},
+    });
+    return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
+  }
+
+  /** A native Datagrok single-line string input (used where there's no
+   *  `DG.Property` to drive `forProperty` — e.g. a `string_list` slot edited as
+   *  a comma-separated string), so its styling matches the primitive inputs. */
+  private createStringInput(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+    const input = ui.input.string(label, {
+      value,
+      tooltipText: inputTooltip,
+      onValueChanged: (v) => onChange(String(v ?? '')),
+    });
+    return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
+  }
+
   /** A column / column-list input laid out side by side with its table picker:
    *  the column-name field (≈70%) and, when the func has 2+ dataframe inputs, a
    *  table chooser (≈30%) writing the node's `columnTables` association. With a
@@ -555,15 +564,25 @@ export class PropertyPanel {
     /** Per-row table chooser for multi-table funcs (JoinTables keys1→table1, …). */
     tableSelect?: {options: string[]; get: () => string; set: (v: string) => void};
   }): HTMLElement {
-    const textarea = this.buildTextareaEl(opts.getValue(), opts.setValue, opts.tip);
+    // A column / column-list value is a plain (comma-separated) name string, so
+    // it uses a native Datagrok string input with its own caption — not
+    // `forProperty`, which would build a column picker bound to a live table we
+    // don't have here. The table chooser (multi-table funcs) and the picker icon
+    // are appended *inside* the input via `addOptions` (trailing controls).
+    const nameInput = ui.input.string(opts.label, {
+      value: opts.getValue(),
+      tooltipText: opts.tip,
+      onValueChanged: (v) => opts.setValue(String(v ?? '')),
+    });
+    nameInput.input.style.minWidth = '70px';
 
     let getTableParam = (): string => opts.tableParam ?? '';
-    const cells: HTMLElement[] = [ui.div([textarea], 'funcflow-col-input-cell')];
     if (opts.tableSelect) {
       const ts = opts.tableSelect;
       const select = this.buildSelectEl(ts.get(), ts.options, ts.set, 'Which table input this column refers to');
+      select.classList.add('funcflow-col-table-select');
       getTableParam = (): string => select.value || ts.options[0];
-      cells.push(ui.div([select], 'funcflow-col-table-cell'));
+      nameInput.addOptions(select);
     }
 
     // Column chooser — opens a dialog seeded by the upstream table (running the
@@ -575,20 +594,17 @@ export class PropertyPanel {
           tableParam: getTableParam(),
           current: opts.getValue(),
           apply: (value: string) => {
-            textarea.value = value;
+            nameInput.value = value; // fires onValueChanged → opts.setValue
             opts.setValue(value);
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
           },
         });
       }, opts.isList ? 'Choose columns from the connected table' : 'Choose a column from the connected table');
       setTid(pickBtn, 'prop-pick-columns', opts.label);
       pickBtn.classList.add('funcflow-col-pick');
-      cells.push(ui.div([pickBtn], 'funcflow-col-pick-cell'));
+      nameInput.addOptions(pickBtn);
     }
 
-    return this.propRow(ui.div([this.labelWithTooltip(opts.label, opts.tip), ui.div(cells, 'funcflow-col-grid')],
-      'funcflow-prop-row'), opts.label);
+    return this.propRow(ui.div([nameInput.root], 'funcflow-prop-row funcflow-dg-row'), opts.label);
   }
 
   private createColumnRow(

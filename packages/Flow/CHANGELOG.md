@@ -2,6 +2,19 @@
 
 ## v.next
 
+### Native Datagrok inputs in the context panel
+
+* Primitive function parameters (`string`, `int`, `double`/`num`, `qnum`, `datetime`, `bool`) are now
+  edited with **native Datagrok inputs** built straight from the parameter via
+  `ui.input.forProperty` — instead of the bespoke textarea / number / checkbox / select controls. The
+  input honours the property's declared type, numeric range, **choices** (a choice-bearing string now
+  renders as a combo automatically — no special-casing), and nullability. **Column** and
+  **column-list** fields use a plain `ui.input.string` with its **own native caption** (a column
+  name is just a string; `forProperty` would build a table-bound column picker we can't back here);
+  the column-picker icon — and, for multi-table funcs, the table chooser — are appended **inside**
+  the input as trailing controls via `InputBase.addOptions()`. `string_list` is likewise a native
+  `ui.input.string` (comma-separated), so every field in the panel shares one consistent look.
+
 ### Parameter descriptions & package in the node/panel
 
 * Input and output slots now show their **parameter description** on hover — on the node's sockets

@@ -50,7 +50,8 @@ category('Flow: string-list inputs', () => {
     try {
       const node = await addNode(e.flow, f.typeName);
       panel.showNode(node);
-      const field = panel.root.querySelector(`[data-param="${f.param}"] textarea`);
+      // Native DG string input (an <input>), matching the primitive editors.
+      const field = panel.root.querySelector(`[data-param="${f.param}"] input`);
       expect(!!field, true, 'comma-separated text field present');
     } finally {
       panel.root.remove();
