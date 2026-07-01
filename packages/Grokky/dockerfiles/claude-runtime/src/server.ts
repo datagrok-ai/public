@@ -605,11 +605,12 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
   const active = activeQueries.get(data.sessionId);
   if (!active)
     return;
-  active.abortController.abort();
+  // Close before abort so in-flight SDK control responses don't write to an aborted transport.
   try {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
+  active.abortController.abort();
   const rec = sessions.get(data.sessionId);
   if (rec)
     rec.forkNext = true;
@@ -769,6 +770,10 @@ else if (hasSubscription)
   console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
 else
   console.warn('Claude auth: no provider configured (no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
+
+// Survive stray SDK rejections (e.g. abort races) instead of letting Node kill the container.
+process.on('unhandledRejection', (reason) => console.error('unhandledRejection (survived):', reason));
+process.on('uncaughtException', (err) => console.error('uncaughtException (survived):', err));
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
