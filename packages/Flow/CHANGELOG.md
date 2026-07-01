@@ -2,6 +2,15 @@
 
 ## v.next
 
+### `list` / `list<string>` parameters are editable
+
+* Function inputs of type **`list`** — which is how **`list<string>`** parameters surface at runtime
+  (`propertyType: 'list'`, `propertySubType: 'string'`) — were stuck as "connected only". They are
+  now seeded editable and rendered through the same **`ui.input.forProperty`** pathway as the
+  primitives: DG builds its native **List** input, whose value is a real JS array. The compiler
+  emits the array as a JSON literal (empty → omitted so the function default applies), the creation
+  script emit/import round-trips it, and only `string_list` keeps its comma-separated text field.
+
 ### Files drop where you drop them
 
 * Dragging a **file** from the file browser (or any `DG.FileInfo` / `DG.Func` from the Datagrok

@@ -414,6 +414,16 @@ class CreationScriptBuilder {
         continue;
       }
 
+      // `list` args (incl. list<string> params): an array of primitives inlines
+      // as the editable array value (the panel edits it with DG's List input),
+      // so emit → import → emit round-trips. Arrays of calls/objects fall
+      // through to the generic resolution (e.g. column resolvers).
+      if (slotType === 'list' && param.name in node.inputValues && Array.isArray(value) &&
+          (value as unknown[]).every((v) => v === null || ['string', 'number', 'boolean'].includes(typeof v))) {
+        node.inputValues[param.name] = (value as unknown[]).filter((v) => v !== null);
+        continue;
+      }
+
       const res = this.resolveValue(
         value, {advanceConsumedVars: false, contextTable: tableCtxFor(param.name)},
         `input "${param.name}" of ${func.name}`);

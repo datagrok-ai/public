@@ -177,6 +177,12 @@ export function compileGraph(flow: FlowEditor, liveBoundary?: Set<string>): Comp
         if (lit !== '[]') inputMap.set(key, lit);
         continue;
       }
+      if (slotType === 'list') {
+        // Native DG List input (incl. list<string> params) → a JS array; emit
+        // as a JSON array literal. Empty → omit so the function default applies.
+        if (Array.isArray(val) && val.length > 0) inputMap.set(key, JSON.stringify(val));
+        continue;
+      }
       if (val !== undefined)
         inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
     }

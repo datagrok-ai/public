@@ -207,18 +207,20 @@ export class PropertyPanel {
             continue;
           }
           const pt = String(inp.propertyType);
-          if (pt === 'column' || pt === 'column_list') {
+          if (pt === 'column' || pt === 'column_list')
             content.appendChild(this.createColumnRow(node, inp.name, pt === 'column_list', dataframeParams, tip));
-          } else if (pt === 'string_list') {
+          else if (pt === 'string_list') {
             // Comma-separated string (native DG input, to match the primitives);
             // the compiler trims and turns it into an array. (`list<string>`
             // arrives here as `string_list` — DG normalizes it.)
             content.appendChild(this.createStringInput(inp.name, String(node.inputValues[inp.name] ?? ''),
               (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`));
-          } else if (PRIMITIVE_INPUT_TYPES.has(pt)) {
+          } else if (pt === 'list' || PRIMITIVE_INPUT_TYPES.has(pt)) {
             // A native Datagrok input built straight from the property — it
             // honours the declared type, numeric range, choices, and nullability
-            // (choice-bearing strings render as a combo automatically).
+            // (choice-bearing strings render as a combo automatically). A `list`
+            // property (incl. list<string>: propertyType 'list', subtype
+            // 'string') gets DG's List input; its value is a JS array.
             content.appendChild(this.createPropertyInput(inp, node, tip));
           }
         }

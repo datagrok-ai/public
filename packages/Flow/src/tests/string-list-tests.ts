@@ -87,3 +87,78 @@ category('Flow: string-list inputs', () => {
     }
   });
 });
+
+/** A registered func with a plain `list` input (this is also how `list<string>`
+ *  params surface at runtime — propertyType 'list', propertySubType 'string'). */
+function plainListFunc(): {typeName: string; param: string} | null {
+  const pick = getRegisteredFuncs().find((f) =>
+    f.func.inputs.some((i) => String(i.propertyType) === 'list'));
+  if (!pick) return null;
+  const param = pick.func.inputs.find((i) => String(i.propertyType) === 'list')!.name;
+  return {typeName: pick.nodeTypeName, param};
+}
+
+category('Flow: plain-list inputs', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('a list input is seeded editable as an array', async () => {
+    const f = plainListFunc();
+    if (!f) return; // no list-input func on this stand — skip
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, f.typeName);
+      expect(f.param in node.inputValues, true, `${f.param} is editable`);
+      expect(Array.isArray(node.inputValues[f.param]), true, 'seeded as an array');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the property panel renders a native DG input for it', async () => {
+    const f = plainListFunc();
+    if (!f) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, f.typeName);
+      panel.showNode(node);
+      const dgRoot = panel.root.querySelector(`[data-param="${f.param}"] .ui-input-root`);
+      expect(!!dgRoot, true, 'DG List input rendered (forProperty pathway)');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('an array value compiles to a JSON array literal', async () => {
+    const f = plainListFunc();
+    if (!f) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, f.typeName);
+      node.inputValues[f.param] = ['alpha', 'beta'];
+      const clean = emitScript(e.flow, SETTINGS);
+      expect(clean.includes('["alpha","beta"]'), true, 'array literal emitted');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an empty list value is omitted (function default kept)', async () => {
+    const f = plainListFunc();
+    if (!f) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, f.typeName);
+      node.inputValues[f.param] = [];
+      const clean = emitScript(e.flow, SETTINGS);
+      expect(new RegExp(`${f.param}\\s*:`).test(clean), false, 'empty list arg not emitted');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});

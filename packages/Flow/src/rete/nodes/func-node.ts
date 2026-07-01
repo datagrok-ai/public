@@ -99,6 +99,12 @@ export class FuncNode extends FlowNode {
         // string; the compiler turns the value into a JS array of trimmed,
         // non-empty strings (so users needn't wire a String List Input node).
         this.inputValues[inp.name] = '';
+      } else if (String(inp.propertyType) === 'list') {
+        // Plain `list` (incl. `list<string>` params, which the platform reports
+        // as propertyType 'list' + propertySubType 'string') is edited with a
+        // native DG List input (`ui.input.forProperty`) whose value is a JS
+        // array; the compiler emits it as an array literal (empty → omitted).
+        this.inputValues[inp.name] = [];
       }
     }
 
