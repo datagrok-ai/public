@@ -13,6 +13,7 @@ import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
+import {getParamDescription} from '../utils/dart-proxy-utils';
 import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
@@ -83,7 +84,7 @@ export function stringChoiceOptions(choices: string[], nullable: boolean, curren
 
 function buildFuncInputTooltip(param: DG.Property): string {
   const parts: string[] = [];
-  const desc = param.description;
+  const desc = getParamDescription(param) || param.description;
   if (desc) parts.push(desc);
   parts.push(`Type: ${param.propertyType}`);
   if (param.defaultValue !== undefined && param.defaultValue !== null && param.defaultValue !== '')
@@ -168,6 +169,10 @@ export class PropertyPanel {
       const content = ui.div([], 'funcflow-accordion-content');
       if (func.description)
         content.appendChild(ui.div([ui.label('Description'), ui.divText(func.description)], 'funcflow-prop-row'));
+      // Package disambiguates a vague function name (e.g. which "Descriptors").
+      const pkg = node.dgPackageName || '';
+      if (pkg)
+        content.appendChild(setTid(ui.div([ui.label('Package'), ui.divText(pkg)], 'funcflow-prop-row'), 'prop-func-package'));
       content.appendChild(ui.div([ui.label('Full Name'), ui.divText(node.dgFuncName ?? func.name)], 'funcflow-prop-row'));
       if (node.dgRole)
         content.appendChild(ui.div([ui.label('Role'), ui.divText(node.dgRole)], 'funcflow-prop-row'));

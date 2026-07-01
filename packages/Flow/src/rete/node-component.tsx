@@ -175,7 +175,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           <div className="ff-node-io">
             <div className="ff-node-inputs">
               {inputs.map(([key, input]) => input && (
-                <div key={key} className="ff-socket-row ff-socket-row-input" data-testid={tid('socket-input', key)}>
+                <div key={key} className="ff-socket-row ff-socket-row-input" data-testid={tid('socket-input', key)}
+                  title={node.inputDescriptions?.[key] || undefined}>
                   <RefSocket
                     name="input-socket"
                     emit={props.emit}
@@ -198,6 +199,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
                     (idx < ptCount ? ' ff-socket-row-passthrough' : '')
                   }
                   data-testid={tid('socket-output', key)}
+                  title={node.outputDescriptions?.[key] || undefined}
                 >
                   <span className="ff-socket-label">{output.label ?? key}</span>
                   <RefSocket

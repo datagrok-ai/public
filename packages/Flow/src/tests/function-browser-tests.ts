@@ -172,7 +172,7 @@ category('Flow: function browser', () => {
     expect(cat !== 'Cheminformatics', true, `${chemSource.func.name} is a source, not a chem operation (got ${cat})`);
   });
 
-  test('the toolbox renders a Cheminformatics section when chem funcs exist', async () => {
+  test('the toolbox floats Cheminformatics/Bioinformatics to the top, after Queries', async () => {
     if (!getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
       expect(true, true, 'no Chem funcs on this stand — skipped');
       return;
@@ -183,8 +183,20 @@ category('Flow: function browser', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
-      const header = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
-      expect(!!header, true, 'Cheminformatics section header present');
+      const chem = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
+      expect(!!chem, true, 'Cheminformatics section header present');
+      // It sits AFTER the Queries pane but BEFORE the Viewers pane and the
+      // built-in sections (Inputs) and the general categories (Data Sources).
+      const queries = browser.root.querySelector('[data-testid="ff-browser-queries"]');
+      const viewers = browser.root.querySelector('[data-testid="ff-browser-viewers"]');
+      const inputs = browser.root.querySelector('[data-testid="ff-browser-section-Inputs"]');
+      const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-Data Sources"]');
+      const before = (a: Element | null, b: Element | null): boolean =>
+        !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if (queries) expect(before(queries, chem), true, 'Cheminformatics comes after Queries');
+      if (viewers) expect(before(chem, viewers), true, 'Cheminformatics comes before Viewers');
+      if (inputs) expect(before(chem, inputs), true, 'Cheminformatics comes before the Inputs built-ins');
+      if (dataSources) expect(before(chem, dataSources), true, 'Cheminformatics comes before Data Sources');
     } finally {
       browser.root.remove();
     }

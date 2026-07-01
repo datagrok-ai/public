@@ -61,6 +61,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'core:Show size',
   'core:TabControl',
   'core:TabControl_AddPane',
+  'core:AddPropertiesColumn',
   // Admetica
   'Admetica:admeticaHT',
   'Admetica:admeticaMenu',

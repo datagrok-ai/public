@@ -78,6 +78,20 @@ export function isInputOptional(prop: DG.Property): boolean {
   }
 }
 
+/** The human description of a function parameter, read defensively from the
+ *  Dart-proxy `options` map (`description` set via `@grok.decorators.param`),
+ *  falling back to a `caption`. Empty string when none is declared. */
+export function getParamDescription(prop: DG.Property): string {
+  try {
+    const opts = (prop as unknown as {options?: unknown}).options;
+    const desc = safeGet(opts, 'description') ?? safeGet(opts, 'caption') ??
+      (prop as unknown as {description?: unknown}).description;
+    return desc ? String(desc).trim() : '';
+  } catch {
+    return '';
+  }
+}
+
 /** Returns the display name for a function node header.
  * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
 export function getFuncDisplayName(func: DG.Func): string {

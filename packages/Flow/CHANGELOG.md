@@ -2,6 +2,21 @@
 
 ## v.next
 
+### Parameter descriptions & package in the node/panel
+
+* Input and output slots now show their **parameter description** on hover — on the node's sockets
+  and on the context-panel input rows — read from the function's `@grok.decorators.param({options:
+  {description}})` (or a query/script `[description]`). The context panel's **Function** pane also
+  shows the **Package** the function comes from, disambiguating a vague name (e.g. which
+  "Descriptors"). `FuncNode` captures per-slot descriptions + the package name from the live
+  `DG.Func`.
+
+### Domain sections lead the toolbox
+
+* **Cheminformatics** and **Bioinformatics** sections now float to the **top of the function list,
+  right after the Queries pane** — the science a chemist/biologist reaches for first — ahead of the
+  Viewers/Widgets panes, the built-in building blocks, and the general task categories.
+
 ### Cleaner, domain-aware function toolbox
 
 * The **“what it does”** grouping gains two domain sections: **Cheminformatics** and

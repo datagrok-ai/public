@@ -229,33 +229,39 @@ export class FunctionBrowser {
     return setTid(container, 'browser');
   }
 
+  /** Domain sections floated to the very top of the function list (right after
+   *  the Queries pane) — the science a chemist/biologist reaches for first. */
+  private static readonly DOMAIN_CATEGORIES = ['Cheminformatics', 'Bioinformatics'];
+
   render(): void {
     this.treeContainer.innerHTML = '';
 
-    // KNIME-style Files browser (open by default), then Queries / Viewers /
-    // Widgets panes lead the toolbox, before the building-block built-ins and
-    // the function categories.
-    this.renderFilesSection();
-    this.renderQueriesSection();
-    this.renderViewersSection();
-    this.renderWidgetsSection();
-
-    // Add built-in nodes section
-    this.renderBuiltinNodes();
-
-    // Add DG function nodes — queries, widget-producers, and (already-excluded)
+    // DG function nodes — queries, widget-producers, and (already-excluded)
     // viewer functions don't appear here; they live in their dedicated panes.
     const funcs = this.filterBySearch(getRegisteredFuncs()
       .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
     const grouped = this.groupFunctions(funcs);
-
-    const sortedKeys = this.orderGroupKeys(Object.keys(grouped));
-    for (const category of sortedKeys) {
+    const renderCategory = (category: string): void => {
       const items = grouped[category];
-      if (items.length === 0) continue;
-      const section = this.createCollapsibleSection(category, items);
-      this.treeContainer.appendChild(section);
-    }
+      if (!items || items.length === 0) return;
+      this.treeContainer.appendChild(this.createCollapsibleSection(category, items));
+    };
+
+    // KNIME-style Files browser (open by default), then the Queries pane, then —
+    // right on top — the Cheminformatics / Bioinformatics domain sections (the
+    // science a chemist/biologist reaches for first). Viewers / Widgets panes,
+    // the building-block built-ins, and the remaining task categories follow.
+    this.renderFilesSection();
+    this.renderQueriesSection();
+    for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
+
+    this.renderViewersSection();
+    this.renderWidgetsSection();
+    this.renderBuiltinNodes();
+
+    const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
+      .filter((k) => !FunctionBrowser.DOMAIN_CATEGORIES.includes(k));
+    for (const category of sortedKeys) renderCategory(category);
   }
 
   /** In "what it does" mode, order groups by the curated task sequence

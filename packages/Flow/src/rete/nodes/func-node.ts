@@ -15,7 +15,7 @@ import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
 import {dgTypeToSlotType, getNodeColors, categorizeBySignature, domainCategory, isStringListType} from '../../types/type-map';
-import {getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional} from '../../utils/dart-proxy-utils';
+import {getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional, getParamDescription} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -59,6 +59,7 @@ export class FuncNode extends FlowNode {
     this.dgFunc = func;
     this.dgFuncName = qualifiedName;
     this.dgRole = role;
+    this.dgPackageName = getPackageName(func);
     (this as unknown as {color: string; bgcolor: string}).color = colors.color;
     (this as unknown as {color: string; bgcolor: string}).bgcolor = colors.bgcolor;
 
@@ -75,6 +76,8 @@ export class FuncNode extends FlowNode {
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
       this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), inp.name));
+      const inpDesc = getParamDescription(inp);
+      if (inpDesc) this.inputDescriptions[inp.name] = inpDesc;
 
       if (inp.propertyType in PRIMITIVE_DEFAULTS) {
         const def = (inp as unknown as {defaultValue?: unknown}).defaultValue ?? PRIMITIVE_DEFAULTS[inp.propertyType];
@@ -111,6 +114,8 @@ export class FuncNode extends FlowNode {
     for (const out of funcOutputs) {
       const slotType = dgTypeToSlotType(out.propertyType);
       this.addOutput(out.name, new ClassicPreset.Output(getSocket(slotType), out.name));
+      const outDesc = getParamDescription(out);
+      if (outDesc) this.outputDescriptions[out.name] = outDesc;
     }
 
     // Structural inputs (a table / a column) that aren't optional must be

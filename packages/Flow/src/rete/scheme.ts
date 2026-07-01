@@ -68,6 +68,16 @@ export class FlowNode extends ClassicPreset.Node<
    *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
   requiredInputs: string[] = [];
 
+  /** Per-slot descriptions (from the DG.Func param `description`/`caption`),
+   *  keyed by input/output slot key — shown as hover tooltips on the node's
+   *  sockets and in the context panel. Empty entries are omitted. */
+  inputDescriptions: Record<string, string> = {};
+  outputDescriptions: Record<string, string> = {};
+
+  /** Source package of the underlying function (`''` for core / built-ins).
+   *  Shown in the context panel so a vague function name is disambiguated. */
+  dgPackageName = '';
+
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
   pos: {x: number; y: number} = {x: 0, y: 0};

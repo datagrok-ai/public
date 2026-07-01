@@ -3,8 +3,10 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType, getRegisteredTypeNames,
+  getRegisteredFuncs,
 } from '../rete/node-factory';
 import {FuncNode} from '../rete/nodes/func-node';
+import {getParamDescription} from '../utils/dart-proxy-utils';
 
 category('Flow: node-factory', () => {
   before(async () => {
@@ -56,6 +58,30 @@ category('Flow: node-factory', () => {
     expect(node.passthroughCount, func.inputs.length);
     for (const inp of func.inputs)
       expect(`${inp.name}__pt` in node.outputs, true, `pass-through for ${inp.name}`);
+  });
+
+  test('FuncNode records the source package (shown in the context panel)', async () => {
+    const info = getRegisteredFuncs().find((f) => f.packageName === 'Chem') ??
+      getRegisteredFuncs().find((f) => !!f.packageName);
+    if (!info) return; // no package funcs on this stand — skip
+    const node = new FuncNode(info.func);
+    expect(node.dgPackageName, info.packageName, 'package name captured on the node');
+  });
+
+  test('FuncNode captures param descriptions for socket/panel tooltips', async () => {
+    // Find any registered func whose inputs OR outputs declare a description
+    // (via @grok.decorators.param) — validates the Dart-proxy read end to end.
+    let found: {func: DG.Func; param: string} | null = null;
+    for (const info of getRegisteredFuncs()) {
+      for (const p of [...info.func.inputs, ...info.func.outputs])
+        if (getParamDescription(p)) {found = {func: info.func, param: p.name}; break;}
+      if (found) break;
+    }
+    if (!found) return; // no described params on this stand — skip
+    const node = new FuncNode(found.func);
+    const all = {...node.inputDescriptions, ...node.outputDescriptions};
+    expect(found.param in all, true, `description captured for ${found.func.name}.${found.param}`);
+    expect(all[found.param].length > 0, true, 'description is non-empty');
   });
 
   test('per-function color override pins SetVar to red', async () => {
