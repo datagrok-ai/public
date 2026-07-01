@@ -791,8 +791,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
-  const mkNextBtn = (target: DG.AccordionPane): HTMLElement => {
-    const btn = ui.button('Next →', () => openAccPaneExclusive(target));
+  const mkNextBtn = (getTarget: () => DG.AccordionPane): HTMLElement => {
+    const btn = ui.button('Next →', () => openAccPaneExclusive(getTarget()));
     btn.classList.add('chem-enum-next-btn');
     return btn;
   };
@@ -800,9 +800,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const accordion = ui.accordion();
   accordion.root.classList.add('chem-enum-accordion');
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(accBbsPane)]), true);
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(() => accBbsPane)]), true);
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(accCombinePane)]), false);
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accCombinePane)]), false);
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
@@ -812,7 +812,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ui.form([numRoundsInput]),
     editConfigBtn,
     yamlRow,
-    mkNextBtn(accExtrasPane),
+    mkNextBtn(() => accExtrasPane),
   ], {style: {gap: '8px'}}), false);
   const accExtrasPane = accordion.addPane('Extras (optional)',
     () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
@@ -1133,8 +1133,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
     classes: 'chem-enumerator'});
 
-  view.root.classList.add('chem-enumerator-view');
-  view.setRibbonPanels([[appInfoIcon], [runGroup], [chipReactions], [ribbonArrow], [chipBbs], [chipCombine], [cfgEstEl]]);
+  view.setRibbonPanels([[appInfoIcon, runGroup, chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl]]);
   view.append(root);
 
   // Mount the initial grids and run validation once everything is wired up.
