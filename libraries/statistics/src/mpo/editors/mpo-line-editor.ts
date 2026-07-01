@@ -8,10 +8,13 @@ import {DesirabilityLine, NumericalDesirability} from '../mpo';
 import {Subject} from 'rxjs';
 
 let _konva: typeof Konva | undefined;
+let _konvaPromise: Promise<typeof Konva> | undefined;
 
 async function getKonva(): Promise<typeof Konva> {
-  if (!_konva)
-    _konva = (await import('konva')).default;
+  if (_konva)
+    return _konva;
+  _konvaPromise ??= import('konva').then((m) => m.default);
+  _konva = await _konvaPromise;
   return _konva;
 }
 

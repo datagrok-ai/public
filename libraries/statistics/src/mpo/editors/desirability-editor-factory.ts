@@ -14,6 +14,7 @@ export interface DesirabilityEditor<T = any> {
   resize?(width: number, height: number): void;
   setRange?(min: number, max: number): void;
   setColumn?(col: DG.Column | null): void;
+  setDesignMode?(on: boolean): void;
 }
 
 export class DesirabilityEditorFactory {

@@ -19,6 +19,16 @@ import {MPO_SCORE_CHANGED_EVENT} from './utils';
 const MAX_CATEGORICAL_CATEGORIES = 20;
 const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
 
+interface RowCtx {
+  row: HTMLElement;
+  editor: DesirabilityEditor;
+  editorHost: HTMLElement;
+  prop: PropertyDesirability;
+  sub: Subscription;
+  modeGear?: HTMLElement;
+  controls?: HTMLElement;
+}
+
 function isMpoEligibleColumn(c: DG.Column): boolean {
   return c.isCategorical ? c.categories.length <= MAX_CATEGORICAL_CATEGORIES : isMpoNumericColumn(c);
 }
@@ -33,9 +43,8 @@ export class MpoProfileEditor {
   design = false;
   preview = false;
 
-  private rows: Record<string, HTMLElement> = {};
   private rowIds: Record<string, string> = {};
-  private rowSubs = new Map<string, Subscription>();
+  private rowCtx = new Map<string, RowCtx>();
   private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
@@ -60,6 +69,13 @@ export class MpoProfileEditor {
     return crypto.randomUUID();
   }
 
+  private uniquePropertyName(): string {
+    let n = 1;
+    while (this.profile!.properties[`NewProperty${n}`])
+      ++n;
+    return `NewProperty${n}`;
+  }
+
   setProfile(profile?: DesirabilityProfile): void {
     if (profile) {
       for (const key of Object.keys(profile.properties)) {
@@ -70,14 +86,11 @@ export class MpoProfileEditor {
       }
     }
 
-    for (const sub of this.rowSubs.values())
-      sub.unsubscribe();
-    this.rowSubs.clear();
+    this.resetRows();
 
     this.profile = profile;
     this.aggregationInput.value = profile?.aggregation ?? DEFAULT_AGGREGATION;
     this.columnMapping = {};
-    this.rows = {};
     this.rowIds = {};
     this.propertyOrder = profile ? Object.keys(profile.properties) : [];
 
@@ -86,6 +99,12 @@ export class MpoProfileEditor {
 
     this.render();
     this.runAllComputeFunctions();
+  }
+
+  private resetRows(): void {
+    for (const ctx of this.rowCtx.values())
+      ctx.sub.unsubscribe();
+    this.rowCtx.clear();
   }
 
   private runAllComputeFunctions(): void {
@@ -105,8 +124,15 @@ export class MpoProfileEditor {
     if (this.design === on)
       return;
     this.design = on;
-    this.rows = {};
-    this.render();
+
+    if (!this.profile || this.propertyOrder.length === 0)
+      return this.render();
+
+    for (const name of this.propertyOrder) {
+      const rowId = this.rowIds[name];
+      this.rowCtx.get(rowId)?.editor.setDesignMode?.(on);
+      this.updateDesignControls(rowId);
+    }
   }
 
   private render(): void {
@@ -117,9 +143,7 @@ export class MpoProfileEditor {
 
     const rows = this.propertyOrder.map((name) => {
       const rowId = this.rowIds[name];
-      if (!this.rows[rowId])
-        this.rows[rowId] = this.buildRow(name, rowId, this.profile!.properties[name]);
-      return this.rows[rowId];
+      return this.rowCtx.get(rowId)?.row ?? this.buildRow(name, rowId, this.profile!.properties[name]);
     });
 
     if (!rows.length) {
@@ -152,14 +176,14 @@ export class MpoProfileEditor {
     if (!this.profile)
       return;
 
-    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    const newName = this.uniquePropertyName();
     const newRowId = this.newRowId();
 
     this.profile.properties[newName] = createDefaultNumerical();
     this.rowIds[newName] = newRowId;
     this.propertyOrder.push(newName);
 
-    this.rows = {};
+    this.resetRows();
     this.render();
     this.emitChange();
   }
@@ -191,29 +215,52 @@ export class MpoProfileEditor {
 
     const editor = DesirabilityEditorFactory.create(prop, 300, 80, this.design);
     editor.root.classList.add('statistics-mpo-editor-fill');
-    this.rowSubs.get(rowId)?.unsubscribe();
-    this.rowSubs.set(rowId, editor.onChanged.subscribe(() => this.emitChange()));
+    const sub = editor.onChanged.subscribe(() => this.emitChange());
 
     const propertyCell = this.buildPropertyCell(name);
     const weightCell = this.buildWeightCell(rowId, prop);
     const columnCell = this.buildColumnSelector(rowId, name, editor);
 
-    const modeGear = this.design ?
-      this.buildModeGear(rowId, prop, editor) :
-      null;
-
-    const controls = this.design ? this.buildRowControls(rowId, prop) : null;
+    const editorHost = ui.divH([editor.root]);
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
       weightCell,
-      ui.divH([editor.root, modeGear].filter(Boolean)),
+      editorHost,
     );
 
-    if (controls)
-      row.append(controls);
+    this.rowCtx.set(rowId, {row, editor, editorHost, prop, sub});
+    this.updateDesignControls(rowId);
 
     return row;
+  }
+
+  private updateDesignControls(rowId: string): void {
+    const ctx = this.rowCtx.get(rowId);
+    if (!ctx)
+      return;
+
+    if (this.design) {
+      if (!ctx.modeGear) {
+        ctx.modeGear = this.buildModeGear(rowId, ctx.prop, ctx.editor);
+        ctx.editorHost.append(ctx.modeGear);
+      }
+      if (!ctx.controls) {
+        ctx.controls = this.buildRowControls(rowId, ctx.prop);
+        ctx.row.append(ctx.controls);
+      }
+      return;
+    }
+
+    ctx.modeGear?.remove();
+    ctx.modeGear = undefined;
+    ctx.controls?.remove();
+    ctx.controls = undefined;
+  }
+
+  private removeRow(rowId: string): void {
+    this.rowCtx.get(rowId)?.sub.unsubscribe();
+    this.rowCtx.delete(rowId);
   }
 
   private buildPropertyCell(name: string): HTMLElement | null {
@@ -360,7 +407,7 @@ export class MpoProfileEditor {
 
     // Block d4's mouse-wheel column cycling so page scroll over the input doesn't
     // mutate the value. No preventDefault — the browser still scrolls.
-    input.root.addEventListener('wheel', (e: Event) => e.stopImmediatePropagation(), {capture: true});
+    input.root.addEventListener('wheel', (e: Event) => e.stopImmediatePropagation(), {capture: true, passive: true});
 
     return input.root;
   }
@@ -419,9 +466,9 @@ export class MpoProfileEditor {
   }
 
   private rebuildRow(name: string, rowId: string): void {
-    const oldRow = this.rows[rowId];
+    const oldRow = this.rowCtx.get(rowId)?.row;
+    this.removeRow(rowId);
     const newRow = this.buildRow(name, rowId, this.profile!.properties[name]);
-    this.rows[rowId] = newRow;
 
     if (oldRow?.parentNode)
       oldRow.replaceWith(newRow);
@@ -511,15 +558,12 @@ export class MpoProfileEditor {
     delete this.profile.properties[name];
     delete this.columnMapping[name];
     delete this.rowIds[name];
-    this.rowSubs.get(rowId)?.unsubscribe();
-    this.rowSubs.delete(rowId);
+    const rowEl = this.rowCtx.get(rowId)?.row;
+    this.removeRow(rowId);
 
     const idx = this.propertyOrder.indexOf(name);
     if (idx >= 0)
       this.propertyOrder.splice(idx, 1);
-
-    const rowEl = this.rows[rowId];
-    delete this.rows[rowId];
 
     if (this.propertyOrder.length === 0)
       this.render();
@@ -537,7 +581,7 @@ export class MpoProfileEditor {
     if (!afterName)
       return;
 
-    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    const newName = this.uniquePropertyName();
     const newRowId = this.newRowId();
 
     this.profile.properties[newName] = createDefaultNumerical();
@@ -548,9 +592,7 @@ export class MpoProfileEditor {
     this.propertyOrder.splice(idx + 1, 0, newName);
 
     const newRow = this.buildRow(newName, newRowId, this.profile.properties[newName]);
-    this.rows[newRowId] = newRow;
-
-    this.rows[rowId]?.after(newRow);
+    this.rowCtx.get(rowId)?.row.after(newRow);
     this.emitChange();
   }
 
