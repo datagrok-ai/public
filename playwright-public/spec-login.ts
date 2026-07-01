@@ -66,19 +66,20 @@ export function fileBrowseUrl(relPath: string): string {
   return `${baseUrl}/file/${relPath}?browse=files`;
 }
 
-// Authenticate, then navigate DIRECTLY to the dataset's file-browse URL so the
-// platform and the dataset open in a SINGLE navigation. Waits for the preloader
-// to clear and the grid viewer to attach. Ported 1:1 from TestTrack spec-login.
+// Authenticate, then open the dataset into a table view. The TestTrack original
+// deep-linked to the dot-namespaced file-browse URL (/file/System.AppData/...?browse=files),
+// but that route 404s on the minimal ui_tests CI stack (the xamgle SPA resolves it as a
+// static asset). Instead load the platform normally and open the file via the file API —
+// the CI-safe pattern used across the suite (cf. Bio openBioDataset). The dot-namespaced
+// connector prefix (System.AppData) is converted to the API colon form (System:AppData).
 export async function loginAndOpenFile(page: Page, relPath: string): Promise<void> {
-  const token = process.env.DATAGROK_AUTH_TOKEN;
-  if (!token || token.length === 0)
-    throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
-  await page.goto(baseUrl + '/oauth/');
-  const u = new URL(baseUrl);
-  await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
-  await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
-  await page.goto(fileBrowseUrl(relPath));
-  await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
+  await loginToDatagrok(page);
+  const apiPath = relPath.replace(/^System\.AppData\//, 'System:AppData/');
+  await page.evaluate(async (p) => {
+    const g = (window as any).grok;
+    const df = await g.dapi.files.readCsv(p);
+    g.shell.addTableView(df);
+  }, apiPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60_000});
 }
 
