@@ -264,6 +264,11 @@ test('Helm / lifecycle chain for the Macromolecule HELM column', async ({page}) 
   });
 
   await softStep('Scenario 2 Step 5-6: footer OK → dialog closes; grid cell value updates', async () => {
+    // On the slower CI stack the platform preloader re-appears while the 540-row HELM
+    // editor / monomer-lib settles and intercepts the OK click ("#grok-preloader intercepts
+    // pointer events"); wait for it to clear before clicking (best-effort).
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null,
+      null, {timeout: 30_000}).catch(() => {});
     await page.locator('.d4-dialog button[name="button-OK"]').first().click();
     await page.locator('.d4-dialog.d4-dialog-full-screen').waitFor({state: 'hidden', timeout: 20_000});
     // Poll the committed cell value instead of a fixed settle: the async setValue
