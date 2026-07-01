@@ -8,10 +8,12 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES,
 } from '../rete/node-factory';
+import {EXCLUDED_FUNC_NQNAMES} from '../rete/excluded-funcs';
 import {
   categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery,
-  queryConnectionName, FunctionBrowser,
+  queryConnectionName, FunctionBrowser, funcOutputsWidget,
 } from '../panel/function-browser';
+import {getTags} from '../utils/dart-proxy-utils';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
 
@@ -46,6 +48,58 @@ category('Flow: function browser', () => {
     expect(viewOutputs.length, 0, `view-output funcs leaked: ${viewOutputs.map((f) => f.func.name).slice(0, 5).join(',')}`);
   });
 
+  test('denylisted nqNames never survive into the catalog', async () => {
+    const survivingNq = new Set(getRegisteredFuncs().map((f) => {
+      try {return f.func.nqName;} catch {return f.func.name;}
+    }));
+    // Every entry that exists on this stand must be filtered out.
+    const leaked: string[] = [];
+    for (const nq of EXCLUDED_FUNC_NQNAMES)
+      if (survivingNq.has(nq)) leaked.push(nq);
+    expect(leaked.length, 0, `denylisted funcs leaked: ${leaked.slice(0, 8).join(', ')}`);
+  });
+
+  test('machinery tags and right-click actions are excluded (but widgets are kept)', async () => {
+    const funcs = getRegisteredFuncs();
+    // No surviving func carries a UI-machinery tag — checking tags (not just the
+    // role field) is the biggest declutter lever. NOTE: panel/widget/widgets/
+    // tooltip are deliberately NOT banned — widget-producing functions are usable
+    // in Flow (Widgets pane + preview).
+    const banned = new Set(['internal', 'moleculesketcher', 'folderviewer',
+      'cellrenderer', 'viewers', 'filehandler', 'semtypedetector', 'apptreebrowser', '@editors']);
+    const withBannedTag = funcs.filter((f) => {
+      const tokens = getTags(f.func).map((t) => t.trim().toLowerCase());
+      return tokens.some((t) => banned.has(t));
+    });
+    expect(withBannedTag.length, 0,
+      `machinery leaked: ${withBannedTag.map((f) => f.func.name).slice(0, 6).join(', ')}`);
+
+    // No semantic_value (right-click) inputs, no filter-DSL-call outputs.
+    const semValue = funcs.filter((f) => {
+      try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
+    });
+    expect(semValue.length, 0, 'semantic_value right-click actions leaked');
+    const filterCalls = funcs.filter((f) => {
+      try {
+        return f.func.outputs.some((p) =>
+          ['tablerowfiltercall', 'colfiltercall'].includes(String(p.propertyType)));
+      } catch {return false;}
+    });
+    expect(filterCalls.length, 0, 'filter-DSL builder funcs leaked');
+  });
+
+  test('widget-producing functions are kept (Widgets pane populated)', async () => {
+    // Widgets are supported (preview) — a function that outputs a widget must not
+    // be excluded just for being a widget/panel. There should be widget nodes.
+    const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
+    expect(widgets.length > 0, true, 'at least one widget-producing function survives');
+    // And a right-click widget (semantic_value input) is still excluded.
+    const ctxWidgets = widgets.filter((f) => {
+      try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
+    });
+    expect(ctxWidgets.length, 0, 'context (semantic_value) widgets are still excluded');
+  });
+
   test('categorizeFunc places funcs by what they do', async () => {
     // (functionName -> expected category). Guarded: only assert when the func
     // exists on this stand, so the test is portable across deployments.
@@ -72,8 +126,67 @@ category('Flow: function browser', () => {
     expect(FUNC_CATEGORIES[0], 'Data Sources');
     // Every classified func lands in a known category.
     for (const info of getRegisteredFuncs().slice(0, 200)) {
-      const cat = categorizeFunc(info.func, info.role);
+      const cat = categorizeFunc(info.func, info.role, info.packageName);
       expect((FUNC_CATEGORIES as readonly string[]).includes(cat), true, `unknown category ${cat}`);
+    }
+  });
+
+  test('chem/bio operations group into their domain sections', async () => {
+    const hasDataInput = (f: {func: DG.Func}): boolean => {
+      try {return f.func.inputs.some((p) => ['dataframe', 'column', 'column_list'].includes(String(p.propertyType)));}
+      catch {return false;}
+    };
+    // A Chem/Bio function that OPERATES on data (dataframe/column input) lands in
+    // Cheminformatics/Bioinformatics — the domain wins over the task category.
+    const chem = getRegisteredFuncs().find((f) => f.packageName === 'Chem' && hasDataInput(f));
+    if (chem) expect(categorizeFunc(chem.func, chem.role, 'Chem'), 'Cheminformatics');
+    const bio = getRegisteredFuncs().find((f) => f.packageName === 'Bio' && hasDataInput(f));
+    if (bio) expect(categorizeFunc(bio.func, bio.role, 'Bio'), 'Bioinformatics');
+    // A core/general func is unaffected by the domain routing.
+    const join = DG.Func.find({name: 'JoinTables'})[0];
+    if (join) expect(categorizeFunc(join, null, ''), 'Combine Tables');
+
+    // The two domain sections are in the ordered category list, after Visualize.
+    expect((FUNC_CATEGORIES as readonly string[]).includes('Cheminformatics'), true);
+    expect((FUNC_CATEGORIES as readonly string[]).includes('Bioinformatics'), true);
+    expect(FUNC_CATEGORIES.indexOf('Cheminformatics') > FUNC_CATEGORIES.indexOf('Visualize'), true);
+  });
+
+  test('chem/bio *sources* (no data input) stay out of the domain sections', async () => {
+    // A pure source/query/generator (produces a table from scalars, no dataframe/
+    // column input) is NOT an operation — it falls back to its task category, so
+    // the domain sections hold only functions that do something to your data.
+    const chemSource = getRegisteredFuncs().find((f) => {
+      if (f.packageName !== 'Chem' && f.packageName !== 'Chembl' && f.packageName !== 'ChemblApi') return false;
+      try {
+        const ins = f.func.inputs.map((p) => String(p.propertyType));
+        const outs = f.func.outputs.map((p) => String(p.propertyType));
+        return outs.includes('dataframe') && !ins.some((t) => ['dataframe', 'column', 'column_list'].includes(t));
+      } catch {return false;}
+    });
+    if (!chemSource) {
+      expect(true, true, 'no chem source on this stand — skipped');
+      return;
+    }
+    const cat = categorizeFunc(chemSource.func, chemSource.role, chemSource.packageName);
+    expect(cat !== 'Cheminformatics', true, `${chemSource.func.name} is a source, not a chem operation (got ${cat})`);
+  });
+
+  test('the toolbox renders a Cheminformatics section when chem funcs exist', async () => {
+    if (!getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
+      expect(true, true, 'no Chem funcs on this stand — skipped');
+      return;
+    }
+    const browser = new FunctionBrowser({
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+    });
+    document.body.appendChild(browser.root);
+    try {
+      browser.render();
+      const header = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
+      expect(!!header, true, 'Cheminformatics section header present');
+    } finally {
+      browser.root.remove();
     }
   });
 

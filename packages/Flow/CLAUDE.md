@@ -234,7 +234,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 
 | File | Category | Covers |
 |---|---|---|
-| `type-map-tests.ts` | Flow: type-map | `areTypesCompatible` matrix, `dgTypeToSlotType`, colors |
+| `type-map-tests.ts` | Flow: type-map | `areTypesCompatible` matrix, `dgTypeToSlotType`, colors, **`domainSection`/`domainCategory`/`isDomainOperation` chem/bio routing (operations only, not sources), disjoint package sets** |
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
@@ -243,7 +243,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
-| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, …), category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
+| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
@@ -399,7 +399,7 @@ A second, **data-free** connection type that expresses pure run-order — "node1
 
 ## Function Filtering ([rete/node-factory.ts](src/rete/node-factory.ts))
 
-Functions with no inputs *and* no outputs are skipped. Functions whose role appears in `EXCLUDED_ROLES` (or any tag in `EXCLUDED_TAGS`) are skipped.
+`shouldExcludeFunc` drops a function when **any** holds: no inputs *and* no outputs; package ∈ `EXCLUDED_PACKAGES`; `nqName` ∈ the curated denylist [excluded-funcs.ts](src/rete/excluded-funcs.ts); name is/starts-with `test`; **role** ∈ `EXCLUDED_ROLES` (exact) **or a tag** ∈ `EXCLUDED_TAGS` (case-insensitive — sketchers/renderers/`Internal`/`Viewers`/… usually declare their kind as a *tag*, so the tag check is the biggest declutter lever); a `funccall` **or** `semantic_value` input; a `view`/`viewer` **or** `tablerowfiltercall`/`colfiltercall` output; or primitive-only signature. **`EXCLUDED_TAGS` deliberately omits `panel`/`widget`/`widgets`/`tooltip`** — widget-producing functions are usable in Flow (Widgets pane + preview); the `semantic_value` rule is what keeps right-click/context widgets out. The `EXCLUDED_FUNC_NQNAMES` denylist (incl. core plumbing: cache drops, project/publish, raw DB-query builders, UI-container builders) is empirically derived and **meant to be edited by hand** — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md). This cut the catalog ~568 → ~283.
 
 `registerBuiltinNodes()` populates the `FACTORIES` map with all built-in types. `registerAllFunctions()` discovers DG functions via `DG.Func.find({})` and registers a per-func factory under name `DG Functions/<role>/<funcName>` (or `DG Functions/<role>/<pkg>:<funcName>` on collision).
 
@@ -410,7 +410,8 @@ Functions with no inputs *and* no outputs are skipped. Functions whose role appe
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
 - `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName, category?)` checks this **first** (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
-- `CATEGORY_COLORS`: task-category → title-bar color, the **fallback after role** so the role-less majority (JoinTables, AddNewColumn, chem properties, …) is colored by what it does instead of all gray. `FuncNode` computes the category via `categorizeBySignature` (shared with the browser's `categorizeFunc`) and passes it to `getNodeColors`. Precedence: func-name → role → category → default gray.
+- `CATEGORY_COLORS`: task-category → title-bar color (incl. **Cheminformatics** pink / **Bioinformatics** deep-purple), the **fallback after role** so the role-less majority (JoinTables, AddNewColumn, chem properties, …) is colored by what it does instead of all gray. `FuncNode` computes the category as `domainCategory(pkg, inputTypes) ?? categorizeBySignature(...)` (same routing as the browser's `categorizeFunc`) and passes it to `getNodeColors`. Precedence: func-name → role → category → default gray.
+- `CHEMINFORMATICS_PACKAGES` / `BIOINFORMATICS_PACKAGES` + `domainSection(pkg)` / `domainCategory(pkg, inputTypes)` / `isDomainOperation(inputTypes)`: the by-package domain routing (gated to operations that consume data), shared by node coloring and the toolbox grouping.
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
 `TypedSocket` ([rete/sockets.ts](src/rete/sockets.ts)) is one-instance-per-DG-type (cached), so reference equality holds. Its `isCompatibleWith` method is consulted at connection-pick time by `ClassicFlow.canMakeConnection`, which rejects incompatible drops before they enter the editor's data layer.
@@ -653,7 +654,8 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 - **Widgets pane** (`ff-browser-widgets`): functions whose output is a `widget` (`funcOutputsWidget`),
   also kept out of the categories.
 - Search input (with a **clear ✕**, `ff-browser-search-clear`) + Group-by selector. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`.
-- **`categorizeFunc(func, role)`** buckets by **input/output signature** (validated against the live catalog — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md)). `FUNC_CATEGORIES` is also the **tree order** (Data Sources first):
+- **`categorizeFunc(func, role, packageName?)`** buckets by **domain then signature** (validated against the live catalog — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md)). `FUNC_CATEGORIES` is also the **tree order** (Data Sources first):
+  - **Domain wins (for operations only)**: a function from a `CHEMINFORMATICS_PACKAGES` / `BIOINFORMATICS_PACKAGES` package (in [type-map.ts](src/types/type-map.ts)) groups under **Cheminformatics** / **Bioinformatics** — via `domainCategory(pkg, inputTypes)`, which routes it there **only if it takes a dataframe/column input** (`isDomainOperation`); a chem/bio *source* (produces a table from scalars — a DB fetch, generator, or query) falls back to its signature category (Data Sources). It gets the matching title-bar color (pink / deep-purple). `DG.DataQuery` instances are filtered from the tree entirely into the **Queries pane**. Everything else falls through to the signature categories:
   - **Data Sources** — outputs a table, **0 table inputs** (OpenFile, DB queries). A join is *not* a data source.
   - **Combine Tables** — **≥2 table inputs** (JoinTables, LinkTables).
   - **Transform Tables** — 1 table in → table out, or table in → no output (Aggregate, Unpivot, FilterRows).
@@ -666,7 +668,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
 
 ### Catalog exclusions ([node-factory.ts](src/rete/node-factory.ts))
 
-`shouldExcludeFunc(func, role, tags, pkgName)` drops ~⅔ of the raw catalog (firehose → ~800 usable nodes). Excluded when **any**: package ∈ `EXCLUDED_PACKAGES` (`Dbtests, ApiTests, UiTests, DevTools, Tutorials, ApiSamples, UsageAnalysis`); name is/starts-with `test`; role (comma-split) ∈ `EXCLUDED_ROLES` (now also `editor, cellEditor, panel, widgets, tooltip`); tag ∈ `EXCLUDED_TAGS`; it takes a **`funccall` input** (command/dialog wrapper); it **outputs a `view` or `viewer`** (a whole TableView/ViewBase — replaced by the manual viewer nodes); or it is **primitive-only** (every input AND output is a scalar in `PRIMITIVE_TYPES` = string/int/double/bool/dynamic/num — ~250 math/string helpers). Locked in by [tests/function-browser-tests.ts](src/tests/function-browser-tests.ts).
+`shouldExcludeFunc(func, role, tags, pkgName)` drops the raw catalog (firehose ~2,357) to ~285 usable nodes. Excluded when **any**: package ∈ `EXCLUDED_PACKAGES` (`Dbtests, ApiTests, UiTests, DevTools, Tutorials, ApiSamples, UsageAnalysis`); **`func.nqName` ∈ [`EXCLUDED_FUNC_NQNAMES`](src/rete/excluded-funcs.ts)** (the curated, hand-editable denylist — helpers, internal twins, demo/test, plumbing); name is/starts-with `test`; a **role OR tag** ∈ `EXCLUDED_ROLE_TAGS` (the combined lower-cased set: `EXCLUDED_ROLES` + `widget, viewers, internal, @editors, design, filehandler` — checked against **both** the role field and every tag, since panels/widgets/sketchers usually declare their kind as a *tag*); it takes a **`funccall`** or **`semantic_value`** input; it **outputs** a `view`/`viewer` or a `tablerowfiltercall`/`colfiltercall` (filter-DSL builder); or it is **primitive-only**. Locked in by [tests/function-browser-tests.ts](src/tests/function-browser-tests.ts). The nqName denylist + tag/structural rules were derived empirically (live catalog dump + per-package source assessment); see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md).
 
 ### Theme (CSS)
 

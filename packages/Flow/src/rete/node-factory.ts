@@ -30,6 +30,7 @@ import {
 import {BreakpointNode} from './nodes/breakpoint-node';
 import {ViewerNode, CORE_VIEWER_SPECS, genericViewerSpec, VIEWER_TYPE_PREFIX, ViewerSpec} from './nodes/viewer-node';
 import {getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName} from '../utils/dart-proxy-utils';
+import {EXCLUDED_FUNC_NQNAMES} from './excluded-funcs';
 
 /** Scalar property types — a function whose inputs AND outputs are *only* these
  *  is pure scalar plumbing (math/string helpers), not a data-flow step → hidden. */
@@ -54,13 +55,14 @@ function register(name: string, factory: Factory): void {
   FACTORIES.set(name, factory);
 }
 
-/** Tags that mark a function for exclusion from the catalog. */
-export const EXCLUDED_TAGS: string[] = [];
-
-/** Roles that mark a function for exclusion.
- *  Beyond the platform UI-extension roles, we drop roles that produce
- *  context-panel UI fragments (panel / widgets / tooltip) and inline value
- *  editors — none of which are pipeline steps a scientist would chain. */
+/** Roles/tags that mark a function as platform/UI machinery rather than a
+ *  pipeline step. A function declares these either as its `role`
+ *  (`func.options.role`) OR — very commonly — as a **tag**: panel / widgets /
+ *  moleculeSketcher / folderViewer / Internal / … are almost always stored as
+ *  tags, not in the role field, so `shouldExcludeFunc` checks BOTH,
+ *  case-insensitively. This is the single biggest declutter lever: without the
+ *  tag check, every package's context-panel and widget functions leaked into
+ *  the toolbox. */
 export const EXCLUDED_ROLES: string[] = [
   DG.FUNC_TYPES.APP, 'aiSearchProvider', 'antibodyNumbering', 'appTreeBrowser', 'canonicalizer',
   DG.FUNC_TYPES.CELL_RENDERER, 'dashboard', DG.FUNC_TYPES.FILE_VIEWER, DG.FUNC_TYPES.FILE_IMPORTER,
@@ -68,6 +70,26 @@ export const EXCLUDED_ROLES: string[] = [
   'notationProviderConstructor', 'notationRefiner', 'packageSettingsEditor', 'searchProvider', 'semTypeDetector',
   'semValueExtractor', 'valueEditor', 'editor', 'cellEditor', 'panel', 'widgets', 'tooltip',
 ];
+
+/** Tags that mark UI/platform machinery, matched case-insensitively against a
+ *  function's tags (panels/sketchers/renderers/… usually declare their kind as
+ *  a *tag*, not in the role field — checking tags is the biggest declutter
+ *  lever). **Deliberately excludes `panel` / `widget` / `widgets` / `tooltip`:**
+ *  functions that produce a widget (including context panels) are usable in Flow
+ *  now — they flow to the Widgets pane and can be previewed. `filter` is handled
+ *  by the filter-DSL output rule instead. `Viewers`-tagged core charts are
+ *  dropped (the Viewers pane covers them). */
+const EXCLUDED_TAGS = new Set<string>([
+  'app', 'aisearchprovider', 'antibodynumbering', 'apptreebrowser', 'canonicalizer',
+  'cellrenderer', 'dashboard', 'fileviewer', 'fileexporter', 'file-handler', 'filehandler',
+  'folderviewer', 'moleculesketcher', 'notationproviderconstructor', 'notationrefiner',
+  'packagesettingseditor', 'searchprovider', 'semtypedetector', 'semvalueextractor',
+  'valueeditor', 'editor', 'celleditor', 'internal', '@editors', 'viewers', 'design',
+]);
+
+/** Output property types that are internal filter-DSL builder calls (produced
+ *  only to feed Aggregate/Filter machinery) — never a wireable pipeline value. */
+const FILTER_CALL_OUTPUT_TYPES = new Set<string>(['tablerowfiltercall', 'colfiltercall']);
 
 /** Whole packages that are dev / test / internal-telemetry only — never useful
  *  in a user-facing flow. (Empirically the largest source of catalog noise:
@@ -82,30 +104,46 @@ export const EXCLUDED_PACKAGES: string[] = [
 function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], pkgName: string): boolean {
   if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
 
+  // Curated denylist of individually-assessed, non-pipeline functions (helpers,
+  // internal twins, demo/test, plumbing) — keyed by namespace-qualified name.
+  try {
+    if (EXCLUDED_FUNC_NQNAMES.has(func.nqName)) return true;
+  } catch { /* nqName can throw on odd Dart proxies — fall through */ }
+
   // Test scaffolding by name (TestData, testFunction, Pkg:test, …).
   const nm = (func.name || '').toLowerCase();
   if (nm === 'test' || nm.startsWith('test')) return true;
 
-  // Role may be a comma-joined list ("widgets,panel") — exclude if any part matches.
+  // UI-extension roles (comma-split, exact match).
   if (role) {
     for (const r of role.split(',').map((s) => s.trim()))
       if (r && EXCLUDED_ROLES.includes(r)) return true;
   }
-  for (const tag of tags) if (EXCLUDED_TAGS.includes(tag)) return true;
+  // UI/platform-machinery tags (moleculeSketcher, Internal, Viewers, …) —
+  // case-insensitive. Widget/panel/tooltip tags are intentionally NOT here.
+  if (tags.some((t) => EXCLUDED_TAGS.has(t.trim().toLowerCase()))) return true;
 
   // Command / dialog wrappers operate on a FuncCall, not on data.
   try {
     if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
   } catch { /* ignore introspection failures */ }
 
+  // Right-click / context actions take a `semantic_value` (the cell's value) and
+  // just mutate the UI or clipboard — not a pipeline step.
+  try {
+    if (func.inputs.some((p) => String(p.propertyType) === 'semantic_value')) return true;
+  } catch { /* ignore introspection failures */ }
+
   // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
   // widget) can't be previewed or composed in a flow — drop them.
   // Viewer-producing functions are likewise dropped: they need a TableView
   // lifecycle and are replaced by the manual viewer nodes (the Viewers pane).
+  // Filter-DSL builder outputs (tablerowfiltercall / colfiltercall) exist only
+  // to feed Aggregate/Filter internals — likewise not wireable.
   try {
     if (func.outputs.some((p) => {
       const t = String(p.propertyType);
-      return t === 'view' || t === 'viewer';
+      return t === 'view' || t === 'viewer' || FILTER_CALL_OUTPUT_TYPES.has(t);
     })) return true;
   } catch { /* ignore introspection failures */ }
 

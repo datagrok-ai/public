@@ -52,6 +52,55 @@ export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
 export const DEFAULT_NODE_COLOR = '#BDBDBD';
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 
+// ---- domain sections (cheminformatics / bioinformatics) ----
+
+/** Packages whose functions are grouped under **Cheminformatics** (small
+ *  molecules: structures, descriptors, similarity/substructure, ADMET, docking,
+ *  reactions, chemical DBs). Membership is by source package — a domain a
+ *  scientist recognizes at a glance, orthogonal to the signature-based task
+ *  categories used for everything else. */
+export const CHEMINFORMATICS_PACKAGES = new Set<string>([
+  'Chem', 'Chembl', 'ChemblApi', 'PubchemApi', 'Chemspace', 'Surechembl',
+  'Admetica', 'Docking', 'Retrosynthesis', 'Marvin', 'ChemDrawSketcher',
+  'KetcherSketcher', 'HitTriage', 'Datagrokdsmf', 'Curves',
+]);
+
+/** Packages whose functions are grouped under **Bioinformatics** (sequences,
+ *  peptides, macromolecules, structures, oligos). */
+export const BIOINFORMATICS_PACKAGES = new Set<string>([
+  'Bio', 'SequenceTranslator', 'Helm', 'Proteomics', 'Bionemo', 'Biologics',
+  'OligoBatchCalculator', 'Parabilisseq', 'Sequenceutils', 'BiostructureViewer',
+  'PhyloTreeViewer', 'Peptides',
+]);
+
+/** The domain section a function belongs to based on its source package, or
+ *  `null` for general (task-categorized) functions. Chem wins over Bio for the
+ *  (currently empty) intersection. */
+export function domainSection(packageName: string | null | undefined): 'Cheminformatics' | 'Bioinformatics' | null {
+  if (!packageName) return null;
+  if (CHEMINFORMATICS_PACKAGES.has(packageName)) return 'Cheminformatics';
+  if (BIOINFORMATICS_PACKAGES.has(packageName)) return 'Bioinformatics';
+  return null;
+}
+
+/** Whether a function *operates on data it is given* — i.e. takes a dataframe or
+ *  column input. The domain sections hold only such operations; a chem/bio
+ *  function that merely *produces* a table from scalars (a DB query, fetch, or
+ *  generator) is a data source, not an operation, and is left to its signature
+ *  category (Data Sources) so "Cheminformatics"/"Bioinformatics" stay about
+ *  doing something to the scientist's table — never queries. */
+export function isDomainOperation(inputTypes: string[]): boolean {
+  return inputTypes.some((t) => t === 'dataframe' || t === 'column' || t === 'column_list');
+}
+
+/** The domain section for a function only when it's an operation on data (see
+ *  `isDomainOperation`); otherwise `null` (fall back to the task category). */
+export function domainCategory(
+  packageName: string | null | undefined, inputTypes: string[]): 'Cheminformatics' | 'Bioinformatics' | null {
+  const section = domainSection(packageName);
+  return section && isDomainOperation(inputTypes) ? section : null;
+}
+
 // ---- categorize a function by what it does (shared by the browser + coloring) ----
 
 const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
@@ -87,6 +136,8 @@ export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> =
   'Column Operations': {color: '#5C9DED', bgcolor: '#ffffff'}, // blue — derive columns
   'Compute Values': {color: '#9CCC65', bgcolor: '#ffffff'},    // green — scalars
   'Visualize': {color: '#4DD0E1', bgcolor: '#ffffff'},         // cyan — viewers
+  'Cheminformatics': {color: '#EC407A', bgcolor: '#ffffff'},   // pink — small molecules
+  'Bioinformatics': {color: '#7E57C2', bgcolor: '#ffffff'},    // deep purple — sequences
   'Other': {color: '#90A4AE', bgcolor: '#ffffff'},             // blue-gray — the rest
 };
 

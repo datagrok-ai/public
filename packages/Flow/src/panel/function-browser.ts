@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {FuncInfo, getRegisteredFuncs, VIEWER_NODE_TYPES} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
-import {categorizeBySignature} from '../types/type-map';
+import {categorizeBySignature, domainCategory} from '../types/type-map';
 
 /** Whether a function's output is a widget (→ the Widgets pane, not a category). */
 export function funcOutputsWidget(f: FuncInfo): boolean {
@@ -27,6 +27,8 @@ export const FUNC_CATEGORIES = [
   'Column Operations',
   'Compute Values',
   'Visualize',
+  'Cheminformatics',
+  'Bioinformatics',
   'Other',
 ] as const;
 export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
@@ -43,10 +45,16 @@ export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
  *  - **Column Operations** emit a column / column list (AddNewColumn, descriptors).
  *  - **Compute Values** emit a scalar (statistics, math, text, predicates).
  *  - **Visualize** emit a viewer / view / widget / graphics.
+ *  - **Cheminformatics** / **Bioinformatics** — grouped by source package
+ *    (domain wins over the signature category), so a scientist finds all
+ *    chem/bio steps together regardless of what they do.
  *  - **Other** — expression/filter builders and dynamic helpers. */
-export function categorizeFunc(func: DG.Func, role: string | null): FuncCategory {
+export function categorizeFunc(func: DG.Func, role: string | null, packageName?: string): FuncCategory {
+  const inputTypes = func.inputs.map((i) => String(i.propertyType));
+  const domain = domainCategory(packageName, inputTypes);
+  if (domain) return domain;
   return categorizeBySignature(
-    func.inputs.map((i) => String(i.propertyType)),
+    inputTypes,
     func.outputs.map((o) => String(o.propertyType)),
     role) as FuncCategory;
 }
@@ -590,7 +598,7 @@ export class FunctionBrowser {
         keys = [f.packageName || 'Core'];
         break;
       case 'category':
-        keys = [categorizeFunc(f.func, f.role)];
+        keys = [categorizeFunc(f.func, f.role, f.packageName)];
         break;
       default:
         keys = ['Other'];

@@ -2,6 +2,36 @@
 
 ## v.next
 
+### Cleaner, domain-aware function toolbox
+
+* The **“what it does”** grouping gains two domain sections: **Cheminformatics** and
+  **Bioinformatics**. Functions are routed there by source package (Chem/Chembl/Admetica/… →
+  Cheminformatics; Bio/SequenceTranslator/Helm/… → Bioinformatics), which wins over the
+  signature-based task category, so a scientist finds all chem/bio steps together. The node
+  title-bar color follows the same domain (pink / deep-purple). **Only operations belong there:**
+  a chem/bio function is placed in a domain section only if it takes a dataframe/column input; a
+  pure *source* (DB fetch, generator, or query that produces a table from scalars) falls back to
+  **Data Sources**, and every **`DG.DataQuery`** stays in the **Queries** pane — so the domain
+  sections hold things that *do something to your table*, never queries. Package sets +
+  `domainSection()`/`domainCategory()` live in `type-map.ts`.
+* The catalog was **de-cluttered from ~568 to ~283 nodes** by fixing the exclusion filter and adding
+  a curated denylist:
+  * The exclusion check now also inspects **tags** (case-insensitively), not just the role field.
+    Sketchers, cell renderers, folder viewers, semantic-type detectors and
+    `Internal`/`@editors`/`Viewers`-tagged functions almost always declare their kind as a *tag* —
+    the old role-only check let them leak in. **Widget-producing functions are deliberately kept**
+    (they flow to the Widgets pane and can be previewed); only right-click widgets (`semantic_value`
+    input) and specific dashboard-chrome widgets are dropped.
+  * Two new signature rules: functions taking a **`semantic_value`** input (right-click/context
+    actions) or emitting a **`tablerowfiltercall`/`colfiltercall`** (internal filter-DSL builders)
+    are dropped.
+  * A hand-reviewable **`nqName` denylist** (`src/rete/excluded-funcs.ts`) removes the case-by-case
+    residue rules can't catch — internal engine/helper getters, internal near-duplicates of a kept
+    canonical (e.g. `Chem:getInchis` over `Chem:addInchisTopMenu`, `Eda:apply*` over `Eda:train*`),
+    demo/test/autocomplete helpers, core plumbing (cache drops, project/publish, raw DB-query
+    builders, UI-container builders), and state-plumbing RPCs. Produced empirically (live catalog
+    dump + per-package source assessment) and meant to be edited by hand.
+
 ### Rerun a single node
 
 * Right-click a node → **“Rerun this node only”** re-executes just that node using the values its
