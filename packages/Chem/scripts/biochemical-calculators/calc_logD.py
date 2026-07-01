@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: column molecules {caption: Molecules column}
+#input: column molecules {semType: Molecule}
 #input: double pH = 7.4 {caption: pH}
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024

@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: column molecules
+#input: column molecules {semType: Molecule}
 #input: bool pI_mean = true {caption: Mean}
 #input: bool pI_IPC2_peptide = false {caption: IPC2 Peptide}
 #input: bool pI_IPC_peptide = false {caption: IPC Peptide}
