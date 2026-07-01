@@ -134,7 +134,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Selection** | | |
-| Show Selected Rows | boolean | When true, selected points are highlighted using the selected rows color. When false, selected points use their regular color coding. |
+| Show Selected Rows | boolean | When checked, selected points are highlighted using the selected rows color. When unchecked, selected points use their regular color coding. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Show All Categories | boolean | When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments. |

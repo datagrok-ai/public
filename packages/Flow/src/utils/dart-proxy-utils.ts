@@ -67,6 +67,17 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
+/** Whether a function input parameter is optional (declared `{optional: true}`).
+ *  Read defensively from the Dart-proxy `options` map. */
+export function isInputOptional(prop: DG.Property): boolean {
+  try {
+    const opt = safeGet((prop as unknown as {options?: unknown}).options, 'optional');
+    return opt === true || opt === 'true';
+  } catch {
+    return false;
+  }
+}
+
 /** Returns the display name for a function node header.
  * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
 export function getFuncDisplayName(func: DG.Func): string {

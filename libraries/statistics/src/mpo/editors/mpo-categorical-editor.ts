@@ -122,6 +122,13 @@ export class MpoCategoricalEditor {
       this.onChanged.next(this._prop);
   }
 
+  setDesignMode(on: boolean): void {
+    if (this.design === on)
+      return;
+    this.design = on;
+    this.buildForm();
+  }
+
   setChoices(choices: string[]): void {
     this.columnCategories = choices;
     this.buildForm();

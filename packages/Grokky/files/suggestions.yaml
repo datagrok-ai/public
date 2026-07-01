@@ -51,29 +51,30 @@
   label: This view
   icon: table
   suggestions:
-    - label: Color rows by {risk:numerical}
-      prompt: Color rows by {risk:numerical} (red ≥ 0.5, green < 0.5)
+    - label: Color rows by {risk.isNumerical}
+      prompt: Color rows by {risk.isNumerical} (red ≥ {risk.stats.med}, green < {risk.stats.med})
       prefer: { risk: 'name~="risk|herg|tox"' }
 
-    - label: Select top 10 compounds by {metric:numerical}
-      prompt: Select top 10 compounds by {metric:numerical}
+    - label: Select top 10 rows by {metric.isNumerical}
+      prompt: Select top 10 rows by {metric.isNumerical}
       prefer: { metric: 'name~="affinity|ic50|ec50|potency"' }
 
-    - label: Hide compounds flagged for {flag:categorical}
-      prompt: Hide compounds flagged for {flag:categorical}
+    - label: Hide rows flagged for {flag.isCategorical}
+      prompt: Hide rows flagged for {flag.isCategorical}
       prefer: { flag: 'name~="mutagen|tumor|alert|flag"' }
 
-    - label: Pin the {mol:semType=Molecule} column
-      prompt: Pin the {mol:semType=Molecule} column
+    - label: Pin the {mol.semType} column
+      prompt: Pin the {mol.semType} column
 
-    - label: Scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
-      prompt: Add a scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
+    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
+      prompt: Add a scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
       prefer:
         x: 'name~="lipo|logp|logd"'
         y: 'name~="affinity|ic50|potency"'
         c: 'name~="stage|class|status"'
 
-    - prompt: Show correlation matrix across numerical columns
+    - label: 'Show correlation matrix ({x.isNumerical}, …)'
+      prompt: Show correlation matrix across numerical columns
 
 - context: panel
   scope: global
@@ -93,4 +94,4 @@
     - label: 'JS: interactive sketcher with molecule properties'
       prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
     - label: 'Python: render Gasteiger partial charges'
-      prompt: 'Python: write a function that accepts a molecule and renders Gasteiger partial charges as a result'
+      prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'

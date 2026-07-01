@@ -277,7 +277,12 @@ export async function loadTestsList(packages: string[], core: boolean = false, r
       const logsDir = `./load-test-console-output${suffix}.log`;
       const recordDir = `./load-test-record${suffix}.mp4`;
 
-      recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
@@ -698,8 +703,15 @@ export async function runBrowser(
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
     if (browserOptions.record && !existingBrowserSession) {
-      // Only set up recording on initial browser creation, not on retry
-      recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      // Only set up recording on initial browser creation, not on retry.
+      // Recording is an optional diagnostic — if it can't start (e.g. ffmpeg is
+      // missing on the runner), warn and keep testing instead of failing the pass.
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);

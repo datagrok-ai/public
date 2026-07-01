@@ -3,12 +3,32 @@ title: "Link Query Language"
 sidebar_position: 3
 ---
 
-A [link](./link-types) is a one-directional connection that propagates data
-from one workflow node to another. The Link Query Language (LQL) is used in
-the `base`, `from`, `to`, and `not` fields of a link or action to point at the
-workflow nodes and their inputs and outputs. This page is a guided
-introduction; for the full selector catalog, grammar, and gotchas see the
+A [LQL link](./link-types) is a one-directional connection that propagates data
+from one workflow node to another.
+The Link Query Language (LQL) is used to point at the
+workflow nodes and their inputs and outputs.
+
+This page is a guided introduction;
+for the full selector catalog, grammar, and gotchas see the
 [LQL reference](./link-query-language-reference).
+
+## Understanding workflow links – essentials
+
+The Datagrok low-code workflows are designed to handle both simple pre-determined workflows
+and complex dymaic multi-step ones.
+Therefore, the LQL works by using together two different concepts:
+
+* IDs - these are the **names** of nodes or sub workflows in a workflow.
+  In a simple case when a workflow contains a fixed set of steps and each of them has a unique name,
+  this is all what we need.
+  However, in a complex case where the workflow is dynamic, any ID can be non-unique.
+  To solve this issue, LQL uses the second concept:
+* Position selectors.  These is a relation between a particular step and the steps before or after it.
+  Position modifiers allow choosing steps from the set of steps with a given ID.
+  For example, we can choose all steps that match a given ID or a step with the given ID
+  that goes exactly after another step, etc.
+
+LQL paths use position modifiers to select steps from the set of steps with matching IDs.
 
 ### Query structure
 
@@ -31,16 +51,19 @@ A minimal example targeting a script input:
 value(optional):myworkflow/subworkflow/script/input1
 ```
 
-A bare identifier in a segment is shorthand for the `first` selector, so the
-query above is equivalent to:
+Here `myworkflow`, `subworkflow`, and `script` are IDs of the workflow nodes.
+For a bare identifier workflow engine automatically applies the `first` selector,
+that choses the first node matching the given ID.
+Therefore, the query above is equivalent to:
 
 ```
 value(optional):first(myworkflow)/first(subworkflow)/first(script)/input1
 ```
 
-To target the workflow that hosts the link itself — used by
-[`pipelineValidator`](./link-types#pipeline-validators) — use a name with no
-path. The forms `NAME`, `NAME:`, `NAME:.`, and `NAME:./` are all equivalent.
+To target the workflow that hosts the link itself
+(often used by [`pipelineValidator`](./link-types#pipeline-validators))
+we can use a name with no path.
+The forms `NAME`, `NAME:`, `NAME:.`, and `NAME:./` are all equivalent.
 `NAME:./path` is also accepted; mid-path `.` is not.
 
 ### Base path and `expand`
@@ -50,11 +73,16 @@ a given type, every workflow inside a parent, every matching tag. LQL expresses
 this with a **base path** and **reference selectors**.
 
 The `base` field of a link is itself an LQL query, conventionally named `base`.
-Inside `base`, the special `expand` selector matches like `all` but with one
-crucial difference: every match produces a separate **link instance**. Each
-instance is then resolved on its own — `from` and `to` paths use reference
-selectors (`same`, `before`, `after`) that take the base query name (prefixed
-with `@`, e.g. `@base`) and anchor relative to that instance's match.
+Inside `base`, we use the special `expand` selector,
+that matches like `all` but with one crucial difference:
+every match produces a separate **link instance**.
+
+Each link instance is then resolved on its own
+— `from` and `to` paths use reference selectors (`same`, `before`, `after`)
+that take the base query name (prefixed with `@`, e.g. `@base`)
+and anchor relative to that instance's match.
+Using base path, we if fact define a template allowing us to create
+many links at once.
 
 Here is a link definition that uses `expand` plus reference selectors:
 
@@ -71,14 +99,16 @@ Here is a link definition that uses `expand` plus reference selectors:
 
 Assuming `mylink1` is defined inside `myworkflow`:
 
-- `expand(workflow1|workflow2)` matches both workflows; `expand(script1)`
-  matches the two `script1` nodes inside each. Four base matches in total
-  (red borders in the diagram).
-- For every base match, `from` resolves `same(@base)` (twice) back to the
-  same nodes the base picked at each segment, then takes `output1` on that
-  script.
-- `to` resolves the same workflow, then `after+(@base, script2)` — the
-  immediately adjacent `script2` after the base's `script1` — then `input1`.
+- `expand(workflow1|workflow2)` matches both workflows;
+  `expand(script1)` matches the two `script1` nodes inside each.
+  It totals we have four base matches (red borders in the diagram).
+- For every base match, `from` resolves `same(@base)` -
+  The node that the base picked at each segment,
+  then takes `output1` on that script.
+- `to` resolves the same workflow,
+  then `after+(@base, script2)` takes the immediately adjacent node with the name `script2`
+  after the base's `script1`,
+  and connects to the `input1` of this script.
 
 Four base matches → four `mylink1` instances. If the trailing `script2` in
 either workflow were removed, that last `script1` would have no `after+` match
@@ -89,42 +119,51 @@ corresponding segment of `base`:
 
 ![Segment alignment of @base](pics/segment_alignment.svg)
 
-`before`, `after`, and their `*` / `+` variants still take their own id-list
-— that's where directional filtering happens. `same(@base)` accepts an
-optional id-list as a narrowing filter (see
-[reference](./link-query-language-reference#patterns)).
 
-The full list of reference selectors and their modifiers (`*` for "match all
-in the direction", `+` for "immediately adjacent only") lives in the
-[reference](./link-query-language-reference#selectors).
+Position selectors `before`, `after`, and their `*` / `+` variants
+take their own id-list and fileter it according to the position.
+
+`same(@base)` accepts an optional id-list as a narrowing filter (see
+[reference](./link-query-language-reference#patterns)).
 
 ### Direction and cardinality
 
-`before` and `after` differ along two axes: which direction they scan, and
-how many matches they keep. The bare form keeps the first match in the
-direction; `*` keeps every match; `+` only matches if the **immediately
-adjacent** sibling is in the id-list.
+Position selectors `before` and `after` differ by two criteria:
+which direction they scan, and how many matches they keep.
+The bare form keeps the first match in the direction;
+`*` keeps every match;
+`+` only matches if the **immediately adjacent** node is matching the provided ID.
 
 Each row below shows the matches for
 `before(@base, prep1|prep2|prep3)` and `after(@base, next1|next2|next3)`:
 
 ![before / after modifiers](pics/before_after_modifiers.svg)
 
-Stop ids — an optional third argument like
-`before(@base, target, boundary)` — confine the scan to the region before
-a known boundary step. See the
-[reference](./link-query-language-reference#modifiers-and-stop-ids).
+Position selectors also accept **boundary**:
+— an optional third argument with an ID or list of IDs,
+that confines the scan to the region before the boundary step(s).
+Example: `before(@base, target, boundary)`
+
+The full list of reference selectors and their modifiers (`*` for "match all
+in the direction", `+` for "immediately adjacent only") lives in the
+[reference](./link-query-language-reference#selectors).
 
 ### Tags
 
-Any selector can match by [tag](./configuration#tags) instead of id by
-prefixing it with `#`. Tag arguments combine with **AND** (`&`), unlike id
-arguments which combine with **OR** (`|`), because the same node can carry
-multiple tags. Tag matching also crosses nesting boundaries — a `#all(metric)`
-query finds every descendant tagged `metric`, no matter how deep — but never
-travels upward past the link's host workflow.
+Any selector can match by [tag](./configuration#tags) instead of id by prefixing it with `#`.
+Tag arguments combine with **AND** (`&`),
+unlike id arguments which combine with **OR** (`|`),
+because the same node can carrymultiple tags.
+Tag matching also crosses nesting boundaries —
+a `#all(metric)` query finds every descendant tagged `metric`,
+no matter how deep — but never travels upward past the link's host workflow.
+
+From the perspective of the link engine,
+tags are just a more flexible kind of IDs with slightly different combination rules.
+Position selectors usrk with tags the same way as with regular IDs.
 
 ![tag selectors on a nested tree](pics/tag_selectors.svg)
+
 
 Pure tag query:
 
@@ -198,7 +237,7 @@ to:   "out_(template):script2/inputs(MyPkg:Script2, debug|verbose)"
 `outputs(...)` always pulls outputs, `inputs(...)` always pulls inputs,
 regardless of which side it appears on.
 
-**`_(template)`.** No prefix — expanded link-io names equal the script
+**`_(template)`** with no prefix expands link-io names equal the script
 IO ids verbatim (`a`, `b` instead of `in_a`, `in_b`). The slot id is
 then the operator's 0-based index on its side, so multiple anonymous
 templates stay addressable without colliding with string-named ones.

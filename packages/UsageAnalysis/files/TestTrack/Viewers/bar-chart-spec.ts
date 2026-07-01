@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,36 +12,9 @@ test('Bar chart tests', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // Phase 3: Add Bar chart
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-bar-chart"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-Bar-chart"]').waitFor({timeout: 5000});
+  await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
 
   // Open settings
   await page.evaluate(() => {
@@ -53,32 +27,13 @@ test('Bar chart tests', async ({page}) => {
 
   // #### Stack column
   await softStep('Stack column', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      const r: any[] = [];
-
-      bc.props.stackColumnName = 'SEX';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(bc.props.stackColumnName);
-
-      bc.props.stackColumnName = 'RACE';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(bc.props.stackColumnName);
-
-      bc.props.relativeValues = true;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(bc.props.relativeValues);
-
-      bc.props.relativeValues = false;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(bc.props.relativeValues);
-
-      bc.props.stackColumnName = '';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(bc.props.stackColumnName);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {set: {stackColumnName: 'SEX'}, wait: 500, read: 'stackColumnName'},
+      {set: {stackColumnName: 'RACE'}, wait: 500, read: 'stackColumnName'},
+      {set: {relativeValues: true}, wait: 500, read: 'relativeValues'},
+      {set: {relativeValues: false}, wait: 500, read: 'relativeValues'},
+      {set: {stackColumnName: ''}, wait: 500, read: 'stackColumnName'},
+    ]);
     expect(result[0]).toBe('SEX');
     expect(result[1]).toBe('RACE');
     expect(result[2]).toBe(true);
@@ -88,109 +43,41 @@ test('Bar chart tests', async ({page}) => {
 
   // #### Sorting
   await softStep('Sorting', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      bc.props.splitColumnName = 'RACE';
-      const r: any[] = [];
-
-      bc.props.barSortType = 'by value';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortType);
-
-      bc.props.barSortOrder = 'asc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortOrder);
-
-      bc.props.barSortOrder = 'desc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortOrder);
-
-      bc.props.barSortType = 'by category';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortType);
-
-      bc.props.barSortOrder = 'asc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortOrder);
-
-      bc.props.barSortOrder = 'desc';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.barSortOrder);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {set: {splitColumnName: 'RACE', barSortType: 'by value'}, read: 'barSortType'},
+      {set: {barSortOrder: 'asc'}, read: 'barSortOrder'},
+      {set: {barSortOrder: 'desc'}, read: 'barSortOrder'},
+      {set: {barSortType: 'by category'}, read: 'barSortType'},
+      {set: {barSortOrder: 'asc'}, read: 'barSortOrder'},
+      {set: {barSortOrder: 'desc'}, read: 'barSortOrder'},
+    ]);
     expect(result).toEqual(['by value', 'asc', 'desc', 'by category', 'asc', 'desc']);
   });
 
   // #### Value axis type
   await softStep('Value axis type', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      bc.props.valueColumnName = 'HEIGHT';
-      bc.props.splitColumnName = 'RACE';
-      const r: any[] = [];
-
-      bc.props.axisType = 'logarithmic';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.axisType);
-
-      bc.props.axisType = 'linear';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.axisType);
-
-      bc.props.valueMin = 100;
-      bc.props.valueMax = 200;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({min: bc.props.valueMin, max: bc.props.valueMax});
-
-      bc.props.valueMin = null;
-      bc.props.valueMax = null;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({min: bc.props.valueMin, max: bc.props.valueMax});
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {set: {valueColumnName: 'HEIGHT', splitColumnName: 'RACE', axisType: 'logarithmic'}, read: 'axisType'},
+      {set: {axisType: 'linear'}, read: 'axisType'},
+      {set: {valueMin: 100, valueMax: 200}, read: ['valueMin', 'valueMax']},
+      {set: {valueMin: null, valueMax: null}, read: ['valueMin', 'valueMax']},
+    ]);
     expect(result[0]).toBe('logarithmic');
     expect(result[1]).toBe('linear');
-    expect(result[2]).toEqual({min: 100, max: 200});
-    expect(result[3]).toEqual({min: null, max: null});
+    expect(result[2]).toEqual({valueMin: 100, valueMax: 200});
+    expect(result[3]).toEqual({valueMin: null, valueMax: null});
   });
 
   // #### Color coding
   await softStep('Color coding', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      bc.props.splitColumnName = 'RACE';
-      bc.props.valueColumnName = 'AGE';
-      const r: any[] = [];
-
-      bc.props.colorColumnName = 'HEIGHT';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.colorColumnName);
-
-      bc.props.colorAggrType = 'min';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.colorAggrType);
-
-      bc.props.colorAggrType = 'max';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(bc.props.colorAggrType);
-
-      bc.props.colorAggrType = 'med';
-      await new Promise(res => setTimeout(res, 200));
-      r.push(bc.props.colorAggrType);
-
-      bc.props.invertColorScheme = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.invertColorScheme);
-
-      bc.props.colorColumnName = '';
-      bc.props.invertColorScheme = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.colorColumnName);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {set: {splitColumnName: 'RACE', valueColumnName: 'AGE', colorColumnName: 'HEIGHT'}, read: 'colorColumnName'},
+      {set: {colorAggrType: 'min'}, read: 'colorAggrType'},
+      {set: {colorAggrType: 'max'}, wait: 200, read: 'colorAggrType'},
+      {set: {colorAggrType: 'med'}, wait: 200, read: 'colorAggrType'},
+      {set: {invertColorScheme: true}, read: 'invertColorScheme'},
+      {set: {colorColumnName: '', invertColorScheme: false}, read: 'colorColumnName'},
+    ]);
     expect(result[0]).toBe('HEIGHT');
     expect(result[1]).toBe('min');
     expect(result[2]).toBe('max');
@@ -289,32 +176,16 @@ test('Bar chart tests', async ({page}) => {
 
   // #### Controls visibility
   await softStep('Controls visibility', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      const r: any = {};
-
-      bc.props.showValueSelector = false;
-      bc.props.showCategorySelector = false;
-      bc.props.showStackSelector = false;
-      bc.props.showValueAxis = false;
-      bc.props.showCategoryValues = false;
-      await new Promise(res => setTimeout(res, 200));
-      r.allOff = [bc.props.showValueSelector, bc.props.showCategorySelector,
-        bc.props.showStackSelector, bc.props.showValueAxis, bc.props.showCategoryValues];
-
-      bc.props.showValueSelector = true;
-      bc.props.showCategorySelector = true;
-      bc.props.showStackSelector = true;
-      bc.props.showValueAxis = true;
-      bc.props.showCategoryValues = true;
-      await new Promise(res => setTimeout(res, 200));
-      r.allOn = [bc.props.showValueSelector, bc.props.showCategorySelector,
-        bc.props.showStackSelector, bc.props.showValueAxis, bc.props.showCategoryValues];
-
-      return r;
-    });
-    expect(result.allOff).toEqual([false, false, false, false, false]);
-    expect(result.allOn).toEqual([true, true, true, true, true]);
+    const ctrls = ['showValueSelector', 'showCategorySelector', 'showStackSelector',
+      'showValueAxis', 'showCategoryValues'];
+    const off = Object.fromEntries(ctrls.map((k) => [k, false]));
+    const on = Object.fromEntries(ctrls.map((k) => [k, true]));
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {set: off, wait: 200, read: ctrls},
+      {set: on, wait: 200, read: ctrls},
+    ]);
+    expect(result[0]).toEqual(off);
+    expect(result[1]).toEqual(on);
   });
 
   // #### Aggregation types
@@ -424,23 +295,14 @@ test('Bar chart tests', async ({page}) => {
 
   // #### Show values instead of categories
   await softStep('Show values instead of categories', async () => {
-    const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      bc.props.splitColumnName = 'RACE';
-      bc.props.valueColumnName = 'AGE';
-      bc.props.valueAggrType = 'avg';
-      const r: boolean[] = [];
-
-      bc.props.showValuesInsteadOfCategories = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.showValuesInsteadOfCategories);
-
-      bc.props.showValuesInsteadOfCategories = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(bc.props.showValuesInsteadOfCategories);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Bar chart', [
+      {
+        set: {splitColumnName: 'RACE', valueColumnName: 'AGE', valueAggrType: 'avg',
+          showValuesInsteadOfCategories: true},
+        read: 'showValuesInsteadOfCategories',
+      },
+      {set: {showValuesInsteadOfCategories: false}, read: 'showValuesInsteadOfCategories'},
+    ]);
     expect(result).toEqual([true, false]);
   });
 
@@ -619,8 +481,5 @@ test('Bar chart tests', async ({page}) => {
     expect(result.value1).toBe('AGE');
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

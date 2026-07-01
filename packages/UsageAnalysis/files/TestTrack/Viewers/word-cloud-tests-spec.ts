@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,26 +12,10 @@ test('Word Cloud tests', async ({page}) => {
   await loginToDatagrok(page);
 
   // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   // Phase 3: Add Word Cloud viewer by clicking toolbox icon
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-Word-cloud"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-Word-cloud"]').waitFor({timeout: 10000});
+  await v.addViewerByIcon(page, 'Word-cloud', 'Word-cloud', 10000);
   await page.waitForTimeout(1000);
 
   // Open viewer settings (gear icon on panel-base title bar)
@@ -99,65 +84,32 @@ test('Word Cloud tests', async ({page}) => {
 
   // #### Font size range
   await softStep('Font size range', async () => {
-    const result = await page.evaluate(async () => {
-      const wc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Word cloud') as any;
-      const r: any[] = [];
-
-      wc.props.minTextSize = 10;
-      wc.props.maxTextSize = 60;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minTextSize, max: wc.props.maxTextSize});
-
-      wc.props.minTextSize = 20;
-      wc.props.maxTextSize = 20;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minTextSize, max: wc.props.maxTextSize});
-
-      wc.props.minTextSize = 12;
-      wc.props.maxTextSize = 48;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minTextSize, max: wc.props.maxTextSize});
-
-      return r;
-    });
-    expect(result[0]).toEqual({min: 10, max: 60});
-    expect(result[1]).toEqual({min: 20, max: 20});
-    expect(result[2]).toEqual({min: 12, max: 48});
+    const result = await v.setViewerProps(page, 'Word cloud', [
+      {set: {minTextSize: 10, maxTextSize: 60}, wait: 400, read: ['minTextSize', 'maxTextSize']},
+      {set: {minTextSize: 20, maxTextSize: 20}, wait: 400, read: ['minTextSize', 'maxTextSize']},
+      {set: {minTextSize: 12, maxTextSize: 48}, wait: 400, read: ['minTextSize', 'maxTextSize']},
+    ]);
+    expect(result[0]).toEqual({minTextSize: 10, maxTextSize: 60});
+    expect(result[1]).toEqual({minTextSize: 20, maxTextSize: 20});
+    expect(result[2]).toEqual({minTextSize: 12, maxTextSize: 48});
   });
 
   // #### Text rotation
   await softStep('Text rotation', async () => {
-    const result = await page.evaluate(async () => {
-      const wc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Word cloud') as any;
-      const r: any[] = [];
-
-      wc.props.minRotationDegree = 0;
-      wc.props.maxRotationDegree = 0;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minRotationDegree, max: wc.props.maxRotationDegree});
-
-      wc.props.minRotationDegree = -90;
-      wc.props.maxRotationDegree = 90;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minRotationDegree, max: wc.props.maxRotationDegree});
-
-      wc.props.rotationStep = 45;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({step: wc.props.rotationStep});
-
-      // Restore defaults (code defaults: -30, 30, 5)
-      wc.props.minRotationDegree = -30;
-      wc.props.maxRotationDegree = 30;
-      wc.props.rotationStep = 5;
-      await new Promise(res => setTimeout(res, 400));
-      r.push({min: wc.props.minRotationDegree, max: wc.props.maxRotationDegree, step: wc.props.rotationStep});
-
-      return r;
-    });
-    expect(result[0]).toEqual({min: 0, max: 0});
-    expect(result[1]).toEqual({min: -90, max: 90});
-    expect(result[2]).toEqual({step: 45});
-    expect(result[3]).toEqual({min: -30, max: 30, step: 5});
+    const result = await v.setViewerProps(page, 'Word cloud', [
+      {set: {minRotationDegree: 0, maxRotationDegree: 0}, wait: 400, read: ['minRotationDegree', 'maxRotationDegree']},
+      {set: {minRotationDegree: -90, maxRotationDegree: 90}, wait: 400, read: ['minRotationDegree', 'maxRotationDegree']},
+      {set: {rotationStep: 45}, wait: 400, read: 'rotationStep'},
+      {
+        set: {minRotationDegree: -30, maxRotationDegree: 30, rotationStep: 5},
+        wait: 400,
+        read: ['minRotationDegree', 'maxRotationDegree', 'rotationStep'],
+      },
+    ]);
+    expect(result[0]).toEqual({minRotationDegree: 0, maxRotationDegree: 0});
+    expect(result[1]).toEqual({minRotationDegree: -90, maxRotationDegree: 90});
+    expect(result[2]).toBe(45);
+    expect(result[3]).toEqual({minRotationDegree: -30, maxRotationDegree: 30, rotationStep: 5});
   });
 
   // #### Grid size
@@ -177,23 +129,11 @@ test('Word Cloud tests', async ({page}) => {
 
   // #### Draw out of bound
   await softStep('Draw out of bound', async () => {
-    const result = await page.evaluate(async () => {
-      const wc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Word cloud') as any;
-      const r: boolean[] = [];
-
-      wc.props.drawOutOfBound = true;
-      await new Promise(res => setTimeout(res, 400));
-      r.push(wc.props.drawOutOfBound);
-
-      wc.props.drawOutOfBound = false;
-      await new Promise(res => setTimeout(res, 400));
-      r.push(wc.props.drawOutOfBound);
-
-      // Restore default
-      wc.props.drawOutOfBound = true;
-      await new Promise(res => setTimeout(res, 200));
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Word cloud', [
+      {set: {drawOutOfBound: true}, wait: 400, read: 'drawOutOfBound'},
+      {set: {drawOutOfBound: false}, wait: 400, read: 'drawOutOfBound'},
+      {set: {drawOutOfBound: true}, wait: 200},
+    ]);
     expect(result).toEqual([true, false]);
   });
 
@@ -214,29 +154,15 @@ test('Word Cloud tests', async ({page}) => {
 
   // #### Bold
   await softStep('Bold', async () => {
-    const result = await page.evaluate(async () => {
-      const wc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Word cloud') as any;
-      const r: boolean[] = [];
-
-      wc.props.bold = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(wc.props.bold);
-
-      wc.props.bold = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(wc.props.bold);
-
-      wc.props.bold = true;
-      await new Promise(res => setTimeout(res, 200));
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Word cloud', [
+      {set: {bold: true}, read: 'bold'},
+      {set: {bold: false}, read: 'bold'},
+      {set: {bold: true}, wait: 200},
+    ]);
     expect(result).toEqual([true, false]);
   });
 
-  // #### Tooltip on hover
-  // Canvas-based — scenario's intent is that tooltip appears when hovering a word.
-  // We assert the weakest verifiable property: after a mousemove over the viewer, a
-  // tooltip element exists in the DOM.
+  // #### Tooltip on hover (canvas-based: assert a tooltip element appears on mousemove)
   await softStep('Tooltip on hover', async () => {
     const result = await page.evaluate(async () => {
       const viewerEl = document.querySelector('[name="viewer-Word-cloud"]') as HTMLElement;
@@ -256,16 +182,10 @@ test('Word Cloud tests', async ({page}) => {
       viewerEl.dispatchEvent(new MouseEvent('mouseleave', {bubbles: true}));
       return {tip1, tip2};
     });
-    // Weakest assertion consistent with scenario intent: tooltip DOM appears
-    // during hover. Individual word targeting not possible from Playwright
-    // (echarts-wordcloud renders to a single canvas).
     expect(result.tip1 || result.tip2).toBe(true);
   });
 
-  // #### Word click and selection
-  // Omitted as a softStep — echarts-wordcloud renders to a single canvas; the
-  // `mousedown` handler uses echarts events (`d.name`, `d.event`) that cannot be
-  // faithfully dispatched from DOM-level events without the echarts chart instance.
+  // #### Word click and selection — omitted (echarts-wordcloud canvas, no DOM-dispatchable events)
 
   // #### Filter interaction
   await softStep('Filter interaction', async () => {
@@ -379,8 +299,5 @@ test('Word Cloud tests', async ({page}) => {
     expect(result[1].hasCanvas).toBe(true);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

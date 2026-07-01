@@ -4,10 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
-  createDefaultNumerical,
-  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
-  PropertyDesirability,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -18,6 +15,7 @@ import {PackageFunctions} from '../package';
 import {
   computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles,
   isEdaPackageInstalled, MpoMethod, UNTITLED_PROFILE,
+  createProfileForDf,
 } from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
@@ -233,11 +231,7 @@ export class MpoProfileDialog {
   }
 
   private createManualProfile(): void {
-    const props: {[key: string]: PropertyDesirability} = {};
-    for (const col of this.dataFrame.columns.numerical)
-      props[col.name] = createDefaultNumerical(1, col.min, col.max);
-
-    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+    this.currentProfile = createProfileForDf(this.dataFrame);
     this.applyNameAndDescription(this.currentProfile);
     this.currentProfileFileName = null;
     this.originalProfile = null;

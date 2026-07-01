@@ -818,12 +818,6 @@ export function importMol(content: string) : any {
   return PackageFunctions.importMol(content);
 }
 
-//output: grid_cell_renderer result
-//meta.chemRendererName: OpenChemLib
-export async function oclCellRenderer() : Promise<any> {
-  return await PackageFunctions.oclCellRenderer();
-}
-
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
 //input: semantic_value value { semType: Molecule }
@@ -1023,10 +1017,11 @@ export function MMPEditor(call: DG.FuncCall) : void {
 //input: string_list diffTypes 
 //input: string_list scalings 
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
+//input: bool runOnFilteredData { optional: true; nullable: true }
 //editor: Chem:MMPEditor
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number) : Promise<void> {
-  await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff);
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number, runOnFilteredData: boolean) : Promise<void> {
+  await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
 
 //name: Scaffold Tree Filter

@@ -18,6 +18,18 @@ interface FlowNodeWithStatus extends FlowNode {
   dgStatus?: NodeExecStatus;
 }
 
+/** Plain-language label shown under the node title. `detail` is an optional
+ *  short data summary for a completed node (e.g. "1,204 × 8"). */
+export function statusLabel(status: NodeExecStatus, detail?: string): string {
+  switch (status) {
+  case NodeExecStatus.running:   return 'Running…';
+  case NodeExecStatus.completed: return detail ? `Done · ${detail}` : 'Done';
+  case NodeExecStatus.errored:   return 'Error';
+  case NodeExecStatus.stale:     return 'Out of date';
+  default:                       return '';
+  }
+}
+
 export class ExecutionVisualizer {
   private flow: FlowEditor;
   private trackedNodes = new Set<string>();
@@ -26,10 +38,11 @@ export class ExecutionVisualizer {
     this.flow = flow;
   }
 
-  highlightNode(nodeId: string, status: NodeExecStatus): void {
+  highlightNode(nodeId: string, status: NodeExecStatus, detail?: string): void {
     const node = this.flow.getNodeById(nodeId) as FlowNodeWithStatus | undefined;
     if (!node) return;
     node.dgStatus = status;
+    node.statusText = statusLabel(status, detail);
     this.trackedNodes.add(nodeId);
     void this.flow.updateNode(nodeId);
     this.propagateToConnections(nodeId, status);
@@ -55,6 +68,7 @@ export class ExecutionVisualizer {
       const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
       if (node) {
         node.dgStatus = NodeExecStatus.idle;
+        node.statusText = '';
         void this.flow.updateNode(id);
       }
     }
@@ -67,6 +81,7 @@ export class ExecutionVisualizer {
       const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
       if (node) {
         node.dgStatus = NodeExecStatus.stale;
+        node.statusText = statusLabel(NodeExecStatus.stale);
         void this.flow.updateNode(id);
       }
     }

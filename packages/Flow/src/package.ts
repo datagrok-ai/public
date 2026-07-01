@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -5,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export * from './package.g';
 
 import {FuncFlowView} from './funcflow-view';
+import { getFilesBrowser } from './utils/files-browser-tree';
 
 export const _package = new DG.Package();
 
@@ -66,9 +68,16 @@ export class PackageFunctions {
     name: 'openCreationScriptFlowDialog',
     meta: {role: 'creationScriptEditor'},
   })
-  static async openCreationScriptFlowDialog(script: string, show: boolean = true): Promise<DG.Dialog> {
-    const view = new FuncFlowView();
+  static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
+    // Load the tables being edited so the view can split the flow back into a
+    // creation script per table and save each via TableInfo.saveCreationScript.
+    const loaded = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
+    const tableInfos = loaded.filter((t): t is DG.TableInfo => t != null);
+    const view = new FuncFlowView(tableInfos);
     view.name = `Creation Script`;
+    // Inside the cramped dialog the overview adds clutter — start it minimized;
+    // expand it once the flow is opened in the full editor.
+    view.setMinimapCollapsed(true);
     try {
       await view.loadFromCreationScript(script);
     } catch (e) {
@@ -78,11 +87,17 @@ export class PackageFunctions {
     const d = ui.dialog({title: 'Creation Script Flow'})
       .add(view.root)
       .addButton('Open In Editor', () => {
+        view.setMinimapCollapsed(false);
         grok.shell.addView(view);
         d.close();
       });
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
+  }
+
+  @grok.decorators.func()
+  static testDialog() {
+    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
   }
 }

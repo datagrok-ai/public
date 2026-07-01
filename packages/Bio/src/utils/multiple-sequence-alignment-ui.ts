@@ -83,19 +83,22 @@ export async function multipleSequenceAlignmentUI(
       kalignTerminalGap.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
       const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
-      const kalignParamsDiv = ui.inputs([kalignGapOpen, kalignGapExtend, kalignTerminalGap]);
-      kalignParamsDiv.hidden = true;
+      // Added to the dialog form directly (not a nested ui.inputs() form) to keep label alignment consistent.
+      const kalignGapInputs = [kalignGapOpen, kalignGapExtend, kalignTerminalGap];
+      let kalignParamsExpanded = false;
+      const updateKalignParamsVisibility = (): void => {
+        const show = state.mode === 'kalign' && kalignParamsExpanded;
+        for (const input of kalignGapInputs)
+          input.root.style.display = show ? '' : 'none';
+      };
       const kalignParamsButton = ui.button('Alignment parameters', () => {
-        kalignParamsDiv.hidden = !kalignParamsDiv.hidden;
-        [kalignGapOpen, kalignGapExtend, kalignTerminalGap].forEach((input) => {
-          input.root.style.removeProperty('max-width');
-          input.captionLabel.style.removeProperty('max-width');
-        });
+        kalignParamsExpanded = !kalignParamsExpanded;
+        updateKalignParamsVisibility();
       }, 'Adjust alignment parameters such as penalties for opening and extending gaps');
       kalignParamsButton.classList.add('msa-params-button');
       kalignParamsButton.prepend(ui.icons.settings(() => null, 'Settings'));
 
-      const kalignElements = [kalignParamsDiv, kalignParamsButton, kalignVersionDiv];
+      const kalignElements = [kalignParamsButton, kalignVersionDiv];
 
       // --- Engine UI (non-canonical sequences, dynamically discovered) ---
 
@@ -156,6 +159,7 @@ export async function multipleSequenceAlignmentUI(
           el.style.display = newMode === 'kalign' ? '' : 'none';
         for (const el of engineElements)
           el.style.display = newMode === 'engine' ? '' : 'none';
+        updateKalignParamsVisibility();
       }
 
       async function onColumnChanged(col: DG.Column<string>): Promise<void> {
@@ -309,7 +313,9 @@ export async function multipleSequenceAlignmentUI(
         .add(engineParamsButton)
         .add(engineParamsDiv)
         .add(includeHelmInput)
-        .add(kalignParamsDiv)
+        .add(kalignGapOpen)
+        .add(kalignGapExtend)
+        .add(kalignTerminalGap)
         .add(kalignParamsButton)
         .add(kalignVersionDiv)
         .add(onlySelectedInput)

@@ -21,6 +21,8 @@ export interface McpInputs {
   search_code: {query?: string};
   get_indexing_status: {path?: string};
   clear_index: {path?: string};
+  datagrok_exec: {code?: string};
+  datagrok_show_entities: {entities?: any[]};
 }
 
 export type ToolName = keyof ToolInputs;
@@ -52,6 +54,7 @@ export interface AbortMessage {
 export interface InputResponseMessage {
   type: 'input_response';
   sessionId: string;
+  requestId?: string;
   value: any;
 }
 
@@ -63,14 +66,19 @@ export interface SyncMessage {
   packageName?: string;
 }
 
-export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
+export interface AuthStartMessage {type: 'auth_start'}
+export interface AuthCodeMessage {type: 'auth_code'; code: string}
+
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
 export type OutgoingMessage =
-  | {type: 'chunk'; sessionId: string; content: string; kind?: 'exec' | 'entity'}
+  | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'tool_result'; sessionId: string; content: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}
-  | {type: 'input_request'; sessionId: string; toolName: string; input: any}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
+  | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
+  | {type: 'auth_url'; url: string}
+  | {type: 'auth_done'}
+  | {type: 'auth_error'; message: string};

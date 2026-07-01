@@ -15,9 +15,11 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, missingRequiredInputs} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
+import {tid} from '../utils/test-ids';
+import {summarizeNode} from '../summary/summary-generator';
 
 interface NodeProps {
   data: FlowNode & {selected?: boolean};
@@ -45,52 +47,135 @@ function isConnected(nodeId: string, side: 'input' | 'output', key: string): boo
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
   const collapsed = node.collapsed === true;
-  const inputs = Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>;
-  const outputs = Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>;
+  // Exec (execution-ordering) ports render separately at the top corners — keep
+  // them out of the regular data-socket rows.
+  const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
+    .filter(([key]) => !isExecKey(key));
+  const outputs = (Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>)
+    .filter(([key]) => !isExecKey(key));
+  const execIn = node.inputs[EXEC_IN_KEY] as ClassicPreset.Input<TypedSocket> | undefined;
+  const execOut = node.outputs[EXEC_OUT_KEY] as ClassicPreset.Output<TypedSocket> | undefined;
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
   const ptCount = node.passthroughCount ?? 0;
 
   const titleColor = (node as unknown as {color?: string}).color;
   const titleStyle: React.CSSProperties = titleColor ? {background: titleColor} : {};
 
-  const onStatusClick = (e: React.MouseEvent): void => {
+  const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
+  const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
+
+  // Pre-run hint: structural inputs the user still has to provide. Shown only
+  // when the node hasn't successfully run (idle/stale), so a "Done"/"Error"
+  // status from a real run always takes precedence.
+  const needs = missingRequiredInputs(node, (key) => isConnected(node.id, 'input', key));
+  const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
+  const attention = idle && needs.length > 0;
+
+  // Auto-summary caption (U12), shown when the user hasn't written their own
+  // description. Computed once so the visible (CSS-ellipsized) text and the
+  // hover tooltip stay in sync — the tooltip reveals it in full when truncated.
+  const autoSummary = !node.description && !collapsed ? summarizeNode(node) : '';
+
+  // Collapse is the caret's job now — the status dot is display-only, so
+  // clicking the run indicator never hides the node out from under you.
+  const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     toggleCollapsed(node.id);
   };
-  const onStatusPointerDown = (e: React.PointerEvent): void => {
-    // Prevent the AreaPlugin's drag handler from picking up the pointerdown
-    // when the user is just clicking the status dot to collapse.
+  const stopPointer = (e: React.PointerEvent): void => {
+    // Keep the AreaPlugin's node-drag handler from grabbing a click on a
+    // title-bar affordance (caret).
     e.stopPropagation();
   };
 
   return (
     <div
       className={`ff-node ff-node-${node.dgNodeType ?? 'func'}` + (collapsed ? ' ff-node-collapsed' : '')}
+      data-testid={tid('node')}
       data-node-id={node.id}
+      data-node-type={node.dgNodeType ?? 'func'}
+      data-node-type-name={node.dgTypeName ?? ''}
+      data-func={node.dgFuncName ?? ''}
+      data-node-label={node.label}
       data-selected={node.selected ? 'true' : 'false'}
-      data-status={(node as unknown as {dgStatus?: string}).dgStatus ?? 'idle'}
+      data-status={dgStatus}
+      data-attention={attention ? 'true' : 'false'}
     >
-      <div className="ff-node-title" style={titleStyle} data-role={node.dgRole ?? ''}>
-        <div
-          className="ff-node-status"
-          data-status={(node as unknown as {dgStatus?: string}).dgStatus ?? 'idle'}
-          title={collapsed ? 'Expand node' : 'Collapse node'}
-          onPointerDown={onStatusPointerDown}
-          onClick={onStatusClick}
-        />
-        <span className="ff-node-title-text">{node.label}</span>
+      {/* Execution-ordering ports — top corners (KNIME flow-variable style).
+          exec-in (left) accepts "run after" predecessors; exec-out (right)
+          drives successors. Always rendered so edges stay attached even when
+          the node is collapsed. */}
+      <div className="ff-node-exec-row">
+        <span className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')} title="Run after (order in)">
+          {execIn && (
+            <RefSocket
+              name="exec-in-socket"
+              emit={props.emit}
+              side="input"
+              socketKey={EXEC_IN_KEY}
+              nodeId={node.id}
+              payload={execIn.socket}
+            />
+          )}
+        </span>
+        <span className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')} title="Run before (order out)">
+          {execOut && (
+            <RefSocket
+              name="exec-out-socket"
+              emit={props.emit}
+              side="output"
+              socketKey={EXEC_OUT_KEY}
+              nodeId={node.id}
+              payload={execOut.socket}
+            />
+          )}
+        </span>
       </div>
 
+      <div className="ff-node-title" data-testid={tid('node-title')} style={titleStyle} data-role={node.dgRole ?? ''}>
+        <div
+          className="ff-node-status"
+          data-testid={tid('node-status')}
+          data-status={dgStatus}
+          title={statusText || 'Not run yet'}
+        />
+        <span className="ff-node-title-text" data-testid={tid('node-title-text')}>{node.label}</span>
+        <span
+          className="ff-node-caret"
+          data-testid={tid('node-caret')}
+          title={collapsed ? 'Expand node' : 'Collapse node'}
+          onPointerDown={stopPointer}
+          onClick={onCaretClick}
+        >{collapsed ? '▸' : '▾'}</span>
+      </div>
+
+      {/* Pre-run "Needs input" hint takes precedence over an idle/stale status;
+          a real run's status (Done/Running/Error) wins otherwise. Shown
+          collapsed too, so a folded node still reports its state at a glance. */}
+      {attention ? (
+        <div className="ff-node-hint" data-testid={tid('node-hint')} title={`Connect or set: ${needs.join(', ')}`}>
+          Requires: {needs.join(', ')}
+        </div>
+      ) : statusText ? (
+        <div className="ff-node-statusline" data-testid={tid('node-statusline')} data-status={dgStatus}>{statusText}</div>
+      ) : null}
+
       {node.description && !collapsed && (
-        <div className="ff-node-description" title={node.description}>{node.description}</div>
+        <div className="ff-node-description" data-testid={tid('node-description')} title={node.description}>{node.description}</div>
+      )}
+
+      {/* Auto-generated plain-language caption — the flow documents itself
+          (U12). The title reveals the full text when CSS ellipsis truncates it. */}
+      {autoSummary && (
+        <div className="ff-node-summary" data-testid={tid('node-summary')} title={autoSummary}>{autoSummary}</div>
       )}
 
       {!collapsed && (
-        <div className="ff-node-body">
+        <div className="ff-node-body" data-testid={tid('node-body')}>
           <div className="ff-node-io">
             <div className="ff-node-inputs">
               {inputs.map(([key, input]) => input && (
-                <div key={key} className="ff-socket-row ff-socket-row-input">
+                <div key={key} className="ff-socket-row ff-socket-row-input" data-testid={tid('socket-input', key)}>
                   <RefSocket
                     name="input-socket"
                     emit={props.emit}
@@ -112,6 +197,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
                     'ff-socket-row ff-socket-row-output' +
                     (idx < ptCount ? ' ff-socket-row-passthrough' : '')
                   }
+                  data-testid={tid('socket-output', key)}
                 >
                   <span className="ff-socket-label">{output.label ?? key}</span>
                   <RefSocket
@@ -189,6 +275,7 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   return (
     <div
       className="ff-socket"
+      data-testid={tid('socket', props.data.dgType)}
       style={{background: color, ['--socket-color' as never]: color}}
       title={props.data.dgType}
       data-type={props.data.dgType}
@@ -202,13 +289,14 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
  *  `setAttribute('stroke', ...)`). The color is stuffed into the connection
  *  payload by `FlowEditor` at construction time as `_color`. */
 interface ConnectionProps {
-  data: FlowScheme['Connection'] & {_color?: string};
+  data: FlowScheme['Connection'] & {_color?: string; _count?: string};
 }
 
 export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Element | null {
   const {path, start, end} = Presets.classic.useConnection();
   if (!path) return null;
   const color = props.data._color ?? '#8892a0';
+  const count = props.data._count;
 
   // Compute the actual path: if waypoints are present, chain
   // classicConnectionPath segments through start → waypoints → end. Without
@@ -230,7 +318,8 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
   // unbounded SVG canvas.
   return (
     <svg
-      data-testid="connection"
+      data-testid={tid('connection')}
+      data-connection-id={props.data.id}
       style={{
         overflow: 'visible',
         position: 'absolute',
@@ -258,11 +347,22 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
           cy={wp.y}
           r={5}
           className="ff-waypoint"
+          data-testid={tid('waypoint', i)}
           data-connection-id={props.data.id}
           data-waypoint-index={i}
           style={{fill: color, stroke: '#fff', strokeWidth: 1.5, pointerEvents: 'auto', cursor: 'move'}}
         />
       ))}
+      {count && start && end && (
+        <text
+          className="ff-edge-count"
+          data-testid={tid('edge-count')}
+          x={(start.x + end.x) / 2}
+          y={(start.y + end.y) / 2 - 6}
+          textAnchor="middle"
+          dominantBaseline="central"
+        >{count}</text>
+      )}
     </svg>
   );
 }

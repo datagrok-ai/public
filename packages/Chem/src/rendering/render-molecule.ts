@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {_properties} from '../package';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {_isSmarts} from '../utils/mol-creation_rdkit';
@@ -10,10 +9,10 @@ import {_isSmarts} from '../utils/mol-creation_rdkit';
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
   molStr: string,
-  options?: {renderer?: 'RDKit' | 'OpenChemLib',
+  options?: {renderer?: 'RDKit',
   width?: number, height?: number, popupMenu?: boolean}): HTMLElement {
   options ??= {};
-  options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib' ?? 'RDKit';
+  options.renderer ??= 'RDKit';
   options.width ??= 200;
   options.height ??= 100;
   options.popupMenu ??= true;

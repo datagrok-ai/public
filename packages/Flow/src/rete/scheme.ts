@@ -55,8 +55,18 @@ export class FlowNode extends ClassicPreset.Node<
   dgTypeName?: string;
 
   /** When true the node renders as a single title bar with no body.
-   *  Toggled by clicking the status circle. */
+   *  Toggled by the caret in the title bar (the status dot is display-only). */
   collapsed = false;
+
+  /** Short, plain-language run status shown under the node title
+   *  (e.g. "Running…", "Done · 1,204 × 8", "Error"). Set by
+   *  `ExecutionVisualizer`; empty when idle. */
+  statusText = '';
+
+  /** Input keys that must be satisfied (connected, or filled in the panel) for
+   *  the node to do anything — the structural inputs (a table, a column).
+   *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
+  requiredInputs: string[] = [];
 
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
@@ -90,3 +100,34 @@ export class FlowConnection extends ClassicPreset.Connection<ClassicPreset.Node,
 }
 
 export type FlowScheme = GetSchemes<FlowNode, FlowConnection>;
+
+/** Execution-ordering ports added to *every* node by `createNode`. A connection
+ *  exec-out → exec-in is a pure topological dependency ("run the source, and
+ *  therefore everything before it, before the target"): the topological sort
+ *  treats it like any other edge, but it carries no data — the compiler ignores
+ *  it and it never produces a variable. Lets users express run-order explicitly
+ *  instead of relying on vertical node position. */
+export const ORDER_SOCKET_TYPE = 'order';
+export const EXEC_IN_KEY = '__exec_in';
+export const EXEC_OUT_KEY = '__exec_out';
+
+/** Whether a port key is one of the execution-ordering ports. */
+export function isExecKey(key: string): boolean {
+  return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
+}
+
+/** The labels of a node's required inputs that are neither connected nor filled
+ *  with a value — i.e. what the user still has to provide. Pure (no editor
+ *  dependency): `isConnected(key)` is supplied by the caller. Drives the
+ *  "Needs input" hint on the node and lightweight pre-run validation. */
+export function missingRequiredInputs(node: FlowNode, isConnected: (key: string) => boolean): string[] {
+  const missing: string[] = [];
+  for (const key of node.requiredInputs) {
+    if (isConnected(key)) continue;
+    const v = node.inputValues[key];
+    if (v !== undefined && v !== null && String(v).trim() !== '') continue;
+    const input = (node.inputs as Record<string, {label?: string} | undefined>)[key];
+    missing.push(input?.label ?? key);
+  }
+  return missing;
+}

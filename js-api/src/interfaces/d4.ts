@@ -589,8 +589,8 @@ export interface IScatterPlotSettings {
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
+  /// When checked, selected markers are highlighted using the selected rows color.
+  /// When unchecked, selected markers use their regular color coding.
   showSelectedRows: boolean;
 
   /// When true, clicking on the background (no point hit) clears the current selection.
@@ -746,6 +746,28 @@ export interface IScatterPlotSettings {
   regressionLineColor: number;
 
   regressionLineTransparency: number;
+
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an
+  /// *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*).
+  movingAverageWindow: number;
+
+  /// Window unit (*Points*, a row count, by default):
+  /// * *Absolute* — a width in X-axis units, for a numeric X axis.
+  /// * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis.
+  movingAverageWindowUnit: string;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  movingAverageLineColor: number;
+
+  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 
@@ -1144,8 +1166,8 @@ export interface IBoxPlotSettings {
 
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected points are highlighted using the selected rows color.
-  /// When false, selected points use their regular color coding.
+  /// When checked, selected points are highlighted using the selected rows color.
+  /// When unchecked, selected points use their regular color coding.
   showSelectedRows: boolean;
 
   statistics: Array<string>;
@@ -2145,8 +2167,8 @@ export interface ILineChartSettings {
   /// Example: "Split by" = "SEX" and you hover over the "Male" category in the filter.
   showMouseOverCategory: boolean;
 
-  /// When true, selected points and line segments are highlighted using the selected rows color.
-  /// When false, they keep their regular color coding.
+  /// When checked, selected points and line segments are highlighted using the selected rows color.
+  /// When unchecked, they keep their regular color coding.
   showSelectedRows: boolean;
 
   overviewAggrType: string;
@@ -2405,6 +2427,28 @@ export interface ILineChartSettings {
   regressionLineColor: number;
 
   regressionLineTransparency: number;
+
+  /// Moving (rolling) average line visibility.
+  showMovingAverageLine: boolean;
+
+  /// Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an
+  /// *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*).
+  movingAverageWindow: number;
+
+  /// Window unit (*Points*, a row count, by default):
+  /// * *Absolute* — a width in X-axis units, for a numeric X axis.
+  /// * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis.
+  movingAverageWindowUnit: string;
+
+  /// Shades a ±1 standard deviation band around the line.
+  showMovingAverageDeviation: boolean;
+
+  /// Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20.
+  movingAveragePerCategory: boolean;
+
+  movingAverageLineColor: number;
+
+  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 
@@ -2737,6 +2781,10 @@ export interface INetworkDiagramSettings {
 
   hoverColor: number;
 
+  /// When checked, selected nodes and edges are highlighted using the selected rows color.
+  /// When unchecked, they keep their regular color coding.
+  showSelectedRows: boolean;
+
   edgeLinearColorScheme: Array<number>;
 
   edgeCategoricalColorScheme: Array<number>;
@@ -2859,8 +2907,8 @@ export interface IPcPlotSettings {
   /// Either all lines are shown or only current line, mouse over line, selected ones.
   showAllLines: boolean;
 
-  /// When true, selected lines are highlighted using the selected rows color.
-  /// When false, selected lines use their regular color coding.
+  /// When checked, selected lines are highlighted using the selected rows color.
+  /// When unchecked, selected lines use their regular color coding.
   showSelectedRows: boolean;
 
   /// Whether the in-chart filters are visible
@@ -3340,8 +3388,8 @@ export interface IScatterPlot3dSettings {
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
 
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
+  /// When checked, selected markers are highlighted using the selected rows color.
+  /// When unchecked, selected markers use their regular color coding.
   showSelectedRows: boolean;
 
   markerType: string;
@@ -3586,6 +3634,10 @@ export interface ITileViewerSettings {
 
   tilesFont: string;
 
+  /// When checked, selected tiles are highlighted using the selected rows color.
+  /// When unchecked, selected tiles keep their regular appearance.
+  showSelectedRows: boolean;
+
   lanes: Array<string>;
 
   /// Determines the rows shown on the plot.
@@ -3646,6 +3698,10 @@ export interface ITreeMapSettings {
   sizeAggrType: string;
 
   defaultColor: number;
+
+  /// When checked, selected rows are highlighted using the selected rows color.
+  /// When unchecked, cells keep their regular color coding.
+  showSelectedRows: boolean;
 
   showColumnSelectionPanel: boolean;
 

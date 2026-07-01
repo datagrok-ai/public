@@ -564,7 +564,7 @@ export const RichFunctionView = Vue.defineComponent({
       const ranges = getRanges('rangeSA');
       const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
       const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup});
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
     };
 
     const runFitting = async () => {
@@ -578,7 +578,7 @@ export const RichFunctionView = Vue.defineComponent({
         const targets = getTargets();
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup});
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)

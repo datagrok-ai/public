@@ -13,6 +13,8 @@ RUN groupadd -g 2001 grok && \
     mkdir -p /users && \
     chown -R grok:grok ${HOME_DIR} /workspace /users
 
+RUN npm install -g @anthropic-ai/claude-code
+
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
 COPY --chown=grok:grok src ./src
 RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production

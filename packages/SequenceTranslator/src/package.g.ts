@@ -288,3 +288,12 @@ export function applyNotationProviderForCyclized(col: DG.Column<any>, separator:
 export async function harmonizedSequenceNotationProviderConstructor() : Promise<any> {
   return await PackageFunctions.harmonizedSequenceNotationProviderConstructor();
 }
+
+//name: Markush Enumerator package settings editor
+//tags: packageSettingsEditor
+//input: object propList 
+//output: widget result
+//meta.role: packageSettingsEditor
+export async function markushSettingsEditor(properties: any) : Promise<any> {
+  return await PackageFunctions.markushSettingsEditor(properties);
+}

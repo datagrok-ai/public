@@ -78,6 +78,7 @@ function setToggleState(v: boolean, toggle: HTMLDivElement) {
 }
 
 function setButtonsToggleState() {
+  setToggleState(window.showAI, aiToggle);
   window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
   setToggleState(window.showToolbox, toolboxToogle);
   setToggleState(window.showProperties, propertiesToggle);
@@ -93,7 +94,7 @@ export async function windowsManagerPanel() {
   const isDeveloper = userGroup.memberships.some((g) => g.id === DG.Group.defaultGroupsIds.Developers);
 
   const toggles: HTMLElement[] = [
-    ui.tooltip.bind(aiToggle, () => ui.div(['AI ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(aiToggle, () => ui.div(['AI ', ui.span(['Ctrl+I'], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(topmenuToggle, () => ui.div(['Tabs ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(toolboxToogle, () => ui.div(['Toolbox ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(propertiesToggle, () => ui.div(['Context Panel ', ui.span(['F4'], {style: {color: 'var(--grey-4)'}})]), 'top'),

@@ -12,6 +12,8 @@ import {FlowNode} from '../rete/scheme';
 import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
+import {setTid} from '../utils/test-ids';
+import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
@@ -95,10 +97,15 @@ export class PropertyPanel {
   private contentDiv: HTMLElement;
   private flow: FlowEditor;
 
+  /** Set by the view: opens a column / columns picker dialog for a func-node
+   *  column input, seeded by the upstream table (running the flow up to that
+   *  point if needed). When unset, the picker icon is not rendered. */
+  onPickColumns?: (req: ColumnPickRequest) => void;
+
   constructor(flow: FlowEditor) {
     this.flow = flow;
-    this.contentDiv = ui.div([], 'funcflow-property-content');
-    this.root = ui.divV([this.contentDiv], 'funcflow-property-panel');
+    this.contentDiv = setTid(ui.div([], 'funcflow-property-content'), 'property-content');
+    this.root = setTid(ui.divV([this.contentDiv], 'funcflow-property-panel'), 'property-panel');
   }
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
@@ -111,9 +118,9 @@ export class PropertyPanel {
       node.label = String(v ?? '');
       void this.flow.updateNode(node.id);
     });
-    const typeBadge = ui.div([], 'funcflow-type-badge');
+    const typeBadge = setTid(ui.div([], 'funcflow-type-badge'), 'property-type-badge');
     typeBadge.textContent = node.dgNodeType || 'function';
-    const titleRow = ui.div([titleInput, typeBadge], 'funcflow-title-row');
+    const titleRow = setTid(ui.div([titleInput, typeBadge], 'funcflow-title-row'), 'property-title-row');
     this.contentDiv.appendChild(titleRow);
 
     // Per-node description: rendered under the title in the canvas, and
@@ -128,7 +135,8 @@ export class PropertyPanel {
     if (node.dgFunc) this.addFuncNodePanes(acc, node);
     if (node.dgNodeType === 'input') this.addInputNodePane(acc, node);
     if (node.dgNodeType === 'output') this.addOutputNodePane(acc, node);
-    if (node.dgNodeType === 'utility') this.addUtilityNodePane(acc, node);
+    if (node.properties['viewerType']) this.addViewerNodePane(acc, node);
+    else if (node.dgNodeType === 'utility') this.addUtilityNodePane(acc, node);
 
     this.addConnectionsPane(acc, node);
 
@@ -219,6 +227,12 @@ export class PropertyPanel {
           case 'column_list':
             content.appendChild(this.createColumnRow(node, inp.name, true, dataframeParams, tip));
             break;
+          case 'string_list':
+            // Comma-separated; the compiler trims and turns it into an array.
+            // (`list<string>` arrives here as `string_list` — DG normalizes it.)
+            content.appendChild(this.createTextarea(inp.name, String(node.inputValues[inp.name] ?? ''),
+              (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`));
+            break;
           }
         }
         return content;
@@ -292,6 +306,57 @@ export class PropertyPanel {
     }, true);
   }
 
+  /** Viewer node: the curated, exposed look options (column choices, title).
+   *  Everything else is edited live via the preview's "Edit settings" button. */
+  private addViewerNodePane(acc: DG.Accordion, node: FlowNode): void {
+    if (!node.properties['viewerLook'] || typeof node.properties['viewerLook'] !== 'object')
+      node.properties['viewerLook'] = {};
+    const look = node.properties['viewerLook'] as Record<string, unknown>;
+    const specs = (node.properties['viewerOptionSpecs'] as Array<{key: string; label: string; kind: string}>) ?? [];
+    // The table the viewer plots — its column options pick from it.
+    const tableParam = this.dataframeInputKeys(node)[0];
+    const setLook = (key: string) => (v: unknown): void => {
+      const s = String(v ?? '').trim();
+      if (s) look[key] = s;
+      else delete look[key];
+      void this.flow.updateNode(node.id);
+    };
+
+    acc.addPane('Viewer', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
+      content.appendChild(ui.div([ui.label('Type'),
+        ui.divText(String(node.properties['viewerType']))], 'funcflow-prop-row'));
+      for (const o of specs) {
+        // A column option can also be wired in (a column socket). When connected,
+        // the wired column wins — show it as connected rather than an editor.
+        if (o.kind === 'column' && this.flow.isInputConnected(node.id, o.key)) {
+          const row = ui.div([ui.divText(`${o.label}: connected`)], 'funcflow-prop-row');
+          ui.tooltip.bind(row, 'A column is wired into this option; its name is used.');
+          content.appendChild(row);
+          continue;
+        }
+        // Column option → name field + picker dialog (seeded by the wired table);
+        // non-column option (e.g. Title) → plain text.
+        if (o.kind === 'column') {
+          content.appendChild(this.createColumnFieldRow({
+            nodeId: node.id, label: o.label, isList: false,
+            tip: 'Column name (or wire a column into the socket)',
+            getValue: () => String(look[o.key] ?? ''),
+            setValue: setLook(o.key),
+            tableParam,
+          }));
+          continue;
+        }
+        content.appendChild(this.createTextarea(o.label, String(look[o.key] ?? ''), setLook(o.key)));
+      }
+      const note = ui.divText('Run the flow, then click the viewer in the preview panel and use ' +
+        '“Edit settings” to change every other setting — your changes are saved on the node.');
+      note.style.cssText = 'font-size:11px;color:#888;margin-top:6px;line-height:1.4;';
+      content.appendChild(note);
+      return content;
+    }, true);
+  }
+
   private addUtilityNodePane(acc: DG.Accordion, node: FlowNode): void {
     const props = Object.entries(node.properties).filter(([k]) => !k.startsWith('_'));
     if (props.length === 0) return;
@@ -304,12 +369,27 @@ export class PropertyPanel {
       void this.flow.updateNode(node.id);
     };
 
+    // A 'table' (dataframe) input means column-valued properties can be picked.
+    const tableParam = this.dataframeInputKeys(node)[0];
+
     acc.addPane('Configuration', () => {
       const content = ui.div([], 'funcflow-accordion-content');
       const nodeTips = UTILITY_PROP_TOOLTIPS[kind] ?? {};
       for (const [key, val] of props) {
         const tip = nodeTips[key];
         const isConstValue = isConstant && key === 'value';
+        // Column-valued props (Select Column → columnName, Select Columns →
+        // columnNames) get the picker dialog when there's a table to pick from.
+        if (tableParam && (key === 'columnName' || key === 'columnNames')) {
+          content.appendChild(this.createColumnFieldRow({
+            nodeId: node.id, label: key, isList: key === 'columnNames',
+            tip: tip ?? (key === 'columnNames' ? 'Comma-separated column names' : 'Column name'),
+            getValue: () => String(node.properties[key] ?? ''),
+            setValue: (v) => {node.properties[key] = v;},
+            tableParam,
+          }));
+          continue;
+        }
         if (typeof val === 'boolean') {
           content.appendChild(this.createToggle(key, val, (v) => {
             node.properties[key] = v;
@@ -426,35 +506,114 @@ export class PropertyPanel {
     return textarea;
   }
 
+  /** Stamp an input row with its test-id + a human-findable `data-param` (the
+   *  input/param name), so a specific field is addressable in the context panel. */
+  private propRow(el: HTMLElement, label: string): HTMLElement {
+    setTid(el, 'prop-input', label);
+    el.dataset.param = label;
+    return el;
+  }
+
   private createTextarea(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    return ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
   /** A column / column-list input laid out side by side with its table picker:
    *  the column-name field (≈70%) and, when the func has 2+ dataframe inputs, a
    *  table chooser (≈30%) writing the node's `columnTables` association. With a
    *  single dataframe input the field spans full width (the table is implicit). */
+  /** Input keys on a node whose socket is a dataframe — the tables a column
+   *  field can pick from. (Func nodes may have several; viewers / Select Column
+   *  utilities have one named 'table'.) */
+  private dataframeInputKeys(node: FlowNode): string[] {
+    return (Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>)
+      .filter(([, inp]) => inp?.socket.dgType === 'dataframe')
+      .map(([k]) => k);
+  }
+
+  /** A column / column-list field laid out with its picker: the name field, an
+   *  optional table-chooser (multi-table funcs), and the picker icon that opens
+   *  a dialog seeded by the chosen table input. Storage is fully delegated via
+   *  `getValue`/`setValue`, so this serves **any** node with a column field —
+   *  func inputs (`inputValues`), viewer look options, Select Column utilities.
+   *  `label` is the display label and the picker's `data-param` / test-id key. */
+  private createColumnFieldRow(opts: {
+    nodeId: string;
+    label: string;
+    isList: boolean;
+    tip: string;
+    getValue: () => string;
+    setValue: (v: string) => void;
+    /** Single dataframe input the columns come from (most nodes). */
+    tableParam?: string;
+    /** Per-row table chooser for multi-table funcs (JoinTables keys1→table1, …). */
+    tableSelect?: {options: string[]; get: () => string; set: (v: string) => void};
+  }): HTMLElement {
+    const textarea = this.buildTextareaEl(opts.getValue(), opts.setValue, opts.tip);
+
+    let getTableParam = (): string => opts.tableParam ?? '';
+    const cells: HTMLElement[] = [ui.div([textarea], 'funcflow-col-input-cell')];
+    if (opts.tableSelect) {
+      const ts = opts.tableSelect;
+      const select = this.buildSelectEl(ts.get(), ts.options, ts.set, 'Which table input this column refers to');
+      getTableParam = (): string => select.value || ts.options[0];
+      cells.push(ui.div([select], 'funcflow-col-table-cell'));
+    }
+
+    // Column chooser — opens a dialog seeded by the upstream table (running the
+    // flow up to that point if needed) so users pick from a real column list.
+    if (this.onPickColumns && (opts.tableSelect || opts.tableParam)) {
+      const pickBtn = ui.iconFA('list', () => {
+        this.onPickColumns!({
+          nodeId: opts.nodeId, paramName: opts.label, isList: opts.isList,
+          tableParam: getTableParam(),
+          current: opts.getValue(),
+          apply: (value: string) => {
+            textarea.value = value;
+            opts.setValue(value);
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+          },
+        });
+      }, opts.isList ? 'Choose columns from the connected table' : 'Choose a column from the connected table');
+      setTid(pickBtn, 'prop-pick-columns', opts.label);
+      pickBtn.classList.add('funcflow-col-pick');
+      cells.push(ui.div([pickBtn], 'funcflow-col-pick-cell'));
+    }
+
+    return this.propRow(ui.div([this.labelWithTooltip(opts.label, opts.tip), ui.div(cells, 'funcflow-col-grid')],
+      'funcflow-prop-row'), opts.label);
+  }
+
   private createColumnRow(
     node: FlowNode, paramName: string, isList: boolean, dataframeParams: string[], tip: string,
   ): HTMLElement {
     const colTip = isList ?
       `${tip} | Comma-separated column names` :
       `${tip} | Column name (compiled to table.col(...))`;
-    const textarea = this.buildTextareaEl(String(node.inputValues[paramName] ?? ''),
-      (v) => {node.inputValues[paramName] = v;}, colTip);
 
-    const cells: HTMLElement[] = [ui.div([textarea], 'funcflow-col-input-cell')];
+    // Single dataframe input → fixed table; multi-table funcs → a per-row select
+    // writing the node's `columnTables` association (keys1→table1, keys2→table2).
+    let tableParam: string | undefined = dataframeParams[0];
+    let tableSelect: {options: string[]; get: () => string; set: (v: string) => void} | undefined;
     if (dataframeParams.length >= 2) {
       if (!node.properties['columnTables']) node.properties['columnTables'] = {};
       const associations = node.properties['columnTables'] as Record<string, string>;
-      const current = associations[paramName] ?? dataframeParams[0];
-      const select = this.buildSelectEl(current, dataframeParams,
-        (v) => {associations[paramName] = v;}, 'Which table input this column refers to');
-      cells.push(ui.div([select], 'funcflow-col-table-cell'));
+      tableParam = undefined;
+      tableSelect = {
+        options: dataframeParams,
+        get: () => associations[paramName] ?? dataframeParams[0],
+        set: (v) => {associations[paramName] = v;},
+      };
     }
-    return ui.div([this.labelWithTooltip(paramName, colTip), ui.div(cells, 'funcflow-col-grid')],
-      'funcflow-prop-row');
+
+    return this.createColumnFieldRow({
+      nodeId: node.id, label: paramName, isList, tip: colTip,
+      getValue: () => String(node.inputValues[paramName] ?? ''),
+      setValue: (v) => {node.inputValues[paramName] = v;},
+      tableParam, tableSelect,
+    });
   }
 
   private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string): HTMLElement {
@@ -468,7 +627,7 @@ export class PropertyPanel {
       if (!isNaN(parsed)) onChange(parsed);
     });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    return ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row'), label);
   }
 
   private createToggle(label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string): HTMLElement {
@@ -479,7 +638,7 @@ export class PropertyPanel {
     input.addEventListener('change', () => onChange(input.checked));
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
     const lbl = this.labelWithTooltip(label, inputTooltip);
-    return ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row');
+    return this.propRow(ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row'), label);
   }
 
   private buildSelectEl(value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLSelectElement {
@@ -498,7 +657,7 @@ export class PropertyPanel {
   }
 
   private createCombo(label: string, value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    return ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row');
+    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
+      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 }

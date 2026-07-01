@@ -89,6 +89,7 @@ export class DesirabilityModeDialog {
     const subs: Subscription[] = [];
 
     let modeInputRoot: HTMLElement | undefined;
+    let invertRoot: HTMLElement | undefined;
 
     const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
       if (v === this.prop.functionType)
@@ -179,7 +180,16 @@ export class DesirabilityModeDialog {
           this.onUpdate({line} as any);
       }));
 
+      const invertInput = ui.input.toggle('Invert', {value: !!prop.inverted, onValueChanged: (v) => {
+        prop.inverted = v;
+        this.onUpdate({inverted: v} as any);
+        previewEditor.redrawAll(false);
+      }});
+      invertInput.setTooltip('Invert desirability (d → 1 − d). Lower-is-better for ramps/sigmoids; ' +
+        'turns a Gaussian target into an avoided range.');
+
       modeInputRoot = modeInput.root;
+      invertRoot = invertInput.root;
       previewEditor.root.classList.add('statistics-mpo-plot');
       contentPanel.append(previewEditor.root, sectionHeader('PARAMETERS'), paramForm);
     };
@@ -203,6 +213,7 @@ export class DesirabilityModeDialog {
       dispose();
       ui.empty(contentPanel);
       modeInputRoot = undefined;
+      invertRoot = undefined;
 
       if (isNumerical(this.prop))
         buildNumericalContent();
@@ -214,6 +225,8 @@ export class DesirabilityModeDialog {
         headerItems.push(typeInput.root);
       if (modeInputRoot)
         headerItems.push(modeInputRoot);
+      if (invertRoot)
+        headerItems.push(invertRoot);
       if (headerItems.length > 0)
         contentPanel.prepend(ui.divH(headerItems, 'statistics-mpo-dialog-header-row'));
 

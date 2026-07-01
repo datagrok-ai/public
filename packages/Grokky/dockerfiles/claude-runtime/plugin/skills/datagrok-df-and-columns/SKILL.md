@@ -32,6 +32,7 @@ and `datagrok-selection`.
 | Clone DataFrame (full)                       | `t.clone()`                                                     |
 | Clone filtered rows                          | `t.clone(t.filter)`                                             |
 | Clone column subset                          | `t.clone(null, ['a', 'b'])`                                     |
+| Check if value is missing                    | `col.isNone(i)`                                                 | 
 | Stats (cached on column)                     | `col.stats.{min,max,avg,stdev,med,q1,q2,q3,sum,valueCount,missingValueCount,uniqueCount}` |
 | Set semType                                  | `col.semType = DG.SEMTYPE.MOLECULE`                             |
 | Set friendly name / units / format / desc    | `col.meta.friendlyName / .units / .format / .description = ...` |

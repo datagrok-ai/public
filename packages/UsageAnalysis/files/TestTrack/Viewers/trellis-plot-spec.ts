@@ -1,26 +1,17 @@
 import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const curvesPath = 'System:DemoFiles/curves.csv';
 
 test('Trellis plot tests', async ({page}) => {
-  // Phase 1: Navigate
+  // Many viewer attaches + layout round-trips need a large per-test budget.
+  test.setTimeout(900_000);
   page.setDefaultTimeout(120000);
-  await page.goto(baseUrl, {timeout: 120000, waitUntil: 'domcontentloaded'});
-  await page.waitForFunction(() => {
-    try {
-      return typeof grok !== 'undefined'
-        && grok.shell
-        && typeof grok.shell.closeAll === 'function'
-        && grok.dapi
-        && grok.dapi.files
-        && document.querySelector('.d4-root') !== null;
-    } catch { return false; }
-  }, {timeout: 120000});
+  await loginToDatagrok(page);
   await page.waitForTimeout(5000);
 
   // Phase 2: Open dataset
@@ -48,11 +39,7 @@ test('Trellis plot tests', async ({page}) => {
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
   // Phase 3: Add Trellis plot
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-trellis-plot"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-Trellis-plot"]').waitFor({timeout: 10000});
+  await v.addViewerByIcon(page, 'trellis-plot', 'Trellis-plot', 10000);
 
   // #### Inner viewer types
   await softStep('Inner viewer types', async () => {
@@ -140,26 +127,12 @@ test('Trellis plot tests', async ({page}) => {
 
   // #### Global scale
   await softStep('Global scale', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      await new Promise(r => setTimeout(r, 800));
-      const r: boolean[] = [];
-
-      tp.props.globalScale = true;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(tp.props.globalScale);
-
-      tp.props.globalScale = false;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(tp.props.globalScale);
-
-      tp.props.globalScale = true;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(tp.props.globalScale);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {set: {viewerType: 'Scatter plot'}, wait: 800},
+      {set: {globalScale: true}, wait: 500, read: 'globalScale'},
+      {set: {globalScale: false}, wait: 500, read: 'globalScale'},
+      {set: {globalScale: true}, wait: 500, read: 'globalScale'},
+    ]);
     expect(result).toEqual([true, false, true]);
   });
 
@@ -195,25 +168,17 @@ test('Trellis plot tests', async ({page}) => {
 
   // #### Range sliders with global scale
   await softStep('Range sliders with global scale', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.globalScale = true;
-      tp.props.showRangeSliders = true;
-      tp.props.showXAxes = 'Always';
-      tp.props.showYAxes = 'Always';
-      await new Promise(r => setTimeout(r, 500));
-      return {
-        globalScale: tp.props.globalScale,
-        showRangeSliders: tp.props.showRangeSliders,
-        showXAxes: tp.props.showXAxes,
-        showYAxes: tp.props.showYAxes,
-      };
-      // Note: hover/drag range sliders and Reset Inner Range Sliders are canvas interactions -- not automatable
+    // Note: hover/drag range sliders and Reset Inner Range Sliders are canvas interactions -- not automatable
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {
+        set: {globalScale: true, showRangeSliders: true, showXAxes: 'Always', showYAxes: 'Always'},
+        wait: 500,
+        read: ['globalScale', 'showRangeSliders', 'showXAxes', 'showYAxes'],
+      },
+    ]);
+    expect(result[0]).toEqual({
+      globalScale: true, showRangeSliders: true, showXAxes: 'Always', showYAxes: 'Always',
     });
-    expect(result.globalScale).toBe(true);
-    expect(result.showRangeSliders).toBe(true);
-    expect(result.showXAxes).toBe('Always');
-    expect(result.showYAxes).toBe('Always');
   });
 
   // #### Gridlines
@@ -233,28 +198,12 @@ test('Trellis plot tests', async ({page}) => {
 
   // #### Tiles mode
   await softStep('Tiles mode', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const r: any[] = [];
-
-      tp.props.useTiledView = true;
-      await new Promise(res => setTimeout(res, 500));
-      r.push(tp.props.useTiledView);
-
-      tp.props.tilesPerRow = 2;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.tilesPerRow);
-
-      tp.props.tilesPerRow = 6;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.tilesPerRow);
-
-      tp.props.useTiledView = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.useTiledView);
-
-      return r;
-    });
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {set: {useTiledView: true}, wait: 500, read: 'useTiledView'},
+      {set: {tilesPerRow: 2}, read: 'tilesPerRow'},
+      {set: {tilesPerRow: 6}, read: 'tilesPerRow'},
+      {set: {useTiledView: false}, read: 'useTiledView'},
+    ]);
     expect(result).toEqual([true, 2, 6, false]);
   });
 
@@ -338,66 +287,37 @@ test('Trellis plot tests', async ({page}) => {
 
   // #### On Click functionality
   await softStep('On Click functionality', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const r: string[] = [];
-
-      tp.props.onClick = 'Select';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.onClick);
-
-      tp.props.onClick = 'Filter';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.onClick);
-
-      tp.props.onClick = 'None';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(tp.props.onClick);
-
-      return r;
-      // Note: actual cell clicks are canvas-based and not automatable
-    });
+    // Note: actual cell clicks are canvas-based and not automatable
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {set: {onClick: 'Select'}, read: 'onClick'},
+      {set: {onClick: 'Filter'}, read: 'onClick'},
+      {set: {onClick: 'None'}, read: 'onClick'},
+    ]);
     expect(result).toEqual(['Select', 'Filter', 'None']);
   });
 
   // #### Selectors
   await softStep('Selectors', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const r: any[] = [];
-
-      tp.props.showXSelectors = false;
-      tp.props.showYSelectors = false;
-      tp.props.showControlPanel = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel});
-
-      tp.props.showXSelectors = true;
-      tp.props.showYSelectors = true;
-      tp.props.showControlPanel = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push({x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel});
-
-      return r;
-    });
-    expect(result[0]).toEqual({x: false, y: false, cp: false});
-    expect(result[1]).toEqual({x: true, y: true, cp: true});
+    const sel = ['showXSelectors', 'showYSelectors', 'showControlPanel'];
+    const off = Object.fromEntries(sel.map((k) => [k, false]));
+    const on = Object.fromEntries(sel.map((k) => [k, true]));
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {set: off, read: sel},
+      {set: on, read: sel},
+    ]);
+    expect(result[0]).toEqual(off);
+    expect(result[1]).toEqual(on);
   });
 
   // #### Allow viewer full screen
   await softStep('Allow viewer full screen', async () => {
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      // Note: hover/click full-screen icon are canvas interactions -- not automatable
-      tp.props.allowViewerFullScreen = false;
-      await new Promise(r => setTimeout(r, 300));
-      const off = tp.props.allowViewerFullScreen;
-      tp.props.allowViewerFullScreen = true;
-      await new Promise(r => setTimeout(r, 300));
-      return {off, on: tp.props.allowViewerFullScreen};
-    });
-    expect(result.off).toBe(false);
-    expect(result.on).toBe(true);
+    // Note: hover/click full-screen icon are canvas interactions -- not automatable
+    const result = await v.setViewerProps(page, 'Trellis plot', [
+      {set: {allowViewerFullScreen: false}, read: 'allowViewerFullScreen'},
+      {set: {allowViewerFullScreen: true}, read: 'allowViewerFullScreen'},
+    ]);
+    expect(result[0]).toBe(false);
+    expect(result[1]).toBe(true);
   });
 
   // #### Scrolling
@@ -487,7 +407,7 @@ test('Trellis plot tests', async ({page}) => {
     expect(result.viewerType).toBe('Scatter plot');
   });
 
-  // #### Use in Trellis (Scatter plot only -- other types tested in MCP run)
+  // #### Use in Trellis (Scatter plot only)
   await softStep('Use in Trellis', async () => {
     const result = await page.evaluate(async () => {
       // Close current trellis
@@ -813,8 +733,5 @@ test('Trellis plot tests', async ({page}) => {
     expect(result.scriptGenerated).toBe(true);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

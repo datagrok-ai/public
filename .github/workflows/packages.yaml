@@ -574,6 +574,17 @@ jobs:
           sudo chown root:root chrome_sandbox
           sudo chmod 4755 chrome_sandbox
           sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
+      - name: Install ffmpeg
+        # `grok test --record` records the run via Puppeteer page.screencast(),
+        # which spawns ffmpeg. The runner image doesn't ship it, so install it
+        # here — otherwise the whole Puppeteer pass fails with `spawnSync ffmpeg ENOENT`.
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -n 1
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples' }}

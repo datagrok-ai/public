@@ -18,6 +18,12 @@ export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalD
   return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
 }
 
+export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
+
+export function isMpoNumericColumn(col: DG.Column): boolean {
+  return MPO_NUMERIC_TYPES.has(col.type);
+}
+
 export function createDefaultCategorical(
   weight = 1,
   categories?: {name: string; desirability: number}[],
@@ -56,7 +62,7 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
 /// weight). Validates the MpoCalculator cache so editing one curve only recomputes that column.
 export function desirabilityKey(d: PropertyDesirability): string {
   return isNumerical(d) ?
-    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}` :
+    `n|${JSON.stringify(d.line)}|${JSON.stringify(d.missingValues ?? null)}|${d.inverted ? 1 : 0}` :
     `c|${JSON.stringify((d as CategoricalDesirability).categories)}|${JSON.stringify(d.missingValues ?? null)}`;
 }
 
@@ -92,6 +98,7 @@ export function hoistColumns(dataFrame: DG.DataFrame, columns: DG.Column[]): Hoi
 export function mapColumnDesirability(h: HoistedColumn, rowCount: number): ColumnDesirability {
   const {raw, valNull, isCat, cats, catScore} = h;
   const line = isCat ? null : (h.template as NumericalDesirability).line;
+  const inv = !isCat && (h.template as NumericalDesirability).inverted === true;
   const segN = line ? line.length : 0;
   const loX = segN ? line![0][0] : 0;
   const hiX = segN ? line![segN - 1][0] : 0;
@@ -127,6 +134,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
     // Inlined desirabilityScore over the column's line.
     const x = raw[i];
     let score = 0;
+    let matched = false;
     if (segN !== 0 && x >= loX && x <= hiX) {
       for (let k = 0; k < segN - 1; ++k) {
         const x1 = line![k][0];
@@ -134,11 +142,13 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
         if (x >= x1 && x <= x2) {
           const y1 = line![k][1];
           score = x1 === x2 ? y1 : y1 + (line![k + 1][1] - y1) * (x - x1) / (x2 - x1);
+          matched = true;
           break;
         }
       }
     }
-    D[i] = score;
+    // Out-of-range / no matching segment always scores 0, regardless of inversion; only the defined curve flips.
+    D[i] = matched ? (inv ? 1 - score : score) : 0;
   }
   return {D, state};
 }
@@ -147,7 +157,7 @@ export function mapColumnDesirability(h: HoistedColumn, rowCount: number): Colum
 /// into the final score, column-major into per-row accumulators.
 export function reduceMpo(
   maps: ColumnDesirability[], hoisted: HoistedColumn[], aggregation: WeightedAggregation, rowCount: number,
-): Float64Array {
+): {scores: Float64Array, minPositive: number} {
   const aggCode = AGG_CODE[aggregation];
   if (aggCode === undefined)
     throw new Error(`Unknown aggregation type: ${aggregation}`);
@@ -212,6 +222,7 @@ export function reduceMpo(
     }
   }
 
+  let minPositive = Infinity;
   for (let i = 0; i < rowCount; ++i) {
     if (bail[i] || cnt[i] === 0)
       out[i] = DG.FLOAT_NULL;
@@ -221,8 +232,10 @@ export function reduceMpo(
       out[i] = Math.pow(acc1[i], 1 / acc2![i]); // (Π sᵏ^wᵏ)^(1/Σw) ≡ Π sᵏ^(wᵏ/Σw)
     else
       out[i] = acc1[i];
+    if (out[i] > 0 && out[i] !== DG.FLOAT_NULL && out[i] < minPositive)
+      minPositive = out[i];
   }
-  return out;
+  return {scores: out, minPositive};
 }
 
 /// Builds the per-property desirability output columns from the mapping results (state 1/2 rows → null).
@@ -279,7 +292,9 @@ export class MpoCalculator {
       maps.push(m);
     }
 
-    resultColumn.setRawData(reduceMpo(maps, hoisted, aggregation, rowCount)); // notify=true: refreshes viewers
+    const {scores, minPositive} = reduceMpo(maps, hoisted, aggregation, rowCount);
+    resultColumn.setRawData(scores); // notify=true: refreshes viewers
+    resultColumn.meta.format = minPositive < 1e-5 ? 'scientific' : '0.00000';
 
     const desirabilityColumns = createDesirabilityColumns ?
       buildDesirabilityColumns(columns, maps, profileName, rowCount) : undefined;

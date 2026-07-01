@@ -6,10 +6,6 @@ import * as DG from 'datagrok-api/dg';
 
 //Limitation constants
 const COMP_MIN = 1;
-const SAMPLES_COUNT_MIN = 1;
-const FEATURES_COUNT_MIN = 1;
-const PERCENTAGE_MIN = 0;
-const PERCENTAGE_MAX = 100;
 const MAX_ELEMENTS_COUNT = 100000000;
 export const NIPALS_PREFER_COLS_COUNT = 900;
 
@@ -18,10 +14,6 @@ const TINY = 0.000001;
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
 const COMP_EXCESS = 'components must not be greater than features count.';
-const INCORERRECT_MIN_MAX_MES = 'min must be less than max.';
-const INCORERRECT_FEATURES_MES = 'features must be positive.';
-const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
-const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
 const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
 const UNSUPPORTED_COLUMN_TYPE_MES = 'unsupported column type: ';
 const INCORRECT_MIN_DIST_MES = 'min distance must be positive.';
@@ -141,22 +133,6 @@ export function checkWasmDimensionReducerInputs(features: DG.ColumnList, compone
   // Check data total size
   if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
     throw new Error(DATAFRAME_IS_TOO_BIG_MES);
-}
-
-// Check inputs of data for SVM testing generator
-export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: number,
-  min: number, max: number, violatorsPercentage: number): void {
-  if (min >= max)
-    throw new Error(INCORERRECT_MIN_MAX_MES);
-
-  if (featuresCount < FEATURES_COUNT_MIN)
-    throw new Error(INCORERRECT_FEATURES_MES);
-
-  if (samplesCount < SAMPLES_COUNT_MIN)
-    throw new Error(INCORERRECT_SAMPLES_MES);
-
-  if ((violatorsPercentage < PERCENTAGE_MIN) || (violatorsPercentage > PERCENTAGE_MAX))
-    throw new Error(INCORERRECT_PERCENTAGE_MES);
 }
 
 // Returns rows of column data

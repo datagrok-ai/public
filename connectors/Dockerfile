@@ -38,6 +38,12 @@ RUN set -ex ; \
 
 FROM datagrok/openjdk:8 as main
 
+# Java 8 derives its default charset from the locale; in a minimal image that is
+# ANSI_X3.4-1968 (US-ASCII), which mangles multibyte UTF-8 from result sets (e.g.
+# Databricks Arrow decode turns '®' into '??'). Force UTF-8.
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
 # Grok user
 ARG HOME_DIR
 ARG GROK_CONNECT_DIR
@@ -57,7 +63,7 @@ WORKDIR ${GROK_CONNECT_DIR}
 # GrokConnect
 EXPOSE 1234
 
-ENTRYPOINT ["java", "-Xmx4g", "-classpath", "grok_connect.jar:lib/*", "grok_connect.GrokConnect"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-Xmx4g", "-classpath", "grok_connect.jar:lib/*", "grok_connect.GrokConnect"]
 
 ARG BRANCH
 ARG COMMIT_PUBLIC

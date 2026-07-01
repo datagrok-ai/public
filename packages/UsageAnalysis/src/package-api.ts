@@ -436,16 +436,20 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
   }
 
-  export async function stressTestsDashboard(lastBuildsNum: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:StressTestsDashboard', { lastBuildsNum });
+  export async function stressTestsFailures(build: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsFailures', { build });
+  }
+
+  export async function stressTestsRaw(build: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsRaw', { build });
+  }
+
+  export async function stressTestsSummary(lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsSummary', { lastBuildsNum });
   }
 
   export async function benchmarks(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:Benchmarks', {});
-  }
-
-  export async function stressTests(batch_name: string | null): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:StressTests', { batch_name });
   }
 
   export async function lastBuildsBenchmarksCompare(): Promise<DG.DataFrame> {

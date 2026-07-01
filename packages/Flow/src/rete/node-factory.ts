@@ -6,9 +6,10 @@
  *  and a zero-arg factory that returns a fresh `FlowNode` instance. */
 
 import * as DG from 'datagrok-api/dg';
-import {FlowNode} from './scheme';
+import {ClassicPreset} from 'rete';
+import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE} from './scheme';
 import {FuncNode} from './nodes/func-node';
-import {TypedSocket} from './sockets';
+import {TypedSocket, getSocket} from './sockets';
 import {areTypesCompatible} from '../types/type-map';
 
 import {
@@ -27,7 +28,13 @@ import {
   LessThanNode, LessOrEqualNode, ContainsNode, StartsWithNode, EndsWithNode, IsNullNode,
 } from './nodes/comparison-nodes';
 import {BreakpointNode} from './nodes/breakpoint-node';
+import {ViewerNode, CORE_VIEWER_SPECS, genericViewerSpec, VIEWER_TYPE_PREFIX, ViewerSpec} from './nodes/viewer-node';
 import {getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName} from '../utils/dart-proxy-utils';
+import {EXCLUDED_FUNC_NQNAMES} from './excluded-funcs';
+
+/** Scalar property types — a function whose inputs AND outputs are *only* these
+ *  is pure scalar plumbing (math/string helpers), not a data-flow step → hidden. */
+const PRIMITIVE_TYPES = new Set<string>(['string', 'int', 'double', 'bool', 'dynamic', 'num']);
 
 export interface FuncInfo {
   func: DG.Func;
@@ -48,22 +55,119 @@ function register(name: string, factory: Factory): void {
   FACTORIES.set(name, factory);
 }
 
-/** Tags that mark a function for exclusion from the catalog. */
-export const EXCLUDED_TAGS: string[] = [];
-
-/** Roles that mark a function for exclusion. */
+/** Roles/tags that mark a function as platform/UI machinery rather than a
+ *  pipeline step. A function declares these either as its `role`
+ *  (`func.options.role`) OR — very commonly — as a **tag**: panel / widgets /
+ *  moleculeSketcher / folderViewer / Internal / … are almost always stored as
+ *  tags, not in the role field, so `shouldExcludeFunc` checks BOTH,
+ *  case-insensitively. This is the single biggest declutter lever: without the
+ *  tag check, every package's context-panel and widget functions leaked into
+ *  the toolbox. */
 export const EXCLUDED_ROLES: string[] = [
   DG.FUNC_TYPES.APP, 'aiSearchProvider', 'antibodyNumbering', 'appTreeBrowser', 'canonicalizer',
   DG.FUNC_TYPES.CELL_RENDERER, 'dashboard', DG.FUNC_TYPES.FILE_VIEWER, DG.FUNC_TYPES.FILE_IMPORTER,
   DG.FUNC_TYPES.FILE_EXPORTER, DG.FUNC_TYPES.FILTER, DG.FUNC_TYPES.FOLDER_VIEWER, DG.FUNC_TYPES.MOLECULE_SKETCHER,
   'notationProviderConstructor', 'notationRefiner', 'packageSettingsEditor', 'searchProvider', 'semTypeDetector',
-  'semValueExtractor', 'valueEditor',
+  'semValueExtractor', 'valueEditor', 'editor', 'cellEditor', 'panel', 'widgets', 'tooltip',
 ];
 
-function shouldExcludeFunc(role: string | null, tags: string[]): boolean {
-  if (role && EXCLUDED_ROLES.includes(role)) return true;
-  for (const tag of tags) if (EXCLUDED_TAGS.includes(tag)) return true;
+/** Tags that mark UI/platform machinery, matched case-insensitively against a
+ *  function's tags (panels/sketchers/renderers/… usually declare their kind as
+ *  a *tag*, not in the role field — checking tags is the biggest declutter
+ *  lever). **Deliberately excludes `panel` / `widget` / `widgets` / `tooltip`:**
+ *  functions that produce a widget (including context panels) are usable in Flow
+ *  now — they flow to the Widgets pane and can be previewed. `filter` is handled
+ *  by the filter-DSL output rule instead. `Viewers`-tagged core charts are
+ *  dropped (the Viewers pane covers them). */
+const EXCLUDED_TAGS = new Set<string>([
+  'app', 'aisearchprovider', 'antibodynumbering', 'apptreebrowser', 'canonicalizer',
+  'cellrenderer', 'dashboard', 'fileviewer', 'fileexporter', 'file-handler', 'filehandler',
+  'folderviewer', 'moleculesketcher', 'notationproviderconstructor', 'notationrefiner',
+  'packagesettingseditor', 'searchprovider', 'semtypedetector', 'semvalueextractor',
+  'valueeditor', 'editor', 'celleditor', 'internal', '@editors', 'viewers', 'design',
+]);
+
+/** Output property types that are internal filter-DSL builder calls (produced
+ *  only to feed Aggregate/Filter machinery) — never a wireable pipeline value. */
+const FILTER_CALL_OUTPUT_TYPES = new Set<string>(['tablerowfiltercall', 'colfiltercall']);
+
+/** Whole packages that are dev / test / internal-telemetry only — never useful
+ *  in a user-facing flow. (Empirically the largest source of catalog noise:
+ *  Dbtests ~287, UsageAnalysis ~132, ApiTests ~36, … — see docs/func-catalog-snapshot.md.) */
+export const EXCLUDED_PACKAGES: string[] = [
+  'Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis',
+];
+
+/** A function is excluded when it is test scaffolding, lives in a dev/test
+ *  package, carries an excluded role/tag, or is a command/dialog wrapper that
+ *  takes a `funccall` (e.g. CmdAggregate, addNewColumnDialog) rather than data. */
+function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], pkgName: string): boolean {
+  if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
+
+  // Curated denylist of individually-assessed, non-pipeline functions (helpers,
+  // internal twins, demo/test, plumbing) — keyed by namespace-qualified name.
+  try {
+    if (EXCLUDED_FUNC_NQNAMES.has(func.nqName)) return true;
+  } catch { /* nqName can throw on odd Dart proxies — fall through */ }
+
+  // Test scaffolding by name (TestData, testFunction, Pkg:test, …).
+  const nm = (func.name || '').toLowerCase();
+  if (nm === 'test' || nm.startsWith('test')) return true;
+
+  // UI-extension roles (comma-split, exact match).
+  if (role) {
+    for (const r of role.split(',').map((s) => s.trim()))
+      if (r && EXCLUDED_ROLES.includes(r)) return true;
+  }
+  // UI/platform-machinery tags (moleculeSketcher, Internal, Viewers, …) —
+  // case-insensitive. Widget/panel/tooltip tags are intentionally NOT here.
+  if (tags.some((t) => EXCLUDED_TAGS.has(t.trim().toLowerCase()))) return true;
+
+  // Command / dialog wrappers operate on a FuncCall, not on data.
+  try {
+    if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
+  } catch { /* ignore introspection failures */ }
+
+  // Right-click / context actions take a `semantic_value` (the cell's value) and
+  // just mutate the UI or clipboard — not a pipeline step.
+  try {
+    if (func.inputs.some((p) => String(p.propertyType) === 'semantic_value')) return true;
+  } catch { /* ignore introspection failures */ }
+
+  // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
+  // widget) can't be previewed or composed in a flow — drop them.
+  // Viewer-producing functions are likewise dropped: they need a TableView
+  // lifecycle and are replaced by the manual viewer nodes (the Viewers pane).
+  // Filter-DSL builder outputs (tablerowfiltercall / colfiltercall) exist only
+  // to feed Aggregate/Filter internals — likewise not wireable.
+  try {
+    if (func.outputs.some((p) => {
+      const t = String(p.propertyType);
+      return t === 'view' || t === 'viewer' || FILTER_CALL_OUTPUT_TYPES.has(t);
+    })) return true;
+  } catch { /* ignore introspection failures */ }
+
+  // Primitive-only helpers: every input AND output is a scalar (string / number /
+  // bool / dynamic) — not a data-flow step. Hidden to cut catalog noise.
+  try {
+    const allPrim = (props: DG.Property[]): boolean =>
+      props.every((p) => PRIMITIVE_TYPES.has(String(p.propertyType)));
+    if (allPrim(func.inputs) && allPrim(func.outputs)) return true;
+  } catch { /* ignore introspection failures */ }
+
   return false;
+}
+
+/** Viewer node types for the Viewers toolbox pane (core first, then discovered
+ *  package viewers). Populated by `registerBuiltinNodes` + `registerAllFunctions`. */
+export interface ViewerNodeType {label: string; nodeTypeName: string; core: boolean;}
+export const VIEWER_NODE_TYPES: ViewerNodeType[] = [];
+
+function registerViewerSpec(spec: ViewerSpec, core: boolean): void {
+  const typeName = `${VIEWER_TYPE_PREFIX}${spec.label}`;
+  if (FACTORIES.has(typeName)) return;
+  register(typeName, () => new ViewerNode(spec));
+  VIEWER_NODE_TYPES.push({label: spec.label, nodeTypeName: typeName, core});
 }
 
 export function registerBuiltinNodes(): void {
@@ -122,6 +226,29 @@ export function registerBuiltinNodes(): void {
 
   // Debug
   register('Debug/Breakpoint', () => new BreakpointNode());
+
+  // Core viewers (sync — no catalog lookup — so saved flows with viewer nodes
+  // always deserialize, even before `registerAllFunctions` runs).
+  for (const spec of CORE_VIEWER_SPECS) registerViewerSpec(spec, true);
+}
+
+/** Discover non-core package viewers (role=viewer) and register a generic
+ *  viewer node per distinct friendly name. Idempotent; needs the live catalog. */
+function registerDiscoveredViewers(): void {
+  try {
+    const taken = new Set(VIEWER_NODE_TYPES.map((v) => v.label.toLowerCase()));
+    const found: string[] = [];
+    for (const f of DG.Func.find({meta: {role: 'viewer'}})) {
+      const name = String((f as DG.Func).friendlyName ?? f.name ?? '').trim();
+      if (!name || taken.has(name.toLowerCase())) continue;
+      taken.add(name.toLowerCase());
+      found.push(name);
+    }
+    for (const name of found.sort((a, b) => a.localeCompare(b)))
+      registerViewerSpec(genericViewerSpec(name, name), false);
+  } catch (e) {
+    console.warn('FuncFlow: viewer discovery failed', e);
+  }
 }
 
 let funcsRegistered = false;
@@ -132,6 +259,8 @@ export function registerAllFunctions(): FuncInfo[] {
   if (funcsRegistered) return funcRegistry;
   funcsRegistered = true;
 
+  registerDiscoveredViewers();
+
   const allFuncs = DG.Func.find({});
   funcRegistry = [];
   const seen = new Set<string>();
@@ -141,9 +270,9 @@ export function registerAllFunctions(): FuncInfo[] {
       if (func.inputs.length === 0 && func.outputs.length === 0) continue;
       const role = getRole(func);
       const tags = getTags(func);
-      if (shouldExcludeFunc(role, tags)) continue;
-
       const pkgName = getPackageName(func);
+      if (shouldExcludeFunc(func, role, tags, pkgName)) continue;
+
       const category = role || 'Uncategorized';
 
       let typeName = `DG Functions/${category}/${func.name}`;
@@ -211,7 +340,18 @@ export function createNode(typeName: string): FlowNode | null {
   if (!factory) return null;
   const node = factory();
   node.dgTypeName = typeName;
+  addExecPorts(node);
   return node;
+}
+
+/** Add the execution-ordering port pair to a node: an exec-in (accepts many
+ *  predecessors) and an exec-out. Added after the node's own ports so func
+ *  `passthroughCount` indexing and the data-port rows are unaffected. The
+ *  factory builders are left untouched (so the suggestion-menu type probe in
+ *  `getInputTypesForType` never sees an `order` slot). */
+function addExecPorts(node: FlowNode): void {
+  node.addInput(EXEC_IN_KEY, new ClassicPreset.Input(getSocket(ORDER_SOCKET_TYPE), 'before', true));
+  node.addOutput(EXEC_OUT_KEY, new ClassicPreset.Output(getSocket(ORDER_SOCKET_TYPE), 'after', true));
 }
 
 /** All registered type names, mostly for debugging / completeness checks. */
@@ -259,9 +399,28 @@ function labelForTypeName(typeName: string): string {
   return parts[parts.length - 1];
 }
 
+/** The data-pipeline steps a scientist reaches for most. Used as a usage-proxy
+ *  to float common next-steps to the top of the drag-out suggestion menu (real
+ *  telemetry isn't available client-side). Matched on the simple function name,
+ *  lower-cased. */
+const COMMON_NEXT_FUNCS = new Set([
+  'jointables', 'linktables', 'addnewcolumn', 'addnewcolumnlist', 'aggregate',
+  'filterrows', 'extractrows', 'extractcolumns', 'pivot', 'unpivot', 'splitcolumn',
+  'addtableview', 'clonetable', 'renamecolumn', 'changecolumnstype',
+]);
+
+/** Simple (trailing) function name of a typeName, lower-cased — `DG Functions/
+ *  Transform/Pkg:JoinTables` → `jointables`. */
+function simpleFuncName(typeName: string): string {
+  const last = typeName.split('/').pop() ?? typeName;
+  return (last.split(':').pop() ?? last).toLowerCase();
+}
+
 /** All registered node types whose inputs include at least one slot
- *  type-compatible with `sourceType`. Used by the drag-output suggestion
- *  menu — Value Output is sorted first because dynamic accepts everything. */
+ *  type-compatible with `sourceType`. Used by the drag-output suggestion menu.
+ *  Ranked: Value Output first (dynamic accepts everything), then common
+ *  next-step functions, then the rest of the built-ins, then DG funcs
+ *  alphabetically — so the likely next node is one of the first offered. */
 export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeType[] {
   const matches: CompatibleNodeType[] = [];
   for (const typeName of FACTORIES.keys()) {
@@ -274,13 +433,12 @@ export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeT
       isBuiltin: !typeName.startsWith('DG Functions/'),
     });
   }
-  // Stable sort: Value Output first, then the rest of built-ins, then DG
-  // funcs alphabetically.
-  matches.sort((a, b) => {
-    if (a.typeName === 'Outputs/Value Output') return -1;
-    if (b.typeName === 'Outputs/Value Output') return 1;
-    if (a.isBuiltin !== b.isBuiltin) return a.isBuiltin ? -1 : 1;
-    return a.label.localeCompare(b.label);
-  });
+  // Lower rank number = higher in the list.
+  const rank = (t: CompatibleNodeType): number => {
+    if (t.typeName === 'Outputs/Value Output') return 0;
+    if (COMMON_NEXT_FUNCS.has(simpleFuncName(t.typeName))) return 1;
+    return t.isBuiltin ? 2 : 3;
+  };
+  matches.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
   return matches;
 }

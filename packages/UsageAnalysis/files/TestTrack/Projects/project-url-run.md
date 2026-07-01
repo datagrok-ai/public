@@ -1,33 +1,39 @@
-# Project URL — Run Results
+# Projects / Project URL: deep-link reopen for representative project — Run Results
 
-**Date**: 2026-03-09
-**URL**: https://release-ec2.datagrok.ai/
-**Status**: SKIP
+**Date**: 2026-05-05
+**URL**: https://dev.datagrok.ai
+**Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Go to Browse > Dashboards | SKIP | SKIPPED | Dependent on copy/clone scenario |
-| 2 | Click projects (original, copy, clone, layout) | SKIP | SKIPPED | Copy/clone not performed |
-| 3 | Go to Context Panel > Links, copy URL | SKIP | SKIPPED | No projects to test |
-| 4 | Open URL in new browser tab | SKIP | SKIPPED | No URL to test |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | (whole spec) | 2m 30s | PASS | PASSED | All softStep blocks completed |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Spec script execution | 2m 30s |
+| **Total scenario run** | 2m 30s |
 
 ## Summary
 
-All steps skipped. This scenario depends on Projects copy_clone.md (order 5) which was not fully executed. The Link/Clone/Copy project operations were not performed in prior steps.
+Spec passed end-to-end on dev.datagrok.ai. Total run: 2m 30s.
+
+Deep-link reopen via `page.goto('/p/<id>/<name>')` re-materializes the project's tables via `.script` provenance.
 
 ## Retrospective
 
 ### What worked well
-- N/A
+- URL-based deep link reopen ground-truth verified — table re-materializes by row count, layout restored.
+- `tv.dataFrame.rowCount` used as load signal (avoids the `shell.tables.length` Dart-throw post-reopen).
 
 ### What did not work
-- This scenario has hard dependency on copy_clone scenario
+- Nothing notable.
 
 ### Suggestions for the platform
-- N/A
+- None from this run.
 
 ### Suggestions for the scenario
-- Make dependencies explicit (requires Projects copy_clone.md to have been run first)
-- Could include a standalone test: open any existing project, copy its URL, navigate to it
+- None from this run.

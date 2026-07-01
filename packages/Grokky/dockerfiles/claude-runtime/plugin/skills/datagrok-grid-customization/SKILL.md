@@ -230,11 +230,14 @@ t.col('class').meta.colors.setCategorical(
 
 ### Conditional (numeric or string ranges)
 
+Keys are range expressions where `X` is the threshold the user specified: `'<X'` (below X),
+`'>X'` (above X), `'X-Y'` (from X to Y).
+
 ```datagrok-exec
 t.col('height').meta.colors.setConditional({
-  '20-170': '#00FF00',
+  '<170': '#00FF00',
   '170-190': '#FFFF00',
-  '190-': '#FF0000',
+  '>190': '#FF0000',
 });
 ```
 

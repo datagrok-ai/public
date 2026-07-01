@@ -9,16 +9,16 @@ export interface ExecError {
 
 export async function executeSingleBlock(
   code: string, view: DG.ViewBase, blockIndex: number,
-): Promise<{element: HTMLElement | null; error: ExecError | null}> {
+): Promise<{element: HTMLElement | null; value: any; error: ExecError | null}> {
   try {
     const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
     const result = await new Function('grok', 'ui', 'DG', 'view', 't',
       'return (async () => {' + code + '})()',
     )(grok, ui, DG, view, t);
-    return {element: result instanceof HTMLElement ? result : null, error: null};
+    const element = result instanceof HTMLElement ? result : null;
+    return {element, value: element ? undefined : result, error: null};
   } catch (e: any) {
-    grok.shell.error(`datagrok-exec error: ${e.message}`);
-    return {element: null, error: {blockIndex, error: e?.message ?? String(e)}};
+    return {element: null, value: undefined, error: {blockIndex, error: e?.message ?? String(e)}};
   }
 }
 
@@ -40,8 +40,8 @@ export function buildViewContext(view: DG.ViewBase): string {
   return '';
 }
 
-interface DgEntityRef {
-  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space';
+export interface DgEntityRef {
+  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space' | 'group' | 'user';
   name: string;
   id?: string;
   connector?: string;
@@ -69,6 +69,10 @@ async function fetchEntity(ref: DgEntityRef): Promise<any> {
     return ref.id ? grok.dapi.projects.find(ref.id) : null;
   case 'space':
     return ref.id ? grok.dapi.spaces.find(ref.id) : null;
+  case 'group':
+    return ref.id ? grok.dapi.groups.find(ref.id) : null;
+  case 'user':
+    return ref.id ? grok.dapi.users.find(ref.id) : null;
   }
 }
 
@@ -81,22 +85,8 @@ function renderEntityRef(ref: DgEntityRef): HTMLElement | null {
   return placeholder;
 }
 
-export function renderEntityBlocks(container: HTMLElement): void {
-  for (const block of Array.from(container.querySelectorAll('code.language-datagrok-entities'))) {
-    const pre = block.parentElement;
-    if (!pre || pre.tagName !== 'PRE')
-      continue;
-    try {
-      const refs: DgEntityRef[] = JSON.parse(block.textContent ?? '[]');
-      if (!Array.isArray(refs) || refs.length === 0)
-        continue;
-      const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
-      if (cards.length === 0)
-        continue;
-      const cardsContainer = ui.divV(cards, 'grokky-entity-cards');
-      pre.replaceWith(cardsContainer);
-    } catch (e) {
-      console.warn('Failed to parse datagrok-entities block:', e);
-    }
-  }
+export function renderEntityRefList(refs: DgEntityRef[]): HTMLElement {
+  const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
+  return ui.divV(cards, 'grokky-entity-cards');
 }
+

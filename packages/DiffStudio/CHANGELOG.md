@@ -1,5 +1,11 @@
 # Diff Studio changelog
 
+## 1.6.5 (2026-06-26)
+
+* Inputs lookup: Apply the preselected input set's values on form load (previously they appeared only after toggling the choice)
+* Facet viewer: Reuse line charts across runs to avoid flicker
+* Bump compute-utils to 1.46.4 (Fitting/Sensitivity Analysis lookup fixes)
+
 ## 1.6.4 (2026-06-16)
 
 * Use Rich Function View for Model Hub items
