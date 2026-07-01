@@ -426,9 +426,12 @@ export class FuncFlowView extends DG.ViewBase {
         (drag instanceof DG.FileInfo && drag.isFile) || drag instanceof DG.Func,
       doDrop: (args) => {
         const drag = args.dragObject;
-        if (drag instanceof DG.Func) {void this.addFuncNode(drag); return;}
+        // Place the node where it was dropped (like the native drag from the
+        // function browser), not in the center. `dropEvent` carries the pointer.
+        const ev = args.dropEvent;
+        if (drag instanceof DG.Func) {void this.addFuncNode(drag, ev); return;}
         const fi = drag as DG.FileInfo;
-        void this.addOpenFileNode(fi.fullPath);
+        void this.addOpenFileNode(fi.fullPath, ev);
       },
     });
 
@@ -475,13 +478,21 @@ export class FuncFlowView extends DG.ViewBase {
     return node;
   }
 
-  private async addOpenFileNode(filePath: string): Promise<void> {
+  /** Place a node of the given type at the drop pointer when one is provided
+   *  (drag-and-drop), else in the center (double-click / programmatic add). */
+  private addNodeByTypeAtDrop(typeName: string, dropEvent?: MouseEvent): Promise<FlowNode | null> {
+    return dropEvent ?
+      this.addNodeByTypeAt(typeName, dropEvent.clientX, dropEvent.clientY) :
+      this.addNodeByType(typeName);
+  }
+
+  private async addOpenFileNode(filePath: string, dropEvent?: MouseEvent): Promise<void> {
     const typeName = this.findOpenFileNodeType();
     if (!typeName) {
       grok.shell.warning('OpenFile function not found in registered nodes');
       return;
     }
-    const node = await this.addNodeByType(typeName);
+    const node = await this.addNodeByTypeAtDrop(typeName, dropEvent);
     if (node) {
       node.inputValues['fullPath'] = filePath;
       await this.flow.updateNode(node.id);
@@ -489,13 +500,13 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  private async addFuncNode(func: DG.Func): Promise<void> {
+  private async addFuncNode(func: DG.Func, dropEvent?: MouseEvent): Promise<void> {
     const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
     if (!info) {
       grok.shell.warning(`Function "${func.name}" is not available as a node`);
       return;
     }
-    if (await this.addNodeByType(info.nodeTypeName))
+    if (await this.addNodeByTypeAtDrop(info.nodeTypeName, dropEvent))
       grok.shell.info(`Added node: ${func.name}`);
   }
 

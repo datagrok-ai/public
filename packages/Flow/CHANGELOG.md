@@ -2,6 +2,12 @@
 
 ## v.next
 
+### Files drop where you drop them
+
+* Dragging a **file** from the file browser (or any `DG.FileInfo` / `DG.Func` from the Datagrok
+  browse tree) now drops the node **at the pointer**, like dragging a function from the toolbox —
+  instead of always landing in the canvas center. Double-click still adds to the center.
+
 ### Column-output preview shows the column as a grid
 
 * A node whose real output is a **column** now previews that column as a **one-column DataFrame
