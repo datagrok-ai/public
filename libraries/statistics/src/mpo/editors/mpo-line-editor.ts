@@ -9,6 +9,7 @@ import {Subject} from 'rxjs';
 
 let _konva: typeof Konva | undefined;
 let _konvaPromise: Promise<typeof Konva> | undefined;
+let _mountQueue: (() => void)[] = [];
 
 async function getKonva(): Promise<typeof Konva> {
   if (_konva)
@@ -16,6 +17,18 @@ async function getKonva(): Promise<typeof Konva> {
   _konvaPromise ??= import('konva').then((m) => m.default);
   _konva = await _konvaPromise;
   return _konva;
+}
+
+function scheduleMount(mount: () => void): void {
+  _mountQueue.push(mount);
+  if (_mountQueue.length > 1)
+    return;
+  requestAnimationFrame(() => {
+    const queue = _mountQueue;
+    _mountQueue = [];
+    for (const m of queue)
+      m();
+  });
 }
 
 type Point = [number, number];
@@ -115,7 +128,7 @@ export class MpoDesirabilityLineEditor {
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative';
 
-    requestAnimationFrame(() => this.initKonva(width, height));
+    scheduleMount(() => this.initKonva(width, height));
   }
 
   private ensureDefaultLine(): void {
