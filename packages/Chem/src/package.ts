@@ -3013,7 +3013,7 @@ export class PackageFunctions {
     const loader = ui.loader();
     resultDiv.appendChild(loader);
 
-    const dataFrame = semValue.cell.dataFrame;
+    const dataFrame = semValue.cell?.dataFrame ?? grok.shell.t;
     const profiles = await MpoProfileManager.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
@@ -3075,7 +3075,8 @@ export class PackageFunctions {
 
       ui.empty(resultDiv);
 
-      const mpoValue = scoreResult.scoreColumn.get(semValue.cell.rowIndex);
+      const rowIdx = semValue.cell?.rowIndex ?? dataFrame.currentRowIdx;
+      const mpoValue = rowIdx >= 0 ? scoreResult.scoreColumn.get(rowIdx) : null;
       const valueHost = ui.divH([], {style: {position: 'relative', alignItems: 'center'}});
 
       const addColumnIcon = ui.iconFA(
