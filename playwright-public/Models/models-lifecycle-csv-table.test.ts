@@ -419,6 +419,9 @@ test('Models / lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async 
     await descInput.waitFor({timeout: 10_000});
     await descInput.focus();
     await descInput.fill(NEW_DESCRIPTION);
+    // Drop the stale #grok-preloader overlay that lingers over the Edit dialog on the slow CI
+    // stack and intercepts the pointer click (same guard as the Helm editor OK/CANCEL).
+    await page.evaluate(() => document.querySelector('#grok-preloader')?.remove());
     await page.locator('[name="dialog-Predictive-model"] [name="button-OK"]').click();
     await page.locator('[name="dialog-Predictive-model"]')
       .waitFor({state: 'detached', timeout: 15_000});
@@ -447,6 +450,7 @@ test('Models / lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async 
       '[name="dialog-Predictive-model"] [name="input-host-Description"] textarea').first();
     await descVerify.waitFor({timeout: 5_000});
     await expect(descVerify).toHaveValue(NEW_DESCRIPTION, {timeout: 5_000});
+    await page.evaluate(() => document.querySelector('#grok-preloader')?.remove());
     await page.locator('[name="dialog-Predictive-model"] [name="button-CANCEL"]').click();
     await page.locator('[name="dialog-Predictive-model"]')
       .waitFor({state: 'detached', timeout: 10_000});
