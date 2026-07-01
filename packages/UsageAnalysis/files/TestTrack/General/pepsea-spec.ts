@@ -1,6 +1,13 @@
 /* ---
 sub_features_covered: [bio.analyze.msa, bio.analyze.msa.dialog, bio.detector, bio.engines.msa-pepsea, bio.rendering.column-header]
 --- */
+// NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
+// TestTrack/General for reference only. Reason for removal: PepSeA MSA runs through the on-demand `bio`
+// Docker container (dockerfiles/, on_demand:true — datagrok/python + mafft). On the minimal ui_tests CI
+// stack the container image is cold-built on first request, which exceeds the 60s docker-proxy timeout
+// (proxyRequestTimeout: 60000) → the align request returns `504 Gateway Time-out` before the build
+// finishes. grok_spawner is present, but without a pre-built/pre-warmed image the spec cannot run in CI.
+// Restore it to CI once the ui_tests stack pre-builds the `bio` container (or raises the proxy timeout).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

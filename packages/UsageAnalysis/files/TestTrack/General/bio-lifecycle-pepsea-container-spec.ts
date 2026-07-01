@@ -1,6 +1,14 @@
 /* ---
 sub_features_covered: [bio.analyze.msa, bio.analyze.msa.align-sequences, bio.analyze.msa.dialog, bio.api.get-seq-helper, bio.engines.msa-pepsea, bio.lifecycle.init]
 --- */
+// NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
+// TestTrack/General for reference only. Reason for removal: it exercises the on-demand `bio` PepSeA
+// Docker container (dockerfiles/, on_demand:true). On the minimal ui_tests CI stack that container is
+// not pre-built, so PepSeA is "NOT registered on this host"; the spec already env-gates most steps, but
+// the S1.3 assertion "MSA Engine SELECT exposes PepSeA option (>=2 engines)" cannot pass because only the
+// built-in kalign engine is available without the container. Restore it to CI once the ui_tests stack
+// pre-builds/pre-warms the `bio` container (or raises the 60s docker-proxy timeout so on-demand build
+// completes before the align request times out with 504).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
