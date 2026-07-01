@@ -26,10 +26,7 @@ export class ColorCellRenderer extends DG.GridCellRenderer {
     x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
-    if (gridCell.cell.isNone())
-      return;
-
-    const color = gridCell.cell.valueString.trim();
+    const color = (gridCell.value ?? '').toString().trim();
     if (!color || !isValidColor(color))
       return;
 
@@ -43,9 +40,7 @@ export class ColorCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.isNone())
-      return;
-    const color = gridCell.cell.valueString.trim();
+    const color = (gridCell.value ?? '').toString().trim();
     if (color)
       ui.tooltip.show(color, e.x + 16, e.y + 16);
   }
