@@ -247,5 +247,16 @@ export const DEMO_APP_HIERARCHY = {
 				},
 			]
 		},
+		{
+			name: 'Proteomics',
+			children: [
+				{
+					name: 'Differential Expression',
+				},
+				{
+					name: 'Enrichment Analysis',
+				},
+			]
+		},
 	]
 };
