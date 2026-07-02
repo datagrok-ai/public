@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.5.7 (2026-07-02)
+
+- TreeWizard: fix ribbon flicker on step runs and link updates by keeping the Actions, Run-ready, Save and Confirm controls visible and guarding their clicks instead of hiding them on transient locks
+
 ## 1.5.6 (2026-06-30)
 
 - Use the G7 float format for form inputs on platforms with js-api >= 1.27.7; rendering and export keep `#0.###` and honor per-field format overrides
