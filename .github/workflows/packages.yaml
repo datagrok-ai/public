@@ -708,40 +708,32 @@ jobs:
             docker push $image
           done
 
-      # Vulnerability scan of the published package image(s). Report-only (never
-      # blocks the publish); the authoritative OpenVEX is produced by the weekly
-      # Vulnerability-Scan Jenkins job. Uses Grype, consistent with
-      # security_scan_anchore.yaml. See core/docs/VULNERABILITY_MANAGEMENT.md.
+      # Vulnerability scan of the published package image(s) via GCP Container
+      # Analysis — the same scan as the weekly Vulnerability-Scan Jenkins job
+      # (GROK-18695): push to Artifact Registry, poll the scan, publish OpenVEX +
+      # CSV to the public datagrok-data S3 bucket, then delete the GAR copy.
+      # Report-only: continue-on-error never blocks the publish.
+      # See core/docs/VULNERABILITY_MANAGEMENT.md.
       - name: Scan published Docker image for vulnerabilities
         if: steps.publish-docker.outcome == 'success'
         id: scan-docker
         continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-vuln-sa.json
+          GCP_SA_KEY: ${{ secrets.GCP_VULN_SA_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.VULN_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VULN_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
         run: |
-          mkdir -p vuln-reports
+          printf '%s' "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod +x ./.github/scripts/gcp-vuln-scan.sh
           for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
-            safe=$(echo "$image" | tr '/:' '__')
-            echo "::group::Grype scan $image"
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-              anchore/grype:latest "docker:$image" -o json \
-              > "vuln-reports/${safe}.grype.json" || { echo "grype failed for $image"; continue; }
-            jq -r '["CVE","Severity","Package","Installed","FixedVersion"],
-              (.matches[]? | [.vulnerability.id, .vulnerability.severity, .artifact.name,
-                .artifact.version, (.vulnerability.fix.versions | join(" "))]) | @csv' \
-              "vuln-reports/${safe}.grype.json" > "vuln-reports/${safe}.report.csv" 2>/dev/null || true
-            crit=$(jq '[.matches[]?|select(.vulnerability.severity=="Critical")]|length' "vuln-reports/${safe}.grype.json" 2>/dev/null || echo '?')
-            high=$(jq '[.matches[]?|select(.vulnerability.severity=="High")]|length' "vuln-reports/${safe}.grype.json" 2>/dev/null || echo '?')
-            echo "${image}: Critical=${crit} High=${high}"
+            repo="${image#datagrok/}"; repo="${repo%%:*}"; tag="${image##*:}"
+            echo "::group::GCP vuln scan $image"
+            ./.github/scripts/gcp-vuln-scan.sh "$image" "$repo" "$tag" || echo "scan failed for $image"
             echo "::endgroup::"
           done
-
-      - name: Upload vulnerability reports
-        if: steps.scan-docker.outcome == 'success' || steps.scan-docker.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.package }}-vuln-reports
-          path: vuln-reports/
-          retention-days: 14
-          if-no-files-found: warn
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Commit package-lock.json
         id: git
