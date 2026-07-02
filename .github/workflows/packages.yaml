@@ -708,6 +708,41 @@ jobs:
             docker push $image
           done
 
+      # Vulnerability scan of the published package image(s). Report-only (never
+      # blocks the publish); the authoritative OpenVEX is produced by the weekly
+      # Vulnerability-Scan Jenkins job. Uses Grype, consistent with
+      # security_scan_anchore.yaml. See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Scan published Docker image for vulnerabilities
+        if: steps.publish-docker.outcome == 'success'
+        id: scan-docker
+        continue-on-error: true
+        run: |
+          mkdir -p vuln-reports
+          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
+            safe=$(echo "$image" | tr '/:' '__')
+            echo "::group::Grype scan $image"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              anchore/grype:latest "docker:$image" -o json \
+              > "vuln-reports/${safe}.grype.json" || { echo "grype failed for $image"; continue; }
+            jq -r '["CVE","Severity","Package","Installed","FixedVersion"],
+              (.matches[]? | [.vulnerability.id, .vulnerability.severity, .artifact.name,
+                .artifact.version, (.vulnerability.fix.versions | join(" "))]) | @csv' \
+              "vuln-reports/${safe}.grype.json" > "vuln-reports/${safe}.report.csv" 2>/dev/null || true
+            crit=$(jq '[.matches[]?|select(.vulnerability.severity=="Critical")]|length' "vuln-reports/${safe}.grype.json" 2>/dev/null || echo '?')
+            high=$(jq '[.matches[]?|select(.vulnerability.severity=="High")]|length' "vuln-reports/${safe}.grype.json" 2>/dev/null || echo '?')
+            echo "${image}: Critical=${crit} High=${high}"
+            echo "::endgroup::"
+          done
+
+      - name: Upload vulnerability reports
+        if: steps.scan-docker.outcome == 'success' || steps.scan-docker.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}-vuln-reports
+          path: vuln-reports/
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Commit package-lock.json
         id: git
         continue-on-error: true
