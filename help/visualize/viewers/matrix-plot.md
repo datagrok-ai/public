@@ -28,7 +28,6 @@ General:
 | **General** | | |
 | X Column Names | list | Columns to use on the X axis |
 | Y Column Names | list | Column to use on the Y axis |
-| Font | string |  |
 | Cell Plot Type | string |  |
 | Show X Axes | boolean |  |
 | Show Y Axes | boolean |  |
@@ -43,6 +42,7 @@ General:
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Style** | | |
+| Font | string |  |
 | Auto Layout | boolean |  |
 | **Data** | | |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |

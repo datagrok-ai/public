@@ -55,8 +55,12 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Statistics** | | |
+| Show Group Comparison | boolean | Compare group means with the test that fits the data: * 2 groups — t-test * 3+ groups — one-way ANOVA * vs control — each group against a control * two category columns — two-way ANOVA Method and control are set on-chart. Hidden above 30 group combinations. |
+| Show Comparison Controls | boolean | Show the on-chart group-comparison controls (method, control comparisons, control group); with *Auto Layout* they are also hidden when the viewer is small. |
+| Show Assumption Checks | boolean | Show the ANOVA/t-test assumption checks under the p-value: per-group normality (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they never change the test. |
+| Alpha | number | Significance level for the group comparison (0 < alpha < 1). |
 | Show Statistics | boolean |  |
-| Statistics Format | string | Format for statistics and p-value values. |
+| Statistics Format | string | Format for the statistics table values (p-values and comparison statistics use fixed formats). |
 | Show Total Count | boolean |  |
 | Show Inliers Count | boolean | Shown values count inside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
 | Show Outliers Count | boolean | Shown values count outside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
@@ -93,6 +97,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Color Min | number |  |
 | Color Max | number |  |
 | **Marker** | | |
+| Show Markers | boolean | Show individual data point markers. When off, only the box / violin shapes are drawn. |
 | Markers Column Name | string |  |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
 | Marker Min Size | number |  |
@@ -115,8 +120,6 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Show Mouse Over Point | boolean |  |
 | Show Mouse Over Row Group | boolean |  |
 | Statistics | list |  |
-| Whisker Color | number |  |
-| Violin Whisker Color | number |  |
 | Back Color | number |  |
 | Filtered Rows Color | number |  |
 | Filtered Out Rows Color | number |  |
@@ -147,6 +150,10 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Whisker Width Ratio | number |  |
 | Axis Use Column Format | boolean |  |
 | Bins | number | Number of KDE bins to display a violin plot. |
+| Whisker Color | number | Color of box-plot whiskers, box outline and the slightly transparent box fill. When empty, categories are colored sequentially with the *Categorical Color Scheme* (by inner subcategory when two category columns are selected). |
+| Violin Whisker Color | number | Color of violin whiskers and interquartile range line. |
+| Violin Line Width | number | Width of the violin outline; drawn on top of the points. |
+| Control Band Color | number | Color of the band highlighting the control group in control comparisons mode. |
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list |  |
 | Controls Font | string | Viewer controls elements font. |

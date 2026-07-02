@@ -1060,6 +1060,40 @@ export interface IBoxPlotSettings {
   /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
   category2Map: string;
 
+  /// Compare group means with the test that fits the data:
+  /// * 2 groups — t-test
+  /// * 3+ groups — one-way ANOVA
+  /// * vs control — each group against a control
+  /// * two category columns — two-way ANOVA
+  ///
+  /// Method and control are set on-chart. Hidden above 30 group combinations.
+  showGroupComparison: boolean;
+
+  /// Show the on-chart group-comparison controls (method, control comparisons, control group);
+  /// with *Auto Layout* they are also hidden when the viewer is small.
+  showComparisonControls: boolean;
+
+  /// Show the ANOVA/t-test assumption checks under the p-value: per-group normality
+  /// (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they
+  /// never change the test.
+  showAssumptionChecks: boolean;
+
+  /// Significance level for the group comparison (0 < alpha < 1).
+  alpha: number;
+
+  /// Test method (empty = auto-selected by category count):
+  /// * 2 categories — Welch / Student
+  /// * 3+ categories — Welch / Fisher ANOVA
+  /// * control comparisons — Dunnett / Holm-Welch
+  method: string;
+
+  /// Compare each group against the control group (meaningful for 3+ categories).
+  controlComparisons: boolean;
+
+  /// Category used as the control group for control comparisons;
+  /// ignored while *Compare* is off.
+  controlGroup: string;
+
   showStatistics: boolean;
 
   showCategoryAxis: boolean;
@@ -1120,6 +1154,9 @@ export interface IBoxPlotSettings {
 
   colorMax: number;
 
+  /// Show individual data point markers. When off, only the box / violin shapes are drawn.
+  showMarkers: boolean;
+
   markers: string;
   markersColumnName: string;
 
@@ -1172,7 +1209,7 @@ export interface IBoxPlotSettings {
 
   statistics: Array<string>;
 
-  /// Format for statistics and p-value values.
+  /// Format for the statistics table values (p-values and comparison statistics use fixed formats).
   statisticsFormat: string;
 
   showTotalCount: boolean;
@@ -1232,9 +1269,16 @@ export interface IBoxPlotSettings {
   /// Number of KDE bins to display a violin plot.
   bins: number;
 
+  /// Color of box-plot whiskers, box outline and the slightly transparent box fill.
+  /// When empty, categories are colored sequentially with the *Categorical Color Scheme*
+  /// (by inner subcategory when two category columns are selected).
   whiskerColor: number;
 
+  /// Color of violin whiskers and interquartile range line.
   violinWhiskerColor: number;
+
+  /// Width of the violin outline; drawn on top of the points.
+  violinLineWidth: number;
 
   backColor: number;
 
@@ -1247,6 +1291,9 @@ export interface IBoxPlotSettings {
   missingValueColor: number;
 
   defaultBoxColor: number;
+
+  /// Color of the band highlighting the control group in control comparisons mode.
+  controlBandColor: number;
 
   linearColorScheme: Array<number>;
 
