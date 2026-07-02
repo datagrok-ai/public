@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.4.3 (2026-07-02)
+
+- Fixed validation popover scrolling, scrollbar visibility, and above/below positioning
+
 ## 1.3.0 (2025-03-19)
 
 - 1.27 platform support
