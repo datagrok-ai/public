@@ -6,6 +6,11 @@ export function info() : void {
   PackageFunctions.info();
 }
 
+//name: checkWorkflow
+export function checkWorkflow() : void {
+  PackageFunctions.checkWorkflow();
+}
+
 //name: Biology | Admetica
 //description: Panel with ADMET predictions for a molecule.
 //input: semantic_value smiles { semType: Molecule; description: Molecule to predict. }
@@ -51,7 +56,7 @@ export function admeticaEditor(call: DG.FuncCall) : void {
 //input: list<string> models { description: Properties to compute. }
 //input: bool addPiechart { description: Add a pie-chart column. }
 //input: bool addForm { description: Add a form viewer. }
-//top-menu: Chem | Admetica | Сalculate...
+//top-menu: Chem | Admetica | Calculate...
 //editor: Admetica:AdmeticaEditor
 export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) : Promise<void> {
   await PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
