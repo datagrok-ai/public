@@ -820,7 +820,6 @@ export class PackageFunctions {
     description: 'End-to-end proteomics differential-expression analysis on the HYE benchmark: ' +
       'import → impute → differential expression → volcano + heatmap, with a QC dashboard tab ' +
       'and the top hit pre-selected for its UniProt panel',
-    tags: ['demo'],
     meta: {demoPath: 'Proteomics | Differential Expression', isDemoDashboard: 'true'},
   })
   static async proteomicsDemo(): Promise<void> {
@@ -832,7 +831,6 @@ export class PackageFunctions {
     description: 'Pathway enrichment (g:Profiler GO / KEGG / Reactome / WikiPathways) on a human ' +
       'differential-expression result — cell-cycle up, oxidative-phosphorylation down — with the ' +
       'enrichment charts cross-linked to the volcano',
-    tags: ['demo'],
     meta: {demoPath: 'Proteomics | Enrichment Analysis', isDemoDashboard: 'true'},
   })
   static async proteomicsEnrichmentDemo(): Promise<void> {

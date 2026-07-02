@@ -109,7 +109,6 @@ export async function enrichmentCharts() : Promise<void> {
 }
 
 //name: Proteomics Demo
-//tags: demo
 //meta.demoPath: Proteomics | Differential Expression
 //meta.isDemoDashboard: true
 export async function proteomicsDemo() : Promise<void> {
@@ -117,7 +116,6 @@ export async function proteomicsDemo() : Promise<void> {
 }
 
 //name: Proteomics Enrichment Demo
-//tags: demo
 //meta.demoPath: Proteomics | Enrichment Analysis
 //meta.isDemoDashboard: true
 export async function proteomicsEnrichmentDemo() : Promise<void> {
