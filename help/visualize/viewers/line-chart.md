@@ -142,6 +142,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Size Column Name | string |  |
 | Markers Size Aggr Type | string |  |
+| Markers Size Axis Type | string | Linear or logarithmic scale for the marker *Size* column. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |

@@ -108,6 +108,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | **Size** | | |
 | Show Size Selector | boolean |  |
 | Marker Size Column Name | string |  |
+| Marker Size Axis Type | string | Linear or logarithmic scale for the *Marker Size Column*. |
 | **General** | | |
 | Show Mean Cross | boolean |  |
 | Show Lower Dash | boolean |  |
