@@ -18,6 +18,7 @@ results are checkable against the truth, not just plausible.
 | `fragpipe-smoke-test.tsv` | FragPipe `combined_protein.tsv` | DDA | The FragPipe path + UniProt panel (real accessions) with an engineered volcano |
 | `spectronaut-hye-mix.tsv` | Spectronaut report (long) | DIA | Long-format DIA import and the three-species (HYE) ground-truth story |
 | `spectronaut-hye-demo.tsv` | Spectronaut report (long, slim) | DIA | **The registered `Proteomics Demo`** — the full pipeline's richest endpoint, run end to end |
+| `enrichment-demo.csv` | Engineered human DE result | — | **The registered `Proteomics Enrichment Demo`** — a single-organism pathway-enrichment story |
 | `spectronaut-hye-candidates.tsv` | Spectronaut Candidates | DIA | The pre-computed-DE shortcut (straight to volcano/enrichment) |
 | `spectronaut-hye-precursor*.{tsv,json}` | Spectronaut precursor / aggregated | DIA | Streaming-aggregation import and its golden-file equivalence tests |
 
@@ -134,6 +135,30 @@ NR==1{for(i=1;i<=NF;i++)h[$i]=i; s=""; for(k=1;k<=length(w);k++)s=s (k>1?OFS:"")
 {o=""; for(k=1;k<=length(w);k++){c=w[k]; v=(c in h)?$(h[c]):""; if(c=="PG.IBAQ"&&v!=""&&v!="NA"&&v!="NaN")v=v*1000; o=o (k>1?OFS:"") v} print o}' \
   spectronaut-hye-mix.tsv > spectronaut-hye-demo.tsv
 ```
+
+## enrichment-demo.csv
+
+| Property | Value |
+|----------|-------|
+| **Format** | Pre-computed DE result (CSV): `Protein ID, Gene, log2FC, p-value, adj.p-value, significant` |
+| **Source** | **Engineered for demonstration.** Real HGNC gene symbols + UniProt accessions; fold-changes and p-values are synthetic. |
+| **Organism** | Human (single organism — enrichment requires one) |
+| **Proteins** | 119 (30 up, 25 down, 64 non-significant background) |
+| **Signal** | UP = cell cycle / mitosis; DOWN = oxidative phosphorylation; background = a diverse, unrelated set |
+| **Size** | 4.5 KB |
+
+Backs the registered **`Proteomics Enrichment Demo`** (`meta.demoPath: Proteomics | Enrichment
+Analysis`). The demo loads this as a pre-computed DE result, opens the volcano, runs g:Profiler
+over-representation analysis (GO / KEGG / Reactome / WikiPathways), and docks the enrichment
+charts cross-linked to the volcano — selecting a term highlights its proteins.
+
+Why engineered rather than a real dataset: enrichment assumes a **single organism**, which rules
+out the three-species HYE files, and it needs a **coherent** regulated set so the returned terms
+are recognizable. The two regulated sets are drawn from textbook, strongly-annotated pathways
+(cell cycle up, oxidative phosphorylation down), so g:Profiler returns crisp terms — e.g. KEGG
+"Cell cycle" and "Oxidative phosphorylation" at FDR < 1e-15. Gene symbols are real (g:Profiler
+maps them); accessions are real (the UniProt panel resolves); only the statistics are synthetic.
+Regenerate with `bash tools/generate-enrichment-fixture.sh` (the gene lists live in that script).
 
 ## spectronaut-hye-candidates.tsv
 
