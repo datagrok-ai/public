@@ -6,7 +6,7 @@ import {
   getRegisteredFuncs,
 } from '../rete/node-factory';
 import {FuncNode} from '../rete/nodes/func-node';
-import {getParamDescription} from '../utils/dart-proxy-utils';
+import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
 
 category('Flow: node-factory', () => {
   before(async () => {
@@ -66,6 +66,24 @@ category('Flow: node-factory', () => {
     if (!info) return; // no package funcs on this stand — skip
     const node = new FuncNode(info.func);
     expect(node.dgPackageName, info.packageName, 'package name captured on the node');
+  });
+
+  test('input slot label shows the caption, key stays the property name', async () => {
+    // Find a registered func whose input declares a caption distinct from its
+    // name (e.g. Aggregate/PCA/dbScan) — the slot label should be that caption
+    // while the slot key stays the property name.
+    let found: {func: DG.Func; name: string; caption: string} | null = null;
+    for (const info of getRegisteredFuncs()) {
+      for (const p of info.func.inputs) {
+        const cap = getParamDisplayName(p);
+        if (cap && cap !== p.name) {found = {func: info.func, name: p.name, caption: cap}; break;}
+      }
+      if (found) break;
+    }
+    if (!found) return; // no caption-bearing inputs on this stand — skip
+    const node = new FuncNode(found.func);
+    expect(found.name in node.inputs, true, 'slot key is the property name (identity unchanged)');
+    expect((node.inputs[found.name] as {label?: string}).label, found.caption, 'slot label is the caption');
   });
 
   test('FuncNode captures param descriptions for socket/panel tooltips', async () => {

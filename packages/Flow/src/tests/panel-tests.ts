@@ -1,7 +1,9 @@
+import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {propertyChoices, stringChoiceOptions} from '../panel/property-panel';
+import {getParamDisplayName} from '../utils/dart-proxy-utils';
 
 category('Flow: property panel', () => {
   before(async () => {
@@ -29,6 +31,15 @@ category('Flow: property panel', () => {
     expect(opts!.join(','), 'custom,inner,outer');
     // Empty current is not added as a bogus option.
     expect(stringChoiceOptions(['inner'], false, '')!.join(','), 'inner');
+  });
+
+  test('getParamDisplayName falls back to the property name when no caption', async () => {
+    // No / empty caption → the identity name (the caption-present case is
+    // validated end-to-end against live registered funcs in node-factory-tests).
+    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', type: 'int'})), 'minPts',
+      'no caption → the property name');
+    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', caption: '', type: 'int'})), 'minPts',
+      'empty caption → the property name');
   });
 
   test('propertyChoices reads declared choices from a live function input', async () => {

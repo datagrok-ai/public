@@ -14,8 +14,13 @@ import {ClassicPreset} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
-import {dgTypeToSlotType, getNodeColors, categorizeBySignature, domainCategory, isStringListType} from '../../types/type-map';
-import {getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional, getParamDescription} from '../../utils/dart-proxy-utils';
+import {
+  dgTypeToSlotType, getNodeColors, categorizeBySignature, domainCategory, isStringListType,
+} from '../../types/type-map';
+import {
+  getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
+  getParamDescription, getParamDisplayName,
+} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -72,10 +77,12 @@ export class FuncNode extends FlowNode {
       .filter((p) => String(p.propertyType) === 'dataframe')
       .map((p) => p.name);
 
-    // 1. Inputs.
+    // 1. Inputs. The slot key is the property name (identity — used for
+    // connections, inputValues, compilation); the label shows the caption when
+    // one is declared (display only).
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
-      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), inp.name));
+      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), getParamDisplayName(inp)));
       const inpDesc = getParamDescription(inp);
       if (inpDesc) this.inputDescriptions[inp.name] = inpDesc;
 

@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Parameter captions on slots and panel fields
+
+* Where a function's input property declares a **`caption`** (distinct from its name — e.g. `minPts` →
+  "Minimum points", `dB` → "Diameter"), that caption is now shown as the **input slot label on the
+  node** and as the **field label in the context panel** ("connected only" rows and the
+  `ui.input.string` column / column-list / string_list fields; `ui.input.forProperty` already did
+  this). Display only — the property **name is unchanged** as the slot key / `inputValues` key /
+  compiled argument. A null or empty caption falls back to the name (`getParamDisplayName`).
+
 ### `list` / `list<string>` parameters are editable
 
 * Function inputs of type **`list`** — which is how **`list<string>`** parameters surface at runtime

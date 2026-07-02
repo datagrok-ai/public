@@ -92,6 +92,23 @@ export function getParamDescription(prop: DG.Property): string {
   }
 }
 
+/** Display label for a function parameter: its `caption` when one is declared
+ *  (via `{caption: ...}` / `@grok.decorators.param`), else the property name.
+ *  Purely for UI — the internal identity (`prop.name`, used for slot keys,
+ *  `inputValues`, connections, compilation) is unchanged. The caption may be
+ *  null or empty; both fall back to the name. Reads the raw `options.caption`
+ *  first, then `friendlyName` (the Dart caption getter, which itself falls back
+ *  to the name). */
+export function getParamDisplayName(prop: DG.Property): string {
+  try {
+    const cap = safeGet((prop as unknown as {options?: unknown}).options, 'caption');
+    if (typeof cap === 'string' && cap.trim() !== '') return cap.trim();
+    const fn = (prop as unknown as {friendlyName?: unknown}).friendlyName;
+    if (typeof fn === 'string' && fn.trim() !== '') return fn.trim();
+  } catch {/* fall through to name */}
+  return prop.name;
+}
+
 /** Returns the display name for a function node header.
  * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
 export function getFuncDisplayName(func: DG.Func): string {

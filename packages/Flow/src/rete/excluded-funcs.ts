@@ -130,6 +130,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:getRdKitModule',
   'Chem:getScaffoldTree',
   'Chem:getStructuralAlerts',
+  'Chem:getMapIdentifiers',
   'Chem:getSynthonSpacesFunc',
   'Chem:isApplicableNN',
   'Chem:isInteractiveNN',

@@ -13,7 +13,7 @@ import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
-import {getParamDescription} from '../utils/dart-proxy-utils';
+import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
 import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
@@ -193,28 +193,31 @@ export class PropertyPanel {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
         for (const inp of func.inputs) {
           const tip = buildFuncInputTooltip(inp);
+          // Display label — the property's caption when declared, else its name.
+          // Purely cosmetic: the slot key / `inputValues` stay keyed by name.
+          const label = getParamDisplayName(inp);
           const isEditable = inp.name in node.inputValues;
           if (!isEditable) {
-            const row = ui.div([ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)], 'funcflow-prop-row');
+            const row = ui.div([ui.divText(`${label}: ${inp.propertyType} (connected only)`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
             content.appendChild(row);
             continue;
           }
           if (this.flow.isInputConnected(node.id, inp.name)) {
-            const row = ui.div([ui.divText(`${inp.name}: connected`)], 'funcflow-prop-row');
+            const row = ui.div([ui.divText(`${label}: connected`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
             content.appendChild(row);
             continue;
           }
           const pt = String(inp.propertyType);
           if (pt === 'column' || pt === 'column_list')
-            content.appendChild(this.createColumnRow(node, inp.name, pt === 'column_list', dataframeParams, tip));
+            content.appendChild(this.createColumnRow(node, inp.name, pt === 'column_list', dataframeParams, tip, label));
           else if (pt === 'string_list') {
             // Comma-separated string (native DG input, to match the primitives);
             // the compiler trims and turns it into an array. (`list<string>`
             // arrives here as `string_list` — DG normalizes it.)
             content.appendChild(this.createStringInput(inp.name, String(node.inputValues[inp.name] ?? ''),
-              (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`));
+              (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`, label));
           } else if (pt === 'list' || PRIMITIVE_INPUT_TYPES.has(pt)) {
             // A native Datagrok input built straight from the property — it
             // honours the declared type, numeric range, choices, and nullability
@@ -526,12 +529,15 @@ export class PropertyPanel {
   /** A native Datagrok single-line string input (used where there's no
    *  `DG.Property` to drive `forProperty` — e.g. a `string_list` slot edited as
    *  a comma-separated string), so its styling matches the primitive inputs. */
-  private createStringInput(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    const input = ui.input.string(label, {
+  private createStringInput(
+    label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, caption?: string,
+  ): HTMLElement {
+    const input = ui.input.string(caption ?? label, {
       value,
       tooltipText: inputTooltip,
       onValueChanged: (v) => onChange(String(v ?? '')),
     });
+    // Display caption may differ from the identity; keep the row keyed by name.
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
   }
 
@@ -553,7 +559,8 @@ export class PropertyPanel {
    *  a dialog seeded by the chosen table input. Storage is fully delegated via
    *  `getValue`/`setValue`, so this serves **any** node with a column field —
    *  func inputs (`inputValues`), viewer look options, Select Column utilities.
-   *  `label` is the display label and the picker's `data-param` / test-id key. */
+   *  `label` is the identity — the picker's `data-param` / test-id key; the
+   *  visible caption is `caption ?? label` (display only). */
   private createColumnFieldRow(opts: {
     nodeId: string;
     label: string;
@@ -561,6 +568,8 @@ export class PropertyPanel {
     tip: string;
     getValue: () => string;
     setValue: (v: string) => void;
+    /** Display caption when it differs from the identity `label` (optional). */
+    caption?: string;
     /** Single dataframe input the columns come from (most nodes). */
     tableParam?: string;
     /** Per-row table chooser for multi-table funcs (JoinTables keys1→table1, …). */
@@ -571,7 +580,7 @@ export class PropertyPanel {
     // `forProperty`, which would build a column picker bound to a live table we
     // don't have here. The table chooser (multi-table funcs) and the picker icon
     // are appended *inside* the input via `addOptions` (trailing controls).
-    const nameInput = ui.input.string(opts.label, {
+    const nameInput = ui.input.string(opts.caption ?? opts.label, {
       value: opts.getValue(),
       tooltipText: opts.tip,
       onValueChanged: (v) => opts.setValue(String(v ?? '')),
@@ -610,7 +619,7 @@ export class PropertyPanel {
   }
 
   private createColumnRow(
-    node: FlowNode, paramName: string, isList: boolean, dataframeParams: string[], tip: string,
+    node: FlowNode, paramName: string, isList: boolean, dataframeParams: string[], tip: string, caption?: string,
   ): HTMLElement {
     const colTip = isList ?
       `${tip} | Comma-separated column names` :
@@ -632,7 +641,7 @@ export class PropertyPanel {
     }
 
     return this.createColumnFieldRow({
-      nodeId: node.id, label: paramName, isList, tip: colTip,
+      nodeId: node.id, label: paramName, caption, isList, tip: colTip,
       getValue: () => String(node.inputValues[paramName] ?? ''),
       setValue: (v) => {node.inputValues[paramName] = v;},
       tableParam, tableSelect,
