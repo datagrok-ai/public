@@ -215,7 +215,7 @@ export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG
 //description: Calculates molecular descriptors for the molecules column
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
-//input: list<string> selected 
+//input: list<string> selected { caption: Descriptors }
 //top-menu: Chem | Calculate | Descriptors...
 //editor: Chem:DescriptorsEditor
 export async function descriptorsDocker(table: DG.DataFrame, molecules: DG.Column, selected: string[]) : Promise<void> {

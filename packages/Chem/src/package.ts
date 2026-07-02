@@ -566,7 +566,7 @@ export class PackageFunctions {
   static async descriptorsDocker(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', caption: 'Descriptors'}) selected: string[],
+    @grok.decorators.param({type: 'list<string>', options: {caption: 'Descriptors'}}) selected: string[],
   ): Promise<void> {
     const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
     try {
