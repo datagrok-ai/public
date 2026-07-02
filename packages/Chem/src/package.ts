@@ -15,6 +15,7 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import Sketcher = DG.chem.Sketcher;
+import {FuncCallParamsEditor, MessageFuncCallEditor} from './analysis/func-call-params-editor';
 import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
@@ -29,7 +30,7 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {addDescriptorsColsToDf, DescriptorsEditor, getDescriptorsSingle, getSelected} from './descriptors/descriptors-calculation';
-import {identifiersWidget, getMapIdentifiers, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
+import {identifiersWidget, getMapIdentifiers, MapIdentifiersEditor, textToSmiles} from './widgets/identifiers';
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -625,9 +626,32 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Map Identifiers',
     'top-menu': 'Chem | Calculate | Map Identifiers...',
+    'editor': 'Chem:MapIdentifiersEditor',
   })
-  static async getMapIdentifiers() {
-    await openMapIdentifiersDialog();
+  static async getMapIdentifiers(
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'string'}) fromSource: string,
+    @grok.decorators.param({type: 'string'}) toSource: string): Promise<void> {
+    const prog = DG.TaskBarProgressIndicator.create('Receiving identifiers...');
+    try {
+      await DG.Func.find({package: 'Chem', name: 'mapIdentifiersTransform'})[0].prepare({
+        table: table,
+        molecules: molecules,
+        fromSource: fromSource,
+        toSource: toSource,
+      }).call(undefined, undefined, {processed: false});
+    } finally {
+      prog.close();
+    }
+  }
+
+  @grok.decorators.editor({
+    name: 'MapIdentifiersEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static mapIdentifiersEditor(call: DG.FuncCall): DG.Widget {
+    return new MapIdentifiersEditor(call);
   }
 
   @grok.decorators.func({
@@ -667,8 +691,8 @@ export class PackageFunctions {
     } else if (molColumns.length === 1)
       call.func.prepare({molecules: molColumns[0]}).call(true);
     else {
-      const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0]});
-      ui.dialog({title: 'Substructure search'});
+      const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0],
+        filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
       ui.dialog({title: 'Substructure search'})
         .add(colInput)
         .onOK(async () => {
@@ -782,36 +806,32 @@ export class PackageFunctions {
     return mcsCol;
   }
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
   static ChemSpaceEditor(
-    @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): void {
+    @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): DG.Widget {
     const dataFrame = grok.shell.tv?.dataFrame;
-    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length) {
-      grok.shell.warning(`Chemical Space requires an open table with a Molecule column`);
-      return;
-    }
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length)
+      return new MessageFuncCallEditor(`Chemical Space requires an open table with a Molecule column`);
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
     const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
-    const editor = funcEditor.getEditor();
-    editor.appendChild(clusterMCS.root);
-    const dialog = ui.dialog({title: 'Chemical space'})
-      .add(editor)
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        return call.func.prepare({
-          molecules: params.col,
-          table: params.table,
-          methodName: params.methodName,
-          similarityMetric: params.similarityMetric,
-          plotEmbeddings: params.plotEmbeddings,
-          options: params.options,
-          preprocessingFunction: params.preprocessingFunction,
-          clusterEmbeddings: params.clusterEmbeddings,
-          clusterMCS: !!clusterMCS.value,
-        }).call();
-      });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      extraInputs: [{name: 'clusterMCS', input: clusterMCS}],
+      stableInputs: [funcEditor.tableInput, funcEditor.methodInput,
+        funcEditor.plotEmbeddingsInput, funcEditor.clusterEmbeddingsInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        methodName: p.methodName,
+        similarityMetric: p.similarityMetric,
+        plotEmbeddings: p.plotEmbeddings,
+        options: p.options,
+        preprocessingFunction: p.preprocessingFunction,
+        clusterEmbeddings: p.clusterEmbeddings,
+      }),
+      isValid: (p) => !!p.table && !!p.col,
+      inputFor: {table: funcEditor.tableInput},
+    });
   }
 
   @grok.decorators.func({
@@ -1096,30 +1116,30 @@ export class PackageFunctions {
     return await rGroupDecomp(col, params);
   }
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
   static ActivityCliffsEditor(
-    call: DG.FuncCall): void {
+    call: DG.FuncCall): DG.Widget {
+    const dataFrame = grok.shell.tv?.dataFrame;
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length)
+      return new MessageFuncCallEditor(`Activity Cliffs requires an open table with a Molecule column`);
     const funcEditor = new ActivityCliffsFunctionEditor({semtype: DG.SEMTYPE.MOLECULE});
-    const dialog = ui.dialog({title: 'Activity Cliffs'})
-      .add(funcEditor.getEditor())
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        if (params.activities) {
-          call.func.prepare({
-            table: params.table,
-            molecules: params.col,
-            activities: params.activities,
-            similarity: params.similarityThreshold,
-            methodName: params.methodName,
-            similarityMetric: params.similarityMetric,
-            preprocessingFunction: params.preprocessingFunction,
-            options: params.options,
-          }).call(true);
-        } else
-          grok.shell.error(`Column with activities has not been selected. Table contains no numeric columns.`);
-      });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      stableInputs: [funcEditor.tableInput, funcEditor.methodInput, funcEditor.similarityInput,
+        funcEditor.plotEmbeddingsInput, funcEditor.clusterEmbeddingsInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        activities: p.activities,
+        similarity: p.similarityThreshold,
+        methodName: p.methodName,
+        similarityMetric: p.similarityMetric,
+        preprocessingFunction: p.preprocessingFunction,
+        options: p.options,
+      }),
+      isValid: (p) => !!p.table && !!p.col && !!p.activities,
+      inputFor: {table: funcEditor.tableInput, molecules: funcEditor.colInput, activities: funcEditor.activitiesInput},
+    });
   }
 
   @grok.decorators.func({
@@ -2304,18 +2324,12 @@ export class PackageFunctions {
 
   @grok.decorators.editor({
     name: 'MMPEditor',
+    outputs: [{name: 'result', type: 'widget'}],
   })
-  static MMPEditor(call: DG.FuncCall): void {
-    const funcEditor = new MmmpFunctionEditor();
-    const editor = funcEditor.getEditor();
-    const dialog = ui.dialog({title: 'Matched Molecular Pairs'})
-      .add(editor)
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        return call.func.prepare(params).call();
-      });
-    // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+  static MMPEditor(call: DG.FuncCall): DG.Widget {
+    if (!call.inputs['table'] && !grok.shell.tv?.dataFrame)
+      return new MessageFuncCallEditor('Matched Molecular Pairs requires an open table');
+    return new MmmpFunctionEditor(call);
   }
 
   @grok.decorators.func({

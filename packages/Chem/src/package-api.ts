@@ -350,8 +350,12 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }
 
-  export async function getMapIdentifiers(): Promise<void> {
-    return await grok.functions.call('Chem:GetMapIdentifiers', {});
+  export async function getMapIdentifiers(table: DG.DataFrame , molecules: DG.Column , fromSource: string , toSource: string ): Promise<void> {
+    return await grok.functions.call('Chem:GetMapIdentifiers', { table, molecules, fromSource, toSource });
+  }
+
+  export async function mapIdentifiersEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Chem:MapIdentifiersEditor', { call });
   }
 
   export async function mapIdentifiersTransform(table: DG.DataFrame , molecules: DG.Column , fromSource: string , toSource: string ): Promise<void> {
@@ -395,7 +399,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
-  export async function chemSpaceEditor(call: any ): Promise<void> {
+  export async function chemSpaceEditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
@@ -444,7 +448,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:RGroupDecomposition', { df, molColName, core, rGroupName, rGroupMatchingStrategy, onlyMatchAtRGroups });
   }
 
-  export async function activityCliffsEditor(call: any ): Promise<void> {
+  export async function activityCliffsEditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:ActivityCliffsEditor', { call });
   }
 
@@ -804,7 +808,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:MmpViewer', {});
   }
 
-  export async function mmpeditor(call: any ): Promise<void> {
+  export async function mmpeditor(call: any ): Promise<any> {
     return await grok.functions.call('Chem:MMPEditor', { call });
   }
 

@@ -43,17 +43,26 @@ export class DescriptorsEditor extends DG.FuncCallEditor {
   }
 
   private async initTree(): Promise<void> {
-    const stored = await getSelected();
-    const selected: string[] = this.pendingHistorySelection ?? this.funcCall.inputs['selected'] ?? stored;
-    this.pendingHistorySelection = undefined;
-    this.treeControl = buildDescriptorsTreeControl(selected, () => {
-      this.funcCall.inputs['selected'] = this.treeControl!.getSelected();
+    try {
+      const stored = await getSelected();
+      const selected: string[] = this.pendingHistorySelection ?? this.funcCall.inputs['selected'] ?? stored;
+      this.pendingHistorySelection = undefined;
+      this.treeControl = buildDescriptorsTreeControl(selected, () => {
+        this.funcCall.inputs['selected'] = this.treeControl!.getSelected();
+        this.inputChangedSubject.next();
+      });
+      removeChildren(this.treeHost);
+      this.treeHost.appendChild(this.treeControl.root);
+      this.funcCall.inputs['selected'] = this.treeControl.getSelected();
       this.inputChangedSubject.next();
-    });
-    removeChildren(this.treeHost);
-    this.treeHost.appendChild(this.treeControl.root);
-    this.funcCall.inputs['selected'] = this.treeControl.getSelected();
-    this.inputChangedSubject.next();
+    } catch (e: any) {
+      // the descriptor tree comes from the chem-chem Docker container; if it is unavailable,
+      // surface it in the widget instead of leaving an unhandled rejection (isValid stays false).
+      removeChildren(this.treeHost);
+      this.treeHost.appendChild(ui.divText('Could not load descriptors. The Chem service may be unavailable.'));
+      grok.log.error(e);
+      this.inputChangedSubject.next();
+    }
   }
 
   updateColumnInput(): void {

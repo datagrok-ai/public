@@ -254,9 +254,22 @@ export async function chemDescriptorsTree() : Promise<any> {
 }
 
 //name: Map Identifiers
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule }
+//input: string fromSource 
+//input: string toSource 
 //top-menu: Chem | Calculate | Map Identifiers...
-export async function getMapIdentifiers() : Promise<void> {
-  await PackageFunctions.getMapIdentifiers();
+//editor: Chem:MapIdentifiersEditor
+export async function getMapIdentifiers(table: DG.DataFrame, molecules: DG.Column, fromSource: string, toSource: string) : Promise<void> {
+  await PackageFunctions.getMapIdentifiers(table, molecules, fromSource, toSource);
+}
+
+//name: MapIdentifiersEditor
+//input: funccall call 
+//output: widget result
+//meta.role: editor
+export function mapIdentifiersEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.mapIdentifiersEditor(call);
 }
 
 //input: dataframe table 
@@ -329,9 +342,10 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
 }
 
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function ChemSpaceEditor(call: DG.FuncCall) : void {
-  PackageFunctions.ChemSpaceEditor(call);
+export function ChemSpaceEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.ChemSpaceEditor(call);
 }
 
 //name: Fingerprints
@@ -443,9 +457,10 @@ export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, 
 }
 
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function ActivityCliffsEditor(call: DG.FuncCall) : void {
-  PackageFunctions.ActivityCliffsEditor(call);
+export function ActivityCliffsEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.ActivityCliffsEditor(call);
 }
 
 //name: Activity Cliffs
@@ -1047,9 +1062,10 @@ export function mmpViewer() : any {
 }
 
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function MMPEditor(call: DG.FuncCall) : void {
-  PackageFunctions.MMPEditor(call);
+export function MMPEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.MMPEditor(call);
 }
 
 //name: Matched Molecular Pairs

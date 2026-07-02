@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Observable, Subject} from 'rxjs';
 import {checkMoleculeValid, getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
@@ -197,47 +198,110 @@ function addNameField(map: { [key: string]: any }, smiles: string) {
   }
 }
 
-export async function openMapIdentifiersDialog() {
-  const dlg = ui.dialog('Chem Map Identifiers');
-  const table = grok.shell.t;
-  if (!table) {
-    grok.shell.warning('There is no table opened');
-    return;
+/** FuncCall editor for `Chem:Map Identifiers`: edits the live funccall inputs (table, molecules,
+ * fromSource, toSource); the platform hosts it in a dialog and runs the call on OK. */
+export class MapIdentifiersEditor extends DG.FuncCallEditor {
+  tableInput: DG.InputBase<DG.DataFrame | null>;
+  columnInput!: DG.InputBase<DG.Column | null>;
+  fromSourceInput: DG.InputBase<string | null>;
+  toSourceInput: DG.InputBase<string | null>;
+  private inputChangedSubject: Subject<any> = new Subject<any>();
+
+  constructor(private funcCall: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+    this.tableInput = ui.input.table('Table', {value: funcCall.inputs['table'] ?? grok.shell.t, nullable: false,
+      onValueChanged: () => {
+        this.updateColumnInput();
+        this.syncCall();
+      }, tooltipText: 'Input data frame containing a molecule column'});
+    this.fromSourceInput = ui.input.choice('From Source', {value: funcCall.inputs['fromSource'] ?? SMILES,
+      items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
+    this.toSourceInput = ui.input.choice('To Source',
+      {value: funcCall.inputs['toSource'] ?? UniChemSource.idNamesChoices[0],
+        items: UniChemSource.idNamesChoices, nullable: false, onValueChanged: () => this.syncCall()});
+    root.appendChild(this.tableInput.root);
+    root.appendChild(this.fromSourceInput.root);
+    root.appendChild(this.toSourceInput.root);
+    this.updateColumnInput();
+    this.syncCall();
   }
-  const moleculeColumns = table.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
-  if (moleculeColumns.length === 0) {
-    grok.shell.warning('Chem Map Identifiers is applicable only to chemical datasets');
-    return;
-  }
-  const columnSelector = ui.input.column('Ids', {table: table, value: moleculeColumns[0]});
-  columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
-  const fromSource = ui.input.choice('From Source', {value: SMILES,
-    items: UniChemSource.idNamesChoices, nullable: false});
-  const toSource = ui.input.choice('To Source', {value: UniChemSource.idNamesChoices[0],
-    items: UniChemSource.idNamesChoices, nullable: false});
-  dlg.add(columnSelector);
-  dlg.add(fromSource);
-  dlg.add(toSource);
-  dlg.onOK(async () => {
-    if (!columnSelector.value) {
-      grok.shell.warning('Column should be chosen');
+
+  updateColumnInput(): void {
+    const table = this.tableInput.value;
+    if (table == null)
       return;
-    }
-    const prog = DG.TaskBarProgressIndicator.create('Receiving identifiers...');
+    this.columnInput?.root?.remove();
+    const moleculeColumns = table.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    this.columnInput = ui.input.column('Ids', {
+      table: table, nullable: false,
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
+      value: moleculeColumns[0] ?? undefined,
+      onValueChanged: () => this.syncCall(),
+      tooltipText: 'Column with molecules to map to identifiers'});
+    this.columnInput.root.children[0]?.classList.add('d4-chem-descriptors-molecule-column-input');
+    // the source inputs are appended in the constructor before the first call, but guard anyway:
+    // insertBefore throws NotFoundError when the anchor is not a child of the root
+    if (this.fromSourceInput.root.parentNode === this.root)
+      this.root.insertBefore(this.columnInput.root, this.fromSourceInput.root);
+    else
+      this.root.appendChild(this.columnInput.root);
+  }
+
+  private syncCall(): void {
+    this.funcCall.inputs['table'] = this.tableInput.value;
+    this.funcCall.inputs['molecules'] = this.columnInput?.value;
+    this.funcCall.inputs['fromSource'] = this.fromSourceInput.value;
+    this.funcCall.inputs['toSource'] = this.toSourceInput.value;
+    this.inputChangedSubject.next(null);
+  }
+
+  get isValid(): boolean {
+    return this.tableInput.value != null && this.columnInput?.value != null &&
+      !!this.fromSourceInput.value && !!this.toSourceInput.value;
+  }
+
+  getHistoryString(): string {
+    return JSON.stringify({
+      fromSource: this.fromSourceInput.value,
+      toSource: this.toSourceInput.value,
+    });
+  }
+
+  loadHistoryString(history: string): void {
+    if (!history)
+      return;
     try {
-      await DG.Func.find({name: 'mapIdentifiersTransform'})[0].prepare({
-        table: table,
-        molecules: columnSelector.value!,
-        fromSource: fromSource.value!,
-        toSource: toSource.value!,
-      }).call(undefined, undefined, {processed: false});
-    } catch (e) {
-      throw e;
-    } finally {
-      prog.close();
+      const parsed = JSON.parse(history);
+      // apply a saved source only when it is among the currently available options
+      if (parsed.fromSource && UniChemSource.idNamesChoices.includes(parsed.fromSource))
+        this.fromSourceInput.value = parsed.fromSource;
+      if (parsed.toSource && UniChemSource.idNamesChoices.includes(parsed.toSource))
+        this.toSourceInput.value = parsed.toSource;
+      this.syncCall();
+    } catch (e: any) {
+      grok.log.error(e);
     }
-  });
-  dlg.show();
+  }
+
+  inputFor(propertyName: string): DG.InputBase {
+    switch (propertyName) {
+    case 'table':
+      return this.tableInput;
+    case 'molecules':
+      return this.columnInput;
+    case 'fromSource':
+      return this.fromSourceInput;
+    case 'toSource':
+      return this.toSourceInput;
+    default:
+      throw new Error(`Unknown property name: ${propertyName}`);
+    }
+  }
+
+  get onInputChanged(): Observable<any> {
+    return this.inputChangedSubject;
+  }
 }
 
 export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fromSource: string,
