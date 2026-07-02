@@ -37,6 +37,7 @@ import {findColumn} from './utils/column-detection';
 import {SEMTYPE} from './utils/proteomics-types';
 import {buildProteomicsRibbonMenu} from './menu';
 import {runProteomicsDemo} from './demo/proteomics-demo';
+import {runEnrichmentDemo} from './demo/enrichment-demo';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -824,6 +825,18 @@ export class PackageFunctions {
   })
   static async proteomicsDemo(): Promise<void> {
     await runProteomicsDemo();
+  }
+
+  @grok.decorators.func({
+    name: 'Proteomics Enrichment Demo',
+    description: 'Pathway enrichment (g:Profiler GO / KEGG / Reactome / WikiPathways) on a human ' +
+      'differential-expression result — cell-cycle up, oxidative-phosphorylation down — with the ' +
+      'enrichment charts cross-linked to the volcano',
+    tags: ['demo'],
+    meta: {demoPath: 'Proteomics | Enrichment Analysis', isDemoDashboard: 'true'},
+  })
+  static async proteomicsEnrichmentDemo(): Promise<void> {
+    await runEnrichmentDemo();
   }
 
   @grok.decorators.panel({

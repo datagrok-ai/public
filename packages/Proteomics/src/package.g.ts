@@ -116,6 +116,14 @@ export async function proteomicsDemo() : Promise<void> {
   await PackageFunctions.proteomicsDemo();
 }
 
+//name: Proteomics Enrichment Demo
+//tags: demo
+//meta.demoPath: Proteomics | Enrichment Analysis
+//meta.isDemoDashboard: true
+export async function proteomicsEnrichmentDemo() : Promise<void> {
+  await PackageFunctions.proteomicsEnrichmentDemo();
+}
+
 //name: Proteomics | UniProt
 //description: UniProt protein details
 //input: string proteinId { semType: Proteomics-ProteinId }
