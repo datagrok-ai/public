@@ -29,7 +29,9 @@ import {
 } from './nodes/comparison-nodes';
 import {BreakpointNode} from './nodes/breakpoint-node';
 import {ViewerNode, CORE_VIEWER_SPECS, genericViewerSpec, VIEWER_TYPE_PREFIX, ViewerSpec} from './nodes/viewer-node';
-import {getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName} from '../utils/dart-proxy-utils';
+import {
+  getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName, safeGet,
+} from '../utils/dart-proxy-utils';
 import {EXCLUDED_FUNC_NQNAMES} from './excluded-funcs';
 
 /** Scalar property types — a function whose inputs AND outputs are *only* these
@@ -102,6 +104,13 @@ export const EXCLUDED_PACKAGES: string[] = [
  *  package, carries an excluded role/tag, or is a command/dialog wrapper that
  *  takes a `funccall` (e.g. CmdAggregate, addNewColumnDialog) rather than data. */
 function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], pkgName: string): boolean {
+  // Explicit author opt-out: `meta.includeInFlow: false` on the function
+  // (meta.* surfaces as func.options; the value may arrive as a string).
+  try {
+    const include = safeGet(func.options, 'includeInFlow');
+    if (include === false || String(include).toLowerCase() === 'false') return true;
+  } catch { /* options can throw on odd Dart proxies — fall through */ }
+
   if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
 
   // Curated denylist of individually-assessed, non-pipeline functions (helpers,

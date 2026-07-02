@@ -31,6 +31,7 @@ export async function flowFromCreationScript(script: string) : Promise<any> {
 //input: bool show 
 //output: dynamic result
 //meta.role: creationScriptEditor
+//meta.includeInFlow: false
 export async function openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean) : Promise<any> {
   return await PackageFunctions.openCreationScriptFlowDialog(script, tableIds, show);
 }

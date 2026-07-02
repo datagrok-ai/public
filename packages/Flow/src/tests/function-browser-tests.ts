@@ -59,6 +59,25 @@ category('Flow: function browser', () => {
     expect(leaked.length, 0, `denylisted funcs leaked: ${leaked.slice(0, 8).join(', ')}`);
   });
 
+  test('meta.includeInFlow: false opts a function out of the catalog', async () => {
+    // No surviving function declares the opt-out (meta.* surfaces as
+    // func.options; the value may arrive as boolean false or the string 'false').
+    const leaked = getRegisteredFuncs().filter((f) => {
+      try {
+        const v = (f.func.options as Record<string, unknown>)?.['includeInFlow'];
+        return v === false || String(v).toLowerCase() === 'false';
+      } catch {return false;}
+    });
+    expect(leaked.length, 0, `includeInFlow:false funcs leaked: ${leaked.map((f) => f.func.name).join(', ')}`);
+
+    // End-to-end: Flow's own dialog opener declares the opt-out in its decorator
+    // meta — it must exist on the stand yet be absent from the catalog.
+    const exists = DG.Func.find({name: 'openCreationScriptFlowDialog'}).length > 0;
+    if (!exists) return; // older Flow build on this stand — skip the e2e half
+    const inCatalog = getRegisteredFuncs().some((f) => f.func.name === 'openCreationScriptFlowDialog');
+    expect(inCatalog, false, 'openCreationScriptFlowDialog is opted out via meta.includeInFlow');
+  });
+
   test('machinery tags and right-click actions are excluded (but widgets are kept)', async () => {
     const funcs = getRegisteredFuncs();
     // No surviving func carries a UI-machinery tag — checking tags (not just the

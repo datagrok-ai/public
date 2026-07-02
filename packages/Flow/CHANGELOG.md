@@ -2,6 +2,15 @@
 
 ## v.next
 
+### `meta.includeInFlow: false` opt-out
+
+* Any function can now opt itself out of the Flow toolbox by declaring **`meta.includeInFlow:
+  false`** (in a decorator's `meta`, a `//meta.includeInFlow: false` header, or script/query
+  annotations). The meta surfaces as `func.options.includeInFlow`; both boolean `false` and the
+  string `'false'` are honoured, checked first in `shouldExcludeFunc`. Flow's own
+  `openCreationScriptFlowDialog` (an internal dialog opener that leaked into the toolbox) is the
+  first user.
+
 ### Parameter captions on slots and panel fields
 
 * Where a function's input property declares a **`caption`** (distinct from its name — e.g. `minPts` →

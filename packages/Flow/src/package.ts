@@ -66,7 +66,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'openCreationScriptFlowDialog',
-    meta: {role: 'creationScriptEditor'},
+    // includeInFlow: Flow-internal dialog opener — hide it from Flow's own toolbox.
+    meta: {role: 'creationScriptEditor', includeInFlow: 'false'},
   })
   static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
     // Load the tables being edited so the view can split the flow back into a
