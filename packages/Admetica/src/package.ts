@@ -27,6 +27,12 @@ export class PackageFunctions {
     grok.shell.info(_package.webRoot);
   }
 
+  @grok.decorators.func()
+  static checkWorkflow() {
+    grok.shell.info('I am checking the workflow...');
+  }
+
+
   @grok.decorators.panel({
     name: 'Biology | Admetica',
     description: 'Panel with ADMET predictions for a molecule.',
