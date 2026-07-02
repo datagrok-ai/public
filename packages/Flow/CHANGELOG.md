@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Node auto-summary uses the real description
+
+* The plain-language line under a node's title (shown when you haven't written your own annotation)
+  now prefers the function's **`description`** — the same text the context panel's Function pane
+  shows — and, failing that, uses a deliberately-set **friendly name verbatim** instead of running
+  it through the camelCase humanizer (which mangled acronyms: "InChI" showed as "In ch i"). Curated
+  parameterized summaries (e.g. "Loads file demog.csv") still take precedence; the humanizer now
+  only handles functions with no display metadata at all.
+
 ### `meta.includeInFlow: false` opt-out
 
 * Any function can now opt itself out of the Flow toolbox by declaring **`meta.includeInFlow:

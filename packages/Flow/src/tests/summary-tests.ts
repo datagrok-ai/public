@@ -55,6 +55,31 @@ category('Flow: summaries', () => {
     expect(summarizeNode(n), 'Foo bar baz');
   });
 
+  test('fallback prefers the description, then a distinct friendly name verbatim', async () => {
+    // Description wins — the node line matches the context panel's Function pane.
+    const withDesc = funcNode('getInchis', dgType('getInchis'));
+    withDesc.dgFunc = {name: 'getInchis', friendlyName: 'InChI',
+      description: 'Computes the InChI identifier for each molecule.'} as never;
+    expect(summarizeNode(withDesc), 'Computes the InChI identifier for each molecule.');
+
+    // No description → a deliberately-set friendly name is used VERBATIM —
+    // never humanized (was "In ch i").
+    const friendlyOnly = funcNode('getInchis', dgType('getInchis'));
+    friendlyOnly.dgFunc = {name: 'getInchis', friendlyName: 'InChI', description: ''} as never;
+    expect(summarizeNode(friendlyOnly), 'InChI');
+
+    // friendlyName defaulted to the raw name → still humanized.
+    const noMeta = funcNode('fooBarBaz', dgType('fooBarBaz'));
+    noMeta.dgFunc = {name: 'fooBarBaz', friendlyName: 'fooBarBaz', description: ''} as never;
+    expect(summarizeNode(noMeta), 'Foo bar baz');
+
+    // Curated templates still beat the description (they read live input values).
+    const curated = funcNode('CalculateLogP', dgType('CalculateLogP'));
+    curated.dgFunc = {name: 'CalculateLogP', friendlyName: 'CalculateLogP',
+      description: 'Some long docs text.'} as never;
+    expect(summarizeNode(curated), 'Calculates logP');
+  });
+
   test('summarizeFlow groups disjoint pipelines, ordered top-then-left', async () => {
     const a = funcNode('OpenFile', dgType('OpenFile'), {fullPath: 'x/demog.csv'});
     a.pos = {x: 0, y: 0};

@@ -1,8 +1,9 @@
 /** Heuristic plain-language summaries for nodes and whole flows (U12). A node's
  *  caption comes from, in order: a built-in type summary, a curated function
- *  summary, or a humanized fallback from the function's friendly name. The flow
- *  summary groups the graph into its disjoint pipelines (connected components)
- *  and describes each left-to-right. No platform calls — pure and testable. */
+ *  summary, the function's description, its friendly name (verbatim when
+ *  deliberately set), or a humanized identifier. The flow summary groups the
+ *  graph into its disjoint pipelines (connected components) and describes each
+ *  left-to-right. No platform calls — pure and testable. */
 
 import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {topologicalSortNodes} from '../compiler/topological-sort';
@@ -51,10 +52,16 @@ export function summarizeNode(node: FlowNode): string {
   const curated = CURATED_FUNC_SUMMARIES[fname.toLowerCase()];
   if (curated) return clean(curated(node));
 
-  // Fallback: a friendly name with spaces is already human; otherwise humanize.
+  // Fallbacks, best first: the function's own description (the same text the
+  // context panel's Function pane shows); a friendly name — **verbatim**
+  // whenever it was deliberately set (differs from the raw name) or is already
+  // a phrase (has spaces) — never humanized, so acronyms like "InChI" survive;
+  // finally a humanized identifier.
+  const desc = str(node.dgFunc?.description);
+  if (desc) return clean(desc);
   const friendly = str(node.dgFunc?.friendlyName);
-  if (friendly && /\s/.test(friendly)) return clean(friendly);
-  return clean(humanize(friendly || fname) || 'Runs a function');
+  if (friendly && (friendly !== fname || /\s/.test(friendly))) return clean(friendly);
+  return clean(humanize(fname) || 'Runs a function');
 }
 
 /** Where one of a step's inputs comes from — another step in the same pipeline. */

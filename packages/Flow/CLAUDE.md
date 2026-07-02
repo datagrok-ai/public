@@ -559,7 +559,9 @@ or `QUESTIONS`; reuse the `until*` helpers and target a concrete element via `by
 Plain-language captions so a flow documents itself. `summarizeNode(node)` returns a short caption via,
 in order: a built-in type summary (`BUILTIN_SUMMARIES`, keyed by registered type name) → a **curated**
 function summary (`CURATED_FUNC_SUMMARIES`, keyed by bare lower-cased func name, reading the node's own
-`inputValues`) → a humanized fallback from the function's friendly name. The curated set
+`inputValues`) → the function's **`description`** (same text as the context panel's Function pane) → a
+deliberately-set **friendly name verbatim** (used whenever it differs from the raw name or contains a
+space — never humanized, so acronyms like "InChI" survive) → a humanized identifier. The curated set
 ([`summary-defs.ts`](src/summary/summary-defs.ts), ~80 funcs) was chosen empirically from the live
 catalog. `summarizeFlow(nodes, connections)` groups the graph into **disjoint pipelines** (union-find
 over all connections), orders each left-to-right and pipelines top-to-bottom, and renders a numbered
