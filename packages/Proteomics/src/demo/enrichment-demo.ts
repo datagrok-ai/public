@@ -69,7 +69,13 @@ export async function runEnrichmentDemo(): Promise<void> {
         df, 1.0, 0.05, 'hsapiens',
         ['GO:BP', 'GO:MF', 'GO:CC', 'KEGG', 'REAC', 'WP'], true);
       pi.update(90, 'Opening enrichment charts…');
-      openEnrichmentVisualization(enrichmentDf, df);
+      // openEnrichmentVisualization opens the enrichment view and makes it current.
+      // Name it "<source> — Enrichment" (mirrors the DE demo's "<source> — QC" tab)
+      // and land back on the main view, so the demo-app framework's leaf-rename puts
+      // "Enrichment Analysis" on the main view — matching where the DE demo lands.
+      const enrichTv = openEnrichmentVisualization(enrichmentDf, df);
+      enrichTv.name = `${df.name} — Enrichment`;
+      grok.shell.v = tv;
       grok.shell.info(
         `Enrichment demo: ${enrichmentDf.rowCount} over-represented terms across ${mapped}/${total} genes. ` +
         'Up-regulated proteins are enriched for cell-cycle / mitosis; down-regulated for oxidative ' +
