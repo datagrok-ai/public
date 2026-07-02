@@ -53,15 +53,19 @@ export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
 
-//input: string nqName 
-//input: string version 
-//input: object instanceConfig 
+//name: Start Workflow
+//description: Launch a compute workflow (pipeline) by its qualified name and open its editor.
+//input: string nqName { description: Qualified name of the workflow function to launch }
+//input: string version { description: Workflow version to run }
+//input: object instanceConfig { description: Optional initial pipeline configuration }
 //output: object result
 export async function StartWorkflow(nqName: string, version: string, instanceConfig?: any) {
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
-//input: object params 
+//name: Run Optimizer
+//description: Run parameter optimization (fitting) for a model and return the resulting function calls.
+//input: object params { description: Optimizer parameters: target function, variables, and objective }
 //output: object result
 export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
@@ -82,6 +86,8 @@ export async function HistoryTestApp() : Promise<void> {
   await PackageFunctions.HistoryTestApp();
 }
 
+//name: Mock Pipeline 1
+//description: Sample static two-step workflow configuration used for testing the workflow engine.
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -89,6 +95,8 @@ export async function MockPipeline1(params: any) {
   return await PackageFunctions.MockPipeline1(params);
 }
 
+//name: Mock Pipeline 2
+//description: Sample sequential workflow configuration with links, actions, and validators for testing.
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
