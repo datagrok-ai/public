@@ -26,6 +26,7 @@ import {openQcDashboard} from './viewers/qc-dashboard';
 import {openSpcDashboard} from './viewers/spc-dashboard';
 import {createGroupMeanCorrelation} from './viewers/group-mean-correlation';
 import {uniprotPanel} from './panels/uniprot-panel';
+import {focusProtein} from './panels/protein-focus';
 import {publishedAnalysisPanel} from './panels/published-analysis-panel';
 import {showShareForReviewDialog} from './publishing/share-dialog';
 import {recoverPublishedProject} from './publishing/post-open-recovery';
@@ -35,6 +36,8 @@ import {openEnrichmentVisualization} from './viewers/enrichment-viewers';
 import {findColumn} from './utils/column-detection';
 import {SEMTYPE} from './utils/proteomics-types';
 import {buildProteomicsRibbonMenu} from './menu';
+import {runProteomicsDemo} from './demo/proteomics-demo';
+import {runEnrichmentDemo} from './demo/enrichment-demo';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -332,6 +335,7 @@ export class PackageFunctions {
           const tv = grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
           dockComparisonFilterIfMultiContrast(tv, df);
+          focusProtein(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import Spectronaut Candidates file: ${e?.message ?? e}`);
         }
@@ -350,6 +354,7 @@ export class PackageFunctions {
           df.name = file.name.replace(/\.[^.]+$/, '');
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups from Spectronaut`);
+          focusProtein(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import Spectronaut file: ${e?.message ?? e}`);
           grok.shell.warning(
@@ -374,6 +379,7 @@ export class PackageFunctions {
           df.name = file.name.replace(/\.[^.]+$/, '');
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups`);
+          focusProtein(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import MaxQuant file: ${e?.message ?? e}`);
         }
@@ -392,6 +398,7 @@ export class PackageFunctions {
           df.name = file.name.replace(/\.[^.]+$/, '');
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups from FragPipe`);
+          focusProtein(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import FragPipe file: ${e?.message ?? e}`);
         }
@@ -810,15 +817,24 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Proteomics Demo',
-    description: 'Proteomics analysis workflow demo',
-    tags: ['demo'],
-    meta: {path: 'Proteomics'},
+    description: 'End-to-end proteomics differential-expression analysis on the HYE benchmark: ' +
+      'import → impute → differential expression → volcano + heatmap, with a QC dashboard tab ' +
+      'and the top hit pre-selected for its UniProt panel',
+    meta: {demoPath: 'Proteomics | Differential Expression', isDemoDashboard: 'true'},
   })
   static async proteomicsDemo(): Promise<void> {
-    const text = await _package.files.readAsText('demo/proteinGroups.txt');
-    const df = await parseMaxQuantText(text);
-    df.name = 'proteinGroups';
-    grok.shell.addTableView(df);
+    await runProteomicsDemo();
+  }
+
+  @grok.decorators.func({
+    name: 'Proteomics Enrichment Demo',
+    description: 'Pathway enrichment (g:Profiler GO / KEGG / Reactome / WikiPathways) on a human ' +
+      'differential-expression result — cell-cycle up, oxidative-phosphorylation down — with the ' +
+      'enrichment charts cross-linked to the volcano',
+    meta: {demoPath: 'Proteomics | Enrichment Analysis', isDemoDashboard: 'true'},
+  })
+  static async proteomicsEnrichmentDemo(): Promise<void> {
+    await runEnrichmentDemo();
   }
 
   @grok.decorators.panel({

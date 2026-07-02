@@ -445,7 +445,10 @@ export async function runEnrichmentPipeline(
   let enrichmentDf = directionDfs[0];
   for (let i = 1; i < directionDfs.length; i++)
     enrichmentDf = enrichmentDf.append(directionDfs[i]);
-  enrichmentDf.name = 'Enrichment Results';
+  // Name the result after its source table (e.g. "MyStudy — Enrichment") so it's
+  // distinguishable when several analyses are open — mirrors the "<source> — QC"
+  // convention. Falls back to the generic name if the source is unnamed.
+  enrichmentDf.name = df.name ? `${df.name} — Enrichment` : 'Enrichment Results';
   enrichmentDf.setTag('proteomics.enrichment', 'true');
   const fdrCol = enrichmentDf.col('FDR');
   if (fdrCol) {

@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SEMTYPE} from '../utils/proteomics-types';
+import {focusProtein} from '../panels/protein-focus';
 import {
   log2TransformColumns,
   copyAsLog2Columns,
@@ -190,6 +191,7 @@ function showMappingDialog(df: DG.DataFrame, fileName: string): void {
       // Open in table view
       grok.shell.addTableView(df);
       grok.shell.info(`Imported ${df.rowCount} proteins from ${fileName}`);
+      focusProtein(df);
     })
     .show();
 }
