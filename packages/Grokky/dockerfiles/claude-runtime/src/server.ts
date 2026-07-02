@@ -16,6 +16,7 @@ import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
+import {Verifier} from './verify';
 
 const PORT = 5355;
 const MAX_SESSIONS = 200;
@@ -194,6 +195,10 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
+const EXEC_TIMEOUT_MS = 300_000;
+const VERIFY_TIMEOUT_MS = 60_000;
+const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
 // Created per handleMessage so the ws/sid/active closure stays current.
@@ -214,9 +219,30 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
         )},
         async ({code}) => {
           try {
-            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}, EXEC_TIMEOUT_MS));
           } catch (e: any) {
             return asResult({success: false, error: e.message});
+          }
+        },
+      ),
+      sdkTool(
+        'datagrok_verify',
+        'Confirm a previous datagrok_exec / MCP action actually took effect, by re-reading LIVE state. ' +
+        'Runs in a fresh scope (globals: grok, ui, DG, view, t) — it CANNOT see variables from your action ' +
+        'code, so it must re-derive from t/view/grok. Returns {passed, observed?, error?}. After any action ' +
+        'you MUST call this before reporting success; passed:false means it did NOT work — fix it, do not report done.',
+        {
+          assertion: z.string().describe(
+            'Async JS (await works) that MUST `return` the observed result; truthy = verified. Re-read ' +
+            'whatever you changed from t/view/grok. Never return a bare literal.',
+          ),
+          description: z.string().describe('Short human-readable statement of what is being verified.'),
+        },
+        async ({assertion, description}) => {
+          try {
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_verify', {assertion, description}, VERIFY_TIMEOUT_MS));
+          } catch (e: any) {
+            return asResult({passed: false, error: e.message});
           }
         },
       ),
@@ -235,7 +261,7 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
         )},
         async ({entities}) => {
           try {
-            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_show_entities', {entities}));
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_show_entities', {entities}, SHOW_ENTITIES_TIMEOUT_MS));
           } catch (e: any) {
             return asResult({success: false, error: e.message});
           }
@@ -271,6 +297,7 @@ function buildOptions(
   userId?: string,
   model?: ClaudeModel,
   forkSession?: boolean, resumeAt?: string,
+  verifier?: Verifier,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
   const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
@@ -297,6 +324,10 @@ function buildOptions(
     cwd: userDir || WORKSPACE,
     hooks: {
       PreToolUse: [{hooks: [blockWorkspaceAccess]}],
+      ...(verifier ? {
+        PostToolUse: [{hooks: [verifier.postToolUse]}],
+        Stop: [{hooks: [verifier.stop]}],
+      } : {}),
     },
     // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
     ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
@@ -327,6 +358,7 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
   datagrok_exec: (_i) => 'Execute in browser',
+  datagrok_verify: (i) => `Verify: ${i.description ?? 'action outcome'}`,
   datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
@@ -406,7 +438,7 @@ function flushFenceState(ws: WsSender, sid: string): void {
   fenceStates.delete(sid);
 }
 
-function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
+function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: Verifier): void {
   const e = event as any;
   switch (event.type) {
   case 'assistant':
@@ -434,7 +466,11 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
       if (e.session_id)
         storeSession(sid, e.session_id, pendingUuid.get(sid));
       pendingUuid.delete(sid);
-      emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
+      emit(ws, {
+        type: 'final', sessionId: sid, content: e.result || '',
+        ...(e.structured_output ? {structured_output: e.structured_output} : {}),
+        ...(verifier?.exhausted ? {unverified: true} : {}),
+      });
     } else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
     break;
@@ -450,12 +486,24 @@ interface ActiveQuery {
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
 // input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
-function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any): Promise<any> {
+function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any, timeoutMs?: number): Promise<any> {
+  if (active.abortController.signal.aborted)
+    return Promise.reject(new Error('aborted'));
   const requestId = randomUUID();
   emit(ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
   return new Promise<any>((resolve, reject) => {
-    active.pendingInputs.set(requestId, resolve);
+    const timer = timeoutMs ? setTimeout(() => {
+      if (active.pendingInputs.delete(requestId))
+        reject(new Error(`no browser response for ${toolName} after ${timeoutMs / 1000}s`));
+    }, timeoutMs) : undefined;
+    active.pendingInputs.set(requestId, (value) => {
+      if (timer)
+        clearTimeout(timer);
+      resolve(value);
+    });
     active.abortController.signal.addEventListener('abort', () => {
+      if (timer)
+        clearTimeout(timer);
       if (active.pendingInputs.delete(requestId))
         reject(new Error('aborted'));
     }, {once: true});
@@ -469,7 +517,9 @@ function registerActiveQuery(sid: string, q: ActiveQuery): void {
   markQueryStart();
 }
 
-function unregisterActiveQuery(sid: string): void {
+function unregisterActiveQuery(sid: string, q?: ActiveQuery): void {
+  if (q && activeQueries.get(sid) !== q)
+    return;
   activeQueries.delete(sid);
   markQueryEnd();
 }
@@ -492,6 +542,8 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   let message = data.message ?? '';
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
+  if (activeQueries.has(sid))
+    return emit(ws, {type: 'busy', sessionId: sid});
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and
   // a stale read for one turn is fine.
@@ -519,12 +571,13 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   ]);
 
   const browserExecServer = createBrowserExecServer(ws, sid, active);
+  const verifier = !data.systemPromptMode || data.systemPromptMode === 'datagrok' ? new Verifier() : undefined;
 
   let gotResult = false;
   try {
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model,
-      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined);
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
@@ -540,14 +593,17 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
         break;
       if (event.type === 'result')
         gotResult = true;
-      forwardEvent(ws, sid, event);
+      forwardEvent(ws, sid, event, verifier);
     }
   } catch (e: any) {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
-    fenceStates.delete(sid);
-    unregisterActiveQuery(sid);
+    if (verifier?.hadActions)
+      console.log(`verify[${sid}]: ${verifier.statsLine()}`);
+    if (activeQueries.get(sid) === active)
+      fenceStates.delete(sid);
+    unregisterActiveQuery(sid, active);
   }
 }
 
@@ -611,6 +667,7 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
   active.abortController.abort();
+  unregisterActiveQuery(data.sessionId, active);
   const rec = sessions.get(data.sessionId);
   if (rec)
     rec.forkNext = true;

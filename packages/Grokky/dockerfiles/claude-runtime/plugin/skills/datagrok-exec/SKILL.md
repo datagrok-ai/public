@@ -26,9 +26,13 @@ The code runs in an async IIFE, so `await` works directly.
 
 ## Tool result
 
-The tool returns `{success, returnValue?, error?}`. `returnValue` is the only server-side proof
-the action completed; use it to validate and to report accurate details to the user. ALWAYS make
-your code `return` a plain confirmation object so `returnValue` is populated:
+The tool returns `{success, returnValue?, error?}`.
+
+**`success` only means the JS did not throw — NOT that the intended effect happened.** A typo'd
+viewer name, a no-op, or an action that ran twice all return `success: true`. `returnValue` is
+whatever object *your own code* chose to `return`; it populates the chat confirmation shown to the
+user, but it is **not proof** — it is self-reported by the same code that took the action. Make your
+code `return` a plain confirmation object so the user sees accurate details:
 
 | Action              | Return                              |
 |---------------------|-------------------------------------|
@@ -42,7 +46,22 @@ your code `return` a plain confirmation object so `returnValue` is populated:
 
 **Error**: `{success: false, error: "..."}` — report verbatim, do not silently retry.
 
-**Never pre-announce** success before calling the tool — report only after `{success: true}`.
+**Never pre-announce** success before calling the tool.
+
+## Verifying actions — required after every action
+
+Proof does not come from your own action code — it comes from **re-reading live state in a separate
+call**. After any action (`datagrok_exec` that changed something, or any MCP call that changed
+platform state), call the **`datagrok_verify`** tool before reporting success. It runs your assertion in a
+fresh scope (globals `grok`, `ui`, `DG`, `view`, `t`) that **cannot see your action's variables**, so
+it can only pass by re-deriving from the real platform state.
+
+The assertion is yours to design for whatever you changed: re-read that thing and `return` the
+observed result (truthy = verified).
+`{passed: true}` → report the observed value, not the value you intended. `{passed: false}` → the
+action did NOT work; fix it and verify again — do not report success. The runtime blocks the turn
+from ending until a verify passes (bounded retries — if they run out, the response is shown to the
+user flagged as **unverified**, so never present unverified work as done).
 
 ## Returning a result to the chat
 

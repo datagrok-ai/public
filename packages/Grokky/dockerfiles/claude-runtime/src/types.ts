@@ -22,6 +22,7 @@ export interface McpInputs {
   get_indexing_status: {path?: string};
   clear_index: {path?: string};
   datagrok_exec: {code?: string};
+  datagrok_verify: {assertion?: string; description?: string};
   datagrok_show_entities: {entities?: any[]};
 }
 
@@ -74,8 +75,9 @@ export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
   | {type: 'error'; sessionId: string; message: string}
+  | {type: 'busy'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}

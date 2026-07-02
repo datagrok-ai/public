@@ -13,7 +13,7 @@ import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
-import {executeSingleBlock, renderEntityRefList} from '../claude/exec-blocks';
+import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -464,6 +464,10 @@ async function streamOnce(
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
         await panel.finalizeStreaming(segmentContent, fullContent, view);
+        if (evt.unverified) {
+          const warn = 'Not verified — the assistant could not confirm this action took effect.';
+          panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
+        }
         cleanup();
         resolve();
       });
@@ -501,6 +505,15 @@ async function streamOnce(
             {success: false, error: error.error} :
             {success: true, ...(value != null ? {returnValue: value} : {})};
           client.respondToInput(sessionId, evt.requestId, result);
+          return;
+        }
+        if (evt.toolName === 'datagrok_verify') {
+          const {passed, observed, error} = await runVerification(evt.input.assertion ?? '', view);
+          client.respondToInput(sessionId, evt.requestId, {
+            passed,
+            ...(observed !== undefined ? {observed} : {}),
+            ...(error ? {error} : {}),
+          });
           return;
         }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.

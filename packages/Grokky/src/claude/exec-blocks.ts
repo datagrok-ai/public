@@ -22,6 +22,27 @@ export async function executeSingleBlock(
   }
 }
 
+const VERIFY_TIMEOUT_MS = 30000;
+
+export interface VerificationResult {
+  passed: boolean;
+  observed: any;
+  error: string | null;
+}
+
+export async function runVerification(
+  assertion: string, view: DG.ViewBase,
+): Promise<VerificationResult> {
+  const liveView = grok.shell.v ?? view;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), VERIFY_TIMEOUT_MS));
+  const res = await Promise.race([executeSingleBlock(assertion, liveView, 0), timeout]);
+  if (res === null)
+    return {passed: false, observed: undefined, error: `Verification timed out after ${VERIFY_TIMEOUT_MS / 1000}s`};
+  if (res.element)
+    return {passed: false, observed: undefined, error: 'Assertion must return the observed value, not a DOM element'};
+  return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
+}
+
 export function buildViewContext(view: DG.ViewBase): string {
   if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
     const df = (view as DG.TableView).dataFrame;

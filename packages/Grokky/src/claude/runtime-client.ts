@@ -10,7 +10,7 @@ export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
+export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
@@ -106,6 +106,7 @@ export class ClaudeRuntimeClient {
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
+          ...(data.unverified ? {unverified: true} : {}),
         });
         break;
       case 'error':
@@ -198,15 +199,16 @@ export class ClaudeRuntimeClient {
     try {
       payload = JSON.stringify({type: 'input_response', sessionId, requestId, value});
     } catch {
-      // Non-serializable executed-JS return — reply with an error so the tool call resolves.
-      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value: {success: false, error: 'result is not serializable'}});
+      // Non-serializable executed-JS return: reply with a failure both datagrok_exec and datagrok_verify can read.
+      const fallback = {success: false, passed: false, error: 'result is not serializable'};
+      payload = JSON.stringify({type: 'input_response', sessionId, requestId, value: fallback});
     }
     this.ws.send(payload);
   }
 
   async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
     await this.ensureConnected();
-    const sid = options?.sessionId ?? `query-${Date.now()}`;
+    const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
       const cleanup = () => { subs.forEach((s) => s.unsubscribe()); };

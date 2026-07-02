@@ -522,3 +522,10 @@
   display: none;
 }
 
+.grokky-unverified-warning {
+  color: var(--red-3);
+  font-size: 12px;
+  border-left: 2px solid var(--red-3);
+  padding: 3px 0 3px 12px;
+  margin-top: 8px;
+}
