@@ -2,6 +2,19 @@
 
 ## v.next
 
+### Toolbox trim + friendlier chem inputs
+
+* **46 more functions removed** from the toolbox (added to the `excluded-funcs.ts` denylist) — heavy
+  analyses / dialogs / panels / scripts that need their own app UI or a `FuncCall`, not a pipeline
+  node (Chem substructure/R-group/MMP/ChemProp/scaffold, Bio activity-cliffs/align/HELM, the
+  Chemspace/PubchemApi/ChemblApi search panels, Docking/Proteomics/Dendrogram/ClinicalCase scripts,
+  `core:ColumnGridWidget`, `core:FilterToColumn`, …). The live catalog drops ~283 → **228**.
+* A batch of **Chem** functions gained proper input **captions**, **descriptions**, and **`Molecule`
+  semantic types** on molecule-string inputs (`getMorganFingerprints`, `getSimilarities`,
+  `getDiversities`, `findSimilar`, `similarityMatrixTopMenu`, `clusterMCSTopMenu`,
+  `addChemPropertiesColumns`, `addChemRisksColumns`) so their nodes read cleanly in the toolbox and
+  context panel. (Source-only metadata; takes effect on the Chem package's next build.)
+
 ### Function defaults load into the node
 
 * When a node is added, each primitive input now seeds its **declared default** —

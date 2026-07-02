@@ -361,7 +361,7 @@ export class PackageFunctions {
     meta: {vectorFunc: 'true'},
   })
   static async getMorganFingerprints(
-    @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): Promise<DG.Column> {
+    @grok.decorators.param({options: {semType: 'Molecule', caption: 'Molecules'}}) molColumn: DG.Column): Promise<DG.Column> {
     assure.notNull(molColumn, 'molColumn');
     try {
       const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, false);
@@ -392,8 +392,8 @@ export class PackageFunctions {
     description: 'Computes Tanimoto similarity scores between a query molecule and each molecule in a column.',
   })
   static async getSimilarities(
-    molStringsColumn: DG.Column,
-    molString: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {caption: 'Molecules'}}) molStringsColumn: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', caption: 'Query molecule'}}) molString: string): Promise<DG.DataFrame> {
     try {
       const result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
@@ -408,8 +408,8 @@ export class PackageFunctions {
     description: 'Selects a diverse representative subset of molecules from a column.',
   })
   static async getDiversities(
-    molStringsColumn: DG.Column,
-    @grok.decorators.param({type: 'int', options: {description: 'Maximum number of diverse molecules to return'}}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {caption: 'Molecules'}}) molStringsColumn: DG.Column,
+    @grok.decorators.param({type: 'int', options: {caption: 'Max molecules', description: 'Maximum number of diverse molecules to return'}}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
     try {
       const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
@@ -424,10 +424,10 @@ export class PackageFunctions {
     description: 'Finds the molecules most similar to a query molecule ranked by Tanimoto similarity.',
   })
   static async findSimilar(
-    molStringsColumn: DG.Column,
-    molString: string,
-    @grok.decorators.param({type: 'int', options: {description: 'Maximum number of hits to return'}}) limit: number = Number.MAX_VALUE,
-    @grok.decorators.param({type: 'int', options: {description: 'Minimum similarity score for a molecule to be returned'}}) cutoff: number = 0.0): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {caption: 'Molecules'}}) molStringsColumn: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', caption: 'Query molecule'}}) molString: string,
+    @grok.decorators.param({type: 'int', options: {caption: 'Max hits', description: 'Maximum number of hits to return'}}) limit: number = Number.MAX_VALUE,
+    @grok.decorators.param({type: 'int', options: {caption: 'Min similarity', description: 'Minimum similarity score for a molecule to be returned'}}) cutoff: number = 0.0): Promise<DG.DataFrame> {
     assure.notNull(molStringsColumn, 'molStringsColumn');
     assure.notNull(molString, 'molString');
     assure.notNull(limit, 'limit');
@@ -513,8 +513,8 @@ export class PackageFunctions {
   })
   static async similarityMatrixTopMenu(
     table: DG.DataFrame,
-    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'column'}) symbols: DG.Column,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', description: 'Molecules to build the similarity matrix from'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Symbols', description: 'Column whose values label the matrix rows and columns'}}) symbols: DG.Column,
     @grok.decorators.param({
       type: 'string',
       options: {
@@ -766,8 +766,8 @@ export class PackageFunctions {
   })
   static async clusterMCSTopMenu(
     table: DG.DataFrame,
-    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
-    @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', description: 'Molecules to find common substructures in'}}) molCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', caption: 'Cluster', description: 'Column assigning each molecule to a cluster'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
     c.name = table.columns.getUnusedName(c.name);
     table.columns.add(c);
@@ -2219,9 +2219,9 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) logP?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) logS?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) PSA?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) rotatableBonds?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) stereoCenters?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) moleculeCharge?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Rotatable bonds'}}) rotatableBonds?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Stereo centers'}}) stereoCenters?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecule charge'}}) moleculeCharge?: boolean,
   ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
@@ -2267,10 +2267,10 @@ export class PackageFunctions {
   static async addChemRisksColumns(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'true'}}) mutagenicity?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Mutagenicity'}}) mutagenicity?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Tumorigenicity'}}) tumorigenicity?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Irritating effects'}}) irritatingEffects?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Reproductive effects'}}) reproductiveEffects?: boolean,
   ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {

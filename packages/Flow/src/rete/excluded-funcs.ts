@@ -62,14 +62,20 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'core:TabControl',
   'core:TabControl_AddPane',
   'core:AddPropertiesColumn',
+  'core:ColumnGridWidget',
+  'core:FilterToColumn',
   // Admetica
   'Admetica:admeticaHT',
   'Admetica:admeticaMenu',
   'Admetica:getModels',
   // Bio
+  'Bio:MolToHelmConverterPy',
   'Bio:SequenceGenerator_1',
   'Bio:SubsequenceSearchTopMenu',
+  'Bio:activityCliffs',
   'Bio:addCopyMenu',
+  'Bio:alignSequences',
+  'Bio:getMolFromHelm',
   'Bio:bioSubstructureFilterTest',
   'Bio:convertColumnAction',
   'Bio:detectMacromoleculeEnableStore',
@@ -103,6 +109,27 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'BiostructureViewer:openTableResiduesMenuItem',
   'BiostructureViewer:showBiostructureViewerMenuItem',
   'BiostructureViewer:showNglViewerMenuItem',
+  // Chem — heavy analyses / dialogs / scripts that need their own app UI or a
+  // FuncCall, not a pipeline node (from docs/things-to-do-with-functions.md):
+  'Chem:AmideReaction',
+  'Chem:Desc',
+  'Chem:FindMCS',
+  'Chem:FindRGroups',
+  'Chem:FindRGroupsWithCore',
+  'Chem:GenerateScaffoldTree',
+  'Chem:SimilarityMapsUsingFingerprints',
+  'Chem:activityCliffs',
+  'Chem:applyChemprop',
+  'Chem:callChemDiversitySearch',
+  'Chem:callChemSimilaritySearch',
+  'Chem:getDescriptors',
+  'Chem:getProperties',
+  'Chem:getToxicityRisks',
+  'Chem:mmpAnalysis',
+  'Chem:mpoCalculate',
+  'Chem:rGroupDecomposition',
+  'Chem:searchSubstructure',
+  'Chem:trainChemprop',
   // Chem
   'Chem:SubstructureSearchTopMenu',
   'Chem:activityCliffsInitFunction',
@@ -153,8 +180,23 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chembl:UnichemUnitTestQuery',
   'Chembl:chemblMolregno',
   // ChemblApi
+  'ChemblApi:chemblSimilaritySearchPanel',
+  'ChemblApi:chemblSubstructureSearchPanel',
   'ChemblApi:getCompoundsIds',
+  // Chemspace
+  'Chemspace:getChemspaceIds',
+  'Chemspace:getChemspacePrices',
+  'Chemspace:pricesPanel',
+  'Chemspace:samplesPanel',
+  // ClinicalCase
+  'ClinicalCase:Covariates',
+  'ClinicalCase:SurvivalPlot',
+  // Curves
+  'Curves:addAggrStatisticsColumn',
+  'Curves:addStatisticsColumn',
   // Dendrogram
+  'Dendrogram:HierarchicalClusteringByDistanceScript',
+  'Dendrogram:HierarchicalClusteringScript',
   'Dendrogram:getDendrogramService',
   'Dendrogram:getTreeHelper',
   'Dendrogram:hierarchicalClustering',
@@ -162,6 +204,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'DiffStudio:serializeEquations',
   // Docking
   'Docking:getAutoDockService',
+  'Docking:getAutodockResults',
   'Docking:getConfigFiles',
   'Docking:runAutodock',
   // Eda
@@ -200,6 +243,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Eda:visualizeSigmoidKernelSVM',
   // Helm
   'Helm:getHelmHelper',
+  'Helm:getMolfiles',
   'Helm:helmAsync',
   // HitTriage
   'HitTriage:AcquireCampaignLock',
@@ -211,6 +255,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'HitTriage:demoFileSubmit',
   'HitTriage:demoPeptideSequences',
   // Jiraconnect
+  'Jiraconnect:getJiraField',
   'Jiraconnect:getJiraTicketsByFilter',
   'Jiraconnect:issueData',
   'Jiraconnect:projectData',
@@ -232,6 +277,13 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'PowerPack:isFormulaColumn',
   'PowerPack:kpiWidget',
   'PowerPack:webWidget',
+  // Proteomics
+  'Proteomics:NumberAntibodySequencesAbNumber',
+  'Proteomics:NumberAntibodySequencesANARCI',
+  // PubchemApi
+  'PubchemApi:pubChemIdentitySearch',
+  'PubchemApi:pubChemSimilaritySearchPanel',
+  'PubchemApi:pubChemSubstructureSearchPanel',
   // Pyodide
   'Pyodide:DataFrameInputCallJS',
   'Pyodide:DataFrameInputCallPy',
@@ -262,4 +314,5 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'SequenceTranslator:getTranslationHelper',
   'SequenceTranslator:linkStrands',
   'SequenceTranslator:polyToolColumnChoice',
+  'SequenceTranslator:polyToolConvert2',
 ]);
