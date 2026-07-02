@@ -274,14 +274,14 @@ export namespace funcs {
   }
 
   /**
-  Selects a diverse, representative subset of molecules from a column.
+  Selects a diverse representative subset of molecules from a column.
   */
   export async function getDiversities(molStringsColumn: DG.Column , limit: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetDiversities', { molStringsColumn, limit });
   }
 
   /**
-  Finds the molecules most similar to a query molecule, ranked by Tanimoto similarity.
+  Finds the molecules most similar to a query molecule ranked by Tanimoto similarity.
   */
   export async function findSimilar(molStringsColumn: DG.Column , molString: string , limit: number , cutoff: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:FindSimilar', { molStringsColumn, molString, limit, cutoff });
@@ -324,8 +324,15 @@ export namespace funcs {
     return await grok.functions.call('Chem:SimilarityMatrixTopMenu', { table, molecules, symbols, fingerprintType });
   }
 
-  export async function descriptorsDocker(): Promise<void> {
-    return await grok.functions.call('Chem:DescriptorsDocker', {});
+  /**
+  Calculates molecular descriptors for the molecules column
+  */
+  export async function descriptorsDocker(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
+    return await grok.functions.call('Chem:DescriptorsDocker', { table, molecules, selected });
+  }
+
+  export async function descriptorsEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Chem:DescriptorsEditor', { call });
   }
 
   export async function calculateDescriptorsTransform(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
@@ -609,7 +616,7 @@ export namespace funcs {
   }
 
   /**
-  RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
+  RDKit-based conversion for SMILES SMARTS InChi Molfile V2000 and Molfile V3000
   */
   export async function convertMolNotation(molecule: string , sourceNotation: string , targetNotation: string ): Promise<string> {
     return await grok.functions.call('Chem:ConvertMolNotation', { molecule, sourceNotation, targetNotation });
@@ -752,7 +759,7 @@ export namespace funcs {
   }
 
   /**
-  Returns a diverse, representative subset of molecules from a column.
+  Returns a diverse representative subset of molecules from a column.
   */
   export async function callChemDiversitySearch(col: DG.Column , metricName: string , fingerprint: string , limit: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, fingerprint, limit });
@@ -766,7 +773,7 @@ export namespace funcs {
   }
 
   /**
-  Computes chemical properties (MW, HBA, HBD, logP, etc.) for a column of molecules.
+  Computes chemical properties (MW HBA HBD logP etc.) for a column of molecules.
   */
   export async function getProperties(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetProperties', { molecules, selected });

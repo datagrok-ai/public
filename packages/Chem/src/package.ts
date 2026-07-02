@@ -28,7 +28,7 @@ import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
-import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
+import {addDescriptorsColsToDf, DescriptorsEditor, getDescriptorsSingle, getSelected} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
 //widget imports
@@ -559,9 +559,32 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Descriptors...',
+    'name': 'Chemical Descriptors',
+    'description': 'Calculates molecular descriptors for the molecules column',
+    'editor': 'Chem:DescriptorsEditor',
   })
-  static async descriptorsDocker(): Promise<void> {
-    await openDescriptorsDialogDocker();
+  static async descriptorsDocker(
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>', caption: 'Descriptors'}) selected: string[],
+  ): Promise<void> {
+    const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
+    try {
+      await DG.Func.find({package: 'Chem', name: 'calculateDescriptorsTransform'})[0].prepare({
+        table: table,
+        molecules: molecules,
+        selected: selected}).call(undefined, undefined, {processed: false});
+    } finally {
+      prog.close();
+    }
+  }
+
+  @grok.decorators.editor({
+    name: 'DescriptorsEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static descriptorsEditor(call: DG.FuncCall): DG.Widget {
+    return new DescriptorsEditor(call);
   }
 
   //function with tranfrom tag to be able to run within data sync projects, adds column to dataframe

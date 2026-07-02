@@ -211,9 +211,23 @@ export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG
   return await PackageFunctions.similarityMatrixTopMenu(table, molecules, symbols, fingerprintType);
 }
 
+//name: Chemical Descriptors
+//description: Calculates molecular descriptors for the molecules column
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule }
+//input: list<string> selected 
 //top-menu: Chem | Calculate | Descriptors...
-export async function descriptorsDocker() : Promise<void> {
-  await PackageFunctions.descriptorsDocker();
+//editor: Chem:DescriptorsEditor
+export async function descriptorsDocker(table: DG.DataFrame, molecules: DG.Column, selected: string[]) : Promise<void> {
+  await PackageFunctions.descriptorsDocker(table, molecules, selected);
+}
+
+//name: DescriptorsEditor
+//input: funccall call 
+//output: widget result
+//meta.role: editor
+export function descriptorsEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.descriptorsEditor(call);
 }
 
 //input: dataframe table 
