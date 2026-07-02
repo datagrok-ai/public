@@ -32,7 +32,9 @@ export async function runEnrichmentDemo(): Promise<void> {
     pi.update(10, 'Loading human DE result…');
     const text = await _package.files.readAsText('demo/enrichment-demo.csv');
     const df = DG.DataFrame.fromCsv(text);
-    df.name = 'Enrichment demo (Treatment vs Control)';
+    // Kept free of "Enrichment" so the derived enrichment view reads cleanly as
+    // "<source> — Enrichment" (mirrors the QC demo's "<source> — QC" naming).
+    df.name = 'Treatment vs Control (human)';
 
     // Semantic-type the columns so the pipeline and panels find them by type,
     // not by name — mirrors what the parsers do on a real import.

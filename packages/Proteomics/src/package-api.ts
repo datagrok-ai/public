@@ -119,6 +119,10 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:ProteomicsDemo', {});
   }
 
+  export async function proteomicsEnrichmentDemo(): Promise<void> {
+    return await grok.functions.call('Proteomics:ProteomicsEnrichmentDemo', {});
+  }
+
   /**
    * UniProt protein details
    * @param {string} proteinId

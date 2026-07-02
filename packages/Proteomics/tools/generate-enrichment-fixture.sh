@@ -2,6 +2,8 @@
 # Engineered human Treatment-vs-Control DE result for the enrichment demo.
 # UP = cell cycle / mitosis, DOWN = oxidative phosphorylation, plus a diverse
 # non-significant background. Gene symbols are real HGNC; accessions real UniProt.
+# Fold-changes and p-values are spread with a DETERMINISTIC sin-hash jitter so
+# the volcano looks organic (no banding) yet regenerates identically anywhere.
 out=files/demo/enrichment-demo.csv
 echo "Protein ID,Gene,log2FC,p-value,adj.p-value,significant" > "$out"
 
@@ -127,39 +129,32 @@ SRSF1 Q07955
 G3BP1 Q13283
 DDX5 P17844"
 
-i=0
-while read -r gene acc; do
-  [ -z "$gene" ] && continue
-  fc=$(awk -v i=$i 'BEGIN{printf "%.2f", 1.5 + (i%10)*0.18}')
-  pexp=$(( 3 + i%4 ))
-  p=$(awk -v e=$pexp 'BEGIN{printf "%.2e", 10^(-e)}')
-  adj=$(awk -v e=$pexp 'BEGIN{printf "%.2e", 2*10^(-e)}')
-  echo "$acc,$gene,$fc,$p,$adj,true" >> "$out"
-  i=$((i+1))
-done <<< "$UP"
+# deterministic pseudo-random in [0,1) from a seed integer and a multiplier
+emit() { # $1=list  $2=sign(+1/-1) for sig sets, 0=background
+  local sign="$2"; local i=0
+  while read -r gene acc; do
+    [ -z "$gene" ] && continue
+    awk -v i="$i" -v gene="$gene" -v acc="$acc" -v sign="$sign" 'BEGIN{
+      h1=sin((i+1)*12.9898)*43758.5453; j1=h1-int(h1); if(j1<0)j1+=1
+      h2=sin((i+1)*78.2330)*24634.6345; j2=h2-int(h2); if(j2<0)j2+=1
+      if (sign!=0) {
+        fc=sign*(1.2 + j1*2.3)                 # |fc| 1.2..3.5
+        e=2.5 + j2*4.5                          # -log10(p) 2.5..7.0
+        p=exp(-e*log(10)); adj=2*p
+        printf "%s,%s,%.3f,%.2e,%.2e,true\n", acc, gene, fc, p, adj
+      } else {
+        fc=-1.3 + j1*2.6                        # spread -1.3..1.3
+        p=0.06 + j2*0.90                        # 0.06..0.96  (never significant)
+        adj=p*1.05; if(adj>0.99)adj=0.99
+        printf "%s,%s,%.3f,%.3f,%.3f,false\n", acc, gene, fc, p, adj
+      }
+    }' >> "$out"
+    i=$((i+1))
+  done <<< "$1"
+}
 
-i=0
-while read -r gene acc; do
-  [ -z "$gene" ] && continue
-  fc=$(awk -v i=$i 'BEGIN{printf "%.2f", -(1.5 + (i%8)*0.18)}')
-  pexp=$(( 3 + i%4 ))
-  p=$(awk -v e=$pexp 'BEGIN{printf "%.2e", 10^(-e)}')
-  adj=$(awk -v e=$pexp 'BEGIN{printf "%.2e", 2*10^(-e)}')
-  echo "$acc,$gene,$fc,$p,$adj,true" >> "$out"
-  i=$((i+1))
-done <<< "$DOWN"
+emit "$UP" 1
+emit "$DOWN" -1
+emit "$BG" 0
 
-i=0
-while read -r gene acc; do
-  [ -z "$gene" ] && continue
-  fc=$(awk -v i=$i 'BEGIN{printf "%.2f", -0.6 + (i%13)*0.09}')
-  p=$(awk -v i=$i 'BEGIN{printf "%.2f", 0.10 + (i%9)*0.09}')
-  adj=$(awk -v i=$i 'BEGIN{v=(0.10 + (i%9)*0.09)*1.05; if(v>0.99)v=0.99; printf "%.2f", v}')
-  echo "$acc,$gene,$fc,$p,$adj,false" >> "$out"
-  i=$((i+1))
-done <<< "$BG"
-
-echo "=== rows: $(($(wc -l < "$out") - 1)) (up=$(grep -c ',true$' "$out") sig, bg=$(grep -c ',false$' "$out") ns) ==="
-echo "=== head ==="; head -4 "$out"
-echo "=== down sample ==="; grep -E ',-' "$out" | head -3
-echo "=== bg sample ==="; grep ',false$' "$out" | head -3
+echo "rows: $(($(wc -l < "$out") - 1)) (sig=$(grep -c ',true$' "$out"), ns=$(grep -c ',false$' "$out"))"
