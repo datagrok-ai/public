@@ -31,3 +31,4 @@ After that molecules with desired properties can be simply filtered using standa
 
 See also: 
 * [Docker Containers](https://datagrok.ai/help/develop/how-to/docker_containers)
+KG CI validation marker — 2026-07-02. Safe to remove; used to exercise the knowledge-graph rebuild workflow.
