@@ -92,6 +92,27 @@ export function getParamDescription(prop: DG.Property): string {
   }
 }
 
+/** Strip one pair of wrapping quotes from a default that arrives
+ *  double-encoded from the annotation (`"'something'"` / `'"something"'`). */
+export function unquoteDefault(s: string): string {
+  const t = s.trim();
+  if (t.length >= 2 && ((t.startsWith('\'') && t.endsWith('\'')) || (t.startsWith('"') && t.endsWith('"'))))
+    return t.slice(1, -1);
+  return t;
+}
+
+/** A parameter's declared default — `defaultValue ?? initialValue` — read
+ *  defensively from the Dart proxy. String values are unquoted (annotation
+ *  defaults often arrive double-encoded). `undefined` when none is declared. */
+export function getParamDefault(prop: DG.Property): unknown {
+  let v: unknown;
+  try {v = prop.defaultValue;} catch {/* proxy read failed */}
+  if (v === undefined || v === null)
+    try {v = (prop as unknown as {initialValue?: unknown}).initialValue;} catch {/* proxy read failed */}
+  if (v === undefined || v === null) return undefined;
+  return typeof v === 'string' ? unquoteDefault(v) : v;
+}
+
 /** Display label for a function parameter: its `caption` when one is declared
  *  (via `{caption: ...}` / `@grok.decorators.param`), else the property name.
  *  Purely for UI — the internal identity (`prop.name`, used for slot keys,

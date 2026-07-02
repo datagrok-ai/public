@@ -2,6 +2,16 @@
 
 ## v.next
 
+### Function defaults load into the node
+
+* When a node is added, each primitive input now seeds its **declared default** —
+  `prop.defaultValue ?? prop.initialValue` — instead of a bare zero value. Annotation defaults that
+  arrive double-encoded (`"'inner'"`) are unquoted, and string-encoded booleans/numbers are coerced
+  to their declared type so the compiler emits correct literals. Since `ui.input.forProperty`
+  doesn't initialize its editor itself, every DG input in the context panel (primitives, `list`,
+  `string_list`, column fields) is now explicitly initialized from the stored value via the
+  `stringValue` setter (guarded — an unparseable value just leaves the editor blank).
+
 ### Node auto-summary uses the real description
 
 * The plain-language line under a node's title (shown when you haven't written your own annotation)

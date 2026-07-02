@@ -373,7 +373,7 @@ value), `properties.viewerLook` (the accumulated options, look keys minus `#type
 
 ### Function Nodes ([rete/nodes/func-node.ts](src/rete/nodes/func-node.ts))
 
-`FuncNode` is built dynamically per `DG.Func`. Header uses `func.friendlyName` (split by `|`, last segment). Color comes from `ROLE_COLORS` map. Generates `await grok.functions.call('Pkg:funcName', {...})`.
+`FuncNode` is built dynamically per `DG.Func`. Header uses `func.friendlyName` (split by `|`, last segment). Color comes from `ROLE_COLORS` map. Generates `await grok.functions.call('Pkg:funcName', {...})`. Primitive inputs seed `inputValues` with the **declared default** — `getParamDefault(prop)` = `defaultValue ?? initialValue`, read defensively, with one pair of wrapping quotes stripped (`unquoteDefault` — annotation defaults arrive double-encoded like `"'inner'"`), string-encoded bools/numbers coerced to their declared type (`'false'` must not compile to `true`) — else the type's zero value. In the panel, every DG input is initialized from the stored value via the guarded `stringValue` setter (`PropertyPanel.initInputValue`) because `ui.input.forProperty` / the `value` init option don't reliably load the editor.
 
 #### Pass-Through Outputs
 

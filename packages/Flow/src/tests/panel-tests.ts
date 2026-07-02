@@ -2,8 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
-import {propertyChoices, stringChoiceOptions} from '../panel/property-panel';
-import {getParamDisplayName} from '../utils/dart-proxy-utils';
+import {propertyChoices, stringChoiceOptions, PropertyPanel} from '../panel/property-panel';
+import {getParamDisplayName, getParamDefault, unquoteDefault} from '../utils/dart-proxy-utils';
+import {makeEditor, destroyEditor, addNode} from './test-utils';
 
 category('Flow: property panel', () => {
   before(async () => {
@@ -40,6 +41,54 @@ category('Flow: property panel', () => {
       'no caption → the property name');
     expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', caption: '', type: 'int'})), 'minPts',
       'empty caption → the property name');
+  });
+
+  test('unquoteDefault strips one pair of wrapping quotes', async () => {
+    expect(unquoteDefault(`'inner'`), 'inner');
+    expect(unquoteDefault('"inner"'), 'inner');
+    expect(unquoteDefault('plain'), 'plain');
+    expect(unquoteDefault(`  'padded'  `), 'padded');
+    expect(unquoteDefault(`'`), `'`); // a lone quote is not a pair
+    expect(unquoteDefault(''), '');
+  });
+
+  test('a declared default seeds the node and initializes the panel editor', async () => {
+    // Find a registered func with a primitive input that declares a default
+    // (defaultValue ?? initialValue) — prefer strings (no numeric coercion).
+    let found: {typeName: string; param: string; def: unknown} | null = null;
+    for (const pass of [['string'], ['int', 'double', 'num']]) {
+      for (const info of getRegisteredFuncs()) {
+        for (const p of info.func.inputs) {
+          if (!pass.includes(String(p.propertyType))) continue;
+          const def = getParamDefault(p);
+          if (def === undefined || String(def) === '') continue;
+          found = {typeName: info.nodeTypeName, param: p.name, def};
+          break;
+        }
+        if (found) break;
+      }
+      if (found) break;
+    }
+    if (!found) return; // no declared defaults on this stand — skip
+
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, found.typeName);
+      const seeded = node.inputValues[found.param];
+      expect(String(seeded), String(found.def), `inputValues seeded with the default (${found.typeName})`);
+
+      panel.showNode(node);
+      const sel = `[data-param="${found.param}"] input, [data-param="${found.param}"] select, ` +
+        `[data-param="${found.param}"] textarea`;
+      const editor = panel.root.querySelector(sel) as HTMLInputElement | null;
+      expect(!!editor, true, 'editor rendered');
+      expect(editor!.value, String(seeded), 'editor initialized with the seeded default');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
   });
 
   test('propertyChoices reads declared choices from a live function input', async () => {

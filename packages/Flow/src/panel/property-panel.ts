@@ -511,6 +511,16 @@ export class PropertyPanel {
       this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
+  /** Initialize a DG input's editor from a stored value via the `stringValue`
+   *  setter — `ui.input.forProperty` (and the `value` init option) does not
+   *  reliably load the editor itself. Guarded: a value the editor can't parse
+   *  just leaves it at its own blank/default state. */
+  private static initInputValue(input: DG.InputBase, v: unknown): void {
+    try {
+      if (v !== undefined && v !== null && String(v) !== '') input.stringValue = String(v);
+    } catch {/* leave the editor as-is */}
+  }
+
   /** A native Datagrok input for a primitive func parameter, built from the
    *  property so it honours the declared type, numeric range, choices, and
    *  nullability — replacing the bespoke combo/number/toggle wiring. Edits are
@@ -519,10 +529,10 @@ export class PropertyPanel {
    *  the field stays addressable by name. */
   private createPropertyInput(param: DG.Property, node: FlowNode, inputTooltip: string): HTMLElement {
     const input = ui.input.forProperty(param, null, {
-      value: node.inputValues[param.name],
       tooltipText: inputTooltip,
       onValueChanged: (v) => {node.inputValues[param.name] = v;},
     });
+    PropertyPanel.initInputValue(input, node.inputValues[param.name]);
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }
 
@@ -533,10 +543,10 @@ export class PropertyPanel {
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, caption?: string,
   ): HTMLElement {
     const input = ui.input.string(caption ?? label, {
-      value,
       tooltipText: inputTooltip,
       onValueChanged: (v) => onChange(String(v ?? '')),
     });
+    PropertyPanel.initInputValue(input, value);
     // Display caption may differ from the identity; keep the row keyed by name.
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
   }
@@ -581,10 +591,10 @@ export class PropertyPanel {
     // don't have here. The table chooser (multi-table funcs) and the picker icon
     // are appended *inside* the input via `addOptions` (trailing controls).
     const nameInput = ui.input.string(opts.caption ?? opts.label, {
-      value: opts.getValue(),
       tooltipText: opts.tip,
       onValueChanged: (v) => opts.setValue(String(v ?? '')),
     });
+    PropertyPanel.initInputValue(nameInput, opts.getValue());
     nameInput.input.style.minWidth = '70px';
 
     let getTableParam = (): string => opts.tableParam ?? '';

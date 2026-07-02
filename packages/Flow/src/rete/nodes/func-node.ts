@@ -19,7 +19,7 @@ import {
 } from '../../types/type-map';
 import {
   getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
-  getParamDescription, getParamDisplayName,
+  getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
@@ -87,7 +87,16 @@ export class FuncNode extends FlowNode {
       if (inpDesc) this.inputDescriptions[inp.name] = inpDesc;
 
       if (inp.propertyType in PRIMITIVE_DEFAULTS) {
-        const def = (inp as unknown as {defaultValue?: unknown}).defaultValue ?? PRIMITIVE_DEFAULTS[inp.propertyType];
+        // Seed the declared default (`defaultValue ?? initialValue`, unquoted),
+        // else the type's zero value. String-encoded defaults are coerced to
+        // the declared type so the compiler emits correct literals ('false'
+        // must not compile to `true`).
+        let def = getParamDefault(inp) ?? PRIMITIVE_DEFAULTS[inp.propertyType];
+        if (inp.propertyType === 'bool' && typeof def === 'string')
+          def = def.toLowerCase() === 'true';
+        else if (typeof def === 'string' && def !== '' &&
+                 ['int', 'double', 'num'].includes(String(inp.propertyType)) && !isNaN(Number(def)))
+          def = Number(def);
         this.inputValues[inp.name] = def;
       } else if ((inp.propertyType === 'column' || inp.propertyType === 'column_list') &&
                  dataframeParams.length > 0) {
