@@ -24,8 +24,8 @@ export async function openScriptsBrowser(page: Page) {
   // Script..."), surfacing as "subtree intercepts pointer events" timeouts.
   await page.waitForFunction(
     () => document.querySelector('#grok-preloader, .grok-preloader') == null,
-    undefined, { timeout: 90_000 },
-  );
+    undefined, { timeout: 30_000 },
+  ).catch(() => { /* tolerate a lingering preloader — neutralised by addStyleTag below */ });
   // Also neutralise pointer events on the preloader — it can re-appear after
   // dialog-opening clicks while the platform fetches data, and intercept the
   // next interaction. Platform JS still drives it; only the click-intercept

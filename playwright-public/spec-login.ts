@@ -49,7 +49,16 @@ async function injectToken(page: Page, token: string): Promise<void> {
   await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
   await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
   await page.goto(baseUrl);
-  await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
+  // Cold CI Datlas keeps #grok-preloader in the DOM past the timeout even though
+  // the Browse tree is already interactive (confirmed via CI page snapshot). Make
+  // the wait best-effort and neutralise the preloader's click-interception so a
+  // lingering preloader can neither hard-fail login nor intercept later clicks.
+  await page.waitForFunction(() => document.querySelector('#grok-preloader, .grok-preloader') == null, null, {timeout: 30_000})
+    .catch(() => { /* tolerate a lingering preloader — neutralised below */ });
+  await page.addStyleTag({content: `
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+    .d4-tooltip { display: none !important; }
+  `}).catch(() => {});
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 }
 

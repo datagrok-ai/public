@@ -240,6 +240,18 @@ test.describe.serial('Spaces general', () => {
       else document.addEventListener('DOMContentLoaded', start, { once: true });
     });
     page = await sharedContext.newPage();
+    // On long CI runs the session persisted in .auth.json (captured at global-setup
+    // time) can lapse before this late-running suite loads, leaving the context on
+    // the login screen so the Spaces tree never renders. Re-inject the current auth
+    // token — the same mechanism spec-login.injectToken uses and which the sibling
+    // suites rely on throughout the build.
+    const token = process.env.DATAGROK_AUTH_TOKEN;
+    if (token) {
+      const u = new URL(BASE);
+      await sharedContext.addCookies([{ name: 'auth', value: token, domain: u.hostname, path: '/' }]);
+      await page.goto(BASE + '/oauth/');
+      await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
+    }
     await page.goto(BASE);
     await expect(
       page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first(),

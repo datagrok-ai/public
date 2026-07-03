@@ -38,7 +38,8 @@ export default async function globalSetup(_config: FullConfig) {
     await ctx.addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
     await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
     await page.goto(baseURL, gotoOpts);
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, undefined, {timeout: 120_000});
+    await page.waitForFunction(() => document.querySelector('#grok-preloader, .grok-preloader') == null, undefined, {timeout: 30_000}).catch(() => {});
+    await page.addStyleTag({content: '#grok-preloader,.grok-preloader{pointer-events:none!important}.d4-tooltip{display:none!important}'}).catch(() => {});
     await page.locator('[name="Browse"]').first().waitFor({timeout: 60_000});
 
     const state = await ctx.storageState();

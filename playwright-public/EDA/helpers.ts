@@ -17,8 +17,9 @@ export const test = base.extend<{}, { sharedPage: Page }>({
     });
     const page = await context.newPage();
     await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null,
-      undefined, { timeout: 120_000 });
+    await page.waitForFunction(() => document.querySelector('#grok-preloader, .grok-preloader') == null,
+      undefined, { timeout: 30_000 }).catch(() => {});
+    await page.addStyleTag({content: '#grok-preloader,.grok-preloader{pointer-events:none!important}.d4-tooltip{display:none!important}'}).catch(() => {});
     await page.locator('.d4-ribbon').first().waitFor({ timeout: 60_000 });
     await use(page);
     await context.close();

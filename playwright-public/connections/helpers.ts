@@ -58,8 +58,8 @@ export async function goHome(page: Page): Promise<void> {
   // "subtree intercepts pointer events" timeouts on the first interactive step.
   await page.waitForFunction(
     () => document.querySelector('#grok-preloader, .grok-preloader') == null,
-    undefined, { timeout: 90_000 },
-  );
+    undefined, { timeout: 30_000 },
+  ).catch(() => { /* tolerate a lingering preloader — neutralised by addStyleTag below */ });
   await page.waitForTimeout(500);
   // Datagrok hover-tooltips intercept Playwright's stability checks on tree nodes.
   // The platform's tooltip JS still runs (handlers fire, content builds) — only
