@@ -819,6 +819,7 @@ class Preview {
         ...sharedOptions,
         valueColumnName: look.valueColumnName,
         category1ColumnName: look.category1ColumnName,
+        category2ColumnName: look.category2ColumnName,
         axisType: look.axisType,
         invertYAxis: look.invertYAxis,
         showColorSelector: false,
