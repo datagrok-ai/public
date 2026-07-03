@@ -29,6 +29,15 @@
   (a column drag offers real column consumers first) and **functions already used on the canvas**
   float up (pipelines repeat their ops).
 
+### "What produces this?" — suggestions for input drags too
+
+* Dragging an **input** socket to empty canvas now opens the same "Add node…" popup as an output
+  drag — listing every node type with a **compatible output or pass-through**, real producers
+  ranked above pass-through threaders. The matching **Input node** leads (a table drag offers
+  *Table Input* first — the "make this a script parameter" producer), then the science in play
+  (chem/bio), then **Data Sources** + common table funcs. Picking one creates the node at the drop
+  point and wires its output (real over pass-through) into the dragged input.
+
 ### Drop an input drag anywhere on a producer node
 
 * The drop-anywhere-on-node connection shortcut now works in **both directions**. Dragging out of

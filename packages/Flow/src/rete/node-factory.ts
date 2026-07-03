@@ -409,14 +409,42 @@ function getInputTypesForType(typeName: string): string[] {
   return cached;
 }
 
+/** Cache of (typeName → output slot dgTypes), split into real outputs vs
+ *  pass-throughs (`__pt` keys) — the reverse suggestion menu ("what produces
+ *  this?") ranks real producers above threaders. Same one-sample probe as
+ *  `getInputTypesForType`. */
+const _sampleOutputTypesCache = new Map<string, {real: string[]; passthrough: string[]}>();
+
+function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
+  let cached = _sampleOutputTypesCache.get(typeName);
+  if (cached !== undefined) return cached;
+  const factory = FACTORIES.get(typeName);
+  if (!factory) return {real: [], passthrough: []};
+  try {
+    const sample = factory();
+    cached = {real: [], passthrough: []};
+    for (const [key, out] of Object.entries(sample.outputs) as Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!out) continue;
+      (key.endsWith('__pt') ? cached.passthrough : cached.real).push(out.socket.dgType);
+    }
+  } catch {
+    cached = {real: [], passthrough: []};
+  }
+  _sampleOutputTypesCache.set(typeName, cached);
+  return cached;
+}
+
 export interface CompatibleNodeType {
   typeName: string;
   label: string;
   isBuiltin: boolean;
   description?: string;
-  /** Whether an input slot matches the dragged type exactly (vs a
-   *  `dynamic`/`object` wildcard) — exact consumers rank first in their tier. */
+  /** Whether a slot matches the dragged type exactly (vs a `dynamic`/`object`
+   *  wildcard) — exact matches rank first in their tier. */
   exact?: boolean;
+  /** Reverse menu only: whether a **real** output matches (vs pass-through
+   *  only) — real producers rank above threaders in their tier. */
+  realOutput?: boolean;
 }
 
 /** Display label for a suggestion-menu candidate. Built-ins show their trailing
@@ -498,20 +526,7 @@ export function findNodeTypesAcceptingInput(
     });
   }
 
-  // The science in play: the drag-source's own domain wins; a domain-less
-  // source (OpenFile, a utility) falls back to any domain already on the
-  // canvas — a flow with chem nodes keeps offering chem next-steps.
-  const preferredDomains = new Set<string>();
-  const srcDomain = domainSection(context?.sourcePackageName || undefined);
-  if (srcDomain) preferredDomains.add(srcDomain);
-  else {
-    for (const p of context?.graphPackageNames ?? []) {
-      const d = domainSection(p);
-      if (d) preferredDomains.add(d);
-    }
-  }
-  const usedFuncs = new Set<string>();
-  for (const n of context?.graphFuncNames ?? []) usedFuncs.add(n.toLowerCase());
+  const {preferredDomains, usedFuncs} = contextBoosts(context);
 
   // Lower rank number = higher in the list.
   const rank = (t: CompatibleNodeType): number => {
@@ -524,6 +539,79 @@ export function findNodeTypesAcceptingInput(
   const used = (t: CompatibleNodeType): number => (usedFuncs.has(simpleFuncName(t.typeName)) ? 0 : 1);
   matches.sort((a, b) =>
     rank(a) - rank(b) ||
+    Number(b.exact) - Number(a.exact) ||
+    used(a) - used(b) ||
+    a.label.localeCompare(b.label));
+  return matches;
+}
+
+/** Shared ranking boosts derived from the canvas context: the science in play
+ *  (the drag-origin node's own domain wins; a domain-less origin — OpenFile, a
+ *  utility — falls back to any domain already on the canvas) and the functions
+ *  the user already reached for. */
+function contextBoosts(context?: SuggestionContext): {preferredDomains: Set<string>; usedFuncs: Set<string>} {
+  const preferredDomains = new Set<string>();
+  const srcDomain = domainSection(context?.sourcePackageName || undefined);
+  if (srcDomain) preferredDomains.add(srcDomain);
+  else {
+    for (const p of context?.graphPackageNames ?? []) {
+      const d = domainSection(p);
+      if (d) preferredDomains.add(d);
+    }
+  }
+  const usedFuncs = new Set<string>();
+  for (const n of context?.graphFuncNames ?? []) usedFuncs.add(n.toLowerCase());
+  return {preferredDomains, usedFuncs};
+}
+
+/** All registered node types with an output — or a pass-through — compatible
+ *  with `targetType`. The reverse suggestion menu: dragging an *input* to empty
+ *  canvas asks "what produces this?".
+ *
+ *  Ranked like `findNodeTypesAcceptingInput`, with the terminals swapped for
+ *  the upstream direction (lower tier = higher):
+ *  1. The **matching Input node** (Table Input for a table drag, …) — the
+ *     universal "make this a script parameter" producer.
+ *  2. **The science in play** (same domain boost as the forward menu).
+ *  3. **Data Sources** functions (OpenFile, queries, generators — the natural
+ *     answer to "where does a table come from?") and the common table funcs.
+ *  4. Other built-ins; 5. the remaining DG functions.
+ *
+ *  Within a tier: a **real output** match beats a pass-through-only threader
+ *  (`realOutput`), then an **exact type match** beats a wildcard, then
+ *  already-used-on-canvas funcs, then alphabetical. */
+export function findNodeTypesProducingOutput(
+  targetType: string, context?: SuggestionContext,
+): CompatibleNodeType[] {
+  const matches: Array<CompatibleNodeType & {exact: boolean; realOutput: boolean}> = [];
+  const infoByTypeName = new Map(funcRegistry.map((f) => [f.nodeTypeName, f]));
+  for (const typeName of FACTORIES.keys()) {
+    const {real, passthrough} = getOutputTypesForType(typeName);
+    const realCompat = real.some((t) => areTypesCompatible(t, targetType));
+    if (!realCompat && !passthrough.some((t) => areTypesCompatible(t, targetType))) continue;
+    matches.push({
+      typeName,
+      label: labelForTypeName(typeName, infoByTypeName.get(typeName)),
+      isBuiltin: !typeName.startsWith('DG Functions/'),
+      realOutput: realCompat,
+      exact: (realCompat ? real : passthrough).includes(targetType),
+    });
+  }
+
+  const {preferredDomains, usedFuncs} = contextBoosts(context);
+
+  const rank = (t: CompatibleNodeType & {exact: boolean; realOutput: boolean}): number => {
+    if (t.typeName.startsWith('Inputs/') && t.realOutput && t.exact) return 0;
+    const info = infoByTypeName.get(t.typeName);
+    if (info && preferredDomains.size > 0 && preferredDomains.has(funcCategory(info))) return 1;
+    if (COMMON_NEXT_FUNCS.has(simpleFuncName(t.typeName))) return 2;
+    if (info && funcCategory(info) === 'Data Sources') return 2;
+    return t.isBuiltin ? 3 : 4;
+  };
+  const used = (t: CompatibleNodeType): number => (usedFuncs.has(simpleFuncName(t.typeName)) ? 0 : 1);
+  matches.sort((a, b) =>
+    rank(a) - rank(b) ||
+    Number(b.realOutput) - Number(a.realOutput) ||
     Number(b.exact) - Number(a.exact) ||
     used(a) - used(b) ||
     a.label.localeCompare(b.label));

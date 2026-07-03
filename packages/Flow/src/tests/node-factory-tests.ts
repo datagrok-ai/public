@@ -3,7 +3,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType, getRegisteredTypeNames,
-  getRegisteredFuncs, findNodeTypesAcceptingInput, funcCategory,
+  getRegisteredFuncs, findNodeTypesAcceptingInput, findNodeTypesProducingOutput, funcCategory,
 } from '../rete/node-factory';
 import {FUNC_CATEGORIES} from '../panel/function-browser';
 import {FuncNode} from '../rete/nodes/func-node';
@@ -207,6 +207,55 @@ category('Flow: node-factory', () => {
       const used = findNodeTypesAcceptingInput('dataframe', {graphFuncNames: ['Aggregate']});
       expect(idxOf(used, byFunc('Aggregate')) < idxOf(used, byFunc('AddNewColumn')), true,
         'a func already on the canvas floats above its tier peers');
+    }
+  });
+
+  test('reverse suggestions: producers of a type, real outputs before passthrough threaders', async () => {
+    const idxOf = (list: {typeName: string}[], pred: (c: {typeName: string; label: string}) => boolean): number =>
+      (list as Array<{typeName: string; label: string}>).findIndex(pred);
+    const byFunc = (name: string) => (c: {typeName: string}): boolean =>
+      (c.typeName.split('/').pop() ?? '').split(':').pop() === name;
+
+    // "What produces a table?" — the matching Input node leads (the universal
+    // "make this a script parameter" producer).
+    const tables = findNodeTypesProducingOutput('dataframe');
+    expect(tables.length > 0, true, 'table producers exist');
+    expect(tables[0].typeName, 'Inputs/Table Input', 'the matching Input node leads');
+
+    // A Data Sources func (OpenFile — real dataframe output) is boosted.
+    const openFile = idxOf(tables, byFunc('OpenFile'));
+    if (openFile !== -1) {
+      // It precedes any passthrough-only threader (e.g. a func that merely
+      // threads a table through, like a column-outputting mutator).
+      const threader = tables.findIndex((c) => c.realOutput === false);
+      if (threader !== -1)
+        expect(openFile < threader, true, 'a real producer precedes passthrough-only threaders');
+    }
+
+    // Real-over-passthrough within a tier: Aggregate (real dataframe output)
+    // beats Add New Column (only its table passthrough matches a table drag) —
+    // both are COMMON funcs, and alphabetics would put ANC first.
+    const agg = idxOf(tables, byFunc('Aggregate'));
+    const anc = idxOf(tables, byFunc('AddNewColumn'));
+    if (agg !== -1 && anc !== -1) {
+      expect(agg < anc, true, 'real dataframe output beats a passthrough-only match');
+      const ancItem = tables[anc] as {realOutput?: boolean};
+      expect(ancItem.realOutput, false, 'AddNewColumn matches via passthrough only');
+    }
+
+    // A string drag leads with String Input; a passthrough-only threader for
+    // strings (any func with a string input) is offered too, ranked below.
+    const strings = findNodeTypesProducingOutput('string');
+    expect(strings[0].typeName, 'Inputs/String Input', 'String Input leads a string drag');
+
+    // The domain boost applies in the reverse direction too.
+    if (getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
+      const fromChem = findNodeTypesProducingOutput('dataframe', {sourcePackageName: 'Chem'});
+      const isChem = (c: {label: string}): boolean => c.label.endsWith('(Cheminformatics)');
+      const firstChem = idxOf(fromChem, isChem as (c: {typeName: string; label: string}) => boolean);
+      const ancChem = idxOf(fromChem, byFunc('Aggregate'));
+      if (firstChem !== -1 && ancChem !== -1)
+        expect(firstChem < ancChem, true, 'chem producers lead when dragging from a chem node');
     }
   });
 });

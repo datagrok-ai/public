@@ -118,9 +118,10 @@ export class FlowEditor {
   private dragOutSource: {nodeId: string; outputKey: string; dgType: string} | null = null;
 
   /** Input-side drag state (dragging out of an input socket, or the tail of an
-   *  existing connection). Drives the reverse drop-on-node shortcut: dropping
+   *  existing connection). Drives the reverse drop-on-node shortcut — dropping
    *  on a node body connects from that node's compatible output (a real output
-   *  wins over a passthrough). No suggestion menu on empty-canvas drops. */
+   *  wins over a passthrough) — and, on empty canvas, the reverse suggestion
+   *  menu ("what produces this?"). */
   private dragInSource: {nodeId: string; inputKey: string; dgType: string} | null = null;
 
   constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
@@ -703,8 +704,8 @@ export class FlowEditor {
         if (data.created || data.socket) return context;
         // Dropped without hitting a socket: if it landed on a node body,
         // connect to its one obvious counterpart slot (no need to hit the tiny
-        // pin). An output drag on empty canvas opens the suggestion menu; an
-        // input drag just aborts (producers are upstream — aim at one).
+        // pin). Empty-canvas drops open the suggestion menu for the matching
+        // direction — consumers for an output drag, producers for an input drag.
         if (srcOut) void this.handleOutputDrop(srcOut, lastPointer.x, lastPointer.y);
         else if (srcIn) void this.handleInputDrop(srcIn, lastPointer.x, lastPointer.y);
       }
@@ -743,8 +744,8 @@ export class FlowEditor {
 
   /** Drop of an input-drag that missed every socket: if it landed on another
    *  node's body, connect from that node's one obvious output (a real output
-   *  wins over a passthrough — see `soleCompatibleOutput`). On empty canvas or
-   *  ambiguity: abort — no suggestion menu for the upstream direction. */
+   *  wins over a passthrough — see `soleCompatibleOutput`; ambiguity aborts).
+   *  On empty canvas: open the reverse suggestion menu ("what produces this?"). */
   private async handleInputDrop(
     src: {nodeId: string; inputKey: string; dgType: string}, x: number, y: number,
   ): Promise<void> {
@@ -758,9 +759,58 @@ export class FlowEditor {
       }
     }
     const sourceNodeId = nodeEl?.dataset.nodeId;
-    if (!sourceNodeId || sourceNodeId === src.nodeId) return;
-    const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
-    if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
+    if (sourceNodeId && sourceNodeId !== src.nodeId) {
+      const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
+      if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
+      return;
+    }
+    if (!sourceNodeId) await this.openReverseSuggestionMenu(x, y, src);
+  }
+
+  /** The reverse suggestion menu: an input drag dropped on empty canvas offers
+   *  every node type with a compatible output — or pass-through — (real
+   *  producers first), creates the chosen one at the drop point, and wires its
+   *  first compatible output (real over pass-through) into the dragged input. */
+  private async openReverseSuggestionMenu(
+    clientX: number, clientY: number,
+    target: {nodeId: string; inputKey: string; dgType: string},
+  ): Promise<void> {
+    const {findNodeTypesProducingOutput, createNode} = await import('./node-factory');
+    const nodes = this.editor.getNodes();
+    const candidates = findNodeTypesProducingOutput(target.dgType, {
+      sourcePackageName: this.editor.getNode(target.nodeId)?.dgPackageName,
+      graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
+      graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+    });
+    if (candidates.length === 0) return;
+
+    const choice = await this.promptSuggestion(clientX, clientY, candidates);
+    if (!choice) return;
+
+    const node = createNode(choice);
+    if (!node) return;
+    const {x, y} = this.screenToCanvas(clientX, clientY);
+    await this.addNodeAt(node, x, y);
+
+    // Auto-connect: the new node's first compatible output drives the dragged
+    // input — a real output wins over a pass-through.
+    const targetSocket = (this.editor.getNode(target.nodeId)?.inputs[target.inputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    if (!targetSocket) return;
+    let realKey: string | null = null;
+    let ptKey: string | null = null;
+    for (const [key, out] of Object.entries(node.outputs) as Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!out || isExecKey(key)) continue;
+      if (!out.socket.isCompatibleWith(targetSocket)) continue;
+      if (key.endsWith('__pt')) {
+        if (!ptKey) ptKey = key;
+      } else {
+        realKey = key;
+        break;
+      }
+    }
+    const outKey = realKey ?? ptKey;
+    if (outKey) await this.addConnectionByKeys(node.id, outKey, target.nodeId, target.inputKey);
   }
 
   /** The output on `sourceNodeId` that can drive the dragged input: the sole
