@@ -59,6 +59,54 @@ export function categorizeFunc(func: DG.Func, role: string | null, packageName?:
     role) as FuncCategory;
 }
 
+/** For each domain section, the flagship package whose functions lead the list
+ *  (the rest of that domain's packages follow). */
+export const DOMAIN_PRIMARY_PACKAGE: Record<string, string> = {
+  Cheminformatics: 'Chem',
+  Bioinformatics: 'Bio',
+};
+
+/** The "most-used" operations a scientist reaches for first inside a domain
+ *  section — matched as lowercased substrings against the function name (lower
+ *  index = higher up). Everything unlisted sorts after these, alphabetically —
+ *  so descriptors / properties / similarity lead each domain list. */
+export const DOMAIN_PRIORITY_KEYWORDS: Record<string, string[]> = {
+  Cheminformatics: [
+    'descriptor', 'propert', 'fingerprint', 'similar', 'substructure',
+    'diversit', 'cluster', 'scaffold', 'r-group', 'rgroup', 'mcs',
+    'activity', 'toxic', 'risk', 'elemental', 'mutate', 'curate', 'convert',
+  ],
+  Bioinformatics: [
+    'descriptor', 'propert', 'composition', 'similar', 'sequence',
+    'align', 'msa', 'logo', 'atomic', 'translate', 'helm', 'convert',
+  ],
+};
+
+/** Order a domain section's items: flagship-package functions first (Chem under
+ *  Cheminformatics, Bio under Bioinformatics), then the rest; within each group
+ *  the curated "most-used" operations (descriptors, properties, …) lead, then
+ *  alphabetical by package, then by display name. Pure — returns a new array. */
+export function orderDomainSection(items: FuncInfo[], category: string): FuncInfo[] {
+  const primary = DOMAIN_PRIMARY_PACKAGE[category];
+  const keywords = DOMAIN_PRIORITY_KEYWORDS[category] ?? [];
+  const priorityRank = (info: FuncInfo): number => {
+    const hay = `${info.name} ${info.func.name}`.toLowerCase();
+    const i = keywords.findIndex((k) => hay.includes(k));
+    return i === -1 ? keywords.length : i;
+  };
+  return [...items].sort((a, b) => {
+    const ap = a.packageName === primary ? 0 : 1;
+    const bp = b.packageName === primary ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    const ar = priorityRank(a);
+    const br = priorityRank(b);
+    if (ar !== br) return ar - br;
+    const pkg = a.packageName.localeCompare(b.packageName);
+    if (pkg !== 0) return pkg;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 /** MIME-ish key used to carry a node type name through HTML5 drag/drop.
  *  The canvas drop handler reads this and adds the corresponding node at
  *  the drop point. */
@@ -242,8 +290,10 @@ export class FunctionBrowser {
       .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
     const grouped = this.groupFunctions(funcs);
     const renderCategory = (category: string): void => {
-      const items = grouped[category];
+      let items = grouped[category];
       if (!items || items.length === 0) return;
+      if (FunctionBrowser.DOMAIN_CATEGORIES.includes(category))
+        items = orderDomainSection(items, category);
       this.treeContainer.appendChild(this.createCollapsibleSection(category, items));
     };
 

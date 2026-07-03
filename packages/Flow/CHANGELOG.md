@@ -2,6 +2,14 @@
 
 ## v.next
 
+### Domain sections sorted by relevance
+
+* The **Cheminformatics** and **Bioinformatics** toolbox sections are now ordered so the flagship
+  package leads — **Chem** functions come first under Cheminformatics, **Bio** under Bioinformatics —
+  and within each, the "most-used" operations (descriptors, properties, fingerprints, similarity, …)
+  float to the top, then the rest alphabetically. (`orderDomainSection` in
+  [function-browser.ts](src/panel/function-browser.ts).)
+
 ### Toolbox trim + friendlier chem inputs
 
 * **46 more functions removed** from the toolbox (added to the `excluded-funcs.ts` denylist) — heavy

@@ -194,6 +194,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // Curves
   'Curves:addAggrStatisticsColumn',
   'Curves:addStatisticsColumn',
+  'Curves:dataToCurves',
   // Dendrogram
   'Dendrogram:HierarchicalClusteringByDistanceScript',
   'Dendrogram:HierarchicalClusteringScript',

@@ -11,8 +11,9 @@ import {
 import {EXCLUDED_FUNC_NQNAMES} from '../rete/excluded-funcs';
 import {
   categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery,
-  queryConnectionName, FunctionBrowser, funcOutputsWidget,
+  queryConnectionName, FunctionBrowser, funcOutputsWidget, orderDomainSection,
 } from '../panel/function-browser';
+import type {FuncInfo} from '../rete/node-factory';
 import {getTags} from '../utils/dart-proxy-utils';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
@@ -281,6 +282,41 @@ category('Flow: function browser', () => {
     } finally {
       browser.root.remove();
     }
+  });
+
+  test('orderDomainSection floats the flagship package + most-used ops to the top', async () => {
+    // Only name / func.name / packageName drive the sort.
+    const mk = (name: string, pkg: string): FuncInfo => ({
+      func: {name} as DG.Func, name, role: null, tags: [], packageName: pkg,
+      nodeTypeName: `DG Functions/Cheminformatics/${name}`,
+    });
+    // Deliberately shuffled: a non-Chem pkg, a plain Chem func, and Chem's
+    // descriptors/properties which must lead.
+    const items = [
+      mk('Chemspace Search', 'Chemspace'),
+      mk('Add Chem Risks', 'Chem'),
+      mk('addChemPropertiesColumns', 'Chem'),
+      mk('getMorganFingerprints', 'Chem'),
+      mk('Admetica Eval', 'Admetica'),
+      mk('Get Descriptors', 'Chem'),
+    ];
+    const ordered = orderDomainSection(items, 'Cheminformatics').map((i) => i.packageName);
+    // Every Chem item precedes every non-Chem item.
+    const lastChem = ordered.lastIndexOf('Chem');
+    const firstOther = ordered.findIndex((p) => p !== 'Chem');
+    expect(lastChem < firstOther, true, 'all Chem funcs come before other cheminformatics pkgs');
+
+    // Within Chem, descriptors/properties/fingerprints lead the plain "Add Chem Risks".
+    const names = orderDomainSection(items, 'Cheminformatics').map((i) => i.name);
+    const idx = (n: string): number => names.indexOf(n);
+    expect(idx('Get Descriptors') < idx('Add Chem Risks'), true, 'descriptors before a generic risks func');
+    expect(idx('addChemPropertiesColumns') < idx('Add Chem Risks'), true, 'properties before generic');
+    expect(idx('getMorganFingerprints') < idx('Add Chem Risks'), true, 'fingerprints before generic');
+
+    // Bio flagship routing works too.
+    const bioItems = [mk('Helm Convert', 'Helm'), mk('Sequence Descriptors', 'Bio')];
+    const bioOrdered = orderDomainSection(bioItems, 'Bioinformatics').map((i) => i.packageName);
+    expect(bioOrdered[0], 'Bio', 'Bio leads the Bioinformatics section');
   });
 
   test('statusLabel renders plain-language status', async () => {
