@@ -27,6 +27,19 @@ import {ExecutionController} from '../execution/execution-controller';
 import {ScriptSettings} from '../compiler/script-emitter';
 import {createFuncCallEditor} from '../utils/func-editor-utils';
 
+/** Run semantic-type detection on the resolved upstream tables before they
+ *  seed a picker/editor dialog — semtype-filtered column inputs (Molecule, …)
+ *  are empty otherwise, because a captured clone may not have been through
+ *  detection yet. Guarded per table: a detection failure never blocks the
+ *  dialog. Shared by the column picker and the function-editor launcher. */
+export async function detectSemanticTypes(tables: Iterable<DG.DataFrame>): Promise<void> {
+  for (const t of tables) {
+    try {
+      await t.meta.detectSemanticTypes();
+    } catch {/* detection is best-effort — open the dialog regardless */}
+  }
+}
+
 /** The dataframe input a column/column_list param resolves against: the node's
  *  explicit `columnTables` association, else the shared numeric-suffix pairing
  *  (`keys2`→`table2`), else the first dataframe input — the same ladder the
@@ -132,6 +145,11 @@ export class FuncEditorLauncher {
         tables.set(m.param, table);
       }
     }
+
+    // The editor's column pickers filter by semantic type (Molecule, …) — make
+    // sure the seeded tables carry their semtypes before the dialog opens (a
+    // captured clone may not have been through detection yet).
+    await detectSemanticTypes(tables.values());
 
     const fc = func.prepare(this.buildParams(node, func, tables, dfParams));
     const edited = await createFuncCallEditor(fc);

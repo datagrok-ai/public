@@ -24,6 +24,7 @@ import * as DG from 'datagrok-api/dg';
 import {FlowEditor} from '../rete/flow-editor';
 import {ExecutionController} from '../execution/execution-controller';
 import {ScriptSettings} from '../compiler/script-emitter';
+import {detectSemanticTypes} from './func-editor-launcher';
 
 export interface ColumnPickRequest {
   /** Node whose column input is being edited. */
@@ -64,6 +65,10 @@ export class ColumnPicker {
         return;
       }
     }
+    // Semtype-filtered column inputs (Molecule, …) need the table's semantic
+    // types detected before the picker opens — a captured clone may not have
+    // been through detection yet.
+    await detectSemanticTypes([table]);
     this.openDialog(table, req);
   }
 

@@ -47,6 +47,7 @@ export async function createFuncCallEditor(fc: DG.FuncCall): Promise<DG.FuncCall
   // especially table
   return new Promise<DG.FuncCall>( async (res) => {
     DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+    fc.setAuxValue('forceEditParameters', true);
     fc.edit();
     const d = await pollDialogCreation();
     if (!d)

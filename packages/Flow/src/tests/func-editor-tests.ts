@@ -9,7 +9,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {PropertyPanel} from '../panel/property-panel';
 import {
-  FuncEditorLauncher, applyEditorResult, editorValueToPanelValue, tableParamForColumn,
+  FuncEditorLauncher, applyEditorResult, detectSemanticTypes, editorValueToPanelValue, tableParamForColumn,
 } from '../panel/func-editor-launcher';
 import {shouldUseFunctionEditor, pollDialogCreation} from '../utils/func-editor-utils';
 import {ExecutionController} from '../execution/execution-controller';
@@ -134,6 +134,23 @@ category('Flow: func editor', () => {
     expect(String(node.inputValues[colParam]), 'picked', `${func.name}.${colParam} came back as a name`);
   });
 
+  test('detectSemanticTypes stamps semtypes on the seeded tables (and never throws)', async () => {
+    // A molecule column: after detection its semType is 'Molecule', so the
+    // editor / picker dialogs can filter columns by semantic type.
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('smiles', ['CCO', 'c1ccccc1', 'CC(=O)O']),
+      DG.Column.fromList(DG.TYPE.INT, 'n', [1, 2, 3]),
+    ]);
+    await detectSemanticTypes([df]);
+    // Guarded: only assert when a Molecule detector is installed on this stand.
+    if (DG.Func.find({tags: ['semTypeDetector'], package: 'Chem'}).length > 0)
+      expect(df.col('smiles')!.semType, 'Molecule', 'smiles column detected as Molecule');
+
+    // Plain tables and empty input are harmless no-ops.
+    await detectSemanticTypes([]);
+    await detectSemanticTypes([DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'x', [1])])]);
+  });
+
   test('launcher: gate refuses without a table; a captured table opens the editor', async () => {
     // End-to-end against the live platform: unconnected → refused (balloon);
     // connected with a captured upstream table → the function's OWN dialog
@@ -165,6 +182,10 @@ category('Flow: func editor', () => {
       const dlg = await pollDialogCreation(10_000);
       expect(!!dlg, true, 'the editor dialog opened');
       expect(dlg!.title, 'Add New Column', 'the function’s own editor, not a generic form');
+      // Give the launcher's own dialog poll (100 ms ticks) a beat to see the
+      // dialog and subscribe to its onClose — closing within the same tick
+      // would resolve nothing (a user can't close a dialog that fast).
+      await new Promise((r) => setTimeout(r, 400));
       dlg!.close();
       expect(await openPromise, true, 'the round-trip resolved');
       expect(String(node.inputValues['name']), 'myNewCol', 'seeded value survives the round-trip');

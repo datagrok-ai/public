@@ -29,6 +29,13 @@
   (a column drag offers real column consumers first) and **functions already used on the canvas**
   float up (pipelines repeat their ops).
 
+### Semantic types detected before pickers and editors open
+
+* The tables resolved for the **column picker** and the **function-editor dialog** now go through
+  `detectSemanticTypes()` before the dialog opens, so semtype-filtered column inputs (Molecule, …)
+  are populated instead of empty — a captured upstream clone may not have been through detection
+  yet. Best-effort: a detection failure never blocks the dialog.
+
 ### "What produces this?" — suggestions for input drags too
 
 * Dragging an **input** socket to empty canvas now opens the same "Add node…" popup as an output

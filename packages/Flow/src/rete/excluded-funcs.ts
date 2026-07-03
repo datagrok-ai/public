@@ -83,7 +83,7 @@ export const EXCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Bio:getBioLib',
   'Bio:getHelmMonomers',
   'Bio:getMonomerLibHelper',
-  'Bio:getRegionTopMenu',
+  'Bio:getRegion',
   'Bio:getSeqHandler',
   'Bio:getSeqHelper',
   'Bio:helmPreprocessingFunction',
