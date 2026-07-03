@@ -2760,7 +2760,7 @@ export class PackageFunctions {
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
+    @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C(OCC1c2ccccc2-c2ccccc21)[*:1]'}}) fragment: string): Promise<void> {
     const rdModule = PackageFunctions.getRdKitModule();
     addDeprotectedColumn(table, molecules, fragment, rdModule);
   }
