@@ -15,8 +15,18 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
     const df = await grok.dapi.files.readCsv(p);
     grok.shell.addTableView(df);
     await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(() => resolve(), 4000);
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); finish(); });
+      const started = Date.now();
+      const tick = () => {
+        if (done) return;
+        const detected = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+          .some((c: any) => c.semType === 'Macromolecule');
+        if (detected || Date.now() - started > 15000) { sub.unsubscribe(); finish(); }
+        else setTimeout(tick, 200);
+      };
+      setTimeout(tick, 200);
     });
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
     const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
@@ -25,18 +35,26 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, path);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
-  await page.evaluate(async () => {
+  await page.waitForFunction(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+      try { await (grok as any).functions.call(fn, {}); return true; } catch { /* keep polling */ }
     }
-    await new Promise((r) => setTimeout(r, 3000));
-  });
+    return false;
+  }, null, {timeout: 60_000, polling: 1000});
+}
+async function openBioTransformMenu(page: import('@playwright/test').Page, itemName: string) {
+  await page.locator('[name="div-Bio"]').click();
+  const transform = page.locator('[name="div-Bio---Transform"]');
+  await transform.waitFor({state: 'visible', timeout: 30_000});
+  await transform.hover();
+  const item = page.locator(`[name="div-Bio---Transform---${itemName}"]`);
+  await item.waitFor({state: 'visible', timeout: 30_000});
+  await item.click();
 }
 const BIO_SEQUENCE_CELL_TYPES = ['sequence', 'helm', 'separator', 'biln', 'custom', 'fasta'];
 async function waitForSequenceCellTypeBind(page: import('@playwright/test').Page,
@@ -71,7 +89,7 @@ async function inspectMacroCol(page: import('@playwright/test').Page):
   });
 }
 test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await softStep('Open filter_HELM.csv — units=helm, bilnSequenceCellRenderer dispatch', async () => {
@@ -80,9 +98,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     const info = await inspectMacroCol(page);
     expect(info.semType).toBe('Macromolecule');
     expect(info.units).toBe('helm');
-    expect(info.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES, `cellType ${info.gridCellType} must be a Bio sequence-family value`)
-      .toContain(info.gridCellType!);
+    expect(info.gridCellType, 'HELM column must bind a Bio sequence renderer (units=helm dispatch)').toBe('sequence');
     expect(info.hasErrorBalloon).toBe(false);
   });
   await softStep('Open filter_MSA.csv — units=separator (separatorSequenceCellRenderer dispatch)', async () => {
@@ -91,8 +107,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     const info = await inspectMacroCol(page);
     expect(info.semType).toBe('Macromolecule');
     expect(info.units).toBe('separator');
-    expect(info.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
+    expect(info.gridCellType, 'MSA column must bind a Bio sequence renderer (units=separator dispatch)').toBe('sequence');
     expect(info.hasErrorBalloon).toBe(false);
     const sepTag: string | null = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -100,7 +115,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
       const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
       return macro?.getTag?.('.separator') ?? macro?.getTag?.('separator') ?? null;
     });
-    expect(sepTag).not.toBeNull();
+    expect(sepTag, "MSA separator tag must be '-' per GROK-12164 reproducer parameters").toBe('-');
   });
   await softStep('Enumerate Bio cellRenderer registrations — bio.rendering parent surface', async () => {
     const bioCellRenderers: string[] = await page.evaluate(() => {
@@ -133,7 +148,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
 });
 // Scenario 2 — Convert HELM -> SEPARATOR re-dispatches renderer (GROK-12164 guard)
 test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK-12164)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   let preHelmColName: string | null = null;
@@ -142,20 +157,11 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.units).toBe('helm');
-    expect(info.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
+    expect(info.gridCellType, 'baseline HELM column must bind a Bio sequence renderer').toBe('sequence');
     preHelmColName = info.name;
   });
   await softStep('Bio > Transform > Convert Sequence Notation... opens dialog', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Transform"]')!
-        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector(
-        '[name="div-Bio---Transform---Convert-Sequence-Notation..."]') as HTMLElement).click();
-    });
+    await openBioTransformMenu(page, 'Convert-Sequence-Notation...');
     await page.locator('[name="dialog-Convert-Sequence-Notation"]').waitFor({timeout: 60_000});
   });
   await softStep('Set Convert-to=separator, Separator=-, click OK', async () => {
@@ -198,19 +204,15 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     const sourceHelm = tagsByMacro.find((m) => m.units === 'helm');
     const newSeparator = tagsByMacro.find((m) => m.units === 'separator');
     expect(sourceHelm, 'source HELM column units=helm must be intact post-convert').toBeTruthy();
-    expect(sourceHelm!.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES,
-      `source HELM cellType ${sourceHelm!.gridCellType} must be in bio sequence family`)
-      .toContain(sourceHelm!.gridCellType!);
-    if (preHelmColName) expect(sourceHelm!.name).toBe(preHelmColName);
+    expect(sourceHelm!.units, 'source column units=helm must be intact post-convert').toBe('helm');
+    expect(sourceHelm!.gridCellType, 'source HELM column must keep a Bio sequence renderer').toBe('sequence');
+    expect(preHelmColName, 'baseline HELM column name must have been captured').toBeTruthy();
+    expect(sourceHelm!.name, 'convert must not rename the source HELM column').toBe(preHelmColName);
     expect(newSeparator, 'new column from convert must carry units=separator (GROK-12164)').toBeTruthy();
-    expect(newSeparator!.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES,
-      `new SEPARATOR cellType ${newSeparator!.gridCellType} must be in bio sequence family`)
-      .toContain(newSeparator!.gridCellType!);
-    expect(newSeparator!.gridCellType,
-      'GROK-12164: new SEPARATOR column must not retain HELM dispatch (cellType !== "helm")')
-      .not.toBe('helm');
+    // GROK-12164: all four Bio sequence renderers are one MacromoleculeSequenceCellRenderer (cellType='sequence');
+    // dispatch is keyed by the column units tag, so the regression contract is asserted at the units-tag level.
+    expect(newSeparator!.units, 'GROK-12164: new column must dispatch by its own units=separator tag').toBe('separator');
+    expect(newSeparator!.gridCellType, 'new SEPARATOR column must bind a Bio sequence renderer').toBe('sequence');
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });
@@ -221,7 +223,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
 });
 // Scenario 3 — Split-to-Monomers produces Monomer columns rendered by monomerCellRenderer
 test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCellRenderer)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await softStep('Open filter_MSA.csv — separator-with-MSA-flag baseline', async () => {
@@ -236,15 +238,7 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
       return cols.filter((c: any) => c.semType === 'Monomer').length;
     });
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Transform"]')!
-        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector(
-        '[name="div-Bio---Transform---Split-to-Monomers..."]') as HTMLElement).click();
-    });
+    await openBioTransformMenu(page, 'Split-to-Monomers...');
     await page.locator('[name="dialog-Split-to-Monomers"]').waitFor({timeout: 60_000});
     await page.locator('[name="dialog-Split-to-Monomers"] [name="button-OK"]').click();
     await page.waitForFunction((base) => {
@@ -276,11 +270,12 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
           gridCellType: (grok.shell.tv as any).grid?.col?.(c.name)?.cellType ?? null,
         }));
       });
-    expect(monomerColInfo.length).toBeGreaterThan(0);
+    expect(monomerColInfo.length, 'Split to Monomers must produce per-position Monomer columns').toBeGreaterThan(0);
     for (const m of monomerColInfo)
       expect(m.semType, `column ${m.name} should be semType='Monomer'`).toBe('Monomer');
-    const anyMonomerDispatched = monomerColInfo.some((m) => m.gridCellType === 'Monomer');
-    expect(anyMonomerDispatched, 'at least one Monomer column should have grid.cellType=Monomer').toBe(true);
+    for (const m of monomerColInfo)
+      expect(m.gridCellType, `Monomer column ${m.name} must dispatch to monomerCellRenderer (cellType=Monomer)`)
+        .toBe('Monomer');
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });
@@ -291,7 +286,7 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
 });
 // Scenario 4 — Custom-notation column dispatches to customSequenceCellRenderer
 test('Bio | Rendering — units=custom column dispatches to customSequenceCellRenderer', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await softStep('Open filter_HELM.csv — baseline units=helm', async () => {
@@ -299,8 +294,7 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.units).toBe('helm');
-    expect(info.gridCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
+    expect(info.gridCellType, 'baseline HELM column must bind a Bio sequence renderer').toBe('sequence');
   });
   await softStep('setTag units=custom + detectSemanticTypes — re-dispatches to customSequenceCellRenderer', async () => {
     const colName: string | null = await page.evaluate(async () => {
@@ -329,11 +323,10 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
           postCellType: (grok.shell.tv as any).grid?.col?.(name)?.cellType ?? null,
         };
       }, colName);
-    expect(result.postUnits).toBe('custom');
-    expect(result.postCellType).not.toBeNull();
-    expect(BIO_SEQUENCE_CELL_TYPES,
-      `cellType ${result.postCellType} must be in bio sequence family after units=custom rebind`)
-      .toContain(result.postCellType!);
+    // units tag is the renderer dispatch key; the helm->custom transition is the observable re-dispatch.
+    // The pixel-level BILN-vs-fallback paint difference (.md) is not observable via the JS grid API.
+    expect(result.postUnits, 'setTag units=custom must re-key dispatch to the custom notation renderer').toBe('custom');
+    expect(result.postCellType, 'custom column must still bind a Bio sequence renderer').toBe('sequence');
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });

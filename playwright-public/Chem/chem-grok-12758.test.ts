@@ -12,7 +12,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
   test.setTimeout(180_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
 
   await softStep('Open spgi-100.csv + wait for Chem menu', async () => {
     await page.evaluate(async () => {
@@ -51,9 +50,12 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
       if (!chemMenu) throw new Error('Top-menu Chem entry not found');
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 700));
-      const stItem = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(el => el.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
+      let stItem: HTMLElement | undefined;
+      for (let i = 0; i < 40 && !stItem; i++) {
+        stItem = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(el => el.textContent!.trim() === 'Scaffold Tree') as HTMLElement | undefined;
+        if (!stItem) await new Promise(r => setTimeout(r, 150));
+      }
       if (!stItem) throw new Error('Top-menu "Scaffold Tree" sub-menu item not found');
       (stItem.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
@@ -77,12 +79,11 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       }
     });
     expect((ok as any).ok, `Tree generation failed: ${JSON.stringify(ok)}`).toBe(true);
-    await page.waitForTimeout(3000);
   });
 
   await softStep('Wait for scaffold tree to populate with ≥4 visible nodes (poll up to 90s)', async () => {
     const finalState = await page.evaluate(async () => {
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 90; i++) {
         const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
         if (viewer) {
           const allNodes = Array.from(viewer.querySelectorAll('.d4-tree-view-node'));
@@ -90,13 +91,13 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
           const toolbar = viewer.querySelector('.chem-scaffold-tree-toolbar');
           const emptyState = (toolbar?.className ?? '').includes('empty-tree');
           if (!emptyState && visibleNodes.length >= 4) {
-            return {ok: true, visibleNodes: visibleNodes.length, totalNodes: allNodes.length, toolbarCls: toolbar?.className, atMs: (i+1) * 5000};
+            return {ok: true, visibleNodes: visibleNodes.length, totalNodes: allNodes.length, toolbarCls: toolbar?.className, atMs: (i+1) * 1000};
           }
-          if (i === 17) {
+          if (i === 89) {
             return {ok: false, visibleNodes: visibleNodes.length, totalNodes: allNodes.length, toolbarCls: toolbar?.className, emptyState};
           }
         }
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 1000));
       }
       return {ok: false, reason: 'viewer disappeared'};
     });
@@ -157,31 +158,58 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
     }), {timeout: 12_000, intervals: [250, 500, 1000]}).toBe(true);
   });
 
-  await softStep('Assert clean filter state — no searchSubstructure errors, BitSet honored, selection untouched', async () => {
+  await softStep('Assert clean filter state — filter BitSet matches the 4th scaffold, no searchSubstructure errors, selection untouched', async () => {
     const state = await page.evaluate(() => {
       const df = (window as any).__df;
+      const tv = (window as any).grok.shell.tv;
+      const viewer: any = Array.from(tv.viewers).find((v: any) => /Scaffold Tree/i.test(v.type || ''));
+      const all: any[] = [];
+      const collect = (g: any) => { for (const it of (g?.items ?? [])) { all.push(it); collect(it); } };
+      collect(viewer?.tree ?? viewer?.treeRoot);
+      const checked = all.find((n) => n.checked);
+      const nodeSmiles = checked?.value?.smiles ?? '';
+      const nodeBitset = checked?.value?.bitset ?? null;
+      const nodeBitsetTrue = nodeBitset ? nodeBitset.trueCount : -1;
+      const filterXorNode = nodeBitset ? df.filter.clone().xor(nodeBitset, false).trueCount : -1;
       const errs = ((window as any).__grok12758_errors as string[] | undefined) ?? [];
-      const searchErrors = errs.filter(e => /Search pattern cannot be set|searchSubstructure/i.test(e));
+      const searchErrors = errs.filter((e) => /Search pattern cannot be set|searchSubstructure/i.test(e));
       return {
         rowCount: df.rowCount,
         filterTrue: df.filter.trueCount,
         selectionTrue: df.selection.trueCount,
+        checkedFound: !!checked,
+        nodeSmiles,
+        nodeBitsetTrue,
+        filterXorNode,
         searchErrors: searchErrors.slice(0, 5),
         totalErrors: errs.length,
       };
     });
-    // (A1) No searchSubstructure-class errors
+    // (Primary) The checkbox toggled a real scaffold node carrying a substructure pattern.
+    expect(state.checkedFound, 'No scaffold-tree node ended up checked after the filter-checkbox click').toBe(true);
+    expect(state.nodeSmiles.length, 'Checked scaffold node has no SMILES pattern').toBeGreaterThan(0);
+    // (Primary — the real GROK-12758 invariant) The applied df.filter is bit-for-bit the 4th
+    // scaffold's own substructure match: neither corrupted/garbage nor a stale cached pattern.
+    expect(
+      state.nodeBitsetTrue,
+      `GROK-12758 regression: 4th scaffold substructure bitset empty/uncomputed (${state.nodeBitsetTrue}); filter did not apply cleanly.`,
+    ).toBeGreaterThan(0);
+    expect(
+      state.filterTrue,
+      `GROK-12758 regression: filter.trueCount=${state.filterTrue} vs scaffold bitset ${state.nodeBitsetTrue} of ${state.rowCount}.`,
+    ).toBe(state.nodeBitsetTrue);
+    expect(
+      state.filterXorNode,
+      `GROK-12758 regression: df.filter set differs from the 4th scaffold substructure match (xor.trueCount=${state.filterXorNode}) — filter applied the wrong rows.`,
+    ).toBe(0);
+    // (A1, supporting) No searchSubstructure-class console errors ("Search pattern cannot be set").
     expect(
       state.searchErrors.length,
       `GROK-12758 regression: searchSubstructure-class errors fired after Edit-Scaffold + checkbox sequence. errors=${JSON.stringify(state.searchErrors)}`,
     ).toBe(0);
-    // (A2) Filter applied cleanly: some rows masked, but not all-zero
-    expect(
-      state.filterTrue,
-      `GROK-12758 regression: filter.trueCount=${state.filterTrue} of ${state.rowCount} — expected strictly between 0 and rowCount.`,
-    ).toBeGreaterThan(0);
-    expect(state.filterTrue).toBeLessThan(state.rowCount);
-    // (A3) Selection untouched (the bug surface includes "crossed-out" molecule rendering — selection BitSet pollution)
+    // (A3, supporting) Selection untouched — the "crossed-out" symptom would pollute the selection BitSet.
+    // Rendering strike-out state is not queryable via a renderer flag; filter-BitSet correctness above
+    // plus this selection check together stand in for the visual "clean filter, not crossed out" invariant.
     expect(
       state.selectionTrue,
       `GROK-12758 regression: selection.trueCount=${state.selectionTrue} after checkbox click — should be 0 (selection BitSet must NOT be modified by filter action).`,

@@ -3,7 +3,7 @@ sub_features_covered: [chem.actions.copy-smiles, chem.search.substructure, chem.
 --- */
 // GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -11,7 +11,7 @@ test.use(specTestOptions);
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
 
@@ -22,7 +22,6 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       try { grok.shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
     });
-    await page.waitForTimeout(500);
   });
 
   await softStep('Read spgi-100.csv + addTableView + hook console.error', async () => {
@@ -40,8 +39,8 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     }, datasetPath);
   });
 
-  await softStep('Wait 20s for Chem autostart cascade (semType + chem-filter widget registration)', async () => {
-    await page.waitForTimeout(20000);
+  await softStep('Wait for Molecule semType (Chem autostart cascade)', async () => {
+    await waitForMolecule(page);
   });
 
   await softStep('Verify Molecule semType detected + Grid renders', async () => {
@@ -52,15 +51,12 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       return {hasMol, cols};
     });
     if (!result.hasMol)
-      throw new Error(`Setup failed: no Molecule column on spgi-100.csv after 30s settle. cols=${JSON.stringify(result.cols)}`);
+      throw new Error(`Setup failed: no Molecule column on spgi-100.csv. cols=${JSON.stringify(result.cols)}`);
     await page.locator('[name="viewer-Grid"]').waitFor({timeout: 10000});
   });
 
   await softStep('Open Filter Panel and wait for Structure filter sketch-link', async () => {
-    await page.evaluate(async () => {
-      grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 5000));
-    });
+    await page.evaluate(() => grok.shell.tv.getFiltersGroup());
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
     const probeResult = await page.evaluate(async () => {
       for (let i = 0; i < 90; i++) {
@@ -118,6 +114,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     expect(sketcherOpened, 'Sketcher dialog did not open via Structure filter sketch-link').toBe(true);
 
     // Fill SMILES input via DOM event sequence — native fill() may not reach Dart-side state.
+    // Then poll for the OK button becoming clickable (replaces a fixed parse-wait) and click it.
     await page.evaluate(async () => {
       const smilesInput = Array.from(document.querySelectorAll('.d4-dialog input'))
         .find((i: any) => /smiles/i.test(i.placeholder || '')) as HTMLInputElement | undefined;
@@ -127,11 +124,18 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       smilesInput.dispatchEvent(new Event('input', {bubbles: true}));
       smilesInput.dispatchEvent(new Event('change', {bubbles: true}));
       smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
-      await new Promise(r => setTimeout(r, 2500));
-      const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement | null;
-      if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 4000));
+      for (let i = 0; i < 40; i++) {
+        const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement | null;
+        if (okBtn && !okBtn.classList.contains('disabled')) { okBtn.click(); return; }
+        await new Promise(r => setTimeout(r, 250));
+      }
+      throw new Error('OK button never became clickable in sketcher dialog');
     });
+    const total = await page.evaluate(() => grok.shell.t.rowCount);
+    await expect.poll(
+      () => page.evaluate(() => grok.shell.t.filter.trueCount),
+      {timeout: 30000, message: 'benzene substructure filter never reduced the visible row count'},
+    ).toBeLessThan(total);
     const filterApplied = await page.evaluate(() => ({
       filtered: grok.shell.t.filter.trueCount,
       total: grok.shell.t.rowCount,
@@ -140,17 +144,25 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     }));
     expect(filterApplied.filtered).toBeLessThan(filterApplied.total);
     expect(filterApplied.filtered).toBeGreaterThan(0);
-    expect(filterApplied.summary, 'Filter summary should contain SMARTS/SMILES pattern after apply').toMatch(/\[#\d+\]|c1|C1|[A-Z]/);
+    // Summary must show an actual substructure token (aromatic-ring SMILES or SMARTS atom),
+    // not merely any uppercase letter — [A-Z] catch-all removed.
+    expect(filterApplied.summary, 'Filter summary should contain the benzene substructure pattern after apply').toMatch(/\[#\d+\]|c1[a-z0-9]/i);
     expect(filterApplied.clearBtnPresent, 'Clear button should appear after substructure filter applied').toBe(true);
   });
 
   await softStep('Click Clear button (Reset substructure filter)', async () => {
-    await page.evaluate(async () => {
+    // UI-level reset via the inline clear-sketcher button — a real DOM click, not a JS-API
+    // BitSet substitution (df.filter.setAll(true)), which the .md forbids for the trigger.
+    await page.evaluate(() => {
       const clearBtn = document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button') as HTMLElement | null;
       if (!clearBtn) throw new Error('Clear button not found — filter may not have been applied successfully');
       clearBtn.click();
-      await new Promise(r => setTimeout(r, 2000));
     });
+    // Gate the 3-layer read on L1 (BitSet) actually clearing, instead of a fixed sleep.
+    await expect.poll(
+      () => page.evaluate(() => grok.shell.t.filter.trueCount === grok.shell.t.rowCount),
+      {timeout: 15000, message: 'BitSet did not return to all-true after Reset'},
+    ).toBe(true);
   });
 
   await softStep('Assert 3-layer cleanup invariant (L1 BitSet + L2 Sketcher UI + L3 No leaked tags)', async () => {
@@ -158,13 +170,16 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       const df = grok.shell.t;
       // L1: BitSet all-true (no filter applied)
       const L1_bitsetCleared = df.filter.trueCount === df.rowCount;
-      // L2: sketcher UI cleared — per chem.md regression-lock invariant:
-      //   .chem-clear-sketcher-button absent from DOM AND
-      //   .d4-filter-summary contains no SMARTS/SMILES pattern
+      // L2: sketcher UI cleared — this is the exact GROK-14028 symptom (stale input line).
+      //   Primary signal: the atlas-documented chem-substructure-filter column tag is empty/null.
+      //   Corroboration: .chem-clear-sketcher-button gone AND .d4-filter-summary has no pattern.
+      const molCol = df.columns.toList().find((c: any) => c.semType === 'Molecule');
+      const substructTag = molCol ? molCol.getTag('chem-substructure-filter') : null;
+      const L2_tagCleared = substructTag == null || String(substructTag).length === 0;
       const clearBtnGone = !document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button');
       const summary = document.querySelector('[name="viewer-Filters"] .d4-filter .d4-filter-summary')?.textContent?.trim() ?? '';
       const summaryEmptyOfSmiles = !/\[#\d+\]|c1[a-zA-Z0-9]/.test(summary);
-      const L2_sketcherCleared = clearBtnGone && summaryEmptyOfSmiles;
+      const L2_sketcherCleared = L2_tagCleared && clearBtnGone && summaryEmptyOfSmiles;
       // L3: no leaked virtual / tag columns
       const cols = df.columns.names();
       const leakedTags = cols.filter((n: string) => /^~.*(substructure|highlight)/i.test(n));
@@ -174,6 +189,8 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
         L1_bitsetCleared,
         L2_sketcherCleared,
         L3_noLeakedTags,
+        L2_tagCleared,
+        substructTag,
         clearBtnGone,
         summary,
         summaryEmptyOfSmiles,
@@ -188,7 +205,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       allLayersCleared,
       `GROK-14028 regression: 3-layer cleanup incomplete. ` +
       `L1(BitSet=${result.filteredCount}/${result.rowCount})=${result.L1_bitsetCleared} ` +
-      `L2(clearBtnGone=${result.clearBtnGone} summary='${result.summary}' summaryEmptyOfSmiles=${result.summaryEmptyOfSmiles})=${result.L2_sketcherCleared} ` +
+      `L2(tag='${result.substructTag}' tagCleared=${result.L2_tagCleared} clearBtnGone=${result.clearBtnGone} summary='${result.summary}' summaryEmptyOfSmiles=${result.summaryEmptyOfSmiles})=${result.L2_sketcherCleared} ` +
       `L3(leaked=${JSON.stringify(result.leakedTags)})=${result.L3_noLeakedTags}`,
     ).toBe(true);
     expect(

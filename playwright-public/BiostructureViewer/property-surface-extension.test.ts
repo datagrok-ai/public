@@ -3,9 +3,10 @@ sub_features_covered: [biostructure.api.viewBiostructure, biostructure.prop.bind
 --- */
 // BiostructureViewer property surface: dataJson / pdb / pdbTag / Behaviour / Binding Site / Layout /
 // Controls. Properties are introspected via v.props.getProperties()/get()/setOptions() regardless of
-// WebGL state; canvas geometry and the "Parsed object is empty" console signature are not strict-
-// asserted (CI WebGL is unreliable). Scenario 2 asserts the viewBiostructure(content, format, name)
-// recovery via its registered signature. The gear icon lives in the .panel-base titlebar.
+// WebGL state; canvas geometry is not strict-asserted (CI WebGL is unreliable). Scenario 2 asserts the
+// viewBiostructure(content, format, name) recovery via its registered signature. The Mol* overlay
+// Toggle Controls Panel path (Scenario 6) needs .msp-plugin (WebGL) and is test.skip'd when absent.
+// The gear icon lives in the .panel-base titlebar.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -17,16 +18,8 @@ declare const DG: any;
 const samplePdbPath = 'System:AppData/BiostructureViewer/samples/1bdq.pdb';
 
 test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behaviour/binding-site/layout/controls)', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(150_000);
   stepErrors.length = 0;
-
-  // Console capture for Scenario 2's pitfall-signature observation.
-  const pageErrors: string[] = [];
-  const consoleErrors: string[] = [];
-  page.on('pageerror', (err) => { pageErrors.push(err.message); });
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
-  });
 
   await loginToDatagrok(page);
 
@@ -50,8 +43,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
 
     await softStep('Scenario 1 — Open Molecule3D + Molecule DF; add Biostructure viewer; container mounts', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
         const df = DG.DataFrame.fromColumns([
           DG.Column.fromStrings('id', ['row-1', 'row-2', 'row-3']),
@@ -62,9 +56,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         try { df.col('ligand').semType = 'Molecule'; } catch (_e) { /* best-effort */ }
         df.name = 'property-surface-fixture';
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 3000));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
         return {
           rowCount: df.rowCount,
           hasContainer: !!document.querySelector('[name="viewer-Biostructure"]'),
@@ -85,6 +78,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     await softStep('Scenario 1 — biostructureDataToJson({name}) + setOptions({dataJson}) round-trips verbatim', async () => {
       if (!scenario1Mounted) return;
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'Biostructure') as any : null;
         if (!v) return {ok: false};
@@ -101,7 +95,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
 
         // dataJson is userEditable=false but setOptions accepts it programmatically.
         v.setOptions({dataJson: dataJsonStr});
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => v.props.get('dataJson') === dataJsonStr);
         const dataJsonAfter = v.props.get('dataJson');
 
         const props = v.props.getProperties();
@@ -131,17 +125,14 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     });
 
     // SCENARIO 2 — Raw pdb without a name (the pitfall) + viewBiostructure(content, format, name) recovery.
-    await softStep('Scenario 2 step 4 — Raw pdb without name: setOptions({pdb}) stores content; pitfall signature optimistically captured', async () => {
+    await softStep('Scenario 2 step 4 — Raw pdb without name: setOptions({pdb}) stores the content in the pdb property', async () => {
       if (!scenario1Mounted) return;
 
-      // Reset capture buffers to isolate this step from setup-time noise.
-      pageErrors.length = 0;
-      consoleErrors.length = 0;
-
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 6000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         // Fresh viewer so stale dataJson from Scenario 1 doesn't satisfy the pitfall preconditions.
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
         const df = DG.DataFrame.fromColumns([
           DG.Column.fromStrings('id', ['s2-row-1', 's2-row-2']),
@@ -149,17 +140,15 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         ]);
         try { df.col('structure').semType = 'Molecule3D'; } catch (_e) { /* best-effort */ }
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2000));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         // Raw pdb without a name (the pitfall path); the content is stored in the pdb property.
         let setErr: string | null = null;
         try { v.setOptions({pdb: pdbContent}); }
         catch (e: any) { setErr = String(e?.message ?? e); }
 
-        // Bounded wait for the (expected-to-fail) parse.
-        await new Promise((r) => setTimeout(r, 5000));
+        await settle(() => { const p = v.props.get('pdb'); return !!p && p.length > 1000; });
 
         const pdbAfter = v.props.get('pdb');
         return {
@@ -176,13 +165,6 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
       expect(res.pdbStored).toBe(true);
       expect(res.pdbLenAfter).toBeGreaterThan(1000);
       expect(res.containerPresent).toBe(true);
-
-      // Non-strict capture: the pitfall console signature only surfaces under healthy WebGL.
-      const pitfallRegex = /Parsed object is empty|name\s+'undefined'/i;
-      const pitfallHitsConsole = consoleErrors.filter((m) => pitfallRegex.test(m));
-      const pitfallHitsPage = pageErrors.filter((m) => pitfallRegex.test(m));
-      // eslint-disable-next-line no-console
-      console.log(`[Scenario 2 pitfall observation] consoleHits=${pitfallHitsConsole.length}, pageHits=${pitfallHitsPage.length}`);
     });
 
     await softStep('Scenario 2 step 7 — Recovery: viewBiostructure(content, format, name) is the canonical safe entry point', async () => {
@@ -208,7 +190,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
           ).catch(() => { /* downstream engine errors out of scope */ });
         } catch (e: any) { recoveryInvokeErr = String(e?.message ?? e); }
 
-        await new Promise((r) => setTimeout(r, 1500));
+        // Only the dispatcher accepting the call shape matters; yield once to let it enqueue.
+        await new Promise((r) => setTimeout(r, 100));
 
         return {
           registered: !!fn,
@@ -231,8 +214,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     // SCENARIO 3 — pdbTag round-trip via setOptions on a `.pdb-tag-payload` column tag.
     await softStep('Scenario 3 — pdbTag round-trip via setOptions on a DataFrame with a `.pdb-tag-payload` column tag', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
 
         const df = DG.DataFrame.fromColumns([
@@ -243,9 +227,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         df.col('payload').setTag('.pdb-tag-payload', pdbContent);
 
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2500));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         // Property catalogue: pdbTag is in Data category.
         const props = v.props.getProperties();
@@ -254,7 +237,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         let setErr: string | null = null;
         try { v.setOptions({pdbTag: '.pdb-tag-payload'}); }
         catch (e: any) { setErr = String(e?.message ?? e); }
-        await new Promise((r) => setTimeout(r, 2000));
+        await settle(() => v.props.get('pdbTag') === '.pdb-tag-payload');
         const pdbTagAfter = v.props.get('pdbTag');
 
         // The column tag (source-of-truth the property points to) still holds the PDB content.
@@ -285,8 +268,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     // SCENARIO 4 — Behaviour: showMouseOverRowLigand + showSelectedRowsLigands round-trip + selection driver.
     await softStep('Scenario 4 — Behaviour: showMouseOverRowLigand + showSelectedRowsLigands round-trip + selection driver', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
 
         const df = DG.DataFrame.fromColumns([
@@ -298,52 +282,51 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         try { df.col('ligand').semType = 'Molecule'; } catch (_e) { /* best-effort */ }
 
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2500));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         v.setOptions({ligandColumnName: 'ligand'});
-        await new Promise((r) => setTimeout(r, 800));
+        await settle(() => v.props.get('ligandColumnName') === 'ligand');
         const ligandColAfter = v.props.get('ligandColumnName');
 
         // showCurrentRowLigand OFF for unambiguous row-driven assertions.
         v.setOptions({showCurrentRowLigand: false});
-        await new Promise((r) => setTimeout(r, 600));
+        await settle(() => v.props.get('showCurrentRowLigand') === false);
         const currentRowOff = v.props.get('showCurrentRowLigand');
 
         // showMouseOverRowLigand round-trip (default true).
         const initMouseOver = v.props.get('showMouseOverRowLigand');
         v.setOptions({showMouseOverRowLigand: false});
-        await new Promise((r) => setTimeout(r, 700));
+        await settle(() => v.props.get('showMouseOverRowLigand') === false);
         const mouseOverOff = v.props.get('showMouseOverRowLigand');
         v.setOptions({showMouseOverRowLigand: true});
-        await new Promise((r) => setTimeout(r, 700));
+        await settle(() => v.props.get('showMouseOverRowLigand') === true);
         const mouseOverOn = v.props.get('showMouseOverRowLigand');
 
         // Current-row driver (substitutes for the mouse-over event).
         df.currentRowIdx = 1;
-        await new Promise((r) => setTimeout(r, 400));
+        await settle(() => df.currentRowIdx === 1);
         const currentRowIdx = df.currentRowIdx;
 
         v.setOptions({showMouseOverRowLigand: false});
-        await new Promise((r) => setTimeout(r, 600));
+        await settle(() => v.props.get('showMouseOverRowLigand') === false);
 
         // showSelectedRowsLigands round-trip (default false).
         const initSelected = v.props.get('showSelectedRowsLigands');
         v.setOptions({showSelectedRowsLigands: true});
-        await new Promise((r) => setTimeout(r, 700));
+        await settle(() => v.props.get('showSelectedRowsLigands') === true);
         const selectedOn = v.props.get('showSelectedRowsLigands');
 
         // Select two rows via the selection driver (same BitSet the overlay reads).
         df.selection.init((i: number) => i === 0 || i === 2);
-        await new Promise((r) => setTimeout(r, 600));
+        await settle(() => df.selection.trueCount === 2);
         const selectedCount = df.selection.trueCount;
 
         df.selection.init(() => false);
-        await new Promise((r) => setTimeout(r, 400));
+        await settle(() => df.selection.trueCount === 0);
         const clearedCount = df.selection.trueCount;
         v.setOptions({showSelectedRowsLigands: false});
-        await new Promise((r) => setTimeout(r, 500));
+        await settle(() => v.props.get('showSelectedRowsLigands') === false);
         const selectedOff = v.props.get('showSelectedRowsLigands');
 
         return {
@@ -383,8 +366,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     // SCENARIO 5 — bindingSiteWholeResidues round-trip (default true) with showBindingSite ON.
     await softStep('Scenario 5 — bindingSiteWholeResidues round-trip with showBindingSite ON', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
 
         const df = DG.DataFrame.fromColumns([
@@ -396,28 +380,27 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         try { df.col('ligand').semType = 'Molecule'; } catch (_e) { /* best-effort */ }
 
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2500));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         // Ligand wired + showCurrentRowLigand ON + showBindingSite ON at the default radius (5 Å).
         v.setOptions({ligandColumnName: 'ligand'});
-        await new Promise((r) => setTimeout(r, 500));
+        await settle(() => v.props.get('ligandColumnName') === 'ligand');
         v.setOptions({showCurrentRowLigand: true});
-        await new Promise((r) => setTimeout(r, 500));
+        await settle(() => v.props.get('showCurrentRowLigand') === true);
         v.setOptions({showBindingSite: true});
-        await new Promise((r) => setTimeout(r, 1200));
+        await settle(() => v.props.get('showBindingSite') === true);
         const showBindingSiteAfter = v.props.get('showBindingSite');
         const bindingSiteRadius = v.props.get('bindingSiteRadius');
 
         const initBindingWhole = v.props.get('bindingSiteWholeResidues');
 
         v.setOptions({bindingSiteWholeResidues: false});
-        await new Promise((r) => setTimeout(r, 1200));
+        await settle(() => v.props.get('bindingSiteWholeResidues') === false);
         const bindingWholeOff = v.props.get('bindingSiteWholeResidues');
 
         v.setOptions({bindingSiteWholeResidues: true});
-        await new Promise((r) => setTimeout(r, 1200));
+        await settle(() => v.props.get('bindingSiteWholeResidues') === true);
         const bindingWholeOn = v.props.get('bindingSiteWholeResidues');
 
         // Property catalogue surfaces the binding-site triad in
@@ -458,8 +441,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
 
     await softStep('Scenario 6 step 1-3 — Mount viewer; confirm default layoutShowControls = false; gear-click opens property panel (DOM)', async () => {
       const setupRes = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
 
         const df = DG.DataFrame.fromColumns([
@@ -469,9 +453,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         try { df.col('structure').semType = 'Molecule3D'; } catch (_e) { /* best-effort */ }
 
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2500));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         return {
           containerPresent: !!document.querySelector('[name="viewer-Biostructure"]'),
@@ -495,7 +478,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
           '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
         if (!gear) return {found: false, opened: false};
         gear.click();
-        await new Promise((r) => setTimeout(r, 1500));
+        const end = Date.now() + 10000;
+        while (Date.now() < end) { if (document.querySelector('.grok-prop-panel')) break; await new Promise((r) => setTimeout(r, 100)); }
         const cp = document.querySelector('.grok-prop-panel');
         return {found: true, opened: !!cp};
       });
@@ -514,7 +498,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         if (!v) return {ok: false};
 
         v.setOptions({layoutShowControls: true});
-        await new Promise((r) => setTimeout(r, 1800));
+        const end = Date.now() + 4000;
+        while (Date.now() < end) { if (v.props.get('layoutShowControls') === true) break; await new Promise((r) => setTimeout(r, 50)); }
         const afterTrue = v.props.get('layoutShowControls');
 
         const props = v.props.getProperties();
@@ -532,7 +517,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
       expect(res.layoutCategory).toBe('Layout');
     });
 
-    await softStep('Scenario 6 step 6-7 — Mol* overlay button path: click button[title="Toggle Controls Panel"] (DOM, conditional .msp-plugin)', async () => {
+    await softStep('Scenario 6 step 6-7 — Mol* overlay Toggle Controls Panel button flips layoutShowControls (needs .msp-plugin)', async () => {
       if (!scenario6Mounted) return;
 
       const beforeOverlay = await page.evaluate(() => {
@@ -545,29 +530,20 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         };
       });
 
-      // When .msp-plugin isn't mounted, the overlay button is absent; the gear-click above covers DOM driving.
-      if (!beforeOverlay.mspPluginMounted) {
-        // eslint-disable-next-line no-console
-        console.log('[Scenario 6 step 6 observation] .msp-plugin not mounted in recon env; overlay button click precondition not met (covered by gear-click DOM driving in step 1-3).');
-        return;
-      }
+      // The overlay button exists only once the Mol* WebGL viewport mounts. Absent that, declare a
+      // visible skip (gear-click DOM driving in step 1-3 already covers the property path) — not silent green.
+      if (!beforeOverlay.mspPluginMounted)
+        throw new Error('Test is skipped: Mol* .msp-plugin (WebGL) not mounted — overlay Toggle Controls Panel button unavailable.');
 
-      if (beforeOverlay.overlayBtnPresent) {
-        await page.locator('button[title="Toggle Controls Panel"]').first().click({timeout: 10_000});
-        await page.waitForTimeout(1500);
-      }
+      expect(beforeOverlay.overlayBtnPresent, 'overlay Toggle Controls Panel button present when Mol* mounted').toBe(true);
+      await page.locator('button[title="Toggle Controls Panel"]').first().click({timeout: 10_000});
 
-      const afterOverlay = await page.evaluate(() => {
+      // Clicking the overlay button must flip the mirrored layoutShowControls property.
+      await expect.poll(async () => page.evaluate(() => {
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'Biostructure') as any : null;
-        return {
-          layoutAfter: v?.props?.get?.('layoutShowControls') ?? null,
-        };
-      });
-
-      // The post-click property mirror is left soft (the overlay click doesn't reliably sync back).
-      // eslint-disable-next-line no-console
-      console.log(`[Scenario 6 overlay observation] before=${beforeOverlay.layoutBefore}, after=${afterOverlay.layoutAfter}, overlayBtnPresent=${beforeOverlay.overlayBtnPresent}`);
+        return v?.props?.get?.('layoutShowControls') ?? null;
+      }), {timeout: 10_000, intervals: [200, 500, 1000]}).not.toBe(beforeOverlay.layoutBefore);
 
       // Restore the false default for downstream scenarios.
       await page.evaluate(async () => {
@@ -575,7 +551,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'Biostructure') as any : null;
         if (v) {
           v.setOptions({layoutShowControls: false});
-          await new Promise((r) => setTimeout(r, 800));
+          const end = Date.now() + 3000;
+          while (Date.now() < end) { if (v.props.get('layoutShowControls') === false) break; await new Promise((r) => setTimeout(r, 50)); }
         }
       });
     });
@@ -583,8 +560,9 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     // SCENARIO 7 — Controls category: showWelcomeToast + showImportControls round-trip.
     await softStep('Scenario 7 — Controls category surfaces showWelcomeToast + showImportControls; round-trip via setOptions', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const settle = async (pred: () => boolean, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 50)); } };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await settle(() => !document.querySelector('[name="viewer-Biostructure"]'));
         const pdbContent = await grok.dapi.files.readAsText(pdbPath);
 
         const df = DG.DataFrame.fromColumns([
@@ -594,9 +572,8 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         try { df.col('structure').semType = 'Molecule3D'; } catch (_e) { /* best-effort */ }
 
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 1500));
         const v = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 2500));
+        await settle(() => !!document.querySelector('[name="viewer-Biostructure"]'));
 
         // Controls category must surface both showWelcomeToast and showImportControls.
         const props = v.props.getProperties();
@@ -610,18 +587,18 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         const initImport = v.props.get('showImportControls');
 
         v.setOptions({showImportControls: true});
-        await new Promise((r) => setTimeout(r, 800));
+        await settle(() => v.props.get('showImportControls') === true);
         const importOn = v.props.get('showImportControls');
         v.setOptions({showImportControls: false});
-        await new Promise((r) => setTimeout(r, 800));
+        await settle(() => v.props.get('showImportControls') === false);
         const importOff = v.props.get('showImportControls');
 
         // showWelcomeToast round-trip.
         v.setOptions({showWelcomeToast: true});
-        await new Promise((r) => setTimeout(r, 800));
+        await settle(() => v.props.get('showWelcomeToast') === true);
         const welcomeOn = v.props.get('showWelcomeToast');
         v.setOptions({showWelcomeToast: false});
-        await new Promise((r) => setTimeout(r, 800));
+        await settle(() => v.props.get('showWelcomeToast') === false);
         const welcomeOff = v.props.get('showWelcomeToast');
 
         return {

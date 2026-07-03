@@ -13,7 +13,7 @@ const datasets = [
 ];
 for (const ds of datasets) {
   test(`Bio Analyze umbrella on ${ds.name}`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(180_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async (path) => {
@@ -23,18 +23,19 @@ for (const ds of datasets) {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
+      const detected = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Macromolecule');
       await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(() => resolve(), 4000);
+        const sub = df.onSemanticTypeDetected.subscribe(() => { if (detected()) { sub.unsubscribe(); resolve(); } });
+        const deadline = Date.now() + 30_000;
+        const poll = () => { if (detected() || Date.now() > deadline) { sub.unsubscribe(); resolve(); } else setTimeout(poll, 200); };
+        poll();
       });
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-      if (hasMacromolecule) {
+      if (detected()) {
         for (let i = 0; i < 60; i++) {
           if (document.querySelector('[name="viewer-Grid"] canvas')) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 5000));
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
@@ -44,7 +45,7 @@ for (const ds of datasets) {
       for (const fn of probes) {
         try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
       }
-      await new Promise((r) => setTimeout(r, 3000));
+      throw new Error('Bio package did not warm up: no probe function callable');
     });
     await page.evaluate(async () => {
       const candidates = [
@@ -65,23 +66,26 @@ for (const ds of datasets) {
         if (candidates.every(findAny)) return;
         await new Promise((r) => setTimeout(r, 300));
       }
-      await new Promise((r) => setTimeout(r, 1500));
+      throw new Error('Bio analyze functions did not register within 15s');
     });
-    await page.waitForTimeout(2000);
+    await page.waitForFunction(() => !!(grok as any).functions.find?.('Bio:sequenceSpace'),
+      null, {timeout: 15_000});
     await softStep(`${ds.name}: Bio > Analyze > Sequence Space — run with defaults`, async () => {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Sequence-Space...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Sequence Space');
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
+      const baseScatter: number = await page.evaluate(() =>
+        Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
       await page.waitForFunction(
-        (base) => grok.shell.tv.dataFrame.columns.length > base &&
-          Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
-      const hasScatter = await page.evaluate(() =>
-        Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'));
-      expect(hasScatter).toBe(true);
+        ({base, baseSc}) => grok.shell.tv.dataFrame.columns.length > base &&
+          Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length > baseSc,
+        {base: baseCols, baseSc: baseScatter}, {timeout: 60_000});
+      const hasEmbedCols = await page.evaluate(() => grok.shell.tv.dataFrame.columns.names()
+        .map((s: string) => s.toLowerCase()).some((n: string) => n.includes('embed') || n.startsWith('sequence space')));
+      expect(hasEmbedCols).toBe(true);
     });
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
@@ -93,11 +97,13 @@ for (const ds of datasets) {
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
       expect(title?.trim()).toBe('Activity Cliffs');
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
+      const baseScatter: number = await page.evaluate(() =>
+        Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
       await page.waitForFunction(
-        (base) => grok.shell.tv.dataFrame.columns.length > base &&
-          Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
+        ({base, baseSc}) => grok.shell.tv.dataFrame.columns.length > base &&
+          Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length > baseSc,
+        {base: baseCols, baseSc: baseScatter}, {timeout: 60_000});
       const hasScatter = await page.evaluate(() =>
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'));
       expect(hasScatter).toBe(true);
@@ -122,12 +128,14 @@ for (const ds of datasets) {
         // WebLogo title bar surfaces no Gear under body.selenium; grok.shell.o opens the same Context Panel.
         // The property grid mounts asynchronously after the object is selected, so poll for it instead
         // of a single fixed-delay read (an 800ms snapshot races the panel build under load).
-        const result: {hasPropPanel: boolean, hasPropertyGrid: boolean} = await page.evaluate(async () => {
+        const result: {hasPropPanel: boolean, hasPropertyGrid: boolean, selectedIsWebLogo: boolean, panelText: string} =
+          await page.evaluate(async () => {
           // Force the Context Panel open — under simpleMode it can stay collapsed,
           // so selecting the object alone would not mount the property grid.
           try { (grok.shell as any).windows.showContextPanel = true; } catch (e) {}
           let propPanel: Element | null = null;
           let propertyGrid: Element | null = null;
+          let panelText = '';
           for (let i = 0; i < 40; i++) {
             // Re-select each round: the WebLogo viewer ref and the panel build can
             // race, and re-assigning grok.shell.o re-triggers the property surface.
@@ -136,12 +144,17 @@ for (const ds of datasets) {
             await new Promise((r) => setTimeout(r, 500));
             propPanel = document.querySelector('.grok-prop-panel');
             propertyGrid = document.querySelector('.grok-prop-panel .property-grid');
-            if (propPanel && propertyGrid) break;
+            panelText = propPanel?.textContent ?? '';
+            if (propPanel && propertyGrid && /Data|Layout|Behavior|Style/.test(panelText)) break;
           }
-          return {hasPropPanel: !!propPanel, hasPropertyGrid: !!propertyGrid};
+          return {hasPropPanel: !!propPanel, hasPropertyGrid: !!propertyGrid,
+            selectedIsWebLogo: (grok as any).shell.o?.type === 'WebLogo', panelText};
         });
         expect(result.hasPropPanel).toBe(true);
         expect(result.hasPropertyGrid).toBe(true);
+        // Bind-check: the mounted surface belongs to the WebLogo viewer and shows its property sections.
+        expect(result.selectedIsWebLogo).toBe(true);
+        expect(result.panelText).toMatch(/Data|Layout|Behavior|Style/);
       });
     }
     await page.evaluate(() => {

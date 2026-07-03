@@ -7,7 +7,7 @@ import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 test('Bio cell-context actions + Context Pane info panels + custom editors', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async (path) => {
@@ -17,18 +17,22 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     grok.shell.addTableView(df);
+    const hasMacro = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+      .some((c: any) => c.semType === 'Macromolecule');
     await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(() => resolve(), 4000);
+      const sub = df.onSemanticTypeDetected.subscribe(() => { if (hasMacro()) { sub.unsubscribe(); resolve(); } });
+      const deadline = Date.now() + 10_000;
+      const poll = () => {
+        if (hasMacro() || Date.now() > deadline) { sub.unsubscribe(); resolve(); }
+        else setTimeout(poll, 200);
+      };
+      poll();
     });
-    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-    const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-    if (hasMacromolecule) {
+    if (hasMacro()) {
       for (let i = 0; i < 60; i++) {
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, DATASET_PATH);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
@@ -63,7 +67,6 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     }
     await new Promise((r) => setTimeout(r, 1500));
   });
-  await page.waitForTimeout(2000);
   const setupProbe = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -80,9 +83,11 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
   expect(setupProbe.macroSemType).toBe('Macromolecule');
   expect(setupProbe.rowCount,
     'scenario .md Setup: ≥ 5 rows so cell-level operations have non-degenerate input').toBeGreaterThanOrEqual(5);
-  await softStep('Scenario 1 Step 1-2: addCopyMenu function registered + 4 notation paths reachable', async () => {
+  await softStep('Scenario 1 Step 1-2: Copy-as cell menu exposes all 4 notation entries + joiners produce output', async () => {
     const result: {
       addCopyMenuRegistered: boolean;
+      copyGroupFound: boolean;
+      menuNotationsFound: string[];
       fastaOk: boolean;
       separatorOk: boolean;
       helmOk: boolean;
@@ -138,24 +143,39 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
           }
         }
       } catch {  }
-      return {addCopyMenuRegistered, fastaOk, separatorOk, helmOk, bilnOk, fastaSample,
-        errFasta, errSeparator, errHelm, errBiln};
+      // Build the actual cell context menu and read back the "Copy as ..." entries.
+      let copyGroupFound = false;
+      const menuNotationsFound: string[] = [];
+      try {
+        const DG = (window as any).DG;
+        const menu = DG.Menu.popup();
+        const cell = df.cell(0, macroCol.name);
+        await g.functions.call('Bio:addCopyMenu', {cell, menu});
+        const copyGroup = menu.find('Copy');
+        copyGroupFound = !!copyGroup;
+        if (copyGroup)
+          for (const n of ['fasta', 'separator', 'helm', 'biln'])
+            if (copyGroup.find(n)) menuNotationsFound.push(n);
+      } catch {  }
+      return {addCopyMenuRegistered, copyGroupFound, menuNotationsFound, fastaOk, separatorOk, helmOk, bilnOk,
+        fastaSample, errFasta, errSeparator, errHelm, errBiln};
     });
-    if (!result.fastaOk && result.errFasta)
-      console.warn(`Scenario 1 FASTA joiner error: ${result.errFasta}`);
-    if (!result.separatorOk && result.errSeparator)
-      console.warn(`Scenario 1 SEPARATOR joiner error: ${result.errSeparator}`);
-    if (!result.helmOk && result.errHelm)
-      console.warn(`Scenario 1 HELM joiner error: ${result.errHelm}`);
-    if (!result.bilnOk && result.errBiln)
-      console.warn(`Scenario 1 BILN joiner error: ${result.errBiln}`);
-    expect(result.fastaOk,
-      'addCopyMenu FASTA equivalent path: getJoiner({notation:"fasta"})(getSplitted(0)) MUST produce a non-empty string').toBe(true);
-    expect(result.fastaSample).toBeTruthy();
     expect(result.addCopyMenuRegistered,
       'addCopyMenu (package.ts#L1527) must be registered in the function table').toBe(true);
-    expect(result.separatorOk || result.helmOk || result.bilnOk,
-      'at least one cross-notation conversion (SEPARATOR/HELM/BILN) must succeed').toBe(true);
+    expect(result.copyGroupFound,
+      'addCopyMenu MUST add a "Copy" group to the Macromolecule cell context menu').toBe(true);
+    for (const n of ['fasta', 'separator', 'helm', 'biln'])
+      expect(result.menuNotationsFound,
+        `Copy menu MUST contain the "${n}" notation entry (all 4 unconditionally present per bio.md:89)`).toContain(n);
+    expect(result.fastaOk,
+      `FASTA joiner: getJoiner({notation:"fasta"})(getSplitted(0)) MUST produce a non-empty string; err=${result.errFasta}`).toBe(true);
+    expect(result.fastaSample).toBeTruthy();
+    expect(result.separatorOk,
+      `SEPARATOR joiner MUST produce a non-empty string; err=${result.errSeparator}`).toBe(true);
+    expect(result.helmOk,
+      `HELM joiner MUST produce a non-empty string; err=${result.errHelm}`).toBe(true);
+    expect(result.bilnOk,
+      `BILN joiner MUST produce a non-empty string; err=${result.errBiln}`).toBe(true);
   });
   // Scenario 2 — Composition analysis + Monomer info panels on the cell-level Context Pane.
   await softStep('Scenario 2 Step 1: single-click a Macromolecule cell so it becomes the current cell', async () => {
@@ -170,11 +190,9 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       const cell = df.cell(0, macroCol.name);
       g.shell.o = DG.SemanticValue.fromTableCell(cell);
     });
-    // Context Pane reconcile is async — settle before reading the panels.
-    await page.waitForTimeout(4000);
   });
-  await softStep('Scenario 2 Step 2-3: locate the Composition analysis panel and verify non-empty content', async () => {
-    const result: {found: boolean; expandedHasContent: boolean; headerTexts: string[]} = await page.evaluate(async () => {
+  await softStep('Scenario 2 Step 2-3: Composition analysis panel renders a monomer-composition table with count bars', async () => {
+    const result: {found: boolean; barCount: number; rowCount: number; headerTexts: string[]} = await page.evaluate(async () => {
       const deadline = Date.now() + 60_000;
       let foundHeader: Element | null = null;
       const matchHeader = (h: Element) => {
@@ -193,52 +211,70 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
           '.grok-prop-panel .d4-accordion-pane-header'))
           .map((h) => (h.textContent || '').trim())
           .filter((t) => t.length > 0);
-        return {found: false, expandedHasContent: false, headerTexts};
+        return {found: false, barCount: 0, rowCount: 0, headerTexts};
       }
       (foundHeader as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 1500));
       let pane: Element | null = foundHeader.parentElement;
       while (pane && !pane.classList?.contains('d4-accordion-pane'))
         pane = pane.parentElement;
-      const content = pane?.querySelector(':scope > :not(.d4-accordion-pane-header)');
-      const text = (content?.textContent || '').trim();
-      const childCount = content ? content.children.length : 0;
-      const expandedHasContent = !!content && (text.length > 0 || childCount > 0);
-      const headerTexts: string[] = [];
-      return {found: true, expandedHasContent, headerTexts};
+      const contentDeadline = Date.now() + 15_000;
+      let barCount = 0; let rowCount = 0;
+      while (Date.now() < contentDeadline) {
+        barCount = pane ? pane.querySelectorAll('.macromolecule-cell-comp-analysis-bar').length : 0;
+        rowCount = pane ? pane.querySelectorAll('table tr').length : 0;
+        if (barCount > 0) break;
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      return {found: true, barCount, rowCount, headerTexts: []};
     });
     if (!result.found && result.headerTexts.length > 0)
       console.warn(`Composition analysis pane not found; observed headers: ${result.headerTexts.join(', ')}`);
     expect(result.found,
       'Composition analysis pane MUST appear on a Macromolecule-cell Context Pane (package.ts#L403)').toBe(true);
-    expect(result.expandedHasContent,
-      'Composition analysis pane MUST render non-empty content on expand').toBe(true);
+    expect(result.barCount,
+      'Composition analysis pane MUST render a monomer-composition table with per-monomer count bars').toBeGreaterThan(0);
   });
-  await softStep('Scenario 2 Step 4: locate the Monomer info panel (semType Monomer; see Selector recon-notes)', async () => {
-    // monomerInfoPanel is semType:'Monomer' — may not surface on a Macromolecule cell; assert non-empty only if present.
-    const result: {found: boolean; hasContent: boolean} = await page.evaluate(async () => {
-      const headers = Array.from(document.querySelectorAll(
-        '.grok-prop-panel .d4-accordion-pane-header, .d4-accordion-pane-header'));
-      const h = headers.find((el) => {
-        const t = (el.textContent || '').trim();
-        return t === 'Monomer' || t.toLowerCase().startsWith('monomer');
-      });
-      if (!h) return {found: false, hasContent: false};
-      (h as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 1500));
-      let pane: Element | null = h.parentElement;
-      while (pane && !pane.classList?.contains('d4-accordion-pane'))
-        pane = pane.parentElement;
-      const content = pane?.querySelector(':scope > :not(.d4-accordion-pane-header)');
-      const text = (content?.textContent || '').trim();
-      const childCount = content ? content.children.length : 0;
-      const hasContent = !!content && (text.length > 0 || childCount > 0);
-      return {found: true, hasContent};
+  await softStep('Scenario 2 Step 4: Monomer info panel surfaces non-empty details for a Monomer-semType selection', async () => {
+    // monomerInfoPanel is registered semType:'Monomer' (package.ts#L412); drive a Monomer current object to exercise it.
+    const result: {found: boolean; rowCount: number; symbol: string | null} = await page.evaluate(async () => {
+      const g = (window as any).grok;
+      const DG = (window as any).DG;
+      const df = g.shell.tv.dataFrame;
+      const cols = Array.from({length: df.columns.length}, (_: unknown, i: number) => df.columns.byIndex(i));
+      const macroCol = (cols.find((c: any) => c.semType === 'Macromolecule') as any);
+      const seqHelper = await g.functions.call('Bio:getSeqHelper', {});
+      const handler = seqHelper.getSeqHandler(macroCol);
+      const ss = handler.getSplitted(0);
+      let symbol: string | null = null;
+      for (let i = 0; i < ss.length; i++)
+        if (!ss.isGap(i)) { symbol = ss.getCanonical(i); break; }
+      if (!symbol) return {found: false, rowCount: 0, symbol: null};
+      g.shell.o = DG.SemanticValue.fromValueType(symbol, 'Monomer');
+      // The Monomer info panel (semType Monomer) may not surface on this Context Pane — assert content only if present.
+      const deadline = Date.now() + 8_000;
+      let found = false; let rowCount = 0;
+      while (Date.now() < deadline) {
+        const h = Array.from(document.querySelectorAll(
+          '.grok-prop-panel .d4-accordion-pane-header, .d4-accordion-pane-header'))
+          .find((el) => (el.textContent || '').trim().toLowerCase().startsWith('monomer'));
+        if (h) {
+          (h as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+          let pane: Element | null = h.parentElement;
+          while (pane && !pane.classList?.contains('d4-accordion-pane'))
+            pane = pane.parentElement;
+          rowCount = pane ? pane.querySelectorAll('table tr').length : 0;
+          found = true;
+          if (rowCount > 0) break;
+        }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      return {found, rowCount, symbol};
     });
-    if (result.found) {
-      expect(result.hasContent,
-        'When the Monomer pane surfaces on a Macromolecule-cell selection it MUST render non-empty content').toBe(true);
-    }
+    expect(result.symbol, 'a non-gap monomer symbol must be extractable from the first sequence').toBeTruthy();
+    if (result.found)
+      expect(result.rowCount,
+        'When the Monomer info panel surfaces it MUST render non-empty monomer details (Symbol/Name/... rows)')
+        .toBeGreaterThan(0);
   });
   await softStep('Scenario 2: no balloon error fired by either context-pane info panel', async () => {
     const balloonError = await page.evaluate(() => {
@@ -249,25 +285,28 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
   });
   // Scenario 3 — Get Region editor. Menu label "Extract Region..."; dialog name [name="dialog-Get-Region"].
   await softStep('Scenario 3 Step 1-2: click Bio > Calculate > Extract Region — GetRegionEditor dialog opens', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      const group = document.querySelector('[name="div-Bio---Calculate"]');
-      if (!group) throw new Error('[name="div-Bio---Calculate"] group anchor not found');
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.locator('[name="div-Bio---Calculate"]').waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() => {
+      const group = document.querySelector('[name="div-Bio---Calculate"]')!;
       group.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
       group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      const leaf = document.querySelector('[name="div-Bio---Calculate---Extract-Region..."]');
-      if (!leaf) throw new Error('[name="div-Bio---Calculate---Extract-Region..."] leaf not found');
-      (leaf as HTMLElement).click();
     });
+    await page.locator('[name="div-Bio---Calculate---Extract-Region..."]').waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() =>
+      (document.querySelector('[name="div-Bio---Calculate---Extract-Region..."]') as HTMLElement).click());
     await page.locator('[name="dialog-Get-Region"]').waitFor({state: 'visible', timeout: 60_000});
   });
-  await softStep('Scenario 3 Step 3: GetRegionEditor sequence-column selector is populated with the FASTA column', async () => {
-    const seqInputPresent = await page.locator(
-      '[name="dialog-Get-Region"] [name="input-host-Sequence"]').count();
-    expect(seqInputPresent,
-      'GetRegionEditor MUST render a sequence-column selector input (bio.md:344)').toBeGreaterThan(0);
+  await softStep('Scenario 3 Step 3: GetRegionEditor sequence-column selector is populated with the setup Macromolecule column', async () => {
+    const seqHost = page.locator('[name="dialog-Get-Region"] [name="input-host-Sequence"]');
+    await seqHost.waitFor({state: 'visible', timeout: 15_000});
+    const populated = await seqHost.evaluate((el, name) => {
+      const txt = el.textContent || '';
+      const vals = Array.from(el.querySelectorAll('input, select')).map((i: any) => i.value || '').join(' ');
+      return `${txt} ${vals}`.includes(name);
+    }, setupProbe.macroName as string);
+    expect(populated,
+      `GetRegionEditor selector MUST be populated with the setup Macromolecule column "${setupProbe.macroName}" (bio.md:149)`).toBe(true);
   });
   await softStep('Scenario 3 Step 4: Cancel via Escape closes the dialog with no balloon error', async () => {
     await page.keyboard.press('Escape');
@@ -278,25 +317,28 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
   });
   // Scenario 4 — Split to Monomers editor.
   await softStep('Scenario 4 Step 1: click Bio > Transform > Split to Monomers — SplitToMonomersEditor dialog opens', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      const group = document.querySelector('[name="div-Bio---Transform"]');
-      if (!group) throw new Error('[name="div-Bio---Transform"] group anchor not found');
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.locator('[name="div-Bio---Transform"]').waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() => {
+      const group = document.querySelector('[name="div-Bio---Transform"]')!;
       group.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
       group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      const leaf = document.querySelector('[name="div-Bio---Transform---Split-to-Monomers..."]');
-      if (!leaf) throw new Error('[name="div-Bio---Transform---Split-to-Monomers..."] leaf not found');
-      (leaf as HTMLElement).click();
     });
+    await page.locator('[name="div-Bio---Transform---Split-to-Monomers..."]').waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() =>
+      (document.querySelector('[name="div-Bio---Transform---Split-to-Monomers..."]') as HTMLElement).click());
     await page.locator('[name="dialog-Split-to-Monomers"]').waitFor({state: 'visible', timeout: 60_000});
   });
-  await softStep('Scenario 4 Step 2: SplitToMonomersEditor sequence-column selector is populated', async () => {
-    const seqInputPresent = await page.locator(
-      '[name="dialog-Split-to-Monomers"] [name="input-host-Sequence"]').count();
-    expect(seqInputPresent,
-      'SplitToMonomersEditor MUST render a sequence-column selector input (bio.md:403)').toBeGreaterThan(0);
+  await softStep('Scenario 4 Step 2: SplitToMonomersEditor sequence-column selector is populated with the setup column', async () => {
+    const seqHost = page.locator('[name="dialog-Split-to-Monomers"] [name="input-host-Sequence"]');
+    await seqHost.waitFor({state: 'visible', timeout: 15_000});
+    const populated = await seqHost.evaluate((el, name) => {
+      const txt = el.textContent || '';
+      const vals = Array.from(el.querySelectorAll('input, select')).map((i: any) => i.value || '').join(' ');
+      return `${txt} ${vals}`.includes(name);
+    }, setupProbe.macroName as string);
+    expect(populated,
+      `SplitToMonomersEditor selector MUST be populated with the setup Macromolecule column "${setupProbe.macroName}" (bio.md:167)`).toBe(true);
   });
   await softStep('Scenario 4 Step 3: Cancel via Escape closes the dialog with no balloon error', async () => {
     await page.keyboard.press('Escape');

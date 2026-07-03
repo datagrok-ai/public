@@ -6,7 +6,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async () => {
@@ -24,10 +24,10 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
     if (hasMacromolecule) {
       for (let i = 0; i < 60; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        const canvas = document.querySelector('[name="viewer-Grid"] canvas') as HTMLCanvasElement;
+        if (canvas && canvas.width > 0) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
@@ -50,15 +50,18 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     expect(info.macromolColName).not.toBeNull();
   });
   await softStep('Dispatch Bio > Manage > Monomer Libraries top-menu (bio.manage.libraries-view)', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 500));
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.waitForFunction(() => !!document.querySelector('[name="div-Bio---Manage"]'),
+      null, {timeout: 15_000});
+    await page.evaluate(() => {
       const manage = document.querySelector('[name="div-Bio---Manage"]')!;
       manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 500));
-      (document.querySelector('[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click();
     });
+    await page.waitForFunction(() => !!document.querySelector('[name="div-Bio---Manage---Monomer-Libraries"]'),
+      null, {timeout: 15_000});
+    await page.evaluate(() =>
+      (document.querySelector('[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click());
     await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Manage Monomer Libraries',
       null, {timeout: 30_000});
     const view = await page.evaluate(() => {
@@ -85,6 +88,7 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     });
     expect(view.name).toBe('Manage Monomer Libraries');
     expect(view.type).toBe('view');
+    expect(view.hasGrokView).toBe(true);
     expect(view.hasDuplicateHeading).toBe(true);
   });
   await softStep('View renders per-library checkbox listing (>=1 row) + checkbox element per row', async () => {
@@ -104,6 +108,7 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
         rowCount: libRows.length,
         checkboxCount: checkboxes.length,
         labels,
+        searchBoxPresent: !!root.querySelector('[name="input-host-Search"]'),
         eachRowHasCheckbox: libRows.length > 0 &&
           libRows.every((r) => !!r.querySelector('input[type="checkbox"]')),
       };
@@ -111,71 +116,59 @@ test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
     expect(listing.formPresent).toBe(true);
     expect(listing.rowCount).toBeGreaterThanOrEqual(1);
     expect(listing.checkboxCount).toBeGreaterThanOrEqual(1);
+    expect(listing.searchBoxPresent).toBe(true);
     expect(listing.eachRowHasCheckbox).toBe(true);
   });
-  await softStep('Toggle two libraries independently — per-row state isolation holds', async () => {
-    const result = await page.evaluate(async () => {
-      const root = grok.shell.v.root;
-      const form = root.querySelector('.monomer-lib-controls-form');
-      const rows = form ? Array.from(form.querySelectorAll('.ui-input-bool')) : [];
-      const cbs = rows
-        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement)
-        .filter(Boolean);
-      if (cbs.length < 2) {
-        return {
-          haveTwoRows: false,
-          rowCount: cbs.length,
-        };
-      }
-      const idxA = 0;
-      const idxB = 1;
-      const a0 = cbs[idxA].checked;
-      const b0 = cbs[idxB].checked;
-      cbs[idxA].click();
-      await new Promise((r) => setTimeout(r, 2500));
-      const cbs2 = (Array.from(form!.querySelectorAll('.ui-input-bool')) as HTMLElement[])
-        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement)
-        .filter(Boolean);
-      const a1 = cbs2[idxA].checked;
-      const b1 = cbs2[idxB].checked;
-      cbs2[idxB].click();
-      await new Promise((r) => setTimeout(r, 2500));
-      const cbs3 = (Array.from(form!.querySelectorAll('.ui-input-bool')) as HTMLElement[])
-        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement)
-        .filter(Boolean);
-      const a2 = cbs3[idxA].checked;
-      const b2 = cbs3[idxB].checked;
-      cbs3[idxA].click();
-      await new Promise((r) => setTimeout(r, 2000));
-      cbs3[idxB].click();
-      await new Promise((r) => setTimeout(r, 2500));
-      const cbs4 = (Array.from(form!.querySelectorAll('.ui-input-bool')) as HTMLElement[])
-        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement)
-        .filter(Boolean);
-      const aR = cbs4[idxA].checked;
-      const bR = cbs4[idxB].checked;
-      return {
-        haveTwoRows: true,
-        rowCount: cbs.length,
-        a0, b0,
-        a1, b1,
-        a2, b2,
-        aR, bR,
-        aToggledOnFirstClick: a1 !== a0,
-        bUnchangedAfterAToggle: b1 === b0,
-        bToggledOnSecondClick: b2 !== b1,
-        aUnchangedAfterBToggle: a2 === a1,
-        aRestored: aR === a0,
-        bRestored: bR === b0,
-      };
+  await softStep('Toggle two libraries independently — settings persist, per-row isolation, no error', async () => {
+    const rowCount = await page.evaluate(() => {
+      const form = grok.shell.v.root.querySelector('.monomer-lib-controls-form');
+      const cbs = (form ? Array.from(form.querySelectorAll('.ui-input-bool')) : [])
+        .map((r) => r.querySelector('input[type="checkbox"]')).filter(Boolean);
+      return cbs.length;
     });
-    expect(result.haveTwoRows).toBe(true);
-    expect(result.aToggledOnFirstClick).toBe(true);
-    expect(result.bUnchangedAfterAToggle).toBe(true);
-    expect(result.bToggledOnSecondClick).toBe(true);
-    expect(result.aUnchangedAfterBToggle).toBe(true);
-    expect(result.aRestored).toBe(true);
-    expect(result.bRestored).toBe(true);
+    expect(rowCount, 'need >=2 library checkboxes to test per-row isolation').toBeGreaterThanOrEqual(2);
+
+    const readState = () => page.evaluate(() => {
+      const form = grok.shell.v.root.querySelector('.monomer-lib-controls-form')!;
+      const cbs = Array.from(form.querySelectorAll('.ui-input-bool'))
+        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement).filter(Boolean);
+      return {a: cbs[0].checked, b: cbs[1].checked};
+    });
+    const clickCb = (idx: number) => page.evaluate((i) => {
+      document.querySelectorAll('.d4-balloon').forEach((b) => b.remove());
+      const form = grok.shell.v.root.querySelector('.monomer-lib-controls-form')!;
+      const cbs = Array.from(form.querySelectorAll('.ui-input-bool'))
+        .map((r) => r.querySelector('input[type="checkbox"]') as HTMLInputElement).filter(Boolean);
+      cbs[i].click();
+    }, idx);
+    // Anchor "toggle took effect" on the real downstream save, not just the native .checked flag.
+    const waitSettingsSaved = () => page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('.d4-balloon'))
+        .some((b) => /settings saved/i.test(b.textContent || '')), null, {timeout: 15_000});
+
+    const s0 = await readState();
+    await clickCb(0);
+    await waitSettingsSaved();
+    const s1 = await readState();
+    expect(s1.a, 'checkbox A flips on click').toBe(!s0.a);
+    expect(s1.b, 'checkbox B unchanged while A toggles (per-row isolation)').toBe(s0.b);
+
+    await clickCb(1);
+    await waitSettingsSaved();
+    const s2 = await readState();
+    expect(s2.b, 'checkbox B flips on click').toBe(!s1.b);
+    expect(s2.a, 'checkbox A unchanged while B toggles (per-row isolation)').toBe(s1.a);
+
+    await clickCb(0);
+    await waitSettingsSaved();
+    await clickCb(1);
+    await waitSettingsSaved();
+    const sR = await readState();
+    expect(sR.a, 'checkbox A restored to initial state').toBe(s0.a);
+    expect(sR.b, 'checkbox B restored to initial state').toBe(s0.b);
+
+    const errorBalloons = await page.locator('.d4-balloon.error, .d4-balloon-error, .grok-balloon-error').count();
+    expect(errorBalloons, 'no error balloon during library toggles (.md: toggle without error)').toBe(0);
   });
   finishSpec();
 });

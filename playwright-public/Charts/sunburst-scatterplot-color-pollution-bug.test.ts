@@ -9,7 +9,7 @@ test.use(specTestOptions);
 const spgiPath = 'System:DemoFiles/SPGI.csv';
 
 test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
@@ -33,9 +33,17 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
   await softStep('Setup: Open SPGI.csv, identify shared string column candidate', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 15_000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          try { if (pred()) return true; } catch (e) {}
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return false;
+      };
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => grok.shell.tv && grok.shell.tv.dataFrame && grok.shell.tv.dataFrame.rowCount > 0);
       const candidates: {name: string, distinct: number}[] = [];
       for (const c of df.columns) {
         const t = String(c.type || '').toLowerCase();
@@ -61,27 +69,39 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
     const result = await page.evaluate(async (col) => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
+      const poll = async (pred: () => boolean, timeout = 15_000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          try { if (pred()) return true; } catch (e) {}
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return false;
+      };
       const sunburst = tv.addViewer('Sunburst');
-      await new Promise((r) => setTimeout(r, 3000));
-      try { sunburst.setOptions({hierarchyColumnNames: [col]}); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => sunburst.root && sunburst.root.children.length > 0);
+      sunburst.setOptions({hierarchyColumnNames: [col]});
+      await poll(() => {
+        const rb = sunburst.props.get('hierarchyColumnNames');
+        return rb && Array.from(rb).indexOf(col) >= 0;
+      });
       const scatterplot = tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 1500));
-      try { scatterplot.setOptions({colorColumnName: col}); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => scatterplot.root && scatterplot.root.children.length > 0);
+      scatterplot.setOptions({colorColumnName: col});
+      await poll(() => scatterplot.props.get('colorColumnName') === col);
       const types: string[] = [];
       for (const v of tv.viewers) types.push(v.type);
-      let sbHierarchyReadback: any = null, spColorReadback: any = null;
-      try { sbHierarchyReadback = sunburst.props.get('hierarchyColumnNames'); } catch (e) {}
-      try { spColorReadback = scatterplot.props.get('colorColumnName'); } catch (e) {}
+      const sbHierarchyReadback = sunburst.props.get('hierarchyColumnNames');
       return {
         types,
         sbHierarchy: sbHierarchyReadback ? Array.from(sbHierarchyReadback) : null,
-        spColor: spColorReadback,
+        spColor: scatterplot.props.get('colorColumnName'),
       };
     }, sharedColumn);
     expect(result.types).toContain('Sunburst');
     expect(result.types).toContain('Scatter plot');
+    expect(result.sbHierarchy, 'Sunburst hierarchy binding must be set on shared column').not.toBeNull();
+    expect(result.sbHierarchy).toContain(sharedColumn);
+    expect(result.spColor, 'Scatterplot color must be bound to shared column').toBe(sharedColumn);
   });
 
   await softStep('Step 5-7: Trigger color-state mutation; verify Sunburst color persists (github-3412 invariant)', async () => {
@@ -90,36 +110,42 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
     const result = await page.evaluate(async (col) => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
-      const df = tv.dataFrame;
-      const colObj = df.col(col);
-      let mutationApplied = false;
-      try {
-        if (colObj.meta && typeof colObj.meta.colors !== 'undefined') {
-          const before = colObj.meta.colors;
-          mutationApplied = true;
+      const poll = async (pred: () => boolean, timeout = 15_000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          try { if (pred()) return true; } catch (e) {}
+          await new Promise((r) => setTimeout(r, interval));
         }
-      } catch (e) {}
+        return false;
+      };
       let sunburst: any = null, scatterplot: any = null;
       for (const v of tv.viewers) {
         if (v.type === 'Sunburst') sunburst = v;
         if (v.type === 'Scatter plot') scatterplot = v;
       }
-      let sbHierarchyAfter: any = null;
-      try { sbHierarchyAfter = sunburst ? sunburst.props.get('hierarchyColumnNames') : null; } catch (e) {}
+      // Real color-state mutation on the shared column via the Scatterplot.
+      let mutationApplied = false;
+      if (scatterplot) {
+        scatterplot.setOptions({colorColumnName: col});
+        mutationApplied = await poll(() => scatterplot.props.get('colorColumnName') === col);
+      }
+      const sbHierarchyAfter = sunburst ? sunburst.props.get('hierarchyColumnNames') : null;
       const root = sunburst ? sunburst.root as HTMLElement : null;
       return {
-        ok: true,
         mutationApplied,
         sbHierarchyAfter: sbHierarchyAfter ? Array.from(sbHierarchyAfter) : null,
+        spColorAfter: scatterplot ? scatterplot.props.get('colorColumnName') : null,
         sbHasContent: root ? root.children.length > 0 : false,
         sbWidth: root ? root.getBoundingClientRect().width : 0,
       };
     }, sharedColumn);
-    expect(result.ok).toBe(true);
-    // github-3412 invariant: Sunburst's hierarchy binding remains intact
-    // after Scatterplot interaction; visual stability preserved.
-    if (result.sbHierarchyAfter != null)
-      expect(result.sbHierarchyAfter).toContain(sharedColumn);
+    // github-3412 isolation invariant: after mutating Scatterplot color on the shared
+    // column, both viewers retain their independent bindings — Sunburst hierarchy is
+    // not wiped and Scatterplot color remains on the shared column.
+    expect(result.mutationApplied, 'Scatterplot color mutation must be applied').toBe(true);
+    expect(result.sbHierarchyAfter, 'Sunburst hierarchy binding must survive scatterplot color interaction').not.toBeNull();
+    expect(result.sbHierarchyAfter).toContain(sharedColumn);
+    expect(result.spColorAfter, 'Scatterplot color must stay bound to shared column').toBe(sharedColumn);
     expect(result.sbHasContent).toBe(true);
     expect(result.sbWidth).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -131,18 +157,28 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
     const result = await page.evaluate(async (col) => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
+      const poll = async (pred: () => boolean, timeout = 15_000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          try { if (pred()) return true; } catch (e) {}
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return false;
+      };
       // Find Sunburst, detach
       let sunburst: any = null;
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {ok: false};
-      try { sunburst.detach(); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1000));
+      sunburst.detach();
+      await poll(() => ![...tv.viewers].some((v: any) => v.type === 'Sunburst'));
       const sunburst2 = tv.addViewer('Sunburst');
-      await new Promise((r) => setTimeout(r, 3000));
-      try { sunburst2.setOptions({hierarchyColumnNames: [col]}); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      let readBack: any = null;
-      try { readBack = sunburst2.props.get('hierarchyColumnNames'); } catch (e) {}
+      await poll(() => sunburst2.root && sunburst2.root.children.length > 0);
+      sunburst2.setOptions({hierarchyColumnNames: [col]});
+      await poll(() => {
+        const rb = sunburst2.props.get('hierarchyColumnNames');
+        return rb && Array.from(rb).indexOf(col) >= 0;
+      });
+      const readBack = sunburst2.props.get('hierarchyColumnNames');
       const root = sunburst2.root as HTMLElement;
       return {
         ok: true,
@@ -151,9 +187,9 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
         width: root.getBoundingClientRect().width,
       };
     }, sharedColumn);
-    expect(result.ok).toBe(true);
-    if (result.readBack != null)
-      expect(result.readBack).toContain(sharedColumn);
+    expect(result.ok, 'Sunburst viewer must be found to reopen').toBe(true);
+    expect(result.readBack, 'reopened Sunburst must retain hierarchy binding').not.toBeNull();
+    expect(result.readBack).toContain(sharedColumn);
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);
   });

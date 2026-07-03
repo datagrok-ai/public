@@ -8,7 +8,7 @@ sub_features_covered: [dendrogram.clustering.dialog, dendrogram.clustering.injec
 // scenario's "(or median)" alternative. DataFrame name from readCsv is "Table" (not "mol1K").
 // Resource-load 404s on every neighbor mount are non-fatal noise (see isFatalConsoleError).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -18,14 +18,22 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
     const chem = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
     if (!chem) throw new Error('Top-menu Chem entry not found');
     chem.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 800));
-    const analyze = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'Analyze') as HTMLElement | undefined;
+    let analyze: HTMLElement | undefined;
+    for (let i = 0; i < 30; i++) {
+      analyze = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => m.textContent!.trim() === 'Analyze') as HTMLElement | undefined;
+      if (analyze) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     if (!analyze) throw new Error('"Analyze" sub-menu item not found');
     (analyze.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 600));
-    const hc = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => /Hierarchical\s+Clustering/i.test(m.textContent || '')) as HTMLElement | undefined;
+    let hc: HTMLElement | undefined;
+    for (let i = 0; i < 30; i++) {
+      hc = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => /Hierarchical\s+Clustering/i.test(m.textContent || '')) as HTMLElement | undefined;
+      if (hc) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     if (!hc) throw new Error('"Hierarchical Clustering..." sub-menu item not found');
     (hc.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -78,7 +86,7 @@ function isFatalConsoleError(text: string): boolean {
 }
 
 test('Dendrogram / Hierarchical Clustering (Chem) — dialog gateway + representative OK runs', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
 
   await loginToDatagrok(page);
 
@@ -88,21 +96,21 @@ test('Dendrogram / Hierarchical Clustering (Chem) — dialog gateway + represent
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 1000));
+    for (let i = 0; i < 25; i++) {
+      if (!grok.shell.tv) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
     const df = await grok.dapi.files.readCsv('System:AppData/Chem/mol1K.csv');
     grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 4000);
-    });
-    // Chem dataset: wait for Grid canvas + extra settle for Chem package warmup.
+    // Chem dataset: wait for Grid canvas to paint.
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
-    await new Promise(r => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  await waitForChemMenu(page);
+  await waitForMolecule(page);
 
   // --- Block A — Dialog exposes all Distance and Linkage values ---
 
@@ -172,16 +180,21 @@ test('Dendrogram / Hierarchical Clustering (Chem) — dialog gateway + represent
     try {
       const foundAtMs = await clickOkAndWaitForNeighbor(page);
       expect(foundAtMs, 'Magic-wand mount time (ms; -1 = timeout)').toBeGreaterThan(0);
-      const state = await page.evaluate(() => ({
-        magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
-        closeBtn: !!document.querySelector('.dendrogram-close-bttn'),
-        neighborHasCanvas: !!document.querySelector('.dendrogram-assign-clusters-bttn')
-          ?.parentElement?.querySelector('canvas'),
-        viewerTypes: Array.from(grok.shell.tv.viewers).map((v: any) => v.type),
-      }));
+      const state = await page.evaluate(() => {
+        const canvas = document.querySelector('.dendrogram-assign-clusters-bttn')
+          ?.parentElement?.querySelector('canvas') as HTMLCanvasElement | null;
+        return {
+          magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
+          closeBtn: !!document.querySelector('.dendrogram-close-bttn'),
+          canvasW: canvas?.width ?? 0,
+          canvasH: canvas?.height ?? 0,
+          viewerTypes: Array.from(grok.shell.tv.viewers).map((v: any) => v.type),
+        };
+      });
       expect(state.magicWand, 'magic-wand icon present').toBe(true);
       expect(state.closeBtn, 'close icon present').toBe(true);
-      expect(state.neighborHasCanvas, 'neighbor canvas mounted').toBe(true);
+      expect(state.canvasW, 'neighbor canvas width > 0').toBeGreaterThan(0);
+      expect(state.canvasH, 'neighbor canvas height > 0').toBeGreaterThan(0);
       // GridNeighbor is NOT a DG.Viewer.
       expect(state.viewerTypes, 'viewer types list (neighbor is NOT a Viewer)').toEqual(['Grid']);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);

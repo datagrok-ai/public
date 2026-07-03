@@ -13,7 +13,7 @@ const datasets = [
 ];
 for (const ds of datasets) {
   test(`Bio Sequence Activity Cliffs on ${ds.name}`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(180_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async (path) => {
@@ -23,47 +23,26 @@ for (const ds of datasets) {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
-      await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(() => resolve(), 4000);
-      });
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-      if (hasMacromolecule) {
-        for (let i = 0; i < 60; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-          await new Promise((r) => setTimeout(r, 200));
-        }
-        await new Promise((r) => setTimeout(r, 5000));
-      }
     }, ds.path);
+    await page.waitForFunction(() =>
+      !!grok.shell.t && grok.shell.t.columns.toList().some((c: any) => c.semType === 'Macromolecule'),
+      null, {timeout: 30_000});
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-      for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
-      }
-      await new Promise((r) => setTimeout(r, 3000));
-    });
-    await page.evaluate(async () => {
-      const candidates = ['Bio:activityCliffsTopMenu', 'Bio:activityCliffs', 'Bio:macromoleculeActivityCliffs'];
-      const findAny = (names: string[]): boolean => {
-        for (const n of names) {
-          try {
-            if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-          } catch { /* try next */ }
-        }
-        return false;
-      };
-      const deadline = Date.now() + 15_000;
+      const deadline = Date.now() + 30_000;
       while (Date.now() < deadline) {
-        if (findAny(candidates)) return;
+        for (const fn of probes) {
+          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        }
         await new Promise((r) => setTimeout(r, 300));
       }
-      await new Promise((r) => setTimeout(r, 1500));
     });
-    await page.waitForTimeout(2000);
+    await page.waitForFunction((names) => {
+      const g = grok as any;
+      return names.some((n: string) => { try { return !!(g.functions.find && g.functions.find(n)); } catch { return false; } });
+    }, ['Bio:activityCliffsTopMenu', 'Bio:activityCliffs', 'Bio:macromoleculeActivityCliffs'], {timeout: 30_000});
     await softStep(`${ds.name}: Open Bio > Analyze > Activity Cliffs (defaults)`, async () => {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
@@ -76,20 +55,20 @@ for (const ds of datasets) {
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base &&
           Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
+        baseCols, {timeout: 120_000});
       const result = await page.evaluate(() => ({
-        hasScatter: Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
         scatterCount: Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length,
+        scatterTitles: Array.from((grok.shell.tv as any).viewers)
+          .filter((v: any) => v.type === 'Scatter plot').map((v: any) => v.props?.title ?? ''),
         cols: grok.shell.tv.dataFrame.columns.length,
-        hasParamsTag: !!grok.shell.tv.dataFrame.getTag('seqActivityCliffsParams'),
+        paramsTag: grok.shell.tv.dataFrame.getTag('seqActivityCliffsParams'),
       }));
-      expect(result.hasScatter).toBe(true);
       expect(result.scatterCount).toBe(1);
-      expect(result.hasParamsTag).toBe(true);
-    });
-    await page.evaluate(() => {
-      for (const v of Array.from((grok.shell.tv as any).viewers))
-        if ((v as any).type !== 'Grid') (v as any).close();
+      expect(result.scatterTitles).toContain('Activity cliffs');
+      expect(result.cols).toBeGreaterThanOrEqual(baseCols + 2);
+      expect(result.paramsTag, 'seqActivityCliffsParams tag missing').toBeTruthy();
+      const params = JSON.parse(result.paramsTag as string);
+      expect(Object.keys(params).length).toBeGreaterThan(0);
     });
     await softStep(`${ds.name}: Re-open Bio > Analyze > Activity Cliffs`, async () => {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
@@ -122,18 +101,29 @@ for (const ds of datasets) {
       expect(verified.sim).toBe('Levenshtein');
     });
     await softStep(`${ds.name}: Run with edited parameters — second cliff result docks`, async () => {
-      const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-      await page.locator('.d4-dialog [name="button-OK"]').click();
-      await page.waitForFunction(
-        (base) => grok.shell.tv.dataFrame.columns.length > base &&
-          Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
-      const result = await page.evaluate(() => ({
-        hasScatter: Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
+      const before = await page.evaluate(() => ({
         cols: grok.shell.tv.dataFrame.columns.length,
+        scatterCount: Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length,
       }));
-      expect(result.hasScatter).toBe(true);
-      expect(result.cols).toBeGreaterThan(baseCols);
+      expect(before.scatterCount).toBe(1);
+      await page.locator('.d4-dialog [name="button-OK"]').click();
+      // GROK-19150: assert only that a distinct second viewer DOCKS (count=2); the
+      // multi-instance click-routing isolation invariant is delegated to bio-grok-19150-spec.ts.
+      await page.waitForFunction(
+        (base) => grok.shell.tv.dataFrame.columns.length > base.cols &&
+          Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length === 2,
+        before, {timeout: 120_000});
+      const result = await page.evaluate(() => {
+        const scatters = Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot');
+        return {
+          scatterCount: scatters.length,
+          distinct: scatters.length === 2 && scatters[0] !== scatters[1],
+          cols: grok.shell.tv.dataFrame.columns.length,
+        };
+      });
+      expect(result.scatterCount).toBe(2);
+      expect(result.distinct).toBe(true);
+      expect(result.cols).toBeGreaterThan(before.cols);
     });
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))

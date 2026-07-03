@@ -9,7 +9,7 @@ import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 
 test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip context', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(90_000);
 
   await loginToDatagrok(page);
 
@@ -20,7 +20,10 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
       try { grok.shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => {
+      try { return Array.from((window as any).grok.shell.views).length === 0; }
+      catch (e) { return false; }
+    }, {timeout: 10_000}).catch(() => {});
   });
 
   await softStep('Read smiles-50.csv + addTableView + hook console.error', async () => {
@@ -30,11 +33,16 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
       grok.shell.addTableView(df);
       (window as any).__df = df;
       (window as any).__grok16870_errors = [];
+      const push = (s: string) => (window as any).__grok16870_errors.push(s);
       const orig = console.error;
       console.error = function(...args: any[]) {
-        (window as any).__grok16870_errors.push(args.map((a: any) => String(a)).join(' '));
+        push(args.map((a: any) => String(a)).join(' '));
         orig.apply(console, args as any);
       };
+      // GROK-16870 surfaces as a Dart NullError that can bypass console.error and hit
+      // window.onerror / unhandledrejection — capture all channels so 0-errors is meaningful.
+      window.addEventListener('error', (e: any) => push(String(e?.error ?? e?.message ?? e)));
+      window.addEventListener('unhandledrejection', (e: any) => push(String(e?.reason)));
     });
   });
 
@@ -58,6 +66,7 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
     await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 30_000, state: 'visible'});
   });
 
+  let anyTooltipShown = false;
   await softStep('Hover over Box Plot at 5 positions and let tooltip render', async () => {
     const rect = await page.evaluate(() => {
       const bp = document.querySelector('[name="viewer-Box-plot"]') as HTMLElement | null;
@@ -76,9 +85,11 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
     ];
     for (const [hx, hy] of positions) {
       await page.mouse.move(hx, hy, {steps: 5});
-      await page.waitForTimeout(1200);
+      const shown = await page.locator('.d4-tooltip').first()
+        .waitFor({state: 'visible', timeout: 6000}).then(() => true).catch(() => false);
+      anyTooltipShown = anyTooltipShown || shown;
     }
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(200); // let the last async RDKit render microtask flush
   });
 
   await softStep('Assert no rdkit-cell-renderer errors during hover sweep', async () => {
@@ -88,6 +99,11 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
         /rdkit[-_]cell[-_]renderer|method not found|gS|cellRenderer\.render|NullError/i.test(e));
       return {totalErrors: errs.length, rdkitErrors};
     });
+    // GROK-16870: tooltip presence is a soft signal, not a hard precondition — the .md
+    // documents that a Box Plot over smiles-50 may render an empty central region, so a
+    // missed hover is not a regression. The invariant locked here is crash ABSENCE.
+    if (!anyTooltipShown)
+      console.warn('GROK-16870: hover sweep rendered no Box Plot tooltip (empty central region) — absence check is crash-scoped only');
     expect(
       result.rdkitErrors.length,
       `GROK-16870 regression: RDKit cell renderer errors fired during Box Plot tooltip render. rdkitErrors=${JSON.stringify(result.rdkitErrors.slice(0, 5))}`,

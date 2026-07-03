@@ -78,7 +78,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS API smoke)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(90_000);
 
   await loginToDatagrok(page);
 
@@ -88,17 +88,37 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       const th: any = await grok.functions.call('Dendrogram:getTreeHelper');
       const required = ['newickToDf', 'toNewick', 'getLeafList', 'getNodeList'];
       const methods = required.map(m => ({m, isFn: typeof th?.[m] === 'function'}));
+
+      // Exercise the helper on a 4-leaf literal ((A,B),(C,D)) - prove the
+      // methods actually run, not just that they exist.
+      const root: any = {
+        name: 'root', branch_length: 0, children: [
+          {name: 'I1', branch_length: 1, children: [
+            {name: 'A', branch_length: 1, children: []},
+            {name: 'B', branch_length: 1, children: []}]},
+          {name: 'I2', branch_length: 1, children: [
+            {name: 'C', branch_length: 1, children: []},
+            {name: 'D', branch_length: 1, children: []}]}]};
+      const leafNames = th.getLeafList(root).map((n: any) => n.name).sort();
+      const nodeCount = th.getNodeList(root).length;
+      const newick = th.toNewick(root);
       return {
         truthy: th != null,
         constructorName: th?.constructor?.name,
         methods,
         allMethodsCallable: methods.every(x => x.isFn),
+        leafNames,
+        nodeCount,
+        newickHasLeaves: ['A', 'B', 'C', 'D'].every(n => newick.includes(n)),
       };
     });
     expect(result.truthy, 'getTreeHelper returns a non-null ITreeHelper').toBe(true);
     expect(result.allMethodsCallable,
       `getTreeHelper instance exposes the ITreeHelper method surface (${result.methods.map(x => `${x.m}=${x.isFn}`).join(', ')})`)
       .toBe(true);
+    expect(result.leafNames, 'getLeafList on ((A,B),(C,D)) returns exactly the 4 leaves').toEqual(['A', 'B', 'C', 'D']);
+    expect(result.nodeCount, 'getNodeList enumerates all 7 nodes (4 leaves + 2 internal + root)').toBe(7);
+    expect(result.newickHasLeaves, 'toNewick round-trips the 4 leaf names into the newick string').toBe(true);
   });
 
   await softStep('Scenario 1.2 - Dendrogram:getDendrogramService resolves to an IDendrogramService with callable injectTreeForGrid', async () => {
@@ -118,7 +138,10 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
     const result = await page.evaluate(async () => {
       // Setup phase per scenario .md Setup block.
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 600));
+      for (let i = 0; i < 20; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
 
       // Setup step 1 - 4-row synthetic DataFrame with a single string column
       // 'leaf' whose values line up with the tree's leaf names.
@@ -130,7 +153,10 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       // Setup step 3 - open a TableView so a DG.Grid is available for
       // injectTreeForGrid to attach onto.
       const tv = grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1200));
+      for (let i = 0; i < 40; i++) {
+        if (grok.shell.tv?.grid?.dataFrame) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
 
       // Setup step 2 - 4-leaf NodeType literal whose leaf .name values
       // are [A, B, C, D] (the literal-construction path per scenario
@@ -153,6 +179,9 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       // Scenario 1 step 1 - obtain treeHelper (re-fetched in this evaluate
       // for self-containment; same singleton fetched in Scenario 1.1).
       const th: any = await grok.functions.call('Dendrogram:getTreeHelper');
+      // Validate the literal through the helper before injecting - the 4
+      // leaf names must line up with the DataFrame 'leaf' column values.
+      const treeLeafNames = th.getLeafList(treeRoot).map((n: any) => n.name).sort();
 
       // Scenario 1 step 3 - obtain dendrogramService.
       const svc: any = await grok.functions.call('Dendrogram:getDendrogramService');
@@ -214,9 +243,12 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
         closeBttnMounted,
         fatalErrors,
         viewerTypes,
+        treeLeafNames,
       };
     });
 
+    expect(result.treeLeafNames,
+      'getLeafList(treeRoot) confirms the 4 leaves before injectTreeForGrid').toEqual(['A', 'B', 'C', 'D']);
     expect(result.injectThrew,
       'svc.injectTreeForGrid(grid, treeRoot, "leaf") must NOT throw')
       .toBe(false);
@@ -240,10 +272,16 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       const closeBtn = document.querySelector('.dendrogram-close-bttn') as HTMLElement | null;
       if (closeBtn) {
         closeBtn.click();
-        await new Promise(r => setTimeout(r, 400));
+        for (let i = 0; i < 20; i++) {
+          if (!document.querySelector('.dendrogram-assign-clusters-bttn')) break;
+          await new Promise(r => setTimeout(r, 100));
+        }
       }
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 400));
+      for (let i = 0; i < 20; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
     });
   });
 
@@ -261,7 +299,10 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
   // - the singleton invariant is the strict property the scenario names).
   await softStep('Scenario 2 - getDendrogramService singleton invariant: svc2 === svc1, window.$dendrogramService === svc1 on first AND second call', async () => {
     const result = await page.evaluate(async () => {
-      // Scenario 2 step 1 - capture initial value.
+      // Scenario 2 step 1 - prime the cache with one call so the baseline is
+      // deterministic (guaranteed populated), then capture it. This removes
+      // the vacuous "cache-not-set" pass path from the respect probe below.
+      await grok.functions.call('Dendrogram:getDendrogramService');
       const initialCached: any = (window as any).$dendrogramService;
       const initialWasSet = initialCached != null;
 
@@ -284,10 +325,9 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       const winAfter2 = (window as any).$dendrogramService;
       const win2EqualsSvc1 = winAfter2 === svc1;
 
-      // Cache-respect probe: if the cache pre-existed at step 1, svc1
-      // should equal that initial value (the package.ts#L84 guard
-      // returns the cached instance directly).
-      const svc1RespectsInitial = !initialWasSet || (svc1 === initialCached);
+      // Cache-respect probe: svc1 must equal the primed baseline (the
+      // package.ts#L84 guard returns the cached instance, does not overwrite).
+      const svc1RespectsInitial = svc1 === initialCached;
 
       return {
         initialWasSet,
@@ -299,6 +339,9 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
         svc1HasInject: typeof svc1?.injectTreeForGrid === 'function',
       };
     });
+    expect(result.initialWasSet,
+      'window.$dendrogramService is populated by the priming call (deterministic baseline for the cache-respect probe)')
+      .toBe(true);
     expect(result.winAfter1Set,
       'window.$dendrogramService is set after the first getDendrogramService call (atlas: dendrogram.api.get-dendrogram-service singleton)')
       .toBe(true);
@@ -312,7 +355,7 @@ test('Dendrogram / Cross-package TreeHelper / DendrogramService consumption (JS 
       'window.$dendrogramService === svc1 continues to hold after the second call')
       .toBe(true);
     expect(result.svc1RespectsInitial,
-      'when window.$dendrogramService pre-existed at Scenario 2 step 1, svc1 equals that cached instance (the package.ts#L84 guard returns the cache, does not overwrite)')
+      'svc1 equals the primed cached instance (the package.ts#L84 guard returns the cache, does not overwrite)')
       .toBe(true);
     expect(result.svc1HasInject,
       'the singleton instance exposes the IDendrogramService surface (callable injectTreeForGrid)')

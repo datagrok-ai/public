@@ -6,7 +6,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Match dispatch + standardize)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async (path) => {
@@ -24,20 +24,22 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
     const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
     if (hasMacromolecule) {
       for (let i = 0; i < 60; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        const c = document.querySelector('[name="viewer-Grid"] canvas') as HTMLElement | null;
+        if (c && c.clientWidth > 0) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getMonomerLibHelper', 'Bio:getSeqHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+    for (let i = 0; i < 15; i++) {
+      for (const fn of probes) {
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+      }
+      await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
   await page.evaluate(() => {
     const w: any = window as any;
@@ -59,18 +61,18 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       err: (window as any).__balloonErrors || 0,
       warn: (window as any).__balloonWarnings || 0,
     }));
-    await softStep('S1.1-1.2: Bio | Manage | Monomer Libraries top-menu opens the Manage Monomer Libraries view', async () => {
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 500));
-        const manage = document.querySelector('[name="div-Bio---Manage"]')!;
-        manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 500));
-        const leaf = document.querySelector(
-          '[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement;
-        if (leaf) leaf.click();
+    await softStep('S1.1-1.2: Bio:Manage Monomer Libraries app invocation opens the Manage Monomer Libraries view', async () => {
+      // Direct app-entry invocation (bio.manage.libraries-app), disambiguated by the app tag
+      // from the same-named func that opens a dialog.
+      const invokeErr = await page.evaluate(async () => {
+        try {
+          const fns = (window as any).DG.Func.find({package: 'Bio', name: 'Manage Monomer Libraries', tags: ['app']});
+          if (!fns || fns.length === 0) return 'Bio app "Manage Monomer Libraries" not registered';
+          await fns[0].apply();
+          return null;
+        } catch (e) { return String(e).slice(0, 250); }
       });
+      expect(invokeErr, `Bio:Manage Monomer Libraries app invocation failed: ${invokeErr}`).toBeNull();
       await page.waitForFunction(() => {
         try {
           const n = (window as any).grok?.shell?.v?.name;
@@ -89,63 +91,43 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(result.viewType).toBe('view');
       expect(result.viewRootPresent).toBe(true);
     });
-    await softStep('S1.3-1.4: tree browser populates ≥1 library node + first node click is no-throw', async () => {
+    await softStep('S1.3-1.4: Monomer Manager Tree Browser populates ≥1 library node + first node click is no-throw', async () => {
       const result = await page.evaluate(async () => {
-        const handles = ['Bio:manageMonomerLibrariesViewTreeBrowser', 'Bio:Monomer Manager Tree Browser'];
-        let treeRoot: any = null;
-        try { treeRoot = (window as any).ui?.tree?.(); } catch (_) {  }
-        if (!treeRoot) {
-          try { treeRoot = (window as any).DG?.TreeViewGroup?.tree?.(); } catch (_) {  }
-        }
-        if (!treeRoot) {
-          return {invokeErr: 'no DG.TreeViewGroup factory exposed on window.ui or window.DG', nodeCount: 0, usedHandle: null};
-        }
+        const treeRoot: any = (window as any).ui?.tree?.();
+        if (!treeRoot)
+          return {invokeErr: 'ui.tree() factory not available', nodeCount: 0, nodeNames: [] as string[], firstNodeClickErr: null};
         let invokeErr: string | null = null;
-        let usedHandle: string | null = null;
-        for (const h of handles) {
-          try {
-            await (grok as any).functions.call(h, {treeNode: treeRoot});
-            usedHandle = h;
-            invokeErr = null;
-            break;
-          } catch (e) {
-            invokeErr = String(e).slice(0, 250);
-          }
-        }
-        await new Promise((r) => setTimeout(r, 1500));
-        let nodeCount = 0;
-        let nodeNames: string[] = [];
         try {
-          const items: any[] = treeRoot.items || treeRoot.children || [];
-          nodeCount = items.length;
-          nodeNames = items.map((n: any) => {
-            try { return String(n.text || n.value || n.name || ''); } catch (_) { return ''; }
-          }).filter((s: string) => s.length > 0);
+          await (grok as any).functions.call('Bio:Monomer Manager Tree Browser', {treeNode: treeRoot});
         } catch (e) {
-          return {invokeErr: `tree read-back failed: ${String(e).slice(0, 200)}`, nodeCount: 0, nodeNames: [], usedHandle};
+          invokeErr = String(e).slice(0, 250);
         }
+        const readItems = () => (treeRoot.items || treeRoot.children || []) as any[];
+        for (let i = 0; i < 75; i++) {
+          if (readItems().length > 0) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        const items = readItems();
+        const nodeCount = items.length;
+        const nodeNames = items.map((n: any) => {
+          try { return String(n.text || n.value || n.name || ''); } catch (_) { return ''; }
+        }).filter((s: string) => s.length > 0);
         let firstNodeClickErr: string | null = null;
-        try {
-          const items: any[] = treeRoot.items || treeRoot.children || [];
-          if (items.length > 0) {
-            const node = items[0];
-            try {
-              if (node?.onSelected?.next) { node.onSelected.next(node); }
-              else if (typeof node?.select === 'function') { node.select(); }
-              else if (typeof node?.click === 'function') { node.click(); }
-            } catch (e) { firstNodeClickErr = String(e).slice(0, 200); }
-            await new Promise((r) => setTimeout(r, 1500));
+        if (items.length > 0) {
+          const node = items[0];
+          try {
+            if (node?.onSelected?.next) node.onSelected.next(node);
+            else if (typeof node?.select === 'function') node.select();
+            else if (typeof node?.click === 'function') node.click();
+          } catch (e) { firstNodeClickErr = String(e).slice(0, 200); }
+          // Bounded wait for the per-library monomer manager surface to mount (bounded posture — not asserted).
+          for (let i = 0; i < 50; i++) {
+            const root: any = (grok.shell.v as any)?.root;
+            if (root?.querySelector?.('.d4-grid, .grok-grid, canvas')) break;
+            await new Promise((r) => setTimeout(r, 200));
           }
-        } catch (e) {
-          firstNodeClickErr = String(e).slice(0, 200);
         }
-        return {
-          usedHandle,
-          invokeErr,
-          nodeCount,
-          nodeNames,
-          firstNodeClickErr,
-        };
+        return {invokeErr, nodeCount, nodeNames, firstNodeClickErr};
       });
       expect(result.invokeErr,
         `Bio:Monomer Manager Tree Browser did not resolve: ${result.invokeErr}`).toBeNull();
@@ -178,28 +160,43 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       });
       if (helm) {
         try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
-        await new Promise((r) => setTimeout(r, 500));
+        for (let i = 0; i < 25; i++) {
+          if ((grok.shell as any).v === helm) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
       }
     });
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await softStep('S2.1-2.3: Bio | Manage | Monomers top-menu opens a view with the expected shape', async () => {
       await page.evaluate(async () => {
+        const wait = async (sel: string) => {
+          for (let i = 0; i < 50; i++) {
+            const e = document.querySelector(sel) as HTMLElement | null;
+            if (e) return e;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          return null;
+        };
         const bioMenu = document.querySelector('[name="div-Bio"]') as HTMLElement | null;
         if (!bioMenu) throw new Error('Bio top-menu [name="div-Bio"] not present after HELM TableView re-focus');
         bioMenu.click();
-        await new Promise((r) => setTimeout(r, 500));
-        const manage = document.querySelector('[name="div-Bio---Manage"]');
+        const manage = await wait('[name="div-Bio---Manage"]');
         if (!manage) throw new Error('[name="div-Bio---Manage"] submenu not present');
         manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
         manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 500));
-        const leaf = document.querySelector('[name="div-Bio---Manage---Monomers"]') as HTMLElement;
+        const leaf = await wait('[name="div-Bio---Manage---Monomers"]');
         if (leaf) leaf.click();
       });
       await page.waitForFunction(() => {
         try {
           const n = (window as any).grok?.shell?.v?.name;
           return typeof n === 'string' && n.toLowerCase().includes('monomer');
+        } catch (_) { return false; }
+      }, null, {timeout: 30_000});
+      await page.waitForFunction(() => {
+        try {
+          const root: any = (window as any).grok?.shell?.v?.root;
+          return !!root && root.querySelectorAll('[name^="viewer-"], .d4-grid, .grok-grid, .d4-tree-view-root').length > 0;
         } catch (_) { return false; }
       }, null, {timeout: 30_000});
       const result = await page.evaluate(() => {
@@ -209,17 +206,9 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         let firstChildTag: string | null = null;
         let hasChildElement = false;
         if (rootIsElement) {
-          try {
-            const candidates = root.querySelectorAll(
-              '[name^="viewer-"], .d4-grid, .grok-grid, .d4-tree-view-root, .grok-tree-view, ul, table, .d4-dialog-contents'
-            );
-            hasChildElement = candidates.length > 0;
-            if (candidates.length > 0) firstChildTag = candidates[0].tagName.toLowerCase();
-            else {
-              hasChildElement = root.children && root.children.length > 0;
-              if (hasChildElement) firstChildTag = root.children[0].tagName.toLowerCase();
-            }
-          } catch (_) { /* leave defaults */ }
+          const candidates = root.querySelectorAll('[name^="viewer-"], .d4-grid, .grok-grid, .d4-tree-view-root');
+          hasChildElement = candidates.length > 0;
+          if (candidates.length > 0) firstChildTag = candidates[0].tagName.toLowerCase();
         }
         return {
           viewName: v?.name || null,
@@ -230,12 +219,10 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         };
       });
       expect((result.viewName || '').toLowerCase()).toContain('monomer');
-      if (result.viewType != null) {
-        expect(result.viewType).not.toBe('dialog');
-      }
+      expect(result.viewType).toBe('view');
       expect(result.rootIsElement).toBe(true);
       expect(result.hasChildElement,
-        `expected ≥1 child element under the Manage Monomers view root; firstChildTag=${result.firstChildTag}`).toBe(true);
+        `expected the Manage Monomers monomer-list surface under the view root; firstChildTag=${result.firstChildTag}`).toBe(true);
     });
     // Scenario 2 Expected: no error balloon raised.
     await softStep('S2.4: no error balloon raised during Scenario 2', async () => {
@@ -261,20 +248,29 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       });
       if (helm) {
         try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
-        await new Promise((r) => setTimeout(r, 500));
+        for (let i = 0; i < 25; i++) {
+          if ((grok.shell as any).v === helm) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
       }
     });
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 15_000});
     await softStep('S3.2-3.5: Match-with-Monomer-Library dialog opens with three host inputs + Polymer-Type carries PEPTIDE/RNA/CHEM', async () => {
       await page.evaluate(async () => {
+        const wait = async (sel: string) => {
+          for (let i = 0; i < 50; i++) {
+            const e = document.querySelector(sel) as HTMLElement | null;
+            if (e) return e;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          return null;
+        };
         (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 500));
-        const manage = document.querySelector('[name="div-Bio---Manage"]')!;
+        const manage = await wait('[name="div-Bio---Manage"]');
+        if (!manage) throw new Error('[name="div-Bio---Manage"] submenu not present');
         manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
         manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 500));
-        const leaf = document.querySelector(
-          '[name="div-Bio---Manage---Match-with-Monomer-Library..."]') as HTMLElement;
+        const leaf = await wait('[name="div-Bio---Manage---Match-with-Monomer-Library..."]');
         if (leaf) leaf.click();
       });
       await page.locator('[name="dialog-matchWithMonomerLibrary"]').waitFor({state: 'visible', timeout: 30_000});
@@ -305,13 +301,12 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(result.hostTablePresent).toBe(true);
       expect(result.hostMoleculesPresent).toBe(true);
       expect(result.hostPolymerPresent).toBe(true);
-      if (result.polymerOptions.length > 0) {
-        const expected = ['PEPTIDE', 'RNA', 'CHEM'];
-        const upper = result.polymerOptions.map((s) => s.toUpperCase());
-        for (const opt of expected) {
-          expect(upper,
-            `expected Polymer-Type to include '${opt}'; observed: [${result.polymerOptions.join(', ')}]`).toContain(opt);
-        }
+      expect(result.polymerOptions.length,
+        `Polymer-Type select produced no options; observed: [${result.polymerOptions.join(', ')}]`).toBeGreaterThanOrEqual(3);
+      const upper = result.polymerOptions.map((s) => s.toUpperCase());
+      for (const opt of ['PEPTIDE', 'RNA', 'CHEM']) {
+        expect(upper,
+          `expected Polymer-Type to include '${opt}'; observed: [${result.polymerOptions.join(', ')}]`).toContain(opt);
       }
     });
     await softStep('S3.6: standardiseMonomerLibrary resolves; normalized payload parses as a non-null object', async () => {
@@ -340,14 +335,22 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         } catch (e) {
           stdErr = String(e).slice(0, 250);
         }
-        let parsedShape: string | null = null;
+        let parsedIsArray = false;
+        let parsedLength = -1;
+        let firstPolymerType: string | null = null;
+        let firstSymbol: string | null = null;
         let parseErr: string | null = null;
         if (typeof returned === 'string' && returned.length > 0) {
           try {
             const reparsed: any = JSON.parse(returned);
-            if (Array.isArray(reparsed)) parsedShape = 'array';
-            else if (reparsed && typeof reparsed === 'object') parsedShape = 'object';
-            else parsedShape = typeof reparsed;
+            parsedIsArray = Array.isArray(reparsed);
+            if (parsedIsArray) {
+              parsedLength = reparsed.length;
+              if (reparsed[0]) {
+                firstPolymerType = reparsed[0].polymerType ?? null;
+                firstSymbol = reparsed[0].symbol ?? null;
+              }
+            }
           } catch (e) {
             parseErr = String(e).slice(0, 200);
           }
@@ -356,7 +359,10 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
           stdErr,
           returnedType: typeof returned,
           returnedNonEmpty: typeof returned === 'string' && returned.length > 0,
-          parsedShape,
+          parsedIsArray,
+          parsedLength,
+          firstPolymerType,
+          firstSymbol,
           parseErr,
         };
       });
@@ -366,7 +372,14 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(result.returnedNonEmpty).toBe(true);
       expect(result.parseErr,
         `normalized library did not parse: ${result.parseErr}`).toBeNull();
-      expect(['array', 'object']).toContain(result.parsedShape);
+      expect(result.parsedIsArray,
+        'normalized library should JSON-parse to an array of monomers').toBe(true);
+      expect(result.parsedLength,
+        'normalized library should contain the standardized monomer').toBeGreaterThanOrEqual(1);
+      expect(result.firstPolymerType,
+        `standardized monomer should round-trip polymerType PEPTIDE; got ${result.firstPolymerType}`).toBe('PEPTIDE');
+      expect((result.firstSymbol || '').length,
+        'standardized monomer should carry a non-empty symbol').toBeGreaterThan(0);
     });
     await softStep('S3.7: no error balloon raised during Scenario 3', async () => {
       const balloonAfter = await page.evaluate(() => ({

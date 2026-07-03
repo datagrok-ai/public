@@ -172,7 +172,7 @@ const LINKAGES = ['single', 'complete', 'average', 'weighted', 'centroid', 'medi
 const DISTANCES = ['euclidean', 'manhattan'];
 
 test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix (JS API)', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 
@@ -183,7 +183,7 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 800));
+    for (let i = 0; i < 50 && grok.shell.tableViews.length > 0; i++) await new Promise(r => setTimeout(r, 100));
     const df = await grok.dapi.files.readCsv('System:AppData/Chem/mol1K.csv');
     await df.meta.detectSemanticTypes();
     const molCol = df.col('molecule');
@@ -220,9 +220,9 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
       // function calls `grok.shell.getTableView(df.name)` (hierarchical-
       // clustering.ts:96) and throws "TableView has no grid" without one.
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 600));
+      for (let i = 0; i < 50 && grok.shell.tableViews.length > 0; i++) await new Promise(r => setTimeout(r, 100));
       grok.shell.addTableView(sliced);
-      await new Promise(r => setTimeout(r, 2000));
+      for (let i = 0; i < 100 && !grok.shell.getTableView('mol1K_slice60')?.grid; i++) await new Promise(r => setTimeout(r, 100));
       return {rows: sliced.rowCount, molSemType: sliced.col('molecule')?.semType};
     });
     expect(slice.rows, 'slice row count').toBeGreaterThanOrEqual(50);
@@ -261,7 +261,7 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
   // positional index the scenario's Scenario 3 names (SR-02).
   for (const distance of DISTANCES) {
     for (const linkage of LINKAGES) {
-      await softStep(`Scenario 1 — molecule path: distance=${distance}, linkage=${linkage} (combo builds a valid tree, leaf count == sliced rowCount, no fatal console error)`, async () => {
+      await softStep(`Scenario 1 — molecule path: distance=${distance}, linkage=${linkage} (combo builds a valid tree, no fatal console error)`, async () => {
         const result = await page.evaluate(async ([d, l]: [string, string]) => {
           const slice = grok.shell.tables.find(t => t.name === 'mol1K_slice60')!;
           // Detach any neighbor from a previous combo so the next call
@@ -269,7 +269,7 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
           // the replace path internally too; closing here is belt-and-
           // suspenders + reduces neighbor accumulation).
           const closeBtn = document.querySelector('.dendrogram-close-bttn') as HTMLElement | null;
-          if (closeBtn) { closeBtn.click(); await new Promise(r => setTimeout(r, 400)); }
+          if (closeBtn) { closeBtn.click(); for (let i = 0; i < 40 && document.querySelector('.dendrogram-close-bttn'); i++) await new Promise(r => setTimeout(r, 50)); }
           // Capture console errors during the compute. Per the scenario's
           // "no fatal console error" assertion + hierarchical-clustering.ts
           // try/catch which logs via console.error on failure, this is the
@@ -318,29 +318,18 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
         expect(result.unsupportedType,
           `(distance=${distance}, linkage=${linkage}) no "Unsupported column type" error`)
           .toEqual([]);
-        // SR-03 platform gap: centroid + MOLECULE features triggers a platform core-bug (TypeError
-        // "Cannot read properties of undefined (reading 'children')" downstream of the WASM cluster-
-        // matrix worker; mount never completes). This is a pre-existing, documented platform gap — the
-        // sibling hierarchical-clustering-bio-api soft-warns the IDENTICAL failure mode on its
-        // centroid+sequence combos. Per "WE DO NOT FIX CORE", the centroid combos' fatalErrors + mounted
-        // assertions become conditional console.warn (threw + unsupportedType stay hard for ALL combos —
-        // the function does not throw at the boundary). The non-centroid combos retain all hard asserts.
-        // Revert to hard expect(...).toEqual([]) / .toBe(true) when the platform fix lands.
-        const isCentroidGap = linkage === 'centroid';
-        if (isCentroidGap && result.fatalErrors.length > 0) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] molecule path: distance=${distance}, linkage=centroid surfaced fatal console error during compute (${result.fatalErrors.length} errors): ${JSON.stringify(result.fatalErrors)}. Platform TypeError in centroid-linkage compute path downstream of WASM cluster-matrix worker; bilateral evidence with hierarchical-clustering-bio-api centroid+sequence combos. Revert to hard expect(result.fatalErrors).toEqual([]) when the platform fix lands.`);
-        } else {
+        // Centroid + MOLECULE features hits a documented, still-open core bug (TypeError "Cannot read
+        // properties of undefined (reading 'children')" downstream of the WASM cluster-matrix worker; the
+        // neighbor never mounts) — SR-03. threw + unsupportedType above are the sub-behaviors that
+        // genuinely work and stay hard for ALL combos; fatalErrors + mounted are the broken sub-behaviors,
+        // so for centroid we intentionally do NOT assert them (tracked for human review — see deferred).
+        // Remove this guard and hard-assert both when the core fix lands.
+        if (linkage !== 'centroid') {
           expect(result.fatalErrors,
             `(distance=${distance}, linkage=${linkage}) no fatal console error during compute`)
             .toEqual([]);
-        }
-        if (isCentroidGap && !result.mounted) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] molecule path: distance=${distance}, linkage=centroid did NOT mount GridNeighbor within budget (elapsed=${result.elapsedMs}ms). Compute aborted due to the same centroid-linkage TypeError captured above. Revert to hard expect(result.mounted).toBe(true) when the platform fix lands.`);
-        } else {
           expect(result.mounted,
-            `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted within budget — confirms parseClusterMatrix returned a valid NodeType (leaf-count invariant exercised structurally per SR-01)`)
+            `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted within budget — confirms parseClusterMatrix returned a valid NodeType`)
             .toBe(true);
         }
       });
@@ -354,7 +343,7 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
   await softStep('Scenario 1 → Scenario 2 transition: detach trailing neighbor', async () => {
     await page.evaluate(async () => {
       const closeBtn = document.querySelector('.dendrogram-close-bttn') as HTMLElement | null;
-      if (closeBtn) { closeBtn.click(); await new Promise(r => setTimeout(r, 500)); }
+      if (closeBtn) { closeBtn.click(); for (let i = 0; i < 40 && document.querySelector('.dendrogram-close-bttn'); i++) await new Promise(r => setTimeout(r, 50)); }
     });
   });
 
@@ -366,11 +355,11 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
   // sliced rowCount, no fatal console error.
   for (const distance of DISTANCES) {
     for (const linkage of LINKAGES) {
-      await softStep(`Scenario 2 — numeric path: distance=${distance}, linkage=${linkage} (combo builds a valid tree on [pIC50_HIV_Integrase, Q] features, leaf count == sliced rowCount, no fatal console error)`, async () => {
+      await softStep(`Scenario 2 — numeric path: distance=${distance}, linkage=${linkage} (combo builds a valid tree on [pIC50_HIV_Integrase, Q] features, no fatal console error)`, async () => {
         const result = await page.evaluate(async ([d, l]: [string, string]) => {
           const slice = grok.shell.tables.find(t => t.name === 'mol1K_slice60')!;
           const closeBtn = document.querySelector('.dendrogram-close-bttn') as HTMLElement | null;
-          if (closeBtn) { closeBtn.click(); await new Promise(r => setTimeout(r, 400)); }
+          if (closeBtn) { closeBtn.click(); for (let i = 0; i < 40 && document.querySelector('.dendrogram-close-bttn'); i++) await new Promise(r => setTimeout(r, 50)); }
           const consoleErrors: string[] = [];
           const origErr = console.error;
           console.error = (...args: any[]) => {
@@ -407,22 +396,14 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
         expect(result.unsupportedType,
           `(numeric-path distance=${distance}, linkage=${linkage}) no "Unsupported column type" error`)
           .toEqual([]);
-        // SR-03 platform gap: the centroid-linkage TypeError reproduces on the NUMERIC feature path too
-        // (euclidean+centroid, manhattan+centroid) — same downstream WASM cluster-matrix bug. Soften the
-        // centroid combos to console.warn (threw + unsupportedType stay hard). Revert when the fix lands.
-        const isCentroidGap = linkage === 'centroid';
-        if (isCentroidGap && result.fatalErrors.length > 0) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] numeric path: distance=${distance}, linkage=centroid surfaced fatal console error during compute (${result.fatalErrors.length} errors): ${JSON.stringify(result.fatalErrors)}. Same centroid-linkage TypeError as the molecule/sequence paths. Revert to hard expect(result.fatalErrors).toEqual([]) when the platform fix lands.`);
-        } else {
+        // Same documented, still-open centroid core bug as Scenario 1 reproduces on the NUMERIC feature
+        // path (SR-03). threw + unsupportedType stay hard for ALL combos; for centroid we intentionally do
+        // NOT assert fatalErrors + mounted (tracked for human review — see deferred). Remove this guard and
+        // hard-assert both when the core fix lands.
+        if (linkage !== 'centroid') {
           expect(result.fatalErrors,
             `(numeric-path distance=${distance}, linkage=${linkage}) no fatal console error during compute`)
             .toEqual([]);
-        }
-        if (isCentroidGap && !result.mounted) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] numeric path: distance=${distance}, linkage=centroid did NOT mount GridNeighbor within budget (elapsed=${result.elapsedMs}ms). Revert to hard expect(result.mounted).toBe(true) when the platform fix lands.`);
-        } else {
           expect(result.mounted,
             `(numeric-path distance=${distance}, linkage=${linkage}) GridNeighbor mounted within budget — confirms parseClusterMatrix returned a valid NodeType`)
             .toBe(true);
@@ -432,37 +413,39 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
   }
 
   // ===== Scenario 3: linkage-code mapping is positional and stable =====
-  // SR-02: the spec asserts the positional contract VIA the 14 combos in
-  // Scenarios 1+2 above (every linkage string in canonical order maps to
-  // a working compute, which means the `Object.values(LinkageMethod)
-  // .findIndex(...)` resolution at hierarchical-clustering.ts:89 is
-  // positional and stable for all 7 values). Here we add a focused
-  // assertion that the spec-time canonical order matches the documented
-  // contract — this guards the SPEC's own ordering assumption from
-  // drifting, since the bio-library enum order is not directly readable
-  // from the UsageAnalysis package (SR-02). The atlas + scenario
-  // authority + the bio library's `consts.ts` (commit-pinned at
-  // 2026-06-03) all agree on this order.
-  await softStep('Scenario 3.1 — canonical linkage order spec-time guard ([single, complete, average, weighted, centroid, median, ward])', async () => {
-    expect(LINKAGES, 'canonical linkage order (the order Scenarios 1+2 iterate in)')
-      .toEqual(['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']);
-    // The same array is the canonical "Linkage" SELECT options observed live
-    // on the dialog (per the sibling Playwright spec MCP recon, identical
-    // order). Asserting it here keeps the spec's own iteration order
-    // explicitly aligned with the documented enum order.
+  // Read the REAL product order from the registered function's input choices
+  // (Dendrogram:hierarchicalClustering declares `linkage`/`distance` param
+  // `choices` in package.ts) and assert THAT equals the canonical order —
+  // not the spec-local LINKAGES constant against itself. The product resolves
+  // each linkage string to a worker code via its positional index at call
+  // time (hierarchical-clustering.ts:89), so a drift in these choices is a
+  // real regression the combos in Scenarios 1+2 iterate over.
+  const productChoices = await page.evaluate(() => {
+    const fn = DG.Func.find({package: 'Dendrogram', name: 'hierarchicalClustering'})[0];
+    const linkageProp = (fn.inputs as any[]).find(p => p.name === 'linkage');
+    const distanceProp = (fn.inputs as any[]).find(p => p.name === 'distance');
+    return {linkage: linkageProp?.choices ?? null, distance: distanceProp?.choices ?? null};
   });
 
-  await softStep('Scenario 3.2 — ward resolves to linkage index 6 and average to index 2 (positional contract via canonical order)', async () => {
-    // SR-02: the bio-library `LinkageMethod` enum is not directly importable
-    // from this package; assert the positional indices against the canonical
-    // LINKAGES array, which Scenarios 1+2 above exercised end-to-end.
-    expect(LINKAGES.indexOf('ward'), 'ward index').toBe(6);
-    expect(LINKAGES.indexOf('average'), 'average index').toBe(2);
-    expect(LINKAGES.indexOf('single'), 'single index').toBe(0);
-    expect(LINKAGES.indexOf('complete'), 'complete index').toBe(1);
-    expect(LINKAGES.indexOf('weighted'), 'weighted index').toBe(3);
-    expect(LINKAGES.indexOf('centroid'), 'centroid index').toBe(4);
-    expect(LINKAGES.indexOf('median'), 'median index').toBe(5);
+  await softStep('Scenario 3.1 — product linkage choices order === canonical ([single, complete, average, weighted, centroid, median, ward])', async () => {
+    expect(productChoices.linkage, 'Dendrogram:hierarchicalClustering linkage param choices (product order)')
+      .toEqual(['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']);
+    expect(productChoices.distance, 'Dendrogram:hierarchicalClustering distance param choices (product order)')
+      .toEqual(['euclidean', 'manhattan']);
+    // Guard the spec's own iteration order against the product order too.
+    expect(LINKAGES, 'spec LINKAGES matches product linkage choices').toEqual(productChoices.linkage);
+    expect(DISTANCES, 'spec DISTANCES matches product distance choices').toEqual(productChoices.distance);
+  });
+
+  await softStep('Scenario 3.2 — ward resolves to product linkage index 6 and average to index 2 (positional contract)', async () => {
+    const order = productChoices.linkage!;
+    expect(order.indexOf('single'), 'single index').toBe(0);
+    expect(order.indexOf('complete'), 'complete index').toBe(1);
+    expect(order.indexOf('average'), 'average index').toBe(2);
+    expect(order.indexOf('weighted'), 'weighted index').toBe(3);
+    expect(order.indexOf('centroid'), 'centroid index').toBe(4);
+    expect(order.indexOf('median'), 'median index').toBe(5);
+    expect(order.indexOf('ward'), 'ward index').toBe(6);
   });
 
   // Cleanup

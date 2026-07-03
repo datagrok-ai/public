@@ -8,7 +8,7 @@ import {saveAllTablesWithProvenance, deleteProjectWithCleanup} from '../helpers/
 test.use(specTestOptions);
 
 test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
@@ -33,38 +33,47 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
 
   let projectId: string | null = null;
   let savedTableInfoIds: string[] = [];
+  let demogName: string | null = null;
   const projectName = `radar-rebind-${Date.now()}`;
 
   await softStep('Steps 1-3: Open demog + SPGI; add Radar to SPGI; rebind table to demog', async () => {
-    const result = await page.evaluate(async (pName) => {
+    const result = await page.evaluate(async () => {
       const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 30_000, step = 150) => {
+        const deadline = Date.now() + timeout;
+        while (Date.now() < deadline) {
+          try { if (pred()) return true; } catch (_) { /* not ready */ }
+          await new Promise((r) => setTimeout(r, step));
+        }
+        return false;
+      };
+      const norm = (t: any) => (typeof t === 'string' ? t : (t?.name ?? null));
+      const hasTable = (name: string) => { for (const t of grok.shell.tables) if (t.name === name) return true; return false; };
       const dfDemog = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       grok.shell.addTableView(dfDemog);
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => hasTable(dfDemog.name));
       const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
       const tvSpgi = grok.shell.addTableView(dfSpgi);
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => hasTable(dfSpgi.name));
       const radar = tvSpgi.addViewer('Radar');
-      await new Promise((r) => setTimeout(r, 3000));
+      await poll(() => { for (const v of tvSpgi.viewers) if (v.type === 'Radar') return true; return false; });
       let rebindOk = false;
       let readBackTable = null;
       try {
         radar.setOptions({table: dfDemog.name});
-        await new Promise((r) => setTimeout(r, 1500));
-        readBackTable = radar.props.get('table');
+        await poll(() => norm(radar.props.get('table')) === dfDemog.name);
+        readBackTable = norm(radar.props.get('table'));
         rebindOk = true;
       } catch (e) {
         return {rebindOk: false, err: String(e).substring(0, 200)};
       }
       return {rebindOk, readBackTable, demogName: dfDemog.name, spgiName: dfSpgi.name};
-    }, projectName);
+    });
     expect(result.rebindOk, result.rebindOk ? '' : `Radar table rebind failed: ${(result as any).err}`).toBe(true);
-    // The rebind must actually take effect: the Radar's table prop reads back the demog table
-    // (prop may surface the name or the Table object — assert it resolved to the demog binding, not SPGI).
-    const readBack = result.readBackTable as any;
-    const readBackName = typeof readBack === 'string' ? readBack : (readBack?.name ?? readBack);
-    expect(readBackName, `Radar table prop did not rebind to demog (got ${JSON.stringify(readBack)})`)
+    // The rebind must actually take effect: the Radar's table prop reads back the demog table (not SPGI).
+    expect(result.readBackTable, `Radar table prop did not rebind to demog (got ${JSON.stringify(result.readBackTable)})`)
       .toBe(result.demogName);
+    demogName = result.demogName;
   });
 
   await softStep('Steps 4-6: Save project, close all, reopen by id (GROK-18085 invariant)', async () => {
@@ -89,20 +98,40 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
     }
     projectId = saved!.projectId;
     savedTableInfoIds = saved!.tableInfoIds;
-    expect(projectId).toBeTruthy();
+    expect(typeof projectId).toBe('string');
+    expect((projectId as string).length).toBeGreaterThan(0);
+    // Step 4 persists BOTH demog and SPGI so the reopen can re-materialize the rebind.
+    expect(savedTableInfoIds.length).toBe(2);
 
     const reopenResult = await page.evaluate(async (id) => {
       const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 30_000, step = 200) => {
+        const deadline = Date.now() + timeout;
+        while (Date.now() < deadline) {
+          try { if (pred()) return true; } catch (_) { /* not ready */ }
+          await new Promise((r) => setTimeout(r, step));
+        }
+        return false;
+      };
+      const norm = (t: any) => (typeof t === 'string' ? t : (t?.name ?? null));
+      const viewCount = () => { let n = 0; for (const _ of grok.shell.tableViews) n++; return n; };
+      const hasRadar = () => { for (const view of grok.shell.tableViews) for (const v of view.viewers) if (v.type === 'Radar') return true; return false; };
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1500));
+      await poll(() => viewCount() === 0, 15_000);
       try {
         const proj = await grok.dapi.projects.find(id);
         if (proj.open) await proj.open();
-        await new Promise((r) => setTimeout(r, 3000));
+        await poll(hasRadar, 30_000);
         const tv = grok.shell.tv;
         const types: string[] = [];
-        if (tv) for (const v of tv.viewers) types.push(v.type);
-        return {ok: true, viewerTypes: types, hasTv: !!tv};
+        let radarTable: string | null = null;
+        let radarFound = false;
+        for (const view of grok.shell.tableViews)
+          for (const v of view.viewers) {
+            types.push(v.type);
+            if (v.type === 'Radar' && !radarFound) { radarFound = true; radarTable = norm(v.props.get('table')); }
+          }
+        return {ok: true, viewerTypes: types, hasTv: !!tv, radarFound, radarTable};
       } catch (e) {
         return {ok: false, err: String(e).substring(0, 300)};
       }
@@ -111,7 +140,11 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
     // The reopen is the operation under test — a thrown reopen must fail, not just warn.
     expect(reopenResult.ok, reopenResult.ok ? '' : `Project reopen failed: ${(reopenResult as any).err}`).toBe(true);
     expect(reopenResult.hasTv, 'reopened project produced no active TableView').toBe(true);
-    // Primary GROK-18085 invariant: no console error during reopen.
+    // Primary GROK-18085 invariant: the SPGI->demog Radar rebind survives save/reopen.
+    expect(reopenResult.viewerTypes, 'reopened project has no Radar viewer').toContain('Radar');
+    expect((reopenResult as any).radarTable, `reopened Radar not rebound to demog (got ${JSON.stringify((reopenResult as any).radarTable)})`)
+      .toBe(demogName);
+    // Secondary guard: the reported bug was a console error on reopen — assert none.
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
   });

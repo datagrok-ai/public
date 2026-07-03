@@ -25,12 +25,30 @@ test.use(specTestOptions);
 const readLogin = (page: Page): Promise<string | null> =>
   page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
 
+// Author label / avatar / timestamp of the rendered comment at `index`
+// (chat.dart: .grok-comments-message-user, .grok-comments-message-picture, the
+// .fa-clock timestamp icon whose title holds the formatted post time).
+const commentRowMeta = (page: Page, index: number): Promise<{author: string; hasAvatar: boolean; timestamp: string}> =>
+  page.evaluate((i) => {
+    const q = (sel: string) => Array.from(document.querySelectorAll('.grok-comments-message-panel ' + sel));
+    const authors = q('.grok-comments-message-user');
+    const avatars = q('.grok-comments-message-picture');
+    const stamps = q('.fa-clock');
+    return {
+      author: (authors[i]?.textContent ?? '').trim(),
+      hasAvatar: !!avatars[i],
+      timestamp: ((stamps[i] as HTMLElement)?.title ?? '').trim(),
+    };
+  }, index);
+
 test('Chat / Projects chat collaboration: post, share, second-user reply, persistence', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(180_000);
 
   const COMMENT_A = 'First comment from A';
   const REPLY_B = 'Reply from B';
   const projectName = `ChatCollab${Date.now()}`;
+  let authorA = '';
+  let authorB = '';
 
   let secondLogin: string;
   try {
@@ -60,6 +78,12 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       chatId = chats[0].id;
       // Author owns their comment → edit/delete controls available to A.
       expect(await isCommentActionsHidden(page, 0)).toBe(false);
+      // Feed row shows author, avatar and timestamp (.md step 2).
+      const metaA = await commentRowMeta(page, 0);
+      expect(metaA.author, 'A comment shows an author label').not.toBe('');
+      expect(metaA.hasAvatar, 'A comment shows an avatar').toBe(true);
+      expect(metaA.timestamp, 'A comment shows a timestamp').not.toBe('');
+      authorA = metaA.author;
     });
 
     // Step 3: A shares the project with B (View access).
@@ -79,11 +103,22 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       await expect(commentByText(page, COMMENT_A)).toHaveCount(1);
       // B is not the author of A's comment → its edit/delete controls are hidden.
       expect(await isCommentActionsHidden(page, 0)).toBe(true);
+      // B sees A's comment with A's author label (.md step 4).
+      expect((await commentRowMeta(page, 0)).author, 'B sees A comment authored by A').toBe(authorA);
 
       await postComment(page, REPLY_B);
       expect(await commentTexts(page)).toEqual([COMMENT_A, REPLY_B]);
       expect(await isCommentActionsHidden(page, 0)).toBe(true);  // A's comment
       expect(await isCommentActionsHidden(page, 1)).toBe(false); // B's own reply
+      const metaB = await commentRowMeta(page, 1);
+      expect(metaB.hasAvatar, 'B reply shows an avatar').toBe(true);
+      expect(metaB.timestamp, 'B reply shows a timestamp').not.toBe('');
+      expect(metaB.author, 'B reply authored by B, distinct from A').not.toBe(authorA);
+      expect(metaB.author, 'B reply shows an author label').not.toBe('');
+      authorB = metaB.author;
+      // .md step 5 (notification/inbox for the shared project / new comment) is
+      // NOT asserted: notification generation is async and not reliably queryable
+      // on the dev server; deferred for human review rather than a flaky green.
     });
 
     // Steps 8 + 12: back as A — sees B's reply after refresh; history persisted.
@@ -98,6 +133,9 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       expect(await commentTexts(page)).toEqual([COMMENT_A, REPLY_B]);
       expect(await isCommentActionsHidden(page, 0)).toBe(false); // A's own comment
       expect(await isCommentActionsHidden(page, 1)).toBe(true);  // B's comment
+      // Authors stay correct after the round-trip (.md step 7).
+      expect((await commentRowMeta(page, 0)).author, 'comment 0 authored by A').toBe(authorA);
+      expect((await commentRowMeta(page, 1)).author, 'comment 1 authored by B').toBe(authorB);
 
       // Persistence (server truth) — both comments stored; raw endpoint is unsorted.
       const persisted = await getChatCommentTexts(page, chatId);

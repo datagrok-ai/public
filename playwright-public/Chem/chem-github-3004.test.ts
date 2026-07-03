@@ -20,7 +20,7 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
       try { grok.shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => Array.from((window as any).grok.shell.tableViews).length === 0, null, {timeout: 30000});
   });
 
   await softStep('Open TableView A (tableA) + TableView B (tableB)', async () => {
@@ -39,25 +39,16 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
   });
 
   await softStep('Verify both tables have Molecule semType (poll up to 60s for both)', async () => {
-    const result = await page.evaluate(async () => {
-      for (let i = 0; i < 30; i++) {
-        const tables = Array.from(grok.shell.tables) as any[];
-        const states = tables.map((t: any) => ({
-          name: t.name,
-          hasMol: t.columns.toList().some((c: any) => c.semType === 'Molecule'),
-        }));
-        const allHaveMol = states.length >= 2 && states.every(s => s.hasMol);
-        if (allHaveMol) return {ok: true, states};
-        await new Promise(r => setTimeout(r, 2000));
-      }
-      const tables2 = Array.from(grok.shell.tables) as any[];
-      return {ok: false, states: tables2.map((t: any) => ({
-        name: t.name,
-        hasMol: t.columns.toList().some((c: any) => c.semType === 'Molecule'),
-      }))};
-    });
-    expect((result as any).ok,
-      `Tables missing Molecule semType after 60s poll: ${JSON.stringify((result as any).states)}`).toBe(true);
+    await page.waitForFunction(() => {
+      const tables = Array.from((window as any).grok.shell.tables) as any[];
+      return tables.length >= 2 && tables.every((t: any) => t.columns.toList().some((c: any) => c.semType === 'Molecule'));
+    }, null, {timeout: 60000});
+    const states = await page.evaluate(() => (Array.from(grok.shell.tables) as any[]).map((t: any) => ({
+      name: t.name,
+      hasMol: t.columns.toList().some((c: any) => c.semType === 'Molecule'),
+    })));
+    expect(states.length >= 2 && states.every((s: any) => s.hasMol),
+      `Tables missing Molecule semType after 60s poll: ${JSON.stringify(states)}`).toBe(true);
   });
 
   await softStep('Force tableB to be active', async () => {
@@ -65,8 +56,8 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
       const tvs = Array.from(grok.shell.tableViews) as any[];
       const tvB = tvs.find((tv: any) => tv.dataFrame?.name === 'tableB');
       if (tvB) (grok.shell as any).v = tvB;
-      await new Promise(r => setTimeout(r, 1500));
     });
+    await page.waitForFunction(() => (window as any).grok.shell.tv?.dataFrame?.name === 'tableB', null, {timeout: 10000});
   });
 
   await softStep('Pre-condition: active table is tableB after step 2', async () => {
@@ -83,11 +74,13 @@ test('Chem: github-3004 Scaffold Tree from active TableView binds to active Tabl
   });
 
   await softStep('Invoke top-menu Chem | Analyze | Scaffold Tree', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
       if (!chemMenu) throw new Error('Top-menu Chem entry not found');
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 700));
+    });
+    await page.locator('.d4-menu-item-label', {hasText: 'Scaffold Tree'}).first().waitFor({state: 'attached', timeout: 30000});
+    await page.evaluate(() => {
       const stItem = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find(el => el.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
       if (!stItem) throw new Error('Top-menu "Scaffold Tree" sub-menu item not found');

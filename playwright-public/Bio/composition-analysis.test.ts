@@ -6,12 +6,12 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasets = [
-  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},
-  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv'},
-  {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv'},
+  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', expectedRows: 64},
+  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', expectedRows: 540},
+  {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv', expectedRows: 540},
 ];
 test('Bio | Analyze | Composition — composition analysis integration', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(() => {
@@ -34,26 +34,31 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         const cols = Array.from({length: df.columns.length}, (_: unknown, i: number) => df.columns.byIndex(i));
         const hasBioChem = cols.some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
         if (hasBioChem) {
-          for (let i = 0; i < 50; i++) {
+          for (let i = 0; i < 100; i++) {
             if (document.querySelector('[name="viewer-Grid"] canvas')) break;
             await new Promise((r) => setTimeout(r, 200));
           }
-          await new Promise((r) => setTimeout(r, 5000));
         }
         return {rows: df.rowCount, hasMacromolecule: hasBioChem};
       }, ds.path);
-      expect(result.rows).toBeGreaterThan(0);
+      expect(result.rows).toBe(ds.expectedRows);
       expect(result.hasMacromolecule).toBe(true);
       await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     });
     await softStep(`[${ds.name}] Scenario 1 Step 2 — Bio > Analyze > Composition; WebLogo viewer docks; no multi-column dialog`, async () => {
       await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 300));
-        document.querySelector('[name="div-Bio---Analyze"]')!.dispatchEvent(
+        const waitFor = async (sel: string) => {
+          for (let i = 0; i < 50; i++) {
+            const el = document.querySelector(sel);
+            if (el) return el as HTMLElement;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          return null;
+        };
+        (await waitFor('[name="div-Bio"]'))!.click();
+        (await waitFor('[name="div-Bio---Analyze"]'))!.dispatchEvent(
           new MouseEvent('mouseenter', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 300));
-        (document.querySelector('[name="div-Bio---Analyze---Composition"]') as HTMLElement).click();
+        (await waitFor('[name="div-Bio---Analyze---Composition"]'))!.click();
       });
       await page.waitForFunction(() => {
         const viewers = Array.from((window as any).grok.shell.tv.viewers);
@@ -74,8 +79,12 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.dialogOpen).toBe(false);
     });
     await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
-      // Settle: canvas may be in DOM before click handlers are bound.
-      await page.waitForTimeout(4000);
+      // Canvas may be in DOM before positions are computed and click handlers bound.
+      await page.waitForFunction(() => {
+        const wl: any = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
+        return !!wl && Array.isArray(wl.positions) && wl.positions.length > 0 &&
+          !!wl.root.querySelector('canvas');
+      }, null, {timeout: 30_000});
       const selected: number = await page.evaluate(async () => {
         const g = (window as any).grok;
         const tv = g.shell.tv;
@@ -130,18 +139,17 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
           panelBase = panelBase.parentElement;
         const gear = panelBase?.querySelector(
           '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-        if (!gear) {
-          // Fallback: programmatic equivalent if the title-bar gear is absent.
-          g.shell.o = w;
-          await new Promise((r) => setTimeout(r, 600));
-          const pg2 = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
-          return {found: false, pg: !!pg2};
-        }
+        if (!gear) return {found: false, pg: false};
         gear.click();
-        await new Promise((r) => setTimeout(r, 600));
-        const pg = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
+        let pg: Element | null = null;
+        for (let i = 0; i < 30; i++) {
+          pg = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
+          if (pg) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         return {found: true, pg: !!pg};
       });
+      expect(opened.found).toBe(true);
       expect(opened.pg).toBe(true);
       // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
@@ -174,7 +182,8 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
           changedSkip: before.skipEmptyPositions !== after.skipEmptyPositions,
         };
       });
-      expect(result.changedShow || result.changedSkip).toBe(true);
+      expect(result.changedShow).toBe(true);
+      expect(result.changedSkip).toBe(true);
     });
   }
   await page.evaluate(() => (window as any).grok.shell.closeAll());

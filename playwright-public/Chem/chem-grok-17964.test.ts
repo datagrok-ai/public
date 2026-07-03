@@ -2,14 +2,28 @@
 sub_features_covered: [chem.notation, chem.notation.action, chem.notation.convert-mol]
 --- */
 // GROK-17964: Convert Notation column-action must register exactly once across cancel/commit/repeat invocations.
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
+// Focus the original molecule column on the Context Panel, poll until the Convert Notation
+// action link renders, then return how many are attached — replaces the duplicated
+// set-current-object + blind-sleep + count blocks.
+async function countConvertNotationOnMolCol(page: Page): Promise<number> {
+  await page.evaluate(() => { grok.shell.o = grok.shell.t.col((window as any).__grok17964_origMolCol); });
+  await expect.poll(async () => page.evaluate(() =>
+    Array.from(document.querySelectorAll('label.d4-link-action'))
+      .some(l => (l.textContent ?? '').trim().startsWith('Convert Notation')),
+  ), {timeout: 15_000, intervals: [250, 500, 1000]}).toBe(true);
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('label.d4-link-action'))
+      .filter(l => (l.textContent ?? '').trim().startsWith('Convert Notation')).length);
+}
+
 test('Chem: GROK-17964 Convert Notation column-action registration is exactly-once', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
 
@@ -20,7 +34,8 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
       try { grok.shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
     });
-    await page.waitForTimeout(500);
+    await expect.poll(async () => page.evaluate(() => Array.from(grok.shell.tableViews).length),
+      {timeout: 5000, intervals: [100, 250, 500]}).toBe(0);
   });
 
   await softStep('Read smiles-50.csv + addTableView', async () => {
@@ -55,7 +70,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
     });
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected on smiles-50.csv after 30s poll. cols=${JSON.stringify(result.allCols)}`);
-    await page.waitForTimeout(2000);
+    await page.locator('.d4-accordion-pane').first().waitFor({state: 'attached', timeout: 10_000});
     // Expand all accordion panes — chem action labels render only when the Actions pane is expanded.
     await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
@@ -86,109 +101,99 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
     ).toBe(1);
   });
 
-  await softStep('Cancellation path: open Convert Notation dialog, CANCEL, recount', async () => {
-    await page.evaluate(async () => {
+  await softStep('Cancellation path: open Convert Notation dialog, assert controls, CANCEL, recount', async () => {
+    await page.evaluate(() => {
       const link = Array.from(document.querySelectorAll('label.d4-link-action'))
         .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation')) as HTMLElement;
       if (!link) throw new Error('Convert Notation link not found pre-cancel');
       link.click();
-      await new Promise(r => setTimeout(r, 1500));
     });
     await page.locator('.d4-dialog').waitFor({timeout: 8000});
+    const controls = await page.evaluate(() => {
+      const dlg = document.querySelector('.d4-dialog')!;
+      const q = (n: string) => dlg.querySelector(`[name="${n}"]`) as HTMLInputElement | null;
+      const overwrite = q('input-Overwrite'); const join = q('input-Join'); const kekulize = q('input-Kekulize');
+      return {
+        hasTarget: !!q('input-Target-Notation'), hasOverwrite: !!overwrite, hasJoin: !!join, hasKekulize: !!kekulize,
+        overwriteChecked: !!overwrite?.checked, joinChecked: !!join?.checked, kekulizeChecked: !!kekulize?.checked,
+      };
+    });
+    expect(controls.hasTarget && controls.hasOverwrite && controls.hasJoin && controls.hasKekulize,
+      `GROK-17964: Convert Notation dialog must expose Target-Notation/Overwrite/Join/Kekulize controls, got ${JSON.stringify(controls)}`).toBe(true);
+    expect(controls.joinChecked, 'Convert Notation: Join must default checked').toBe(true);
+    expect(controls.overwriteChecked, 'Convert Notation: Overwrite must default unchecked').toBe(false);
+    expect(controls.kekulizeChecked, 'Convert Notation: Kekulize must default unchecked').toBe(false);
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-    await page.waitForTimeout(1500);
-    const afterCancel = await page.evaluate(() => {
-      const molColName = (window as any).__grok17964_origMolCol;
-      grok.shell.o = grok.shell.t.col(molColName);
-      return new Promise(resolve => {
-        setTimeout(() => {
-          const entries = Array.from(document.querySelectorAll('label.d4-link-action'))
-            .filter(l => (l.textContent ?? '').trim().startsWith('Convert Notation'));
-          resolve({count: entries.length});
-        }, 1800);
-      });
-    }) as {count: number};
+    await page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 8000});
+    const afterCancel = await countConvertNotationOnMolCol(page);
     expect(
-      afterCancel.count,
-      `GROK-17964 regression: registration count after CANCEL expected 1, got ${afterCancel.count}.`,
+      afterCancel,
+      `GROK-17964 regression: registration count after CANCEL expected 1, got ${afterCancel}.`,
     ).toBe(1);
   });
 
-  await softStep('Successful completion path: Convert Notation → molblock, OK, wait for completion', async () => {
-    await page.evaluate(async () => {
-      const stale = document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement | null;
-      if (stale && (stale.closest('.d4-dialog') as HTMLElement | null)?.offsetParent !== null) stale.click();
-      await new Promise(r => setTimeout(r, 500));
+  await softStep('Successful completion path: Convert Notation → molblock, OK, verify new molblock column', async () => {
+    const baseColCount = await page.evaluate(() => grok.shell.t.columns.length);
+    await page.evaluate(() => {
       const link = Array.from(document.querySelectorAll('label.d4-link-action'))
         .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation')) as HTMLElement;
       if (!link) throw new Error('Convert Notation link not found pre-commit');
       link.click();
-      await new Promise(r => setTimeout(r, 1500));
+    });
+    await page.locator('.d4-dialog').waitFor({timeout: 8000});
+    await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog');
-      const targetSelect = dlg?.querySelector('[name="input-Target-Notation"]') as HTMLSelectElement;
-      if (targetSelect) {
-        targetSelect.value = 'molblock';
-        targetSelect.dispatchEvent(new Event('change', {bubbles: true}));
-      }
+      const targetSelect = dlg?.querySelector('[name="input-Target-Notation"]') as HTMLSelectElement | null;
+      if (!dlg || !targetSelect) throw new Error('Convert Notation dialog / Target-Notation select not found');
+      targetSelect.value = 'molblock';
+      targetSelect.dispatchEvent(new Event('change', {bubbles: true}));
     });
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(15_000);
+    // Completion is verified, not slept: the dialog detaches and (defaults overwrite=false/join=true)
+    // a new converted Molecule column is added to the frame.
+    await page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 30_000});
+    await expect.poll(async () => page.evaluate(() => grok.shell.t.columns.length),
+      {timeout: 30_000, intervals: [500, 1000, 2000]}).toBe(baseColCount + 1);
+    const added = await page.evaluate(() => {
+      const cols = grok.shell.t.columns.toList();
+      const last = cols[cols.length - 1];
+      return {name: last.name, semType: last.semType, units: last.meta?.units};
+    });
+    expect(
+      added.semType,
+      `GROK-17964: Convert Notation must add a new Molecule column (before=${baseColCount}, added=${JSON.stringify(added)}).`,
+    ).toBe('Molecule');
   });
 
   await softStep('Exactly-once on original column post-commit', async () => {
-    const onOriginal = await page.evaluate(() => {
-      const molColName = (window as any).__grok17964_origMolCol;
-      grok.shell.o = grok.shell.t.col(molColName);
-      return new Promise(resolve => {
-        setTimeout(() => {
-          const entries = Array.from(document.querySelectorAll('label.d4-link-action'))
-            .filter(l => (l.textContent ?? '').trim().startsWith('Convert Notation'));
-          resolve({count: entries.length});
-        }, 1800);
-      });
-    }) as {count: number};
+    const onOriginal = await countConvertNotationOnMolCol(page);
     expect(
-      onOriginal.count,
-      `GROK-17964 regression: registration count on ORIGINAL column post-commit expected 1, got ${onOriginal.count}.`,
+      onOriginal,
+      `GROK-17964 regression: registration count on ORIGINAL column post-commit expected 1, got ${onOriginal}.`,
     ).toBe(1);
   });
 
   await softStep('Multi-invocation hardening: open + CANCEL twice on original column, recount', async () => {
-    const ready = await page.evaluate(async () => {
-      const molColName = (window as any).__grok17964_origMolCol;
-      grok.shell.o = grok.shell.t.col(molColName);
-      await new Promise(r => setTimeout(r, 2500));
-      const link = Array.from(document.querySelectorAll('label.d4-link-action'))
-        .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation'));
-      return {present: !!link};
-    });
-    expect(ready.present, 'Pre-multi-invocation: Convert Notation link not visible after re-focus on original column').toBe(true);
+    await page.evaluate(() => { grok.shell.o = grok.shell.t.col((window as any).__grok17964_origMolCol); });
+    await expect.poll(async () => page.evaluate(() =>
+      Array.from(document.querySelectorAll('label.d4-link-action'))
+        .some(l => (l.textContent ?? '').trim().startsWith('Convert Notation')),
+    ), {timeout: 15_000, intervals: [250, 500, 1000]}).toBe(true);
     for (let i = 0; i < 2; i++) {
-      await page.evaluate(async () => {
+      await page.evaluate(() => {
         const link = Array.from(document.querySelectorAll('label.d4-link-action'))
           .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation')) as HTMLElement;
         if (!link) throw new Error('Convert Notation link not found during multi-cancel');
         link.click();
-        await new Promise(r => setTimeout(r, 1500));
       });
       await page.locator('.d4-dialog').waitFor({timeout: 8000});
       await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-      await page.waitForTimeout(1500);
+      await page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 8000});
     }
-    const afterMulti = await page.evaluate(() => {
-      const molColName = (window as any).__grok17964_origMolCol;
-      grok.shell.o = grok.shell.t.col(molColName);
-      return new Promise(resolve => {
-        setTimeout(() => {
-          const entries = Array.from(document.querySelectorAll('label.d4-link-action'))
-            .filter(l => (l.textContent ?? '').trim().startsWith('Convert Notation'));
-          resolve({count: entries.length});
-        }, 1800);
-      });
-    }) as {count: number};
+    const afterMulti = await countConvertNotationOnMolCol(page);
     expect(
-      afterMulti.count,
-      `GROK-17964 regression: registration count after multi-cancel expected 1, got ${afterMulti.count}.`,
+      afterMulti,
+      `GROK-17964 regression: registration count after multi-cancel expected 1, got ${afterMulti}.`,
     ).toBe(1);
   });
 

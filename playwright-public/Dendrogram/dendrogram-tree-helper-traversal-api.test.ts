@@ -115,7 +115,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Dendrogram / TreeHelper public traversal / serialization / grid-order surface (JS API)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(90_000);
 
   await loginToDatagrok(page);
 
@@ -162,11 +162,35 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
       const rtDf: any = th.newickToDf(roundTripped);
       const rtLeafCol = rtDf.getCol('leaf');
       const rtNodeCol = rtDf.getCol('node');
+      const rtParentCol = rtDf.getCol('parent');
       const rtLeafNames: string[] = [];
+      // Group leaf names by their parent to recover the two interior
+      // clusters ({A,B} under I1, {C,D} under I2); this verifies the
+      // topology survived the round-trip, not merely the flat leaf set.
+      const rtClustersByParent: Record<string, string[]> = {};
       for (let i = 0; i < rtDf.rowCount; i++) {
-        if (rtLeafCol.get(i)) rtLeafNames.push(rtNodeCol.get(i));
+        if (rtLeafCol.get(i)) {
+          const nm = rtNodeCol.get(i);
+          rtLeafNames.push(nm);
+          const par = String(rtParentCol.get(i));
+          (rtClustersByParent[par] ??= []).push(nm);
+        }
       }
-      const rtLeafNamesSet = rtLeafNames.sort();
+      const rtLeafNamesSet = rtLeafNames.slice().sort();
+      const rtClusters = Object.values(rtClustersByParent)
+        .map((c) => c.slice().sort())
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+      // Descendant-before-ancestor invariant of the post-order getNodeList:
+      // every node appears after all of its children in nodeNamesInOrder.
+      const nodeIndexByRef = new Map<any, number>();
+      nodes.forEach((n, i) => nodeIndexByRef.set(n, i));
+      const descendantBeforeAncestor = nodes.every((n) =>
+        (n.children || []).every((ch: any) => {
+          const ci = nodeIndexByRef.get(ch);
+          const ni = nodeIndexByRef.get(n);
+          return ci != null && ci < ni;
+        }));
 
       // Capture fatal console errors during the call sequence.
       // (Note: errors are caught after the fact via grok.shell.warnings
@@ -201,8 +225,10 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
         nodeNamesMultiset,
         lastIsRoot,
         leafShapeOk,
+        descendantBeforeAncestor,
         rtLeafCountIs4: rtLeafNames.length === 4,
         rtLeafNamesSet,
+        rtClusters,
       };
     });
 
@@ -231,6 +257,19 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
       'getNodeList(root) name multiset == {A,B,C,D,I1,I2,root}')
       .toEqual(['A', 'B', 'C', 'D', 'I1', 'I2', 'root']);
 
+    // Post-order contract assertion (per recon-note A above): pin the exact
+    // empirically-verified post-order sequence, so a non-post-order ordering
+    // that happens to satisfy the sorted-multiset + root-last checks cannot pass.
+    expect(result.nodeNamesInOrder,
+      'getNodeList(root) yields the exact post-order sequence [A,B,I1,C,D,I2,root]')
+      .toEqual(['A', 'B', 'I1', 'C', 'D', 'I2', 'root']);
+
+    // Order-independent robustness for the same contract: every node appears
+    // after all of its children (descendant-before-ancestor).
+    expect(result.descendantBeforeAncestor,
+      'getNodeList(root) is post-order: each node appears after all of its children')
+      .toBe(true);
+
     // Post-order contract assertion (per recon-note A above): the root
     // is always the last entry in the post-order list.
     expect(result.lastIsRoot,
@@ -252,6 +291,13 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
     expect(result.rtLeafNamesSet,
       'newickToDf(toNewick(root)) leaf-name set == {A,B,C,D} (round-trip leaf preservation)')
       .toEqual(['A', 'B', 'C', 'D']);
+
+    // Scenario 1 expected: the round-trip preserves TOPOLOGY, not just leaf
+    // labels - leaves grouped by their reconstructed parent must reproduce
+    // the two interior clusters {A,B} and {C,D}.
+    expect(result.rtClusters,
+      'newickToDf(toNewick(root)) preserves the interior clusters {A,B} and {C,D} (topology round-trip, not just leaf labels)')
+      .toEqual([['A', 'B'], ['C', 'D']]);
   });
 
   // ===== Scenario 2: treeCutAsLeaves + treeCutAsTree at an interior cut height =====
@@ -430,14 +476,18 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
       // 'leaf' whose initial values are the permutation [C, A, D, B] -
       // chosen so the reorder has work to do.
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 400));
+      const tClose = Date.now();
+      while ((grok.shell.tableViews?.length ?? 0) > 0 && Date.now() - tClose < 4000)
+        await new Promise(r => setTimeout(r, 25));
 
       const df: any = DG.DataFrame.fromColumns([
         DG.Column.fromList('string', 'leaf', ['C', 'A', 'D', 'B']),
       ]);
       df.name = 'tree-helper-traversal-set-grid-order';
       const tv: any = grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1200));
+      const tGrid = Date.now();
+      while (!(tv.grid && (tv.grid.getRowOrder()?.length)) && Date.now() - tGrid < 8000)
+        await new Promise(r => setTimeout(r, 50));
 
       const grid: any = tv.grid;
       const dfRowCountBefore = df.rowCount;
@@ -451,11 +501,12 @@ test('Dendrogram / TreeHelper public traversal / serialization / grid-order surf
         threw = String(e?.message ?? e);
       }
 
-      // Scenario 3 step 3: await DOM settle (the package logs
-      // 'Dendrogram.setGridOrder() start' via console.debug; the reorder
-      // itself is synchronous - it directly assigns into grid.rowOrder
-      // via grid.setRowOrder).
-      await new Promise(r => setTimeout(r, 500));
+      // Scenario 3 step 3: the reorder is synchronous (setGridOrder directly
+      // assigns into grid.rowOrder via grid.setRowOrder), so poll only until
+      // the row order has been populated to 4 entries rather than sleeping.
+      const tSettle = Date.now();
+      while ((grid.getRowOrder()?.length ?? 0) !== 4 && Date.now() - tSettle < 4000)
+        await new Promise(r => setTimeout(r, 25));
 
       // Scenario 3 step 4-5: read the leaf column values back in visual
       // row order. The authoritative read-back is grid.getRowOrder()

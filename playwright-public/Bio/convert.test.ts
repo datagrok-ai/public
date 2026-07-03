@@ -1,18 +1,35 @@
 /* ---
 sub_features_covered: [bio.calculate.get-region, bio.calculate.get-region.top-menu, bio.detector, bio.transform.convert-notation, bio.transform.convert-notation.top-menu, bio.transform.split-to-monomers, bio.transform.to-atomic-level]
 --- */
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const datasets = [
-  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta'},
-  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm'},
-  {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv', units: 'separator'},
+  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta', monomers: 39},
+  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm', monomers: 17},
+  {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv', units: 'separator', monomers: 17},
 ];
+// Opens the Bio top-menu and drills to a leaf, polling for each menu node instead of fixed sleeps.
+async function openBioMenuItem(page: Page, submenu: string, leaf: string): Promise<void> {
+  await page.evaluate(async ({submenu, leaf}) => {
+    const waitNode = async (sel: string): Promise<HTMLElement> => {
+      for (let i = 0; i < 100; i++) {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        if (el) return el;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      throw new Error(`menu node not found: ${sel}`);
+    };
+    (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
+    (await waitNode(`[name="div-Bio---${submenu}"]`))
+      .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+    (await waitNode(`[name="div-Bio---${submenu}---${leaf}"]`)).click();
+  }, {submenu, leaf});
+}
 for (const ds of datasets) {
   test(`Bio Convert matrix on ${ds.name}`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(180_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async (path) => {
@@ -22,28 +39,26 @@ for (const ds of datasets) {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
-      await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(() => resolve(), 4000);
-      });
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-      if (hasMacromolecule) {
+      const hasMacromolecule = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Macromolecule');
+      for (let i = 0; i < 100 && !hasMacromolecule(); i++)
+        await new Promise((r) => setTimeout(r, 100));
+      if (hasMacromolecule())
         for (let i = 0; i < 60; i++) {
           if (document.querySelector('[name="viewer-Grid"] canvas')) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 5000));
-      }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-      for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      for (let i = 0; i < 30; i++) {
+        for (const fn of probes) {
+          try { await (grok as any).functions.call(fn, {}); return; } catch { /* not ready yet */ }
+        }
+        await new Promise((r) => setTimeout(r, 100));
       }
-      await new Promise((r) => setTimeout(r, 3000));
     });
     await softStep(`${ds.name}: Dataset opens with Macromolecule sequence column (units=${ds.units})`, async () => {
       const info: {hasMacro: boolean, units: string | null} = await page.evaluate(() => {
@@ -57,14 +72,7 @@ for (const ds of datasets) {
     });
     await softStep(`${ds.name}: Calculate > Extract Region adds a Macromolecule sub-region column`, async () => {
       const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Calculate"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector('[name="div-Bio---Calculate---Extract-Region..."]') as HTMLElement).click();
-      });
+      await openBioMenuItem(page, 'Calculate', 'Extract-Region...');
       // Dialog name is `dialog-Get-Region` (named after API getRegion, not the menu label).
       await page.locator('[name="dialog-Get-Region"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Get-Region"] [name="button-OK"]').click();
@@ -84,16 +92,13 @@ for (const ds of datasets) {
         null, {timeout: 15_000}).catch(() => {});
     });
     await softStep(`${ds.name}: Transform > Convert Sequence Notation adds a new Macromolecule column`, async () => {
-      const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Transform"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector(
-          '[name="div-Bio---Transform---Convert-Sequence-Notation..."]') as HTMLElement).click();
+      const beforeMacro: number = await page.evaluate(() => {
+        const df = grok.shell.tv.dataFrame;
+        const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+        return cols.filter((c: any) => c.semType === 'Macromolecule').length;
       });
+      const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
+      await openBioMenuItem(page, 'Transform', 'Convert-Sequence-Notation...');
       await page.locator('[name="dialog-Convert-Sequence-Notation"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Convert-Sequence-Notation"] [name="button-OK"]').click();
       await page.waitForFunction(
@@ -110,7 +115,11 @@ for (const ds of datasets) {
             allUnits: macroCols.map((c: any) => c.meta?.units ?? null).filter((u: any) => u !== null),
           };
         });
-      expect(info.newMacroCount).toBeGreaterThanOrEqual(2);
+      // A new Macromolecule column was added by THIS step (not the earlier Extract-Region step),
+      // in a different notation than the source. Exact target notation is env/default-dependent
+      // (see convert.md unresolved_ambiguities: polytool-vs-transform-convert), so not pinned to a literal.
+      expect(info.newMacroCount).toBeGreaterThan(beforeMacro);
+      expect(info.lastUnits).not.toBeNull();
       expect(info.lastUnits).not.toBe(ds.units);
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
@@ -122,15 +131,7 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Molecule').length;
       });
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Transform"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector(
-          '[name="div-Bio---Transform---To-Atomic-Level..."]') as HTMLElement).click();
-      });
+      await openBioMenuItem(page, 'Transform', 'To-Atomic-Level...');
       await page.locator('[name="dialog-To-Atomic-Level"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-To-Atomic-Level"] [name="button-OK"]').click();
       await page.waitForFunction((base) => {
@@ -156,15 +157,7 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Monomer').length;
       });
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Transform"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector(
-          '[name="div-Bio---Transform---Split-to-Monomers..."]') as HTMLElement).click();
-      });
+      await openBioMenuItem(page, 'Transform', 'Split-to-Monomers...');
       await page.locator('[name="dialog-Split-to-Monomers"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Split-to-Monomers"] [name="button-OK"]').click();
       await page.waitForFunction((base) => {
@@ -177,8 +170,9 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Monomer').length;
       });
-      expect(monCount).toBeGreaterThan(beforeMonCount);
-      expect(monCount).toBeGreaterThan(0);
+      // N per-position Monomer columns = alignment width of the source (convert.md matrix / convert-run.md):
+      // FASTA -> 39, HELM -> 17, MSA -> 17. A broken split emitting a single column must fail here.
+      expect(monCount - beforeMonCount).toBe(ds.monomers);
     });
     finishSpec();
   });

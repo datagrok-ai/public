@@ -1,7 +1,6 @@
 /* ---
 sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.top-menu, bio.search.diversity, bio.search.diversity.top-menu, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.diversity-search, bio.viewers.similarity-search]
 --- */
-// GROK-16111: the three Bio current-row viewers silently KNN on empty input (unfixed; balloon assertion softened, see SR-01 below).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -53,7 +52,8 @@ const viewerCases: ViewerCase[] = [
 ];
 for (const vc of viewerCases) {
   test(`Bio ${vc.label} rejects empty current-row input with balloon`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(180_000);
+    test.fail(true, 'GROK-16111: Bio current-row viewers silently KNN on empty input, no rejection balloon — remove test.fail when fixed');
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async () => {
@@ -70,21 +70,23 @@ for (const vc of viewerCases) {
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
       const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
       if (hasMacromolecule) {
-        for (let i = 0; i < 60; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        for (let i = 0; i < 75; i++) {
+          const canvas = document.querySelector('[name="viewer-Grid"] canvas') as HTMLCanvasElement;
+          if (canvas && canvas.width > 0) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 5000));
       }
     });
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-      for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      for (let i = 0; i < 30; i++) {
+        for (const fn of probes) {
+          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        }
+        await new Promise((r) => setTimeout(r, 500));
       }
-      await new Promise((r) => setTimeout(r, 3000));
     });
     await softStep('Setup: open filter_FASTA, empty row 0, hook balloon, set current row', async () => {
       const setup = await page.evaluate(() => {
@@ -123,13 +125,21 @@ for (const vc of viewerCases) {
     await softStep(`${vc.label}: open Bio > ${vc.groupSelector.includes('Search') ? 'Search' : 'Analyze'} > ${vc.label}${vc.hasEditorDialog ? ' (defaults OK)' : ''}`, async () => {
       await page.evaluate(async ({groupSel, leafSel}) => {
         (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        const group = document.querySelector(groupSel);
+        let group: Element | null = null;
+        for (let i = 0; i < 40; i++) {
+          group = document.querySelector(groupSel);
+          if (group) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         if (!group) throw new Error(`Bio group ${groupSel} not found in top menu`);
         group.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
         group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        const leaf = document.querySelector(leafSel);
+        let leaf: Element | null = null;
+        for (let i = 0; i < 40; i++) {
+          leaf = document.querySelector(leafSel);
+          if (leaf) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         if (!leaf) throw new Error(`Bio leaf ${leafSel} not found under ${groupSel}`);
         (leaf as HTMLElement).click();
       }, {groupSel: vc.groupSelector, leafSel: vc.leafSelector});
@@ -142,7 +152,7 @@ for (const vc of viewerCases) {
       await page.waitForFunction(() => {
         return Array.isArray((window as any).__balloonCalls)
           && (window as any).__balloonCalls.length > 0;
-      }, null, {timeout: 30_000}).catch(() => { /* swallow — assertion below covers it */ });
+      }, null, {timeout: 30_000}).catch(() => { /* bounded readiness gate; the balloon assertion below is the real check */ });
       const probe = await page.evaluate((viewerSel) => {
         const df = grok.shell.tv.dataFrame;
         const calls = ((window as any).__balloonCalls || []) as Array<{type: string; msg: string}>;
@@ -159,12 +169,11 @@ for (const vc of viewerCases) {
           docked,
         };
       }, vc.viewerSelector);
-      // SR-01: GROK-16111 unfixed — viewers silently KNN on empty input. Hard balloon expect() softened to console.warn until fixed.
-      if (!(probe.balloonCount > 0)) {
-        // eslint-disable-next-line no-console
-        console.warn(`[SR-01 known platform gap] GROK-16111: ${vc.label} did NOT surface a rejection balloon on empty current-row input (balloonCount=${probe.balloonCount}). Captured balloons: ${JSON.stringify(probe.balloonMsgs)}. Active viewer types: ${JSON.stringify(probe.viewerTypes)}. Revert SR-01 + restore the hard expect(probe.balloonCount).toBeGreaterThan(0) when GROK-16111 is fixed.`);
-      }
-      expect(probe.rowCount).toBe(baseRowCount);
+      // Invariant 2 (.md): no silent zero-row result — the source table is not rewritten and the viewer reacts (docks or rejects), never a silent no-op.
+      expect(probe.rowCount, `${vc.label}: source table must not be silently rewritten on empty input`).toBe(baseRowCount);
+      expect(probe.docked || probe.balloonCount > 0, `${vc.label}: viewer must react on empty input (dock or reject), not silently no-op`).toBe(true);
+      // Invariant 1 (.md): empty current-row input must surface a rejection balloon. GROK-16111 keeps this failing today; test.fail() tracks the xfail and auto-flips to red when fixed.
+      expect(probe.balloonCount, 'GROK-16111: empty current-row input must surface a rejection balloon').toBeGreaterThan(0);
     });
     finishSpec();
   });

@@ -6,7 +6,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio MSA on FASTA', async ({page}) => {
-  test.setTimeout(240_000);
+  test.setTimeout(150_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async () => {
@@ -31,7 +31,6 @@ test('Bio MSA on FASTA', async ({page}) => {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise((r) => setTimeout(r, 200));
     }
-    await new Promise((r) => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.waitForFunction(() => !!document.querySelector('[name="div-Bio"]'),
@@ -51,21 +50,15 @@ test('Bio MSA on FASTA', async ({page}) => {
   await softStep('Add deterministic int Clusters column (setup for per-cluster MSA)', async () => {
     // Create the Clusters column directly via the JS API. The Add-New-Column UI + RandBetween
     // formula path is flaky on dev (CodeMirror autocomplete intercepts the editor click; the
-    // formula compute occasionally exceeds 60s), and this column is pure setup — its values are
-    // overwritten just below. The Add-New-Column dialog itself is covered by
-    // PowerPack/add-new-column-spec.ts. 0..5 matches the original RandBetween(0,5) range.
+    // formula compute occasionally exceeds 60s), and this column is pure setup. The
+    // Add-New-Column dialog itself is covered by PowerPack/add-new-column-spec.ts. i%6 gives a
+    // deterministic 0..5 range matching the original RandBetween(0,5) formula.
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       if (df.col('Clusters') != null) df.columns.remove('Clusters');
       const col = DG.Column.int('Clusters', df.rowCount);
       for (let i = 0; i < df.rowCount; i++) col.set(i, i % 6, false);
       df.columns.add(col);
-    });
-    await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const c: any = df.col('Clusters');
-      for (let i = 0; i < df.rowCount; i++)
-        c.set(i, i % 2, false);
     });
     const info = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -93,20 +86,21 @@ test('Bio MSA on FASTA', async ({page}) => {
     });
     expect(info.found).toBe(true);
     expect(info.type).toBe('int');
-    expect(info.min).toBeGreaterThanOrEqual(0);
-    expect(info.max).toBeLessThanOrEqual(5);
-    expect(info.distinctCount).toBeGreaterThanOrEqual(2);
+    expect(info.min).toBe(0);
+    expect(info.max).toBe(5);
+    expect(info.distinctCount).toBe(6);
     expect(info.minRowsPerCluster).toBeGreaterThanOrEqual(2);
   });
   await softStep('Open Bio > Analyze > MSA...', async () => {
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Analyze"]')!
-        .dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector('[name="div-Bio---Analyze---MSA..."]') as HTMLElement).click();
-    });
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.waitForFunction(() => !!document.querySelector('[name="div-Bio---Analyze"]'),
+      null, {timeout: 5000});
+    await page.evaluate(() => document.querySelector('[name="div-Bio---Analyze"]')!
+      .dispatchEvent(new MouseEvent('mouseenter', {bubbles: true})));
+    await page.waitForFunction(() => !!document.querySelector('[name="div-Bio---Analyze---MSA..."]'),
+      null, {timeout: 5000});
+    await page.evaluate(() =>
+      (document.querySelector('[name="div-Bio---Analyze---MSA..."]') as HTMLElement).click());
     await page.locator('[name="dialog-MSA"]').waitFor({timeout: 15000});
     const inputs: string[] = await page.evaluate(() => {
       const dlg = document.querySelector('[name="dialog-MSA"]')!;
@@ -214,20 +208,22 @@ test('Bio MSA on FASTA', async ({page}) => {
       let hasGaps = false;
       for (let i = 0; i < df.rowCount && !hasGaps; i++)
         if ((msa.get(i) ?? '').includes('-')) hasGaps = true;
-      let alignedTag: string | null = null;
-      try { alignedTag = msa.getTag('aligned') ?? null; } catch {  }
       return {
         msaName: msa?.name,
         semType: msa?.semType,
         cellRendererTag,
-        alignedTag,
         allEqualPerCluster,
         hasGaps,
         clusterCount: Object.keys(lenByCluster).length,
       };
     });
-    expect(result.msaName).toBeTruthy();
+    expect(result.msaName).toMatch(/^msa\(/i);
     expect(result.semType).toBe('Macromolecule');
+    // Asserts the sequence CELL renderer is attached. The WebLogo column-HEADER renderer
+    // (bio.rendering.column-header) is not directly assertable from the page context:
+    // Column.getTag('cell.renderer') returns null across the JS-API boundary (renderer tag
+    // lives on a private meta slot), so cellType==='sequence' is the reliable signal — see
+    // msa-run.md. Header-renderer presence deferred for human review.
     expect(result.cellRendererTag).toBe('sequence');
     expect(result.allEqualPerCluster).toBe(true);
     expect(result.hasGaps).toBe(true);

@@ -16,7 +16,7 @@ const samplePdbqtPath = 'System:AppData/BiostructureViewer/samples/pdbqt.pdbqt';
 const filesFolderUrlSuffix = '/files/System.AppData/BiostructureViewer/samples';
 
 test('BiostructureViewer / GROK-14442 file-handler search disambiguation regression guard', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -101,9 +101,9 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
     // SCENARIO 1 — .pdb double-click must route to importPdb (function-call spy + UI inference).
     await softStep('Scenario 1 step 1 — DOM-driving: open Files browser via Browse tab', async () => {
       await page.locator('[name="Browse"]').click();
-      await page.waitForTimeout(800);
-      const browseVisible = await page.locator('[name="Browse"]').isVisible();
-      expect(browseVisible).toBe(true);
+      // Verify the Files browser tree actually opened, not just that the Browse tab exists.
+      await page.locator('.d4-tree-view-root').first().waitFor({state: 'visible', timeout: 30_000});
+      expect(await page.locator('.d4-tree-view-root').first().isVisible()).toBe(true);
     });
 
     let scenario1SpyCaptured: string[] = [];
@@ -127,21 +127,24 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
         };
       });
 
-      // Drive the file-handler dispatch (same code path as the Files-browser double-click).
-      await page.evaluate(async (path) => {
+      // Drive the REAL file-handler dispatch — the registry (not the test) decides WHICH
+      // import fires. openFile is the same entrypoint the Files-browser double-click uses; do
+      // NOT name the handler here (that would make the spy tautological).
+      await page.evaluate((path) => {
         const grokAny: any = (window as any).grok;
-        try {
-          const fileInfo = await grokAny.dapi.files.list(path).catch(() => null);
-          // openFile on some versions; else dispatch importPdb directly. Both hit the same registry.
-          if (grokAny.dapi.files.openFile)
-            grokAny.dapi.files.openFile(path).catch(() => {});
-          else
-            grokAny.dapi.files.readAsText(path).then((content: string) => {
-              return grokAny.functions.call('BiostructureViewer:importPdb', {fileContent: content});
-            }).catch(() => {});
-        } catch (_) {}
-        await new Promise((r) => setTimeout(r, 8000));
+        if (typeof grokAny.dapi.files.openFile === 'function')
+          grokAny.dapi.files.openFile(path);
       }, samplePdbPath);
+
+      // Poll for a routing signal instead of a blind sleep.
+      await page.waitForFunction(() => {
+        const w: any = window as any;
+        const tv = w.grok?.shell?.tv;
+        return (w.__bvCapturedHandlers || []).length > 0 ||
+          !!document.querySelector('[name="viewer-Biostructure"]') ||
+          !!document.querySelector('[name="dialog-Open-file"]') ||
+          !!(tv?.dataFrame?.columns && tv.dataFrame.columns.length > 0);
+      }, null, {timeout: 30_000}).catch(() => {});
 
       // Capture spy results.
       const capture = await page.evaluate(() => {
@@ -194,39 +197,35 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
       const importPdbFired = scenario1SpyCaptured.includes('BiostructureViewer:importPdb');
       const importPdbqtFired = scenario1SpyCaptured.includes('BiostructureViewer:importPdbqt');
 
-      if (scenario1SpyCaptured.length > 0) {
+      // Inverse-regression guard (the exact pre-fix bug shape) — HARD asserts. They fail only if
+      // .pdb actually routed to importPdbqt or mounted the AutoDock-pose UI; they hold whether the
+      // spy fired or the dispatcher bypassed the JS spy.
+      expect(
+        importPdbqtFired,
+        'GROK-14442 file-handler search regressed: .pdb routed to importPdbqt ' +
+        '(extension prefix-containment collision — pre-fix bug shape). ' +
+        `Captured handlers: ${JSON.stringify(scenario1SpyCaptured)}.`,
+      ).toBe(false);
+      expect(
+        scenario1AutodockUiMounted,
+        'GROK-14442 file-handler search regressed: the AutoDock-pose UI mounted for a .pdb input, ' +
+        'implying importPdbqt fired.',
+      ).toBe(false);
+      // Positive routing is asserted only when a signal is observable: openFile may dispatch through
+      // the Dart-side registry without crossing the JS grok.functions.call spy, and headless WebGL
+      // may keep the Mol* viewer from mounting — asserting the positive unconditionally would
+      // false-fail on CORRECT routing (see riskNotes). The core GROK-14442 invariant is hard-asserted
+      // registry-side in Scenario A.
+      if (scenario1SpyCaptured.length > 0)
         expect(
           importPdbFired,
           'GROK-14442 file-handler search regressed: .pdb did NOT route to importPdb. ' +
           `Captured handlers: ${JSON.stringify(scenario1SpyCaptured)}.`,
         ).toBe(true);
-        expect(
-          importPdbqtFired,
-          'GROK-14442 file-handler search regressed: .pdb routed to importPdbqt ' +
-          '(extension prefix-containment collision — pre-fix bug shape). ' +
-          `Captured handlers: ${JSON.stringify(scenario1SpyCaptured)}.`,
-        ).toBe(false);
-      } else {
-        // Fallback: spy captured nothing (dispatcher bypassed functions.call); use UI inference.
-        expect(
-          scenario1AutodockUiMounted,
-          'GROK-14442 file-handler search regressed (UI-inference path): the ' +
-          'AutoDock-pose UI is mounted, implying importPdbqt fired for a ' +
-          '.pdb input. Spy captured nothing; UI inference is the fallback.',
-        ).toBe(false);
-        if (!scenario1ViewerMounted) {
-          // eslint-disable-next-line no-console
-          console.warn(
-            '[SR-01 spy-bypass] GROK-14442 Scenario 1 — function-call spy captured nothing AND ' +
-            'Biostructure viewer did not mount. AutoDock UI also absent, so the ' +
-            'inverse-regression is not surfaced. Treating as inconclusive (no FAIL).',
-          );
-        }
-      }
     });
 
     // Close any resulting view to leave a clean state for Scenario 2.
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const grokAny: any = (window as any).grok;
       grokAny.shell.closeAll();
       // Best-effort dialog dismissal.
@@ -234,8 +233,9 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
         const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
         if (cancel) cancel.click();
       });
-      await new Promise((r) => setTimeout(r, 1500));
     });
+    await page.waitForFunction(() => document.querySelectorAll('.d4-dialog').length === 0,
+      null, {timeout: 5_000}).catch(() => {});
 
     // SCENARIO 2 — .pdbqt double-click must route to importPdbqt (inverse-regression guard).
     let scenario2SpyCaptured: string[] = [];
@@ -258,18 +258,21 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
         };
       });
 
-      await page.evaluate(async (path) => {
+      // Drive the REAL dispatcher — the registry decides which import fires (no handler naming).
+      await page.evaluate((path) => {
         const grokAny: any = (window as any).grok;
-        try {
-          if (grokAny.dapi.files.openFile)
-            grokAny.dapi.files.openFile(path).catch(() => {});
-          else
-            grokAny.dapi.files.readAsText(path).then((content: string) => {
-              return grokAny.functions.call('BiostructureViewer:importPdbqt', {fileContent: content, test: true});
-            }).catch(() => {});
-        } catch (_) {}
-        await new Promise((r) => setTimeout(r, 8000));
+        if (typeof grokAny.dapi.files.openFile === 'function')
+          grokAny.dapi.files.openFile(path);
       }, samplePdbqtPath);
+
+      // Poll for a routing signal instead of a blind sleep.
+      await page.waitForFunction(() => {
+        const w: any = window as any;
+        const tv = w.grok?.shell?.tv;
+        return (w.__bvCapturedHandlers || []).length > 0 ||
+          !!document.querySelector('[name="viewer-Biostructure"]') ||
+          !!(tv?.dataFrame?.columns && tv.dataFrame.columns.length > 0);
+      }, null, {timeout: 30_000}).catch(() => {});
 
       // Capture and uninstall.
       const capture = await page.evaluate(() => {
@@ -293,52 +296,39 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
       const importPdbFired = scenario2SpyCaptured.includes('BiostructureViewer:importPdb');
       const importPdbqtFired = scenario2SpyCaptured.includes('BiostructureViewer:importPdbqt');
 
-      if (scenario2SpyCaptured.length > 0) {
+      // Inverse-regression guards — HARD. Fail only if .pdbqt actually routed to importPdb or
+      // mounted the Biostructure (Mol*) viewer.
+      expect(
+        importPdbFired,
+        'GROK-14442 file-handler search inverse regression: .pdbqt routed ' +
+        `to importPdb. Captured handlers: ${JSON.stringify(scenario2SpyCaptured)}.`,
+      ).toBe(false);
+      expect(
+        scenario2BioViewerMounted,
+        'GROK-14442 inverse regression: Biostructure (Mol*) viewer mounted for a .pdbqt input, ' +
+        'implying importPdb fired.',
+      ).toBe(false);
+      // Positive routing asserted only when the JS spy observed it (see Scenario 1 note / riskNotes).
+      if (scenario2SpyCaptured.length > 0)
         expect(
           importPdbqtFired,
           'GROK-14442 inverse: .pdbqt did NOT route to importPdbqt. ' +
           `Captured handlers: ${JSON.stringify(scenario2SpyCaptured)}.`,
         ).toBe(true);
-        expect(
-          importPdbFired,
-          'GROK-14442 file-handler search inverse regression: .pdbqt routed ' +
-          `to importPdb. Captured handlers: ${JSON.stringify(scenario2SpyCaptured)}.`,
-        ).toBe(false);
-      } else {
-        // Fallback UI inference: a mounted Biostructure viewer would be the inverse-regression signature.
-        expect(
-          scenario2BioViewerMounted,
-          'GROK-14442 inverse regression (UI-inference path): Biostructure ' +
-          '(Mol*) viewer mounted for .pdbqt input, implying importPdb fired. ' +
-          'Spy captured nothing; UI inference is the fallback.',
-        ).toBe(false);
-        // eslint-disable-next-line no-console
-        console.warn(
-          '[SR-01 spy-bypass] GROK-14442 Scenario 2 — function-call spy captured nothing. ' +
-          'Inverse-regression check inferred from UI absence of Biostructure viewer.',
-        );
-      }
     });
 
-    // SCENARIO 2 step 5 — Joint disambiguation cross-check (log-only summary).
+    // SCENARIO 2 step 5 — Joint disambiguation cross-check, derived from the observed dispatches.
     await softStep('Scenario 2 step 5 — Joint disambiguation cross-check (GROK-14442 invariant)', async () => {
-      const summary = {
-        scenarioA: {
-          pdb_resolves_to_only_importPdb: true,
-          pdbqt_resolves_to_only_importPdbqt: true,
-        },
-        scenario1: {
-          spyCaptured: scenario1SpyCaptured,
-          viewerMounted: scenario1ViewerMounted,
-          autodockUiMounted: scenario1AutodockUiMounted,
-        },
-        scenario2: {
-          spyCaptured: scenario2SpyCaptured,
-          bioViewerMounted: scenario2BioViewerMounted,
-        },
-      };
-      // eslint-disable-next-line no-console
-      console.log(`[GROK-14442 joint-invariant summary] ${JSON.stringify(summary)}`);
+      // Neither scenario may have captured the OTHER extension's handler — the cross-contamination
+      // that GROK-14442 fixed. Asserted from the actual captured sets, not hard-coded literals.
+      expect(
+        scenario1SpyCaptured.includes('BiostructureViewer:importPdbqt'),
+        `GROK-14442 cross-check: .pdb captured importPdbqt (${JSON.stringify(scenario1SpyCaptured)}).`,
+      ).toBe(false);
+      expect(
+        scenario2SpyCaptured.includes('BiostructureViewer:importPdb'),
+        `GROK-14442 cross-check: .pdbqt captured importPdb (${JSON.stringify(scenario2SpyCaptured)}).`,
+      ).toBe(false);
     });
   } finally {
     // Cleanup — restore grok.functions.call and close views.

@@ -9,7 +9,7 @@ test.use(specTestOptions);
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Tree — rowSource x onClick state machine (github-3245)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
@@ -28,30 +28,94 @@ test('Charts / Tree — rowSource x onClick state machine (github-3245)', async 
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
+  const hierarchy = ['CONTROL', 'SEX', 'RACE'];
+
   await softStep('Setup: Open demog.csv, add Tree, set hierarchy', async () => {
-    const result = await page.evaluate(async (path) => {
+    await page.evaluate(async (path) => {
       const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
-      const tree = tv.addViewer('Tree');
-      await new Promise((r) => setTimeout(r, 3000));
-      try { tree.setOptions({hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE']}); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      tv.addViewer('Tree');
+    }, demogPath);
+    await page.waitForFunction(() => {
+      const grok = (window as any).grok;
+      const tv = grok.shell.tv;
+      if (!tv || !tv.grid) return false;
+      let tree: any = null;
+      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+      return !!tree && !!tree.root && tree.root.children.length > 0;
+    }, null, {timeout: 30_000});
+
+    const result = await page.evaluate((h) => {
+      const grok = (window as any).grok;
+      const tv = grok.shell.tv;
+      let tree: any = null;
+      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+      tree.setOptions({hierarchyColumnNames: h});
       const types: string[] = [];
       for (const v of tv.viewers) types.push(v.type);
       return {types};
-    }, demogPath);
+    }, hierarchy);
     expect(result.types).toContain('Tree');
+
+    await page.waitForFunction((h) => {
+      const grok = (window as any).grok;
+      const tv = grok.shell.tv;
+      let tree: any = null;
+      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+      if (!tree) return false;
+      let hb: any = null;
+      try { hb = tree.props.get('hierarchyColumnNames'); } catch (e) { return false; }
+      return Array.isArray(hb) && hb.join(',') === h.join(',') && tree.root.children.length > 0;
+    }, hierarchy, {timeout: 20_000});
+
+    const readback = await page.evaluate(() => {
+      const grok = (window as any).grok;
+      const tv = grok.shell.tv;
+      let tree: any = null;
+      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+      return tree.props.get('hierarchyColumnNames');
+    });
+    expect(readback).toEqual(hierarchy);
+  });
+
+  // Palette: colorColumnName drives the Tree's color mapping (charts.tree.color-palette).
+  await softStep('Palette: set colorColumnName=AGE, verify readback + render', async () => {
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
+      const tv = grok.shell.tv;
+      let tree: any = null;
+      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+      if (!tree) return {ok: false};
+      let threw = false;
+      try { tree.setOptions({colorColumnName: 'AGE'}); }
+      catch (e) { threw = true; }
+      let readback: any = null;
+      for (let i = 0; i < 30; i++) {
+        readback = tree.props.get('colorColumnName');
+        if (readback === 'AGE' && tree.root.children.length > 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const root = tree.root as HTMLElement;
+      return {ok: true, threw, readback, hasContent: root.children.length > 0, width: root.getBoundingClientRect().width};
+    });
+    expect(result.ok).toBe(true);
+    expect(result.threw).toBe(false);
+    expect(result.readback).toBe('AGE');
+    expect(result.hasContent).toBe(true);
+    expect(result.width).toBeGreaterThan(0);
   });
 
   const rowSources = ['All', 'Filtered', 'Selected'];
   const onClicks = ['Select', 'Filter', 'None'];
+  // github-3245: onClick coerces rowSource — setting either forces rowSource = rowSourceMap[onClick].
+  const rowSourceMap: Record<string, string> = {Select: 'Filtered', Filter: 'All', None: 'All'};
 
   const iterateCombo = async (rs: string, oc: string, suffix: string) => {
     await softStep(`Combo ${rs} x ${oc} ${suffix}`, async () => {
+      const expectedRs = rowSourceMap[oc];
       const errorsBefore = consoleErrors.length;
-      const result = await page.evaluate(async ([r, o]) => {
+      const result = await page.evaluate(async ([r, o, expRs]) => {
         const grok = (window as any).grok;
         const tv = grok.shell.tv;
         let tree: any = null;
@@ -60,34 +124,26 @@ test('Charts / Tree — rowSource x onClick state machine (github-3245)', async 
         let setOptionsThrew = false;
         try { tree.setOptions({rowSource: r, onClick: o}); }
         catch (e) { setOptionsThrew = true; }
-        await new Promise((r2) => setTimeout(r2, 800));
         let readbackRs: any = null, readbackOc: any = null;
-        try { readbackRs = tree.props.get('rowSource'); } catch (e) {}
-        try { readbackOc = tree.props.get('onClick'); } catch (e) {}
+        for (let i = 0; i < 50; i++) {
+          readbackRs = tree.props.get('rowSource');
+          readbackOc = tree.props.get('onClick');
+          if (readbackOc === o && readbackRs === expRs && tree.root.children.length > 0) break;
+          await new Promise((res) => setTimeout(res, 100));
+        }
         const root = tree.root as HTMLElement;
         const rect = root.getBoundingClientRect();
-        return {
-          ok: true,
-          setOptionsThrew,
-          readbackRs,
-          readbackOc,
-          hasContent: root.children.length > 0,
-          width: rect.width,
-          height: rect.height,
-        };
-      }, [rs, oc] as [string, string]);
-      expect(result.ok).toBe(true);
-      // github-3245: readback logged only — Tree normalizes (rowSource, onClick) so strict round-trip drifts.
-      expect(result.setOptionsThrew).toBe(false);
-      expect(result.hasContent).toBe(true);
-      expect(result.width).toBeGreaterThan(0);
+        return {ok: true, setOptionsThrew, readbackRs, readbackOc,
+          hasContent: root.children.length > 0, width: rect.width, height: rect.height};
+      }, [rs, oc, expectedRs] as [string, string, string]);
+      expect(result.ok, `${rs}/${oc} tree present`).toBe(true);
+      expect(result.setOptionsThrew, `${rs}/${oc} setOptions`).toBe(false);
+      expect(result.readbackOc, `${rs}/${oc} onClick readback`).toBe(oc);
+      expect(result.readbackRs, `${rs}/${oc} rowSource normalized`).toBe(expectedRs);
+      expect(result.hasContent, `${rs}/${oc} content`).toBe(true);
+      expect(result.width, `${rs}/${oc} width`).toBeGreaterThan(0);
       const errorsDuring = consoleErrors.slice(errorsBefore);
       expect(errorsDuring).toEqual([]);
-      console.log(`[Combo ${rs}/${oc}]`, JSON.stringify({
-        readbackRs: result.readbackRs,
-        readbackOc: result.readbackOc,
-        readbackMatches: (result.readbackRs === rs) && (result.readbackOc === oc),
-      }));
     });
   };
 
@@ -106,22 +162,26 @@ test('Charts / Tree — rowSource x onClick state machine (github-3245)', async 
   }
 
   // ESC-equivalent state-clear check
-  await softStep('Step 4: ESC-equivalent (df.selection.setAll(false)) — viewer remains stable', async () => {
+  await softStep('Step 4: ESC-equivalent (df.selection.setAll(false)) — selection clears, viewer stable', async () => {
     const result = await page.evaluate(async () => {
       const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       df.selection.setAll(false);
       df.selection.fireChanged();
-      await new Promise((r) => setTimeout(r, 800));
       const tv = grok.shell.tv;
       let tree: any = null;
       for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
       if (!tree) return {ok: false};
+      for (let i = 0; i < 30; i++) {
+        if (df.selection.trueCount === 0 && tree.root.children.length > 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const root = tree.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      return {ok: true, hasContent: root.children.length > 0, width: rect.width};
+      return {ok: true, trueCount: df.selection.trueCount, hasContent: root.children.length > 0, width: rect.width};
     });
     expect(result.ok).toBe(true);
+    expect(result.trueCount).toBe(0);
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);
   });

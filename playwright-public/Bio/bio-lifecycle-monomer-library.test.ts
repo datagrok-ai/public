@@ -10,8 +10,38 @@ import {
   deleteProjectWithCleanup,
 } from '../helpers/projects';
 test.use(specTestOptions);
+
+// Opens ribbon Bio | Manage | Monomer Libraries, waiting on each submenu instead of blind sleeps.
+async function openManageMonomerLibrariesRibbon(page: any): Promise<void> {
+  await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+  await page.locator('[name="div-Bio---Manage"]').waitFor({state: 'visible', timeout: 15_000});
+  await page.evaluate(() => {
+    const manage = document.querySelector('[name="div-Bio---Manage"]')!;
+    manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+    manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+  });
+  await page.locator('[name="div-Bio---Manage---Monomer-Libraries"]').waitFor({state: 'visible', timeout: 15_000});
+  await page.evaluate(() =>
+    (document.querySelector('[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click());
+  await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Manage Monomer Libraries',
+    null, {timeout: 30_000});
+  await page.locator('.monomer-lib-controls-form .ui-input-bool').first().waitFor({timeout: 15_000});
+}
+
+// Deterministic per-monomer color signature for the first N peptide symbols, read via the JS color API.
+async function captureMonomerColors(page: any): Promise<{sig: string; count: number}> {
+  return await page.evaluate(async () => {
+    const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
+    const lib: any = helper.getMonomerLib();
+    const symbols: string[] = (typeof lib.getMonomerSymbolsByType === 'function'
+      ? lib.getMonomerSymbolsByType('PEPTIDE') : []).slice().sort().slice(0, 20);
+    const map: {[s: string]: string} = {};
+    for (const s of symbols) map[s] = JSON.stringify(lib.getMonomerColors('HELM_AA', s));
+    return {sig: JSON.stringify(map), count: symbols.length};
+  });
+}
 test('Bio monomer_library source-class lifecycle: load → edit/save round-trip → save project with library reference', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   const stamp = Date.now();
   const workingCopy = `bio-lifecycle-monomer-library-${stamp}.json`;
@@ -25,6 +55,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
   const syntheticSymbol = `XYZ_TEST_${stamp}`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   let workingCopyWritten = false;
+  let preColors: {sig: string; count: number} | null = null;
   await loginToDatagrok(page);
   // Setup — open the HELM dataset so the renderer touches the library color-coding path.
   await page.evaluate(async (path) => {
@@ -34,35 +65,39 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(() => resolve(), 4000);
-    });
-    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-    const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-    if (hasMacromolecule) {
-      for (let i = 0; i < 60; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+    const hasMacro = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+      .some((c: any) => c.semType === 'Macromolecule');
+    for (let i = 0; i < 100; i++) {
+      if (hasMacro()) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    if (hasMacro()) {
+      for (let i = 0; i < 75; i++) {
+        const cnv = document.querySelector('[name="viewer-Grid"] canvas') as HTMLCanvasElement | null;
+        if (cnv && cnv.width > 0 && cnv.height > 0) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
-    const probes = ['Bio:getMonomerLibHelper', 'Bio:getSeqHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+    for (let i = 0; i < 30; i++) {
+      try {
+        const helper = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
+        if (helper != null) return;
+      } catch { /* retry */ }
+      await new Promise((r) => setTimeout(r, 1000));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
   try {
     // Scenario 1 — Load library via service surface
     await softStep('S1.1-1.2: getMonomerLibHelper returns singleton + canonical lib readable via FileShare', async () => {
       const result = await page.evaluate(async (candidates) => {
         const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
+        const helper2: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
         const hasHelper = helper != null;
+        const sameHelper = helper != null && helper === helper2;
         try {
           if (helper && typeof helper.awaitLoaded === 'function') {
             try { await helper.awaitLoaded(30_000); }
@@ -91,12 +126,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
           throw new Error(`S1.2: ${chosenPath} did not parse as JSON: ${String(e).slice(0, 200)}`);
         }
         const monomers: any[] = Array.isArray(parsed) ? parsed : [];
-        const sample = monomers.slice(0, 5);
-        const allHaveSymbol = sample.length > 0 && sample.every((m: any) => typeof m?.symbol === 'string');
-        const allHaveStructure = sample.length > 0 &&
-          sample.every((m: any) => typeof m?.molfile === 'string' || typeof m?.smiles === 'string');
+        const allHaveSymbol = monomers.length > 0 && monomers.every((m: any) => typeof m?.symbol === 'string');
+        const allHaveStructure = monomers.length > 0 &&
+          monomers.every((m: any) => typeof m?.molfile === 'string' || typeof m?.smiles === 'string');
         return {
           hasHelper,
+          sameHelper,
           chosenPath,
           monomersArrayPresent: Array.isArray(parsed),
           monomerCount: monomers.length,
@@ -106,6 +141,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         };
       }, canonicalLibCandidates);
       expect(result.hasHelper).toBe(true);
+      expect(result.sameHelper, 'getMonomerLibHelper must return the same singleton instance on repeat calls').toBe(true);
       expect(result.chosenPath).not.toBeNull();
       expect(result.sourceJsonLen).toBeGreaterThan(0);
       expect(result.monomersArrayPresent).toBe(true);
@@ -114,18 +150,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.allHaveStructure).toBe(true);
     });
     await softStep('S1.3: ribbon Bio | Manage | Monomer Libraries opens View; canonical library appears in listing', async () => {
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 500));
-        const manage = document.querySelector('[name="div-Bio---Manage"]')!;
-        manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 500));
-        (document.querySelector(
-          '[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click();
-      });
-      await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Manage Monomer Libraries',
-        null, {timeout: 30_000});
+      await openManageMonomerLibrariesRibbon(page);
       const listing = await page.evaluate(() => {
         const v = grok.shell.v;
         const root: any = v?.root;
@@ -188,7 +213,10 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
             return span ? (span.textContent || '').trim() : '';
           }).filter((s: string) => s.length > 0);
           dialog.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-          await new Promise((r) => setTimeout(r, 800));
+          for (let i = 0; i < 40; i++) {
+            if (!document.querySelector('.d4-dialog .monomer-lib-controls-form')) break;
+            await new Promise((r) => setTimeout(r, 100));
+          }
         }
         return {
           dispatchErr: null,
@@ -206,11 +234,8 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.dialogOpened,
         `expected dialog with .monomer-lib-controls-form within 10s; view labels: [${result.viewLabels.join(', ')}]`).toBe(true);
       expect(result.dialogRowCount).toBeGreaterThanOrEqual(1);
-      const cataloguesOverlap = result.viewLabels.length > 0 &&
-        result.dialogLabels.length > 0 &&
-        result.viewLabels.some((l: string) => result.dialogLabels.includes(l));
-      expect(cataloguesOverlap,
-        `view labels [${result.viewLabels.join(', ')}] do not share any entry with dialog labels [${result.dialogLabels.join(', ')}]`).toBe(true);
+      expect(result.cataloguesAgree,
+        `view labels [${result.viewLabels.join(', ')}] disagree with dialog labels [${result.dialogLabels.join(', ')}]`).toBe(true);
     });
     // Scenario 2 — Save edited library back to FileShare
     await softStep('S2.1: working copy lands under System:AppData/Bio/monomer-libraries via writeAsText', async () => {
@@ -293,17 +318,19 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.afterCount).toBe(result.beforeCount + 1);
       expect(result.hasSynthetic).toBe(true);
     });
-    await softStep('S2.3: reload via loadMonomerLib(true) — working-copy library discoverable in available set', async () => {
-      const result = await page.evaluate(async ({fileName, stem}) => {
+    await softStep('S2.3: reload via loadMonomerLib(true) — working copy available AND synthetic monomer in in-memory cache', async () => {
+      const result = await page.evaluate(async ({fileName, stem, symbol}) => {
         const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
         try {
-          if (typeof helper.loadMonomerLib === 'function') {
+          // Refresh provider file lists first so the freshly written working copy is picked up by the reload.
+          if (typeof helper.getAvaliableLibraryNames === 'function')
+            await helper.getAvaliableLibraryNames(true);
+          if (typeof helper.loadMonomerLib === 'function')
             await helper.loadMonomerLib(true);
-          } else if (typeof helper.loadLibraries === 'function') {
+          else if (typeof helper.loadLibraries === 'function')
             await helper.loadLibraries(true);
-          }
         } catch (e) {
-          return {reloadErr: String(e).slice(0, 200), inAvailable: false, availableNames: []};
+          return {reloadErr: String(e).slice(0, 200), inAvailable: false, inMemory: false, availableNames: [], monomerCount: 0};
         }
         try {
           if (typeof helper.awaitLoaded === 'function') {
@@ -313,40 +340,36 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         } catch (_) { /* timeout non-fatal */ }
         let availableNames: string[] = [];
         try {
-          if (typeof helper.getAvaliableLibraryNames === 'function') {
-            try { availableNames = await helper.getAvaliableLibraryNames(true); }
-            catch (_) { availableNames = await helper.getAvaliableLibraryNames(); }
-          }
+          try { availableNames = await helper.getAvaliableLibraryNames(true); }
+          catch (_) { availableNames = await helper.getAvaliableLibraryNames(); }
         } catch (e) {
-          return {reloadErr: String(e).slice(0, 200), inAvailable: false, availableNames: []};
+          return {reloadErr: String(e).slice(0, 200), inAvailable: false, inMemory: false, availableNames: [], monomerCount: 0};
         }
-        const inAvailable = availableNames.some((n: string) =>
-          n === fileName || n.includes(stem));
-        return {reloadErr: null, inAvailable, availableNames};
-      }, {fileName: workingCopy, stem: workingCopy.replace(/\.json$/, '')});
+        const inAvailable = availableNames.some((n: string) => n === fileName || n.includes(stem));
+        let inMemory = false;
+        let monomerCount = 0;
+        try {
+          const lib: any = helper.getMonomerLib();
+          const all: any[] = typeof lib.toJSON === 'function' ? lib.toJSON() : [];
+          monomerCount = all.length;
+          inMemory = all.some((m: any) => m?.symbol === symbol) ||
+            (typeof lib.getMonomer === 'function' && lib.getMonomer('PEPTIDE', symbol) != null);
+        } catch (_) { /* leave false */ }
+        return {reloadErr: null, inAvailable, inMemory, availableNames, monomerCount};
+      }, {fileName: workingCopy, stem: workingCopy.replace(/\.json$/, ''), symbol: syntheticSymbol});
       expect(result.reloadErr, `reload error: ${result.reloadErr}`).toBeNull();
       expect(result.inAvailable,
         `expected working copy '${workingCopy}' (or stem) in available libraries; observed: [${result.availableNames.join(', ')}]`).toBe(true);
+      expect(result.monomerCount).toBeGreaterThan(0);
+      expect(result.inMemory,
+        `expected synthetic monomer '${syntheticSymbol}' present in reloaded in-memory library cache (${result.monomerCount} monomers) — stale-singleton regression`).toBe(true);
     });
     await softStep('S2.4: reopen Manage Monomer Libraries view — working copy appears in listing', async () => {
-      await page.evaluate(async () => {
+      await page.evaluate(() => {
         const v = grok.shell.v;
-        if (v && v.name === 'Manage Monomer Libraries' && typeof v.close === 'function') {
-          v.close();
-          await new Promise((r) => setTimeout(r, 500));
-        }
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 500));
-        const manage = document.querySelector('[name="div-Bio---Manage"]')!;
-        manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 500));
-        (document.querySelector(
-          '[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click();
+        if (v && v.name === 'Manage Monomer Libraries' && typeof v.close === 'function') v.close();
       });
-      await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Manage Monomer Libraries',
-        null, {timeout: 30_000});
-      await page.waitForTimeout(2000);
+      await openManageMonomerLibrariesRibbon(page);
       const result = await page.evaluate(({fileName, stem}) => {
         const root: any = grok.shell.v?.root;
         const form: any = root?.querySelector?.('.monomer-lib-controls-form');
@@ -411,6 +434,9 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(info.hasMacro).toBe(true);
       expect(info.units).toBe('helm');
       expect(info.rowCount).toBeGreaterThan(0);
+      // Snapshot the monomer color set from the working-copy library before the save (scenario headline invariant).
+      preColors = await captureMonomerColors(page);
+      expect(preColors.count, 'expected peptide monomer colors captured before save').toBeGreaterThan(0);
     });
     // Close the Manage view so the layout-save helper sees the HELM TableView.
     await page.evaluate(async () => {
@@ -471,6 +497,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(post.hasWorkingCopy,
         `expected working copy '${workingCopy}' (or stem) in post-reopen available libraries; observed: [${post.availableNames.join(', ')}]`).toBe(true);
       expect(post.availableCount).toBeGreaterThanOrEqual(1);
+      // Color-stability: the monomer color set must be unchanged across save/reopen (no color reset on reload).
+      const postColors = await captureMonomerColors(page);
+      expect(postColors.count, 'expected peptide monomer colors after reopen').toBeGreaterThan(0);
+      expect(postColors.sig,
+        'Macromolecule monomer color set changed across save/reopen — color-stability regression')
+        .toBe(preColors!.sig);
     });
   } finally {
     // Scenario 4 — Cleanup (runs regardless of earlier failures)

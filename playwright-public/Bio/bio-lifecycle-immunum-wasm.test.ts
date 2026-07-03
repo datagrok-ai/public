@@ -11,12 +11,15 @@ import {
 } from '../helpers/projects';
 test.use(specTestOptions);
 test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+reopen → re-run', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(240_000);
   stepErrors.length = 0;
   const stamp = Date.now();
   const projectName = `bio-lifecycle-immunum-wasm-${stamp}`;
   const antibodyFixturePath = 'System:AppData/Bio/samples/antibodies.csv';
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
+  // Hoisted from S1.4 so Scenario 3 can assert the WASM re-load is deterministic.
+  let firstRunColNames: string[] | null = null;
+  let firstRunSample: Record<string, string | null> | null = null;
   const EXPECTED_IMMUNUM_COLS = [
     'position_names', 'chain_type', 'annotations_json',
     'numbering_detail', 'numbering_map',
@@ -41,18 +44,18 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, antibodyFixturePath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
-  await page.evaluate(async () => {
+  // Poll Bio readiness until one probe resolves (bounded), instead of a blind sleep.
+  await page.waitForFunction(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { if (await (grok as any).functions.call(fn, {})) return true; } catch { /* try next */ }
     }
-    await new Promise((r) => setTimeout(r, 3000));
-  });
+    return false;
+  }, null, {timeout: 60_000});
   // Scenario 1 — Trigger initBio + verify getSeqHelper resolves
   await softStep('S1.1: initBio completes; Bio:getSeqHelper resolves to a usable singleton', async () => {
     const info = await page.evaluate(async () => {
@@ -95,15 +98,14 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
   });
   await softStep('S1.3-1.4: Apply Antibody Numbering (Immunum/IMGT) via top-menu; sibling column appended', async () => {
     const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Annotate"]')!
-        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector(
-        '[name="div-Bio---Annotate---Apply-Numbering-Scheme..."]') as HTMLElement).click();
-    });
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.locator('[name="div-Bio---Annotate"]').waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() => document.querySelector('[name="div-Bio---Annotate"]')!
+      .dispatchEvent(new MouseEvent('mouseover', {bubbles: true})));
+    await page.locator('[name="div-Bio---Annotate---Apply-Numbering-Scheme..."]')
+      .waitFor({state: 'attached', timeout: 10_000});
+    await page.evaluate(() => (document.querySelector(
+      '[name="div-Bio---Annotate---Apply-Numbering-Scheme..."]') as HTMLElement).click());
     // Dialog title is "Apply Antibody Numbering" (not the menu label).
     await page.locator('[name="dialog-Apply-Antibody-Numbering"]').waitFor({timeout: 60_000});
     await page.locator('[name="dialog-Apply-Antibody-Numbering"] [name="button-OK"]').click();
@@ -164,6 +166,8 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(info.colNames).toContain(expectedName);
     for (const expectedName of EXPECTED_IMMUNUM_COLS)
       expect(info.sampleRow![expectedName]).not.toBeNull();
+    firstRunColNames = info.colNames;
+    firstRunSample = info.sampleRow;
   });
   try {
     // Scenario 2 — Save project with the numbering output
@@ -172,13 +176,15 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(saved.projectId).toBeTruthy();
       expect(saved.primaryTableInfoId).toBeTruthy();
     });
-    await softStep('S2.2: saved project is findable server-side via dapi.projects.find(id)', async () => {
+    await softStep('S2.2: saved project + its persisted TableInfo are findable server-side', async () => {
       if (!saved) throw new Error('S2.1 did not produce a saved project');
-      const ok = await page.evaluate(async (id) => {
-        const proj = await (grok as any).dapi.projects.find(id);
-        return proj != null && proj.id === id;
-      }, saved.projectId);
-      expect(ok).toBe(true);
+      const res = await page.evaluate(async ({projId, tiId}) => {
+        const proj = await (grok as any).dapi.projects.find(projId);
+        const ti = await (grok as any).dapi.tables.find(tiId);
+        return {projOk: proj != null && proj.id === projId, tiOk: ti != null && ti.id === tiId};
+      }, {projId: saved.projectId, tiId: saved.primaryTableInfoId});
+      expect(res.projOk).toBe(true);
+      expect(res.tiOk).toBe(true);
     });
     // Scenario 3 — Reopen project + WASM re-load + deterministic re-run.
     await softStep('S3.1-3.2: reopen project — antibody table + Macromolecule semType survive', async () => {
@@ -199,6 +205,10 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(post.hasMacro).toBe(true);
       expect(post.units).not.toBeNull();
       expect(post.rowCount).toBeGreaterThan(0);
+      // Note: the numbering output is a separate engine-result DataFrame (S1.4), not
+      // appended to the saved grid, so we do not assert derived immunum columns persist
+      // on reopen (platform persistence of derived columns unconfirmed on dev). The
+      // round-trip of the numbering itself is verified below via the deterministic re-run.
     });
     await softStep('S3.3-3.4: re-run Immunum on reopened table; result shape deterministic on WASM re-load', async () => {
       const info = await page.evaluate(async () => {
@@ -240,6 +250,9 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
         expect(info.colNames).toContain(expectedName);
       for (const expectedName of EXPECTED_IMMUNUM_COLS)
         expect(info.sampleRow![expectedName]).not.toBeNull();
+      // md 3.4: the WASM re-load must produce identical numbering for identical input.
+      expect(info.colNames).toEqual(firstRunColNames);
+      expect(info.sampleRow).toEqual(firstRunSample);
     });
   } finally {
     // Scenario 4 — Cleanup (runs regardless of earlier failures)

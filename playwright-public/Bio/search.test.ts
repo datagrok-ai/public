@@ -6,7 +6,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async () => {
@@ -16,28 +16,34 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv('System:AppData/Bio/tests/filter_FASTA.csv');
     grok.shell.addTableView(df);
+    const macroDetected = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+      .some((c: any) => c.semType === 'Macromolecule');
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(() => resolve(), 4000);
+      const t0 = Date.now();
+      const poll = setInterval(() => {
+        if (macroDetected() || Date.now() - t0 > 30_000) { clearInterval(poll); sub.unsubscribe(); resolve(); }
+      }, 200);
     });
-    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-    const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-    if (hasMacromolecule) {
+    if (macroDetected()) {
       for (let i = 0; i < 60; i++) {
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  await page.waitForFunction(() => grok.shell.tv?.dataFrame?.rowCount > 0, null, {timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      for (const fn of probes) {
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+      }
+      await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
   await page.evaluate(async () => {
     const names = [
@@ -57,9 +63,9 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       if (findAny()) return;
       await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 1500));
   });
   let baseRows = -1;
+  let macroName: string | null = null;
   await softStep('Open filter_FASTA.csv (14 rows, Macromolecule fasta column)', async () => {
     const info = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -72,18 +78,26 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       };
     });
     baseRows = info.rows;
-    expect(info.rows).toBeGreaterThan(0);
+    macroName = info.macroName;
+    expect(info.rows).toBe(14);
     expect(info.macroName).not.toBeNull();
     expect(info.units).toBe('fasta');
   });
   await softStep('Open Bio > Search > Subsequence Search', async () => {
     await page.evaluate(async () => {
+      const waitEl = async (sel: string): Promise<HTMLElement> => {
+        const dl = Date.now() + 15_000;
+        while (Date.now() < dl) {
+          const el = document.querySelector(sel) as HTMLElement | null;
+          if (el) return el;
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        throw new Error('menu element not found: ' + sel);
+      };
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Search"]')!
+      (await waitEl('[name="div-Bio---Search"]'))
         .dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector('[name="div-Bio---Search---Subsequence-Search-..."]') as HTMLElement).click();
+      (await waitEl('[name="div-Bio---Search---Subsequence-Search-..."]')).click();
     });
     await page.locator('[name="viewer-Filters"] input[placeholder="Substructure"]')
       .waitFor({timeout: 30_000});
@@ -95,7 +109,7 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       };
     });
     expect(info.filterCount).toBe(1);
-    expect(info.column).not.toBeNull();
+    expect(info.column).toBe(macroName);
   });
   const subsequence = 'RTDEVSNHTHDKPTLTWFEEIFEEYHSP';
   await softStep(`Set Sequence filter to ${subsequence} -> 1 row`, async () => {

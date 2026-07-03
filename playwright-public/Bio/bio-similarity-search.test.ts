@@ -7,7 +7,7 @@ import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 const DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await page.evaluate(async (path) => {
@@ -17,28 +17,28 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(() => resolve(), 4000);
-    });
-    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-    const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-    if (hasMacromolecule) {
-      for (let i = 0; i < 60; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      await new Promise((r) => setTimeout(r, 5000));
+    const semDeadline = Date.now() + 45_000;
+    while (Date.now() < semDeadline) {
+      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+      if (cols.some((c: any) => c.semType === 'Macromolecule')) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    for (let i = 0; i < 150; i++) {
+      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+      await new Promise((r) => setTimeout(r, 200));
     }
   }, DATASET_PATH);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      for (const fn of probes) {
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+      }
+      await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
   await page.evaluate(async () => {
     const candidates = ['Bio:similaritySearchTopMenu', 'Bio:similaritySearch'];
@@ -55,9 +55,13 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       if (findAny(candidates)) return;
       await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 1500));
   });
-  await page.waitForTimeout(2000);
+  await page.waitForFunction(() => {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) return false;
+    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+    return cols.some((c: any) => c.semType === 'Macromolecule');
+  }, null, {timeout: 45_000});
   const setupProbe = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -75,16 +79,25 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
   expect(setupProbe.macroSemType).toBe('Macromolecule');
   expect(setupProbe.rowCount,
     'scenario .md Setup: ≥ 5 rows so KNN K=3..5 is meaningful and a non-current row exists').toBeGreaterThanOrEqual(5);
+  let expectedKnn = 0;
   await softStep('Scenario 1.1: click Bio > Search > Similarity Search (no dialog — viewer docks directly)', async () => {
     await page.evaluate(async () => {
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      const group = document.querySelector('[name="div-Bio---Search"]');
+      let group: Element | null = null;
+      for (let i = 0; i < 50; i++) {
+        group = document.querySelector('[name="div-Bio---Search"]');
+        if (group) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       if (!group) throw new Error('[name="div-Bio---Search"] group anchor not found');
       group.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
       group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      const leaf = document.querySelector('[name="div-Bio---Search---Similarity-Search"]');
+      let leaf: Element | null = null;
+      for (let i = 0; i < 50; i++) {
+        leaf = document.querySelector('[name="div-Bio---Search---Similarity-Search"]');
+        if (leaf) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       if (!leaf) throw new Error('[name="div-Bio---Search---Similarity-Search"] leaf not found under Bio > Search');
       (leaf as HTMLElement).click();
     });
@@ -96,7 +109,7 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
       if (!v) return false;
       return (v as any).idxs != null && (v as any).scores != null;
-    }, null, {timeout: 180_000});
+    }, null, {timeout: 45_000});
     const dockProbe = await page.evaluate(() => {
       const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
       const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
@@ -107,11 +120,13 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
         if (idxsCol && typeof idxsCol.length === 'number') knnRowCount = idxsCol.length;
       } catch {  }
       const targetMoleculeIdx = (v as any)?.targetMoleculeIdx ?? null;
+      const limit = typeof (v as any)?.limit === 'number' ? (v as any).limit : null;
       return {
         viewerPresent: !!v,
         viewerType: v?.type ?? null,
         viewerTypes,
         knnRowCount,
+        limit,
         targetMoleculeIdx,
         currentRowIdx: grok.shell.tv.dataFrame.currentRowIdx,
         viewerDockedDOM: !!document.querySelector('[name="viewer-Sequence-Similarity-Search"]'),
@@ -122,20 +137,26 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
     expect(dockProbe.viewerType).toBe('Sequence Similarity Search');
     expect(dockProbe.viewerDockedDOM,
       'viewer dock container [name="viewer-Sequence-Similarity-Search"] MUST be present in DOM').toBe(true);
+    expect(dockProbe.limit, 'viewer MUST expose its KNN limit property').not.toBeNull();
+    expectedKnn = Math.min(dockProbe.limit!, setupProbe.rowCount - 1) + 1;
     expect(dockProbe.knnRowCount,
-      'Viewer KNN compute MUST populate idxs with >=2 rows (target + at least one neighbour).' +
-      ` Observed: ${dockProbe.knnRowCount}`).not.toBeNull();
-    expect(dockProbe.knnRowCount!).toBeGreaterThanOrEqual(2);
+      `Viewer KNN compute MUST populate idxs with target + min(limit,rows-1) neighbours (expected ${expectedKnn}).` +
+      ` Observed: ${dockProbe.knnRowCount}`).toBe(expectedKnn);
+    const s1Errors = await page.evaluate(() => Array.from(
+      document.querySelectorAll('.d4-balloon-error, .grok-balloon-error')).map((e) => e.textContent ?? ''));
+    expect(s1Errors, '.md Scenario 1 Expected: No error balloon appears').toEqual([]);
   });
-  // Settle after Scenario 1's compute so Scenario 2's render isn't queued behind a pending renderPromise.
-  await page.waitForTimeout(1500);
   // Scenario 2 — Clicking a different row re-queries the KNN viewer.
   const scenario1Baseline = await page.evaluate(() => {
     const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
     const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
     const targetMoleculeIdx = (v as any)?.targetMoleculeIdx ?? null;
+    const idxsCol = (v as any)?.idxs;
+    const idxs = (idxsCol && typeof idxsCol.length === 'number')
+      ? Array.from({length: idxsCol.length}, (_, i) => idxsCol.get(i)) : null;
     return {
       targetMoleculeIdx,
+      idxs,
       currentRowIdx: grok.shell.tv.dataFrame.currentRowIdx,
     };
   });
@@ -156,24 +177,25 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       const targetMoleculeIdx = (v as any)?.targetMoleculeIdx ?? null;
       return targetMoleculeIdx !== null
         && targetMoleculeIdx !== (baseline as any).targetMoleculeIdx;
-    }, scenario1Baseline, {timeout: 180_000});
+    }, scenario1Baseline, {timeout: 45_000});
     await page.waitForFunction(() => {
       const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
       const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
       if (!v) return false;
       return (v as any).idxs != null && (v as any).scores != null;
-    }, null, {timeout: 180_000});
+    }, null, {timeout: 45_000});
     const scenario2Probe = await page.evaluate(() => {
       const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
       const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
       const targetMoleculeIdx = (v as any)?.targetMoleculeIdx ?? null;
       let knnRowCount: number | null = null;
-      try {
-        const idxsCol = (v as any)?.idxs;
-        if (idxsCol && typeof idxsCol.length === 'number') knnRowCount = idxsCol.length;
-      } catch { /* keep null */ }
+      const idxsCol = (v as any)?.idxs;
+      const idxs = (idxsCol && typeof idxsCol.length === 'number')
+        ? Array.from({length: idxsCol.length}, (_, i) => idxsCol.get(i)) : null;
+      if (idxs) knnRowCount = idxs.length;
       return {
         targetMoleculeIdx,
+        idxs,
         knnRowCount,
         currentRowIdx: grok.shell.tv.dataFrame.currentRowIdx,
         viewerPresent: !!v,
@@ -188,12 +210,20 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       `Viewer did not react to df.currentRowIdx change.`)
       .not.toBe(scenario1Baseline.targetMoleculeIdx);
     expect(scenario2Probe.knnRowCount,
-      `Re-queried KNN MUST populate >=2 rows. Observed: ${scenario2Probe.knnRowCount}`)
-      .not.toBeNull();
-    expect(scenario2Probe.knnRowCount!).toBeGreaterThanOrEqual(2);
+      `Re-queried KNN idxs MUST hold target + min(limit,rows-1) neighbours (expected ${expectedKnn}).` +
+      ` Observed: ${scenario2Probe.knnRowCount}`).toBe(expectedKnn);
+    // .md Scenario 2 Expected: neighbour panel updates — idxs recomputed for the new row, not left stale.
+    expect(scenario2Probe.idxs, 'Re-query MUST recompute the KNN neighbour set (idxs)').not.toBeNull();
+    expect(JSON.stringify(scenario2Probe.idxs),
+      `Neighbour set MUST change for the newly-clicked row. Scenario 1 idxs: ` +
+      `${JSON.stringify(scenario1Baseline.idxs)}; Scenario 2: ${JSON.stringify(scenario2Probe.idxs)}`)
+      .not.toBe(JSON.stringify(scenario1Baseline.idxs));
     expect(scenario2Probe.currentRowIdx).toBe(setupProbe.rowCount - 1);
     const dfStable = await page.evaluate(() => !!grok.shell.tv.dataFrame);
     expect(dfStable).toBe(true);
+    const s2Errors = await page.evaluate(() => Array.from(
+      document.querySelectorAll('.d4-balloon-error, .grok-balloon-error')).map((e) => e.textContent ?? ''));
+    expect(s2Errors, '.md Scenario 2 Expected: No error balloon appears').toEqual([]);
   });
   finishSpec();
 });

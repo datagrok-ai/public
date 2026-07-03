@@ -19,7 +19,7 @@ function heavyAtomIsotopeFlags(mol: string): string[] {
 }
 for (const ds of datasets) {
   test(`Bio Transform To Atomic Level + round-trip on ${ds.name}`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(360_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async (path) => {
@@ -29,28 +29,34 @@ for (const ds of datasets) {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
+      const detected = () => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Macromolecule');
       await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(() => resolve(), 4000);
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); finish(); });
+        (async () => {
+          for (let i = 0; i < 40 && !detected(); i++) await new Promise((r) => setTimeout(r, 200));
+          finish();
+        })();
       });
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-      if (hasMacromolecule) {
+      if (detected()) {
         for (let i = 0; i < 60; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          if (document.querySelector('[name="viewer-Grid"] canvas') && grok.shell.tv?.grid && df.rowCount > 0) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 5000));
       }
     }, ds.path);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-      for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      for (let i = 0; i < 15; i++) {
+        for (const fn of probes) {
+          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        }
+        await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 3000));
     });
     await softStep(`${ds.name}: Macromolecule column has units=${ds.units}`, async () => {
       const info: {hasMacro: boolean, units: string | null} = await page.evaluate(() => {
@@ -68,15 +74,13 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Molecule').length;
       });
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Transform"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector(
-          '[name="div-Bio---Transform---To-Atomic-Level..."]') as HTMLElement).click();
-      });
+      await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+      await page.locator('[name="div-Bio---Transform"]').waitFor({state: 'attached', timeout: 15_000});
+      await page.evaluate(() => document.querySelector('[name="div-Bio---Transform"]')!
+        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true})));
+      await page.locator('[name="div-Bio---Transform---To-Atomic-Level..."]').waitFor({state: 'attached', timeout: 15_000});
+      await page.evaluate(() =>
+        (document.querySelector('[name="div-Bio---Transform---To-Atomic-Level..."]') as HTMLElement).click());
       await page.locator('[name="dialog-To-Atomic-Level"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-To-Atomic-Level"] [name="button-OK"]').click();
       await page.waitForFunction((base) => {
@@ -100,28 +104,39 @@ for (const ds of datasets) {
         });
       expect(info.hasMol).toBe(true);
       expect(info.units).toBe('molblock');
+      expect(info.name).toMatch(/^molfile\(/);
       expect(info.firstCell).not.toBeNull();
       expect(info.firstCell!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-    // Scenario 2 — Column Context Panel "To Atomic Level" action opens the same dialog.
-    await softStep(`${ds.name}: Context Panel column-action "To Atomic Level" opens the same dialog`, async () => {
+    // Scenario 2 — Column context-panel "To Atomic Level" action runs the same conversion.
+    await softStep(`${ds.name}: Context Panel column-action "To Atomic Level" produces a molblock column`, async () => {
+      const beforeMolCount: number = await page.evaluate(() => {
+        const df = grok.shell.tv.dataFrame;
+        const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+        return cols.filter((c: any) => c.semType === 'Molecule').length;
+      });
       await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
         if (macro) grok.shell.o = macro;
       });
-      await page.waitForTimeout(800);
+      await page.waitForFunction(() =>
+        Array.from(document.querySelectorAll('.d4-accordion-pane-header')).some((h) => h.textContent === 'Actions'),
+      null, {timeout: 15_000});
       await page.evaluate(() => {
         for (const h of Array.from(document.querySelectorAll('.d4-accordion-pane-header'))) {
           if ((h as HTMLElement).textContent === 'Actions')
             h.dispatchEvent(new MouseEvent('click', {bubbles: true}));
         }
       });
-      await page.waitForTimeout(800);
+      await page.waitForFunction(() =>
+        Array.from(document.querySelectorAll('label.d4-link-action'))
+          .some((l) => l.textContent?.trim().toLowerCase().startsWith('to atomic level')),
+      null, {timeout: 15_000});
       const clicked: boolean = await page.evaluate(() => {
         const labels = Array.from(document.querySelectorAll('label.d4-link-action'));
         const link = labels.find((l) => (l as HTMLElement).textContent?.trim()
@@ -134,11 +149,30 @@ for (const ds of datasets) {
       });
       expect(clicked).toBe(true);
       await page.locator('[name="dialog-To-Atomic-Level"]').waitFor({timeout: 30_000});
-      const cancelBtn = page.locator('[name="dialog-To-Atomic-Level"] [name="button-CANCEL"]');
-      if (await cancelBtn.count() > 0)
-        await cancelBtn.first().click();
-      else
-        await page.keyboard.press('Escape');
+      await page.locator('[name="dialog-To-Atomic-Level"] [name="button-OK"]').click();
+      await page.waitForFunction((base) => {
+        const df = grok.shell.tv.dataFrame;
+        const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+        return cols.filter((c: any) => c.semType === 'Molecule').length > base;
+      }, beforeMolCount, {timeout: 120_000});
+      const info: {units: string | null, name: string | null, firstCell: string | null} =
+        await page.evaluate(() => {
+          const df = grok.shell.tv.dataFrame;
+          const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+          const mol: any = cols.reverse().find((c: any) => c.semType === 'Molecule');
+          let firstCell: string | null = null;
+          if (mol) {
+            for (let r = 0; r < Math.min(df.rowCount, 50); r++) {
+              const v = mol.get(r);
+              if (v != null && String(v).length > 0) { firstCell = String(v); break; }
+            }
+          }
+          return {units: mol?.meta?.units ?? null, name: mol?.name ?? null, firstCell};
+        });
+      expect(info.units).toBe('molblock');
+      expect(info.name).toMatch(/^molfile\(/);
+      expect(info.firstCell).not.toBeNull();
+      expect(info.firstCell!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
@@ -149,39 +183,41 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Macromolecule').length;
       });
-      await page.evaluate(async () => {
-        (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 400));
-        document.querySelector('[name="div-Bio---Transform"]')!
-          .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-        (document.querySelector(
-          '[name="div-Bio---Transform---Molecules-to-HELM..."]') as HTMLElement).click();
-      });
+      await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+      await page.locator('[name="div-Bio---Transform"]').waitFor({state: 'attached', timeout: 15_000});
+      await page.evaluate(() => document.querySelector('[name="div-Bio---Transform"]')!
+        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true})));
+      await page.locator('[name="div-Bio---Transform---Molecules-to-HELM..."]').waitFor({state: 'attached', timeout: 15_000});
+      await page.evaluate(() =>
+        (document.querySelector('[name="div-Bio---Transform---Molecules-to-HELM..."]') as HTMLElement).click());
       await page.locator('[name="dialog-Molecules-to-HELM"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Molecules-to-HELM"] [name="button-OK"]').click();
-      // Reverse conversion of atomic-level molecules back to HELM is heavy (full
-      // peptide structures); give it headroom on a cold/loaded stack — the test
-      // budget is 600s and CI retries once.
+      // Reverse conversion of atomic-level molecules back to HELM is heavy (full peptide
+      // structures + monomer matching); keep a large polled budget for a cold/loaded stack.
       await page.waitForFunction((base) => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Macromolecule').length > base;
       }, beforeMacroCount, {timeout: 300_000});
-      const info: {newMacroCount: number, lastUnits: string | null, lastName: string | null} =
+      const info: {newMacroCount: number, lastUnits: string | null, firstHelm: string | null} =
         await page.evaluate(() => {
           const df = grok.shell.tv.dataFrame;
           const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
           const macros = cols.filter((c: any) => c.semType === 'Macromolecule');
           const last: any = macros[macros.length - 1];
-          return {
-            newMacroCount: macros.length,
-            lastUnits: last?.meta?.units ?? null,
-            lastName: last?.name ?? null,
-          };
+          let firstHelm: string | null = null;
+          if (last) {
+            for (let r = 0; r < Math.min(df.rowCount, 50); r++) {
+              const v = last.get(r);
+              if (v != null && String(v).length > 0) { firstHelm = String(v); break; }
+            }
+          }
+          return {newMacroCount: macros.length, lastUnits: last?.meta?.units ?? null, firstHelm};
         });
       expect(info.newMacroCount).toBeGreaterThan(beforeMacroCount);
       expect(info.lastUnits).toBe('helm');
+      expect(info.firstHelm).not.toBeNull();
+      expect(info.firstHelm!).toMatch(/PEPTIDE\d+\{.+\}/);
       await page.waitForFunction(
         () => document.querySelectorAll('[name="dialog-Molecules-to-HELM"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});

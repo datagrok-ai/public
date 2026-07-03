@@ -15,7 +15,7 @@ declare const DG: any;
 const samplePdbPath = 'System:AppData/BiostructureViewer/samples/1bdq.pdb';
 
 test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regression guard', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   // pageerror capture supplementing the in-package contextMenuError sentinel.
@@ -63,7 +63,12 @@ test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regressi
             setTimeout(resolve, 5000);
           } catch (_) { resolve(undefined); }
         });
-        await new Promise((r) => setTimeout(r, 3000));
+        // Poll for the grid + overlay canvases to render (canvas[2] is the overlay).
+        for (let i = 0; i < 60; i++) {
+          const gr = tv && tv.grid ? tv.grid.root : null;
+          if (gr && gr.querySelectorAll('canvas').length >= 3) break;
+          await new Promise((r) => setTimeout(r, 300));
+        }
         // Force-call autostart to wire the onContextMenu hook (idempotent on a cold session).
         let autostartCalled = false;
         let autostartErr: string | null = null;
@@ -74,7 +79,7 @@ test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regressi
             autostartCalled = true;
           }
         } catch (e: any) { autostartErr = String(e && e.message ? e.message : e); }
-        await new Promise((r) => setTimeout(r, 4000));
+        // Hook readiness is polled authoritatively by the next step (probe loop); no blind wait here.
         // Initialize the in-package error sentinel that detectors.js writes to in its outer catch.
         if (!w.$biostructureViewer) w.$biostructureViewer = {};
         w.$biostructureViewer.contextMenuError = null;
@@ -211,8 +216,13 @@ test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regressi
         });
         overlay.dispatchEvent(evt);
 
-        // Settle: the onContextMenu callback is async.
-        await new Promise((r) => setTimeout(r, 2000));
+        // Poll for a positive completion signal (menu rendered) or a late async error,
+        // so a deferred contextMenuError write is still caught within the budget.
+        for (let i = 0; i < 15; i++) {
+          await new Promise((r) => setTimeout(r, 200));
+          if (w.$biostructureViewer && w.$biostructureViewer.contextMenuError) break;
+          if (document.querySelector('.d4-menu-popup')) break;
+        }
 
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         document.querySelectorAll('.d4-menu-popup').forEach((m) => { try { m.remove(); } catch (_) {} });
@@ -298,7 +308,11 @@ test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regressi
             clientX: populatedX, clientY: populatedY,
           });
           overlay.dispatchEvent(evt);
-          await new Promise((r) => setTimeout(r, 2000));
+          // Advance as soon as the menu renders instead of a blind 2s wait.
+          for (let k = 0; k < 12; k++) {
+            await new Promise((r) => setTimeout(r, 200));
+            if (document.querySelectorAll('.d4-menu-popup .d4-menu-item-label').length > 0) break;
+          }
 
           menuLabels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
             .map((el) => (el.textContent || '').trim());
@@ -324,7 +338,12 @@ test('BiostructureViewer / GROK-14552 grid null-cell right-click safety regressi
             showGroupEl.dispatchEvent(new MouseEvent('mouseenter', {
               bubbles: true, clientX: r.left + 10, clientY: r.top + 10,
             }));
-            await new Promise((rr) => setTimeout(rr, 800));
+            // Poll for the submenu to expand rather than a fixed 800ms wait.
+            for (let k = 0; k < 8; k++) {
+              await new Promise((rr) => setTimeout(rr, 100));
+              if (Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+                .some((el) => ['Biostructure', 'NGL'].includes((el.textContent || '').trim()))) break;
+            }
             const afterHoverLabels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
               .map((el) => (el.textContent || '').trim());
             showSubmenuExpanded = afterHoverLabels.includes('Biostructure') ||

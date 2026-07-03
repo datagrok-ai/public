@@ -13,7 +13,7 @@ test.use(specTestOptions);
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLib / getSeqHandler / getHelmMonomers', async ({page}) => {
-  test.setTimeout(360_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
@@ -177,7 +177,14 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           if (document.querySelector('[name="viewer-Grid"] canvas')) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 3000));
+        // Poll the actual readiness signal — a Macromolecule column with its
+        // detector-assigned units tag populated — instead of a fixed settle.
+        for (let i = 0; i < 40; i++) {
+          const ready = Array.from({length: dfHelm.columns.length}, (_, k) => dfHelm.columns.byIndex(k))
+            .some((c: any) => c.semType === 'Macromolecule' && c.getTag?.('units'));
+          if (ready) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
         const helmCols = Array.from({length: dfHelm.columns.length},
           (_, i) => dfHelm.columns.byIndex(i));
         const helmCol: any = helmCols.find((c: any) => c.semType === 'Macromolecule');
@@ -215,7 +222,12 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           if (document.querySelector('[name="viewer-Grid"] canvas')) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        await new Promise((r) => setTimeout(r, 3000));
+        for (let i = 0; i < 40; i++) {
+          const ready = Array.from({length: dfFasta.columns.length}, (_, k) => dfFasta.columns.byIndex(k))
+            .some((c: any) => c.semType === 'Macromolecule' && c.getTag?.('units'));
+          if (ready) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
         const fastaCols = Array.from({length: dfFasta.columns.length},
           (_, i) => dfFasta.columns.byIndex(i));
         const fastaCol: any = fastaCols.find((c: any) => c.semType === 'Macromolecule');
@@ -250,16 +262,17 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       // Atlas contract: both calls resolve to a non-null ISeqHandler instance.
       expect(out.helm?.resolved, `helm handler err: ${out.helm?.err ?? ''}`).toBe(true);
       expect(out.fasta?.resolved, `fasta handler err: ${out.fasta?.err ?? ''}`).toBe(true);
-      // Notation-correctness — at minimum the column's units tag should be
-      // 'helm' / 'fasta' respectively (the canonical detector output per
-      // bio.md L592-L595). The handler's own notation accessor may surface
-      // the same value or an internal enum form; assert via the column tag
-      // (load-bearing observable per bio.md "Common observability pieces").
+      // Column units tag is a supporting precondition (detector output).
       expect(out.helm?.unitsTag).toBe('helm');
       expect(out.fasta?.unitsTag).toBe('fasta');
-      // ISeqHandler surface contract — getSplitter() is the load-bearing
-      // method (used by all per-notation operations across the bio package).
+      // Notation-correctness (md Scenario 2 Expected) — the handler's OWN
+      // notation accessor must report the notation. NOTATION is a string enum
+      // (consts.ts: HELM='helm', FASTA='fasta'); normalize to be robust.
+      expect(String(out.helm?.notation ?? '').toLowerCase(), 'helm handler notation').toContain('helm');
+      expect(String(out.fasta?.notation ?? '').toLowerCase(), 'fasta handler notation').toContain('fasta');
+      // ISeqHandler surface contract — getSplitter() and getRegion() callable.
       expect(out.helm?.hasGetSplitter).toBe(true);
+      expect(out.helm?.hasGetRegion, 'helm handler getRegion callable').toBe(true);
       expect(out.fasta?.hasGetSplitter).toBe(true);
       // Per-column scoping: distinct handlers for distinct columns.
       expect(out.distinctInstances, 'handlers should be distinct instances per column').toBe(true);
@@ -300,7 +313,12 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
             if (document.querySelector('[name="viewer-Grid"] canvas')) break;
             await new Promise((r) => setTimeout(r, 200));
           }
-          await new Promise((r) => setTimeout(r, 3000));
+          for (let i = 0; i < 40; i++) {
+            const ready = Array.from({length: dfHelm.columns.length}, (_, k) => dfHelm.columns.byIndex(k))
+              .some((c: any) => c.semType === 'Macromolecule' && c.getTag?.('units'));
+            if (ready) break;
+            await new Promise((r) => setTimeout(r, 200));
+          }
         }
         const helmCols = Array.from({length: dfHelm.columns.length},
           (_, i) => dfHelm.columns.byIndex(i));
@@ -380,18 +398,11 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           unique: Array.from(symbolsInColumn),
           count: symbolsInColumn.size,
         };
-        // Compute the symmetric-difference statistics. The returned list may
-        // be larger than the strict observable-in-column set (e.g. due to
-        // upstream monomer-library merging) — the load-bearing direction is:
-        // every observable-in-column symbol should appear in the returned
-        // list (column ⊆ returned). The reverse direction (returned ⊆
-        // column) is documented as the "no monomer in the returned list
-        // should be absent from the source HELM strings" assertion — but
-        // SeqHelper implementations historically also include unused
-        // library monomers; assert the more robust column ⊆ returned
-        // direction and report the reverse-difference for diagnostic
-        // surfacing (without failing on it).
-        const returnedSet = new Set(monomerList);
+        // Set-equality both directions (md Scenario 3 Expected). getHelmMonomers
+        // delegates to getSeqMonomers = Object.keys(sh.stats.freq) — exactly the
+        // monomers observed in the column, no library merge — so returned and
+        // column-parsed sets must coincide. Ignore the empty gap symbol.
+        const returnedSet = new Set(monomerList.filter((s) => s.length > 0));
         const missingInReturned: string[] = [];
         for (const sym of symbolsInColumn) {
           if (!returnedSet.has(sym)) missingInReturned.push(sym);
@@ -409,16 +420,15 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       expect(out.monomers?.resolved, `getHelmMonomers err: ${out.monomers?.err ?? ''} tried=${JSON.stringify(out.monomers?.candidatesTried)}`).toBe(true);
       expect(out.monomers?.listType).toBe('array');
       expect(out.monomers?.count, `returned monomer list count`).toBeGreaterThan(0);
-      // Round-trip / mapping consistency — column-observed symbols ⊆ returned.
-      // The reverse direction (returned ⊆ column) is NOT asserted: the
-      // SeqHelper implementation may include monomers from the active
-      // monomer library merge that don't appear in the column's strings.
-      // Surface the reverse-direction stats in the diagnostic message
-      // without failing on them.
+      // Round-trip set-equality (md Scenario 3 Expected) — both directions.
       expect(out.columnSymbols?.count, 'unique symbols extracted from HELM column').toBeGreaterThan(0);
       expect(
         out.columnSymbols?.missingInReturned ?? [],
         `column ⊆ returned violated; column-symbols absent from returned list: ${JSON.stringify(out.columnSymbols?.missingInReturned)}`,
+      ).toEqual([]);
+      expect(
+        out.columnSymbols?.extraInReturned ?? [],
+        `returned ⊆ column violated; monomers returned but absent from HELM strings: ${JSON.stringify(out.columnSymbols?.extraInReturned)}`,
       ).toEqual([]);
       // No error balloon raised (scenario Expected bullet 4).
       expect(out.errBalloons, 'error balloon count after S3').toBe(0);

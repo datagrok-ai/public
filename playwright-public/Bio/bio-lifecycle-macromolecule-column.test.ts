@@ -12,7 +12,7 @@ import {
 } from '../helpers/projects';
 test.use(specTestOptions);
 test('Bio macromolecule_column source-class lifecycle: detect → convert → fasta round-trip → save+reopen', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(300_000);
   stepErrors.length = 0;
   const stamp = Date.now();
   const projectName = `bio-lifecycle-macromolecule-${stamp}`;
@@ -38,46 +38,59 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, 'System:AppData/Bio/tests/filter_HELM.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+    for (let i = 0; i < 30; i++) {
+      for (const fn of probes) {
+        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      }
+      await new Promise((r) => setTimeout(r, 200));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
+  const bioCellTypes = ['sequence', 'helm', 'separator', 'biln', 'custom', 'fasta'];
   await softStep('S1.2: Macromolecule detector classifies HELM column synchronously (units=helm)', async () => {
+    await page.waitForFunction((accepted: string[]) => {
+      const df = grok.shell.tv?.dataFrame;
+      if (!df) return false;
+      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+      const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
+      if (!macro) return false;
+      const ct = (grok.shell.tv as any).grid?.col?.(macro.name)?.cellType ?? null;
+      return ct !== null && accepted.indexOf(ct) >= 0;
+    }, bioCellTypes, {timeout: 60_000});
     const info = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
       const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
       return {
         hasMacro: !!macro,
-        units: macro?.meta?.units ?? null,
-        rendererTag: macro?.getTag?.('cell.renderer') ?? macro?.meta?.units ?? null,
+        units: macro?.getTag?.('units') ?? macro?.meta?.units ?? null,
+        gridCellType: (grok.shell.tv as any).grid?.col?.(macro?.name)?.cellType ?? null,
       };
     });
     expect(info.hasMacro).toBe(true);
     expect(info.units).toBe('helm');
-    expect(info.units).not.toBeNull();
+    expect(bioCellTypes, `HELM renderer must dispatch a bio sequence cellType, got ${info.gridCellType}`)
+      .toContain(info.gridCellType!);
   });
   await softStep('S1.3-1.4: Convert HELM → SEPARATOR via top-menu; new Macromolecule column appears with units=separator', async () => {
     const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
-    await page.evaluate(async () => {
-      (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 400));
-      document.querySelector('[name="div-Bio---Transform"]')!
-        .dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 400));
-      (document.querySelector(
-        '[name="div-Bio---Transform---Convert-Sequence-Notation..."]') as HTMLElement).click();
-    });
-    await page.locator('[name="dialog-Convert-Sequence-Notation"]').waitFor({timeout: 60_000});
-    await page.locator('[name="dialog-Convert-Sequence-Notation"] [name="button-OK"]').click();
+    await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
+    await page.locator('[name="div-Bio---Transform"]').waitFor({state: 'attached', timeout: 15_000});
+    await page.evaluate(() => document.querySelector('[name="div-Bio---Transform"]')!
+      .dispatchEvent(new MouseEvent('mouseover', {bubbles: true})));
+    await page.locator('[name="div-Bio---Transform---Convert-Sequence-Notation..."]').waitFor({state: 'attached', timeout: 15_000});
+    await page.evaluate(() => (document.querySelector(
+      '[name="div-Bio---Transform---Convert-Sequence-Notation..."]') as HTMLElement).click());
+    const dlg = page.locator('[name="dialog-Convert-Sequence-Notation"]');
+    await dlg.waitFor({timeout: 60_000});
+    await dlg.locator('[name="input-host-Convert-to"] select').selectOption('separator');
+    await dlg.locator('[name="input-host-Separator"] select').selectOption('-');
+    await dlg.locator('[name="button-OK"]').click();
     await page.waitForFunction(
       (b) => grok.shell.tv.dataFrame.columns.length > b, before, {timeout: 60_000});
     const info: {macroCount: number, lastUnits: string | null, allUnits: string[]} =
@@ -93,8 +106,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
         };
       });
     expect(info.macroCount).toBeGreaterThanOrEqual(2);
-    expect(info.lastUnits).not.toBe('helm');
-    expect(info.lastUnits).not.toBeNull();
+    expect(info.lastUnits).toBe('separator');
     await page.waitForFunction(
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
@@ -108,9 +120,15 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(() => resolve(), 4000);
     });
-    await new Promise((r) => setTimeout(r, 3000));
   }, 'System:AppData/Bio/tests/filter_FASTA.csv');
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  await page.waitForFunction(() => {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) return false;
+    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+    return cols.some((c: any) => c.semType === 'Macromolecule' &&
+      (c.getTag?.('units') ?? c.meta?.units) === 'fasta');
+  }, null, {timeout: 30_000});
   await softStep('S2.1: filter_FASTA.csv opens with Macromolecule semType (units=fasta)', async () => {
     const info = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -137,6 +155,13 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       const idColList = idCol ? [idCol] : [];
       const seqHelper: any = await (grok as any).functions.call('Bio:getSeqHelper', {});
       const seqHandler: any = seqHelper.getSeqHandler(seqCol);
+      const canonSeq = (handler: any, row: number): string => {
+        const ss: any = handler.getSplitted(row);
+        const mons: string[] = [];
+        for (let p = 0; p < ss.length; p++) mons.push(ss.getOriginal(p));
+        return mons.join('/');
+      };
+      const originalFirstSeq: string = canonSeq(seqHandler, 0);
       const fastaLines: string[] = [];
       const lineWidth = 60;
       for (let rowIdx = 0; rowIdx < seqHandler.length; rowIdx++) {
@@ -163,11 +188,21 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       } catch (e) {
         writeErr = String(e).slice(0, 200);
       }
-      let reimported: any = null;
       let reimportErr: string | null = null;
+      let reimportedSummary: {rowCount: number, cols: number, firstColSem: string | null} | null = null;
+      let reimportedFirstSeq: string | null = null;
       try {
-        const dfs: any = await (grok as any).functions.call('Bio:importFasta', {content: fastaText});
-        reimported = Array.isArray(dfs) ? dfs[0] : dfs;
+        const dfs: any = await (grok as any).functions.call('Bio:importFasta', {fileContent: fastaText});
+        const reimported: any = Array.isArray(dfs) ? dfs[0] : dfs;
+        const rCols = Array.from({length: reimported.columns.length}, (_, i) => reimported.columns.byIndex(i));
+        const rMacro: any = rCols.find((c: any) => c.semType === 'Macromolecule')
+          ?? reimported.columns.byIndex(reimported.columns.length - 1);
+        reimportedFirstSeq = canonSeq(seqHelper.getSeqHandler(rMacro), 0);
+        reimportedSummary = {
+          rowCount: reimported.rowCount,
+          cols: reimported.columns.length,
+          firstColSem: rMacro?.semType ?? null,
+        };
       } catch (e) {
         reimportErr = String(e).slice(0, 200);
       }
@@ -179,23 +214,22 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
           totalLen: fastaText.length,
         },
         writeErr,
-        reimported: reimported ? {
-          rowCount: reimported.rowCount,
-          cols: reimported.columns.length,
-          firstColSem: reimported.columns.byIndex(reimported.columns.length - 1).semType,
-        } : null,
+        reimported: reimportedSummary,
         reimportErr,
+        reimportedFirstSeq,
+        originalFirstSeq,
         originalRowCount: df.rowCount,
       };
     }, {tempPath: fastaTempPath});
     expect(result.fastaShape.startsWithHeader).toBe(true);
     expect(result.fastaShape.totalLen).toBeGreaterThan(0);
-    if (result.reimported) {
-      expect(result.reimported.rowCount).toBe(result.originalRowCount);
-      expect(result.reimported.firstColSem).toBe('Macromolecule');
-    } else {
-      expect(result.fastaShape.lineCount).toBeGreaterThan(1);
-    }
+    expect(result.writeErr, `FASTA write failed: ${result.writeErr}`).toBeNull();
+    expect(result.reimportErr, `Bio:importFasta failed: ${result.reimportErr}`).toBeNull();
+    expect(result.reimported).not.toBeNull();
+    expect(result.reimported!.rowCount).toBe(result.originalRowCount);
+    expect(result.reimported!.firstColSem).toBe('Macromolecule');
+    expect(result.reimportedFirstSeq, 'FASTA round-trip must preserve first sequence content')
+      .toBe(result.originalFirstSeq);
   });
   // Scenario 3 — Save project with analysis + reopen restores analysis output
   await softStep('S3.1: Open Bio | Analyze | Sequence Space with defaults — embedding columns + ScatterPlot dock', async () => {

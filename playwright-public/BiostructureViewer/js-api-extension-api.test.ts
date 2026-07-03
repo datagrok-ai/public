@@ -190,7 +190,7 @@ test.use(specTestOptions);
 const samplePdbPath = 'System:AppData/BiostructureViewer/samples/1bdq.pdb';
 
 test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(90_000);
   stepErrors.length = 0;
 
   // Console capture: bug-invariant (atlas edge_cases[5]) asserts the
@@ -313,8 +313,16 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
 
       const res = await page.evaluate(async () => {
         const g = (window as any).grok;
+        const waitFor = async (pred: () => boolean, timeoutMs: number) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < timeoutMs) {
+            if (pred()) return true;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          return pred();
+        };
         g.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await waitFor(() => (g.shell.views ? Array.from(g.shell.views).length === 0 : true), 5000);
 
         // Pre-state.
         const preViewCount = g.shell.views ? Array.from(g.shell.views).length : 0;
@@ -334,8 +342,9 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
         }
         const callDurationMs = Date.now() - t0;
 
-        // Settle per atlas edge_cases[6] (Mol* parse + draw is async).
-        await new Promise((r) => setTimeout(r, 3000));
+        // Settle per atlas edge_cases[6]: poll for the Mol* host mount
+        // instead of a blind sleep (returns as soon as .msp-plugin attaches).
+        await waitFor(() => !!document.querySelector('.msp-plugin'), 10000);
 
         // Post-state — the canonical observable per SR-01: a standalone
         // View has been added; shell.v is that View; its name is the
@@ -354,8 +363,11 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
         const hasMspPlugin = !!document.querySelector('.msp-plugin');
         const hasMspViewport = !!document.querySelector('.msp-viewport');
         const hasMspCanvas = !!document.querySelector('.msp-viewport canvas');
+        const probe = document.createElement('canvas');
+        const webglAvailable = !!(probe.getContext('webgl2') || probe.getContext('webgl'));
 
         return {
+          webglAvailable,
           preViewCount,
           callResolved,
           callRejectMessage,
@@ -369,35 +381,35 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
         };
       });
 
-      // SR-02: call resolves OR rejects with the documented engine-init
-      // timeout signature; any other reject IS a failure (e.g. a thrown
-      // dispatcher error or a parse-stage error).
-      const acceptedReject = res.callRejectMessage === 'timeout';
-      expect(res.callResolved || acceptedReject).toBe(true);
-
-      // Shell-state observable side-effect (SR-01): a new View has been
-      // added. The standalone-view creation in initViewer happens
-      // synchronously BEFORE the canvas3dInit await begins, so the View IS
-      // present regardless of WebGL outcome.
+      // Shell-state observable side-effect (SR-01), WebGL-independent: the
+      // standalone view is created synchronously BEFORE the canvas3dInit
+      // await, so it IS present regardless of WebGL outcome. The byId path
+      // uses initViewer's default viewName === 'Mol*'
+      // (src/viewers/molstar-viewer/utils.ts#L60); the view has type 'view'
+      // (a DG.View), NOT 'TableView' (the scenario .md tv.viewers walk).
       expect(res.postViewCount).toBeGreaterThan(res.preViewCount);
-
-      // The byId path uses initViewer's default viewName === 'Mol*'
-      // (src/viewers/molstar-viewer/utils.ts#L60). The current view is the
-      // newly created standalone view.
       expect(res.currInfo).not.toBe(null);
       expect(res.currInfo!.name).toBe('Mol*');
-      // SR-01: the standalone view has type === 'view' (a DG.View), NOT
-      // type === 'TableView' (which the scenario .md tv.viewers walk
-      // assumed). The atlas-documented "viewer is present in shell state"
-      // bullet is preserved at this surface.
       expect(res.currInfo!.type).toBe('view');
 
-      // Atlas edge_cases[6] / references/viewers/biostructureviewer.md#L50:
-      // the Mol* engine host (.msp-plugin) mounts inside the View's root.
-      // The canvas itself is canvas3dInit-gated (may be absent under
-      // WebGL-uncertain runtime per SR-02). Render-readiness assertion is
-      // therefore on the host DOM, not the canvas.
+      // Mol* engine host (.msp-plugin) mounts inside the view root regardless
+      // of WebGL — positive proof the call did real render work (pairs with
+      // the negative pitfall check below so absence-of-error can't pass on a
+      // no-op).
       expect(res.hasMspPlugin).toBe(true);
+
+      // WebGL-gated invariants. Under healthy WebGL the grok.functions.call
+      // resolves and the .msp-viewport canvas draws — hard-assert both. In
+      // headless CI WebGL is unavailable, so createRcsbViewer's canvas3dInit
+      // subscription rejects with the literal 'timeout' (atlas edge_cases[6],
+      // SR-02); assert exactly that documented precondition — any other
+      // reject (parse error, dispatcher throw) still fails.
+      if (res.webglAvailable) {
+        expect(res.callResolved, res.callRejectMessage ?? '').toBe(true);
+        expect(res.hasMspViewport).toBe(true);
+        expect(res.hasMspCanvas).toBe(true);
+      } else
+        expect(res.callResolved || res.callRejectMessage === 'timeout', res.callRejectMessage ?? '').toBe(true);
 
       // Bug-invariant (atlas edge_cases[5]): the documented pitfall
       // signature MUST NOT surface in console or pageerror. viewPdbById's
@@ -440,8 +452,16 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
 
       const res = await page.evaluate(async (pdbPath) => {
         const g = (window as any).grok;
+        const waitFor = async (pred: () => boolean, timeoutMs: number) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < timeoutMs) {
+            if (pred()) return true;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          return pred();
+        };
         g.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        await waitFor(() => (g.shell.views ? Array.from(g.shell.views).length === 0 : true), 5000);
 
         // SR-04: acquire PDB text via the canonical apitest fixture. Avoids
         // the outbound dependency on files.rcsb.org while exercising the
@@ -470,7 +490,8 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
         }
         const callDurationMs = Date.now() - t0;
 
-        await new Promise((r) => setTimeout(r, 3000));
+        // Settle per atlas edge_cases[6]: poll for the Mol* host mount.
+        await waitFor(() => !!document.querySelector('.msp-plugin'), 10000);
 
         const postViewNames: Array<{name: string, type: string}> = [];
         if (g.shell.views) {
@@ -482,8 +503,11 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
         const hasMspPlugin = !!document.querySelector('.msp-plugin');
         const hasMspViewport = !!document.querySelector('.msp-viewport');
         const hasMspCanvas = !!document.querySelector('.msp-viewport canvas');
+        const probe = document.createElement('canvas');
+        const webglAvailable = !!(probe.getContext('webgl2') || probe.getContext('webgl'));
 
         return {
+          webglAvailable,
           pdbReadError,
           pdbContentLen: pdbContent ? pdbContent.length : 0,
           preViewCount,
@@ -503,23 +527,30 @@ test('BiostructureViewer / JS API extension (viewPdbById / viewPdbByData)', asyn
       expect(res.pdbReadError).toBe(null);
       expect(res.pdbContentLen).toBeGreaterThan(1000);
 
-      // SR-02: same conditional reject pattern as Scenario 1.
-      const acceptedReject = res.callRejectMessage === 'timeout';
-      expect(res.callResolved || acceptedReject).toBe(true);
-
-      // SR-01: shell-state observable side-effect.
-      expect(res.postViewCount).toBeGreaterThan(res.preViewCount);
-      expect(res.currInfo).not.toBe(null);
+      // SR-01: shell-state observable side-effect, WebGL-independent. The
       // byData path uses the supplied `name` arg as the view's name
       // (src/viewers/molstar-viewer/utils.ts#L94 -> initViewer(name) on
       // line 95). With name === '1QBS', the standalone view's .name is
       // '1QBS'. This is the bug-invariant of edge_cases[5]: the name is
       // supplied; the bare-pdb pitfall is avoided.
+      expect(res.postViewCount).toBeGreaterThan(res.preViewCount);
+      expect(res.currInfo).not.toBe(null);
       expect(res.currInfo!.name).toBe('1QBS');
       expect(res.currInfo!.type).toBe('view');
 
-      // Mol* engine host DOM presence (per atlas edge_cases[6]).
+      // Mol* engine host mounts regardless of WebGL — positive parse-success
+      // signal that pairs with the negative pitfall check below.
       expect(res.hasMspPlugin).toBe(true);
+
+      // WebGL-gated invariants (see Scenario 1): hard-assert resolve + canvas
+      // under healthy WebGL; in headless CI assert exactly the documented
+      // 'timeout' engine-init reject (atlas edge_cases[6], SR-02).
+      if (res.webglAvailable) {
+        expect(res.callResolved, res.callRejectMessage ?? '').toBe(true);
+        expect(res.hasMspViewport).toBe(true);
+        expect(res.hasMspCanvas).toBe(true);
+      } else
+        expect(res.callResolved || res.callRejectMessage === 'timeout', res.callRejectMessage ?? '').toBe(true);
 
       // Bug-invariant (atlas edge_cases[5]) — the explicit name argument
       // is the documented safe path; the pitfall signature MUST NOT

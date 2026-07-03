@@ -9,7 +9,7 @@ test.use(specTestOptions);
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Tree — 8-enhancement bundle regression (github-3221)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
@@ -31,56 +31,77 @@ test('Charts / Tree — 8-enhancement bundle regression (github-3221)', async ({
   let availableProps: string[] = [];
 
   await softStep('Setup: Open demog.csv, add Tree, set hierarchy CONTROL/SEX/RACE', async () => {
-    const result = await page.evaluate(async (path) => {
+    await page.evaluate(async (path) => {
       const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv(path);
-      const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
-      const tree = tv.addViewer('Tree');
-      await new Promise((r) => setTimeout(r, 3000));
-      try { tree.setOptions({hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE']}); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      const types: string[] = [];
-      for (const v of tv.viewers) types.push(v.type);
-      let propNames: string[] = [];
-      try { propNames = tree.props.getProperties().map((p: any) => p.name); } catch (e) {}
-      return {types, propNames};
+      grok.shell.addTableView(df);
     }, demogPath);
-    expect(result.types).toContain('Tree');
-    console.log('[Tree props]', result.propNames.join(', '));
-    availableProps = result.propNames;
+    await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 15_000});
+
+    await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Tree'));
+    await page.waitForFunction(() => {
+      const t = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Tree');
+      return t && (t.root as HTMLElement).children.length > 0;
+    }, null, {timeout: 15_000});
+
+    const setThrew = await page.evaluate(() => {
+      const tree = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Tree');
+      try { tree.setOptions({hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE']}); return false; }
+      catch (e) { return true; }
+    });
+    expect(setThrew).toBe(false);
+    // Let the hierarchy change re-render the tree. hierarchyColumnNames is a COLUMN_LIST
+    // property that is not readable via props.get on the dev Tree build (throws
+    // "Property not found"), so gate on the viewer staying rendered rather than
+    // round-tripping the value.
+    await page.waitForFunction(() => {
+      const t = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Tree');
+      if (!t || (t.root as HTMLElement).children.length === 0) return false;
+      try { return t.props.getProperties().length > 0; } catch { return false; }
+    }, null, {timeout: 30_000});
+
+    const meta = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const tree = tv.viewers.find((v: any) => v.type === 'Tree');
+      return {
+        types: tv.viewers.map((v: any) => v.type) as string[],
+        propNames: tree.props.getProperties().map((p: any) => p.name) as string[],
+      };
+    });
+    expect(meta.types).toContain('Tree');
+    expect(meta.propNames.length).toBeGreaterThan(0);
+    availableProps = meta.propNames;
   });
 
   // Helper applied 8 times — exercises each enhancement
   const exerciseProperty = async (propName: string, value: any, label: string) => {
     await softStep(`Capability: ${label} (${propName})`, async () => {
       const errorsBefore = consoleErrors.length;
-      const result = await page.evaluate(async ([p, v]) => {
-        const grok = (window as any).grok;
-        const tv = grok.shell.tv;
-        let tree: any = null;
-        for (const vw of tv.viewers) if (vw.type === 'Tree') { tree = vw; break; }
-        if (!tree) return {ok: false};
-        let setOptionsThrew = false;
-        try {
-          const opts: any = {}; opts[p] = v;
-          tree.setOptions(opts);
-        } catch (e) { setOptionsThrew = true; }
-        await new Promise((r) => setTimeout(r, 800));
-        let readBack: any = null;
-        try { readBack = tree.props.get(p); } catch (e) {}
+      const setThrew = await page.evaluate(([p, v]) => {
+        const tree = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Tree');
+        if (!tree) return null;
+        try { const opts: any = {}; opts[p] = v; tree.setOptions(opts); return false; }
+        catch (e) { return true; }
+      }, [propName, value] as [string, any]);
+      expect(setThrew).toBe(false);
+
+      // github-3221 invariant: setOptions actually takes effect — poll until the property round-trips.
+      await page.waitForFunction(([p, v]) => {
+        const tree = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Tree');
+        try { return JSON.stringify(tree.props.get(p)) === JSON.stringify(v); }
+        catch { return false; }
+      }, [propName, value] as [string, any], {timeout: 10_000});
+
+      const result = await page.evaluate(([p]) => {
+        const tree = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Tree');
         const root = tree.root as HTMLElement;
         return {
-          ok: true,
-          setOptionsThrew,
-          readBack,
+          readBack: tree.props.get(p),
           hasContent: root.children.length > 0,
           width: root.getBoundingClientRect().width,
         };
-      }, [propName, value] as [string, any]);
-      expect(result.ok).toBe(true);
-      // github-3221 invariant: each capability's setOptions does not throw.
-      expect(result.setOptionsThrew).toBe(false);
+      }, [propName] as [string]);
+      expect(result.readBack).toStrictEqual(value);
       expect(result.hasContent).toBe(true);
       expect(result.width).toBeGreaterThan(0);
       const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -100,20 +121,17 @@ test('Charts / Tree — 8-enhancement bundle regression (github-3221)', async ({
   await exerciseProperty('includeNulls', true, 'includeNulls ON');
   await exerciseProperty('includeNulls', false, 'includeNulls OFF');
 
-  // Capability 4 (layout) — guarded probe; 'layout' may not be exposed on dev build.
+  // Capability 4 (layout) — 'layout' may not be exposed on this Tree build (see riskNotes).
   if (availableProps.includes('layout'))
     await exerciseProperty('layout', 'orthogonal', 'layout=orthogonal');
   else
-    console.warn('[SKIP] charts.tree.layout not exposed on current Tree build; capability 4 deferred per scenario step 7 conditional');
+    test.info().annotations.push({type: 'skip', description: 'charts.tree.layout not exposed on current Tree build'});
 
   await exerciseProperty('showMouseOverLine', true, 'showMouseOverLine ON');
 
   await softStep('Final visual stability check after 8 enhancements', async () => {
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      const tv = grok.shell.tv;
-      let tree: any = null;
-      for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
+    const result = await page.evaluate(() => {
+      const tree = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Tree');
       if (!tree) return {ok: false};
       const root = tree.root as HTMLElement;
       const rect = root.getBoundingClientRect();
@@ -123,6 +141,7 @@ test('Charts / Tree — 8-enhancement bundle regression (github-3221)', async ({
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
+    expect(consoleErrors).toEqual([]);
   });
 
   await page.evaluate(() => (window as any).grok.shell.closeAll());

@@ -16,7 +16,7 @@ declare const DG: any;
 const sample1bdq = 'System:AppData/BiostructureViewer/samples/1bdq.pdb';
 
 test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + grid-context + PDB id panel)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(180_000);
   stepErrors.length = 0;
 
   const pageErrors: string[] = [];
@@ -44,8 +44,15 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
 
     await softStep('Scenario 1 step 1-3 — Open Molecule3D table; tv.addViewer("NGL"); canvas mount + container DOM', async () => {
       const res = await page.evaluate(async (pdbPath) => {
+        const pollUntil = async (pred: () => boolean, timeoutMs = 3000, stepMs = 75) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < timeoutMs) {
+            try { if (pred()) return true; } catch (_) { /* predicate not ready */ }
+            await new Promise((r) => setTimeout(r, stepMs));
+          }
+          return false;
+        };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
         const content = await grok.dapi.files.readAsText(pdbPath);
         const df = DG.DataFrame.fromColumns([
           DG.Column.fromStrings('id', ['1bdq']),
@@ -56,9 +63,10 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) { /* tag set */ }
         df.name = 'ngl-extension-fixture';
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 2000));
+        await pollUntil(() => !!document.querySelector('[name="viewer-Grid"]'));
         const v = tv.addViewer('NGL');
-        await new Promise((r) => setTimeout(r, 3000));
+        await pollUntil(() => !!document.querySelector('[name="viewer-NGL"]') &&
+          v?.props?.get?.('representation') === 'cartoon', 30_000);
         return {
           rowCount: df.rowCount,
           hasNglContainer: !!document.querySelector('[name="viewer-NGL"]'),
@@ -83,12 +91,20 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
+        const pollProp = async (prop: string, expected: any) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < 3000) {
+            if (v.props.get(prop) === expected) return true;
+            await new Promise((r) => setTimeout(r, 75));
+          }
+          return false;
+        };
         // NGL uses 'ball+stick' (Mol* uses 'ball-and-stick').
         v.setOptions({representation: 'ball+stick'});
-        await new Promise((r) => setTimeout(r, 1500));
+        await pollProp('representation', 'ball+stick');
         const afterRep = v.props.get('representation');
         v.setOptions({representation: 'cartoon'});
-        await new Promise((r) => setTimeout(r, 1000));
+        await pollProp('representation', 'cartoon');
         const restoredRep = v.props.get('representation');
         return {ok: true, afterRep, restoredRep};
       });
@@ -104,7 +120,9 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
         v.setOptions({ligandColumnName: 'structure'});
-        await new Promise((r) => setTimeout(r, 1200));
+        const t0 = Date.now();
+        while (Date.now() - t0 < 3000 && v.props.get('ligandColumnName') !== 'structure')
+          await new Promise((r) => setTimeout(r, 75));
         const ligandColAfter = v.props.get('ligandColumnName');
         return {ok: true, ligandColAfter};
       });
@@ -118,20 +136,28 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
+        const pollProp = async (prop: string, expected: any) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < 3000) {
+            if (v.props.get(prop) === expected) return true;
+            await new Promise((r) => setTimeout(r, 75));
+          }
+          return false;
+        };
         // Defaults: showCurrentRowLigand=true, showMouseOverRowLigand=true.
         const initCurrent = v.props.get('showCurrentRowLigand');
         const initMouseOver = v.props.get('showMouseOverRowLigand');
         v.setOptions({showCurrentRowLigand: false});
-        await new Promise((r) => setTimeout(r, 800));
+        await pollProp('showCurrentRowLigand', false);
         const curOff = v.props.get('showCurrentRowLigand');
         v.setOptions({showCurrentRowLigand: true});
-        await new Promise((r) => setTimeout(r, 800));
+        await pollProp('showCurrentRowLigand', true);
         const curOn = v.props.get('showCurrentRowLigand');
         v.setOptions({showMouseOverRowLigand: false});
-        await new Promise((r) => setTimeout(r, 800));
+        await pollProp('showMouseOverRowLigand', false);
         const moOff = v.props.get('showMouseOverRowLigand');
         v.setOptions({showMouseOverRowLigand: true});
-        await new Promise((r) => setTimeout(r, 800));
+        await pollProp('showMouseOverRowLigand', true);
         const moOn = v.props.get('showMouseOverRowLigand');
         return {ok: true, initCurrent, initMouseOver, curOff, curOn, moOff, moOn};
       });
@@ -154,11 +180,15 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         // Default: showSelectedRowsLigands=false.
         const initSelected = v.props.get('showSelectedRowsLigands');
         v.setOptions({showSelectedRowsLigands: true});
-        await new Promise((r) => setTimeout(r, 1200));
+        const t0 = Date.now();
+        while (Date.now() - t0 < 3000 && v.props.get('showSelectedRowsLigands') !== true)
+          await new Promise((r) => setTimeout(r, 75));
         const selOn = v.props.get('showSelectedRowsLigands');
         // 1-row fixture: assert the property round-trip + selection driver (multi-row math is GROK-17967's).
         df.selection.init((i: number) => i === 0);
-        await new Promise((r) => setTimeout(r, 800));
+        const t1 = Date.now();
+        while (Date.now() - t1 < 3000 && df.selection.trueCount < 1)
+          await new Promise((r) => setTimeout(r, 75));
         const selectedCount = df.selection.trueCount;
         return {ok: true, initSelected, selOn, selectedCount, rowCount: df.rowCount};
       });
@@ -251,9 +281,10 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         const previewMolstarDensityFns = DG.Func.find({name: 'previewBiostructureDensity', package: 'BiostructureViewer'});
 
         const fn = (arr: any[]): any => arr && arr[0];
-        // The fileViewer match surface is options.fileViewer (or options.ext); probe both.
+        // A fileViewer's match surface is options.fileViewer — probe it exactly (no ext fallback,
+        // so a preview func registered without a fileViewer binding fails rather than passes on ext).
         const extSet = (f: any): Set<string> => {
-          const raw = (f?.options?.fileViewer || f?.options?.ext || '') as string;
+          const raw = (f?.options?.fileViewer || '') as string;
           return new Set(
             raw.split(',').map((x: string) => x.trim().toLowerCase()).filter((x: string) => x.length > 0),
           );
@@ -306,8 +337,15 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
     await softStep('Scenario 4 setup — Stage Molecule3D table + force BSV autostart for deterministic context-menu wiring', async () => {
       const res = await page.evaluate(async (pdbPath) => {
         const w: any = window;
+        const pollUntil = async (pred: () => boolean, timeoutMs = 3000, stepMs = 75) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < timeoutMs) {
+            try { if (pred()) return true; } catch (_) { /* predicate not ready */ }
+            await new Promise((r) => setTimeout(r, stepMs));
+          }
+          return false;
+        };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
         const content = await grok.dapi.files.readAsText(pdbPath);
         const df = DG.DataFrame.fromColumns([
           DG.Column.fromStrings('id', ['1bdq', '1bdq-clone']),
@@ -325,7 +363,7 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
             setTimeout(resolve, 5000);
           } catch (_) { resolve(undefined); }
         });
-        await new Promise((r) => setTimeout(r, 3000));
+        await pollUntil(() => !!document.querySelector('[name="viewer-Grid"]'));
         // Force-call autostart to wire the context-menu hook.
         let autostartCalled = false;
         try {
@@ -335,7 +373,11 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
             autostartCalled = true;
           }
         } catch (_) { /* best-effort */ }
-        await new Promise((r) => setTimeout(r, 4000));
+        // Poll for the observable effect of autostart + grid render: overlay canvases present.
+        await pollUntil(() => {
+          const gr = tv && tv.grid ? tv.grid.root : null;
+          return !!gr && gr.querySelectorAll('canvas').length >= 3;
+        }, 10_000);
         if (!w.$biostructureViewer) w.$biostructureViewer = {};
         w.$biostructureViewer.contextMenuError = null;
         const gridRoot = tv && tv.grid ? tv.grid.root : null;
@@ -393,7 +435,11 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
             clientX: cx, clientY: cy,
           });
           overlay.dispatchEvent(evt);
-          await new Promise((r) => setTimeout(r, 2000));
+          // Poll for the popup to appear rather than waiting a fixed delay.
+          const tPopup = Date.now();
+          while (Date.now() - tPopup < 2500 &&
+            document.querySelectorAll('.d4-menu-popup .d4-menu-item-label').length === 0)
+            await new Promise((r) => setTimeout(r, 75));
 
           menuLabels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
             .map((el) => (el.textContent || '').trim());
@@ -416,7 +462,15 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
             showGroupEl.dispatchEvent(new MouseEvent('mouseenter', {
               bubbles: true, clientX: r.left + 10, clientY: r.top + 10,
             }));
-            await new Promise((rr) => setTimeout(rr, 800));
+            // Poll for the submenu leaves to expand after hover.
+            const tHover = Date.now();
+            const hasLeaves = () => {
+              const l = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+                .map((el) => (el.textContent || '').trim());
+              return l.includes('NGL') && l.includes('Biostructure');
+            };
+            while (Date.now() - tHover < 2000 && !hasLeaves())
+              await new Promise((rr) => setTimeout(rr, 75));
             const afterHoverLabels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
               .map((el) => (el.textContent || '').trim());
             hasNgl = hasNgl || afterHoverLabels.includes('NGL');
@@ -478,18 +532,25 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
     await softStep('Scenario 5 step 1-3 — Stage PDB_ID table; set current cell; right pane PDB-id-viewer surfaces', async () => {
       pageErrors.length = 0;
       const res = await page.evaluate(async () => {
+        const pollUntil = async (pred: () => boolean, timeoutMs = 3000, stepMs = 75) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < timeoutMs) {
+            try { if (pred()) return true; } catch (_) { /* predicate not ready */ }
+            await new Promise((r) => setTimeout(r, stepMs));
+          }
+          return false;
+        };
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
         const df = DG.DataFrame.fromColumns([
           DG.Column.fromStrings('pdb_id', ['1QBS', '1BNA', '1CRN']),
         ]);
         df.col('pdb_id').semType = 'PDB_ID';
         df.name = 'ngl-extension-pdb-id-fixture';
         const tv = grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 2500));
+        await pollUntil(() => !!document.querySelector('[name="viewer-Grid"]'));
         df.currentRowIdx = 0;
         try { df.currentCell = df.cell(0, 'pdb_id'); } catch (_) { /* setter variants */ }
-        await new Promise((r) => setTimeout(r, 1500));
+        await pollUntil(() => df.currentRowIdx === 0);
         return {
           rowCount: df.rowCount,
           pdbIdSemType: df.col('pdb_id').semType,
@@ -516,11 +577,18 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         let err: string | null = null;
         try { widget = await fn.apply({pdbId: '1QBS'}); }
         catch (e: any) { err = String(e?.message || e); }
+        // Stash the root so step 5 can prove the re-invocation produced a fresh widget.
+        const w: any = window;
+        w.__nglStep4Root = widget && widget.root ? widget.root : null;
         return {
           ok: !!widget,
           err,
           widgetRootTagName: widget && widget.root ? widget.root.tagName : null,
           widgetRootNotNull: !!(widget && widget.root),
+          // NGL Stage mounts its viewport into the widget host synchronously (RCSB structure
+          // load is async/outbound and not asserted here).
+          widgetRootChildCount: widget && widget.root ? widget.root.childElementCount : 0,
+          widgetRootClass: widget && widget.root ? widget.root.className : null,
           panelRole: fn.options?.role,
           panelName: fn.options?.name,
           inputSemType: fn.inputs?.[0]?.semType,
@@ -531,7 +599,11 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         `pdbIdNglPanelWidget apply failed: ${JSON.stringify(res)}`,
       ).toBe(true);
       expect(res.widgetRootNotNull).toBe(true);
-      expect(res.widgetRootTagName).toBe('DIV');
+      expect(
+        res.widgetRootChildCount,
+        `pdbIdNglPanelWidget produced an empty root (no NGL viewport mounted): ${JSON.stringify(res)}`,
+      ).toBeGreaterThan(0);
+      expect(res.widgetRootClass).toContain('d4-ngl-viewer');
       expect(res.panelRole).toBe('panel');
       expect(res.inputSemType).toBe('PDB_ID');
     });
@@ -544,7 +616,9 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         if (!df) return {ok: false, reason: 'no df'};
         df.currentRowIdx = 1;
         try { df.currentCell = df.cell(1, 'pdb_id'); } catch (_) { /* setter variants */ }
-        await new Promise((r) => setTimeout(r, 1500));
+        const t0 = Date.now();
+        while (Date.now() - t0 < 3000 && df.currentRowIdx !== 1)
+          await new Promise((r) => setTimeout(r, 75));
         // Re-invoke the widget func with the new PDB_ID.
         const fns = DG.Func.find({name: 'pdbIdNglPanelWidget', package: 'BiostructureViewer'});
         const fn = fns && fns[0];
@@ -552,17 +626,25 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         let err: string | null = null;
         try { widget = await fn.apply({pdbId: '1BNA'}); }
         catch (e: any) { err = String(e?.message || e); }
+        const w: any = window;
         return {
           ok: !!widget,
           err,
           currentRowIdx: df.currentRowIdx,
           widgetRootNotNull: !!(widget && widget.root),
+          widgetRootChildCount: widget && widget.root ? widget.root.childElementCount : 0,
+          // A fresh widget instance for the new id is a distinct root element from step 4's.
+          rootDiffersFromPrev: !!(widget && widget.root && widget.root !== w.__nglStep4Root),
           paneStillPresent: !!document.querySelector('[name="pane-PDB-id-viewer"]'),
         };
       });
       expect(res.ok).toBe(true);
       expect(res.currentRowIdx).toBe(1);
       expect(res.widgetRootNotNull).toBe(true);
+      // The re-invocation for '1BNA' must produce a fresh, non-empty widget (not the stale '1QBS' one).
+      // The id-specific 3D structure loads async from RCSB and is not asserted here.
+      expect(res.rootDiffersFromPrev).toBe(true);
+      expect(res.widgetRootChildCount).toBeGreaterThan(0);
       const errSig = pageErrors.filter((m) =>
         /TypeError|ReferenceError|Cannot read properties/i.test(m),
       );

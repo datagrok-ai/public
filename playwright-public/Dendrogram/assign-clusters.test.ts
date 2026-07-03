@@ -2,25 +2,28 @@
 sub_features_covered: [dendrogram.api.tree-helper.cut-tree-to-grid, dendrogram.clustering.assign-clusters-dialog, dendrogram.clustering.dialog, dendrogram.clustering.inject-tree-for-grid, dendrogram.clustering.menu.chem, dendrogram.event.context-menu, dendrogram.viewer]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
 async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
   await page.evaluate(async () => {
+    const pollLabel = async (pred: (t: string) => boolean): Promise<HTMLElement> => {
+      for (let i = 0; i < 30; i++) {
+        const el = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(m => pred(m.textContent!.trim())) as HTMLElement | undefined;
+        if (el) return el;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      throw new Error('menu label not found');
+    };
     const chem = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
     if (!chem) throw new Error('Top-menu Chem entry not found');
     chem.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 800));
-    const analyze = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'Analyze') as HTMLElement | undefined;
-    if (!analyze) throw new Error('"Analyze" sub-menu item not found');
+    const analyze = await pollLabel(t => t === 'Analyze');
     (analyze.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 600));
-    const hc = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => /Hierarchical\s+Clustering/i.test(m.textContent || '')) as HTMLElement | undefined;
-    if (!hc) throw new Error('"Hierarchical Clustering..." sub-menu item not found');
+    const hc = await pollLabel(t => /Hierarchical\s+Clustering/i.test(t));
     (hc.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
   await page.locator('[name="dialog-Hierarchical-Clustering"]').waitFor({timeout: 15_000});
@@ -56,9 +59,13 @@ async function openAssignClustersViaContextMenu(page: Page): Promise<void> {
       clientY: rect.top + rect.height / 2,
     });
     neighborRoot.dispatchEvent(ev);
-    await new Promise(r => setTimeout(r, 600));
-    const assign = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'Assign Clusters') as HTMLElement | undefined;
+    let assign: HTMLElement | undefined;
+    for (let i = 0; i < 30; i++) {
+      assign = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => m.textContent!.trim() === 'Assign Clusters') as HTMLElement | undefined;
+      if (assign) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     if (!assign) throw new Error('"Assign Clusters" context-menu item not found');
     (assign.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -78,32 +85,38 @@ async function setClustersInputAndAssign(page: Page, clusters: number): Promise<
   return await page.evaluate(async (target: number) => {
     const clustersInput = document.querySelector('[name="input-Clusters"]') as HTMLInputElement;
     if (!clustersInput) throw new Error('Clusters input not found');
+    const thresholdInput = document.querySelector('[name="input-Threshold"]') as HTMLInputElement;
+    const thresholdBefore = thresholdInput.value;
     clustersInput.value = String(target);
     clustersInput.dispatchEvent(new Event('input', {bubbles: true}));
     clustersInput.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 500));
-    const thresholdInput = document.querySelector('[name="input-Threshold"]') as HTMLInputElement;
+    for (let i = 0; i < 30; i++) {
+      if (thresholdInput.value !== thresholdBefore) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     const threshold = thresholdInput.value;
     const df = grok.shell.tv.dataFrame;
     const colsBefore = df.columns.names();
     const assignBtn = document.querySelector('[name="button-Assign"]') as HTMLButtonElement;
     if (!assignBtn) throw new Error('Assign button not found');
     assignBtn.click();
-    // Wait for dialog to close + new column to appear.
-    for (let i = 0; i < 30; i++) {
-      if (!document.querySelector('[name="dialog-Assign-Clusters"]')) break;
-      await new Promise(r => setTimeout(r, 200));
+    // Wait for dialog to close + the new Cluster column to appear on the df.
+    let newColumns: string[] = [];
+    for (let i = 0; i < 50; i++) {
+      newColumns = df.columns.names().filter((c: string) => !colsBefore.includes(c));
+      if (!document.querySelector('[name="dialog-Assign-Clusters"]') &&
+        newColumns.some((c: string) => /^Cluster \(/.test(c))) break;
+      await new Promise(r => setTimeout(r, 100));
     }
-    await new Promise(r => setTimeout(r, 500));
     const colsAfter = df.columns.names();
-    const newColumns = colsAfter.filter((c: string) => !colsBefore.includes(c));
+    newColumns = colsAfter.filter((c: string) => !colsBefore.includes(c));
     const allClusterColumns = colsAfter.filter((c: string) => c.startsWith('Cluster ('));
     return {threshold, newColumns, allClusterColumns};
   }, clusters);
 }
 
 test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding, replace-on-rerun)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 
@@ -120,14 +133,18 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 4000);
     });
-    // Chem dataset: wait for Grid canvas + extra settle for Chem package warmup.
+    // Chem dataset: wait for Grid canvas to mount.
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
-    await new Promise(r => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  // Chem package warmup — wait for the Chem top-menu to register before opening it.
+  await waitForChemMenu(page);
+  // The Chem autostart detector applies the Molecule semType asynchronously after the
+  // menu attaches; poll until it's applied so downstream steps see a Molecule column.
+  await waitForMolecule(page);
 
   // Scenario 1 — Build dendrogram via Chem | Analyze | Hierarchical Clustering on mol1K.
   await softStep('1. Open mol1K and verify molecule column rendered', async () => {
@@ -213,7 +230,10 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
       slider.value = String(newVal);
       slider.dispatchEvent(new Event('input', {bubbles: true}));
       slider.dispatchEvent(new Event('change', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
+      for (let i = 0; i < 30; i++) {
+        if (parseInt(clustersInput.value, 10) !== beforeClusters) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
       return {beforeClusters, afterClusters: parseInt(clustersInput.value, 10), sliderVal: slider.value};
     });
     expect(result.afterClusters, 'Clusters recomputed after slider move').not.toBe(result.beforeClusters);
@@ -228,7 +248,10 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
       clustersInput.value = '5';
       clustersInput.dispatchEvent(new Event('input', {bubbles: true}));
       clustersInput.dispatchEvent(new Event('change', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
+      for (let i = 0; i < 30; i++) {
+        if (parseFloat(thresholdInput.value) !== beforeThreshold) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
       return {beforeThreshold, afterThreshold: parseFloat(thresholdInput.value), clusters: clustersInput.value};
     });
     // Binary search maps Clusters→Threshold inexactly; assert "changed" + preserved input, not a literal.
@@ -239,7 +262,6 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
 
   // Scenario 4 — Assign creates a `Cluster (<threshold>)` column.
   await softStep('8. Click Assign with Clusters=5 → `Cluster (<n.nn>)` column appended', async () => {
-    const before = await page.evaluate(() => grok.shell.tv.dataFrame.columns.names());
     const result = await setClustersInputAndAssign(page, 5);
     // Scope the "exactly one created" invariant to the Cluster column: background Chem processing on
     // mol1K can append unrelated columns concurrently within the before/after snapshot window.
@@ -261,7 +283,8 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
     expect(colInfo.categoriesLen, 'category count == requested Clusters value').toBe(5);
     for (const v of colInfo.firstFiveValues)
       expect(v, 'cluster id is a non-empty string').toMatch(/^\d+$/);
-    expect(before.length + 1, 'column count grew by exactly one').toBe(before.length + 1);
+    const after = await page.evaluate(() => grok.shell.tv.dataFrame.columns.names());
+    expect(after, 'new Cluster column present in df after Assign').toContain(newCol);
   });
 
   await softStep('9. Re-open via magic-wand, Clusters=8, Assign → second column appended (auto-unique)', async () => {
@@ -293,8 +316,10 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
       'one neighbor attached before re-run').toBe(1);
     await openHierarchicalClusteringDialog(page);
     await clickOkAndWaitForNeighbor(page);
-    // Settle so the close-then-inject sequence finishes.
-    await page.waitForTimeout(2_000);
+    // The close-then-inject sequence settles to exactly one neighbor button.
+    await expect.poll(() => page.evaluate(() =>
+      document.querySelectorAll('.dendrogram-assign-clusters-bttn').length),
+      {timeout: 10_000}).toBe(1);
     const counts = await page.evaluate(() => ({
       neighborCount: document.querySelectorAll('.dendrogram-assign-clusters-bttn').length,
       closeBtnCount: document.querySelectorAll('.dendrogram-close-bttn').length,
@@ -303,7 +328,7 @@ test('Dendrogram / Assign Clusters end-to-end (column creation, two-way binding,
     }));
     expect(counts.neighborCount, 'exactly one dendrogram neighbor attached after re-run').toBe(1);
     expect(counts.closeBtnCount, 'exactly one close icon').toBe(1);
-    expect(counts.clusterColumnCount, 'prior Cluster columns preserved across re-run').toBeGreaterThanOrEqual(2);
+    expect(counts.clusterColumnCount, 'exactly two prior Cluster columns preserved, none added across re-run').toBe(2);
   });
 
   // Cleanup

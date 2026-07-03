@@ -5,7 +5,7 @@ sub_features_covered: [biostructure.data-provider.rcsb-mmcif, biostructure.file-
 // probes (no Mol* engine init, which surfaces WebGL noise in CI). Mol*-engine-dependent assertions
 // (Reset Camera, viewport context menu) are gated on .msp-plugin / .msp-viewport being present.
 // Scenarios 4, 7, 8 make outbound RCSB calls (bounded 30-90s; absence treated as a precondition).
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -15,8 +15,22 @@ declare const DG: any;
 
 const samplePdbIdCsv = 'System:AppData/BiostructureViewer/pdb_id.csv';
 
+// RCSB reachability probe (via the platform proxy, mirroring how Fetch PDB Sequences reaches RCSB).
+// Used to distinguish a transient outbound-network outage (explicit skip) from a genuinely broken
+// transform (real failure) when the chain-column append times out.
+async function rcsbReachable(page: Page): Promise<boolean> {
+  return await page.evaluate(async () => {
+    try {
+      const resp = await grok.dapi.fetchProxy('https://files.rcsb.org/download/1CRN.cif', {method: 'GET'});
+      return !!resp?.ok;
+    } catch (_e) {
+      return false;
+    }
+  });
+}
+
 test('BiostructureViewer / happy-path smoke', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(360_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -58,11 +72,17 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
   await softStep('Scenario 2a/4 — Build pdb_id table; tv.addViewer mounts [name="viewer-Biostructure"]', async () => {
     const res = await page.evaluate(async () => {
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 40; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('pdb_id', ['1CRN'])]);
       df.col('pdb_id').semType = 'PDB_ID';
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 40; i++) {
+        if (tv.grid || document.querySelector('[name="viewer-Grid"]')) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const v = tv.addViewer('Biostructure');
       // Cold-start readiness poll: wait up to 30s for the 'representation' descriptor to register
       // (props.get throws "Property not found" before the lazy package chunk loads on a cold context).
@@ -104,20 +124,18 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
   // Scenario 2b — Settings panel via gear icon (DOM driven).
   await softStep('Scenario 2b — Open viewer settings via gear (DOM); property panel surfaces', async () => {
     if (!scenarioMountedViewer) return;
-    const opened = await page.evaluate(async () => {
+    const gearClicked = await page.evaluate(() => {
       const container = document.querySelector('[name="viewer-Biostructure"]');
-      if (!container) return {gearClicked: false, panelOpened: false};
+      if (!container) return false;
       // Gear lives in the panel-titlebar of the enclosing .panel-base, not the viewer container.
       const gear = container.closest('.panel-base')?.querySelector(
         '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-      if (!gear) return {gearClicked: false, panelOpened: false};
+      if (!gear) return false;
       gear.click();
-      await new Promise((r) => setTimeout(r, 1500));
-      const cp = document.querySelector('.grok-prop-panel');
-      return {gearClicked: true, panelOpened: !!cp};
+      return true;
     });
-    expect(opened.gearClicked).toBe(true);
-    expect(opened.panelOpened).toBe(true);
+    expect(gearClicked).toBe(true);
+    await page.locator('.grok-prop-panel').waitFor({timeout: 10_000});
   });
 
   // Scenario 2b cont. — Switch representation cartoon -> ball-and-stick -> molecular-surface -> cartoon.
@@ -134,8 +152,13 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
       const observed: string[] = [];
       for (const r of reps) {
         v.setOptions({representation: r});
-        await new Promise((res) => setTimeout(res, 1500));
-        observed.push(v.props.get('representation'));
+        let val: any = null;
+        for (let i = 0; i < 50; i++) {
+          val = v.props.get('representation');
+          if (val === r) break;
+          await new Promise((res) => setTimeout(res, 100));
+        }
+        observed.push(val);
       }
       return {ok: true, observed};
     });
@@ -147,14 +170,20 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
   await softStep('Scenario 3 — Reset Camera overlay button click (DOM, precondition .msp-plugin)', async () => {
     const result = await page.evaluate(async () => {
       const pluginPresent = !!document.querySelector('.msp-plugin');
-      if (!pluginPresent) return {precondition: false, clicked: null};
+      if (!pluginPresent) return {precondition: false, btnFound: false, clicked: false};
       const btn = document.querySelector('button[title="Reset Camera"]') as HTMLButtonElement | null;
-      if (!btn) return {precondition: true, clicked: false};
+      if (!btn) return {precondition: true, btnFound: false, clicked: false};
       btn.click();
       await new Promise((r) => setTimeout(r, 400));
-      return {precondition: true, clicked: true};
+      return {precondition: true, btnFound: true, clicked: true};
     });
-    if (result.precondition) expect(result.clicked).toBe(true);
+    // Mol* WebGL engine is deliberately not initialized in CI (see top-of-file); when it is absent
+    // this is a declared skip, not silent coverage.
+    if (!result.precondition)
+      throw new Error('Test is skipped: Mol* engine (.msp-plugin) not initialized in CI');
+    expect(result.btnFound).toBe(true);
+    expect(result.clicked).toBe(true);
+    // GROK: observable camera-reset effect not asserted — Mol* engine unavailable in CI to verify against.
   });
 
   // Scenario 4 — RCSB mmCIF data provider wiring (JS-API setOptions path).
@@ -186,14 +215,20 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
   await softStep('Scenario 5 — Ligand + binding-site property descriptors (no engine init)', async () => {
     const res = await page.evaluate(async () => {
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 40; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       // Lightweight df: a single 'ligand' string column (no semType) so the engine never
       // enters the data-request pipeline.
       const df = DG.DataFrame.fromColumns([
         DG.Column.fromStrings('ligand', ['placeholder']),
       ]);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 40; i++) {
+        if (tv.grid || document.querySelector('[name="viewer-Grid"]')) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const v = tv.addViewer('Biostructure');
       // Cold-start readiness poll: wait up to 30s for the bindingSiteRadius descriptor to register.
       let props: any[] = [];
@@ -260,49 +295,57 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
       if (r.width === 0 || r.height === 0) return null;
       return {x: r.x, y: r.y, w: r.width, h: r.height};
     });
-    if (!rect) return; // precondition (viewport rendered) not met; no DOM driving asserted here
+    // Mol* WebGL viewport is deliberately not initialized in CI (see top-of-file); declared skip.
+    if (!rect)
+      throw new Error('Test is skipped: Mol* viewport (.msp-viewport) not rendered in CI');
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
-    await page.mouse.click(cx, cy, {button: 'right'});
-    await page.waitForTimeout(700);
-    const dlPresent = await page.evaluate(() => {
-      return !!document.querySelector('[name="div-Download"]');
-    });
-    if (dlPresent) {
-      await page.evaluate(async () => {
-        const dl = document.querySelector('[name="div-Download"]') as HTMLElement | null;
-        if (dl) dl.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 400));
-      });
-      await page.evaluate(() => {
-        const leaf = document.querySelector('[name="div-Download---As-PDB"]') as HTMLElement | null;
-        if (leaf) leaf.click();
-      });
-      await page.waitForTimeout(500);
-      // Re-trigger menu for As CIF.
-      const rect2 = await page.evaluate(() => {
-        const vp = document.querySelector('.msp-viewport') as HTMLElement | null;
-        if (!vp) return null;
-        const r = vp.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) return null;
-        return {x: r.x, y: r.y, w: r.width, h: r.height};
-      });
-      if (rect2) {
-        await page.mouse.click(rect2.x + rect2.w / 2, rect2.y + rect2.h / 2, {button: 'right'});
-        await page.waitForTimeout(700);
-        await page.evaluate(async () => {
-          const dl = document.querySelector('[name="div-Download"]') as HTMLElement | null;
-          if (dl) dl.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-          await new Promise((r) => setTimeout(r, 400));
-        });
-        await page.evaluate(() => {
-          const leaf = document.querySelector('[name="div-Download---As-CIF"]') as HTMLElement | null;
-          if (leaf) leaf.click();
-        });
+    // Spy the download side-effect: Mol* saves via a blob anchor click.
+    await page.evaluate(() => {
+      (window as any).__dlSpy = [];
+      const proto = HTMLAnchorElement.prototype as any;
+      if (!proto.__origClick) {
+        proto.__origClick = proto.click;
+        proto.click = function() {
+          if (this.download || (this.href && /^blob:/.test(this.href)))
+            (window as any).__dlSpy.push(this.download || this.href);
+          return proto.__origClick.apply(this, arguments);
+        };
       }
-    }
+    });
+    // As PDB.
+    await page.mouse.click(cx, cy, {button: 'right'});
+    await page.locator('[name="div-Download"]').waitFor({timeout: 10_000});
+    await page.evaluate(async () => {
+      const dl = document.querySelector('[name="div-Download"]') as HTMLElement | null;
+      if (dl) dl.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+      await new Promise((r) => setTimeout(r, 200));
+    });
+    const asPdbFound = await page.evaluate(() => {
+      const leaf = document.querySelector('[name="div-Download---As-PDB"]') as HTMLElement | null;
+      if (!leaf) return false;
+      leaf.click();
+      return true;
+    });
+    expect(asPdbFound).toBe(true);
+    // Re-trigger menu for As CIF.
+    await page.mouse.click(cx, cy, {button: 'right'});
+    await page.locator('[name="div-Download"]').waitFor({timeout: 10_000});
+    await page.evaluate(async () => {
+      const dl = document.querySelector('[name="div-Download"]') as HTMLElement | null;
+      if (dl) dl.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+      await new Promise((r) => setTimeout(r, 200));
+    });
+    const asCifFound = await page.evaluate(() => {
+      const leaf = document.querySelector('[name="div-Download---As-CIF"]') as HTMLElement | null;
+      if (!leaf) return false;
+      leaf.click();
+      return true;
+    });
+    expect(asCifFound).toBe(true);
+    // Both leaves must have triggered a file download.
+    await page.waitForFunction(() => ((window as any).__dlSpy || []).length >= 2, null, {timeout: 15_000});
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
   });
 
   // Scenario 7 — Bio | Transform | Fetch PDB Sequences appends Chain N columns (outbound RCSB).
@@ -311,7 +354,10 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
   await softStep('Scenario 7 — pdb_id.csv -> Bio | Transform | Fetch PDB Sequences (DOM driven; Bio-optional)', async () => {
     const setup = await page.evaluate(async (path) => {
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 40; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
       // Bio package menu registration: allow up to 8s.
@@ -348,13 +394,16 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
     await page.locator('[name="dialog-Fetch-PDB-Sequences"] [name="button-OK"]').click();
     scenario7DialogOk = true;
 
-    // 90s ceiling — outbound RCSB GraphQL. If chains never appear, skip the rest (Scenario 8 too).
+    // 90s ceiling — outbound RCSB GraphQL. A timeout is a real failure unless RCSB is unreachable,
+    // in which case skip explicitly (never swallow — that would hide a broken transform).
     try {
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base,
         beforeCount, {timeout: 90_000});
     } catch (e) {
-      return;
+      if (!(await rcsbReachable(page)))
+        throw new Error('Test is skipped: RCSB unreachable — Fetch PDB Sequences could not complete');
+      throw e;
     }
     const chainNames = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -401,7 +450,9 @@ test('BiostructureViewer / happy-path smoke', async ({page}) => {
         return names;
       });
     } catch (e) {
-      return;
+      if (!(await rcsbReachable(page)))
+        throw new Error('Test is skipped: RCSB unreachable — re-run Fetch PDB Sequences could not complete');
+      throw e;
     }
 
     for (const original of originalChains) expect(newColNames).toContain(original);

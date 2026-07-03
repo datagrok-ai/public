@@ -15,7 +15,7 @@ declare const DG: any;
 const sampleDockCsv = 'System:AppData/BiostructureViewer/samples/dock.csv';
 
 test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regression guard', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
@@ -37,27 +37,31 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
     // SCENARIO 1 — Multi-ligand fixture in the Biostructure (Mol*) viewer.
     let bioMountedDiag: any = null;
     let bioPropsDiag: any = null;
-    let bioSelectionCount = 0;
 
     await softStep('Scenario 1 step 1 — Open multi-ligand dock.csv; Biostructure viewer mounts', async () => {
       const result = await page.evaluate(async (path) => {
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        for (let i = 0; i < 50; i++) {
+          if (!grok.shell.tv) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         const df = await grok.dapi.files.readCsv(path);
         df.name = 'biostructure-bug-grok-17967-multiligand';
         const tv = grok.shell.addTableView(df);
-        // Wait for semantic-type detection (best-effort).
-        await new Promise((resolve) => {
-          const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-          setTimeout(resolve, 5000);
-        });
-        await new Promise((r) => setTimeout(r, 1500));
+        // Poll for semantic-type detection (best-effort; bounded 5s).
+        for (let i = 0; i < 50; i++) {
+          if (df.col('ligand')?.semType) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         const vBio = tv.addViewer('Biostructure');
-        await new Promise((r) => setTimeout(r, 3000));
+        // Poll until the viewer container is mounted and its representation prop is set.
+        for (let i = 0; i < 100; i++) {
+          if (document.querySelector('[name="viewer-Biostructure"]') && vBio?.props?.get?.('representation') != null) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         // Tag the ligand column Molecule3D so the picker accepts it as a wiring target.
         const ligandCol = df.col('ligand');
         if (ligandCol) ligandCol.semType = 'Molecule3D';
-        await new Promise((r) => setTimeout(r, 800));
         return {
           rowCount: df.rowCount,
           hasLigandCol: !!ligandCol,
@@ -76,7 +80,8 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
       expect(result.bioType).toBe('Biostructure');
       expect(result.defaultRep).toBe('cartoon');
       expect(result.hasLigandCol).toBe(true);
-      expect(result.ligandSemType).toBe('Molecule3D');
+      // semType is tagged Molecule3D above; picker acceptance is verified downstream via the
+      // ligandColumnName round-trip (asserting the value we just set here would be tautological).
       expect(result.rowCount).toBeGreaterThan(1);
       expect(result.viewerTypesAfter).toContain('Biostructure');
       bioMountedDiag = result;
@@ -92,7 +97,10 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
           ligandColumnName: 'ligand',
           showSelectedRowsLigands: true,
         });
-        await new Promise((r) => setTimeout(r, 1500));
+        for (let i = 0; i < 50; i++) {
+          if (vBio.props.get('ligandColumnName') === 'ligand') break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         return {
           ok: true,
           ligandColAfter: vBio.props.get('ligandColumnName'),
@@ -115,8 +123,7 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
         const df = tv.dataFrame;
         if (!df) return {ok: false, reason: 'no dataframe'};
         // Select the first 3 rows (multi-ligand selection).
-        df.selection.init((i: number) => i < 3);
-        await new Promise((r) => setTimeout(r, 1500));
+        df.selection.init((i: number) => i < 3); // synchronous — no wait needed
         return {
           ok: true,
           selectedCount: df.selection.trueCount,
@@ -124,9 +131,8 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
         };
       });
       expect(result.ok).toBe(true);
-      expect(result.selectedCount).toBeGreaterThanOrEqual(2);
-      expect(result.selectedCount).toBeLessThanOrEqual(result.rowCount);
-      bioSelectionCount = result.selectedCount;
+      expect(result.selectedCount).toBe(3);
+      expect(result.rowCount).toBeGreaterThanOrEqual(3);
     });
 
     // SCENARIO 2 — Same table, add NGL viewer, mirror the property contract; assert parity.
@@ -138,7 +144,10 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
         const tv = grok.shell.tv;
         if (!tv) return {ok: false, reason: 'no tv'};
         const vNgl = tv.addViewer('NGL');
-        await new Promise((r) => setTimeout(r, 3000));
+        for (let i = 0; i < 100; i++) {
+          if (document.querySelector('[name="viewer-NGL"]') && vNgl?.type === 'NGL') break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         return {
           ok: true,
           hasNglContainer: !!document.querySelector('[name="viewer-NGL"]'),
@@ -166,7 +175,10 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
           ligandColumnName: 'ligand',
           showSelectedRowsLigands: true,
         });
-        await new Promise((r) => setTimeout(r, 1500));
+        for (let i = 0; i < 50; i++) {
+          if (vNgl.props.get('ligandColumnName') === 'ligand') break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
         return {
           ok: true,
           ligandColAfter: vNgl.props.get('ligandColumnName'),
@@ -224,12 +236,16 @@ test('BiostructureViewer / GROK-17967 multi-ligand NGL/Biostructure parity regre
       ).toBe(result.nglShowSel);
       expect(result.bioShowSel).toBe(true);
 
-      // Both engines must report the same showCurrentRowLigand default.
-      expect(result.bioShowCur).toBe(result.nglShowCur);
+      // Both engines must report the documented showCurrentRowLigand default (true), not just equal.
+      expect(result.bioShowCur).toBe(true);
+      expect(result.nglShowCur).toBe(true);
 
-      // Shared selected-row count drives the per-row overlay on both engines.
-      expect(result.sharedSelectionCount).toBe(bioSelectionCount);
-      expect(result.sharedSelectionCount).toBeGreaterThanOrEqual(2);
+      // Shared selected-row count drives the per-row overlay on both engines: exactly the 3 rows
+      // selected via selection.init(i => i < 3).
+      expect(result.sharedSelectionCount).toBe(3);
+      // GROK-17967: per-engine loaded/overlaid ligand-count parity (the true render-state invariant)
+      // is NOT asserted here — no confirmed public JS accessor exposes each engine's loaded ligand
+      // entities. This step asserts the property-contract parity only (see header). Deferred for review.
     });
 
     await softStep('Scenario 2 step 6 — Teardown (best-effort)', async () => {

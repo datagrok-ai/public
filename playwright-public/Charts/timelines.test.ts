@@ -10,7 +10,7 @@ test.use(specTestOptions);
 const aePath = 'System:AppData/Charts/ae.csv';
 
 test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   // Capture console errors for the GROK-19033 visual-stability invariant; filter benign network noise.
   const consoleErrors: string[] = [];
@@ -64,24 +64,27 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
       // Two-tier click + JS API fallback (same pattern as sunburst-spec.ts).
+      const waitFor = async (pred: () => any, timeout: number, interval = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) { const r = pred(); if (r) return r; await new Promise((res) => setTimeout(res, interval)); }
+        return pred();
+      };
+      const probeDialog = () => {
+        const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
+        return all[all.length - 1] as HTMLElement | undefined;
+      };
       const openGallery = async () => {
-        const probe = () => {
-          const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
-          return all[all.length - 1] as HTMLElement | undefined;
-        };
         fullClick(addBtn);
-        await new Promise((r) => setTimeout(r, 800));
-        if (probe()) return probe();
+        if (await waitFor(probeDialog, 3000)) return probeDialog();
         addBtn.click();
-        await new Promise((r) => setTimeout(r, 800));
-        return probe();
+        return await waitFor(probeDialog, 3000);
       };
       let dlg = await openGallery();
       if (!dlg) {
         console.warn('[timelines Step 1-2]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Timelines');
-        // Charts package webpack-lazy-loads — wait ≥3000ms before probing.
-        await new Promise((r) => setTimeout(r, 4500));
+        // Charts package webpack-lazy-loads — poll for the viewer root.
+        await waitFor(() => document.querySelector('[name="viewer-Timelines"]'), 20_000);
         const viewerTypes: string[] = [];
         for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) viewerTypes.push(v.type);
         const tlRoot = !!document.querySelector('[name="viewer-Timelines"]');
@@ -91,8 +94,8 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
         .find((t) => (t.textContent || '').trim() === 'Timelines') as HTMLElement | undefined;
       if (!tile) throw new Error('Timelines tile not found');
       fullClick(tile);
-      // Charts package webpack-lazy-loads — wait ≥3000ms before probing.
-      await new Promise((r) => setTimeout(r, 4500));
+      // Charts package webpack-lazy-loads — poll for the viewer root.
+      await waitFor(() => document.querySelector('[name="viewer-Timelines"]'), 20_000);
       for (const d of Array.from(document.querySelectorAll('[name="dialog-Add-Viewer"]'))) {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
@@ -108,15 +111,20 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
     expect(result.columns).toEqual(expect.arrayContaining(['USUBJID', 'AESTDY', 'AEENDY', 'AESOC']));
   });
 
-  await softStep('Scenario 1 Step 3-4: Open Gear; set Color Column = AESOC via combobox', async () => {
+  await softStep('Scenario 1 Step 3-4: Open Gear; set Color Column = AESOC via JS API', async () => {
     const result = await page.evaluate(async () => {
       const tlEl = document.querySelector('[name="viewer-Timelines"]') as HTMLElement | null;
       if (!tlEl) return {ok: false, gearClicked: false};
       const panel = tlEl.closest('.panel-base') as HTMLElement | null;
       const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
       if (!gear) return {ok: false, gearClicked: false};
+      const waitFor = async (pred: () => any, timeout: number, interval = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) { const r = pred(); if (r) return r; await new Promise((res) => setTimeout(res, interval)); }
+        return pred();
+      };
       gear.click();
-      await new Promise((r) => setTimeout(r, 1000));
+      await waitFor(() => document.querySelector('[name="div-column-combobox-split--by"]'), 10_000);
 
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
@@ -132,11 +140,13 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       };
 
       timelines.setOptions({colorColumnName: 'AESOC'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const csStart = Date.now();
+      while (Date.now() - csStart < 5000 && timelines.props.get('colorColumnName') !== 'AESOC')
+        await new Promise((r) => setTimeout(r, 100));
       const colorCombo = document.querySelector('[name="div-column-combobox-color"]');
       const comboShown = !!colorCombo;
       const comboColumnText = colorCombo?.querySelector('.d4-column-selector-column')?.textContent?.trim() || null;
-      const colorColumn = safeGet('colorColumnName');
+      const colorColumn = timelines.props.get('colorColumnName');
 
       const aesoc = tv.dataFrame.col('AESOC');
       const categories = new Set<string>();
@@ -169,8 +179,9 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
     expect(result.comboShown).toBe(true);
     expect(result.legendVisLabelShown).toBe(true);
     expect(result.splitComboShown).toBe(true);
-    if (result.colorColumn != null) expect(result.colorColumn).toBe('AESOC');
-    if (result.comboColumnText != null) expect(result.comboColumnText).toBe('AESOC');
+    expect(result.colorColumn, 'colorColumnName should bind to AESOC').toBe('AESOC');
+    // AESOC is a raw SDTM name (no display alias), so the combobox reflects the field name verbatim.
+    expect(result.comboColumnText, 'color combobox should reflect AESOC').toBe('AESOC');
     expect(result.categoryCount).toBeGreaterThan(0);
     console.log('[Timelines defaults read]', JSON.stringify(result.defaultProps));
   });
@@ -183,32 +194,36 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       if (!tl) return {ok: false};
       const legend = tl.querySelector('[name="legend"]');
       if (!legend) return {ok: false, legendFound: false};
+      // The legend repopulates asynchronously after the color column change; poll for items.
+      const itemsStart = Date.now();
+      while (Date.now() - itemsStart < 15000 && legend.querySelectorAll('.d4-legend-item').length === 0)
+        await new Promise((r) => setTimeout(r, 100));
       const items = Array.from(legend.querySelectorAll('.d4-legend-item'));
       const target = items[0] as HTMLElement | undefined;
       if (!target) return {ok: false, legendFound: true, itemCount: 0};
       const targetText = target.querySelector('.d4-legend-value')?.textContent?.trim() || null;
       const beforeCls = target.className;
       target.click();
-      await new Promise((r) => setTimeout(r, 700));
+      const clkStart = Date.now();
+      while (Date.now() - clkStart < 5000 && !target.className.includes('d4-legend-item-current'))
+        await new Promise((r) => setTimeout(r, 100));
       const afterCls = target.className;
 
       const root = tl.getBoundingClientRect();
 
-      // GROK-19033 invariant: canvas pixel sample is not all-white.
+      // GROK-19033 invariant: the viewer canvas is present, sampleable, and not all-white.
       const canvas = tl.querySelector('canvas') as HTMLCanvasElement | null;
-      let canvasNotWhite = true;
+      const canvasPresent = !!canvas;
+      let canvasSampled = false;
+      let canvasNotWhite = false;
       if (canvas) {
-        try {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            const cx = Math.max(1, Math.floor(canvas.width / 2));
-            const cy = Math.max(1, Math.floor(canvas.height / 2));
-            const px = ctx.getImageData(cx, cy, 1, 1).data;
-            const allWhite = px[0] === 255 && px[1] === 255 && px[2] === 255 && px[3] === 255;
-            canvasNotWhite = !allWhite;
-          }
-        } catch (e) {
-          canvasNotWhite = true;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const cx = Math.max(1, Math.floor(canvas.width / 2));
+          const cy = Math.max(1, Math.floor(canvas.height / 2));
+          const px = ctx.getImageData(cx, cy, 1, 1).data;
+          canvasSampled = true;
+          canvasNotWhite = !(px[0] === 255 && px[1] === 255 && px[2] === 255 && px[3] === 255);
         }
       }
 
@@ -221,6 +236,8 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
         afterCls,
         rootWidth: root.width,
         rootHeight: root.height,
+        canvasPresent,
+        canvasSampled,
         canvasNotWhite,
         currentToggled: !beforeCls.includes('d4-legend-item-current') && afterCls.includes('d4-legend-item-current'),
       };
@@ -232,6 +249,8 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
     // GROK-19033: viewer remains stable, no console error during the click.
     expect(result.rootWidth).toBeGreaterThan(0);
     expect(result.rootHeight).toBeGreaterThan(0);
+    expect(result.canvasPresent, 'Timelines must render a canvas').toBe(true);
+    expect(result.canvasSampled, 'canvas getImageData must succeed').toBe(true);
     expect(result.canvasNotWhite).toBe(true);
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
@@ -248,25 +267,20 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Always'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const start = Date.now();
+      while (Date.now() - start < 5000 && timelines.props.get('legendVisibility') !== 'Always')
+        await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      let visibility = null;
-      try { visibility = timelines.props.get('legendVisibility'); } catch (e) {}
-      const labelText = document.querySelector('[name="prop-view-legend-visibility"]')?.textContent?.trim() || null;
-      return {
-        ok: true,
-        visibility,
-        labelText,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-        height: rect.height,
-      };
+      const visibility = timelines.props.get('legendVisibility');
+      const tlEl = document.querySelector('[name="viewer-Timelines"]');
+      const legendEl = tlEl ? tlEl.querySelector('[name="legend"]') : null;
+      const legendVisible = !!legendEl && (legendEl as HTMLElement).getBoundingClientRect().height > 0;
+      return {ok: true, visibility, legendVisible, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);
-    if (result.visibility != null) expect(result.visibility).toBe('Always');
-    if (result.labelText != null) expect(result.labelText).toBe('Always');
-    expect(result.hasContent).toBe(true);
+    expect(result.visibility, 'legendVisibility should apply').toBe('Always');
+    expect(result.legendVisible, 'legend must be shown when Always').toBe(true);
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -281,25 +295,20 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Never'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const start = Date.now();
+      while (Date.now() - start < 5000 && timelines.props.get('legendVisibility') !== 'Never')
+        await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      let visibility = null;
-      try { visibility = timelines.props.get('legendVisibility'); } catch (e) {}
-      const labelText = document.querySelector('[name="prop-view-legend-visibility"]')?.textContent?.trim() || null;
-      return {
-        ok: true,
-        visibility,
-        labelText,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-        height: rect.height,
-      };
+      const visibility = timelines.props.get('legendVisibility');
+      const tlEl = document.querySelector('[name="viewer-Timelines"]');
+      const legendEl = tlEl ? tlEl.querySelector('[name="legend"]') : null;
+      const legendVisible = !!legendEl && (legendEl as HTMLElement).getBoundingClientRect().height > 0;
+      return {ok: true, visibility, legendVisible, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);
-    if (result.visibility != null) expect(result.visibility).toBe('Never');
-    if (result.labelText != null) expect(result.labelText).toBe('Never');
-    expect(result.hasContent).toBe(true);
+    expect(result.visibility, 'legendVisibility should apply').toBe('Never');
+    expect(result.legendVisible, 'legend must be hidden when Never').toBe(false);
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -314,25 +323,21 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({legendVisibility: 'Auto'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const start = Date.now();
+      while (Date.now() - start < 3000 && timelines.props.get('legendVisibility') !== 'Auto')
+        await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      let visibility = null;
-      try { visibility = timelines.props.get('legendVisibility'); } catch (e) {}
-      const labelText = document.querySelector('[name="prop-view-legend-visibility"]')?.textContent?.trim() || null;
-      return {
-        ok: true,
-        visibility,
-        labelText,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-        height: rect.height,
-      };
+      const visibility = timelines.props.get('legendVisibility');
+      const tlEl = document.querySelector('[name="viewer-Timelines"]');
+      const legendEl = tlEl ? tlEl.querySelector('[name="legend"]') : null;
+      const legendVisible = !!legendEl && (legendEl as HTMLElement).getBoundingClientRect().height > 0;
+      return {ok: true, visibility, legendVisible, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);
-    if (result.visibility != null) expect(result.visibility).toBe('Auto');
-    if (result.labelText != null) expect(result.labelText).toBe('Auto');
-    expect(result.hasContent).toBe(true);
+    // 'Auto' may be stored verbatim or normalized to the resolved mode by the viewer; assert the visible effect (legend shows for AESOC's many categories) as the invariant, and that the stored prop stays a valid mode.
+    expect(['Auto', 'Always', 'Never'], 'legendVisibility must be a valid mode').toContain(result.visibility);
+    expect(result.legendVisible, 'Auto shows the legend when categories exist').toBe(true);
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);
@@ -350,8 +355,11 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       const items = Array.from(legend.querySelectorAll('.d4-legend-item'));
       const target = items[0] as HTMLElement | undefined;
       if (!target) return {ok: false, legendFound: true, itemCount: 0};
+      const before = target.className;
       target.click();
-      await new Promise((r) => setTimeout(r, 700));
+      const s = Date.now();
+      while (Date.now() - s < 5000 && target.className === before)
+        await new Promise((r) => setTimeout(r, 100));
       const root = tl.getBoundingClientRect();
       return {
         ok: true,
@@ -380,35 +388,20 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({splitByColumnName: 'AESEV'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const start = Date.now();
+      while (Date.now() - start < 5000 && timelines.props.get('splitByColumnName') !== 'AESEV')
+        await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
       const splitComboText = document.querySelector('[name="div-column-combobox-split--by"] .d4-column-selector-column')?.textContent?.trim() || null;
-      const aesev = tv.dataFrame.col('AESEV');
-      const distinct = new Set<string>();
-      for (let i = 0; i < tv.dataFrame.rowCount; i++) {
-        const v = aesev.get(i);
-        if (v != null) distinct.add(String(v));
-      }
-      let splitBy = null;
-      try { splitBy = timelines.props.get('splitByColumnName'); } catch (e) {}
-      return {
-        ok: true,
-        splitBy,
-        splitComboText,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-        height: rect.height,
-        laneSourceCount: distinct.size,
-      };
+      const splitBy = timelines.props.get('splitByColumnName');
+      return {ok: true, splitBy, splitComboText, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);
-    if (result.splitBy != null) expect(result.splitBy).toBe('AESEV');
-    if (result.splitComboText != null) expect(result.splitComboText).toBe('AESEV');
-    expect(result.hasContent).toBe(true);
+    expect(result.splitBy, 'splitByColumnName should rebind to AESEV').toBe('AESEV');
+    expect(result.splitComboText, 'split-by combobox should reflect AESEV').toBe('AESEV');
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
-    expect(result.laneSourceCount).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
   });
@@ -424,32 +417,36 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       const items = legend ? Array.from(legend.querySelectorAll('.d4-legend-item')) : [];
       let clicked = false;
       if (items.length > 0) {
-        (items[0] as HTMLElement).click();
+        const el = items[0] as HTMLElement;
+        const before = el.className;
+        el.click();
         clicked = true;
-        await new Promise((r) => setTimeout(r, 700));
+        const s = Date.now();
+        while (Date.now() - s < 3000 && el.className === before)
+          await new Promise((r) => setTimeout(r, 100));
       }
       const root = tl.getBoundingClientRect();
       const canvas = tl.querySelector('canvas') as HTMLCanvasElement | null;
-      let canvasNotWhite = true;
+      const canvasPresent = !!canvas;
+      let canvasSampled = false;
+      let canvasNotWhite = false;
       if (canvas) {
-        try {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            const cx = Math.max(1, Math.floor(canvas.width / 2));
-            const cy = Math.max(1, Math.floor(canvas.height / 2));
-            const px = ctx.getImageData(cx, cy, 1, 1).data;
-            const allWhite = px[0] === 255 && px[1] === 255 && px[2] === 255 && px[3] === 255;
-            canvasNotWhite = !allWhite;
-          }
-        } catch (e) {
-          canvasNotWhite = true;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const cx = Math.max(1, Math.floor(canvas.width / 2));
+          const cy = Math.max(1, Math.floor(canvas.height / 2));
+          const px = ctx.getImageData(cx, cy, 1, 1).data;
+          canvasSampled = true;
+          canvasNotWhite = !(px[0] === 255 && px[1] === 255 && px[2] === 255 && px[3] === 255);
         }
       }
-      return {ok: true, legendItems: items.length, clicked, rootWidth: root.width, rootHeight: root.height, canvasNotWhite};
+      return {ok: true, legendItems: items.length, clicked, rootWidth: root.width, rootHeight: root.height, canvasPresent, canvasSampled, canvasNotWhite};
     });
     expect(result.ok).toBe(true);
     expect(result.rootWidth).toBeGreaterThan(0);
     expect(result.rootHeight).toBeGreaterThan(0);
+    expect(result.canvasPresent, 'Timelines must render a canvas').toBe(true);
+    expect(result.canvasSampled, 'canvas getImageData must succeed').toBe(true);
     expect(result.canvasNotWhite).toBe(true);
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
@@ -464,25 +461,18 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) if (v.type === 'Timelines') { timelines = v; break; }
       if (!timelines) return {ok: false};
       timelines.setOptions({splitByColumnName: 'USUBJID'});
-      await new Promise((r) => setTimeout(r, 1500));
+      const start = Date.now();
+      while (Date.now() - start < 5000 && timelines.props.get('splitByColumnName') !== 'USUBJID')
+        await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      let splitBy = null;
-      try { splitBy = timelines.props.get('splitByColumnName'); } catch (e) {}
+      const splitBy = timelines.props.get('splitByColumnName');
       const splitComboText = document.querySelector('[name="div-column-combobox-split--by"] .d4-column-selector-column')?.textContent?.trim() || null;
-      return {
-        ok: true,
-        splitBy,
-        splitComboText,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-        height: rect.height,
-      };
+      return {ok: true, splitBy, splitComboText, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);
-    if (result.splitBy != null) expect(result.splitBy).toBe('USUBJID');
-    if (result.splitComboText != null) expect(result.splitComboText).toBe('USUBJID');
-    expect(result.hasContent).toBe(true);
+    expect(result.splitBy, 'splitByColumnName should revert to USUBJID').toBe('USUBJID');
+    expect(result.splitComboText, 'split-by combobox should reflect USUBJID').toBe('USUBJID');
     expect(result.width).toBeGreaterThan(0);
     expect(result.height).toBeGreaterThan(0);
     const errorsDuring = consoleErrors.slice(errorsBefore);

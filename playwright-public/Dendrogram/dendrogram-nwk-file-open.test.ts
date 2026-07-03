@@ -26,6 +26,7 @@ interface ImportNewickWitness {
   colNames: string[];
   tagNewick: string | null;
   tagNewickJsonNonEmpty: boolean;
+  newickJsonLeaves: string[];
   leafRows: string[];
   canvasWidth: number;
   canvasHeight: number;
@@ -37,8 +38,13 @@ interface ImportNewickWitness {
 async function runImportNewick(page: Page, newick: string): Promise<ImportNewickWitness> {
   return await page.evaluate(async (nwk: string) => {
     const ret: any = await grok.functions.call('Dendrogram:importNewick', {fileContent: nwk});
-    // Wait for DendrogramApp.buildView (addTableView + dock) to settle.
-    await new Promise(r => setTimeout(r, 3500));
+    // Poll until DendrogramApp.buildView mounts the tree DataFrame and the viewer canvas lays out.
+    for (let i = 0; i < 80; i++) {
+      const tv0: any = grok.shell.tv;
+      const c0 = document.querySelector('[name="viewer-Dendrogram"] canvas') as HTMLCanvasElement | null;
+      if (tv0?.dataFrame?.rowCount && c0 && c0.getBoundingClientRect().width > 0) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     const tv: any = grok.shell.tv;
     const df: any = tv?.dataFrame;
     const canvas = document.querySelector('[name="viewer-Dendrogram"] canvas') as HTMLCanvasElement | null;
@@ -52,6 +58,21 @@ async function runImportNewick(page: Page, newick: string): Promise<ImportNewick
       for (let i = 0; i < df.rowCount; i++)
         if (leafCol.get(i)) leafRows.push(String(nodeCol.get(i)));
     }
+    // Round-trip the .newickJson tag (JSON.stringify of the phylocanvas NodeType tree): a leaf is
+    // a childless node, so walking childless names must reproduce the {a,b,c,d} leaf set.
+    let newickJsonLeaves: string[] = [];
+    const njTag = df?.getTag?.('.newickJson');
+    if (njTag) {
+      try {
+        const walk = (n: any) => {
+          if (!n) return;
+          if (!n.children || n.children.length === 0) { if (n.name) newickJsonLeaves.push(String(n.name)); return; }
+          for (const c of n.children) walk(c);
+        };
+        walk(JSON.parse(njTag));
+        newickJsonLeaves = newickJsonLeaves.sort();
+      } catch (e) { newickJsonLeaves = []; }
+    }
     return {
       callReturnedArray: Array.isArray(ret),
       callReturnLen: Array.isArray(ret) ? ret.length : null,
@@ -62,6 +83,7 @@ async function runImportNewick(page: Page, newick: string): Promise<ImportNewick
       colNames,
       tagNewick: df?.getTag?.('.newick') ?? null,
       tagNewickJsonNonEmpty: !!(df?.getTag?.('.newickJson')?.length),
+      newickJsonLeaves,
       leafRows: leafRows.sort(),
       canvasWidth: canvas?.width ?? 0,
       canvasHeight: canvas?.height ?? 0,
@@ -82,6 +104,7 @@ interface PreviewNewickWitness {
   activeViewCanvasBoundingW: number;
   activeViewCanvasBoundingH: number;
   activeViewRootClass: string | null;
+  webglAvailable: boolean;
 }
 
 async function runPreviewNewick(page: Page, filePath: string): Promise<PreviewNewickWitness> {
@@ -109,7 +132,14 @@ async function runPreviewNewick(page: Page, filePath: string): Promise<PreviewNe
       // Mount the returned DG.View into the shell so the canvas lays out.
       try { grok.shell.addView(ret); } catch (e) { callErr = (callErr || '') + ' | addView: ' + String(e).slice(0,200); }
     }
-    await new Promise(r => setTimeout(r, 2500));
+    // Poll until the mounted preview view lays out a canvas with non-zero bounds.
+    for (let i = 0; i < 50; i++) {
+      const vv: any = grok.shell.v;
+      const c = vv?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (c && c.getBoundingClientRect().width > 0) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    const webglAvailable = document.createElement('canvas').getContext('webgl') != null;
     const v: any = grok.shell.v;
     const root = v?.root as HTMLElement | undefined;
     const canvases = root ? root.querySelectorAll('canvas') : ({length: 0} as any);
@@ -125,6 +155,7 @@ async function runPreviewNewick(page: Page, filePath: string): Promise<PreviewNe
       activeViewCanvasBoundingW: Math.round(firstBr.width),
       activeViewCanvasBoundingH: Math.round(firstBr.height),
       activeViewRootClass: root?.className ?? null,
+      webglAvailable,
     };
   }, filePath);
 }
@@ -143,7 +174,7 @@ async function leafSetViaTreeHelper(page: Page, newick: string): Promise<string[
 }
 
 test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via previewNewick (PhylocanvasGL)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(90_000);
 
   await loginToDatagrok(page);
 
@@ -153,7 +184,10 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 800));
+    for (let i = 0; i < 30; i++) {
+      if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     try { await grok.dapi.files.delete(args.path); } catch (e) { /* tolerate */ }
     await grok.dapi.files.writeAsText(args.path, args.newick);
     const exists = await grok.dapi.files.exists(args.path);
@@ -172,8 +206,10 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
     expect(present, 'sample.nwk visible in Dendrogram AppData listing').toBe(true);
   });
 
+  // Mount DendrogramApp once; every Scenario-1 step asserts against one consistent witness snapshot.
+  const w = await runImportNewick(page, NEWICK);
+
   await softStep('1.2 Dendrogram:importNewick runs without throwing; DendrogramApp mounts a TableView with viewer-Dendrogram', async () => {
-    const w = await runImportNewick(page, NEWICK);
     expect(w.callReturnedArray, 'importNewick returned an array').toBe(true);
     expect(w.callReturnLen, 'importNewick return length').toBe(0);
     await page.locator('[name="viewer-Dendrogram"]').waitFor({timeout: 30_000});
@@ -186,7 +222,6 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
   });
 
   await softStep('1.3 The active view\'s DataFrame is the parsed tree DataFrame (7 rows, [node,parent,leaf,distance])', async () => {
-    const w = await runImportNewick(page, NEWICK);
     // 4 leaves + 3 internal nodes for a balanced binary 4-leaf newick.
     expect(w.rowCount, 'parsed tree DataFrame row count').toBe(7);
     expect(w.colNames, 'parsed tree DataFrame columns').toEqual(
@@ -195,18 +230,16 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
   });
 
   await softStep('1.4 The DataFrame is tagged with .newick (literal) and .newickJson; treeNewick round-trip', async () => {
-    const w = await runImportNewick(page, NEWICK);
     expect(w.tagNewick, '.newick tag equals literal file content').toBe(NEWICK);
     expect(w.tagNewickJsonNonEmpty, '.newickJson tag is populated').toBe(true);
+    expect(w.newickJsonLeaves, '.newickJson round-trips to the {a,b,c,d} leaf set').toEqual([...EXPECTED_LEAVES]);
   });
 
   await softStep('1.5 Leaf set = {a, b, c, d} via the leaf column on the parsed DataFrame', async () => {
-    const w = await runImportNewick(page, NEWICK);
     expect(w.leafRows, 'leaf rows where leaf==true').toEqual([...EXPECTED_LEAVES]);
   });
 
   await softStep('1.6 Dendrogram viewer canvas has non-zero bounding rect (renderer mounted)', async () => {
-    const w = await runImportNewick(page, NEWICK);
     expect(w.canvasBoundingW, 'canvas bounding rect width > 0').toBeGreaterThan(0);
     expect(w.canvasBoundingH, 'canvas bounding rect height > 0').toBeGreaterThan(0);
   });
@@ -216,7 +249,10 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
   await softStep('2.1 Close the importNewick view; ensure fixture is still on disk before preview', async () => {
     await page.evaluate(async (path: string) => {
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 800));
+      for (let i = 0; i < 30; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
       // Re-write the fixture defensively in case cleanup ran between scenarios.
       const exists = await grok.dapi.files.exists(path);
       if (!exists)
@@ -226,34 +262,35 @@ test('Dendrogram / Open .nwk via importNewick (DendrogramApp) + preview via prev
 
   await softStep('2.2 Dendrogram:previewNewick returns a DG.View with a single PhylocanvasGL canvas', async () => {
     const w = await runPreviewNewick(page, FIXTURE_PATH);
-    // previewNewick renders via PhylocanvasGL (WebGL). The minimal CI stack has no working WebGL, so
-    // the call can throw ("Bad state: No element") or mount no canvas; the DendrogramApp viewer in
-    // Scenario 1 uses a 2D canvas and renders fine. Gate the engine-dependent assertions on a
-    // successful preview + canvas mount (dev/full-stack path); otherwise soft-warn — the WebGL-
-    // independent parse contract is hard-asserted in step 2.3. Mirrors the BSV Mol*/.msp-plugin gating.
-    if (!w.callOk || w.activeViewRootCanvases < 1) {
-      // eslint-disable-next-line no-console
-      console.warn(`[CI WebGL gap] previewNewick PhylocanvasGL preview unavailable on this stack (callOk=${w.callOk}, canvases=${w.activeViewRootCanvases}, err=${w.callErr ?? ''}). Engine-dependent assertions skipped; parse contract covered by step 2.3.`);
-      return;
-    }
+    // WebGL-independent contract — always hard-asserted: the handler runs and returns a DG.View.
+    expect(w.callOk, `previewNewick threw: ${w.callErr ?? ''}`).toBe(true);
     expect(w.returnedViewType, 'previewNewick returns a DG.View').toBe('view');
-    expect(w.activeViewRootClass, 'active view root class').toContain('grok-view');
-    expect(w.activeViewRootCanvases, 'active view root canvases').toBe(1);
-    expect(w.activeViewCanvasBoundingW, 'preview canvas bounding rect width > 0').toBeGreaterThan(0);
-    expect(w.activeViewCanvasBoundingH, 'preview canvas bounding rect height > 0').toBeGreaterThan(0);
+    // PhylocanvasGL is WebGL-backed; gate ONLY the pixel-dimension asserts on a real GL context so a
+    // headless stack without WebGL doesn't false-red the parse/handler contract above.
+    if (!w.webglAvailable)
+      console.warn('[skip] No WebGL context on this stack — PhylocanvasGL canvas dimension asserts skipped');
+    else {
+      expect(w.activeViewRootClass, 'active view root class').toContain('grok-view');
+      expect(w.activeViewRootCanvases, 'active view root canvases').toBe(1);
+      expect(w.activeViewCanvasBoundingW, 'preview canvas bounding rect width > 0').toBeGreaterThan(0);
+      expect(w.activeViewCanvasBoundingH, 'preview canvas bounding rect height > 0').toBeGreaterThan(0);
+    }
   });
 
-  await softStep('2.3 Preview parse contract: TreeHelper.newickToDf produces the same leaf set as Scenario 1', async () => {
-    // PhylocanvasGL preview exposes no [name="viewer-*"] anchor; verify the leaf set via the
-    // same TreeHelper.newickToDf parse contract the previewNewick handler walks.
+  await softStep('2.3 TreeHelper.newickToDf parse contract: leaf set = {a, b, c, d} (WebGL-independent)', async () => {
+    // Independent check of the TreeHelper.newickToDf parse used across Dendrogram; does not itself
+    // exercise previewNewick (that is hard-asserted in 2.2) — this pins the leaf-set invariant.
     const leaves = await leafSetViaTreeHelper(page, NEWICK);
-    expect(leaves, 'TreeHelper.newickToDf leaf set on preview bytes').toEqual([...EXPECTED_LEAVES]);
+    expect(leaves, 'TreeHelper.newickToDf leaf set').toEqual([...EXPECTED_LEAVES]);
   });
 
   await softStep('2.4 Cleanup: delete the fixture; AppData/Dendrogram no longer contains sample.nwk', async () => {
     const after = await page.evaluate(async (path: string) => {
       grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 500));
+      for (let i = 0; i < 30; i++) {
+        if ((grok.shell.tableViews?.length ?? 0) === 0) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
       let deleteErr: string | null = null;
       try { await grok.dapi.files.delete(path); } catch (e) { deleteErr = String(e).slice(0, 200); }
       const folder = path.replace(/\/[^/]+$/, '');

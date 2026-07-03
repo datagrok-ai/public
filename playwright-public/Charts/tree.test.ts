@@ -10,7 +10,7 @@ test.use(specTestOptions);
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Tree viewer (Charts package)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
@@ -70,8 +70,7 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
       // (and 'Tree map' sorts first), which would add the wrong viewer.
       await page.locator('[name="dialog-Add-Viewer"] .d4-item-card.viewer-gallery')
         .filter({hasText: /^\s*Tree\s*$/}).first().click({timeout: 5000});
-      // Charts package webpack-lazy-loads — wait before probing.
-      await page.waitForTimeout(4500);
+      // Charts package webpack-lazy-loads; the line-94 viewer-Tree waitFor gates readiness.
       // Close any residual gallery dialog
       const close = page.locator('[name="dialog-Add-Viewer"] [name="icon-font-icon-close"]');
       const closeCount = await close.count();
@@ -81,12 +80,10 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
     } else {
       // JS API fallback: preserves Validator B PASS when DOM gallery flow misses.
       console.warn('[tree Setup]', 'Add Viewer gallery did not open via page.locator; falling back to tv.addViewer JS API');
-      await page.evaluate(async () => {
-        const grok = (window as any).grok;
-        const tv = grok.shell.tv;
-        tv.addViewer('Tree');
-        await new Promise((r) => setTimeout(r, 4500));
-      });
+      await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Tree'));
+      await page.waitForFunction(
+        () => (window as any).grok.shell.tv.viewers.some((v: any) => v.type === 'Tree'),
+        null, {timeout: 30_000});
       fallbackUsed = true;
     }
 
@@ -114,7 +111,7 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
     if (selectColsOpened) {
       await page.locator('[name="dialog-Select-columns..."] [name="button-CANCEL"]').first()
         .click({timeout: 3000}).catch(() => {});
-      await page.waitForTimeout(300);
+      await page.locator('[name="dialog-Select-columns..."]').waitFor({state: 'detached', timeout: 3000}).catch(() => {});
     }
 
     // 8) Set hierarchy via JS API (Charts package "Select Columns" inner grid is canvas)
@@ -124,18 +121,25 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
       let tree: any = null;
       for (const v of tv.viewers) if (v.type === 'Tree') { tree = v; break; }
       if (!tree) return {viewerTypes: [] as string[], hierarchy: null as any, ok: false};
-      tree.setOptions({hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE']});
-      await new Promise((r) => setTimeout(r, 1500));
+      const expected = ['CONTROL', 'SEX', 'RACE'];
+      tree.setOptions({hierarchyColumnNames: expected});
+      // Poll until the option applies (races cold-start init) instead of a fixed sleep.
+      for (let i = 0; i < 50 && JSON.stringify(tree.props.get('hierarchyColumnNames')) !== JSON.stringify(expected); i++)
+        await new Promise((r) => setTimeout(r, 100));
       const viewerTypes: string[] = [];
       for (const v of tv.viewers) viewerTypes.push(v.type);
-      // Wrap props.get in try/catch — Tree props can race cold-start init.
-      let hierarchy = null;
-      try { hierarchy = tree.props.get('hierarchyColumnNames'); } catch (e) {}
-      return {viewerTypes, hierarchy, ok: true};
+      return {viewerTypes, hierarchy: tree.props.get('hierarchyColumnNames'), ok: true};
     });
     expect(setup.ok).toBe(true);
     expect(setup.viewerTypes).toContain('Tree');
-    if (setup.hierarchy != null) expect(setup.hierarchy).toEqual(['CONTROL', 'SEX', 'RACE']);
+    expect(setup.hierarchy, 'hierarchyColumnNames must persist').toEqual(['CONTROL', 'SEX', 'RACE']);
+
+    // Real render check: the ECharts Tree canvas must mount and paint a non-zero surface.
+    await page.locator('[name="viewer-Tree"] canvas').first().waitFor({state: 'attached', timeout: 15_000});
+    await page.waitForFunction(() => {
+      const c = document.querySelector('[name="viewer-Tree"] canvas') as HTMLCanvasElement | null;
+      return !!c && c.width > 0 && c.height > 0;
+    }, null, {timeout: 15_000});
     console.log(`[Setup] fallbackUsed=${fallbackUsed}, selectColsDialogOpened=${selectColsOpened}`);
   });
 
@@ -153,7 +157,7 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
       if (!expanded) {
         await filtersHeader.first().click({timeout: 3000}).catch(() => {});
       }
-      await page.waitForTimeout(800);
+      await page.locator('[name="viewer-Filters"]').waitFor({state: 'attached', timeout: 5000}).catch(() => {});
       if (await page.locator('[name="viewer-Filters"]').count() > 0) {
         panelOpened = true;
         panelOpenedVia = 'toolbox-section';
@@ -164,7 +168,7 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
       const ribbonIcon = page.locator('[name="icon-filter"]');
       if (await ribbonIcon.count() > 0) {
         await ribbonIcon.first().click({timeout: 3000}).catch(() => {});
-        await page.waitForTimeout(800);
+        await page.locator('[name="viewer-Filters"]').waitFor({state: 'attached', timeout: 5000}).catch(() => {});
         if (await page.locator('[name="viewer-Filters"]').count() > 0) {
           panelOpened = true;
           panelOpenedVia = 'ribbon-icon';
@@ -173,33 +177,42 @@ test('Charts / Tree viewer (Charts package)', async ({page}) => {
     }
 
     // Apply categorical filter via JS API (canvas-rendered checkboxes per filters.md)
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(() => {
       const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       const control = df.col('CONTROL');
+      // Independent expected count from the column, computed BEFORE touching the filter mask.
+      let expectedTrue = 0;
+      for (let i = 0; i < df.rowCount; i++) if (control.get(i) === true) expectedTrue++;
       df.filter.setAll(false);
       for (let i = 0; i < df.rowCount; i++)
         if (control.get(i) === true) df.filter.set(i, true);
       df.filter.fireChanged();
-      await new Promise((r) => setTimeout(r, 500));
-      return {filtered: df.filter.trueCount};
+      return {filtered: df.filter.trueCount, expectedTrue, rowCount: df.rowCount};
     });
     console.log(`[Step 1] panelOpened=${panelOpened} (via ${panelOpenedVia}), filtered=${result.filtered}`);
-    if (!panelOpened) console.warn('[Step 1]', 'Filter Panel did not materialize via DOM; filter applied via JS API only');
-    expect(result.filtered).toBe(39);
+    expect(panelOpened, 'Filter Panel must open').toBe(true);
+    expect(result.expectedTrue, 'demog must have 39 CONTROL=true rows').toBe(39);
+    expect(result.filtered, 'filter mask must reflect the 39 CONTROL=true rows').toBe(result.expectedTrue);
+    expect(result.rowCount, 'filter is a mask — the viewer still holds all rows').toBe(5850);
+    // Tree viewer re-render against the filtered subset (canvas) is verified manually in charts-ui.md.
+    await page.waitForFunction(() => {
+      const c = document.querySelector('[name="viewer-Tree"] canvas') as HTMLCanvasElement | null;
+      return !!c && c.width > 0 && c.height > 0;
+    }, null, {timeout: 10_000});
   });
 
   await softStep('Step 2: Clear CONTROL=true filter; verify cardinality returns to 5850', async () => {
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(() => {
       const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       df.filter.setAll(true);
       df.filter.fireChanged();
-      await new Promise((r) => setTimeout(r, 500));
-      return {filtered: df.filter.trueCount, selected: df.selection.trueCount};
+      return {filtered: df.filter.trueCount, rowCount: df.rowCount, selected: df.selection.trueCount};
     });
     console.log(`[Step 2] filtered=${result.filtered}, selected=${result.selected}`);
-    expect(result.filtered).toBe(5850);
+    expect(result.filtered, 'clearing the filter restores all rows').toBe(result.rowCount);
+    expect(result.rowCount).toBe(5850);
     // selection cardinality no longer asserted — canvas Shift+Click setup moved to charts-ui.md.
   });
 

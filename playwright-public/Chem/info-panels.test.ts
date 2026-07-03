@@ -14,23 +14,26 @@ const STRUCTURE_PANES = ['Identifiers', '2D Structure', '3D Structure'];
 async function expandAndVerifyPanes(
   page: Page, label: string, expectedPanes: string[],
 ): Promise<{seen: string[]; found: string[]}> {
-  // Expand ITERATIVELY, re-querying after each round: Chem sub-panes (Rendering,
+  // Expand iteratively, re-querying after each round: Chem sub-panes (Rendering,
   // Highlight, Descriptors, …) only mount once their parent group (Chemistry,
-  // Biology, …) is expanded, so a single pass over the initial header set misses
-  // them. Re-query each round until newly-revealed nested headers are also opened.
+  // Biology, …) is expanded. Poll until the header set stops growing instead of a
+  // blind per-round sleep.
   await page.evaluate(async () => {
-    for (let round = 0; round < 4; round++) {
+    let prev = -1;
+    for (let round = 0; round < 6; round++) {
       const headers = Array.from(document.querySelectorAll('.d4-accordion-pane-header')) as HTMLElement[];
-      for (const h of headers) {
-        if (!h.classList.contains('expanded')) {
-          h.click();
-          await new Promise(r => setTimeout(r, 150));
-        }
-      }
-      await new Promise(r => setTimeout(r, 800));
+      for (const h of headers)
+        if (!h.classList.contains('expanded')) { h.click(); await new Promise(r => setTimeout(r, 120)); }
+      await new Promise(r => setTimeout(r, 250));
+      const count = document.querySelectorAll('.d4-accordion-pane-header').length;
+      if (count === prev) break;
+      prev = count;
     }
   });
-  await page.waitForTimeout(2500);
+  await page.waitForFunction((names) => {
+    const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header')).map(x => x.textContent || '');
+    return names.some((n) => h.some((t) => new RegExp(n, 'i').test(t)));
+  }, expectedPanes, {timeout: 20000}).catch(() => {});
   const seen = await page.evaluate(() =>
     Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
       .map(h => h.textContent!.trim()));
@@ -43,7 +46,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await page.waitForFunction(() => (window as any).grok?.shell != null, null, {timeout: 30000});
 
   // ===== Phase A — smiles-50 column + cell walk =====
 
@@ -79,37 +82,39 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       const col = grok.shell.t.col('canonical_smiles');
       grok.shell.o = col;
     });
-    await page.waitForTimeout(2500);
+    await page.waitForFunction(() => {
+      const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header')).map(x => x.textContent || '');
+      return h.some(t => /Chemistry|Rendering|Highlight/i.test(t));
+    }, null, {timeout: 30000}).catch(() => {});
   });
 
   await softStep('Phase A — Step 4: Walk Chemistry/Biology/Structure info panels (column context)', async () => {
     const {found, seen} = await expandAndVerifyPanes(
       page, 'A4 column', [...CHEMISTRY_PANES, ...BIOLOGY_PANES, ...STRUCTURE_PANES]);
-    // The named behavior is "walk Chem info panels": at least some of the expected panes must render
-    // (a zero-match pass would mean the Chem info-panel pipeline never produced any pane).
-    expect(found.length,
-      `No expected Chem info panels rendered on the column context. seen=${JSON.stringify(seen)}`)
+    // Column-header context reliably exposes the Chem-authored Rendering + Highlight panes
+    // (run.md step 2); assert both concretely instead of a >0 floor.
+    for (const p of ['Rendering', 'Highlight'])
+      expect(seen.some(s => new RegExp(p, 'i').test(s)),
+        `Column-context Chem pane '${p}' missing. seen=${JSON.stringify(seen)}`).toBe(true);
+    expect(found.length, `No Chem panes on column context. seen=${JSON.stringify(seen)}`)
       .toBeGreaterThan(0);
   });
 
   await softStep('Phase A — Steps 5-9: Open chembl-scaffolds + apply Rendering scaffold + Highlight', async () => {
     const exists = await page.evaluate(async () => {
-      try {
-        const ls = await grok.dapi.files.list('System:AppData/Chem/', false);
-        return ls.some((f: any) => /chembl-scaffolds\.csv$/i.test(f.name));
-      } catch (e) { return false; }
+      const ls = await grok.dapi.files.list('System:AppData/Chem/', false);
+      return ls.some((f: any) => /chembl-scaffolds\.csv$/i.test(f.name));
     });
-    if (!exists) {
-      console.log('[A5-9] chembl-scaffolds.csv not available — skipping Rendering+Highlight slice');
-      return;
-    }
+    expect(exists, 'chembl-scaffolds.csv missing — required bundled dataset').toBe(true);
     await page.evaluate(async () => {
       const df = await grok.dapi.files.readCsv('System:AppData/Chem/chembl-scaffolds.csv');
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
-    // SR-DEFERRED scaffold alignment + Highlight custom color: applied via JS API column tags.
-    await page.evaluate(async () => {
+    await waitForMolecule(page);
+    // Scaffold alignment + Highlight applied via JS API column tags. Pixel-level verification
+    // of the aligned/highlighted rendered cells (.md steps 7/9) is out of scope headless — see deferred.
+    const tagged = await page.evaluate(() => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
       const scaffoldCol = tv.dataFrame.columns.toList().find((c: any) => /Scaffold/i.test(c.name));
@@ -118,9 +123,20 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
         molCol.setTag?.('chem-highlight-scaffold', 'true');
       }
       grok.shell.o = molCol;
-      await new Promise(r => setTimeout(r, 2000));
+      return {
+        hasMol: !!molCol, hasScaffold: !!scaffoldCol,
+        scaffoldTag: molCol?.getTag?.('chem-scaffold') ?? null,
+        highlightTag: molCol?.getTag?.('chem-highlight-scaffold') ?? null,
+      };
     });
-    await expandAndVerifyPanes(page, 'A6-7 Rendering', ['Rendering', 'Highlights']);
+    expect(tagged.hasMol && tagged.hasScaffold,
+      `chembl-scaffolds missing Molecule/Scaffold columns: ${JSON.stringify(tagged)}`).toBe(true);
+    expect(tagged.scaffoldTag, 'chem-scaffold tag not applied').not.toBeNull();
+    expect(tagged.highlightTag, 'chem-highlight-scaffold tag not applied').toBe('true');
+    const {seen} = await expandAndVerifyPanes(page, 'A6-7 Rendering', ['Rendering', 'Highlight']);
+    for (const p of ['Rendering', 'Highlight'])
+      expect(seen.some(s => new RegExp(p, 'i').test(s)),
+        `Rendering/Highlight pane '${p}' missing on scaffold context. seen=${JSON.stringify(seen)}`).toBe(true);
   });
 
   await softStep('Phase A — Step 10-11: Switch back to smiles-50.csv + click first cell → cell context', async () => {
@@ -137,6 +153,11 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       const molCol = df.columns.toList().find((c: any) => c.semType === 'Molecule');
       df.currentRowIdx = 0;
       if (molCol) df.currentCol = molCol;
+      // The view switch + current-column selection fire async context rebuilds that
+      // render the molecule COLUMN context. Let that settle first, THEN set shell.o to
+      // the molecule VALUE so the cell-context (Descriptors/Toxicity/…) render wins
+      // instead of being clobbered by the pending column-context render.
+      await new Promise(r => setTimeout(r, 1500));
       grok.shell.o = molCol
         ? (DG as any).SemanticValue.fromValueType(molCol.get(0), 'Molecule')
         : df.currentCell;
@@ -149,18 +170,23 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       'Descriptors', 'Drug Likeness', 'Properties', 'Structural Alerts',
       'Pharmacophore', 'Identifiers', '2D Structure', '3D Structure', 'Toxicity',
     ]);
-    expect(found.length,
-      `No expected Chem cell-context info panels rendered. seen=${JSON.stringify(seen)}`)
-      .toBeGreaterThan(0);
+    // Cell (molecule) context reliably exposes these compute-only Chem panes (run.md step 5).
+    // Database-backed panes (ChEMBL/DrugBank/PubChem/…) are best-effort and excluded from the floor.
+    for (const p of ['Descriptors', 'Properties', 'Structural Alerts', 'Toxicity', '2D Structure'])
+      expect(seen.some(s => new RegExp(p, 'i').test(s)),
+        `Cell-context Chem pane '${p}' missing. seen=${JSON.stringify(seen)}`).toBe(true);
+    expect(found.length, `Too few Chem cell-context panes. seen=${JSON.stringify(seen)}`)
+      .toBeGreaterThanOrEqual(5);
   });
 
   // ===== Phase B — Multi-format coverage =====
 
-  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'};
+  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'; bestEffort?: boolean};
   const variants: Variant[] = [
     {id: 'B-smiles', format: 'smiles', path: 'System:AppData/Chem/tests/smiles-50.csv', opener: 'csv'},
     {id: 'B-molV2000', format: 'molV2000', path: 'System:AppData/Chem/mol1K.sdf', opener: 'openFile'},
     {id: 'B-molV3000', format: 'molV3000', path: 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf', opener: 'openFile'},
+    {id: 'B-smarts', format: 'smarts', path: 'System:AppData/UsageAnalysis/test_datasets/SMARTS_example_temp.csv', opener: 'csv', bestEffort: true},
   ];
 
   for (const v of variants) {
@@ -175,20 +201,18 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
             const df = await grok.dapi.files.readCsv(path);
             grok.shell.addTableView(df);
           }
-          return {ok: true};
-        } catch (e) { return {ok: false, err: String(e)}; }
+          return {ok: true, rows: grok.shell.tv?.dataFrame?.rowCount ?? 0};
+        } catch (e) { return {ok: false, err: String(e), rows: 0}; }
       }, {path: v.path, opener: v.opener});
-      if (!(opened as any).ok) {
-        console.log(`[${v.id}] open failed — skipping (${JSON.stringify(opened)})`);
+      if (v.bestEffort && !(opened as any).ok) {
+        // bestEffort dataset (e.g. SMARTS) may be absent/unloadable on dev — defer, don't hard-fail.
+        console.log(`[${v.id}] open failed — bestEffort, skipping (${JSON.stringify(opened)})`);
         return;
       }
-      try {
-        await waitForChemMenu(page);
-      } catch (e) {
-        console.log(`[${v.id}] Chem menu not ready — skipping (${e})`);
-        return;
-      }
-      await page.evaluate(() => {
+      expect((opened as any).ok, `[${v.id}] open failed: ${JSON.stringify(opened)}`).toBe(true);
+      await waitForChemMenu(page).catch(() => {});
+      await waitForMolecule(page).catch(() => {});
+      const molInfo = await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
         const molCol = df.columns.toList().find((c: any) => c.semType === 'Molecule');
         df.currentRowIdx = 0;
@@ -196,9 +220,23 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
         grok.shell.o = molCol
           ? (DG as any).SemanticValue.fromValueType(molCol.get(0), 'Molecule')
           : df.currentCell;
+        return {hasMol: !!molCol, molName: molCol?.name ?? null, rows: df.rowCount};
       });
-      await page.waitForTimeout(2500);
-      await expandAndVerifyPanes(page, v.id, ['Descriptors', '2D Structure', 'Properties']);
+      if (v.bestEffort && !molInfo.hasMol) {
+        // GROK: SMARTS molecule-cell detection via the RDKit SMARTS renderer branch is a
+        // known-uncertain edge on dev; assert the dataset genuinely loaded and defer the
+        // molecule-render/pane assertion for human review rather than pass-when-broken.
+        expect(molInfo.rows, `[${v.id}] dataset loaded no rows`).toBeGreaterThan(0);
+        console.log(`[${v.id}] Molecule semType not detected — SMARTS render edge; asserting load only`);
+        return;
+      }
+      expect(molInfo.hasMol, `[${v.id}] no Molecule column detected after open`).toBe(true);
+      await page.waitForFunction(() => {
+        const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header')).map(x => x.textContent || '');
+        return h.some(t => /Descriptors|2D Structure|Chemistry/i.test(t));
+      }, null, {timeout: 30000}).catch(() => {});
+      const {found, seen} = await expandAndVerifyPanes(page, v.id, ['Descriptors', '2D Structure', 'Properties']);
+      expect(found.length, `[${v.id}] no Chem panes; seen=${JSON.stringify(seen)}`).toBeGreaterThanOrEqual(2);
     });
   }
 

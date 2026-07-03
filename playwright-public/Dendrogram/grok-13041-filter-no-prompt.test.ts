@@ -8,7 +8,7 @@ sub_features_covered: [dendrogram.clustering.inject-tree-for-grid, dendrogram.ev
 // sort via grid.sort() (grid column headers are canvas, not DOM); both fire the same df events as
 // the UI. Resource-load 404s on every neighbor mount are non-fatal noise (see isFatalConsoleError).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
@@ -25,14 +25,19 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
     const chem = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
     if (!chem) throw new Error('Top-menu Chem entry not found');
     chem.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 800));
-    const analyze = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'Analyze') as HTMLElement | undefined;
+    const findLabel = async (pred: (t: string) => boolean): Promise<HTMLElement | undefined> => {
+      for (let i = 0; i < 60; i++) {
+        const el = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(m => pred((m.textContent || '').trim())) as HTMLElement | undefined;
+        if (el) return el;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return undefined;
+    };
+    const analyze = await findLabel(t => t === 'Analyze');
     if (!analyze) throw new Error('"Analyze" sub-menu item not found');
     (analyze.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 600));
-    const hc = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => /Hierarchical\s+Clustering/i.test(m.textContent || '')) as HTMLElement | undefined;
+    const hc = await findLabel(t => /Hierarchical\s+Clustering/i.test(t));
     if (!hc) throw new Error('"Hierarchical Clustering..." sub-menu item not found');
     (hc.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -81,7 +86,7 @@ async function readPromptState(page: Page): Promise<{
 }
 
 test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; sort DOES (positive contrast)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(240_000);
 
   await loginToDatagrok(page);
 
@@ -103,9 +108,14 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
-    await new Promise(r => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  // Gate on the real Chem-ready signal (top-menu Chem attaches once semType is detected).
+  await waitForChemMenu(page);
+  // The Chem menu attaches before the package finishes warming up its feature
+  // auto-detection; without this settle the Hierarchical Clustering dialog opens with
+  // Features(0) and clustering produces no dendrogram (HEAD kept a 5s settle here).
+  await page.waitForTimeout(5_000);
 
   // Console-error listener for the full test body (Step 5 asserts no console error on filter).
   const consoleErrors: string[] = [];
@@ -167,6 +177,8 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
       const state = await page.evaluate(() => ({
         filterPanelMounted: !!document.querySelector('[name="viewer-Filters"]'),
         filtersListed: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
+        pIC50FilterPresent: Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+          .some(f => (f.textContent || '').includes('pIC50_HIV_Integrase')),
         promptState: {
           dialogCount: document.querySelectorAll('.d4-dialog').length,
           overlayCount: document.querySelectorAll('.dendrogram-overlay').length,
@@ -174,6 +186,7 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
       }));
       expect(state.filterPanelMounted, 'Filter Panel mounted').toBe(true);
       expect(state.filtersListed, 'at least one filter card listed').toBeGreaterThan(0);
+      expect(state.pIC50FilterPresent, 'pIC50_HIV_Integrase filter card present (the filter step 5 drives)').toBe(true);
       // Opening the panel itself MUST not raise the prompt.
       expect(state.promptState.dialogCount, 'no prompt dialog from opening Filter Panel').toBe(0);
       expect(state.promptState.overlayCount, 'no .dendrogram-overlay from opening Filter Panel').toBe(0);
@@ -192,8 +205,11 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
         const df = grok.shell.tv.dataFrame;
         df.rows.filter((row: any) => row.pIC50_HIV_Integrase < 6);
       });
-      // Settle for the deferred alignGridWithTree call and any UI repaint.
-      await page.waitForTimeout(2_000);
+      // Deterministically wait for the filter to have taken effect; alignGridWithTree is
+      // dispatched synchronously off the same onFilterChanged event, so a short yield suffices.
+      await page.waitForFunction(() =>
+        grok.shell.tv.dataFrame.filter.trueCount < grok.shell.tv.dataFrame.rowCount, null, {timeout: 15_000});
+      await page.waitForTimeout(300);
 
       const state = await readPromptState(page);
       const afterOrder = await page.evaluate(() => {
@@ -222,7 +238,8 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
 
     await softStep('6. Clear the filter → neighbor still attached; no late-arriving prompt', async () => {
       await page.evaluate(() => grok.shell.tv.dataFrame.filter.setAll(true));
-      await page.waitForTimeout(1_000);
+      await page.waitForFunction(() =>
+        grok.shell.tv.dataFrame.filter.trueCount === grok.shell.tv.dataFrame.rowCount, null, {timeout: 15_000});
       const state = await readPromptState(page);
       expect(state.filterTrueCount, 'filter cleared (trueCount == rowCount)').toBe(state.rowCount);
       expect(state.dialogCount, 'no .d4-dialog after clearing filter').toBe(0);
@@ -237,7 +254,7 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
       await page.evaluate(() => {
         grok.shell.tv.grid.sort(['pIC50_HIV_Integrase'], [true]);
       });
-      await page.waitForTimeout(2_000);
+      await page.locator('.dendrogram-overlay').waitFor({state: 'visible', timeout: 15_000});
 
       const state = await readPromptState(page);
       const overlayDetail = await page.evaluate(() => {
@@ -264,7 +281,7 @@ test('Dendrogram / GROK-13041 — filter does NOT trigger remove/revert prompt; 
 
     await softStep('8. Click [name="button-Revert-sort"] in overlay → overlay dismissed; neighbor reattached cleanly', async () => {
       await page.locator('[name="button-Revert-sort"]').click();
-      await page.waitForTimeout(1_500);
+      await page.locator('.dendrogram-overlay').waitFor({state: 'detached', timeout: 10_000});
       const state = await readPromptState(page);
       expect(state.overlayCount, 'overlay dismissed after Revert sort').toBe(0);
       expect(state.neighborMounted, 'neighbor magic-wand still present after revert').toBe(true);

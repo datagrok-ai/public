@@ -13,57 +13,42 @@ const datasets = [
 ];
 for (const ds of datasets) {
   test(`Bio Sequence Space on ${ds.name}`, async ({page}) => {
-    test.setTimeout(600_000);
+    test.setTimeout(180_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
-    await page.evaluate(async (path) => {
+    const detected = await page.evaluate(async (path) => {
       document.body.classList.add('selenium');
       grok.shell.settings.showFiltersIconsConstantly = true;
       grok.shell.windows.simpleMode = true;
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
-      await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(() => resolve(), 4000);
-      });
-      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-      const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
-      if (hasMacromolecule) {
-        for (let i = 0; i < 60; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-          await new Promise((r) => setTimeout(r, 200));
-        }
-        await new Promise((r) => setTimeout(r, 5000));
+      const hasMacro = (): boolean => Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Macromolecule');
+      const deadline = Date.now() + 20_000;
+      while (Date.now() < deadline) {
+        if (hasMacro()) return true;
+        await new Promise((r) => setTimeout(r, 200));
       }
+      return hasMacro();
     }, ds.path);
+    expect(detected, `${ds.name}: Macromolecule column detected`).toBe(true);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-      for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
-      }
-      await new Promise((r) => setTimeout(r, 3000));
-    });
-    await page.evaluate(async () => {
-      const candidates = ['Bio:sequenceSpaceTopMenu', 'Bio:sequenceSpace'];
-      const findAny = (names: string[]): boolean => {
-        for (const n of names) {
-          try {
-            if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-          } catch { /* try next */ }
-        }
-        return false;
-      };
-      const deadline = Date.now() + 15_000;
+      const deadline = Date.now() + 30_000;
       while (Date.now() < deadline) {
-        if (findAny(candidates)) return;
+        for (const fn of probes) {
+          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        }
         await new Promise((r) => setTimeout(r, 300));
       }
-      await new Promise((r) => setTimeout(r, 1500));
     });
-    await page.waitForTimeout(2000);
+    await page.waitForFunction(() => {
+      const f = (grok as any).functions.find;
+      try { return !!(f && (f('Bio:sequenceSpaceTopMenu') || f('Bio:sequenceSpace'))); } catch { return false; }
+    }, undefined, {timeout: 30_000});
     await softStep(`${ds.name}: Open Bio > Analyze > Sequence Space (defaults)`, async () => {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Sequence-Space...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
@@ -76,7 +61,7 @@ for (const ds of datasets) {
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base &&
           Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
+        baseCols, {timeout: 90_000});
       const result = await page.evaluate(() => ({
         hasScatter: Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
         scatterCount: Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length,
@@ -87,10 +72,9 @@ for (const ds of datasets) {
       expect(result.hasScatter).toBe(true);
       expect(result.scatterCount).toBe(1);
       expect(result.cols).toBeGreaterThan(baseCols);
-      const hasEmbedX = result.colNames.some((n: string) => /^Embed_X_\d+$/.test(n));
-      const hasEmbedY = result.colNames.some((n: string) => /^Embed_Y_\d+$/.test(n));
-      expect(hasEmbedX).toBe(true);
-      expect(hasEmbedY).toBe(true);
+      expect(result.colNames).toContain('Embed_X_1');
+      expect(result.colNames).toContain('Embed_Y_1');
+      expect(result.colNames.some((n: string) => /^Cluster \(DBSCAN\)/.test(n))).toBe(true);
     });
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))
@@ -113,8 +97,15 @@ for (const ds of datasets) {
         simSel.value = 'Levenshtein';
         simSel.dispatchEvent(new Event('input', {bubbles: true}));
         simSel.dispatchEvent(new Event('change', {bubbles: true}));
-        await new Promise((r) => setTimeout(r, 300));
       });
+      await page.waitForFunction(() => {
+        const dlg = document.querySelector('.d4-dialog')!;
+        const m = (dlg.querySelector('[name="input-Method"]') as HTMLSelectElement)
+          ?? (dlg.querySelector('[name="input-host-Method"] select') as HTMLSelectElement);
+        const s = (dlg.querySelector('[name="input-Similarity"]') as HTMLSelectElement)
+          ?? (dlg.querySelector('[name="input-host-Similarity"] select') as HTMLSelectElement);
+        return m?.value === 't-SNE' && s?.value === 'Levenshtein';
+      }, undefined, {timeout: 15_000});
       const verified = await page.evaluate(() => {
         const dlg = document.querySelector('.d4-dialog')!;
         const methodSel = (dlg.querySelector('[name="input-Method"]') as HTMLSelectElement)
@@ -132,7 +123,7 @@ for (const ds of datasets) {
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base &&
           Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
-        baseCols, {timeout: 240_000});
+        baseCols, {timeout: 90_000});
       const result = await page.evaluate(() => ({
         hasScatter: Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'Scatter plot'),
         cols: grok.shell.tv.dataFrame.columns.length,
@@ -143,8 +134,10 @@ for (const ds of datasets) {
       expect(result.cols).toBeGreaterThan(baseCols);
       const embedXCount = result.colNames.filter((n: string) => /^Embed_X_\d+$/.test(n)).length;
       const embedYCount = result.colNames.filter((n: string) => /^Embed_Y_\d+$/.test(n)).length;
+      const clusterCount = result.colNames.filter((n: string) => /^Cluster \(DBSCAN\)/.test(n)).length;
       expect(embedXCount).toBeGreaterThanOrEqual(2);
       expect(embedYCount).toBeGreaterThanOrEqual(2);
+      expect(clusterCount).toBeGreaterThanOrEqual(2);
     });
     await page.evaluate(() => {
       for (const v of Array.from((grok.shell.tv as any).viewers))

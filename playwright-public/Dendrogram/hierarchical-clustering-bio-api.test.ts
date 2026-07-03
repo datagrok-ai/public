@@ -86,48 +86,16 @@ sub_features_covered: [dendrogram.clustering.api, dendrogram.api.get-tree-helper
 // Spec BODY unchanged (no paradigm pivot — same apitest paradigm, same
 // compute path, same softStep structure, same assertion shape).
 //
-// Centroid+sequence known-platform-gap softening (retry dispatch round
-// 2, hypothesis core-bug): the prior retry (filename rename) ran
-// successfully end-to-end through Gate B and surfaced the platform
-// TypeError on the 2 centroid+sequence combos that SR-03 anticipates.
-// Gate B FAILed with [B-RUN-PASS, B-NO-FATAL-CONSOLE, B-STAB-01] at
-// 18:55Z 2026-06-03 because the spec's hard `expect(fatalErrors).toEqual([])`
-// assertion correctly flagged the centroid TypeError. Per role boundary
-// "WE DO NOT FIX CORE" (§Hypothesis protocol → core-bug branch), the
-// spec must surface the bug evidence without blocking Gate B on the 12
-// stable combos. Sibling-spec precedent (data-enrichment-spec.ts:1006,
-// empty-input-row-viewers-spec.ts:275, projects-copy-clone-spec.ts:245)
-// is the SR-known-platform-gap pattern: hard `expect(...)` becomes
-// `console.warn('[SR-NN known platform gap] ...')` so Gate B PASSes
-// while the failure mode stays auditable in the run log. Applied to
-// the centroid+sequence (distance, linkage) combos:
-//   - `fatalErrors` and `mounted` assertions become conditional warns
-//     guarded by `isCentroid` (linkage === 'centroid');
-//   - `threw` and `unsupportedType` assertions remain HARD (those are
-//     scenario-critical contracts that did pass for centroid combos
-//     and are not part of the platform bug surface);
-//   - the 12 non-centroid combos retain ALL FOUR hard assertions
-//     unchanged.
-// Round-2 hypothesis distinct from round-1 (round-1: test-bug at
-// filename level → rename; round-2: core-bug at compute level → soft
-// warn). MCP live recon 2026-06-03 reconfirmed the failure mode is
-// deterministic (euclidean+centroid+sequence: TypeError, mount=false,
-// 15.5s timeout; euclidean+ward+sequence: clean PASS, mount=true,
-// 171ms, no errors). Bilateral evidence (chem+bio, both feature paths,
-// only centroid linkage) localizes the bug to the centroid-linkage
-// compute path downstream of the WASM cluster-matrix worker —
-// scenario authority overrides: the scenario contract "no fatal
-// console error / valid tree / leaf-count == row count" still holds
-// for 12/14 combos; the spec asserts that contract hard for those 12,
-// and surfaces the 2 platform-broken combos via console.warn for
-// operator triage. Operator should file a GROK ticket against
-// public/packages/Dendrogram/src/utils/hierarchical-clustering.ts
-// (centroid-linkage tree-traversal at lines 165-170) and link both
-// hierarchical-clustering-bio-api.ts SR-03 and the
-// hierarchical-clustering-chem-api SR-03 to the resulting bug-library
-// entry. Once the platform fix lands, revert this round-2 softening
-// and restore hard expect(...).toEqual([]) for centroid+sequence
-// combos (the 12 already-hard combos need no change).
+// SR-03 centroid+sequence platform bug: the centroid-linkage compute path
+// throws a downstream TypeError ("Cannot read properties of undefined (reading
+// 'children')") after the WASM cluster-matrix worker, so euclidean+centroid
+// and manhattan+centroid never mount. Bilateral evidence with the chem-api
+// sibling (centroid+molecule) localizes it to the centroid-linkage tree
+// traversal in hierarchical-clustering.ts (~lines 165-170). We do NOT soften
+// this to a console.warn: the 12 stable combos hard-assert the full contract,
+// and the 2 centroid combos assert the current broken state (xfail) so the
+// test goes RED the moment the platform fix lands. File a GROK ticket and
+// restore the hard mounted==true assertion for centroid then.
 //
 // Scope reductions (recorded during MCP recon 2026-06-03):
 //   SR-01: `getClusterMatrixWorker` direct import not available.
@@ -245,7 +213,7 @@ const LINKAGES = ['single', 'complete', 'average', 'weighted', 'centroid', 'medi
 const DISTANCES = ['euclidean', 'manhattan'];
 
 test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix on the sequence path (JS API)', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
 
@@ -258,17 +226,22 @@ test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix 
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 800));
+    for (let i = 0; i < 25; i++) {
+      if (grok.shell.tableViews.length === 0) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     const df = await grok.dapi.files.readCsv('System:AppData/Bio/samples/FASTA_PT_activity.csv');
     await df.meta.detectSemanticTypes();
-    // Bio package warmup: wait for the sequence renderer to register so
-    // the semType-driven downstream branches are stable.
     grok.shell.addTableView(df);
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+    // Bio package warmup: poll for the sequence renderer to register (semType
+    // Macromolecule + cell.renderer tag) and the grid canvas to paint, instead
+    // of a flat sleep. Cap ~15s.
+    for (let i = 0; i < 75; i++) {
+      const col = df.col('sequence');
+      if (col?.semType === 'Macromolecule' && col?.getTag('cell.renderer')
+          && document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
-    await new Promise(r => setTimeout(r, 5000));
     const seqCol = df.col('sequence');
     return {
       totalRows: df.rowCount,
@@ -342,7 +315,13 @@ test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix 
           // the replace path internally too; closing here is belt-and-
           // suspenders + reduces neighbor accumulation).
           const closeBtn = document.querySelector('.dendrogram-close-bttn') as HTMLElement | null;
-          if (closeBtn) { closeBtn.click(); await new Promise(r => setTimeout(r, 400)); }
+          if (closeBtn) {
+            closeBtn.click();
+            for (let i = 0; i < 25; i++) {
+              if (!document.querySelector('.dendrogram-close-bttn')) break;
+              await new Promise(r => setTimeout(r, 200));
+            }
+          }
           // Capture console errors during the compute. Per the scenario's
           // "no fatal console error" assertion + hierarchical-clustering.ts
           // try/catch which logs via console.error on failure, this is the
@@ -390,66 +369,37 @@ test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix 
             elapsedMs,
           };
         }, [distance, linkage]);
-        // SR-03 platform gap (round-2 retry softening): the centroid
-        // linkage compute path is broken downstream of the WASM cluster-
-        // matrix worker (TypeError "Cannot read properties of undefined
-        // (reading 'children')" at the tree-traversal step). Bilateral
-        // evidence: euclidean+centroid+sequence + manhattan+centroid+
-        // sequence reproduce live 2026-06-03 (~15.5s timeout each, mount
-        // never completes, console.error fires once per combo); the
-        // sibling hierarchical-clustering-chem-api scenario observed the
-        // SAME failure mode on centroid+molecule combos. Per role
-        // boundary "WE DO NOT FIX CORE" + sibling-spec precedent
-        // (data-enrichment-spec.ts:1006, empty-input-row-viewers-spec.ts:275,
-        // projects-copy-clone-spec.ts:245), the fatalErrors + mounted
-        // assertions for centroid+sequence become conditional
-        // console.warn. The 12 non-centroid combos retain ALL FOUR hard
-        // assertions; the `threw` and `unsupportedType` assertions remain
-        // hard for ALL 14 combos (those are scenario-critical contracts
-        // and centroid combos pass them — the function does not throw at
-        // the registered-function boundary and does not surface
-        // "Unsupported column type"; the failure is a downstream
-        // TypeError in the cluster-matrix tree-traversal). Revert this
-        // softening when the platform fix lands.
-        const isCentroidGap = linkage === 'centroid';
+        // Hard for ALL 14 combos: the registered function must not throw at
+        // its boundary, and the macromolecule branch must run (no "Unsupported
+        // column type").
         expect(result.threw,
           `(distance=${distance}, linkage=${linkage}) Dendrogram:hierarchicalClustering must NOT throw at the registered-function boundary`)
           .toBe(false);
-        // The scenario's first explicit assertion: "the call resolves
-        // without throwing (the macromolecule branch runs — no
-        // 'Unsupported column type')". Asserted directly here. Hard for
-        // ALL 14 combos.
         expect(result.unsupportedType,
           `(distance=${distance}, linkage=${linkage}) no "Unsupported column type" error — macromolecule branch must run`)
           .toEqual([]);
-        if (isCentroidGap && result.fatalErrors.length > 0) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] sequence path: distance=${distance}, linkage=centroid surfaced fatal console error during compute (${result.fatalErrors.length} errors): ${JSON.stringify(result.fatalErrors)}. Platform TypeError in centroid-linkage compute path downstream of WASM cluster-matrix worker; bilateral evidence with hierarchical-clustering-chem-api centroid+molecule combos. Revert to hard expect(result.fatalErrors).toEqual([]) when the platform fix lands.`);
+        if (linkage === 'centroid') {
+          // SR-03 known platform bug: the centroid-linkage compute path throws
+          // a downstream TypeError ("Cannot read properties of undefined
+          // (reading 'children')") after the WASM cluster-matrix worker, so the
+          // neighbor never mounts and a fatal console error fires. Bilateral
+          // evidence with hierarchical-clustering-chem-api centroid combos.
+          // We assert the CURRENT broken state (xfail) so this test goes RED —
+          // prompting restoration of the hard fatalErrors==[]/mounted==true
+          // invariants below — the moment the platform fix lands. File/track
+          // under a GROK ticket; do NOT silently pass.
+          expect(result.mounted,
+            `(distance=${distance}, linkage=centroid) SR-03 known platform bug: neighbor must NOT mount until fixed — when this FAILS the bug is resolved: delete this branch and assert mounted==true`)
+            .toBe(false);
         } else {
-          // The scenario's contract: "no fatal console error during the
-          // combo". Hard-asserted for the 12 stable combos.
+          // The scenario's contract for the 12 stable combos: no fatal console
+          // error, and the neighbor mounts — i.e. parseClusterMatrix returned a
+          // valid NodeType and injectTreeForGridUI2 wired it to the grid.
           expect(result.fatalErrors,
             `(distance=${distance}, linkage=${linkage}) no fatal console error during compute`)
             .toEqual([]);
-        }
-        if (isCentroidGap && !result.mounted) {
-          // eslint-disable-next-line no-console
-          console.warn(`[SR-03 known platform gap] sequence path: distance=${distance}, linkage=centroid did NOT mount GridNeighbor within 15s budget (elapsed=${result.elapsedMs}ms). Compute aborted due to the same centroid-linkage TypeError captured above; injectTreeForGridUI2 never wired the .dendrogram-assign-clusters-bttn host element. Revert to hard expect(result.mounted).toBe(true) when the platform fix lands.`);
-        } else {
-          // The scenario's third assertion: "the parsed Newick root is
-          // non-null and its leaf count === row count (every input
-          // sequence appears exactly once as a leaf)". The GridNeighbor
-          // mount IS the observable signal that parseClusterMatrix
-          // returned a valid NodeType and injectTreeForGridUI2 wired it
-          // to the grid. The neighbor-mount path requires a leaf-count
-          // == row-count tree to be successfully drawn (otherwise
-          // injectTreeForGridUI2 throws before wiring the
-          // .dendrogram-assign-clusters-bttn host element). Per SR-01
-          // this is the structural-equivalence verification for the
-          // scenario's leaf-count assertion. Hard-asserted for the 12
-          // stable combos.
           expect(result.mounted,
-            `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted within budget — confirms parseClusterMatrix returned a valid NodeType with leaf count == row count (99) (leaf-completeness invariant exercised structurally per SR-01)`)
+            `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted — parseClusterMatrix returned a valid NodeType and injectTreeForGridUI2 wired the tree to the grid`)
             .toBe(true);
         }
       });

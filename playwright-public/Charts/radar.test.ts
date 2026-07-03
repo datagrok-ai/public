@@ -11,7 +11,7 @@ const earthquakesPath = 'System:DemoFiles/geo/earthquakes.csv';
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Radar viewer (Charts package)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
 
@@ -31,6 +31,14 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
   await softStep('Step 1: Open earthquakes.csv and add Radar viewer via gallery', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 25000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return pred();
+      };
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
       await new Promise<void>((resolve) => {
@@ -57,22 +65,17 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
           return all[all.length - 1] as HTMLElement | undefined;
         };
         fullClick(addBtn);
-        await new Promise((r) => setTimeout(r, 800));
-        if (probe()) return probe();
+        if (await poll(() => !!probe(), 3000)) return probe();
         addBtn.click();
-        await new Promise((r) => setTimeout(r, 800));
+        await poll(() => !!probe(), 3000);
         return probe();
       };
       let dlg = await openGallery();
       if (!dlg) {
         console.warn('[radar Step 1]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Radar');
-        // Retry probe up to ~25s — Charts webpack-lazy-load + Radar DOM attach can take 15+ s on cold start.
-        let radarRoot = false;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          await new Promise((r) => setTimeout(r, 5000));
-          if (document.querySelector('[name="viewer-Radar"]')) { radarRoot = true; break; }
-        }
+        // Charts webpack-lazy-load + Radar DOM attach can take 15+ s on cold start.
+        const radarRoot = await poll(() => !!document.querySelector('[name="viewer-Radar"]'), 25000);
         const viewerTypes: string[] = [];
         for (const v of tv.viewers) viewerTypes.push(v.type);
         return {rowCount: df.rowCount, viewerTypes, radarRoot, fallbackUsed: true};
@@ -85,12 +88,7 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s — Charts webpack-lazy-load + Radar DOM attach can take 15+ s on cold start.
-      let radarRoot = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        if (document.querySelector('[name="viewer-Radar"]')) { radarRoot = true; break; }
-      }
+      const radarRoot = await poll(() => !!document.querySelector('[name="viewer-Radar"]'), 25000);
       const viewerTypes: string[] = [];
       for (const v of tv.viewers) viewerTypes.push(v.type);
       return {rowCount: df.rowCount, viewerTypes, radarRoot, fallbackUsed: false};
@@ -104,6 +102,14 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
   await softStep('Step 2: Open demog.csv and add Radar viewer via gallery', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 25000, interval = 200) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return pred();
+      };
       grok.shell.closeAll();
       await new Promise((r) => setTimeout(r, 500));
       const df = await grok.dapi.files.readCsv(path);
@@ -131,22 +137,16 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
           return all[all.length - 1] as HTMLElement | undefined;
         };
         fullClick(addBtn);
-        await new Promise((r) => setTimeout(r, 800));
-        if (probe()) return probe();
+        if (await poll(() => !!probe(), 3000)) return probe();
         addBtn.click();
-        await new Promise((r) => setTimeout(r, 800));
+        await poll(() => !!probe(), 3000);
         return probe();
       };
       let dlg = await openGallery();
       if (!dlg) {
         console.warn('[radar Step 2]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Radar');
-        // Retry probe up to ~25s (same as Step 1).
-        let radarRoot = false;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          await new Promise((r) => setTimeout(r, 5000));
-          if (document.querySelector('[name="viewer-Radar"]')) { radarRoot = true; break; }
-        }
+        const radarRoot = await poll(() => !!document.querySelector('[name="viewer-Radar"]'), 25000);
         const viewerTypes: string[] = [];
         for (const v of tv.viewers) viewerTypes.push(v.type);
         return {rowCount: df.rowCount, viewerTypes, radarRoot, fallbackUsed: true};
@@ -159,12 +159,7 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s (same as Step 1).
-      let radarRoot = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        if (document.querySelector('[name="viewer-Radar"]')) { radarRoot = true; break; }
-      }
+      const radarRoot = await poll(() => !!document.querySelector('[name="viewer-Radar"]'), 25000);
       const viewerTypes: string[] = [];
       for (const v of tv.viewers) viewerTypes.push(v.type);
       return {rowCount: df.rowCount, viewerTypes, radarRoot, fallbackUsed: false};
@@ -176,13 +171,21 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
 
   await softStep('Step 3: Open Context Panel via Gear; verify categories and toggle a Style color', async () => {
     const result = await page.evaluate(async () => {
+      const poll = async (pred: () => boolean, timeout = 5000, interval = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return pred();
+      };
       const radarEl = document.querySelector('[name="viewer-Radar"]') as HTMLElement | null;
       if (!radarEl) return {gearClicked: false, categories: [] as string[], colorEchoOk: false, newColor: 0, echoed: 0 as any};
       const panel = radarEl.closest('.panel-base') as HTMLElement | null;
       const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
       if (!gear) return {gearClicked: false, categories: [] as string[], colorEchoOk: false, newColor: 0, echoed: 0 as any};
       gear.click();
-      await new Promise((r) => setTimeout(r, 1000));
+      await poll(() => !!document.querySelector('.grok-prop-panel tr.property-grid-category'));
       const cp = document.querySelector('.grok-prop-panel');
       const categories: string[] = [];
       if (cp) {
@@ -192,184 +195,161 @@ test('Charts / Radar viewer (Charts package)', async ({page}) => {
         }
       }
 
-      // Toggle one Style color; wrap in try/catch — Radar props can race cold-start init.
       const tv = (window as any).grok.shell.tv;
       let radar: any = null;
       for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
       const newColor = 0xFF123456 | 0;
-      let echoed: any = null;
-      let colorEchoOk = false;
-      try {
-        radar.setOptions({backgroundMinColor: newColor});
-        await new Promise((r) => setTimeout(r, 800));
-        echoed = radar.props.get('backgroundMinColor');
-        colorEchoOk = echoed === newColor;
-      } catch (e) {
-        console.warn('[Radar Step 3] toggle race; defensive skip:', String(e).substring(0, 120));
-      }
+      radar.setOptions({backgroundMinColor: newColor});
+      const colorEchoOk = await poll(() => radar.props.get('backgroundMinColor') === newColor);
+      const echoed = radar.props.get('backgroundMinColor');
 
       return {gearClicked: true, categories, colorEchoOk, newColor, echoed};
     });
     expect(result.gearClicked).toBe(true);
     expect(result.categories).toEqual(expect.arrayContaining(['Data', 'Selection', 'Value', 'Style', 'Legend']));
-    if (result.echoed != null) expect(result.colorEchoOk).toBe(true);
+    expect(result.colorEchoOk, `backgroundMinColor should round-trip to ${result.newColor}, got ${result.echoed}`).toBe(true);
   });
 
   // Step 9: table switch — find Radar via shell.tableViews loop (don't depend on shell.tv after switches).
-  await softStep('Step 9: Verify radar tableName property surface; attempt setOptions round-trip (race-tolerant)', async () => {
+  // The bound-table property is registered as 'table' (fieldName 'tableName') in EChartViewer.
+  await softStep('Step 9: Verify radar table property and setOptions round-trip (earthquakes -> restore)', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
-      let radar: any = null;
-      let radarTv: any = null;
-      for (const tv of grok.shell.tableViews) {
-        for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; radarTv = tv; break; }
-        if (radar) break;
-      }
-      if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
-      const beforeName: string = radar.dataFrame?.name ?? 'unknown';
-      let earthquakesLoaded = false;
-      try {
-        const eqDf = await grok.dapi.files.readCsv(path);
-        grok.shell.addTableView(eqDf);
-        await new Promise((r) => setTimeout(r, 1500));
-        earthquakesLoaded = true;
-      } catch (e) {
-        console.warn('[Radar Step 9] earthquakes load failed; falling back to property-only verify');
-      }
-      let tableNameProp: any = null;
-      let switched: any = null;
-      let restored: any = null;
-      try {
-        tableNameProp = radar.props.get('tableName');
-        if (earthquakesLoaded) {
-          radar.setOptions({tableName: 'earthquakes'});
-          await new Promise((r) => setTimeout(r, 1200));
-          switched = radar.dataFrame?.name ?? null;
-          radar.setOptions({tableName: beforeName});
-          await new Promise((r) => setTimeout(r, 1200));
-          restored = radar.dataFrame?.name ?? null;
+      const poll = async (pred: () => boolean, timeout = 8000, interval = 150) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
         }
-      } catch (e) {
-        console.warn('[Radar Step 9] setOptions/props.get race; defensive skip:',
-          String(e).substring(0, 120));
-      }
-      const root = radar.root as HTMLElement;
-      const rect = root.getBoundingClientRect();
-      return {
-        ok: true,
-        beforeName,
-        tableNameProp,
-        switched,
-        restored,
-        earthquakesLoaded,
-        hasContent: root.children.length > 0,
-        width: rect.width,
+        return pred();
       };
-    }, earthquakesPath);
-    expect(result.ok).toBe(true);
-    if (result.tableNameProp != null) expect(typeof result.tableNameProp).toBe('string');
-    if (result.switched != null && result.restored != null) {
-      expect(result.restored).toBe(result.beforeName);
-    }
-    // Content presence is load-bearing; width may be 0 when active tv isn't radar's tv.
-    expect(result.hasContent).toBe(true);
-    if (result.width > 0) console.log('[Step 9] viewer width:', result.width);
-    console.log('[Step 9]', JSON.stringify({
-      beforeName: result.beforeName,
-      tableNameProp: result.tableNameProp,
-      switched: result.switched,
-      restored: result.restored,
-      earthquakesLoaded: result.earthquakesLoaded,
-    }));
-  });
-
-  await softStep('Step 10: Set selection via df.selection; verify viewer remains stable + showCurrentRow surface', async () => {
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      let radar: any = null;
-      let radarTv: any = null;
-      for (const tv of grok.shell.tableViews) {
-        for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; radarTv = tv; break; }
-        if (radar) break;
-      }
-      if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
-      const df = radarTv.dataFrame;
-      df.selection.setAll(false);
-      const limit = Math.min(50, df.rowCount);
-      for (let i = 0; i < limit; i++) df.selection.set(i, true);
-      df.selection.fireChanged();
-      await new Promise((r) => setTimeout(r, 600));
-      let showCurrentRow: any = null;
-      try { showCurrentRow = radar.props.get('showCurrentRow'); } catch (e) {}
-      const root = radar.root as HTMLElement;
-      const rect = root.getBoundingClientRect();
-      return {
-        ok: true,
-        selectedCount: df.selection.trueCount,
-        showCurrentRow,
-        hasContent: root.children.length > 0,
-        width: rect.width,
-      };
-    });
-    expect(result.ok).toBe(true);
-    expect(result.selectedCount).toBeGreaterThan(0);
-    if (result.showCurrentRow != null) expect(typeof result.showCurrentRow).toBe('boolean');
-    expect(result.hasContent).toBe(true);
-    if (result.width > 0) console.log('[Step 10] viewer width:', result.width);
-  });
-
-  await softStep('Step 11: Verify color-column property surface; toggle color column race-tolerant', async () => {
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
       let radar: any = null;
       for (const tv of grok.shell.tableViews) {
         for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
         if (radar) break;
       }
       if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
-      let propNames: string[] = [];
-      try { propNames = radar.props.getProperties().map((p: any) => p.name); } catch (e) {}
-      // Try multiple plausible color/values property names — actual name varies by Radar build.
-      const candidates = ['colorColumnName', 'valuesColumnNames', 'columns', 'columnNames'];
-      const exposed = candidates.filter((c) => propNames.includes(c));
-      let togglesAttempted = 0;
-      let togglesSucceeded = 0;
-      for (const propName of exposed) {
-        togglesAttempted++;
-        try {
-          const before = radar.props.get(propName);
-          const opts: any = {};
-          opts[propName] = (Array.isArray(before) || (before == null && propName.endsWith('Names')))
-            ? ['AGE'] : 'AGE';
-          radar.setOptions(opts);
-          await new Promise((r) => setTimeout(r, 500));
-          const after = radar.props.get(propName);
-          if (after != null) togglesSucceeded++;
-        } catch (e) {}
+      const beforeName: string = radar.dataFrame?.name ?? 'unknown';
+      const eqDf = await grok.dapi.files.readCsv(path);
+      grok.shell.addTableView(eqDf);
+      await poll(() => grok.shell.tables.some((t: any) => t.name === eqDf.name));
+
+      const tableNameProp = radar.props.get('table');
+      radar.setOptions({table: eqDf.name});
+      await poll(() => (radar.dataFrame?.name ?? null) === eqDf.name);
+      const switched = radar.dataFrame?.name ?? null;
+      radar.setOptions({table: beforeName});
+      await poll(() => (radar.dataFrame?.name ?? null) === beforeName);
+      const restored = radar.dataFrame?.name ?? null;
+
+      const root = radar.root as HTMLElement;
+      const rect = root.getBoundingClientRect();
+      return {
+        ok: true,
+        beforeName,
+        eqName: eqDf.name,
+        tableNameProp,
+        switched,
+        restored,
+        hasEcharts: !!root.querySelector('[_echarts_instance_]') && !!root.querySelector('canvas'),
+        width: rect.width,
+      };
+    }, earthquakesPath);
+    expect(result.ok, result.reason).toBe(true);
+    // 'table' property (fieldName 'tableName') defaults to null when the viewer is on its host table.
+    if (result.tableNameProp != null) expect(typeof result.tableNameProp).toBe('string');
+    expect(result.switched).toBe(result.eqName);
+    expect(result.restored).toBe(result.beforeName);
+    expect(result.hasEcharts).toBe(true);
+    if (result.width > 0) console.log('[Step 9] viewer width:', result.width);
+  });
+
+  await softStep('Step 10: Set selection + current row; toggle showCurrentRow and verify it round-trips', async () => {
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 5000, interval = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return pred();
+      };
+      let radar: any = null;
+      let radarTv: any = null;
+      for (const tv of grok.shell.tableViews) {
+        for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; radarTv = tv; break; }
+        if (radar) break;
       }
+      if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
+      const df = radar.dataFrame;
+      df.selection.setAll(false);
+      const limit = Math.min(50, df.rowCount);
+      for (let i = 0; i < limit; i++) df.selection.set(i, true);
+      df.selection.fireChanged();
+      df.currentRowIdx = 0;
+      radar.setOptions({showCurrentRow: false});
+      const offOk = await poll(() => radar.props.get('showCurrentRow') === false);
+      radar.setOptions({showCurrentRow: true});
+      const onOk = await poll(() => radar.props.get('showCurrentRow') === true);
+      const root = radar.root as HTMLElement;
+      const rect = root.getBoundingClientRect();
+      return {
+        ok: true,
+        selectedCount: df.selection.trueCount,
+        offOk,
+        onOk,
+        hasEcharts: !!root.querySelector('[_echarts_instance_]') && !!root.querySelector('canvas'),
+        width: rect.width,
+      };
+    });
+    expect(result.ok, result.reason).toBe(true);
+    expect(result.selectedCount).toBeGreaterThan(0);
+    expect(result.offOk, 'showCurrentRow should round-trip to false').toBe(true);
+    expect(result.onOk, 'showCurrentRow should round-trip to true').toBe(true);
+    expect(result.hasEcharts).toBe(true);
+    if (result.width > 0) console.log('[Step 10] viewer width:', result.width);
+  });
+
+  await softStep('Step 11: Verify colorColumnName/valuesColumnNames properties; set color column and verify it round-trips', async () => {
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
+      const poll = async (pred: () => boolean, timeout = 5000, interval = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (pred()) return true;
+          await new Promise((r) => setTimeout(r, interval));
+        }
+        return pred();
+      };
+      let radar: any = null;
+      for (const tv of grok.shell.tableViews) {
+        for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
+        if (radar) break;
+      }
+      if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
+      const propNames: string[] = radar.props.getProperties().map((p: any) => p.name);
+      const colName: string = radar.dataFrame.columns.names()[0];
+      radar.setOptions({colorColumnName: colName});
+      const colorEchoOk = await poll(() => radar.props.get('colorColumnName') === colName);
+      const colorEcho = radar.props.get('colorColumnName');
       const root = radar.root as HTMLElement;
       const rect = root.getBoundingClientRect();
       return {
         ok: true,
         propNames,
-        exposed,
-        togglesAttempted,
-        togglesSucceeded,
-        hasContent: root.children.length > 0,
+        colName,
+        colorEcho,
+        colorEchoOk,
+        hasEcharts: !!root.querySelector('[_echarts_instance_]') && !!root.querySelector('canvas'),
         width: rect.width,
       };
     });
-    expect(result.ok).toBe(true);
-    if (result.propNames.length > 0) {
-      expect(result.exposed.length).toBeGreaterThan(0);
-    }
-    expect(result.hasContent).toBe(true);
-    console.log('[Step 11]', JSON.stringify({
-      exposed: result.exposed,
-      togglesAttempted: result.togglesAttempted,
-      togglesSucceeded: result.togglesSucceeded,
-      viewerWidth: result.width,
-    }));
+    expect(result.ok, result.reason).toBe(true);
+    expect(result.propNames).toEqual(expect.arrayContaining(['colorColumnName', 'valuesColumnNames']));
+    expect(result.colorEchoOk, `colorColumnName should round-trip to ${result.colName}, got ${result.colorEcho}`).toBe(true);
+    expect(result.hasEcharts).toBe(true);
+    if (result.width > 0) console.log('[Step 11] viewer width:', result.width);
   });
 
   // Step 13 (broad sweep): represented by Step 3 categories enumeration; no separate softStep.

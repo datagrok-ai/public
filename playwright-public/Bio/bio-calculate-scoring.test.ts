@@ -22,21 +22,25 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
     const hasMacromolecule = cols.some((c: any) => c.semType === 'Macromolecule');
     if (hasMacromolecule) {
-      for (let i = 0; i < 60; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+      const deadline = Date.now() + 20_000;
+      while (Date.now() < deadline) {
+        const canvas = document.querySelector('[name="viewer-Grid"] canvas') as HTMLCanvasElement | null;
+        if (canvas && canvas.width > 0 && canvas.height > 0) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }, path);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
-    for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      for (const fn of probes) {
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
+      }
+      await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 3000));
   });
   await page.evaluate(async () => {
     const candidates = ['Bio:Identity', 'Bio:Similarity', 'Bio:getRegion',
@@ -54,9 +58,7 @@ async function openBioDataset(page: import('@playwright/test').Page, path: strin
       if (findAny(candidates)) return;
       await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 1500));
   });
-  await page.waitForTimeout(2000);
 }
 async function openBioCalculateLeaf(
   page: import('@playwright/test').Page,
@@ -65,12 +67,18 @@ async function openBioCalculateLeaf(
 ): Promise<void> {
   await page.evaluate(async ({leafSel, leafName}) => {
     (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 400));
+    for (let i = 0; i < 50; i++) {
+      if (document.querySelector('[name="div-Bio---Calculate"]')) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
     const group = document.querySelector('[name="div-Bio---Calculate"]');
     if (!group) throw new Error('[name="div-Bio---Calculate"] group anchor not found');
     group.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 400));
+    for (let i = 0; i < 50; i++) {
+      if (document.querySelector(leafSel)) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
     const leaf = document.querySelector(leafSel);
     if (!leaf)
       throw new Error(`${leafSel} leaf (${leafName}) not found under Bio > Calculate`);
@@ -78,7 +86,7 @@ async function openBioCalculateLeaf(
   }, {leafSel: leafSelector, leafName: leafLabel});
 }
 test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / getRegion / sequenceAlignment API', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
   // Scenario 1 — Identity scoring via top-menu (filter_HELM.csv).
@@ -212,7 +220,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       ok.click();
     }, helmSetup.firstSeq);
   });
-  await softStep('Scenario 2.3: dialog closes; new Similarity column appended; row 0 == 1.0', async () => {
+  await softStep('Scenario 2.3: dialog closes; new Similarity column appended; row 0 self-similarity is the column max', async () => {
     await page.waitForFunction(() => {
       const sim = document.querySelector('[name="dialog-Similarity"]');
       const anyDialogWithRef = Array.from(document.querySelectorAll('.d4-dialog'))
@@ -257,19 +265,16 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(similarityProbe.numericCount,
       `Scenario 2 Expected: a new numeric Similarity score column MUST be appended. Added cols: ${JSON.stringify(similarityProbe.addedCols)}`)
       .toBeGreaterThanOrEqual(1);
-    expect(typeof similarityProbe.row0,
-      `Scenario 2 Expected: row 0 self-similarity is a numeric value; got ${similarityProbe.row0}`)
-      .toBe('number');
-    expect(Number.isFinite(similarityProbe.row0),
-      `Scenario 2 Expected: row 0 self-similarity is a finite number (sum metric is finite by construction); got ${similarityProbe.row0}`)
-      .toBe(true);
-    expect(similarityProbe.row0,
-      `Scenario 2 Expected: row 0 self-similarity is non-negative (sum of fingerprint similarities ≥ 0); got ${similarityProbe.row0}`)
-      .toBeGreaterThanOrEqual(0);
     expect(similarityProbe.nonNullCount,
       'Scenario 2 Expected: Similarity scores are non-null for at least 2 rows').toBeGreaterThanOrEqual(2);
     expect(similarityProbe.min!,
       `Scenario 2 Expected: Similarity scores are non-negative; got min=${similarityProbe.min}`).toBeGreaterThanOrEqual(0);
+    expect(similarityProbe.row0,
+      `Scenario 2 Expected: reference is row 0, so its self-similarity MUST be the column max; got row0=${similarityProbe.row0}, max=${similarityProbe.max}`)
+      .toBe(similarityProbe.max);
+    expect(similarityProbe.max!,
+      `Scenario 2 Expected: similarity scores vary across rows (max > min); got max=${similarityProbe.max}, min=${similarityProbe.min}`)
+      .toBeGreaterThan(similarityProbe.min!);
     expect(similarityProbe.totalColumnCount,
       'Scenario 2 Expected: Identity column from Scenario 1 + Similarity column from Scenario 2 coexist')
       .toBeGreaterThan(preSimilarityColumnCount);
@@ -310,25 +315,12 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       try {
         regionCol = await (grok as any).functions.call('Bio:getRegion', {
           sequence: macroCol,
-          start: '1',
+          start: '0',
           end: '4',
           name: 'region_0_4',
         });
       } catch (e: any) {
         callError = e?.message ?? String(e);
-      }
-      if (callError) {
-        try {
-          regionCol = await (grok as any).functions.call('Bio:getRegion', {
-            sequence: macroCol,
-            start: '0',
-            end: '3',
-            name: 'region_0_4',
-          });
-          callError = null;
-        } catch (e: any) {
-          callError = e?.message ?? String(e);
-        }
       }
       if (callError || !regionCol)
         return {ok: false, error: callError ?? 'getRegion returned null'};
@@ -356,14 +348,23 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(regionResult.length,
       'Scenario 3 Expected: returned column row count matches source row count').toBe(fastaSetup.rowCount);
     expect(regionResult.sampleCells.length).toBeGreaterThan(0);
-    const anyNonEmpty = regionResult.sampleCells.some((c: any) => typeof c === 'string' && c.length > 0);
-    expect(anyNonEmpty,
-      `Scenario 3 Expected: at least one returned cell contains a non-empty region; got cells: ${JSON.stringify(regionResult.sampleCells)}`)
-      .toBe(true);
-    if (regionResult.semType !== undefined) {
-      expect(regionResult.semType,
-        'Scenario 3 Expected: returned column preserves Macromolecule semType').toBe('Macromolecule');
+    for (let i = 0; i < regionResult.sampleCells.length; i++) {
+      const cell = regionResult.sampleCells[i];
+      const source = fastaSetup.samples[i];
+      expect(typeof cell === 'string' && cell.length > 0,
+        `Scenario 3 Expected: region cell for row ${i} is a non-empty positional slice; got ${JSON.stringify(cell)}`)
+        .toBe(true);
+      expect(source.startsWith(cell),
+        `Scenario 3 Expected: region_0_4 cell for row ${i} MUST be the leading slice (first monomers) of the source sequence "${source}"; got "${cell}"`)
+        .toBe(true);
+      expect(cell.length,
+        `Scenario 3 Expected: leading region for row ${i} is shorter than the full source "${source}"; got "${cell}"`)
+        .toBeLessThan(source.length);
     }
+    expect(regionResult.semType,
+      'Scenario 3 Expected: returned column MUST preserve Macromolecule semType').toBe('Macromolecule');
+    expect(regionResult.units,
+      'Scenario 3 Expected: returned column MUST preserve units=fasta').toBe('fasta');
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 3 Expected: "No error balloon appears"').toBe(0);
@@ -451,6 +452,10 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(r.value!,
       `Scenario 4.3 Expected: cross-row Identity score <= 1.0 (tolerated +0.001 rounding); got ${r.value}`)
       .toBeLessThanOrEqual(1.001);
+    if (helmSeq4Setup.row0 !== helmSeq4Setup.row1)
+      expect(r.value!,
+        `Scenario 4.3 Expected: distinct sequences give a non-trivial score strictly below the self-identity 1.0; got ${r.value}`)
+        .toBeLessThan(1);
     const errorBalloonCount = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(errorBalloonCount,
       'Scenario 4 Expected: "No error balloon appears across the three invocations"').toBe(0);

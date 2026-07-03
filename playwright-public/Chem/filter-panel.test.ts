@@ -8,10 +8,12 @@ import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 
 test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
-  test.setTimeout(420_000);
+  test.setTimeout(150_000);
+
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(e.message));
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
 
   await softStep('Step 1: Open spgi-100.csv', async () => {
     await page.evaluate(async () => {
@@ -59,7 +61,17 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
   });
 
   await softStep('Step 4 (A): Cycle Contains / Included in / Exact / Similar tabs', async () => {
+    const errBefore = pageErrors.length;
     const results = await page.evaluate(async () => {
+      const settle = async (): Promise<number> => {
+        let prev = -1, stable = 0;
+        for (let i = 0; i < 40; i++) {
+          const c = grok.shell.tv.dataFrame.filter.trueCount;
+          if (c === prev) { if (++stable >= 3) return c; } else { stable = 0; prev = c; }
+          await new Promise(r => setTimeout(r, 200));
+        }
+        return prev;
+      };
       const filterViewer = document.querySelector('[name="viewer-Filters"]');
       const cards = filterViewer?.querySelectorAll('.d4-filter');
       let structureCard: Element | null = null;
@@ -67,13 +79,13 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         const header = card.querySelector('.d4-filter-header');
         if (header?.textContent?.trim() === 'Structure') structureCard = card;
       });
-      // Open gear → reveal search-type select
       const gearIcon = structureCard?.querySelector('.chem-search-options-icon, [class*="search-options"]') as HTMLElement | null;
-      if (gearIcon) {
-        gearIcon.click();
-        await new Promise(r => setTimeout(r, 600));
+      if (gearIcon) gearIcon.click();
+      let select: HTMLSelectElement | null = null;
+      for (let i = 0; i < 25 && !select; i++) {
+        select = structureCard?.querySelector('select') as HTMLSelectElement | null;
+        if (!select) await new Promise(r => setTimeout(r, 200));
       }
-      const select = structureCard?.querySelector('select') as HTMLSelectElement;
       if (!select) return null;
       const res: Record<string, number> = {};
       const types = ['Contains', 'Included in', 'Exact', 'Similar'];
@@ -81,28 +93,31 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         select.value = type;
         select.dispatchEvent(new Event('input', {bubbles: true}));
         select.dispatchEvent(new Event('change', {bubbles: true}));
-        await new Promise(r => setTimeout(r, 2500));
-        res[type] = grok.shell.tv.dataFrame.filter.trueCount;
+        res[type] = await settle();
       }
       return res;
     });
-    expect(results).not.toBeNull();
-    // Each tab should yield a deterministically-different (or same) count without errors.
-    expect(typeof (results as any).Contains).toBe('number');
-    expect(typeof (results as any)['Included in']).toBe('number');
-    expect(typeof (results as any).Exact).toBe('number');
-    expect(typeof (results as any).Similar).toBe('number');
+    expect(results, 'settings gear must expose the match-mode select').not.toBeNull();
+    const r = results as Record<string, number>;
+    // The benzene query from Step 3 is active — Contains must be a real filtered subset, not the full 100.
+    expect(r.Contains).toBeGreaterThan(0);
+    expect(r.Contains).toBeLessThan(100);
+    // Exact matches are a subset of Contains matches.
+    expect(r.Exact).toBeLessThanOrEqual(r.Contains);
+    // md Block A: each tab switch must complete without console errors.
+    expect(pageErrors.length, `pageerrors during mode cycle: ${pageErrors.slice(errBefore).join('; ')}`).toBe(errBefore);
   });
 
   // ===== Block B — Use as filter from molecule cell context menu =====
 
   await softStep('Step 5 (B): Close Filter Panel', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup().close());
-    await page.waitForTimeout(800);
+    await expect.poll(() => page.evaluate(() =>
+      document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length), {timeout: 5000}).toBe(0);
   });
 
   await softStep('Step 6 (B): Use as filter for first molecule structure (SR-DEFERRED: right-click canvas)', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const df = grok.shell.t;
       const molCol = df.columns.toList().find((c: any) => c.semType === 'Molecule');
       const firstSmiles = molCol.get(0);
@@ -114,98 +129,114 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         columnName: molCol.name,
         molBlock: firstSmiles,
       });
-      await new Promise(r => setTimeout(r, 2000));
     });
+    // A query built from a real row's structure must match at least that row and filter the table.
+    await expect.poll(() => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
+      {timeout: 20000}).toBeLessThan(100);
     const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     expect(filtered).toBeLessThan(100);
+    expect(filtered).toBeGreaterThan(0);
   });
 
   // ===== Block C — Filter from column header hamburger menu =====
 
   await softStep('Step 7 (C): Close Filter Panel again', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup().close());
-    await page.waitForTimeout(800);
+    await expect.poll(() => page.evaluate(() =>
+      document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length), {timeout: 5000}).toBe(0);
   });
 
-  await softStep('Step 8 (C): Column hamburger → Filter → sketcher dialog opens', async () => {
-    await page.evaluate(async () => {
+  await softStep('Step 8 (C): Column hamburger → Filter resolves to the substructure editor function', async () => {
+    const fnFound = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
-      // Invoke the editor function directly — the column-hamburger Filter entry resolves to this.
-      const fn = (DG as any).Func.find({name: 'substructureFilterEditor'})[0] ||
-                  (DG as any).Func.find({name: 'searchSubstructureEditor'})[0];
-      if (fn) await fn.prepare({molecules: molCol}).call();
-      await new Promise(r => setTimeout(r, 2000));
+      // The column-hamburger Filter entry resolves to this editor function.
+      const fn = (DG as any).Func.find({name: 'searchSubstructureEditor'})[0] ||
+                  (DG as any).Func.find({name: 'SearchSubstructureEditor'})[0];
+      if (!fn) return false;
+      await fn.prepare({molecules: molCol}).call();
+      return true;
     });
-    const dialogCount = await page.evaluate(() => document.querySelectorAll('.d4-dialog').length);
-    expect(dialogCount).toBeGreaterThanOrEqual(0);
+    // Hard-assert the editor exists (previously a silent `if (fn)` no-op that always passed).
+    expect(fnFound, 'searchSubstructureEditor must be registered for the hamburger Filter route').toBe(true);
+    // Single mol-column path invokes the search directly rather than opening a modal sketcher dialog,
+    // so dialog presence is not asserted here (see filter-panel.md Block C).
   });
 
+  const structureCardCount = () => page.evaluate(() =>
+    Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+      .filter(c => /Structure|struct/i.test(c.querySelector('.d4-filter-header')?.textContent || '')).length);
+
   await softStep('Step 9 (C): Add another structure filter (CCC) + verify presence', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
       fg.updateOrAdd({type: 'Chem:substructureFilter', column: molCol.name, columnName: molCol.name});
-      await new Promise(r => setTimeout(r, 1500));
     });
-    const count = await page.evaluate(() => {
-      const cards = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
-      return Array.from(cards).filter(c =>
-        /Structure|struct/i.test(c.querySelector('.d4-filter-header')?.textContent || '')).length;
-    });
-    expect(count).toBeGreaterThanOrEqual(1);
+    await expect.poll(structureCardCount, {timeout: 15000}).toBeGreaterThanOrEqual(1);
   });
 
   await softStep('Step 10 (C): Remove Structure filter from Filter Panel', async () => {
-    await page.evaluate(async () => {
-      const cards = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
-      for (const card of cards) {
-        const h = card.querySelector('.d4-filter-header');
-        if (h && /Structure|struct/i.test(h.textContent || '')) {
-          const closeBtn = card.querySelector('[name="icon-times"]') as HTMLElement | null;
-          if (closeBtn) closeBtn.click();
-          await new Promise(r => setTimeout(r, 500));
-          break;
+    for (let i = 0; i < 6; i++) {
+      const remaining = await structureCardCount();
+      if (remaining === 0) break;
+      await page.evaluate(() => {
+        const cards = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
+        for (const card of cards) {
+          const h = card.querySelector('.d4-filter-header');
+          if (h && /Structure|struct/i.test(h.textContent || '')) {
+            (card.querySelector('[name="icon-times"]') as HTMLElement | null)?.click();
+            return;
+          }
         }
-      }
-    });
-    await page.waitForTimeout(800);
+      });
+      await expect.poll(structureCardCount, {timeout: 5000}).toBeLessThan(remaining);
+    }
+    // Removing the widget(s) must clear the structure filter cards from the panel.
+    await expect.poll(structureCardCount, {timeout: 10000}).toBe(0);
   });
 
   // ===== Block D — Drag-and-drop column header =====
 
   await softStep('Step 11 (D): Add Structure filter back (SR-DEFERRED: drag-drop canvas header)', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
       // SR-DEFERRED drag-drop column header → Filter Panel: substituted with fg.updateOrAdd.
+      // The md "inserted at top of panel" invariant is specific to the drag-drop route we cannot
+      // drive here, so position is not asserted; presence + empty-query state is.
       fg.updateOrAdd({type: 'Chem:substructureFilter', column: molCol.name, columnName: molCol.name});
-      await new Promise(r => setTimeout(r, 1500));
     });
-    const hasStructure = await page.evaluate(() => {
-      const cards = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
-      return Array.from(cards).some(c =>
-        /Structure|struct/i.test(c.querySelector('.d4-filter-header')?.textContent || ''));
+    await expect.poll(structureCardCount, {timeout: 15000}).toBeGreaterThanOrEqual(1);
+    // Added without a molBlock → the structure filter query must be empty until the user draws one.
+    const filterMol = await page.evaluate(() => {
+      const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
+      const tag = molCol?.temp['chem-scaffold-filter'];
+      return tag ? (JSON.parse(tag)[0]?.molecule ?? '') : '';
     });
-    expect(hasStructure).toBe(true);
+    expect(filterMol, 'a freshly-added structure filter must carry no pre-populated query').toBe('');
   });
 
   // ===== Block E — Cross-filter + sketcher↔filter sync =====
 
   await softStep('Step 12 (E): Add Stereo Category categorical filter → AND composition', async () => {
     const before = await page.evaluate(() => grok.shell.t.filter.trueCount);
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE']});
-      await new Promise(r => setTimeout(r, 1500));
     });
+    // Selecting the R_ONE subset must strictly reduce the visible set (AND-composition), not leave it unchanged.
+    await expect.poll(() => page.evaluate(() => grok.shell.t.filter.trueCount),
+      {timeout: 15000}).toBeLessThan(before);
     const after = await page.evaluate(() => grok.shell.t.filter.trueCount);
-    expect(after).toBeLessThanOrEqual(before);
+    expect(after).toBeLessThan(before);
+    expect(after).toBeGreaterThan(0);
   });
 
   await softStep('Step 13 (E): Re-edit substructure filter via hamburger sync', async () => {
     // SR-DEFERRED hamburger Re-edit click: apply modified structure via fg.updateOrAdd (filter↔structure sync).
-    await page.evaluate(async () => {
+    const before = await page.evaluate(() => grok.shell.t.filter.trueCount);
+    await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
       fg.updateOrAdd({
@@ -214,10 +245,26 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         columnName: molCol.name,
         molBlock: 'CCCC',
       });
-      await new Promise(r => setTimeout(r, 1500));
     });
-    const trueCount = await page.evaluate(() => grok.shell.t.filter.trueCount);
-    expect(typeof trueCount).toBe('number');
+    // filter↔sketcher sync: the filter widget's active query must update to the modified structure.
+    await expect.poll(() => page.evaluate(() => {
+      const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
+      const tag = molCol?.temp['chem-scaffold-filter'];
+      return tag ? (JSON.parse(tag)[0]?.molecule ?? '') : '';
+    }), {timeout: 20000}).not.toBe('');
+    const {after, filterMol} = await page.evaluate(() => {
+      const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
+      const tag = molCol?.temp['chem-scaffold-filter'];
+      const filterMol = tag ? (JSON.parse(tag)[0]?.molecule ?? '') : '';
+      return {after: grok.shell.t.filter.trueCount, filterMol};
+    });
+    // The filter widget observes the applied structure (butane molblock carries carbon atoms).
+    expect(filterMol.toUpperCase()).toContain('C');
+    // The table re-filters to the new query intersected with the active R_ONE categorical filter;
+    // adding the CCCC substructure constraint can only shrink the R_ONE set (AND-composition).
+    expect(after).toBeGreaterThan(0);
+    expect(after).toBeLessThan(100);
+    expect(after).toBeLessThanOrEqual(before);
   });
 
   await page.evaluate(() => grok.shell.closeAll());

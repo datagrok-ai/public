@@ -11,7 +11,7 @@ const spgiPath = 'System:DemoFiles/SPGI.csv';
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Sunburst viewer', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
 
   await loginToDatagrok(page);
 
@@ -180,12 +180,13 @@ test('Charts / Sunburst viewer', async ({page}) => {
   await softStep('Step 2: Open Context Panel via Gear; verify hierarchy/inherit-from-grid/include-nulls present', async () => {
     const result = await page.evaluate(async () => {
       const sb = document.querySelector('[name="viewer-Sunburst"]') as HTMLElement | null;
-      if (!sb) return {gearClicked: false, categories: [] as string[], propNames: [] as string[]};
+      if (!sb) return {gearClicked: false, categories: [] as string[], propNames: [] as string[], apiPropNames: [] as string[]};
       const panel = sb.closest('.panel-base') as HTMLElement | null;
       const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-      if (!gear) return {gearClicked: false, categories: [] as string[], propNames: [] as string[]};
+      if (!gear) return {gearClicked: false, categories: [] as string[], propNames: [] as string[], apiPropNames: [] as string[]};
       gear.click();
-      await new Promise((r) => setTimeout(r, 1000));
+      for (let i = 0; i < 32 && !document.querySelector('.grok-prop-panel .property-grid-item'); i++)
+        await new Promise((r) => setTimeout(r, 250));
       const cp = document.querySelector('.grok-prop-panel');
       const categories: string[] = [];
       const propNames: string[] = [];
@@ -198,18 +199,15 @@ test('Charts / Sunburst viewer', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       let sunburst: any = null;
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
+      if (!sunburst) throw new Error('Sunburst viewer not found on active table view');
       const apiPropNames: string[] = [];
-      if (sunburst) {
-        try { for (const p of sunburst.props.getProperties()) apiPropNames.push(p.name); }
-        catch (e) {}
-      }
+      for (const p of sunburst.props.getProperties()) apiPropNames.push(p.name);
       return {gearClicked: true, categories, propNames, apiPropNames};
     });
     expect(result.gearClicked).toBe(true);
     expect(result.categories).toEqual(expect.arrayContaining(['Data']));
     expect(result.propNames).toEqual(expect.arrayContaining(['prop-hierarchy']));
-    if (result.apiPropNames.length > 0)
-      expect(result.apiPropNames).toEqual(expect.arrayContaining(['hierarchyColumnNames', 'inheritFromGrid', 'includeNulls']));
+    expect(result.apiPropNames).toEqual(expect.arrayContaining(['hierarchyColumnNames', 'inheritFromGrid', 'includeNulls']));
   });
 
   // Step 3.1: Table switching between SPGI and demog — AMBIGUOUS (not exercised in this run).
@@ -226,7 +224,8 @@ test('Charts / Sunburst viewer', async ({page}) => {
       let dialogOpened = false;
       if (dotsBtn) {
         dotsBtn.click();
-        await new Promise((r) => setTimeout(r, 500));
+        for (let i = 0; i < 20 && !document.querySelector('[name="dialog-Select-columns..."]'); i++)
+          await new Promise((r) => setTimeout(r, 100));
         dialogOpened = !!document.querySelector('[name="dialog-Select-columns..."]');
       }
       // Cancel any open dialog so the JS-API path doesn't conflict.
@@ -241,7 +240,11 @@ test('Charts / Sunburst viewer', async ({page}) => {
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {dialogOpened, cols: [] as string[]};
       sunburst.setOptions({hierarchyColumnNames: ['SEX', 'RACE']});
-      await new Promise((r) => setTimeout(r, 500));
+      for (let i = 0; i < 20; i++) {
+        const c = sunburst.props.get('hierarchyColumnNames');
+        if (Array.isArray(c) && c.length === 2 && c[0] === 'SEX' && c[1] === 'RACE') break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const cols = sunburst.props.get('hierarchyColumnNames') as string[];
       return {dialogOpened, cols: Array.from(cols ?? [])};
     });
@@ -257,7 +260,8 @@ test('Charts / Sunburst viewer', async ({page}) => {
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {inheritFromGrid: null as any};
       sunburst.setOptions({hierarchyColumnNames: ['SEX'], inheritFromGrid: true});
-      await new Promise((r) => setTimeout(r, 500));
+      for (let i = 0; i < 20 && sunburst.props.get('inheritFromGrid') !== true; i++)
+        await new Promise((r) => setTimeout(r, 100));
       return {inheritFromGrid: sunburst.props.get('inheritFromGrid')};
     });
     expect(result.inheritFromGrid).toBe(true);
@@ -271,10 +275,12 @@ test('Charts / Sunburst viewer', async ({page}) => {
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {firstRead: null as any, secondRead: null as any};
       sunburst.setOptions({includeNulls: true});
-      await new Promise((r) => setTimeout(r, 300));
+      for (let i = 0; i < 20 && sunburst.props.get('includeNulls') !== true; i++)
+        await new Promise((r) => setTimeout(r, 100));
       const firstRead = sunburst.props.get('includeNulls');
       sunburst.setOptions({includeNulls: false});
-      await new Promise((r) => setTimeout(r, 300));
+      for (let i = 0; i < 20 && sunburst.props.get('includeNulls') !== false; i++)
+        await new Promise((r) => setTimeout(r, 100));
       const secondRead = sunburst.props.get('includeNulls');
       return {firstRead, secondRead};
     });
@@ -293,7 +299,8 @@ test('Charts / Sunburst viewer', async ({page}) => {
         bubbles: true, cancelable: true, view: window,
         clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 2,
       }));
-      await new Promise((res) => setTimeout(res, 600));
+      for (let i = 0; i < 20 && !document.querySelector('[name="div-Reset-View"]'); i++)
+        await new Promise((res) => setTimeout(res, 250));
       const reset = document.querySelector('[name="div-Reset-View"]') as HTMLElement | null;
       const menuOpened = !!reset;
       let resetClicked = false;
@@ -318,7 +325,8 @@ test('Charts / Sunburst viewer', async ({page}) => {
       const layoutsHeader = document.querySelector('[name="div-section--Layouts"]') as HTMLElement | null;
       if (!layoutsHeader) return {expanded: false, saveBtnFound: false, applied: false};
       if (!layoutsHeader.classList.contains('expanded')) layoutsHeader.click();
-      await new Promise((r) => setTimeout(r, 600));
+      for (let i = 0; i < 20 && !layoutsHeader.parentElement?.querySelector('.d4-toolbox-layouts'); i++)
+        await new Promise((r) => setTimeout(r, 100));
       const layoutsPane = layoutsHeader.parentElement?.querySelector('.d4-toolbox-layouts');
       const saveBtn = layoutsPane?.querySelector('[name="button-Save"]') as HTMLElement | null;
       const saveBtnFound = !!saveBtn;
@@ -375,7 +383,9 @@ test('Charts / Sunburst viewer', async ({page}) => {
         }
         if (stringCols.length === 0) return {ok: false, reason: 'no string columns to use as hierarchy'};
         sunburst.setOptions({hierarchyColumnNames: stringCols});
-        await new Promise((r) => setTimeout(r, 800));
+        const eq = (a: any) => Array.isArray(a) && a.length === stringCols.length && a.every((x: string, i: number) => x === stringCols[i]);
+        for (let i = 0; i < 20 && !eq(sunburst.props.get('hierarchyColumnNames')); i++)
+          await new Promise((r) => setTimeout(r, 100));
         return {ok: true, hierarchy: stringCols};
       });
       expect(prep.ok, prep.ok ? '' : `Sunburst setup failed: ${(prep as any).reason ?? 'unknown'}`).toBe(true);
@@ -396,8 +406,10 @@ test('Charts / Sunburst viewer', async ({page}) => {
 
       const reopened = await page.evaluate(async (name) => {
         const grok = (window as any).grok;
+        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+        for (let i = 0; i < 40 && (Array.from(grok.shell.tableViews) as any[]).length > 0; i++)
+          await sleep(250);
         const tableViewsAfterClose: number = (Array.from(grok.shell.tableViews) as any[]).length;
         let proj: any = null;
         try {
@@ -414,12 +426,13 @@ test('Charts / Sunburst viewer', async ({page}) => {
           return {ok: false, reason: `proj.open threw: ${String(e).substring(0, 160)}`,
             tableViewsAfterClose, sunburstPresent: false, hierarchyAfter: null};
         }
-        await new Promise((r) => setTimeout(r, 3000));
+        const findSb = () => {
+          for (const tv of grok.shell.tableViews)
+            for (const v of tv.viewers) if (v.type === 'Sunburst') return v;
+          return null;
+        };
         let sb: any = null;
-        for (const tv of grok.shell.tableViews) {
-          for (const v of tv.viewers) if (v.type === 'Sunburst') { sb = v; break; }
-          if (sb) break;
-        }
+        for (let i = 0; i < 60; i++) { sb = findSb(); if (sb) break; await sleep(250); }
         let hierarchyAfter: string[] | null = null;
         if (sb) {
           try {

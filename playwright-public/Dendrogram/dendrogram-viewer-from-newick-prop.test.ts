@@ -85,8 +85,11 @@ async function applyViewerOptions(page: Page, opts: Record<string, unknown>): Pr
     if (!v) throw new Error('Dendrogram viewer not mounted');
     v.setOptions(o);
   }, opts);
-  // Settle so onPropertyChanged restyle/rebuild can run.
-  await page.waitForTimeout(250);
+  // Poll until every set option is reflected in props (onPropertyChanged ran).
+  await page.waitForFunction((o: Record<string, unknown>) => {
+    const v = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Dendrogram') as any;
+    return !!v && Object.entries(o).every(([k, val]) => v.props[k] === val);
+  }, opts, {timeout: 10_000});
 }
 
 async function getLeafSetFromNewick(page: Page, newick: string): Promise<string[]> {
@@ -103,17 +106,24 @@ async function getLeafSetFromNewick(page: Page, newick: string): Promise<string[
 }
 
 test('Dendrogram / Viewer from literal newick property + full property-panel sweep', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(120_000);
+
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => consoleErrors.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 
   await loginToDatagrok(page);
 
   // Setup — build the synthetic `leaves4` DataFrame and seed two newick tags.
-  await page.evaluate(async (args: {balanced: string; leftLean: string}) => {
+  await page.evaluate(() => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 800));
+  });
+  // Settle so closeAll finishes tearing down prior views before we add the fresh one.
+  await page.waitForTimeout(800);
+  await page.evaluate((args: {balanced: string; leftLean: string}) => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromList('string', 'leaf', ['a', 'b', 'c', 'd']),
       DG.Column.fromList('int', 'value', [1, 2, 3, 4]),
@@ -122,11 +132,8 @@ test('Dendrogram / Viewer from literal newick property + full property-panel swe
     df.setTag('.newick', args.balanced);
     df.setTag('.newick-alt', args.leftLean);
     grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
   }, {balanced: NEWICK_BALANCED, leftLean: NEWICK_LEFT_LEAN});
+  // Grid render is the authoritative readiness gate (semType detection is scheduled off it).
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
 
   // ── Scenario 1 — Viewer mounts and renders from literal newick property ─
@@ -191,6 +198,14 @@ test('Dendrogram / Viewer from literal newick property + full property-panel swe
   });
 
   await softStep('2.2 newickTag dropdown is populated from .* tags; switching it rebuilds the view', async () => {
+    // The newickTag choice list is populated from the DataFrame's `.*` tags (dendrogram.ts onTableAttached).
+    const tagChoices = await page.evaluate(() => {
+      const v = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Dendrogram') as any;
+      return (v.props.getProperty('newickTag').choices ?? []) as string[];
+    });
+    expect(tagChoices, `newickTag choices = ${JSON.stringify(tagChoices)}`)
+      .toEqual(expect.arrayContaining(['.newick', '.newick-alt']));
+
     // Clear the literal prop so the newickTag wins, then switch the tag and observe treeNewick.
     await applyViewerOptions(page, {newick: ''});
     let info = await getViewerInfo(page);
@@ -213,6 +228,7 @@ test('Dendrogram / Viewer from literal newick property + full property-panel swe
 
   // 2.3 — nodeColumnName rebuild path (data prop).
   await softStep('2.3 nodeColumnName toggle leaf<->value<->leaf rebuilds the view (no console error)', async () => {
+    const errBefore = consoleErrors.length;
     await applyViewerOptions(page, {nodeColumnName: 'value'});
     let info = await getViewerInfo(page);
     expect(info.nodeColumnName, 'nodeColumnName set to value').toBe('value');
@@ -220,6 +236,8 @@ test('Dendrogram / Viewer from literal newick property + full property-panel swe
     info = await getViewerInfo(page);
     expect(info.nodeColumnName, 'nodeColumnName restored to leaf').toBe('leaf');
     expect(info.canvasWidth, 'canvas non-empty after nodeColumnName toggle').toBeGreaterThan(0);
+    const newErrors = consoleErrors.slice(errBefore);
+    expect(newErrors, `console errors during rebuild:\n${newErrors.join('\n')}`).toEqual([]);
   });
 
   // 2.4 — colorColumnName + colorAggrType rebuild path (data props).

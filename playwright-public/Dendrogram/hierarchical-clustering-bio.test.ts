@@ -3,7 +3,7 @@ sub_features_covered: [dendrogram.api.tree-helper.calc-distance-matrix, dendrogr
 --- */
 // Bio Hierarchical Clustering on FASTA_PT_activity.csv (99 rows, sequence col = Macromolecule).
 // The bio leaf auto-defaults Features to the sequence column; Levenshtein build path.
-// Clusters→Threshold binary search is inexact, so assert categories.length > 0 (not == requested).
+// Clusters→Threshold binary search is inexact, so assert a multi-way partition (>=2), not == requested.
 // Mount budget 120s absorbs cold-init; mount-success contract is state.magicWand === true (the
 // foundAtMs numeric is clamped to >=1 on success / -1 on timeout). Resource-load 404s on every
 // neighbor mount are non-fatal noise (see isFatalConsoleError). Centroid linkage crashes (WASM OOB
@@ -19,14 +19,20 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
     const bio = document.querySelector('[name="div-Bio"]') as HTMLElement | null;
     if (!bio) throw new Error('Top-menu Bio entry not found');
     bio.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 800));
-    const analyze = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => m.textContent!.trim() === 'Analyze') as HTMLElement | undefined;
+    const findLabel = (pred: (t: string) => boolean) => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .find(m => pred((m.textContent || '').trim())) as HTMLElement | undefined;
+    const pollLabel = async (pred: (t: string) => boolean) => {
+      for (let i = 0; i < 50; i++) {
+        const el = findLabel(pred);
+        if (el) return el;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return undefined;
+    };
+    const analyze = await pollLabel(t => t === 'Analyze');
     if (!analyze) throw new Error('"Analyze" sub-menu item not found');
     (analyze.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
-    await new Promise(r => setTimeout(r, 700));
-    const hc = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .find(m => /Hierarchical\s+Clustering/i.test(m.textContent || '')) as HTMLElement | undefined;
+    const hc = await pollLabel(t => /Hierarchical\s+Clustering/i.test(t));
     if (!hc) throw new Error('"Hierarchical Clustering..." sub-menu item not found');
     (hc.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
@@ -84,7 +90,7 @@ function isFatalConsoleError(text: string): boolean {
 }
 
 test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + Levenshtein build path + Assign Clusters smoke', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(360_000);
 
   await loginToDatagrok(page);
 
@@ -94,20 +100,36 @@ test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + L
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 1000));
+    for (let i = 0; i < 50; i++) {
+      if (grok.shell.tv == null) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     const df = await grok.dapi.files.readCsv('System:AppData/Bio/samples/FASTA_PT_activity.csv');
     grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 5000);
     });
-    // Bio dataset: wait for Grid canvas + extra settle for Bio package warmup
-    // (sequence renderer registration takes longer than Chem on first load).
+    // Bio dataset: wait for Grid canvas, then for the Bio top-menu to register
+    // (sequence renderer + package warmup complete once [name="div-Bio"] attaches).
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
-    await new Promise(r => setTimeout(r, 6000));
+    for (let i = 0; i < 150; i++) {
+      if (document.querySelector('[name="div-Bio"]')) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    // Wait for the sequence column's Macromolecule semType to actually be detected — the
+    // Bio top-menu registers on package load independently of this dataframe's semType
+    // detection, so div-Bio can attach before detection finishes. Gating on the real
+    // condition faithfully replaces the old fixed settle and lets the Bio leaf auto-default
+    // Features to the sequence column.
+    for (let i = 0; i < 150; i++) {
+      const st = grok.shell.tv?.dataFrame?.col('sequence')?.semType;
+      if (st && /macromolecule/i.test(st)) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
     // Pre-warm the Dendrogram TreeHelper singleton so the first build skips package init.
     try {
       await (grok as any).functions.call('Dendrogram:getTreeHelper');
@@ -311,8 +333,16 @@ test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + L
         clInput.value = '5';
         clInput.dispatchEvent(new Event('input', {bubbles: true}));
         clInput.dispatchEvent(new Event('change', {bubbles: true}));
-        await new Promise(r => setTimeout(r, 800));
-        const settledThreshold = (dlg?.querySelector('[name="input-Threshold"]') as HTMLInputElement | null)?.value;
+        // Poll until the Threshold input recomputes and stabilizes (unchanged, non-empty).
+        const readThreshold = () => (dlg?.querySelector('[name="input-Threshold"]') as HTMLInputElement | null)?.value ?? '';
+        let prev = '';
+        for (let i = 0; i < 40; i++) {
+          const cur = readThreshold();
+          if (cur !== '' && cur === prev) break;
+          prev = cur;
+          await new Promise(r => setTimeout(r, 100));
+        }
+        const settledThreshold = readThreshold();
         const assignBtn = dlg?.querySelector('[name="button-Assign"]') as HTMLElement | null;
         if (!assignBtn) throw new Error('Assign button not found');
         assignBtn.click();
@@ -334,6 +364,9 @@ test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + L
       expect(newCols.length, `exactly one new Cluster column appended (all new: ${JSON.stringify(allNew)})`).toBe(1);
       // Column name format Cluster (<threshold.toFixed(2)>); match the format, not the value.
       expect(newCols[0], 'new column name follows Cluster (N.NN) format').toMatch(/^Cluster\s*\(\d+(\.\d{1,2})?\)$/);
+      // Tie the created column to the settled threshold captured from the dialog (Clusters=5 request).
+      const nameThreshold = Number(newCols[0].match(/\(([\d.]+)\)/)![1]);
+      expect(nameThreshold, 'column-name threshold matches settled dialog threshold').toBeCloseTo(Number(result.settledThreshold), 2);
 
       const colInfo = await page.evaluate((colName: string) => {
         const col = grok.shell.tv.dataFrame.col(colName)!;
@@ -344,8 +377,11 @@ test('Dendrogram / Hierarchical Clustering (Bio) — sequence-default dialog + L
         };
       }, newCols[0]);
       expect(colInfo.type, 'new column is string (categorical)').toBe('string');
-      // Clusters→Threshold binary search is inexact — assert categories.length > 0, not == requested.
-      expect(colInfo.categoriesLength, 'cluster column has at least one category').toBeGreaterThan(0);
+      // Clusters→Threshold binary search is inexact (~4-6 for a request of 5), so we don't assert
+      // == 5, but a request for 5 clusters MUST yield a real multi-way partition — collapsing to a
+      // single category means clustering did nothing. Upper band intentionally omitted (unverified on
+      // dev; recorded for human review) — the floor is what catches the degenerate breakage.
+      expect(colInfo.categoriesLength, 'requested 5 clusters produced a multi-way partition').toBeGreaterThanOrEqual(2);
       expect(colInfo.rowCountMatches, 'cluster column length matches DataFrame row count').toBe(true);
 
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
