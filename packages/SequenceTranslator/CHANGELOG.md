@@ -1,5 +1,10 @@
 # Sequence Translator changelog
 
+## 1.11.4 (2026-07-03)
+
+* Markush enumerator redesign
+* Function name harmonization
+
 ## 1.11.3 (2026-06-23)
 
 * Markush enumeration: R-group templates picker backed by a built-in catalogue of common substituents (alkyl, aryl, heteroaryl, halogens, amines, protecting groups); copy R-groups between positions, append/replace with de-duplication, and export R-groups to CSV.
