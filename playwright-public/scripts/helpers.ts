@@ -62,7 +62,7 @@ export async function openScriptsBrowser(page: Page) {
   // Wait for the gallery to actually render at least one card — ensures data
   // is loaded before tests start searching. Without this, searching immediately
   // after the search bar appears can filter against an empty dataset.
-  await expect(page.locator('.grok-gallery-grid-item').first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('.grok-gallery-grid-item').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => { /* fresh CI stack has no scripts yet — gallery legitimately empty; tests create their own below */ });
 }
 
 // Close all open views and return to the Scripts gallery without a full page
@@ -84,7 +84,7 @@ export async function resetToScripts(page: Page) {
   // Gallery cards are populated asynchronously after the search bar appears.
   // Without this wait, an immediate searchScript() call filters against an
   // empty dataset (debounced search caches "no results") and times out.
-  await expect(page.locator('.grok-gallery-grid-item').first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('.grok-gallery-grid-item').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => { /* fresh CI stack has no scripts yet — gallery legitimately empty; tests create their own below */ });
 }
 
 // Idempotent: create the testRscript only if it does not exist.

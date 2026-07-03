@@ -114,6 +114,14 @@ export async function openSpgi(page: Page): Promise<void> {
     await new Promise((r) => setTimeout(r, 4000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({ timeout: 30_000 });
+  // The Molecule semType is assigned asynchronously by the Chem detector; on cold
+  // CI that lands well after the 4s fallback above, so callers that assert on it
+  // would read `null`. Poll until the Structure column is typed (best-effort — a
+  // genuinely missing detector still surfaces via the caller's own assertion).
+  await page.waitForFunction(() => {
+    const c = (window as any).grok?.shell?.t?.col('Structure');
+    return c != null && c.semType === 'Molecule';
+  }, undefined, { timeout: 60_000 }).catch(() => {});
 }
 
 /**
