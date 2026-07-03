@@ -1253,7 +1253,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 //description: Removes drawn protecting groups / fragments from molecules
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
-//input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
+//input: string fragment = 'O=C(OCC1c2ccccc2-c2ccccc21)[*:1]' { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Transform | Reactions | Deprotect...
 //editor: Chem:DeprotectEditor

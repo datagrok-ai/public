@@ -44,7 +44,7 @@ export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     35: [0.0, 0.498, 0.0],
     53: [0.247, 0.0, 0.498],
   },
-  addStereoAnnotation: true,
+  // addStereoAnnotation: true,
   simplifiedStereoGroupLabel: true,
   highlightColour: [1.0, 0.7, 0.7, 1.0],
   backgroundColour: [1, 1, 1, 1],
