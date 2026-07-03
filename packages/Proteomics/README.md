@@ -11,6 +11,10 @@ from both **DDA** (MaxQuant, FragPipe) and **DIA** (Spectronaut) workflows.
 
 Open it from the **Proteomics** top menu.
 
+![The Proteomics analysis view: an interactive volcano plot of differential expression (top), a clustered expression heatmap of the top proteins (bottom), and the UniProt context panel for the selected protein — showing its name, gene, organism, function, GO terms and per-group abundance — all on one screen](images/hero.png)
+
+*One screen from statistics to biology: the interactive volcano, the clustered expression heatmap, and in-place UniProt annotation for the selected protein.*
+
 ## Where it fits
 
 The package picks up **where the search engine leaves off** and carries the study all the
@@ -74,9 +78,7 @@ its completion on the table, and downstream steps read those as preconditions, s
 menu greys out actions that don't yet apply (and items that need per-sample intensities
 are disabled on the pre-computed Spectronaut Candidates table).
 
-```
-Import → Annotate Experiment → Normalize → Impute → Differential Expression → Visualize / Enrich / Share
-```
+![Proteomics analysis pipeline: Import, Annotate Experiment, Normalize, Impute and Differential Expression, each setting a proteomics.* tag that gates the next step, then branching to Visualize, Enrich and Share](images/pipeline.svg)
 
 ### Import
 `Spectronaut Candidates...` · `Spectronaut Report...` · `MaxQuant...` · `FragPipe...` ·
@@ -114,6 +116,16 @@ Import → Annotate Experiment → Normalize → Impute → Differential Express
   flagging and a Pareto of tripped rules.
 - **Enrichment Charts** — dot plot and bar chart of the top terms, split Up/Down by
   direction; selecting a term highlights its proteins back in the volcano.
+
+Selecting a term in the enrichment results highlights that pathway's member proteins back
+on the volcano — a pathway you find in the biology view is immediately located in the
+statistics view, so the two never drift apart:
+
+![Enrichment results grid with the KEGG Cell Cycle term (KEGG:04110) selected](images/enrichment-term-selected.png)
+
+![The volcano plot after selecting the term — the Cell Cycle pathway's member proteins appear as highlighted points and selected rows](images/enrichment-crosslink.png)
+
+*Selecting the KEGG Cell Cycle term (top) highlights its 25 member proteins on the volcano (bottom).*
 
 ### Share
 - **Share Analysis for Review** — publish a trimmed, read-only snapshot (table + volcano +

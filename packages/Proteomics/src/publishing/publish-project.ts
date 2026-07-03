@@ -13,9 +13,7 @@ import {
 import {createVolcanoPlot} from '../viewers/volcano';
 import {dockEnrichmentCharts, openEnrichmentVisualization} from '../viewers/enrichment-viewers';
 import {reviewSpaceName, reviewNamePrefix, verifyPublishedDashboard} from './publish-settings';
-
-const DEFAULT_FC_THRESHOLD = 1.0;
-const DEFAULT_P_THRESHOLD = 0.05;
+import {DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 
 /**
  * Pure helper: applies (or replaces) the volcano threshold formula lines on

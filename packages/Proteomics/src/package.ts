@@ -7,7 +7,8 @@ import {debounceTime} from 'rxjs/operators';
 
 import {parseMaxQuantText} from './parsers/maxquant-parser';
 import {parseSpectronautText, parseSpectronautStream} from './parsers/spectronaut-parser';
-import {parseSpectronautCandidatesText} from './parsers/spectronaut-candidates-parser';
+import {parseSpectronautCandidatesText, COMPARISON_COLUMNS}
+  from './parsers/spectronaut-candidates-parser';
 import {parseFragPipeText} from './parsers/fragpipe-parser';
 import {showGenericImportDialog} from './parsers/generic-parser';
 import {showAnnotationDialog, getGroups} from './analysis/experiment-setup';
@@ -18,7 +19,8 @@ import {showNormalizationDialog, quantileNormalize, vsnNormalize} from './analys
 import {showImputationDialog, imputeKnn, imputeZero, imputeMean, imputeMedian} from './analysis/imputation';
 import {showDEDialog, requireDifferentialExpression} from './analysis/differential-expression';
 import {createVolcanoPlot, recomputeVolcano, readVolcanoState, MetricKind, applyTopNLabels,
-  getVolcanoTopN, showVolcanoBusy, updateVolcanoBusy, hideVolcanoBusy} from './viewers/volcano';
+  getVolcanoTopN, showVolcanoBusy, updateVolcanoBusy, hideVolcanoBusy,
+  LOCATION_COL} from './viewers/volcano';
 import {STORE as SUBCELL_STORE} from './analysis/subcellular-location';
 import {createExpressionHeatmap} from './viewers/heatmap';
 import {createPcaPlot} from './viewers/pca-plot';
@@ -34,7 +36,7 @@ import {isPublished} from './publishing/publish-state';
 import {showEnrichmentDialog} from './analysis/enrichment';
 import {openEnrichmentVisualization} from './viewers/enrichment-viewers';
 import {findColumn} from './utils/column-detection';
-import {SEMTYPE} from './utils/proteomics-types';
+import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from './utils/proteomics-types';
 import {buildProteomicsRibbonMenu} from './menu';
 import {runProteomicsDemo} from './demo/proteomics-demo';
 import {runEnrichmentDemo} from './demo/enrichment-demo';
@@ -149,7 +151,8 @@ let activeFilterSubscriptions: rxjs.Subscription[] = [];
 export function dockComparisonFilterIfMultiContrast(
   tv: DG.TableView, df: DG.DataFrame,
 ): boolean {
-  const cmpCol = df.col('Comparison (group1/group2)') ?? df.col('Comparison');
+  const cmpCol = COMPARISON_COLUMNS.reduce<DG.Column | null>(
+    (found, name) => found ?? df.col(name), null);
   if (!cmpCol) return false;
   const distinct = new Set<string>();
   for (let i = 0; i < df.rowCount; i++) {
@@ -632,7 +635,7 @@ export class PackageFunctions {
         // column-absent + cold-cache path takes 30-90 s on a real Spectronaut
         // file and the user deserves a heads-up; the column-absent + warm-cache
         // path is a few seconds at most and deserves a shorter toast.
-        if (colorDim === 'location' && !df.col('Subcellular Location')) {
+        if (colorDim === 'location' && !df.col(LOCATION_COL)) {
           const cache = await grok.dapi.userDataStorage.get(SUBCELL_STORE).catch(() => null);
           const cacheEntryCount = cache ?
             Object.keys(cache).filter((k) => k !== '__schema_v').length : 0;
@@ -676,7 +679,8 @@ export class PackageFunctions {
           }
         };
         try {
-          await recomputeVolcano(df, sp!, metric, colorDim, 1.0, 0.05, progress);
+          await recomputeVolcano(df, sp!, metric, colorDim,
+            DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD, progress);
           // Re-rank labels against the (possibly new) metric, applying the
           // chosen count. Decoupled from selection — leaves the user's rows be.
           applyTopNLabels(df, sp!, labelTopNInput.value ?? getVolcanoTopN(df));

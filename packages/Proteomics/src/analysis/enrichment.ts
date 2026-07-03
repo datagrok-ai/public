@@ -3,9 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {parseAccession} from '../panels/uniprot-panel';
 import {findProteomicsColumns} from '../utils/column-detection';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 import {openEnrichmentVisualization} from '../viewers/enrichment-viewers';
 import {requireDifferentialExpression} from './differential-expression';
+import {getOrganism, setOrganism} from './experiment-setup';
 
 // --- Constants ---
 
@@ -92,7 +93,7 @@ export async function gGOSt(
   backgroundGenes: string[],
   organism: string,
   sources: string[],
-  threshold: number = 0.05,
+  threshold: number = DEFAULT_P_THRESHOLD,
 ): Promise<GostResult[]> {
   const resp = await fetchWithTimeout(`${GPROFILER_BASE}/api/gost/profile/`, {
     method: 'POST',
@@ -207,7 +208,7 @@ export function applySmartPathwayFilter(
 export function buildEnrichmentDf(
   results: GostResult[],
   queryGenes: string[],
-  pThreshold: number = 0.05,
+  pThreshold: number = DEFAULT_P_THRESHOLD,
   direction?: 'Up' | 'Down',
 ): DG.DataFrame {
   const n = results.length;
@@ -487,14 +488,17 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
     return;
   }
 
-  const fcInput = ui.input.float('|log2FC| threshold', {value: 1.0});
+  const fcInput = ui.input.float('|log2FC| threshold', {value: DEFAULT_FC_THRESHOLD});
   fcInput.setTooltip('Minimum absolute fold change for significance');
 
-  const pInput = ui.input.float('Adj. p-value threshold', {value: 0.05});
+  const pInput = ui.input.float('Adj. p-value threshold', {value: DEFAULT_P_THRESHOLD});
   pInput.setTooltip('Maximum adjusted p-value for significance');
 
+  // Seed from a previously chosen organism (df tag) so the choice is sticky and
+  // shared with the subcellular-location fetch; default to human when unset.
+  const seededOrganism = ORGANISM_LIST.find((o) => o.code === getOrganism(df));
   const organismInput = ui.input.choice('Organism', {
-    value: 'Homo sapiens (Human)',
+    value: (seededOrganism?.display ?? 'Homo sapiens (Human)') as string,
     items: ORGANISM_LIST.map((o) => o.display) as unknown as string[],
     nullable: false,
   });
@@ -517,8 +521,8 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
   // Live count of significant proteins
   const countDiv = ui.divText('');
   const updateCount = () => {
-    const fc = fcInput.value ?? 1.0;
-    const p = pInput.value ?? 0.05;
+    const fc = fcInput.value ?? DEFAULT_FC_THRESHOLD;
+    const p = pInput.value ?? DEFAULT_P_THRESHOLD;
     const result = countSignificantProteins(df, fc, p, cols.log2fc!, cols.pValue!);
     const totalFmt = result.total.toLocaleString();
     countDiv.textContent =
@@ -543,13 +547,16 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Running enrichment analysis...');
       try {
-        const fc = fcInput.value ?? 1.0;
-        const p = pInput.value ?? 0.05;
+        const fc = fcInput.value ?? DEFAULT_FC_THRESHOLD;
+        const p = pInput.value ?? DEFAULT_P_THRESHOLD;
 
         // Resolve organism code from display name
         const selectedDisplay = organismInput.value;
         const organism = ORGANISM_LIST.find((o) => o.display === selectedDisplay);
         const organismCode = organism?.code ?? 'hsapiens';
+        // Persist so the subcellular-location fetch (and next enrichment run)
+        // narrow to the same species.
+        setOrganism(df, organismCode);
 
         // Build sources array from checkbox states
         const selectedSources: string[] = [];

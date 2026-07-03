@@ -1,5 +1,18 @@
 # Proteomics changelog
 
+## 0.2.0
+
+- **Organism-aware subcellular-location coloring** — the volcano's "color by subcellular
+  location" now fetches UniProt annotations for the experiment's organism (persisted as a
+  `proteomics.organism` tag from the Enrichment dialog), so non-human data is no longer
+  mis-colored by human entries. The taxonomy filter applies only to the reviewed-by-gene
+  fallback; accession lookups stay unfiltered, and all 9 supported organisms are covered.
+- **Internal consistency** — significance thresholds, the direction palette, and column-name
+  constants are now single-sourced instead of duplicated across files; the differential-
+  expression FDR cutoff is wired through to the BH correction.
+- **README** — illustrated with the main analysis view, an authored pipeline diagram, and an
+  enrichment→volcano cross-link walkthrough.
+
 ## 0.1.0
 
 Initial release — mass spectrometry-based proteomics analysis, carrying a study from

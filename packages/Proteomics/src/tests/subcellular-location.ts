@@ -6,11 +6,13 @@ import {
   getSubcellularLocations,
   LOCATION_COLORS,
   mergeStreamTsv,
+  ORGANISM_TAXONOMY,
   parseSubcellularLocation,
   ProgressCb,
   runWithConcurrency,
   STORE,
 } from '../analysis/subcellular-location';
+import {ORGANISM_LIST} from '../analysis/enrichment';
 import {ensureLocationColumn} from '../viewers/volcano';
 
 // CRITICAL: `grok.dapi.userDataStorage` returns a NEW UserDataStorage instance
@@ -46,6 +48,16 @@ const EXPECTED_HEX: Record<string, string> = {
 category('SubcellularLocation', () => {
   test('SEMTYPE.SUBCELLULAR_LOCATION literal is stable', async () => {
     expect(SEMTYPE.SUBCELLULAR_LOCATION, 'Proteomics-SubcellularLocation');
+  });
+
+  // H1 guard: every organism the enrichment dialog offers must have a taxonomy
+  // id, or its gene-fallback subcellular lookup silently runs unfiltered and can
+  // resolve to the wrong species. Locks the two lists in sync against drift.
+  test('every ORGANISM_LIST code has an ORGANISM_TAXONOMY mapping', async () => {
+    for (const org of ORGANISM_LIST) {
+      expect(typeof ORGANISM_TAXONOMY[org.code], 'number');
+      expect(ORGANISM_TAXONOMY[org.code] > 0, true);
+    }
   });
 
   test('classifier: subcellular field used before GO fallback', async () => {
