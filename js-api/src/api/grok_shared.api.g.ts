@@ -136,6 +136,8 @@ export class Permission {
 
   static EDIT_GLOBAL_PERMISSIONS = 'EditGlobalPermissions';
 
+  static EDIT_SETTINGS = 'EditSettings';
+
   static START_ADMIN_SESSION = 'StartAdminSession';
 
   static EDIT_PLUGINS_SETTINGS = 'EditPluginsSettings';
