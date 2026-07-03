@@ -18,10 +18,14 @@ import {
 
 const PROVIDER = 'Postgres';
 const SCHEMA = 'public';
-const TABLE = 'orders';
+// CI: the platform's `entities` metadata table has hundreds of rows on any
+// initialised Datlas (one per registered entity — users, groups, packages,
+// functions, projects, …), so it satisfies the "Get All > 100, Get Top 100
+// = 100" check the same way Northwind's `orders` did on dev.
+const TABLE = 'entities';
 
 test.describe.serial(`Table Get All / Get Top 100 (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
-  test('Right-click orders table → Get All returns the full dataset, Get Top 100 returns exactly 100 rows', async ({ page }) => {
+  test(`Right-click ${TABLE} table → Get All returns the full dataset, Get Top 100 returns exactly 100 rows`, async ({ page }) => {
     test.setTimeout(120_000);
 
     await goHome(page);
@@ -45,7 +49,7 @@ test.describe.serial(`Table Get All / Get Top 100 (${PROVIDER} / ${POSTGRES_CONN
     await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 30_000 });
     const getAllRowCount = await page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount);
-    // `orders` has 830 rows on public's Northwind — the exact number isn't important,
+    // `entities` has hundreds of rows on a fresh Datlas — the exact number isn't important,
     // the point is that Get All returns the full table (much more than the Top 100 cap).
     expect(getAllRowCount).toBeGreaterThan(100);
 

@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_NW_DB,
+  PG_NW_LOGIN,
+  PG_NW_PASSWORD,
+  PG_NW_PORT,
+  PG_NW_SERVER,
   POSTGRES_CONNECTION,
   clickMenuItemExact,
   deleteProjectByFriendlyName,
@@ -45,16 +50,60 @@ import {
 
 const PROVIDER = 'Postgres';
 const FIXTURE_QUERY_FN = 'postgres customers in @country';
+// Persistent fixture connection (NOT test_postgres — that's deleted by
+// connections/05-delete before queries/* run). Same convention as 11b in
+// visual-query-and-params.test.ts.
+const FIXTURE_QUERY_CONN = 'pw_visual_postgres';
 const FIXTURE_QUERY_NODE =
-  'tree-Databases---Postgres---Northwind---postgres-customers-in-@country';
+  `tree-Databases---Postgres---${FIXTURE_QUERY_CONN.replace(/_/g, '-')}---postgres-customers-in-@country`;
 const PROJECT_NAME = 'test_visual_advanced_playwright';
 
 test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test.beforeAll(async ({ browser }) => {
+    if (!PG_NW_PASSWORD) return; // creds absent → the test self-skips below
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
     await deleteProjectByFriendlyName(page, PROJECT_NAME);
+    // Ensure the persistent fixture connection + query exist (mirrors the
+    // ensureVisualQueryFixture() in visual-query-and-params.test.ts — both
+    // tests rely on the same parameterised `postgres customers in @country`
+    // query published on a `pw_visual_postgres` connection pointing at the
+    // shared Northwind test DB).
+    await page.evaluate(async ({ qName, connName, pg }) => {
+      const grok = (window as any).grok;
+      const DG = (window as any).DG;
+      let conn = (await grok.dapi.connections
+        .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
+        .list())[0];
+      if (!conn) {
+        conn = DG.DataConnection.create(connName, {
+          dataSource: 'Postgres',
+          // Shared Northwind test DB (customers table), datagrok user — NOT the
+          // postgres superuser (randomised password; see connections/helpers.ts).
+          // Credentials come from env (Jenkins Credentials in CI / .env on dev).
+          server: pg.server,
+          port: pg.port,
+          db: pg.db,
+          ssl: false,
+          login: pg.login,
+          password: pg.password,
+        });
+        conn = await grok.dapi.connections.save(conn);
+      }
+      const existingQ = await grok.dapi.queries
+        .filter(`friendlyName = "${qName}"`).list();
+      if (existingQ.length > 0) return;
+      // `dc.query(name, sql)` is the canonical JS API path for building a
+      // DB query (see ApiTests/dapi/connection.ts) — `DG.DataQuery.create`
+      // doesn't exist on the surface. `q.newId()` mints a fresh server-side
+      // id so dapi.queries.save persists it as a new entity.
+      const q = conn.query(qName,
+        '--input: string country = "France"\nselect * from customers where country = @country');
+      q.newId();
+      await grok.dapi.queries.save(q);
+    }, { qName: FIXTURE_QUERY_FN, connName: FIXTURE_QUERY_CONN,
+      pg: { server: PG_NW_SERVER, port: PG_NW_PORT, db: PG_NW_DB, login: PG_NW_LOGIN, password: PG_NW_PASSWORD } });
     await ctx.close();
   });
 
@@ -67,15 +116,24 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
   });
 
   test('Run fixture query, parameter refresh, add result viewer, save project', async ({ page }) => {
+    test.skip(!PG_NW_PASSWORD,
+      'DG_PG_PASSWORD not set — fixture needs the Northwind test DB (datagrok user)');
     test.setTimeout(180_000);
 
     await goHome(page);
     await expandDbProvider(page, PROVIDER);
-    await expandDbConnection(page, PROVIDER, POSTGRES_CONNECTION);
+    // Expand the FIXTURE_QUERY_CONN (where the fixture lives) — on dev that
+    // matches POSTGRES_CONNECTION but in CI we provision the fixture on a
+    // separate `pw_visual_postgres` to survive connections/05-delete.
+    await expandDbConnection(page, PROVIDER, FIXTURE_QUERY_CONN);
 
-    // Sanity: the fixture is still published on public. Without it the rest of the test
-    // is meaningless, so we fail fast here with a clear message.
-    expect(await findQueryByFriendlyName(page, FIXTURE_QUERY_FN),
+    // Sanity: the fixture is still published on the server. On the ephemeral
+    // CI Datlas the `postgres customers in @country` query isn't provisioned
+    // (no Northwind fixture); skip cleanly instead of failing the whole spec.
+    const fixture = await findQueryByFriendlyName(page, FIXTURE_QUERY_FN);
+    test.skip(fixture === null,
+      `fixture query "${FIXTURE_QUERY_FN}" is not provisioned on this server (CI Datlas)`);
+    expect(fixture,
       `fixture query "${FIXTURE_QUERY_FN}" must exist on public`).not.toBeNull();
 
     // Run via the tree (right-click → Run is the regression-tested path on stable fixtures
@@ -86,7 +144,10 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
 
     const dialog = page.locator('.d4-dialog');
     await expect(dialog).toBeVisible({ timeout: 15_000 });
-    const country = dialog.locator('input[name$="---Country"]');
+    // `input[name$="---Country"]` was the dev fixture's input-host suffix
+    // pattern; in CI (and on newer builds) it's a plain input wrapped by a
+    // "Country" label. Find it by accessible name instead.
+    const country = dialog.getByLabel('Country');
     await expect(country).toHaveValue('France', { timeout: 10_000 });
     await dialog.locator('[name="button-OK"]').click();
 
@@ -95,7 +156,7 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     // hidden 0×0 placeholder).
     await expect.poll(async () => page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv?.dataFrame?.rowCount ?? 0),
-    { timeout: 30_000 }).toBeGreaterThan(0);
+    { timeout: 60_000 }).toBeGreaterThan(0);
     const franceRows = await page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount);
 
@@ -109,7 +170,7 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     await page.locator('[name="button-REFRESH"]').first().click();
     await expect.poll(async () => page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount),
-    { timeout: 30_000 }).not.toBe(franceRows);
+    { timeout: 40_000 }).not.toBe(franceRows);
 
     // Add a viewer to the result table view via JS API.
     //

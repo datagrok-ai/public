@@ -3,20 +3,36 @@ import { Page, expect } from '@playwright/test';
 // Auth state file produced by the default `e2e/global-setup.ts` (dev login).
 export const AUTH_STATE = 'e2e/.auth.json';
 
-// Default Postgres credentials for the test_postgres / external-provider scenarios.
-// `db.datagrok.ai` is reachable from the dev environment; the password is provided
-// via the `DG_PG_PASSWORD` env var (.env / shell), never hard-coded here.
+// Postgres targets for the test_postgres / external-provider scenarios.
+//
+// These point at the shared Datagrok test databases — the same ones the DBTests
+// package and the Samples:Northwind connection use — reachable from both CI and
+// dev. Connections authenticate as the dedicated `datagrok` user, NEVER the
+// `postgres` superuser: the demo Postgres images randomise the superuser
+// password on init (so `postgres/postgres` fails auth), and hammering the
+// in-network demo containers with `postgres/postgres` forces a DB reinstall.
+//
+// Server/port/db are non-secret coordinates and default in-code. LOGIN and
+// PASSWORD are NEVER hardcoded — they come from env: Jenkins Credentials in CI
+// (wired in infra/jenkins/test-playwright.groovy via withCredentials) and the
+// local `.env` on dev/playwright-tests/. When unset, the credential-gated tests
+// `test.skip(!PG_PASSWORD, …)` cleanly.
+//
+// test_postgres / schema-walk scenarios (02-identifiers, 03-edit, 07-schema)
+// need the Northwind schema (customers table), so default to the Northwind DB.
 export const PG_SERVER = process.env.DG_PG_SERVER ?? 'db.datagrok.ai';
 export const PG_PORT = process.env.DG_PG_PORT ?? '54322';
 export const PG_DB = process.env.DG_PG_DB ?? 'northwind';
-export const PG_LOGIN = process.env.DG_PG_LOGIN ?? 'datagrok';
+export const PG_LOGIN = process.env.DG_PG_LOGIN ?? '';
 export const PG_PASSWORD = process.env.DG_PG_PASSWORD ?? '';
 
-// External-provider Postgres (port 54327, db `test`, user `superuser`).
+// External-provider Postgres for 09-external-provider — the writable shared
+// `test` DB (PostgreSQLDBTests), so the PostgreSQLDBTests2 CRUD cycle has a real
+// DB to CREATE/INSERT/UPDATE/DROP against. Same `datagrok` user, creds from env.
 export const PG_EXT_SERVER = process.env.DG_PG_EXT_SERVER ?? 'db.datagrok.ai';
 export const PG_EXT_PORT = process.env.DG_PG_EXT_PORT ?? '54327';
 export const PG_EXT_DB = process.env.DG_PG_EXT_DB ?? 'test';
-export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? 'superuser';
+export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? '';
 export const PG_EXT_PASSWORD = process.env.DG_PG_EXT_PASSWORD ?? '';
 
 // SPARQL test endpoint (public).
@@ -35,11 +51,27 @@ export const SPARQL_ENDPOINT =
 export async function goHome(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.locator('[name="Browse"]').first().waitFor({ state: 'visible', timeout: 60_000 });
+  // Wait for #grok-preloader inside #rootDiv to detach. On a cold CI Datlas the
+  // Browse sidebar becomes visible BEFORE the preloader is dismissed; while
+  // present, the preloader covers the entire rootDiv subtree and intercepts
+  // every click — including those inside dialogs — which manifests as
+  // "subtree intercepts pointer events" timeouts on the first interactive step.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 90_000 },
+  );
   await page.waitForTimeout(500);
   // Datagrok hover-tooltips intercept Playwright's stability checks on tree nodes.
   // The platform's tooltip JS still runs (handlers fire, content builds) — only
   // visual rendering and pointer interception are disabled for the page lifetime.
-  await page.addStyleTag({ content: '.d4-tooltip { display: none !important; }' });
+  // Additionally, make `#grok-preloader` transparent to pointer events: on cold
+  // CI Datlas the preloader can re-appear AFTER goHome (e.g. while a freshly
+  // opened dialog fetches its schema) and time-out the next click. The platform
+  // JS still drives it; only the pointer-events intercept is neutralised.
+  await page.addStyleTag({ content: `
+    .d4-tooltip { display: none !important; }
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+  ` });
   // Activate Browse so the Databases tree is actually visible — otherwise tree
   // helpers operate on hidden DOM and UI-mode reviewers see no navigation.
   const databasesRoot = treeNodeLocator(page, 'tree-Databases');

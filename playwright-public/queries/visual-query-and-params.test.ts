@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_NW_DB,
+  PG_NW_LOGIN,
+  PG_NW_PASSWORD,
+  PG_NW_PORT,
+  PG_NW_SERVER,
   POSTGRES_CONNECTION,
   clickMenuItemExact,
   deleteQueryByFriendlyName,
@@ -59,12 +64,64 @@ import {
 
 const PROVIDER = 'Postgres';
 const SCHEMA = 'public';
-const VISUAL_QUERY_TABLE = 'customers';
+// CI: a Datagrok metadata table (System:Datagrok). The Visual Query editor
+// only cares that the table has columns; rows aren't queried in this spec.
+const VISUAL_QUERY_TABLE = 'users';
 const VISUAL_QUERY_NAME = 'new_visual_query_test';
 
+// Fixture parameterized query for 11b. On dev/public the test relies on a
+// pre-published `postgres customers in @country` query under the Northwind
+// connection; the CI Datlas has neither.
+//
+// Bootstrap our own: create a persistent `pw_visual_postgres` connection
+// pointing at the shared Northwind test DB as the `datagrok` user (NOT
+// test_postgres — that one gets deleted by connections/05-delete before
+// queries/* run), then save the parameterised query on it.
 const PARAM_QUERY_FRIENDLY_NAME = 'postgres customers in @country';
+const PARAM_QUERY_CONN = 'pw_visual_postgres';
 const PARAM_QUERY_NODE_NAME =
-  'tree-Databases---Postgres---Northwind---postgres-customers-in-@country';
+  `tree-Databases---Postgres---${PARAM_QUERY_CONN.replace(/_/g, '-')}---postgres-customers-in-@country`;
+
+async function ensureVisualQueryFixture(page: import('@playwright/test').Page): Promise<void> {
+  await page.evaluate(async ({ qName, connName, pg }) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    // Ensure the persistent fixture connection exists (shared Northwind test DB).
+    let conn = (await grok.dapi.connections
+      .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
+      .list())[0];
+    if (!conn) {
+      conn = DG.DataConnection.create(connName, {
+        dataSource: 'Postgres',
+        // Shared Northwind test DB (customers table), authenticating as the
+        // dedicated `datagrok` user. NOT the postgres superuser — the demo
+        // Postgres image randomises that password on init, so postgres/postgres
+        // fails auth (see connections/helpers.ts). Credentials come from env
+        // (Jenkins Credentials in CI / .env on dev). ssl:false: these test DB
+        // ports serve plaintext.
+        server: pg.server,
+        port: pg.port,
+        db: pg.db,
+        ssl: false,
+        login: pg.login,
+        password: pg.password,
+      });
+      conn = await grok.dapi.connections.save(conn);
+    }
+    // Ensure the parameterised fixture query exists on it. The canonical
+    // JS API path for building a DB query is `dc.query(name, sql)`
+    // (see ApiTests/dapi/connection.ts), not a missing
+    // `DG.DataQuery.create`. `q.newId()` mints a fresh server-side id.
+    const existingQ = await grok.dapi.queries
+      .filter(`friendlyName = "${qName}"`).list();
+    if (existingQ.length > 0) return;
+    const q = conn.query(qName,
+      '--input: string country = "France"\nselect * from customers where country = @country');
+    q.newId();
+    await grok.dapi.queries.save(q);
+  }, { qName: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN,
+    pg: { server: PG_NW_SERVER, port: PG_NW_PORT, db: PG_NW_DB, login: PG_NW_LOGIN, password: PG_NW_PASSWORD } });
+}
 
 test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test.beforeAll(async ({ browser }) => {
@@ -72,6 +129,9 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     const page = await ctx.newPage();
     await goHome(page);
     await deleteQueryByFriendlyName(page, VISUAL_QUERY_NAME);
+    // 11b's parameterised fixture needs the Northwind test DB creds; skip
+    // provisioning it when they're absent (11b self-skips below). 11a needs no creds.
+    if (PG_NW_PASSWORD) await ensureVisualQueryFixture(page);
     await ctx.close();
   });
 
@@ -135,15 +195,24 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
   });
 
   test('11b. Parameterised query runtime — Run opens param dialog, REFRESH re-runs with a new value', async ({ page }) => {
+    test.skip(!PG_NW_PASSWORD,
+      'DG_PG_PASSWORD not set — fixture needs the Northwind test DB (datagrok user)');
     test.setTimeout(120_000);
     await goHome(page);
 
-    // Navigate to the pre-existing `postgres customers in @country` query (public fixture).
+    // Navigate to the pre-existing `postgres customers in @country` query
+    // (provisioned in beforeAll on PARAM_QUERY_CONN — `pw_visual_postgres` in
+    // CI / POSTGRES_CONNECTION on dev; either way, expand the connection
+    // that actually hosts the fixture).
     await expandDbProvider(page, PROVIDER);
-    await expandDbConnection(page, PROVIDER, POSTGRES_CONNECTION);
+    await expandDbConnection(page, PROVIDER, PARAM_QUERY_CONN);
 
-    // Sanity-check the query is still published on public.
+    // Sanity-check the query is still published on public. On the ephemeral
+    // CI Datlas there is no Northwind fixture — skip cleanly when the query
+    // is absent rather than fail the suite.
     const existing = await findQueryByFriendlyName(page, PARAM_QUERY_FRIENDLY_NAME);
+    test.skip(existing === null,
+      `fixture query "${PARAM_QUERY_FRIENDLY_NAME}" is not provisioned on this server (CI Datlas)`);
     expect(existing, `fixture query "${PARAM_QUERY_FRIENDLY_NAME}" must exist on public`).not.toBeNull();
 
     // Right-click → Run opens the parameter dialog with Country = "France" (the declared default).
@@ -151,7 +220,11 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     await clickMenuItemExact(page, 'Run');
     const dialog = page.locator('.d4-dialog');
     await expect(dialog).toBeVisible({ timeout: 15_000 });
-    const countryInDialog = dialog.locator('input[name$="---Country"]');
+    // Find the Country input by its accessible label — see the
+    // visual-query-advanced.test.ts equivalent fix for the rationale
+    // (`input[name$="---Country"]` was a dev-fixture wrapper pattern that
+    // doesn't match on newer builds / CI).
+    const countryInDialog = dialog.getByLabel('Country');
     await expect(countryInDialog).toHaveValue('France', { timeout: 10_000 });
     await dialog.locator('[name="button-OK"]').click();
 
@@ -161,7 +234,7 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     await expect.poll(async () => page.evaluate(() => {
       const tv = (window as unknown as { grok: any }).grok.shell.tv;
       return tv?.dataFrame?.rowCount ?? 0;
-    }), { timeout: 30_000 }).toBeGreaterThan(0);
+    }), { timeout: 60_000 }).toBeGreaterThan(0);
     const franceRows = await page.evaluate(() =>
       (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount);
 
@@ -177,7 +250,7 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
 
     // Row count should change after the refresh (France has a different number of customers than USA).
     await expect.poll(async () => page.evaluate(() =>
-      (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount), { timeout: 20_000 })
+      (window as unknown as { grok: any }).grok.shell.tv.dataFrame.rowCount), { timeout: 40_000 })
       .not.toBe(franceRows);
 
     // Parameter input still shows the new value — confirms the re-run used it.

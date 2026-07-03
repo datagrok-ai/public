@@ -18,6 +18,25 @@ newParam <- "test"`;
 // Navigate to Scripts via Browse > Platform > Functions > Scripts
 export async function openScriptsBrowser(page: Page) {
   await page.goto(`${BASE}/browse`);
+  // Wait for #grok-preloader to detach. On a cold CI Datlas the Browse tree
+  // becomes visible BEFORE the preloader is dismissed; while present, it covers
+  // rootDiv and intercepts clicks (incl. on dropdown menu items like "Pyodide
+  // Script..."), surfacing as "subtree intercepts pointer events" timeouts.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 90_000 },
+  );
+  // Also neutralise pointer events on the preloader — it can re-appear after
+  // dialog-opening clicks while the platform fetches data, and intercept the
+  // next interaction. Platform JS still drives it; only the click-intercept
+  // is disabled for the page lifetime. The same `display: none` for
+  // `.d4-tooltip` mirrors connections/queries helpers — hover-tooltips
+  // (e.g. the "After you save the project ..." hint that pops up next to
+  // the Save-project dialog's OK button) can also overlap actionability.
+  await page.addStyleTag({ content: `
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+    .d4-tooltip { display: none !important; }
+  ` });
 
   // Expand Platform node (only if collapsed)
   const platformExpander = page.locator('[name="tree-expander-Platform"]');
