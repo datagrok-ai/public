@@ -1,4 +1,5 @@
 #name: SynthonSearch
+#friendlyName: Synthon Space Search
 #description: Search in synthon chemical space using RDKit SynthonSpaceSearch
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.10, rdkit=2025.09.3]

@@ -7,12 +7,13 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
+  copyToClipboard} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
-import {executeSingleBlock, renderEntityRefList} from '../claude/exec-blocks';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
+import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -307,6 +308,82 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
+function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
+  const errorDiv = ui.divText('', 'grokky-auth-error');
+
+  const submitBtn = ui.button('Submit', () => submitCode()) as HTMLButtonElement;
+  submitBtn.disabled = true;
+
+  const codeInput = ui.input.string('Authorization code', {
+    placeholder: 'Paste code here',
+    onValueChanged: () => {
+      submitBtn.disabled = !codeInput.value?.trim();
+      errorDiv.classList.add('grokky-auth-error');
+    },
+  });
+
+  const openLink = ui.link('Open authorization page', () => {
+    const sub = client.onAuthUrl.subscribe((evt) => {
+      window.open(evt.url, '_blank');
+      sub.unsubscribe();
+    });
+    client.startAuth();
+  });
+
+  const pendingStrip = ui.divV([
+    ui.divText('Session expired'),
+    ui.divText('Open the auth page and paste the code below'),
+  ], 'grokky-auth-strip-pending');
+
+  const successStrip = ui.divV([
+    ui.divText('Session renewed'),
+    ui.divText('Re-send your message to continue'),
+  ], 'grokky-auth-strip-success');
+  successStrip.style.display = 'none';
+
+  const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
+
+  const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
+
+  const subs: {unsubscribe: () => void}[] = [];
+  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
+
+  subs.push(
+    client.onAuthDone.subscribe(() => {
+      if (!widget.isConnected) {
+        cleanupSubs();
+        return;
+      }
+      pendingStrip.remove();
+      pendingBody.remove();
+      successStrip.style.display = '';
+      cleanupSubs();
+    }),
+    client.onAuthError.subscribe((evt) => {
+      if (!widget.isConnected) {
+        cleanupSubs();
+        return;
+      }
+      errorDiv.textContent = evt.message;
+      errorDiv.classList.remove('grokky-auth-error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+      codeInput.input.focus();
+    }),
+  );
+
+  function submitCode(): void {
+    const code = codeInput.value?.trim();
+    if (!code)
+      return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying…';
+    client.sendAuthCode(code);
+  }
+
+  return widget;
+}
+
 async function runClaudeStreaming(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
@@ -332,6 +409,7 @@ async function streamOnce(
   return new Promise<void>(async (resolve) => {
     const sessionId = panel.sessionId;
     let accumulated = '';
+    let segmentStart = 0;
     let toolStatus = '';
     let nextBlockIndex = 0;
     const subs: {unsubscribe: () => void}[] = [];
@@ -363,35 +441,46 @@ async function streamOnce(
       forSession(client.onChunk, (evt) => {
         accumulated += evt.content;
         toolStatus = '';
-        panel.updateStreaming(accumulated, chatSession.loader);
+        panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
       });
 
       forSession(client.onToolActivity, (evt) => {
         toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+        panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
-      forSession(client.onToolResult, (evt) => {
-        // browser tool results are internal — Claude's prose is the user-facing feedback.
-        if (evt.toolName?.endsWith('datagrok_exec') || evt.toolName?.endsWith('datagrok_show_entities'))
-          return;
-        toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
-      });
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
-        const content = accumulated || evt.content;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: content}]});
-        await panel.finalizeStreaming(content, content, view);
+        const fullContent = accumulated || evt.content;
+        if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
+        const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+        await panel.finalizeStreaming(segmentContent, fullContent, view);
+        if (evt.unverified) {
+          const warn = 'Not verified — the assistant could not confirm this action took effect.';
+          panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
+        }
         cleanup();
         resolve();
       });
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
+        if (/401|authentication|credentials|\/login/i.test(evt.message)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
         endWithError(`Claude: ${evt.message}`);
       });
 
@@ -407,17 +496,31 @@ async function streamOnce(
         // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
         if (evt.toolName === 'datagrok_exec') {
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
-          if (element)
+          if (element) {
             panel.appendStreamedElement(element);
+            segmentStart = accumulated.length;
+            toolStatus = '';
+          }
           const result = error ?
             {success: false, error: error.error} :
             {success: true, ...(value != null ? {returnValue: value} : {})};
           client.respondToInput(sessionId, evt.requestId, result);
           return;
         }
+        if (evt.toolName === 'datagrok_verify') {
+          const {passed, observed, error} = await runVerification(evt.input.assertion ?? '', view);
+          client.respondToInput(sessionId, evt.requestId, {
+            passed,
+            ...(observed !== undefined ? {observed} : {}),
+            ...(error ? {error} : {}),
+          });
+          return;
+        }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.
         if (evt.toolName === 'datagrok_show_entities') {
           panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
+          segmentStart = accumulated.length;
+          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {success: true});
           return;
         }
@@ -434,6 +537,7 @@ async function streamOnce(
         }
         // Default: AskUserQuestion
         accumulated = '';
+        segmentStart = 0;
         toolStatus = '';
         panel.clearStreaming();
         const response = await panel.showInputRequest(evt.input);

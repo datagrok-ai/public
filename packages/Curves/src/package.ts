@@ -82,9 +82,19 @@ export class PackageFunctions {
     await initExternalConverters();
   }
 
-  @grok.decorators.func()
-  static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
-    runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
+  @grok.decorators.func({
+    name: 'Fit Dose-Response Curves',
+    description: 'Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.',
+  })
+  static async dataToCurves(df: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Concentration (dose) column'}}) concentrationCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Readout (response) column'}}) readoutCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Batch identifier column'}}) batchIDCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Assay name column'}}) assayCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Run identifier column'}}) runIDCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Compound identifier column'}}) compoundIDCol: DG.Column,
+    @grok.decorators.param({options: {description: 'Target entity column'}}) targetEntityCol: DG.Column,
+    @grok.decorators.param({options: {nullable: true, description: 'Boolean column marking points to exclude as outliers'}})excludeOutliersCol?: DG.Column,
     // rest is parent level data
     @grok.decorators.param({options: {nullable: true}})parentTable?: DG.DataFrame, // these inputs need to be string and resolved here bellow, because this function is used in datasync, otherwise context is lost
     @grok.decorators.param({options: {nullable: true}})fitParamColumns?: string[],
@@ -121,8 +131,15 @@ export class PackageFunctions {
     dataToCurvesUI();
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
-  static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'}) seriesNumber: number): DG.Column {
+  @grok.decorators.func({
+    name: 'Add Curve Statistic Column',
+    description: 'Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.',
+    meta: {vectorFunc: 'true', role: 'transform'},
+  })
+  static addStatisticsColumn(table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
+    @grok.decorators.param({options: {description: 'Fit statistic to extract (e.g. IC50, AUC, R²)'}}) propName: string,
+    @grok.decorators.param({type: 'int', options: {description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const sourceColName = col.name;
@@ -156,8 +173,15 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
-  static addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string): DG.Column {
+  @grok.decorators.func({
+    name: 'Add Aggregated Curve Statistic Column',
+    description: 'Aggregate a fit statistic across all series of a curve into a new column.',
+    meta: {vectorFunc: 'true', role: 'transform'},
+  })
+  static addAggrStatisticsColumn(table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
+    @grok.decorators.param({options: {description: 'Fit statistic to aggregate (e.g. IC50, AUC, R²)'}}) propName: string,
+    @grok.decorators.param({options: {description: 'Aggregation type applied across series (e.g. avg, min, max)'}}) aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const nName = `${colName} ${aggrType} ${propName}`;
@@ -224,8 +248,11 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.fileHandler({ext: 'pzfx'})
-  static pzfxFileHandler(@grok.decorators.param({type: 'list'}) bytes: Uint8Array): DG.DataFrame[] {
+  @grok.decorators.fileHandler({
+    ext: 'pzfx',
+    description: 'Open a GraphPad Prism (.pzfx) file as data tables, fitting XY curve tables.',
+  })
+  static pzfxFileHandler(@grok.decorators.param({type: 'list', options: {description: 'Raw bytes of the .pzfx file'}}) bytes: Uint8Array): DG.DataFrame[] {
     const text = new TextDecoder().decode(new Uint8Array(bytes));
     const tables = parsePzfxXml(text);
     const results: DG.DataFrame[] = [];

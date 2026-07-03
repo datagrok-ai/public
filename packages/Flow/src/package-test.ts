@@ -12,6 +12,17 @@ import './tests/order-edge-tests';
 import './tests/minimap-tests';
 import './tests/creation-script-emit-tests';
 import './tests/function-browser-tests';
+import './tests/inspect-tests';
+import './tests/test-ids-tests';
+import './tests/guide-tests';
+import './tests/summary-tests';
+import './tests/files-tree-tests';
+import './tests/execution-preview-tests';
+import './tests/viewer-tests';
+import './tests/column-picker-tests';
+import './tests/connect-interaction-tests';
+import './tests/string-list-tests';
+import './tests/rerun-node-tests';
 
 export let _package = new DG.Package();
 export { tests };

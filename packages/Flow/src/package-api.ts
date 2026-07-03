@@ -33,4 +33,8 @@ export namespace funcs {
   export async function openCreationScriptFlowDialog(script: string , tableIds: any , show: boolean ): Promise<any> {
     return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script, tableIds, show });
   }
+
+  export async function testDialog(): Promise<void> {
+    return await grok.functions.call('Flow:TestDialog', {});
+  }
 }

@@ -2,6 +2,17 @@
 
 ## v.next
 
+* Workspace: Fixed the editor-header "Open" doing nothing for a pinned query/function or data connection — it now opens the entity's own view the way the Browse tree does (a query's run view, a connection's queries browser) via the handler's `renderPreview`, consistently for all entity types, instead of `Func.apply()` (which ran with empty inputs and added no view) or only setting the context object. Running the query and viewing its table result stays on Run / the bottom-preview "Open"
+* Search: Added Spaces, Plugins, Notebooks, and Models to the search provider
+* Search: Added a "Demos" category returning demo functions (those with a `meta.demoPath`)
+* Search: Ordered result categories by relevance; when more than 5 categories match, advanced ones collapse behind a "Show advanced" button
+* Workspace: Pinned predictive models now render their own preview and launch via `prepare().edit()` on "Open", instead of being treated as a generic Func (which auto-ran them and failed)
+* Workspace: Pinned predictive models (and other JS-handler entities) now render in the list instead of throwing and breaking the whole section — `entityIcon` passes the JS entity to the handler, and `EntityMetaDartProxy` (js-api) now converts it for Dart-backed handlers (`renderIcon`/`renderMarkup`/`renderTooltip`/`getCaption`/etc. now `toDart` their argument, like `isApplicable` already did)
+* Workspace: Fixed "Open" on a pinned app (e.g. Demo) doing nothing — both the editor and the bottom-preview "Open" now launch the app (the preview button previously called `Func.apply()` and discarded the returned View)
+* Workspace: Fixed the bottom-preview "Open" opening an app in a background tab without focusing it — the click no longer bubbles to the Welcome view's activation handler (which reverted the current view back to Home), so the launched app becomes the active view
+* Workspace: App preview now fills the preview pane and scrolls instead of overflowing past it when the app's content is taller than the pane
+* Workspace: Pinned project now shows a live preview in the bottom pane (its views' grids with their saved layouts, like the app preview) instead of a blank panel; "Open" closes the preview-opened instance and opens all of its views in the main area, instead of only the first view with an "already open" balloon
+* GROK-19013: Viewers Gallery: Bio/Peptide sequence viewers (WebLogo, VdRegions, Peptides viewers) and tree viewers (Dendrogram, PhylocanvasGL) are now disabled for incompatible datasets in the Add Viewer dialog
 * Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar
 * Add New Column dialog: Fixed TypeError when typing into the Name or Type input before CodeMirror finishes its async init
 

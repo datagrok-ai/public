@@ -90,6 +90,8 @@ General:
 | Node1 Categorical Color Scheme | list |  |
 | Node2 Linear Color Scheme | list |  |
 | Node2 Categorical Color Scheme | list |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected nodes and edges are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Data** | | |

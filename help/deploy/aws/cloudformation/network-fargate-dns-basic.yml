@@ -206,7 +206,7 @@ Parameters:
     Type: String
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.27.6
+    Default: 1.27.7
     Description: Enter Datagrok docker image version.
     Type: String
   EnableRegistryProxy:
@@ -275,7 +275,7 @@ Parameters:
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.6.4
+    Default: 2.6.5
     Description: Enter Grok Connect docker image version.
     Type: String
   GrokPipeVersion:
@@ -290,7 +290,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.20.0
+    Default: 2.22.0
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -321,7 +321,7 @@ Parameters:
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.34.0
+    Default: 1.34.1
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   Postfix:

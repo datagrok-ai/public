@@ -1,9 +1,11 @@
 --name: searchPatentBySubstructure
+--friendlyName: Patent Substructure Search
+--description: Finds SureCHEMBL patents whose molecules contain the query substructure.
 --connection: SureChembl
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
---input: string pattern {semType: Substructure}
---input: int maxMols = 10
+--input: string pattern {semType: Substructure} [Query substructure as a SMARTS pattern]
+--input: int maxMols = 10 [Maximum number of matching molecules to return]
 with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@pattern::qmol limit @maxMols)
  select m as smiles, text as title, sd.id as doc_surechembl_id, lang as language, assign_applic, scpn as doc_id, published,
  string_agg(CASE WHEN sdc.field=1 THEN 'DESCRIPTION'
@@ -23,13 +25,15 @@ with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@patter
 
 
 --name: searchPatentBySimilarity
+--friendlyName: Patent Similarity Search
+--description: Finds SureCHEMBL patents whose molecules are similar to the query structure.
 --connection: SureChembl
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --meta.batchMode: true
---input: string pattern {semType: Molecule}
---input: double threshold = 0.6 { min: 0; max: 1 }
---input: int maxMols = 10
+--input: string pattern {semType: Molecule} [Query structure as a SMILES string]
+--input: double threshold = 0.6 { min: 0; max: 1 } [Minimum Tanimoto similarity, 0-1]
+--input: int maxMols = 10 [Maximum number of matching molecules to return]
 select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 with molecules as (select m, schembl_chem_id, similarity from get_mfp2_neighbors(@pattern) order by similarity desc limit @maxMols)

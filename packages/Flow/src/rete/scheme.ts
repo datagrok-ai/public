@@ -63,6 +63,21 @@ export class FlowNode extends ClassicPreset.Node<
    *  `ExecutionVisualizer`; empty when idle. */
   statusText = '';
 
+  /** Input keys that must be satisfied (connected, or filled in the panel) for
+   *  the node to do anything — the structural inputs (a table, a column).
+   *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
+  requiredInputs: string[] = [];
+
+  /** Per-slot descriptions (from the DG.Func param `description`/`caption`),
+   *  keyed by input/output slot key — shown as hover tooltips on the node's
+   *  sockets and in the context panel. Empty entries are omitted. */
+  inputDescriptions: Record<string, string> = {};
+  outputDescriptions: Record<string, string> = {};
+
+  /** Source package of the underlying function (`''` for core / built-ins).
+   *  Shown in the context panel so a vague function name is disambiguated. */
+  dgPackageName = '';
+
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
   pos: {x: number; y: number} = {x: 0, y: 0};
@@ -109,4 +124,20 @@ export const EXEC_OUT_KEY = '__exec_out';
 /** Whether a port key is one of the execution-ordering ports. */
 export function isExecKey(key: string): boolean {
   return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
+}
+
+/** The labels of a node's required inputs that are neither connected nor filled
+ *  with a value — i.e. what the user still has to provide. Pure (no editor
+ *  dependency): `isConnected(key)` is supplied by the caller. Drives the
+ *  "Needs input" hint on the node and lightweight pre-run validation. */
+export function missingRequiredInputs(node: FlowNode, isConnected: (key: string) => boolean): string[] {
+  const missing: string[] = [];
+  for (const key of node.requiredInputs) {
+    if (isConnected(key)) continue;
+    const v = node.inputValues[key];
+    if (v !== undefined && v !== null && String(v).trim() !== '') continue;
+    const input = (node.inputs as Record<string, {label?: string} | undefined>)[key];
+    missing.push(input?.label ?? key);
+  }
+  return missing;
 }

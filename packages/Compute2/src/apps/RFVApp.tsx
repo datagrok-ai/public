@@ -7,11 +7,11 @@ import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
 import {catchError, debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
-import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {compositorOverlay} from '../directives/compositor-overlay';
+import {canUseResults} from '../utils';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -148,6 +148,10 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const saveRun = async () => {
+      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory). Block
+      // saving a stale/in-flight run with a shell message.
+      if (!canUseResults(currentCallState.value, 'saving'))
+        return;
       const dialog = new EditRunMetadataDialog({
         title: currentFuncCall.value.options['title'] ?? '',
         description: currentFuncCall.value.options['description'] ?? '',
@@ -188,14 +192,6 @@ export const RFVApp = Vue.defineComponent({
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full flex'>
-        <RibbonPanel view={currentView.value}>
-          {!currentCallState.value.isOutputOutdated &&
-            <IconFA
-              name='save'
-              tooltip={'Save'}
-              onClick={saveRun}
-            />}
-        </RibbonPanel>
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
@@ -205,10 +201,12 @@ export const RFVApp = Vue.defineComponent({
           onFormReplaced={onUpdateForm}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
+          onSaveToHistory={() => saveRun()}
           historyEnabled={true}
           localValidation={true}
           skipInit={false}
           showRunButton={!isRunningOnInput.value}
+          keepExportsVisible={isRunningOnInput.value}
           view={currentView.value}
         />
       </div>, [[compositorOverlay, overlayActive.value]])

@@ -664,6 +664,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public appendStreamedElement(el: HTMLElement): void {
     this.ensureResponseBlock();
     this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
   }
 
   public appendUiMessage(content: string): void {
@@ -679,7 +681,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._streamingMarkdownEl.replaceWith(markDown);
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-    } else {
+    } else if (content) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }
@@ -1055,14 +1057,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       };
 
       this.recognition.onerror = (event) => {
+        if (event.error === 'no-speech')
+          return; // silence timeout — onend restarts the mic, no user action needed
         console.error('Speech recognition error:', event.error);
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
-        case 'no-speech':
-          errorMessage = 'No speech detected. Please try again.';
-          break;
         case 'audio-capture':
           errorMessage = 'No microphone found or access denied';
           break;

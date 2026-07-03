@@ -12,18 +12,22 @@
   "paths": {
     "/compound/fastsubstructure/{format}/{mol}/cids/XML": {
       "get": {
+        "summary": "PubChem Substructure Search",
+        "description": "Returns PubChem compound IDs (CIDs) that contain the query structure as a substructure.",
         "parameters": [
           {
             "name": "mol",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Query structure, encoded in the notation given by 'format'."
           },
           {
             "name": "format",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Input structure notation (e.g. smiles, inchi, sdf)."
           }
         ],
         "responses": {
@@ -60,18 +64,22 @@
     },
     "/compound/fastsuperstructure/{format}/{mol}/cids/XML": {
       "get": {
+        "summary": "PubChem Superstructure Search",
+        "description": "Returns PubChem compound IDs (CIDs) that contain the query structure as a superstructure.",
         "parameters": [
           {
             "name": "mol",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Query structure, encoded in the notation given by 'format'."
           },
           {
             "name": "format",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Input structure notation (e.g. smiles, inchi, sdf)."
           }
         ],
         "responses": {
@@ -84,12 +92,15 @@
     },
     "/compound/fastsimilarity_2d/smiles/{smiles}/cids/XML": {
       "get": {
+        "summary": "PubChem Similarity Search",
+        "description": "Returns PubChem compound IDs (CIDs) whose 2D similarity to the query SMILES meets the threshold.",
         "parameters": [
           {
             "name": "smiles",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Query structure as a SMILES string."
           },
           {
             "name": "Threshold",
@@ -98,7 +109,8 @@
             "type": "integer",
             "default": 90,
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Minimum 2D Tanimoto similarity, 0-100 (default 90)."
           }
         ],
         "responses": {

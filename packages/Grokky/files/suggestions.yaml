@@ -51,29 +51,29 @@
   label: This view
   icon: table
   suggestions:
-    - label: Color rows by {risk:numerical}
-      prompt: Color rows by {risk:numerical} (red ≥ 0.5, green < 0.5)
+    - label: Color rows by {risk.isNumerical}
+      prompt: Color rows by {risk.isNumerical} (red ≥ {risk.stats.med}, green < {risk.stats.med})
       prefer: { risk: 'name~="risk|herg|tox"' }
 
-    - label: Select top 10 rows by {metric:numerical}
-      prompt: Select top 10 rows by {metric:numerical}
+    - label: Select top 10 rows by {metric.isNumerical}
+      prompt: Select top 10 rows by {metric.isNumerical}
       prefer: { metric: 'name~="affinity|ic50|ec50|potency"' }
 
-    - label: Hide rows flagged for {flag:categorical}
-      prompt: Hide rows flagged for {flag:categorical}
+    - label: Hide rows flagged for {flag.isCategorical}
+      prompt: Hide rows flagged for {flag.isCategorical}
       prefer: { flag: 'name~="mutagen|tumor|alert|flag"' }
 
-    - label: Pin the {mol:semType=Molecule} column
-      prompt: Pin the {mol:semType=Molecule} column
+    - label: Pin the {mol.semType} column
+      prompt: Pin the {mol.semType} column
 
-    - label: Scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
-      prompt: Add a scatter plot of {x:numerical} vs {y:numerical}, colored by {c:categorical}
+    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
+      prompt: Add a scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
       prefer:
         x: 'name~="lipo|logp|logd"'
         y: 'name~="affinity|ic50|potency"'
         c: 'name~="stage|class|status"'
 
-    - label: 'Show correlation matrix ({x:numerical}, …)'
+    - label: 'Show correlation matrix ({x.isNumerical}, …)'
       prompt: Show correlation matrix across numerical columns
 
 - context: panel

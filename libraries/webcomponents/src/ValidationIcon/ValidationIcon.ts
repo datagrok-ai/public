@@ -41,7 +41,25 @@ export type ValidationIconInput = {
   consistency?: ConsistencyInfo,
 };
 
+const POPOVER_CLASS = 'dg-validation-icon-popover';
+const POPOVER_MAX_HEIGHT = 400;
+const POPOVER_VIEWPORT_MARGIN = 8;
 
+let popoverStylesInjected = false;
+function injectPopoverStyles(): void {
+  if (popoverStylesInjected)
+    return;
+  popoverStylesInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    .${POPOVER_CLASS} { scrollbar-width: thin; scrollbar-color: var(--grey-3) transparent; }
+    .${POPOVER_CLASS}::-webkit-scrollbar { width: 8px; }
+    .${POPOVER_CLASS}::-webkit-scrollbar-track { background: transparent; }
+    .${POPOVER_CLASS}::-webkit-scrollbar-thumb { background: var(--grey-3); border-radius: 4px; }
+    .${POPOVER_CLASS}::-webkit-scrollbar-thumb:hover { background: var(--grey-4); }
+  `;
+  document.head.appendChild(style);
+}
 
 export class ValidationIcon extends HTMLElement {
   private destroyed$ = new Subject<boolean>();
@@ -255,7 +273,8 @@ export class ValidationIcon extends HTMLElement {
   }
 
   private addPopover(icon: HTMLElement) {
-    const popover = ui.div([], 'd4-tooltip');
+    injectPopoverStyles();
+    const popover = ui.div([], `d4-tooltip ${POPOVER_CLASS}`);
     this.stylePopover(popover);
     icon.appendChild(popover);
     return popover;
@@ -273,10 +292,31 @@ export class ValidationIcon extends HTMLElement {
   }
 
   private alignPopover(target: HTMLElement, popover: HTMLElement): void {
-    const bounds = target.getBoundingClientRect().toJSON();
+    const bounds = target.getBoundingClientRect();
+    const margin = POPOVER_VIEWPORT_MARGIN;
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - bounds.top - margin;
+    const spaceAbove = bounds.bottom - margin;
+
     popover.style.inset = 'unset';
-    popover.style.top = bounds.y + 'px';
     popover.style.left = (bounds.x + 20) + 'px';
+
+    if (spaceBelow >= POPOVER_MAX_HEIGHT) {
+      // Enough room below — open downward from the icon.
+      popover.style.top = bounds.top + 'px';
+      popover.style.bottom = 'unset';
+      popover.style.maxHeight = POPOVER_MAX_HEIGHT + 'px';
+    } else if (spaceAbove >= POPOVER_MAX_HEIGHT) {
+      // Not enough below, enough above — open upward from the icon.
+      popover.style.top = 'unset';
+      popover.style.bottom = (viewportHeight - bounds.bottom) + 'px';
+      popover.style.maxHeight = POPOVER_MAX_HEIGHT + 'px';
+    } else {
+      // Neither side fits fully — anchor to the viewport top and take up to POPOVER_MAX_HEIGHT.
+      popover.style.top = margin + 'px';
+      popover.style.bottom = 'unset';
+      popover.style.maxHeight = Math.min(POPOVER_MAX_HEIGHT, viewportHeight - 2 * margin) + 'px';
+    }
   }
 
   private stylePopover(popover: HTMLElement): void {
@@ -285,6 +325,8 @@ export class ValidationIcon extends HTMLElement {
       'font-style': 'normal',
       'pointer-events': 'all',
       'max-width': '300px',
+      'overflow-y': 'auto',
+      'cursor': 'default',
       'text-wrap': 'pretty',
     });
   }

@@ -19,11 +19,16 @@ import * as ui from 'datagrok-api/ui';
 
 import {NodeExecState} from './execution-state';
 import {buildValuePreviews, hasRenderablePreview} from './value-inspector';
+import {setTid} from '../utils/test-ids';
 
 export class OutputPreviewPanel {
   private rootNode: DG.DockNode | null = null;
   private hostEl: HTMLElement | null = null;
   private viewRoot: HTMLElement | null = null;
+
+  /** Called when the user clicks "Edit settings" on a viewer preview — the host
+   *  shows the viewer in the context panel and captures its option changes. */
+  onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
 
   /** Set the Flow view root so the panel docks relative to it (bottom edge). */
   setViewRoot(root: HTMLElement): void {
@@ -41,18 +46,32 @@ export class OutputPreviewPanel {
     // something *renderable*: DataFrame grid, column sample, graphics image.
     if (!hasRenderablePreview(state)) return;
 
-    const inner = buildValuePreviews(state);
+    const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
     inner.style.padding = '8px 12px';
 
+    // Reuse the open dock — but only if it's still actually docked. The user may
+    // have manually closed the panel (the dock manager won't tell us), leaving
+    // our refs stale; if so, drop them and re-dock below so the click reopens it.
     if (this.hostEl && this.rootNode) {
-      this.hostEl.innerHTML = '';
-      this.hostEl.appendChild(inner);
-      return;
+      const stillDocked = (() => {
+        try {
+          return !!grok.shell.dockManager.findNode(this.hostEl);
+        } catch {
+          return false;
+        }
+      })();
+      if (stillDocked) {
+        this.hostEl.innerHTML = '';
+        this.hostEl.appendChild(inner);
+        return;
+      }
+      this.hostEl = null;
+      this.rootNode = null;
     }
 
-    this.hostEl = ui.div([inner], {style: {
+    this.hostEl = setTid(ui.div([inner], {style: {
       width: '100%', height: '100%', overflow: 'auto',
-    }});
+    }}), 'output-panel');
     const refNode = this.viewRoot ?
       grok.shell.dockManager.findNode(this.viewRoot) ?? null :
       null;

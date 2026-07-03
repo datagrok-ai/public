@@ -10,6 +10,7 @@ export * from './package.g';
 export class PackageFunctions {
   @grok.decorators.panel({
     'name': 'Databases | ChEMBL | Substructure Search API',
+    'description': 'Finds ChEMBL molecules that contain the query structure as a substructure.',
     'meta': {role: 'widgets'},
   })
   static async chemblSubstructureSearchPanel(
@@ -21,6 +22,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Databases | ChEMBL | Similarity Search API',
+    'description': 'Finds ChEMBL molecules most similar to the query structure.',
     'meta': {role: 'widgets'},
   })
   static async chemblSimilaritySearchPanel(
@@ -39,8 +41,12 @@ export class PackageFunctions {
     return response.status !== 200 || json.error ? [] : json;
   }
 
-  @grok.decorators.func({'name': 'Chembl Get by Id'})
-  static async getById(id: string): Promise<DG.DataFrame> {
+  @grok.decorators.func({
+    'name': 'Chembl Get by Id',
+    'description': 'Fetches a molecule record from ChEMBL by its ChEMBL ID.',
+  })
+  static async getById(
+    @grok.decorators.param({'options': {'description': 'ChEMBL ID (e.g. CHEMBL25) a bare number is prefixed with CHEMBL'}}) id: string): Promise<DG.DataFrame> {
     if (!id.toLowerCase().startsWith('chembl'))
       id = `CHEMBL${id}`;
 

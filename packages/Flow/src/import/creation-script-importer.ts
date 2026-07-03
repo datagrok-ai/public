@@ -403,6 +403,27 @@ class CreationScriptBuilder {
         continue;
       }
 
+      // string_list / list<string> args: inline as a comma-separated editable
+      // value (mirrors column_list) instead of a wired List Constant node, so
+      // emit → import → emit round-trips.
+      if (slotType === 'string_list' && param.name in node.inputValues) {
+        const items = Array.isArray(value) ?
+          (value as unknown[]).map((v) => String(v).trim()).filter(Boolean) :
+          String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        node.inputValues[param.name] = items.join(', ');
+        continue;
+      }
+
+      // `list` args (incl. list<string> params): an array of primitives inlines
+      // as the editable array value (the panel edits it with DG's List input),
+      // so emit → import → emit round-trips. Arrays of calls/objects fall
+      // through to the generic resolution (e.g. column resolvers).
+      if (slotType === 'list' && param.name in node.inputValues && Array.isArray(value) &&
+          (value as unknown[]).every((v) => v === null || ['string', 'number', 'boolean'].includes(typeof v))) {
+        node.inputValues[param.name] = (value as unknown[]).filter((v) => v !== null);
+        continue;
+      }
+
       const res = this.resolveValue(
         value, {advanceConsumedVars: false, contextTable: tableCtxFor(param.name)},
         `input "${param.name}" of ${func.name}`);

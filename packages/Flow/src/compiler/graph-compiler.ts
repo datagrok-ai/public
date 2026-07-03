@@ -12,6 +12,7 @@ import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
+import {stringListToArrayLiteral} from '../types/type-map';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
@@ -34,7 +35,30 @@ export interface CompiledStep {
 
 const PASSTHROUGH_SUFFIX = '__pt';
 
-export function compileGraph(flow: FlowEditor): CompiledStep[] {
+/** Every node that must run to produce `targetId`'s output: the target plus all
+ *  its transitive predecessors (walking connections backward — data,
+ *  pass-through, and order edges alike). The set is closed under "ancestors",
+ *  so emitting only these steps yields a self-contained sub-script. */
+export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
+  const connections = flow.getConnections();
+  const result = new Set<string>();
+  const stack = [targetId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (result.has(id)) continue;
+    result.add(id);
+    for (const c of connections)
+      if (c.target === id) stack.push(c.source);
+  }
+  return result;
+}
+
+/** When `liveBoundary` is set, a connection whose *source* node is not in the
+ *  set resolves to a `_ffLive(nodeId, outputKey)` call — reading the value that
+ *  node produced in a prior instrumented run from the live-value registry —
+ *  instead of an in-script variable. This is what lets a single node be re-run
+ *  in isolation (its upstream inputs come from the registry, not a re-run). */
+export function compileGraph(flow: FlowEditor, liveBoundary?: Set<string>): CompiledStep[] {
   const sortedIds = topologicalSort(flow);
   const connections = flow.getConnections();
 
@@ -80,7 +104,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     if (kind === 'output') {
       const paramName = String(node.properties['paramName'] ?? 'result');
       const firstInKey = Object.keys(node.inputs).find((k) => !isExecKey(k)) ?? 'value';
-      const inputExpr = resolveInputExpr(nodeId, firstInKey, incoming, outputVarMap);
+      const inputExpr = resolveInputExpr(nodeId, firstInKey, incoming, outputVarMap, liveBoundary);
       steps.push({
         nodeId, nodeType: 'output', funcName: '',
         variableName: paramName,
@@ -95,7 +119,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     if (kind === 'utility') {
       // Breakpoint: pure pass-through — output slot resolves to its input expr.
       if (utilityKind(node) === 'Breakpoint') {
-        const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap);
+        const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap, liveBoundary);
         for (const key of Object.keys(node.outputs))
           if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, inputExpr);
         steps.push({
@@ -109,7 +133,7 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
         continue;
       }
 
-      const step = compileUtilityNode(node, incoming, outputVarMap, usedVarNames);
+      const step = compileUtilityNode(node, incoming, outputVarMap, usedVarNames, liveBoundary);
       steps.push(step);
       for (const key of Object.keys(node.outputs))
         if (!isExecKey(key)) outputVarMap.set(`${nodeId}:${key}`, step.variableName);
@@ -139,13 +163,26 @@ export function compileGraph(flow: FlowEditor): CompiledStep[] {
     for (const key of inputKeys) {
       const conn = incoming.get(nodeId)?.get(key);
       if (conn) {
-        inputMap.set(key, resolveConnExpr(conn, outputVarMap));
+        inputMap.set(key, resolveConnExpr(conn, outputVarMap, liveBoundary));
         continue;
       }
       if (!(key in node.inputValues)) continue;
       const slotType = slotTypeOf(node, key);
       if (slotType === 'column' || slotType === 'column_list') continue; // pass 2
       const val = node.inputValues[key];
+      if (slotType === 'string_list') {
+        // Comma-separated → JS array of trimmed, non-empty strings. Empty → omit
+        // so the function falls back to its own default (don't force `[]`).
+        const lit = stringListToArrayLiteral(val);
+        if (lit !== '[]') inputMap.set(key, lit);
+        continue;
+      }
+      if (slotType === 'list') {
+        // Native DG List input (incl. list<string> params) → a JS array; emit
+        // as a JSON array literal. Empty → omit so the function default applies.
+        if (Array.isArray(val) && val.length > 0) inputMap.set(key, JSON.stringify(val));
+        continue;
+      }
       if (val !== undefined)
         inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
     }
@@ -195,6 +232,7 @@ function compileUtilityNode(
   incoming: Map<string, Map<string, FlowConnection>>,
   outputVarMap: Map<string, string>,
   usedVarNames: Set<string>,
+  liveBoundary?: Set<string>,
 ): CompiledStep {
   const varName = uniqueVarName(toCamelCase(node.label), usedVarNames);
   usedVarNames.add(varName);
@@ -203,7 +241,7 @@ function compileUtilityNode(
   for (const key of Object.keys(node.inputs)) {
     if (isExecKey(key)) continue;
     const conn = incoming.get(node.id)?.get(key);
-    if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap));
+    if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap, liveBoundary));
   }
 
   const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k)) ?? 'value';
@@ -269,13 +307,20 @@ function resolveInputExpr(
   nodeId: string, inputKey: string,
   incoming: Map<string, Map<string, FlowConnection>>,
   outputVarMap: Map<string, string>,
+  liveBoundary?: Set<string>,
 ): string {
   const conn = incoming.get(nodeId)?.get(inputKey);
   if (!conn) return 'undefined';
-  return resolveConnExpr(conn, outputVarMap);
+  return resolveConnExpr(conn, outputVarMap, liveBoundary);
 }
 
-function resolveConnExpr(c: FlowConnection, outputVarMap: Map<string, string>): string {
+function resolveConnExpr(
+  c: FlowConnection, outputVarMap: Map<string, string>, liveBoundary?: Set<string>,
+): string {
+  // Source outside the compiled slice → read its captured value from the
+  // live-value registry rather than an (absent) in-script variable.
+  if (liveBoundary && !liveBoundary.has(c.source))
+    return `_ffLive(${JSON.stringify(c.source)}, ${JSON.stringify(String(c.sourceOutput))})`;
   return outputVarMap.get(`${c.source}:${String(c.sourceOutput)}`) ?? 'undefined';
 }
 

@@ -102,8 +102,10 @@ reactive-tree-driver/
 
 Action steps (`type: 'action'`) are lightweight static pipelines with no children and no history,
 designed as targets for `visibleOn` actions from outer pipelines. In the config they only need
-`id`, `type: 'action'`, and optionally `friendlyName`/`description`/`tags`. During config processing
-they are converted to `PipelineConfigurationStaticProcessed` with `isActionStep: true`.
+`id`, `type: 'action'`, and optionally `friendlyName`/`description`/`tags`. An optional `nqName`
+may point at a function whose `help`/`readme` option drives the help panel (the only reason to set
+it — the action step has no FuncCall). During config processing they are converted to
+`PipelineConfigurationStaticProcessed` with `isActionStep: true`.
 
 Action steps are always navigable (included in back/next sequence). Regular pipelines with children
 are skipped by default; set `forceNavigate: true` to include them.

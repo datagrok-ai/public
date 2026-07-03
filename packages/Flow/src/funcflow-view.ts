@@ -19,6 +19,7 @@ import {FlowEditor} from './rete/flow-editor';
 import {FlowNode} from './rete/scheme';
 import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
+import {ColumnPicker} from './panel/column-picker';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
   createNode, FuncInfo,
@@ -35,12 +36,18 @@ import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
 import {_package} from './package';
+import {setTid} from './utils/test-ids';
+import {GuideHost} from './guide/guide-model';
+import {GuideRunner} from './guide/guide-runner';
+import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
+import {TUTORIALS} from './guide/guide-content';
+import {summarizeFlow} from './summary/summary-generator';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
   {label: 'Workflow demo', file: 'Workflow Demo.ffjson', desc: 'A sample multi-step data workflow.'},
-  {label: 'Sequence demo', file: 'Sequence demo.ffjson', desc: 'A bioinformatics sequence flow.'},
+  {label: 'Bio Molecules', file: 'Sequence demo.ffjson', desc: 'A Peptides conversion and calculation.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {
@@ -52,6 +59,8 @@ export class FuncFlowView extends DG.ViewBase {
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
   private startBgRaf = 0;
+  private helpButton!: HTMLElement;
+  private readonly guideRunner = new GuideRunner();
   private statusBar!: HTMLElement;
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
@@ -106,24 +115,35 @@ export class FuncFlowView extends DG.ViewBase {
     this.functionBrowser = new FunctionBrowser({
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
+      onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
     });
 
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
+    setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();
     this.canvasContainer.appendChild(this.startPanel);
+
+    // Non-invasive floating help button (bottom-left) → tutorials & how-to menu.
+    this.helpButton = createHelpButton((ev) => openGuideMenu(this.guideHost, this.guideRunner, ev));
+    this.canvasContainer.appendChild(this.helpButton);
 
     this.nodeCountLabel = ui.divText('Nodes: 0');
     this.linkCountLabel = ui.divText('Links: 0');
     this.validationLabel = ui.divText('');
+    setTid(this.nodeCountLabel, 'statusbar-nodes');
+    setTid(this.linkCountLabel, 'statusbar-links');
+    setTid(this.validationLabel, 'statusbar-validation');
     ui.tooltip.bind(this.nodeCountLabel, 'Total number of nodes in the graph');
     ui.tooltip.bind(this.linkCountLabel, 'Total number of connections between nodes');
     this.statusBar = ui.div(
       [this.nodeCountLabel, this.linkCountLabel, this.validationLabel],
       'funcflow-status-bar',
     );
+    setTid(this.statusBar, 'statusbar');
 
-    const mainLayout = ui.div([this.canvasContainer], 'funcflow-root');
+    const mainLayout = setTid(ui.div([this.canvasContainer], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
+    setTid(this.root, 'view');
     this.root.appendChild(mainLayout);
     this.root.appendChild(this.statusBar);
     mainLayout.style.flex = '1';
@@ -175,19 +195,85 @@ export class FuncFlowView extends DG.ViewBase {
       const summary = state?.outputs?.[outputKey];
 
       const menu = DG.Menu.popup();
-      if (summary && this.isPortPreviewable(summary)) {
+      if (summary && this.isPortPreviewable(summary))
         menu.item('View output', () => this.showPortPreview(rowEl, outputKey, summary));
-      } else {
-        menu.item('No output captured yet', () => {});
-      }
+      // Inspect-anywhere: run just the slice up to this node and preview it —
+      // no full run, no Output node required.
+      menu.item(summary ? 'Re-run up to here' : 'Run up to here & preview',
+        () => this.previewNodeData(nodeId));
       menu.show({causedBy: ev});
     }, true);
+  }
+
+  /** Live subscription capturing a viewer's option changes into its node. */
+  private viewerEditSub: {unsubscribe(): void} | undefined;
+
+  /** Show a live viewer in the context panel and persist its option changes
+   *  onto the node. `grok.shell.o = viewer` makes Datagrok render the viewer's
+   *  full settings editor; we debounce `onPropertyValueChanged`, read
+   *  `getOptions().look` (dropping the `#type` tag), and store it as the node's
+   *  `viewerLook` so a re-run reproduces the exact look. */
+  private editViewer(nodeId: string, viewer: unknown): void {
+    const v = viewer as {
+      root?: HTMLElement;
+      getOptions?: () => {look?: unknown};
+      onPropertyValueChanged?: unknown;
+    };
+    grok.shell.o = v as object;
+
+    this.viewerEditSub?.unsubscribe();
+    this.viewerEditSub = undefined;
+
+    const capture = (): void => {
+      try {
+        const node = this.flow?.getNodeById(nodeId);
+        if (!node) return;
+        let look = v.getOptions?.().look as Record<string, unknown> | string | undefined;
+        if (typeof look === 'string') look = JSON.parse(look) as Record<string, unknown>;
+        if (!look || typeof look !== 'object') return;
+        const clean: Record<string, unknown> = {};
+        for (const [k, val] of Object.entries(look))
+          if (k !== '#type') clean[k] = val;
+        node.properties['viewerLook'] = clean;
+        void this.flow.updateNode(node.id);
+      } catch (e) {
+        console.warn('FuncFlow: failed to capture viewer options', e);
+      }
+    };
+
+    try {
+      const obs = v.onPropertyValueChanged as {subscribe(cb: () => void): {unsubscribe(): void}} | undefined;
+      if (obs)
+        this.viewerEditSub = DG.debounce(obs as any, 300).subscribe(() => capture());
+    } catch (e) {
+      console.warn('FuncFlow: viewer onPropertyValueChanged unavailable', e);
+    }
+  }
+
+  /** Run only the slice up to this node and open its data preview — the
+   *  "inspect anywhere" entry point from an output-port right-click. */
+  private previewNodeData(nodeId: string): void {
+    this.executionController?.previewNodeData(nodeId, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
+  }
+
+  /** Re-run just this node using upstream values captured from a prior run. */
+  private rerunNode(nodeId: string): void {
+    this.executionController?.rerunNode(nodeId, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
   }
 
   private isPortPreviewable(summary: ValueSummary): boolean {
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
+    if ((summary.type === 'widget' || summary.type === 'viewer') && summary.value?.root instanceof Element) return true;
     return false;
   }
 
@@ -201,7 +287,7 @@ export class FuncFlowView extends DG.ViewBase {
     const inner = buildPreview(name, summary);
     if (!inner) return;
 
-    const popup = ui.div([inner], 'ff-port-preview');
+    const popup = setTid(ui.div([inner], 'ff-port-preview'), 'port-preview');
     document.body.appendChild(popup);
     this.currentPortPopup = popup;
 
@@ -250,13 +336,27 @@ export class FuncFlowView extends DG.ViewBase {
       onGraphChanged: () => {
         this.updateStatusBar();
         this.updateStartPanelVisibility();
+        this.refreshNodeHints();
+        this.flow?.refreshMinimap();
         this.executionController?.onGraphChanged();
       },
+      onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
+      onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
+      canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);
     this.executionController = new ExecutionController(this.flow);
     this.executionController.outputPreview.setViewRoot(this.root);
+
+    // Column inputs (column / column_list) get a picker dialog seeded by the
+    // upstream table — running the flow up to that point on demand if needed.
+    const columnPicker = new ColumnPicker(this.flow, this.executionController, () => ({
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    }));
+    this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
     this.executionController.onBreakpointHit = () => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
@@ -268,8 +368,33 @@ export class FuncFlowView extends DG.ViewBase {
       this.autoSelectFirstOutputNode();
     };
 
+    // The bottom-docked output panel belongs to this view — when the user
+    // navigates to another view it would otherwise linger. Close it whenever
+    // the active view is no longer us. (Clicking a node reopens it later.)
+    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v !== this)
+        this.executionController?.outputPreview.close();
+    }));
+
+    // "Edit settings" on a viewer preview → show the live viewer in the context
+    // panel (Datagrok renders its full settings editor) and capture every change
+    // back into the node's stored options, so a re-run reproduces the look.
+    this.executionController.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
+
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
+  }
+
+  /** Re-render every node so the pre-run "Needs input" hint reflects the
+   *  current wiring (connections don't otherwise re-render their endpoints).
+   *  Cheap for the small graphs Flow targets; debounced via rAF. */
+  private hintRaf = 0;
+  private refreshNodeHints(): void {
+    if (!this.flow || this.hintRaf) return;
+    this.hintRaf = requestAnimationFrame(() => {
+      this.hintRaf = 0;
+      for (const n of this.flow.getNodes()) void this.flow.updateNode(n.id);
+    });
   }
 
   /** Set the overview minimap's collapsed state. Remembered and (re)applied when
@@ -301,9 +426,12 @@ export class FuncFlowView extends DG.ViewBase {
         (drag instanceof DG.FileInfo && drag.isFile) || drag instanceof DG.Func,
       doDrop: (args) => {
         const drag = args.dragObject;
-        if (drag instanceof DG.Func) {void this.addFuncNode(drag); return;}
+        // Place the node where it was dropped (like the native drag from the
+        // function browser), not in the center. `dropEvent` carries the pointer.
+        const ev = args.dropEvent;
+        if (drag instanceof DG.Func) {void this.addFuncNode(drag, ev); return;}
         const fi = drag as DG.FileInfo;
-        void this.addOpenFileNode(fi.fullPath);
+        void this.addOpenFileNode(fi.fullPath, ev);
       },
     });
 
@@ -350,13 +478,21 @@ export class FuncFlowView extends DG.ViewBase {
     return node;
   }
 
-  private async addOpenFileNode(filePath: string): Promise<void> {
+  /** Place a node of the given type at the drop pointer when one is provided
+   *  (drag-and-drop), else in the center (double-click / programmatic add). */
+  private addNodeByTypeAtDrop(typeName: string, dropEvent?: MouseEvent): Promise<FlowNode | null> {
+    return dropEvent ?
+      this.addNodeByTypeAt(typeName, dropEvent.clientX, dropEvent.clientY) :
+      this.addNodeByType(typeName);
+  }
+
+  private async addOpenFileNode(filePath: string, dropEvent?: MouseEvent): Promise<void> {
     const typeName = this.findOpenFileNodeType();
     if (!typeName) {
       grok.shell.warning('OpenFile function not found in registered nodes');
       return;
     }
-    const node = await this.addNodeByType(typeName);
+    const node = await this.addNodeByTypeAtDrop(typeName, dropEvent);
     if (node) {
       node.inputValues['fullPath'] = filePath;
       await this.flow.updateNode(node.id);
@@ -364,13 +500,13 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  private async addFuncNode(func: DG.Func): Promise<void> {
+  private async addFuncNode(func: DG.Func, dropEvent?: MouseEvent): Promise<void> {
     const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
     if (!info) {
       grok.shell.warning(`Function "${func.name}" is not available as a node`);
       return;
     }
-    if (await this.addNodeByType(info.nodeTypeName))
+    if (await this.addNodeByTypeAtDrop(info.nodeTypeName, dropEvent))
       grok.shell.info(`Added node: ${func.name}`);
   }
 
@@ -380,6 +516,22 @@ export class FuncFlowView extends DG.ViewBase {
         return info.nodeTypeName;
     }
     return null;
+  }
+
+  // ---------- guide system (tutorials + how-to) ----------
+
+  /** What the interactive guides need from this view. */
+  private get guideHost(): GuideHost {
+    return {
+      getFlow: () => this.flow,
+      showFunctionBrowser: () => {
+        grok.shell.windows.showToolbox = true;
+        try {
+          this.functionBrowser.render();
+        } catch {/* not ready yet */}
+      },
+      anchorEl: this.helpButton,
+    };
   }
 
   // ---------- start panel (U1: never open empty) ----------
@@ -397,6 +549,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.divText(t.label, 'funcflow-start-card-title'),
         ui.divText(t.desc, 'funcflow-start-card-desc'),
       ], 'funcflow-start-card');
+      setTid(card, 'start-template', t.file.replace(/\.ffjson$/i, ''));
       card.onclick = (): void => void this.loadTemplate(t.file);
       ui.tooltip.bind(card, `Open the "${t.label}" template`);
       return card;
@@ -406,24 +559,44 @@ export class FuncFlowView extends DG.ViewBase {
       ui.divText('Blank canvas', 'funcflow-start-card-title'),
       ui.divText('Start from scratch.', 'funcflow-start-card-desc'),
     ], 'funcflow-start-card funcflow-start-card-blank');
+    setTid(blankCard, 'start-blank');
     blankCard.onclick = (): void => this.hideStartPanel();
     cards.push(blankCard);
 
-    const actions = ui.divH([
-      ui.button('Open a flow…', () => void this.openFlow()),
-      ui.button('Import from a table…', () => this.importCreationScriptDialog()),
-    ], 'funcflow-start-actions');
+    // Primary call-to-action: launch the hands-on tour (the first tutorial),
+    // which walks a newcomer through loading data and adding a column.
+    const firstFlowBtn = ui.button('Create your first flow', () => {
+      this.hideStartPanel();
+      void this.guideRunner.run(TUTORIALS[0], this.guideHost);
+    });
+    firstFlowBtn.classList.add('funcflow-start-tour');
+    ui.tooltip.bind(firstFlowBtn, `Hands-on: ${TUTORIALS[0].title}`);
+    setTid(firstFlowBtn, 'start-first-flow');
 
-    const hint = ui.divText(
-      'Tip: double-click a function in the list on the left, or drag a file onto the canvas.',
-      'funcflow-start-hint');
+    const openBtn = ui.button('Open a flow…', () => void this.openFlow());
+    setTid(openBtn, 'start-open');
+    const actions = ui.divH([firstFlowBtn, openBtn], 'funcflow-start-actions');
+
+    // Discovery hint, with an actionable link that launches the interface tour.
+    const interfaceTour = TUTORIALS.find((t) => t.id === 'interface-tour');
+    const tourLink = ui.link('take a tour of the interface', () => {
+      this.hideStartPanel();
+      if (interfaceTour) void this.guideRunner.run(interfaceTour, this.guideHost);
+    }, 'Walk through every part of the UI — toolbox, ribbon, canvas, and context panel');
+    setTid(tourLink, 'start-ui-tour');
+    const hint = ui.div([], 'funcflow-start-hint');
+    hint.appendChild(document.createTextNode('New here? Create your first flow above, or '));
+    hint.appendChild(tourLink);
+    hint.appendChild(document.createTextNode(
+      '. You can also double-click a function in the list on the left, or drag a file onto the canvas.'));
 
     const panel = ui.divV([
       title, subtitle,
       ui.divH(cards, 'funcflow-start-cards'),
       actions, hint,
     ], 'funcflow-start-panel');
-    return ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay');
+    setTid(panel, 'start-panel');
+    return setTid(ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay'), 'start-overlay');
   }
 
   /** Decorative animated backdrop host. The graph is drawn by
@@ -431,6 +604,7 @@ export class FuncFlowView extends DG.ViewBase {
    *  so it fills any shape with no scaling distortion. */
   private buildStartBackground(): HTMLElement {
     this.startBg = ui.div([], 'funcflow-start-bg');
+    setTid(this.startBg, 'start-bg');
     return this.startBg;
   }
 
@@ -561,6 +735,7 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Show/hide function list', () => this.toggleToolbox())
       .endGroup()
       .group('Advanced')
+      .item('Describe this flow…', () => this.describeFlow())
       .item('See the steps (generated script)…', () => this.generateAndPreview())
       .item('Copy script', () => this.copyScriptToClipboard())
       .item('Export as .js file', () => this.exportAsJs())
@@ -572,36 +747,41 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Export as table-creation script…', () => this.compileToCreationScript())
       .endGroup();
 
+    const ribbonIcon = (icon: string, action: () => void, tooltip: string, id: string): HTMLElement =>
+      setTid(ui.iconFA(icon, action, tooltip), 'ribbon', id);
     const panels: HTMLElement[][] = [
       [
-        ui.iconFA('play', () => this.runInstrumented(), 'Run the flow'),
-        ui.iconFA('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)'),
-        ui.iconFA('forward', () => this.executionController?.continueBreakpoint(), 'Continue'),
-        ui.iconFA('stop', () => this.executionController?.stopRun(), 'Stop'),
+        ribbonIcon('play', () => this.runInstrumented(), 'Run the flow', 'run'),
+        ribbonIcon('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)', 'debug'),
+        ribbonIcon('forward', () => this.executionController?.continueBreakpoint(), 'Continue', 'continue'),
+        ribbonIcon('stop', () => this.executionController?.stopRun(), 'Stop', 'stop'),
       ],
       [
-        ui.iconFA('eye', () => this.generateAndPreview(), 'See the steps (generated script)'),
-        ui.iconFA('save', () => this.saveFlow(), 'Save / share this flow'),
-        ui.iconFA('folder-open', () => void this.openFlow(), 'Open a flow'),
+        ribbonIcon('eye', () => this.generateAndPreview(), 'See the steps (generated script)', 'view-script'),
+        ribbonIcon('save', () => this.saveFlow(), 'Save / share this flow', 'save'),
+        ribbonIcon('folder-open', () => void this.openFlow(), 'Open a flow', 'open'),
       ],
       [
-        ui.iconFA('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)'),
-        ui.iconFA('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)'),
+        ribbonIcon('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)', 'undo'),
+        ribbonIcon('redo', () => void this.flow?.redo(), 'Redo (Ctrl+Shift+Z)', 'redo'),
       ],
       [
-        ui.iconFA('sitemap', () => this.cleanLayout(), 'Tidy up layout'),
-        ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom in'),
-        ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom out'),
-        ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit (double-click empty canvas)'),
-        ui.iconFA('list-ul', () => this.toggleToolbox(), 'Show/hide function list'),
+        ribbonIcon('sitemap', () => this.cleanLayout(), 'Tidy up layout', 'layout'),
+        ribbonIcon('search-plus', () => this.flow?.zoomIn(), 'Zoom in', 'zoom-in'),
+        ribbonIcon('search-minus', () => this.flow?.zoomOut(), 'Zoom out', 'zoom-out'),
+        ribbonIcon('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to fit', 'zoom-fit'),
+        ribbonIcon('list-ul', () => this.toggleToolbox(), 'Show/hide function list', 'toggle-browser'),
+      ],
+      [
+        ribbonIcon('graduation-cap', () => openGuideMenu(this.guideHost, this.guideRunner), 'Tutorials & help', 'help'),
       ],
     ];
 
     // When editing tables' creation scripts, a prominent Save action that writes
     // a per-table creation script back to each table (leads the ribbon).
     if (this.tableInfos.length > 0) {
-      panels.unshift([ui.bigButton('Save', () => this.saveCreationScriptsDialog(),
-        'Review and save a creation script for each table')]);
+      panels.unshift([setTid(ui.bigButton('Save', () => this.saveCreationScriptsDialog(),
+        'Review and save a creation script for each table'), 'ribbon', 'save-creation-scripts')]);
     }
 
     this.setRibbonPanels(panels);
@@ -961,6 +1141,43 @@ export class FuncFlowView extends DG.ViewBase {
         void this.loadFromCreationScript(script);
       })
       .show({width: 560, height: 420});
+  }
+
+  /** Plain-language description of the whole flow: each disjoint pipeline shown
+   *  as its own card with a top-to-bottom, numbered list of node captions (full,
+   *  never truncated). */
+  private describeFlow(): void {
+    if (!this.flow) return;
+    const summary = summarizeFlow(this.flow.getNodes(), this.flow.getConnections());
+
+    if (summary.nodeCount === 0) {
+      ui.dialog({title: 'Flow summary'})
+        .add(ui.divText('This flow is empty — add some nodes first.'))
+        .show({width: 460, height: 220});
+      return;
+    }
+
+    const pipeWord = summary.pipelineCount === 1 ? 'pipeline' : 'independent pipelines';
+    const header = ui.divText(
+      `${summary.nodeCount} node${summary.nodeCount === 1 ? '' : 's'} in ` +
+      `${summary.pipelineCount} ${pipeWord}`, 'ff-flow-summary-header');
+
+    const cards = summary.pipelines.map((p, i) => {
+      const steps = p.steps.map((s) => {
+        const fromText = s.inputs.length === 0 ? '' :
+          '← ' + s.inputs.map((inp) => inp.key ? `${inp.key} from step ${inp.from}` : `step ${inp.from}`).join(', ');
+        const main = ui.divV([ui.divText(s.caption, 'ff-flow-step-text')], 'ff-flow-step-main');
+        if (fromText) main.appendChild(ui.divText(fromText, 'ff-flow-step-from'));
+        return ui.div([ui.divText(`${s.index}`, 'ff-flow-step-n'), main], 'ff-flow-step');
+      });
+      const title = summary.pipelineCount > 1 ?
+        [ui.divText(`Pipeline ${i + 1}`, 'ff-flow-pipe-title')] : [];
+      return ui.divV([...title, ui.divV(steps, 'ff-flow-steps')], 'ff-flow-pipe');
+    });
+
+    ui.dialog({title: 'Flow summary'})
+      .add(ui.divV([header, ...cards], 'ff-flow-summary'))
+      .show({width: 600, height: 460});
   }
 
   private showValidation(): void {

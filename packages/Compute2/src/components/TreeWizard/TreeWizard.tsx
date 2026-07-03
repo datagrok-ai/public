@@ -113,7 +113,6 @@ export const TreeWizard = Vue.defineComponent({
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
     const modelName = Vue.computed(() => props.modelName);
-    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
     const providerFunc = Vue.computed(() => {
       const func = DG.Func.byName(props.providerFunc);
       return func ? Vue.markRaw(func) : undefined;
@@ -516,6 +515,24 @@ export const TreeWizard = Vue.defineComponent({
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
     });
 
+    // Ribbon controls key their visibility on tree presence only, not on the transient locks.
+    // treeMutationsLocked/isGlobalLocked cycle on every link-propagation burst and every run,
+    // which would otherwise hide/re-show the controls (flicker). treeState is buffered during
+    // the global lock, so its last-good value keeps the controls' content stable while busy.
+    const isTreeLoaded = Vue.computed(() => !!treeState.value);
+    const treeBusy = Vue.computed(() => treeMutationsLocked.value || isGlobalLocked.value);
+
+    // The ribbon teleports into the view chrome, outside the compositor overlay that covers the
+    // component body while busy, so the buttons stay clickable during a lock. Guard the mutating
+    // actions here with user-facing feedback (the driver otherwise no-ops them with a console warning).
+    const guardTreeAction = (action: string, fn: () => void) => {
+      if (treeBusy.value) {
+        grok.shell.warning(`The workflow is busy — wait for the current run to finish before ${action}.`);
+        return;
+      }
+      fn();
+    };
+
     const menuActions = Vue.computed(() => {
       if (!treeState.value || !chosenStepUuid.value)
         return {};
@@ -629,33 +646,33 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
           />
-          {isTreeReady.value &&
+          {isTreeLoaded.value &&
             treeState.value &&
             (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
               <IconFA
                 name='sync'
                 tooltip={'Update tree with consistent values'}
                 style={{'padding-right': '3px'}}
-                onClick={() => runSubtreeWithConfirm(treeState.value!.uuid, true)}
+                onClick={() => guardTreeAction('updating the tree', () => runSubtreeWithConfirm(treeState.value!.uuid, true))}
               />:
               <IconFA
                 name='forward'
                 tooltip={'Run ready steps'}
                 style={{'padding-right': '3px'}}
-                onClick={() => runSequence(treeState.value!.uuid, false)}
+                onClick={() => guardTreeAction('running the ready steps', () => runSequence(treeState.value!.uuid, false))}
               />
             )}
-          {isTreeReady.value && <IconFA
+          {isTreeLoaded.value && <IconFA
             name='save'
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
-            onClick={saveEntireModelState}
+            onClick={() => guardTreeAction('saving', saveEntireModelState)}
           /> }
-          {isTreeReady.value && showReturn.value && <IconFA
+          {isTreeLoaded.value && showReturn.value && <IconFA
             name='check'
             tooltip={'Confirm data'}
             style={{'padding-right': '3px'}}
-            onClick={onReturnClicked}
+            onClick={() => guardTreeAction('confirming', onReturnClicked)}
           />
           }
           <IconFA
@@ -664,7 +681,7 @@ export const TreeWizard = Vue.defineComponent({
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
           />
         </RibbonPanel>
-        {isTreeReady.value && isTreeReportable.value &&
+        {isTreeLoaded.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
               exports.value.map((exportData) =>
@@ -691,10 +708,10 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
-        { isTreeReady.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+        { isTreeLoaded.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
           <RibbonMenu groupName={category} view={currentView.value}>
             {
-              actions.map((action) => Vue.withDirectives(<span onClick={() => runActionWithConfirmation(action.uuid)}>
+              actions.map((action) => Vue.withDirectives(<span onClick={() => guardTreeAction('running this action', () => runActionWithConfirmation(action.uuid))}>
                 <div> { action.icon && <IconFA name={action.icon} style={{width: '15px', display: 'inline-block', textAlign: 'center'}}/> } { action.friendlyName ?? action.id } </div>
               </span>, [[tooltip, action.description]]))
             }

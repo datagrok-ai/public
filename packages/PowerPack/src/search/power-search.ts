@@ -90,14 +90,7 @@ function projectsSearch(s: string, host: HTMLDivElement): void {
   if (s.length < 3)
     return;
   grok.dapi.projects.filter(s).list({pageSize: 5}).then((projects) => {
-    if (projects.length > 0) {
-      host.appendChild(
-        ui.divV([
-          ui.h3('Projects'),
-          ui.divH(projects.map((p) => ui.renderCard(p))),
-        ]),
-      );
-    }
+    processListSearchResults(projects, host, s, {name: 'Projects'});
   });
 }
 
@@ -120,6 +113,46 @@ function capitalizeFirstLetter(string: string): string {
 
 
 let listSearchDockedView: DG.View | null = null;
+
+/// Category panels are shown in this relevance order. "Basic" categories are always
+/// visible; everything else (including categories not listed here) is "advanced" and
+/// gets collapsed behind a "Show advanced" button when more than 5 categories are found.
+const CATEGORY_ORDER = ['Apps', 'Spaces', 'Projects', 'Files', 'Queries', 'Scripts',
+  'Functions', 'Demos', 'Models', 'Help',
+  'Users', 'Groups', 'Dockers', 'Connections', 'Plugins', 'Notebooks'];
+const BASIC_CATEGORIES = new Set(['Apps', 'Spaces', 'Projects', 'Files', 'Queries',
+  'Scripts', 'Functions', 'Demos', 'Models', 'Help']);
+
+function categoryOrder(name: string): number {
+  const i = CATEGORY_ORDER.indexOf(name);
+  return i >= 0 ? i : 1000; // unknown categories go after the known ones
+}
+function isAdvancedCategory(name: string): boolean {
+  return !BASIC_CATEGORIES.has(name);
+}
+
+/// Collapses advanced category panels behind a "Show advanced" button when more than
+/// 5 categories are found. Re-evaluated on every appended panel since results stream in.
+function updateAdvancedVisibility(listsHost: Element): void {
+  const total = listsHost.querySelectorAll('.power-pack-search-list-container').length;
+  const hasAdvanced = listsHost.querySelector('.power-pack-search-advanced') != null;
+  const collapse = total > 5 && hasAdvanced;
+  listsHost.classList.toggle('power-search-collapsed', collapse);
+  let btn = listsHost.querySelector('.power-pack-search-show-advanced') as HTMLButtonElement | null;
+  if (collapse && !btn) {
+    btn = ui.button('Show advanced', () => {
+      const shown = listsHost.classList.toggle('power-search-show-advanced');
+      btn!.textContent = shown ? 'Hide advanced' : 'Show advanced';
+    });
+    btn.classList.add('power-pack-search-show-advanced');
+    btn.style.order = '9999';
+    listsHost.appendChild(btn);
+  }
+  else if (!collapse && btn) {
+    btn.remove();
+    listsHost.classList.remove('power-search-show-advanced');
+  }
+}
 
 function processListSearchResults(
   results: any[], host: HTMLDivElement, s: string,
@@ -159,9 +192,14 @@ function processListSearchResults(
     const list = ui.list(results);
     list.classList.add('power-pack-search-list');
 
-    listsHost.appendChild(ui.divV([
+    const categoryName = options?.name ?? options?.description ?? '';
+    const container = ui.divV([
       header, list,
-    ], {style: {width: 'fit-content', order: `${order ?? 9999}`}, classes: 'power-pack-search-list-container'}));
+    ], {style: {width: 'fit-content', order: `${categoryOrder(categoryName)}`}, classes: 'power-pack-search-list-container'});
+    if (isAdvancedCategory(categoryName))
+      container.classList.add('power-pack-search-advanced');
+    listsHost.appendChild(container);
+    updateAdvancedVisibility(listsHost);
   }
 }
 

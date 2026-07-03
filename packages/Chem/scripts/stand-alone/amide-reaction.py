@@ -1,4 +1,5 @@
 #name: Amide reaction
+#description: Enumerates amide products by coupling a set of amines with a set of carboxylic acids.
 #language: python
 #sample: chem/amines.csv, chem/carb_acids.csv
 #meta.domain: chem

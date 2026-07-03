@@ -14,8 +14,13 @@ import {ClassicPreset} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
-import {dgTypeToSlotType, getNodeColors} from '../../types/type-map';
-import {getRole, getFuncQualifiedName, getFuncDisplayName} from '../../utils/dart-proxy-utils';
+import {
+  dgTypeToSlotType, getNodeColors, categorizeBySignature, domainCategory, isStringListType,
+} from '../../types/type-map';
+import {
+  getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
+  getParamDescription, getParamDisplayName, getParamDefault,
+} from '../../utils/dart-proxy-utils';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -41,7 +46,16 @@ export function defaultTableParam(columnParam: string, dataframeParams: string[]
 export class FuncNode extends FlowNode {
   constructor(func: DG.Func) {
     const role = getRole(func);
-    const colors = getNodeColors(role, func.name);
+    const inputTypes = func.inputs.map((p) => String(p.propertyType));
+    // Domain (chem/bio) wins over the signature-based task category — but only
+    // for operations on data (not pure sources/queries), matching the toolbox
+    // grouping — so a cheminformatics/bioinformatics node reads its domain from
+    // its color.
+    const category = domainCategory(getPackageName(func), inputTypes) ?? categorizeBySignature(
+      inputTypes,
+      func.outputs.map((p) => String(p.propertyType)),
+      role);
+    const colors = getNodeColors(role, func.name, category);
     const qualifiedName = getFuncQualifiedName(func);
     const displayName = getFuncDisplayName(func) || func.name;
 
@@ -50,6 +64,7 @@ export class FuncNode extends FlowNode {
     this.dgFunc = func;
     this.dgFuncName = qualifiedName;
     this.dgRole = role;
+    this.dgPackageName = getPackageName(func);
     (this as unknown as {color: string; bgcolor: string}).color = colors.color;
     (this as unknown as {color: string; bgcolor: string}).bgcolor = colors.bgcolor;
 
@@ -62,13 +77,26 @@ export class FuncNode extends FlowNode {
       .filter((p) => String(p.propertyType) === 'dataframe')
       .map((p) => p.name);
 
-    // 1. Inputs.
+    // 1. Inputs. The slot key is the property name (identity — used for
+    // connections, inputValues, compilation); the label shows the caption when
+    // one is declared (display only).
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
-      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), inp.name));
+      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), getParamDisplayName(inp)));
+      const inpDesc = getParamDescription(inp);
+      if (inpDesc) this.inputDescriptions[inp.name] = inpDesc;
 
       if (inp.propertyType in PRIMITIVE_DEFAULTS) {
-        const def = (inp as unknown as {defaultValue?: unknown}).defaultValue ?? PRIMITIVE_DEFAULTS[inp.propertyType];
+        // Seed the declared default (`defaultValue ?? initialValue`, unquoted),
+        // else the type's zero value. String-encoded defaults are coerced to
+        // the declared type so the compiler emits correct literals ('false'
+        // must not compile to `true`).
+        let def = getParamDefault(inp) ?? PRIMITIVE_DEFAULTS[inp.propertyType];
+        if (inp.propertyType === 'bool' && typeof def === 'string')
+          def = def.toLowerCase() === 'true';
+        else if (typeof def === 'string' && def !== '' &&
+                 ['int', 'double', 'num'].includes(String(inp.propertyType)) && !isNaN(Number(def)))
+          def = Number(def);
         this.inputValues[inp.name] = def;
       } else if ((inp.propertyType === 'column' || inp.propertyType === 'column_list') &&
                  dataframeParams.length > 0) {
@@ -82,6 +110,17 @@ export class FuncNode extends FlowNode {
         if (!this.properties['columnTables']) this.properties['columnTables'] = {};
         (this.properties['columnTables'] as Record<string, string>)[inp.name] =
           defaultTableParam(inp.name, dataframeParams);
+      } else if (isStringListType(inp.propertyType)) {
+        // string_list / list<string> are editable inline as a comma-separated
+        // string; the compiler turns the value into a JS array of trimmed,
+        // non-empty strings (so users needn't wire a String List Input node).
+        this.inputValues[inp.name] = '';
+      } else if (String(inp.propertyType) === 'list') {
+        // Plain `list` (incl. `list<string>` params, which the platform reports
+        // as propertyType 'list' + propertySubType 'string') is edited with a
+        // native DG List input (`ui.input.forProperty`) whose value is a JS
+        // array; the compiler emits it as an array literal (empty → omitted).
+        this.inputValues[inp.name] = [];
       }
     }
 
@@ -97,7 +136,17 @@ export class FuncNode extends FlowNode {
     for (const out of funcOutputs) {
       const slotType = dgTypeToSlotType(out.propertyType);
       this.addOutput(out.name, new ClassicPreset.Output(getSocket(slotType), out.name));
+      const outDesc = getParamDescription(out);
+      if (outDesc) this.outputDescriptions[out.name] = outDesc;
     }
+
+    // Structural inputs (a table / a column) that aren't optional must be
+    // satisfied for the node to do anything — drives the "Needs input" hint.
+    // Primitives are excluded: they always carry a default in `inputValues`.
+    const STRUCTURAL = ['dataframe', 'column', 'column_list'];
+    this.requiredInputs = funcInputs
+      .filter((p) => STRUCTURAL.includes(String(p.propertyType)) && !isInputOptional(p))
+      .map((p) => p.name);
   }
 
   /** Look up the underlying input name corresponding to a pass-through key. */

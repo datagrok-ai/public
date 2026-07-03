@@ -1,8 +1,8 @@
 --name: _bioactivity data for bacterial targets for @organism
---friendlyName: Browse | Bioactivity for bacterial targets for @organism
+--friendlyName: Browse | Bioactivity For Bacterial Targets By Organism
 --description: Retrieves bioactivity data for compounds tested against bacterial targets of a specified organism.
 --connection: Chembl
---input: string organism = "Shigella" {suggestions: Chembl:organisms}
+--input: string organism = "Shigella" {suggestions: Chembl:organisms} [Target organism name, e.g. Shigella]
 --meta.searchPattern: "Bioactivity for bacterial targets for ${organism}"
 --tags: unit-test
 SELECT md.chembl_id AS compound_chembl_id,

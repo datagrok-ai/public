@@ -82,15 +82,21 @@ export class PackageFunctions {
     }, 100);
   }
 
-  @grok.decorators.func({})
-  static solve(@grok.decorators.param({type: 'object'}) problem: ODEs): DG.DataFrame {
+  @grok.decorators.func({
+    name: 'Solve ODEs',
+    description: 'Solve a system of ordinary differential equations using default solver settings.',
+  })
+  static solve(@grok.decorators.param({type: 'object', options: {description: 'ODE system to solve (equations, initial values, argument range)'}}) problem: ODEs): DG.DataFrame {
     return solveDefault(problem);
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func({
+    name: 'Solve ODEs with Options',
+    description: 'Solve a system of ordinary differential equations with a custom method and solver options.',
+  })
   static solveEquations(
-    @grok.decorators.param({type: 'object'}) problem: ODEs,
-    @grok.decorators.param({type: 'object'}) options: Partial<SolverOptions>): DG.DataFrame {
+    @grok.decorators.param({type: 'object', options: {description: 'ODE system to solve (equations, initial values, argument range)'}}) problem: ODEs,
+    @grok.decorators.param({type: 'object', options: {description: 'Solver options: numerical method, tolerances, iteration and time limits'}}) options: Partial<SolverOptions>): DG.DataFrame {
     return solveIVP(problem, options);
   }
 
@@ -223,8 +229,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.model({
-    name: 'Ball flight',
-    description: 'Ball flight simulation',
+    name: 'Ball Flight Simulation',
+    description: 'Simulate the trajectory of a thrown ball, accounting for air drag.',
     editor: 'Compute2:RichFunctionViewEditor',
     runOnOpen: 'true',
     runOnInput: 'true',
@@ -281,9 +287,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'Solve ODE',
     description: 'Solve initial value problem for ordinary differential equations',
   })
-  static async solveODE(problem: string): Promise<DG.DataFrame> {
+  static async solveODE(@grok.decorators.param({options: {description: 'Initial value problem in Diff Studio .ivp format'}}) problem: string): Promise<DG.DataFrame> {
     const ivp = getIVP(problem);
     const code = getScriptLines(ivp).join('\n');
 

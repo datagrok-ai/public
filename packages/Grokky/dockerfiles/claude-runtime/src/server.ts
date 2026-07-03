@@ -1,5 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {spawn} from 'node:child_process';
+import type {ChildProcess} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
@@ -14,6 +16,7 @@ import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
+import {Verifier} from './verify';
 
 const PORT = 5355;
 const MAX_SESSIONS = 200;
@@ -21,9 +24,33 @@ const MAX_SESSIONS = 200;
 type FenceMode = 'prose' | 'other';
 interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
 const fenceStates = new Map<string, FenceState>();
-// Most-recent tool_use name per session, used to tag the matching tool_result (see F2 follow-up).
-const lastToolNames = new Map<string, string>();
 const FENCE_RE = /^```([\w-]*)\s*$/;
+
+const ENTITY_TYPE_MAP: Record<string, string> = {
+  project: 'project', dataquery: 'query', dataconnection: 'connection',
+  script: 'script', space: 'space', usergroup: 'group', group: 'group',
+  user: 'user', fileinfo: 'file', file: 'file',
+};
+
+const entityRefSchema = z.object({
+  '#type': z.string().optional(),
+  type: z.string().optional(),
+  name: z.string(),
+  id: z.string().optional(),
+  connector: z.string().optional(),
+  path: z.string().optional(),
+  isDirectory: z.boolean().optional(),
+}).transform((e) => {
+  const raw = (e['#type'] ?? e.type ?? '') as string;
+  return {
+    type: ENTITY_TYPE_MAP[raw.toLowerCase()] ?? raw.toLowerCase(),
+    name: e.name,
+    ...(e.id && {id: e.id}),
+    ...(e.connector && {connector: e.connector}),
+    ...(e.path && {path: e.path}),
+    ...(e.isDirectory !== undefined && {isDirectory: e.isDirectory}),
+  };
+});
 
 const BASH_EXEC_PROMPT = `\
 Execute the given shell command using the Bash tool. \
@@ -115,22 +142,28 @@ function buildSystemPrompt(mode?: string): string {
   return DATAGROK_SYSTEM_PROMPT;
 }
 
-const sessions = new Map<string, string>();
+// forkNext is set on abort: the next turn forks off lastCleanUuid, dropping the aborted turn.
+interface SessionRecord {sdkId: string; lastCleanUuid?: string; forkNext?: boolean}
 
-function storeSession(clientId: string, sdkId: string): void {
+const sessions = new Map<string, SessionRecord>();
+
+// Last assistant uuid of the in-flight turn; committed to the record on a clean result.
+const pendingUuid = new Map<string, string>();
+
+function storeSession(clientId: string, sdkId: string, lastCleanUuid?: string): void {
   sessions.delete(clientId);
-  sessions.set(clientId, sdkId);
+  sessions.set(clientId, {sdkId, lastCleanUuid});
   if (sessions.size > MAX_SESSIONS)
     sessions.delete(sessions.keys().next().value!);
 }
 
-function getSession(clientId: string): string | undefined {
-  const sid = sessions.get(clientId);
-  if (sid !== undefined) {
+function getSession(clientId: string): SessionRecord | undefined {
+  const rec = sessions.get(clientId);
+  if (rec !== undefined) {
     sessions.delete(clientId);
-    sessions.set(clientId, sid);
+    sessions.set(clientId, rec);
   }
-  return sid;
+  return rec;
 }
 
 async function* promptStream(message: string) {
@@ -162,6 +195,10 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
+const EXEC_TIMEOUT_MS = 300_000;
+const VERIFY_TIMEOUT_MS = 60_000;
+const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
 // Created per handleMessage so the ws/sid/active closure stays current.
@@ -182,9 +219,30 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
         )},
         async ({code}) => {
           try {
-            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}));
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_exec', {code}, EXEC_TIMEOUT_MS));
           } catch (e: any) {
             return asResult({success: false, error: e.message});
+          }
+        },
+      ),
+      sdkTool(
+        'datagrok_verify',
+        'Confirm a previous datagrok_exec / MCP action actually took effect, by re-reading LIVE state. ' +
+        'Runs in a fresh scope (globals: grok, ui, DG, view, t) — it CANNOT see variables from your action ' +
+        'code, so it must re-derive from t/view/grok. Returns {passed, observed?, error?}. After any action ' +
+        'you MUST call this before reporting success; passed:false means it did NOT work — fix it, do not report done.',
+        {
+          assertion: z.string().describe(
+            'Async JS (await works) that MUST `return` the observed result; truthy = verified. Re-read ' +
+            'whatever you changed from t/view/grok. Never return a bare literal.',
+          ),
+          description: z.string().describe('Short human-readable statement of what is being verified.'),
+        },
+        async ({assertion, description}) => {
+          try {
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_verify', {assertion, description}, VERIFY_TIMEOUT_MS));
+          } catch (e: any) {
+            return asResult({passed: false, error: e.message});
           }
         },
       ),
@@ -193,13 +251,17 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
         'Display Datagrok entities (files, scripts, queries, connections, projects, spaces, groups, users) ' +
         'as interactive cards in the chat. ALWAYS call this tool when you have entity data from an MCP result — ' +
         'never list entities as plain text, markdown links, or a fenced block.',
-        {entities: z.array(z.any()).describe(
-          'Array of entity refs. Each entry must have: type (file|script|query|connection|project|space|group|user), name. ' +
-          'Files also need connector and path. Other types need id. Pass values from the MCP result exactly — never invent.',
+        {entities: z.array(entityRefSchema).describe(
+          'Array of entity refs. Each entry: ' +
+          'type (file|script|query|connection|project|space|group|user) or the raw #type string from the MCP result — the tool normalizes it; ' +
+          'name (for users, use friendlyName); ' +
+          'id (required for all types except file); ' +
+          'connector + path (required for files; connector is the connection name, e.g. "System:DemoFiles"); ' +
+          'isDirectory (optional, files only). Pass all values from the MCP result exactly — never invent.',
         )},
         async ({entities}) => {
           try {
-            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_show_entities', {entities}));
+            return asResult(await awaitBrowserInput(ws, sid, active, 'datagrok_show_entities', {entities}, SHOW_ENTITIES_TIMEOUT_MS));
           } catch (e: any) {
             return asResult({success: false, error: e.message});
           }
@@ -234,6 +296,8 @@ function buildOptions(
   systemPromptMode?: string, userDir?: string,
   userId?: string,
   model?: ClaudeModel,
+  forkSession?: boolean, resumeAt?: string,
+  verifier?: Verifier,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
   const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
@@ -260,8 +324,13 @@ function buildOptions(
     cwd: userDir || WORKSPACE,
     hooks: {
       PreToolUse: [{hooks: [blockWorkspaceAccess]}],
+      ...(verifier ? {
+        PostToolUse: [{hooks: [verifier.postToolUse]}],
+        Stop: [{hooks: [verifier.stop]}],
+      } : {}),
     },
-    ...(resume ? {resume} : {}),
+    // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
+    ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
   };
 }
 
@@ -269,7 +338,7 @@ const toolFormatters: {[K in ToolName]: (i: ToolInputs[K]) => string} = {
   Read: (i) => `Read ${i.file_path ?? ''}`,
   Write: (i) => `Write ${i.file_path ?? ''}`,
   Edit: (i) => `Edit ${i.file_path ?? ''}`,
-  Bash: (i) => `Bash: ${(i.command ?? '').slice(0, 120)}`,
+  Bash: (_i) => 'Bash',
   Glob: (i) => `Glob ${i.pattern ?? ''} ${i.path ? 'in ' + i.path : ''}`.trim(),
   Grep: (i) => `Grep '${i.pattern ?? ''}' ${i.path ? 'in ' + i.path : ''}`.trim(),
   WebSearch: (i) => `WebSearch: ${i.query ?? ''}`,
@@ -288,7 +357,8 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   search_code: (i) => `Search code: ${i.query ?? ''}`,
   get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
   clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
-  datagrok_exec: (i) => `Execute in browser${i.code ? ': ' + (i.code).slice(0, 60).replace(/\n/g, ' ') : ''}`,
+  datagrok_exec: (_i) => 'Execute in browser',
+  datagrok_verify: (i) => `Verify: ${i.description ?? 'action outcome'}`,
   datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
@@ -302,17 +372,6 @@ function toolSummary(name: string, input: Record<string, unknown>): string {
     return mcp.replace(/_/g, ' ');
   }
   return name;
-}
-
-function extractResult(evt: any): string | null {
-  const r = evt.tool_use_result ?? evt.tool_result;
-  if (!r)
-    return null;
-  if (typeof r === 'string')
-    return r || null;
-  if (Array.isArray(r))
-    return r.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n') || null;
-  return null;
 }
 
 interface WsSender {
@@ -379,27 +438,17 @@ function flushFenceState(ws: WsSender, sid: string): void {
   fenceStates.delete(sid);
 }
 
-function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
+function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: Verifier): void {
   const e = event as any;
   switch (event.type) {
-  case 'system':
-    if (event.subtype === 'init' && e.session_id)
-      storeSession(sid, e.session_id);
-    break;
   case 'assistant':
+    if (e.uuid)
+      pendingUuid.set(sid, e.uuid);
     for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use') {
-        lastToolNames.set(sid, block.name);
+      if (block.type === 'tool_use')
         emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
-      }
     }
     break;
-  case 'user': {
-    const content = extractResult(e);
-    if (content)
-      emit(ws, {type: 'tool_result', sessionId: sid, content, toolName: lastToolNames.get(sid)});
-    break;
-  }
   case 'stream_event':
     if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
       emitFiltered(ws, sid, e.event.delta.text);
@@ -412,9 +461,17 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'result':
     flushFenceState(ws, sid);
-    if (e.subtype === 'success')
-      emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
-    else
+    if (e.subtype === 'success') {
+      // Commit the resume point only on clean completion — aborted turns never reach here.
+      if (e.session_id)
+        storeSession(sid, e.session_id, pendingUuid.get(sid));
+      pendingUuid.delete(sid);
+      emit(ws, {
+        type: 'final', sessionId: sid, content: e.result || '',
+        ...(e.structured_output ? {structured_output: e.structured_output} : {}),
+        ...(verifier?.exhausted ? {unverified: true} : {}),
+      });
+    } else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
     break;
   }
@@ -429,12 +486,24 @@ interface ActiveQuery {
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
 // input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
-function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any): Promise<any> {
+function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any, timeoutMs?: number): Promise<any> {
+  if (active.abortController.signal.aborted)
+    return Promise.reject(new Error('aborted'));
   const requestId = randomUUID();
   emit(ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
   return new Promise<any>((resolve, reject) => {
-    active.pendingInputs.set(requestId, resolve);
+    const timer = timeoutMs ? setTimeout(() => {
+      if (active.pendingInputs.delete(requestId))
+        reject(new Error(`no browser response for ${toolName} after ${timeoutMs / 1000}s`));
+    }, timeoutMs) : undefined;
+    active.pendingInputs.set(requestId, (value) => {
+      if (timer)
+        clearTimeout(timer);
+      resolve(value);
+    });
     active.abortController.signal.addEventListener('abort', () => {
+      if (timer)
+        clearTimeout(timer);
       if (active.pendingInputs.delete(requestId))
         reject(new Error('aborted'));
     }, {once: true});
@@ -448,7 +517,9 @@ function registerActiveQuery(sid: string, q: ActiveQuery): void {
   markQueryStart();
 }
 
-function unregisterActiveQuery(sid: string): void {
+function unregisterActiveQuery(sid: string, q?: ActiveQuery): void {
+  if (q && activeQueries.get(sid) !== q)
+    return;
   activeQueries.delete(sid);
   markQueryEnd();
 }
@@ -471,6 +542,8 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   let message = data.message ?? '';
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
+  if (activeQueries.has(sid))
+    return emit(ws, {type: 'busy', sessionId: sid});
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and
   // a stale read for one turn is fine.
@@ -498,11 +571,13 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   ]);
 
   const browserExecServer = createBrowserExecServer(ws, sid, active);
+  const verifier = !data.systemPromptMode || data.systemPromptMode === 'datagrok' ? new Verifier() : undefined;
 
   let gotResult = false;
   try {
-    const existingSession = getSession(sid);
-    const opts = buildOptions(browserExecServer, existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model);
+    const rec = getSession(sid);
+    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model,
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
@@ -518,30 +593,85 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
         break;
       if (event.type === 'result')
         gotResult = true;
-      forwardEvent(ws, sid, event);
+      forwardEvent(ws, sid, event, verifier);
     }
   } catch (e: any) {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
-    fenceStates.delete(sid);
-    lastToolNames.delete(sid);
-    unregisterActiveQuery(sid);
+    if (verifier?.hadActions)
+      console.log(`verify[${sid}]: ${verifier.statsLine()}`);
+    if (activeQueries.get(sid) === active)
+      fenceStates.delete(sid);
+    unregisterActiveQuery(sid, active);
   }
+}
+
+let authProc: ChildProcess | null = null;
+let authWs: WsSender | null = null;
+
+function handleAuthStart(ws: WsSender): void {
+  if (authProc) {
+    emit(ws, {type: 'auth_error', message: 'Authentication already in progress'});
+    return;
+  }
+  authWs = ws;
+  authProc = spawn('claude', ['auth', 'login'], {
+    env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  let urlSent = false;
+  const onData = (data: Buffer) => {
+    if (urlSent)
+      return;
+    const text = data.toString();
+    const m = text.match(/https:\/\/claude\.com\/cai\/oauth[^\s]+/);
+    if (m) {
+      urlSent = true;
+      emit(ws, {type: 'auth_url', url: m[0]});
+    }
+  };
+  authProc.stdout?.on('data', onData);
+  authProc.stderr?.on('data', onData);
+
+  authProc.on('exit', (code) => {
+    authProc = authWs = null;
+    if (code === 0)
+      emit(ws, {type: 'auth_done'});
+    else
+      emit(ws, {type: 'auth_error', message: `claude auth login exited with code ${code}`});
+  });
+
+  authProc.on('error', (err: Error) => {
+    authProc = authWs = null;
+    emit(ws, {type: 'auth_error', message: err.message});
+  });
+}
+
+function handleAuthCode(ws: WsSender, code: string): void {
+  if (!authProc?.stdin) {
+    emit(ws, {type: 'auth_error', message: 'No authentication in progress'});
+    return;
+  }
+  authProc.stdin.write(code + '\n');
 }
 
 function handleAbort(ws: WsSender, data: AbortMessage): void {
   const active = activeQueries.get(data.sessionId);
   if (!active)
     return;
-  active.abortController.abort();
+  // Close before abort so in-flight SDK control responses don't write to an aborted transport.
   try {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
-  // Drop the SDK session: an aborted session can't be resumed. Leaving it here makes the
-  // next message resume a dead session, so the following turn would fail to continue.
-  sessions.delete(data.sessionId);
+  active.abortController.abort();
+  unregisterActiveQuery(data.sessionId, active);
+  const rec = sessions.get(data.sessionId);
+  if (rec)
+    rec.forkNext = true;
+  pendingUuid.delete(data.sessionId);
   flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
@@ -572,6 +702,16 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
+        return;
+      }
+
+      if (data.type === 'auth_start') {
+        handleAuthStart(sender);
+        return;
+      }
+
+      if (data.type === 'auth_code') {
+        handleAuthCode(sender, data.code ?? '');
         return;
       }
 
@@ -687,6 +827,10 @@ else if (hasSubscription)
   console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
 else
   console.warn('Claude auth: no provider configured (no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
+
+// Survive stray SDK rejections (e.g. abort races) instead of letting Node kill the container.
+process.on('unhandledRejection', (reason) => console.error('unhandledRejection (survived):', reason));
+process.on('uncaughtException', (err) => console.error('uncaughtException (survived):', err));
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);

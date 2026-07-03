@@ -9,11 +9,22 @@ import '../../css/forms.css';
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
 const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
+const SAME_AS_GRID = 'Same as grid';
+
+const numberFormats: {[label: string]: string} = {
+  '3 significant digits': '3 significant digits',
+  'Scientific': 'scientific',
+  '2 digits after comma': '0.00',
+  '4 significant digits': '4 significant digits',
+  '3 digits after comma': '0.000',
+};
+
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
 
   rendererSize: 'small' | 'normal' | 'large';
   font: string;
+  numberFormat: string;
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -54,8 +65,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
-    let width = renderer.defaultWidth;
-    let height = renderer.defaultHeight;
+    const width = renderer.defaultWidth;
+    const height = renderer.defaultHeight;
 
     if (!width || !height)
       return this.getSize();
@@ -93,6 +104,7 @@ export class FormsViewer extends DG.JsViewer {
     this.sortAscending = false;
     this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
     this.font = this.string('font', 'normal normal 13px "Roboto"', {editor: 'font', description: 'Font for labels and values'});
+    this.numberFormat = this.string('numberFormat', SAME_AS_GRID, {choices: [SAME_AS_GRID, ...Object.keys(numberFormats)], description: 'Number format applied to numeric fields'});
 
     //fields
     this.indexes = [];
@@ -169,11 +181,12 @@ export class FormsViewer extends DG.JsViewer {
 
     setTimeout(() => {
       const grid = this.getGrid();
-      if (grid)
+      if (grid) {
         sub(grid.onRowsSorted, () => {
           setTimeout(() => this.render());
         });
-    })
+      }
+    });
 
     sub(this.dataFrame.onColumnsRemoved, () => {
       this.updateFieldsColumnNames();
@@ -256,8 +269,7 @@ export class FormsViewer extends DG.JsViewer {
           if (!this.sortByColumnName) {
             this.sortByColumnName = name;
             this.sortAscending = false;
-          }
-          else if (this.sortAscending)
+          } else if (this.sortAscending)
             this.sortByColumnName = undefined;
           else
             this.sortAscending = true;
@@ -322,7 +334,7 @@ export class FormsViewer extends DG.JsViewer {
             const ctx = canvas.getContext('2d')!;
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
+
             canvas.setAttribute('column', name);
 
             gridCell.render({context: ctx, bounds: new DG.Rect(0, 0, rendererSize.x, rendererSize.y)});
@@ -333,7 +345,6 @@ export class FormsViewer extends DG.JsViewer {
               this.inputClicked.next(name);
             };
             ui.tooltip.bind(resDiv, name);
-
           } else {
             const input = DG.InputBase.forColumn(col);
             if (input) {
@@ -341,6 +352,9 @@ export class FormsViewer extends DG.JsViewer {
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
               input.input.style.font = this.font;
+              const fmt = numberFormats[this.numberFormat];
+              if (fmt && col.type === DG.TYPE.FLOAT)
+                input.format = fmt;
               input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 
@@ -356,8 +370,7 @@ export class FormsViewer extends DG.JsViewer {
                       input.input.style.color = `${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`;
                       input.input.style.backgroundColor = DG.Color.toHtml(color);
                     }
-                  }
-                  else {
+                  } else {
                     if (gc?.contentCellStyle?.textColor)
                       input.input.style.color = DG.Color.toHtml(gc!.contentCellStyle!.textColor);
 
@@ -365,7 +378,7 @@ export class FormsViewer extends DG.JsViewer {
                       input.input.style.backgroundColor = DG.Color.toHtml(gc!.contentCellStyle!.backColor);
                   }
 
-                  if (gc?.contentCellStyle?.horzAlign == "center" || gc?.contentCellStyle?.horzAlign == "right")
+                  if (gc?.contentCellStyle?.horzAlign == 'center' || gc?.contentCellStyle?.horzAlign == 'right')
                     input.input.style.textAlign = gc!.contentCellStyle.horzAlign!;
 
                   if (gc!.contentCellStyle?.font)
@@ -383,7 +396,7 @@ export class FormsViewer extends DG.JsViewer {
           }
         } catch (e) {
           console.error(e);
-         }
+        }
         return resDiv;
       }
       ), 'd4-multi-form-form');
@@ -397,17 +410,14 @@ export class FormsViewer extends DG.JsViewer {
       if (event.ctrlKey && event.shiftKey) {
         for (let i = 0; i <= row; i++)
           this.dataFrame.selection.set(i, false);
-      }
-      else {
+      } else {
         if (event.ctrlKey) {
           const currentSelection = this.dataFrame.selection.get(row);
           this.dataFrame.selection.set(row, !currentSelection);
-        }
-        else if (event.shiftKey) {
+        } else if (event.shiftKey) {
           for (let i = 0; i <= this.dataFrame.rowCount; i++)
             this.dataFrame.selection.set(i, i <= row);
-        }
-        else {
+        } else {
           if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
             this.dataFrame.currentRowIdx = row;
         }

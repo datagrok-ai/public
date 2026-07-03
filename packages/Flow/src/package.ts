@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export * from './package.g';
 
 import {FuncFlowView} from './funcflow-view';
+import { getFilesBrowser } from './utils/files-browser-tree';
 
 export const _package = new DG.Package();
 
@@ -65,7 +66,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'openCreationScriptFlowDialog',
-    meta: {role: 'creationScriptEditor'},
+    // includeInFlow: Flow-internal dialog opener — hide it from Flow's own toolbox.
+    meta: {role: 'creationScriptEditor', includeInFlow: 'false'},
   })
   static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
     // Load the tables being edited so the view can split the flow back into a
@@ -93,5 +95,10 @@ export class PackageFunctions {
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
+  }
+
+  @grok.decorators.func()
+  static testDialog() {
+    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
   }
 }

@@ -78,6 +78,7 @@ function setToggleState(v: boolean, toggle: HTMLDivElement) {
 }
 
 function setButtonsToggleState() {
+  setToggleState(window.showAI, aiToggle);
   window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
   setToggleState(window.showToolbox, toolboxToogle);
   setToggleState(window.showProperties, propertiesToggle);

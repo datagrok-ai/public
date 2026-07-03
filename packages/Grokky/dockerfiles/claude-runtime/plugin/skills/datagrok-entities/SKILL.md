@@ -19,10 +19,10 @@ datagrok_show_entities(entities: EntityRef[])
 
 | type         | required                    | optional                      |
 |--------------|-----------------------------|-------------------------------|
-| `file`       | `connector`, `path`, `name` | `isDirectory`, `size`         |
-| `script`     | `id`, `name`                | `language`                    |
-| `query`      | `id`, `name`                | `connectionName`              |
-| `connection` | `id`, `name`                | `dataSource`                  |
+| `file`       | `connector`, `path`, `name` | `isDirectory`                 |
+| `script`     | `id`, `name`                | —                             |
+| `query`      | `id`, `name`                | —                             |
+| `connection` | `id`, `name`                | —                             |
 | `project`    | `id`, `name`                | —                             |
 | `space`      | `id`, `name`                | —                             |
 | `group`      | `id`, `name`                | —                             |
@@ -30,9 +30,9 @@ datagrok_show_entities(entities: EntityRef[])
 
 ## Notes
 
+- **`#type` passthrough**: MCP results return entities with a `#type` field in PascalCase (e.g. `"FileInfo"`, `"DataQuery"`, `"UserGroup"`). Pass it as-is in the `#type` field — the tool normalizes it to the correct `type` value automatically. You may also pass the normalized `type` string directly if you already know it.
 - Pass `id` and all other identifying values **exactly** from the MCP response — never invent.
-- For files, `connector` is the connection name (e.g. `System:DemoFiles`) and `path` is
-  relative to the connector root.
+- For files, `connector` is the connection name string (e.g. `"System:DemoFiles"`) and `path` is the file path relative to the connector root.
+- For users, use `friendlyName` as the `name` field — users have no `name` property in the MCP response, only `friendlyName` and `login`.
 - A single call may mix entity types — the renderer handles them.
-- After calling the tool, you may add a short prose summary if useful, but the tool call
-  must come first.
+- After calling the tool, you may add a short prose summary if useful, but the tool call must come first.

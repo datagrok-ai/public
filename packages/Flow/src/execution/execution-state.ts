@@ -12,7 +12,7 @@ export enum NodeExecStatus {
 }
 
 export interface ValueSummary {
-  type: 'dataframe' | 'column' | 'primitive' | 'object' | 'null' | 'graphics';
+  type: 'dataframe' | 'column' | 'primitive' | 'object' | 'null' | 'graphics' | 'widget' | 'viewer';
   [key: string]: any;
 }
 

@@ -85,15 +85,16 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
-    name: 'getAutodockResults',
+    name: 'AutoDock Results',
+    description: 'Dock small molecules to a macromolecule target with AutoDock and return binding poses and energies.',
     meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async getAutodockResults(
     table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
-    target: string,
-    poses: number
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Small molecules to dock'}}) ligands: DG.Column,
+    @grok.decorators.param({options: {choices: 'Docking:getConfigFiles', description: 'Target folder with the macromolecule and docking config'}}) target: string,
+    @grok.decorators.param({options: {description: 'Number of output conformations (poses) per molecule'}}) poses: number
   ): Promise<DG.DataFrame> {
     const data = await prepareAutoDockData(target, table, ligands.name, poses);
     if (!data)

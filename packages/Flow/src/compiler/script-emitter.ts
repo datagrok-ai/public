@@ -6,7 +6,7 @@
  *     events for live execution visualization. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode} from '../rete/scheme';
+import {FlowNode, isExecKey} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 
 export interface ScriptSettings {
@@ -24,6 +24,14 @@ export interface EmitOptions {
   enableBreakpoints?: boolean;
   /** Halt execution on first error (default true). */
   haltOnError?: boolean;
+  /** When set, only compile/emit steps for these node ids (the rest are
+   *  dropped). Used to run a slice up to a target node — the set must be
+   *  closed under "ancestors" so no surviving step references a dropped one. */
+  onlyNodeIds?: Set<string>;
+  /** With `onlyNodeIds`, resolve connections whose source is *outside* the set
+   *  to `_ffLive(...)` registry reads instead of in-script variables — so a
+   *  single node can be re-run using values captured from a prior run. */
+  liveExternalInputs?: boolean;
 }
 
 const PASSTHROUGH_SUFFIX = '__pt';
@@ -31,7 +39,9 @@ const PASSTHROUGH_SUFFIX = '__pt';
 export function emitScript(
   flow: FlowEditor, settings: ScriptSettings, options?: EmitOptions,
 ): string {
-  const steps = compileGraph(flow);
+  const liveBoundary = options?.liveExternalInputs && options.onlyNodeIds ? options.onlyNodeIds : undefined;
+  let steps = compileGraph(flow, liveBoundary);
+  if (options?.onlyNodeIds) steps = steps.filter((s) => options.onlyNodeIds!.has(s.nodeId));
   const lines: string[] = [];
   const inst = options?.instrumented === true;
 
@@ -67,8 +77,19 @@ export function emitScript(
   if (inst) lines.push(...emitPreamble(options!.runId!));
 
   // -------- body --------
+  // Stash a step's live output values into the registry (instrumented only), so
+  // a later single-node re-run can read them via `_ffLive`.
+  const stash = (step: CompiledStep): void => {
+    if (!inst) return;
+    const line = stashLine(step, flow.getNodeById(step.nodeId));
+    if (line) lines.push(line);
+  };
+
   for (const step of steps) {
-    if (step.nodeType === 'input') continue;
+    if (step.nodeType === 'input') {
+      stash(step); // param values are in body scope (declared by //input headers)
+      continue;
+    }
 
     if (step.nodeType === 'output') {
       const inputKey = Array.from(step.inputs.keys())[0] ?? 'value';
@@ -90,12 +111,19 @@ export function emitScript(
         if (inst && options?.enableBreakpoints) lines.push(...emitBreakpointCode(step));
         continue;
       }
+      // Viewer nodes: `await table.plot.fromType(type, {}); v.setOptions(look)`.
+      if (step.properties['viewerType']) {
+        lines.push(...emitViewerStep(step, inst, options));
+        stash(step);
+        continue;
+      }
       const code = emitUtilityStep(step);
       if (!code) continue;
       if (inst)
         lines.push(...wrapInstrumented(code, step, options!, {outputExpr: step.variableName}));
       else
         lines.push(code);
+      stash(step);
       continue;
     }
 
@@ -113,11 +141,33 @@ export function emitScript(
 
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
+    stash(step);
   }
 
   if (inst) lines.push(`__ff_emit('run-complete', '', {success: true});`);
 
   return lines.join('\n');
+}
+
+/** `__ff_stash('<nodeId>', {<outputKey>: <valueExpr>, ...})` for a step's live
+ *  outputs — real outputs (→ their variable) and dataframe passthroughs (→ the
+ *  threaded, post-execution input value). Keyed by output socket key so a re-run
+ *  can look up exactly the output a downstream connection reads. Null when the
+ *  step produces nothing worth stashing (e.g. an Output node). */
+function stashLine(step: CompiledStep, node: FlowNode | undefined): string | null {
+  const entries: string[] = [];
+  for (const [key, varName] of step.outputs)
+    entries.push(`${JSON.stringify(key)}: ${varName}`);
+  if (node) {
+    for (const key of Object.keys(node.outputs)) {
+      if (isExecKey(key) || !key.endsWith(PASSTHROUGH_SUFFIX)) continue;
+      const inName = key.slice(0, -PASSTHROUGH_SUFFIX.length);
+      const inExpr = step.inputs.get(inName);
+      if (inExpr && inExpr !== 'undefined') entries.push(`${JSON.stringify(key)}: ${inExpr}`);
+    }
+  }
+  if (entries.length === 0) return null;
+  return `__ff_stash(${JSON.stringify(step.nodeId)}, {${entries.join(', ')}});`;
 }
 
 function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
@@ -281,6 +331,75 @@ function emitUtilityStep(step: CompiledStep): string | null {
   }
 }
 
+// ---------- viewer nodes ----------
+
+/** Non-empty look options, ready to pass to `setOptions` (drops blank values
+ *  the user typed-then-cleared, and any leftover `#type` tag). */
+function cleanViewerLook(look: unknown): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (look && typeof look === 'object') {
+    for (const [k, v] of Object.entries(look as Record<string, unknown>)) {
+      if (k === '#type') continue;
+      if (v === '' || v === null || v === undefined) continue;
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/** The `setOptions(...)` object literal for a viewer step: each connected
+ *  `column` option contributes `"<lookKey>": (<colExpr>).name` (a connected
+ *  column wins over the panel value); the rest come from the stored look. */
+function buildViewerOptions(step: CompiledStep): string {
+  const specs = (step.properties['viewerOptionSpecs'] as Array<{key: string; kind: string}> | undefined) ?? [];
+  const entries: string[] = [];
+  const connected = new Set<string>();
+  for (const s of specs) {
+    if (s.kind !== 'column') continue;
+    const expr = step.inputs.get(s.key);
+    if (expr && expr !== 'undefined') {
+      entries.push(`${JSON.stringify(s.key)}: (${expr}).name`);
+      connected.add(s.key);
+    }
+  }
+  for (const [k, val] of Object.entries(cleanViewerLook(step.properties['viewerLook']))) {
+    if (connected.has(k)) continue; // a wired column overrides the typed value
+    entries.push(`${JSON.stringify(k)}: ${JSON.stringify(val)}`);
+  }
+  return entries.length ? `{${entries.join(', ')}}` : '';
+}
+
+/** A viewer node → `let v = await <table>.plot.fromType('<Type>', {});` plus a
+ *  `v.setOptions(<options>)` when options (typed or wired) are set. */
+function emitViewerStep(step: CompiledStep, inst: boolean, options?: EmitOptions): string[] {
+  const tableExpr = step.inputs.get('table');
+  if (!tableExpr || tableExpr === 'undefined') return []; // no table wired — nothing to plot
+  const type = String(step.properties['viewerType']);
+  const optsLiteral = buildViewerOptions(step);
+  const v = step.variableName;
+  const create = `await ${tableExpr}.plot.fromType(${JSON.stringify(type)}, {})`;
+  const setOpts = optsLiteral ? `${v}.setOptions(${optsLiteral});` : '';
+
+  if (!inst) {
+    const lines = [`let ${v} = ${create};`];
+    if (setOpts) lines.push(setOpts);
+    return lines;
+  }
+
+  const lines = [`__ff_emit('node-start', '${step.nodeId}');`, `let ${v};`, 'try {'];
+  lines.push(`  ${v} = ${create};`);
+  if (setOpts) lines.push(`  ${setOpts}`);
+  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs:{${v}: __ff_summarize(${v}, 'viewer')}});`);
+  lines.push('} catch (__ff_err) {');
+  lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
+  if (options?.haltOnError !== false) {
+    lines.push(`  __ff_emit('run-complete', '', {success: false});`);
+    lines.push('  throw __ff_err;');
+  }
+  lines.push('}');
+  return lines;
+}
+
 // ---------- instrumentation helpers ----------
 
 function emitPreamble(runId: string): string[] {
@@ -292,16 +411,38 @@ function emitPreamble(runId: string): string[] {
     '  if (v.rowCount !== undefined && v.columns !== undefined)',
     '    return {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length,',
     '      colNames:v.columns.names(), clone:v.clone()};',
-    '  if (v.length !== undefined && v.name !== undefined && v.toList)',
-    '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5)};',
+    '  if (v.length !== undefined && v.name !== undefined && v.toList) {',
+    // Capture a one-column DataFrame (from a clone, so a later in-place mutation
+    // of the source table can't change it) — the preview renders this as a grid
+    // instead of a tiny text sample.
+    '    var __ff_cdf = null;',
+    '    try { __ff_cdf = DG.DataFrame.fromColumns([v.clone()]); } catch (e) {}',
+    '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5), clone:__ff_cdf};',
+    '  }',
     '  if (declaredType === \'graphics\' && typeof v === \'string\')',
     '    return {type:\'graphics\', value:v};',
+    // A Viewer or Widget has a live DOM `.root`. The instrumented run is in the
+    // same browser tab, so the event carries the object by reference (like the
+    // DataFrame clone above) — keep it so the panel can mount `.root` directly.
+    '  if (v.root != null && typeof Element !== \'undefined\' && v.root instanceof Element)',
+    '    return {type: declaredType === \'viewer\' ? \'viewer\' : \'widget\', value:v};',
     '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
     '  return {type:\'primitive\', value:v};',
     '}',
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
+    // Live-value registry (on the tab global): each node stashes its outputs so a
+    // later single-node re-run can read them without re-running upstream.
+    '  function __ff_stash(nodeId, map) {',
+    '    (globalThis.__ffFlowLive = globalThis.__ffFlowLive || {})[nodeId] = map;',
+    '  }',
+    '  function _ffLive(nodeId, key) {',
+    '    var vals = globalThis.__ffFlowLive && globalThis.__ffFlowLive[nodeId];',
+    '    if (!vals || !(key in vals))',
+    '      throw new Error(\'Flow: no captured value for \' + nodeId + \':\' + key + \' — run the flow first.\');',
+    '    return vals[key];',
+    '  }',
     `__ff_emit('run-start', '');`,
     '',
   ];
@@ -358,8 +499,16 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
     outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
   }
 
-  // In-place mutating function detection: dataframe input(s) but no real outputs.
-  if (node && step.outputs.size === 0) {
+  // Capture the (possibly in-place-modified) table threaded through a dataframe
+  // input, keyed `<input> (modified)`. Covers two cases the real-output summaries
+  // miss: a pure in-place mutator (no outputs at all), AND a node whose real
+  // output isn't a table but still threads one through its passthrough — e.g.
+  // AddNewColumn returns a *column*, yet a viewer wired to its "table →"
+  // passthrough needs that post-execution table (for inspect + the column
+  // picker). Skipped when a real dataframe output already carries it.
+  const hasDataframeOutput = Array.from(step.outputs.keys()).some((key) =>
+    (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType === 'dataframe');
+  if (node && !hasDataframeOutput) {
     for (const [inKey, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
       if (input?.socket.dgType !== 'dataframe') continue;
       const inputExpr = step.inputs.get(inKey);

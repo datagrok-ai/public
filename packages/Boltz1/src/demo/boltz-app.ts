@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import * as yaml from 'js-yaml';
+import {filter, take} from 'rxjs/operators';
 
 import {BoltzService} from '../utils/boltz-service';
 import {_package} from '../package';
@@ -271,6 +272,25 @@ export class Boltz1AppView {
     view.name = 'Boltz-1';
     return view;
   }
+}
+
+export async function openBoltzDemo(): Promise<void> {
+  const p = await grok.functions.eval('Boltz1:BoltzDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+
+  grok.events.onAccordionConstructed.pipe(
+    filter((acc) => acc.getPane('Boltz-1') != null),
+    take(1),
+  ).subscribe((acc) => setTimeout(() => acc.getPane('Boltz-1').expanded = true));
+
+  setTimeout(() => {
+    const df = grok.shell.tv.dataFrame;
+    const complexCell = df.cell(0, 'Complex');
+    df.currentCell = complexCell;
+    grok.shell.o = DG.SemanticValue.fromTableCell(complexCell);
+    grok.shell.windows.showContextPanel = true;
+  }, 5);
 }
 
 export enum FUNC_PROPS_FIELD {

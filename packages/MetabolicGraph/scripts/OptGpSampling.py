@@ -1,10 +1,11 @@
 #name: OptGpSampling
-#description: Samples the metabolic map and returns binned values of samples
+#friendlyName: OptGP Flux Sampling
+#description: Sample the flux space of a COBRA metabolic model with the OptGP sampler and return binned flux distributions.
 #language: python
 #environment: channels: [Conda-forge], dependencies: [python=3.12, {pip: [cobra]}]
-#input: string cobraModel
-#input: int nSamples = 1000 {nullable: true}
-#input: int thinning = 1 {nullable: true}
+#input: string cobraModel [COBRA metabolic model as a JSON string]
+#input: int nSamples = 1000 {nullable: true} [Number of flux samples to draw]
+#input: int thinning = 1 {nullable: true} [Thinning factor between retained samples]
 #output: dataframe res
 from cobra.core import Metabolite, Model, Reaction
 

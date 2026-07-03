@@ -279,11 +279,11 @@ export class PackageFunctions {
     'type': 'list'
     }
     ],
-    'name': 'importNwk',
-    'description': 'Opens Newick file'
+    'name': 'Import Newick',
+    'description': 'Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.'
     })
   static async importNewick(
-    @grok.decorators.param({'name':'fileContent', 'type':'string'}) fileContent: string): Promise<DG.DataFrame[]> {
+    @grok.decorators.param({'name':'fileContent', 'type':'string', 'options': {'description': 'Newick file contents'}}) fileContent: string): Promise<DG.DataFrame[]> {
     const th: ITreeHelper = new TreeHelper();
     const df: DG.DataFrame = th.newickToDf(fileContent, '');
 

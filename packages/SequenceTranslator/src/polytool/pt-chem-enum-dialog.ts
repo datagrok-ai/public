@@ -42,6 +42,9 @@ const DIALOG_TITLE = 'Markush Enumerator';
 const DEFAULT_TABLE_NAME = 'Markush enumeration';
 const DEFAULT_REMOVE_DUPLICATES = true;
 
+const OUTPUT_NEW_TABLE = 'New table';
+const OUTPUT_APPEND_TO = 'Append to…';
+
 /** Single source of truth for the result-table name: a trimmed user value, or the default when blank/missing. */
 function resolveTableName(raw: string | undefined): string {
   return raw?.trim() || DEFAULT_TABLE_NAME;
@@ -60,12 +63,21 @@ const THUMB_H = 72;
 const TOOLTIP_W = 320;
 const TOOLTIP_H = 260;
 
+// ─── R-group color system ───────────────────────────────────────────────────
+
+const R_GROUP_COLORS = ['#1a7fd4', '#e09020', '#0e9f6e', '#7c3aed', '#be185d', '#0891b2', '#b45309'];
+function getRGroupColor(n: number): string {
+  return R_GROUP_COLORS[(n - 1 + R_GROUP_COLORS.length) % R_GROUP_COLORS.length];
+}
+
 // ─── Card primitives ────────────────────────────────────────────────────────
 
 interface CardOpts {
   smiles: string;
   subtitle: string;
   error?: string;
+  /** When provided (and no error), the subtitle row shows colored R# chips. */
+  rNumbers?: number[];
   onEdit?: () => void;
   onDuplicate?: () => void;
   onRemove?: () => void;
@@ -103,11 +115,21 @@ function buildCard(opts: CardOpts): HTMLElement {
     drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
   else thumbHost.appendChild(ui.divText('—', {style: {color: 'var(--grey-4)'}}));
 
-  const subtitleEl = ui.divText(opts.subtitle, {style: {
-    fontSize: '10px', color: opts.error ? 'var(--red-3)' : 'var(--grey-5)',
-    textAlign: 'center', padding: '2px 4px', whiteSpace: 'nowrap',
-    overflow: 'hidden', textOverflow: 'ellipsis',
-  }});
+  let subtitleEl: HTMLElement;
+  if (opts.rNumbers?.length && !opts.error) {
+    const chips = opts.rNumbers.map((n) => ui.divText('R' + n, {style: {
+      background: getRGroupColor(n), color: 'white', borderRadius: '2px',
+      fontSize: '9px', fontWeight: '500', lineHeight: '14px', padding: '0 4px',
+    }}));
+    subtitleEl = ui.divH(chips, {style: {gap: '3px', justifyContent: 'center', padding: '2px 4px', flexWrap: 'wrap'}});
+    ui.tooltip.bind(subtitleEl, opts.subtitle);
+  } else {
+    subtitleEl = ui.divText(opts.subtitle, {style: {
+      fontSize: '10px', color: opts.error ? 'var(--red-3)' : 'var(--grey-5)',
+      textAlign: 'center', padding: '2px 4px', whiteSpace: 'nowrap',
+      overflow: 'hidden', textOverflow: 'ellipsis',
+    }});
+  }
 
   const card = ui.divV([thumbHost, subtitleEl], {style: {
     width: `${CARD_W}px`, minWidth: `${CARD_W}px`, height: `${CARD_H}px`,
@@ -929,9 +951,6 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
   try {
     const rdkit = await getRdKitModule();
     const panel = buildChemEnumPanel(rdkit, null, 'app');
-    const runBtn = ui.button('Enumerate', async () => { await panel.execute(); });
-    panel.bindActionButton(runBtn as HTMLButtonElement);
-    panel.appActionHost?.appendChild(runBtn);
 
     // Seed the panel so it never opens to an empty screen, in precedence order — the user's
     // most-recent history wins, else the admin-configured package-settings defaults, else the
@@ -954,6 +973,13 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     const view = DG.View.create();
     view.name = DIALOG_TITLE;
     view.box = true;
+    if (panel.ribbonGroups) {
+      view.setRibbonPanels(panel.ribbonGroups);
+      setTimeout(() => {
+        view.root.closest('.d4-root')?.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item')
+          .forEach((el) => { el.style.cssText += ';background:transparent!important;box-shadow:none!important;border:none!important;'; });
+      }, 0);
+    }
     view.root.appendChild(ui.div([panel.root],
       {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
     return view;
@@ -976,6 +1002,8 @@ interface ChemEnumPanel {
    * Only populated in app layout; undefined in dialog layout.
    */
   appActionHost?: HTMLElement;
+  /** App layout: ribbon panel groups (one inner array per separator group). */
+  ribbonGroups?: HTMLElement[][];
 }
 
 type ChemEnumLayout = 'dialog' | 'app';
@@ -1008,6 +1036,7 @@ export function buildChemEnumPanel(
     return buildCard({
       smiles: c.error ? '' : c.smiles,
       subtitle: c.error ? 'invalid' : `core ${i + 1} · ${c.rNumbers.map((n) => 'R' + n).join(', ')}`,
+      rNumbers: c.error ? undefined : c.rNumbers,
       error: c.error,
       onEdit: async () => {
         const edited = await openCoreSketchDialog(rdkit, c.smiles);
@@ -1090,14 +1119,30 @@ export function buildChemEnumPanel(
     const sortedNums = [...state.rGroupsByNum.keys()].sort((a, b) => a - b);
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
-      const label = ui.divText(`R${n} (${list.length})`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
-      const copyBtn = ui.button('Copy to…', () => openCopyToRGroupDialog(n, state, rdkit, refresh));
-      copyBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(copyBtn, `Copy all R${n} substituents into another R-group slot`);
-      const clearBtn = ui.button('Remove all', () => { state.rGroupsByNum.delete(n); refresh(); });
-      clearBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(clearBtn, `Remove all R${n} groups`);
-      const header = ui.divH([label, copyBtn, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
+      const color = getRGroupColor(n);
+      const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
+        const el = ui.iconFA(fa, onClick, tip);
+        el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
+        return el;
+      };
+      const stripIcons = [
+        stripIcon('pencil', `Draw an R${n} substituent`, () => {
+          openRGroupSketchDialog(rdkit, '', n).then((rg) => {
+            if (!rg) return;
+            const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
+            l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
+          });
+        }),
+        stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
+        stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
+      ];
+      const strip = ui.divV([
+        ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
+        ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
+        ui.divText(String(list.length), {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}}),
+        ...stripIcons,
+      ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
+
       const renderer = (i: number): HTMLElement => {
         const rg = list[i];
         const subtitle = rg.error ? 'invalid' :
@@ -1139,9 +1184,12 @@ export function buildChemEnumPanel(
       };
       const vv = ui.virtualView(list.length, renderer, false, 1);
       applyHorizontalRowStyle(vv.root);
-      const row = ui.divV([header, vv.root]);
+      vv.root.style.flex = '1 1 0';
+      const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
+      // Strip icons stay hidden until the R# row is hovered.
+      ui.tools.setHoverVisibility(row, stripIcons);
       rGroupsHost.appendChild(row);
-      rGroupsRenderers.set(n, {row, vv, header});
+      rGroupsRenderers.set(n, {row, vv, header: strip});
     }
   };
 
@@ -1210,6 +1258,22 @@ export function buildChemEnumPanel(
     'Name of the result table created by the enumeration (ignored when appending to an existing table).');
   // Wider field so longer table names stay fully visible.
   tableNameInput.input.style.width = '250px';
+
+  // Output destination slot — swaps between tableNameInput and appendToTableInput.
+  const outputSlot = ui.div([tableNameInput.root], {style: {minWidth: '0'}});
+  const outputModeInput = ui.input.choice<string>('Output', {
+    value: OUTPUT_NEW_TABLE, items: [OUTPUT_NEW_TABLE, OUTPUT_APPEND_TO],
+    onValueChanged: (v) => {
+      ui.empty(outputSlot);
+      if (v === OUTPUT_APPEND_TO) {
+        state.appendToTable = appendToTableInput.value ?? null;
+        outputSlot.appendChild(appendToTableInput.root);
+      } else {
+        state.appendToTable = null;
+        outputSlot.appendChild(tableNameInput.root);
+      }
+    },
+  });
 
   let okButton: HTMLButtonElement | null = null;
 
@@ -1306,34 +1370,19 @@ export function buildChemEnumPanel(
     const parts: HTMLElement[] = [
       ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
     ];
-    if (onDraw) {
-      const drawBtn = ui.button('+ Draw', onDraw);
-      drawBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(drawBtn, `${label}: open sketcher`);
-      parts.push(drawBtn);
-    }
-    if (onImport) {
-      const importBtn = ui.button('↓ Import…', onImport);
-      importBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(importBtn, `${label}: pick a table + column`);
-      parts.push(importBtn);
-    }
-    if (onTemplate) {
-      // Icon + label, matching "+ Draw" / "↓ Import…": leading swatchbook glyph at the same size as the +/↓.
-      const tmplIcon = ui.iconFA('swatchbook');
-      tmplIcon.style.fontSize = 'inherit';
-      tmplIcon.style.marginRight = '4px';
-      const templateBtn = ui.button([tmplIcon, 'Templates'], onTemplate, `${label}: insert a ready-made set`);
-      templateBtn.style.marginLeft = '4px';
-      parts.push(templateBtn);
-    }
+    const iconBtn = (fa: string, onClick: () => void, tip: string): HTMLButtonElement => {
+      const icon = ui.iconFA(fa);
+      icon.style.cssText = 'font-size:inherit;';
+      const btn = ui.button([icon], onClick, tip);
+      btn.style.marginLeft = '4px';
+      parts.push(btn);
+      return btn;
+    };
+    if (onDraw) iconBtn('pencil', onDraw, `${label}: open sketcher`);
+    if (onImport) iconBtn('folder-open', onImport, 'Import data');
+    if (onTemplate) iconBtn('swatchbook', onTemplate, 'Employ templates');
     let clearBtn: HTMLButtonElement | undefined;
-    if (onClear) {
-      clearBtn = ui.button('Remove all', onClear) as HTMLButtonElement;
-      clearBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(clearBtn, `Remove all ${label.toLowerCase()}`);
-      parts.push(clearBtn);
-    }
+    if (onClear) clearBtn = iconBtn('trash-alt', onClear, `Remove all ${label.toLowerCase()}`);
     const root = ui.divH(parts, {style: {
       alignItems: 'center', justifyContent: 'flex-start',
       gap: '0', margin: '0 0 2px', flex: '0 0 auto',
@@ -1365,60 +1414,52 @@ export function buildChemEnumPanel(
 
   let body: HTMLElement;
   let appActionHost: HTMLElement | undefined;
+  let ribbonGroups: HTMLElement[][] | undefined;
 
   if (layout === 'app') {
-    // ── App: two flex columns. Left = cores + preview. Right = r-groups (grows) + controls (compact). ──
+    // ── App: two flex columns. Left = cores + r-groups. Right = preview (full height).
+    //    Controls live in the view ribbon (ribbonGroups), not in the body. ──
     const cellBaseStyle = {
       display: 'flex', flexDirection: 'column',
       minHeight: '0', minWidth: '0',
       padding: '8px', boxSizing: 'border-box',
-      border: '1px solid var(--grey-2)', borderRadius: '4px',
-      background: 'var(--white)', overflow: 'hidden',
+      overflow: 'hidden',
     } as const;
     const growCellStyle = {...cellBaseStyle, flex: '1 1 0'} as const;
 
-    countText.style.fontSize = '11px';
-    countText.style.color = 'var(--grey-5)';
+    const coresCell = ui.divV([coresHeader.root, coresVvHost, coresEmpty], {style: {...cellBaseStyle, flex: '0 0 auto'}});
+    const rGroupsCell = ui.divV([rGroupsHeader.root, rGroupsHost], {style: growCellStyle});
 
-    const coresCell = ui.divV([
-      coresHeader.root,
-      coresVvHost,
-      coresEmpty,
-    ], {style: growCellStyle});
+    // Preview header: title on left, live count + error badge on right.
+    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
+    countText.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:auto;align-self:center;';
+    const previewHeaderRow = ui.divH([previewTitle, countText, errorBadge.root],
+      {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
+    const previewCell = ui.box(ui.divV([previewHeaderRow, previewHost], {style: {...growCellStyle, height: '100%'}}), {style: {width: '270px'}});
 
-    const rGroupsCell = ui.divV([
-      rGroupsHeader.root,
-      rGroupsHost,
-    ], {style: growCellStyle});
+    // Ribbon group 1: Enumerate button — opens a popup to pick output options before running.
+    const openRunDialog = () => {
+      const v = validateParams({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode});
+      const children: HTMLElement[] = [outputModeInput.root, outputSlot, removeDuplicatesInput.root];
+      if (!v.ok)
+        children.push(ui.divText('Add at least one core and the required R-groups first.',
+          {style: {color: 'var(--red-3)', fontSize: '11px', paddingTop: '4px'}}));
+      const dlg = ui.dialog({title: 'Enumerate'}).add(ui.divV(children, {style: {minWidth: '340px', gap: '4px'}}))
+        .onOK(() => executeEnumeration(state, rdkit));
+      dlg.show();
+      const okBtn = dlg.getButton('OK') as HTMLButtonElement;
+      if (okBtn) { okBtn.textContent = 'Run'; okBtn.disabled = !v.ok; }
+    };
+    const enumerateBtn = ui.bigButton('Enumerate', openRunDialog);
+    okButton = enumerateBtn;
+    appActionHost = enumerateBtn;
 
-    const previewCell = ui.divV([
-      sectionHeader('Preview').root,
-      previewHost,
-    ], {style: growCellStyle});
-
-    // Run header carries the live status — count + issues — inline on the right.
-    const runLabel = ui.divText('Run', {style: {
-      fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '40px',
-    }});
-    const runHeaderStats = ui.divH([countText, errorBadge.root], {style: {
-      alignItems: 'center', gap: '8px', marginLeft: 'auto',
-    }});
-    const runHeader = ui.divH([runLabel, runHeaderStats], {style: {
-      alignItems: 'center', gap: '8px', margin: '0 0 6px',
-      flex: '0 0 auto', width: '100%',
-    }});
-
-    // History icon — sits next to Enumerate. Reads localStorage on click and pops a menu.
+    // Ribbon group 2: mode selector.
+    // Ribbon group 3: history, export, clear all.
     const historyBtn = ui.iconFA('history', () => {
-      showHistoryMenu((entry) => {
-        applyHistoryEntry(entry, state, rdkit);
-        refresh();
-      });
+      showHistoryMenu((entry) => { applyHistoryEntry(entry, state, rdkit); refresh(); });
     }, 'Show recent enumerations');
-    historyBtn.style.fontSize = '16px';
-    historyBtn.style.padding = '4px 6px';
-    historyBtn.style.cursor = 'pointer';
-    historyBtn.style.color = 'var(--blue-3)';
+    historyBtn.style.cssText = 'font-size:16px;padding:4px 6px;cursor:pointer;color:var(--blue-3);';
 
     const clearAllBtn = ui.button('Clear all', () => {
       state.cores.splice(0, state.cores.length);
@@ -1427,39 +1468,17 @@ export function buildChemEnumPanel(
     });
     ui.tooltip.bind(clearAllBtn, 'Remove all cores and R-groups');
 
-    appActionHost = ui.div([], {style: {flex: '0 0 auto'}});
-    const actionRow = ui.divH([historyBtn, appActionHost], {style: {
-      alignItems: 'center', gap: '8px', marginTop: '8px', flex: '0 0 auto',
-    }});
+    ribbonGroups = [
+      [appActionHost],
+      [modeInput.root],
+      [historyBtn, exportBtn, clearAllBtn],
+    ];
 
-    const controlsCell = ui.divV([
-      runHeader,
-      modeInput.root,
-      appendToTableInput.root,
-      removeDuplicatesInput.root,
-      tableNameInput.root,
-      ui.divH([clearAllBtn, exportBtn], {style: {gap: '8px', alignItems: 'center'}}),
-      actionRow,
-    ], {style: {
-      ...cellBaseStyle, flex: '0 0 auto', overflow: 'visible',
-    }});
+    const leftColumn = ui.divV([coresCell, rGroupsCell],
+      {style: {display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '0', height: '100%'}});
 
-    const leftColumn = ui.divV([coresCell, previewCell], {style: {
-      flex: '1 1 50%', minWidth: '0',
-      display: 'flex', flexDirection: 'column', gap: '8px',
-    }});
-
-    const rightColumn = ui.divV([rGroupsCell, controlsCell], {style: {
-      flex: '1 1 50%', minWidth: '0',
-      display: 'flex', flexDirection: 'column', gap: '8px',
-    }});
-
-    body = ui.divH([leftColumn, rightColumn], {style: {
-      width: '100%', height: '100%',
-      display: 'flex', flexDirection: 'row',
-      gap: '8px',
-      padding: '4px', boxSizing: 'border-box',
-    }});
+    body = ui.splitH([leftColumn, previewCell], null, true);
+    body.style.cssText = 'width:100%;height:100%;padding:4px;box-sizing:border-box;';
   } else {
     // ── Dialog: horizontal split — cores + r-groups (left 60%) | preview (right 40%) ──
     const coresSection = ui.divV([
@@ -1507,10 +1526,9 @@ export function buildChemEnumPanel(
     ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
 
     const footer = ui.divV([
-      ui.divH([appendToTableInput.root, exportBtn],
-        {style: {alignItems: 'center', gap: '8px'}}),
+      appendToTableInput.root,
       removeDuplicatesInput.root,
-      tableNameInput.root,
+      ui.divH([tableNameInput.root, exportBtn], {style: {alignItems: 'center', gap: '8px'}}),
     ], {style: {padding: '2px 0'}});
 
     body = ui.divV([
@@ -1529,6 +1547,7 @@ export function buildChemEnumPanel(
     bindActionButton: (btn) => { okButton = btn; refresh(); },
     refresh,
     appActionHost,
+    ribbonGroups,
   };
 }
 

@@ -10,10 +10,11 @@ import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/form
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
-import {appSearch, connectionsSearch,
+import {appSearch, connectionsSearch, demosSearch,
   dockerSearch, entitySimilaritySearch, filesSearch, functionSearch, groupsSearch,
-  helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
-  scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+  helpSearch, jsSamplesSearch, modelsSearch, notebooksSearch, pdbSearch, pluginsSearch,
+  pubChemSearch, querySearch, scriptsSearch, spacesSearch, usersSearch,
+  wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {CronInput} from './widgets/cron-input';
 import {HtmlWidget} from './widgets/html-widget';
@@ -228,6 +229,9 @@ export class PackageFunctions {
       }, {
         name: 'Scripts', description: 'Scripts Search', options: {relatedViewName: 'scripts'},
         search: (s: string) => scriptsSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Demos', description: 'Demos Search',
+        search: (s: string) => demosSearch(s).then((r) => ({priority: 10, results: r})),
       },
       {
         name: 'Similarity Search', description: 'Entity Similarity Search',
@@ -282,6 +286,18 @@ export class PackageFunctions {
             {suggestionText: 'New users yesterday', priority: 24},
             {suggestionText: 'New user last 7 days', priority: 23}] : null,
         search: (s: string) => newUsersSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Spaces', description: 'Spaces Search', options: {relatedViewName: 'spaces'},
+        search: (s) => spacesSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Plugins', description: 'Plugins Search', options: {relatedViewName: 'plugins'},
+        search: (s) => pluginsSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Notebooks', description: 'Notebooks Search', options: {relatedViewName: 'notebooks'},
+        search: (s) => notebooksSearch(s).then((r) => ({priority: 10, results: r})),
+      }, {
+        name: 'Models', description: 'Models Search', options: {relatedViewName: 'models'},
+        search: (s) => modelsSearch(s).then((r) => ({priority: 10, results: r})),
       },
 
       ],
@@ -378,11 +394,11 @@ export class PackageFunctions {
 
   @grok.decorators.fileHandler({
     ext: 'xlsx',
-    description: 'Opens Excel file',
+    description: 'Opens an Excel (.xlsx) file as one or more tables (one per sheet)',
   })
   static async xlsxFileHandler(
-    @grok.decorators.param({'type': 'list'}) bytes: Uint8Array,
-    @grok.decorators.param({'options': {'optional': true}}) sheetName?: string): Promise<DG.DataFrame[]> {
+    @grok.decorators.param({'type': 'list', options: {description: 'Raw bytes of the .xlsx file'}}) bytes: Uint8Array,
+    @grok.decorators.param({'options': {'optional': true, description: 'Name of a single sheet to open opens all sheets if omitted'}}) sheetName?: string): Promise<DG.DataFrame[]> {
     const XLSX_MAX_FILE_SIZE = 80 * 1024 * 1024; // 80 MB
     if (bytes.length > XLSX_MAX_FILE_SIZE)
       throw new Error('The file you are trying to open is too large. Excel max file size is 80MB.');
@@ -391,10 +407,19 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    meta: {role: 'transform'}
+    meta: {role: 'transform'},
+    name: 'Enrich Data',
+    description: 'Enriches a table with values looked up from a database column via a linked key',
   })
-  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string,
-      @grok.decorators.param({'options': {'optional': true}}) localColumn?: string): Promise<void> {
+  static async runEnrichment(
+    @grok.decorators.param({options: {description: 'Data connection to the enrichment database'}}) conn: DG.DataConnection,
+    @grok.decorators.param({options: {description: 'Database schema name'}}) schema: string,
+    @grok.decorators.param({options: {description: 'Source table name in the database'}}) table: string,
+    @grok.decorators.param({options: {description: 'Source column to pull enrichment values from'}}) column: string,
+    @grok.decorators.param({options: {description: 'Name for the new enriched column'}}) name: string,
+    @grok.decorators.param({options: {description: 'Table to enrich'}}) df: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Database name'}}) db: string,
+      @grok.decorators.param({'options': {'optional': true, description: 'Local column used as the join key (defaults to the matching column)'}}) localColumn?: string): Promise<void> {
     return runEnrichmentFromConfig(conn, schema, table, column, name, df, db, localColumn ?? null);
   }
 }

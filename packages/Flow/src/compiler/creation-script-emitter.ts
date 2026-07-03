@@ -451,6 +451,16 @@ class CreationScriptEmitter {
         const names = splitList(raw);
         return names.length === 0 ? {kind: 'skip'} : {kind: 'literal', value: names};
       }
+      if (slotType === 'string_list') {
+        // Comma-separated string → array of trimmed, non-empty strings; empty → omit.
+        const items = splitList(raw);
+        return items.length === 0 ? {kind: 'skip'} : {kind: 'literal', value: items};
+      }
+      if (slotType === 'list') {
+        // Native DG List input → a JS array; empty → omit (function default).
+        const items = Array.isArray(raw) ? raw : splitList(raw);
+        return items.length === 0 ? {kind: 'skip'} : {kind: 'literal', value: items};
+      }
       if (raw === undefined || raw === null) return {kind: 'skip'};
       return {kind: 'literal', value: raw};
     }

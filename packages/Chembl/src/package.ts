@@ -99,7 +99,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    name: 'Chembl targets by organism',
+    name: 'Compounds Active Against Organism',
+    description: 'Loads ChEMBL compounds with bioactivity against bacterial targets of the given organism.',
     meta: {role: 'hitTriageDataSource'},
   })
   static async getChemblCompoundsByOrganism(
@@ -110,7 +111,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    name: 'Chembl Compounds',
+    name: 'ChEMBL Compounds',
+    description: 'Loads a sample of ChEMBL compound structures as canonical SMILES.',
     meta: {role: 'hitTriageDataSource'},
   })
   static async getChemblCompounds(
