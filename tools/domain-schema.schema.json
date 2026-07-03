@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "title": "Datagrok domain schema manifest",
+  "description": "Declares entity-mapped tables of a plugin database schema (databases/<schema>/schema.json). Tables get platform row/column security, Datlas-managed CRUD, and an in-transaction audit trail.",
+  "type": "object",
+  "required": ["name", "version", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {
+      "description": "Logical schema name; must match the databases/<name>/ directory.",
+      "$ref": "#/definitions/identifier"
+    },
+    "version": {
+      "type": "string",
+      "description": "Manifest version (semver recommended). Recorded in the registry on deploy."
+    },
+    "tables": {
+      "type": "object",
+      "description": "Entity-mapped tables keyed by table name.",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/definitions/identifier"},
+      "additionalProperties": {"$ref": "#/definitions/table"}
+    },
+    "propertySchemas": {
+      "type": "object",
+      "description": "Named groups of dynamic (jsonb) properties; grant a schema to a group to control column visibility.",
+      "propertyNames": {"$ref": "#/definitions/identifier"},
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "propertyNames": {"$ref": "#/definitions/identifier"},
+        "additionalProperties": {"$ref": "#/definitions/column"}
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "description": "Explicit statements for destructive changes the diff engine refuses to apply automatically."
+    }
+  },
+  "definitions": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 63
+    },
+    "table": {
+      "type": "object",
+      "required": ["columns"],
+      "additionalProperties": false,
+      "properties": {
+        "securityMode": {
+          "enum": ["table", "master", "row"],
+          "default": "table",
+          "description": "table: one check against the table entity; master: delegate to the master row via the delegate column; row: per-row grants with lazy/eager promotion."
+        },
+        "promotion": {
+          "enum": ["lazy", "eager"],
+          "default": "lazy",
+          "description": "Row mode only. lazy: entities row created on first share; eager: at insert."
+        },
+        "defaultRowVisibility": {
+          "enum": ["table", "none"],
+          "default": "table",
+          "description": "Row/master modes: whether table-level View shows unshared rows."
+        },
+        "delegate": {
+          "$ref": "#/definitions/identifier",
+          "description": "Master mode: the ref column whose target row's security applies."
+        },
+        "softDelete": {"type": "boolean", "default": true},
+        "audit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Per-table in-transaction audit trail (before/after diffs, history, restore)."
+        },
+        "idempotency": {
+          "type": "boolean",
+          "default": false,
+          "description": "Adds the idempotency_key system column for replay-safe creates."
+        },
+        "ginIndex": {
+          "type": "boolean",
+          "default": false,
+          "description": "Adds a GIN (jsonb_path_ops) index on the data column."
+        },
+        "businessKey": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/identifier"},
+          "minItems": 1,
+          "description": "Natural key: powers dedup-on-insert, upsert matching, and entity handles."
+        },
+        "friendlyName": {"type": "string"},
+        "description": {"type": "string"},
+        "columns": {
+          "type": "object",
+          "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
+          "propertyNames": {"$ref": "#/definitions/identifier"},
+          "additionalProperties": {"$ref": "#/definitions/column"}
+        },
+        "schemas": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/identifier"},
+          "description": "Property schemas contributing jsonb keys to this table."
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type."
+        },
+        "required": {"type": "boolean", "default": false},
+        "unique": {
+          "type": "boolean",
+          "default": false,
+          "description": "Unique among live (not soft-deleted) rows."
+        },
+        "ref": {
+          "$ref": "#/definitions/identifier",
+          "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
+        },
+        "onDelete": {
+          "enum": ["cascade", "restrict", "setnull"],
+          "description": "Engine-enforced referential action on soft delete (ref/user/group columns)."
+        },
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "choices": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Controlled dictionary of allowed values."
+        },
+        "semType": {"type": "string"},
+        "friendlyName": {"type": "string"},
+        "description": {"type": "string"},
+        "default": {
+          "description": "Default value for new rows / UI inputs."
+        },
+        "format": {"type": "string"}
+      }
+    }
+  }
+}
