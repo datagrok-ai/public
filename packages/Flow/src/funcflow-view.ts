@@ -395,6 +395,9 @@ export class FuncFlowView extends DG.ViewBase {
     // panel (Datagrok renders its full settings editor) and capture every change
     // back into the node's stored options, so a re-run reproduces the look.
     this.executionController.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
+    // The bottom preview dock and the minimap share the same corner — minimize
+    // the minimap when the preview panel first opens so they never overlap.
+    this.executionController.outputPreview.onDocked = () => this.setMinimapCollapsed(true);
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();

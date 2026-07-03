@@ -29,6 +29,12 @@
   (a column drag offers real column consumers first) and **functions already used on the canvas**
   float up (pipelines repeat their ops).
 
+### Minimap minimizes when the output preview opens
+
+* The overview minimap and the bottom-docked **Node Output** panel share the same corner — the
+  minimap now auto-minimizes to its title bar when the preview panel is first docked, so the two
+  never overlap. Expand it back anytime with a click on its header.
+
 ### Semantic types detected before pickers and editors open
 
 * The tables resolved for the **column picker** and the **function-editor dialog** now go through

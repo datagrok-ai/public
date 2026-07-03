@@ -8,6 +8,7 @@ import {NodeExecState, NodeExecStatus} from '../execution/execution-state';
 import {
   buildExecutionMeta, buildValuePreviews, hasRenderablePreview, buildPreview,
 } from '../execution/value-inspector';
+import {OutputPreviewPanel} from '../execution/output-preview';
 
 function widgetState(type: 'widget' | 'viewer'): {state: NodeExecState; root: HTMLElement} {
   const root = document.createElement('div');
@@ -79,6 +80,37 @@ category('Flow: execution preview', () => {
     };
     const preview = buildPreview('result', state.outputs!.result);
     expect(!!preview && !!preview.querySelector('table'), true, 'sample table rendered when no clone');
+  });
+
+  test('onDocked fires when the bottom panel is first created, not on updates', async () => {
+    // The view wires this to minimize the minimap (they share the same
+    // corner). It must fire once per dock creation — an in-place content
+    // update reuses the open dock and stays silent.
+    const panel = new OutputPreviewPanel();
+    let docked = 0;
+    panel.onDocked = (): void => {docked++;};
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
+    const state: NodeExecState = {
+      status: NodeExecStatus.completed,
+      outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df}},
+    };
+    try {
+      // No renderable values → no dock, no callback.
+      panel.showForNode({id: 'n0', label: 'empty'}, {status: NodeExecStatus.completed, outputs: {}});
+      expect(docked, 0, 'no dock for a value-less node');
+
+      panel.showForNode({id: 'n1', label: 'a'}, state);
+      expect(docked, 1, 'dock created → onDocked fired');
+      panel.showForNode({id: 'n2', label: 'b'}, state);
+      expect(docked, 1, 'in-place update → not fired again');
+
+      // Re-docking after a close fires again (the dock is newly created).
+      panel.close();
+      panel.showForNode({id: 'n3', label: 'c'}, state);
+      expect(docked, 2, 'a fresh dock after close fires again');
+    } finally {
+      panel.close();
+    }
   });
 
   test('a widget without a real root is not renderable', async () => {

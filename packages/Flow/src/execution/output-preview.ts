@@ -30,6 +30,11 @@ export class OutputPreviewPanel {
    *  shows the viewer in the context panel and captures its option changes. */
   onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
 
+  /** Called when the bottom dock is newly created (not on in-place content
+   *  updates) — the view minimizes the minimap so it doesn't overlap the
+   *  freshly-docked preview. */
+  onDocked?: () => void;
+
   /** Set the Flow view root so the panel docks relative to it (bottom edge). */
   setViewRoot(root: HTMLElement): void {
     this.viewRoot = root;
@@ -79,6 +84,7 @@ export class OutputPreviewPanel {
       this.rootNode = grok.shell.dockManager.dock(
         this.hostEl, DG.DOCK_TYPE.DOWN, refNode, 'Node Output', 0.4,
       );
+      this.onDocked?.();
     } catch (e) {
       console.warn('OutputPreview: failed to dock', e);
       this.hostEl = null;
