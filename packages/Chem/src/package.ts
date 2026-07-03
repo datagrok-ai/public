@@ -2358,6 +2358,9 @@ export class PackageFunctions {
       table = table.clone(table.filter);
       table.name = (table.name ?? 'Table') + ' (Filtered)';
       grok.shell.addTableView(table);
+      // these two must exist, so they will throw if not
+      molecules = table.getCol(molecules.name);
+      activities = activities.map((col) => table.getCol(col.name));
     }
 
     checkCurrentView(table);
@@ -2370,9 +2373,9 @@ export class PackageFunctions {
         activityColsNames.push(activities[i].name);
       else {
         const scaledCol = scaleActivity(activities[i], scalings[i]);
-        const name = grok.shell.tv.dataFrame.columns.getUnusedName(scaledCol.name);
+        const name = table.columns.getUnusedName(scaledCol.name);
         scaledCol.name = name;
-        grok.shell.tv.dataFrame.columns.add(scaledCol);
+        table.columns.add(scaledCol);
         activityColsNames.push(name);
       }
     }

@@ -113,7 +113,7 @@ export async function chemCellRenderer() : Promise<any> {
 
 //name: Morgan Fingerprints
 //description: Computes Morgan (circular) fingerprints for a column of molecules.
-//input: column molColumn { semType: Molecule }
+//input: column molColumn { semType: Molecule; caption: Molecules }
 //output: column result
 //meta.vectorFunc: true
 export async function getMorganFingerprints(molColumn: DG.Column) : Promise<any> {
@@ -128,8 +128,8 @@ export function getMorganFingerprint(molString: string) : any {
 
 //name: Similarities
 //description: Computes Tanimoto similarity scores between a query molecule and each molecule in a column.
-//input: column molStringsColumn 
-//input: string molString 
+//input: column molStringsColumn { caption: Molecules }
+//input: string molString { semType: Molecule; caption: Query molecule }
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) : Promise<any> {
   return await PackageFunctions.getSimilarities(molStringsColumn, molString);
@@ -137,8 +137,8 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 
 //name: Diversities
 //description: Selects a diverse representative subset of molecules from a column.
-//input: column molStringsColumn 
-//input: int limit { description: Maximum number of diverse molecules to return }
+//input: column molStringsColumn { caption: Molecules }
+//input: int limit { caption: Max molecules; description: Maximum number of diverse molecules to return }
 //output: dataframe result
 export async function getDiversities(molStringsColumn: DG.Column, limit: number) : Promise<any> {
   return await PackageFunctions.getDiversities(molStringsColumn, limit);
@@ -146,10 +146,10 @@ export async function getDiversities(molStringsColumn: DG.Column, limit: number)
 
 //name: Find Similar
 //description: Finds the molecules most similar to a query molecule ranked by Tanimoto similarity.
-//input: column molStringsColumn 
-//input: string molString 
-//input: int limit { description: Maximum number of hits to return }
-//input: int cutoff { description: Minimum similarity score for a molecule to be returned }
+//input: column molStringsColumn { caption: Molecules }
+//input: string molString { semType: Molecule; caption: Query molecule }
+//input: int limit { caption: Max hits; description: Maximum number of hits to return }
+//input: int cutoff { caption: Min similarity; description: Minimum similarity score for a molecule to be returned }
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number) : Promise<any> {
   return await PackageFunctions.findSimilar(molStringsColumn, molString, limit, cutoff);
@@ -202,8 +202,8 @@ export function diversitySearchTopMenu() : void {
 //name: Similarity Matrix
 //description: Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.
 //input: dataframe table 
-//input: column molecules { semType: Molecule }
-//input: column symbols 
+//input: column molecules { semType: Molecule; description: Molecules to build the similarity matrix from }
+//input: column symbols { caption: Symbols; description: Column whose values label the matrix rows and columns }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //output: dataframe result
 //top-menu: Chem | Calculate | Similarity Matrix...
@@ -323,8 +323,8 @@ export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: 
 //name: Cluster MCS
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
-//input: column molCol { semType: Molecule }
-//input: column clusterCol { type: categorical }
+//input: column molCol { semType: Molecule; caption: Molecules; description: Molecules to find common substructures in }
+//input: column clusterCol { type: categorical; caption: Cluster; description: Column assigning each molecule to a cluster }
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
@@ -1000,9 +1000,9 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //input: bool logP = false 
 //input: bool logS = false 
 //input: bool PSA = false 
-//input: bool rotatableBonds = false 
-//input: bool stereoCenters = false 
-//input: bool moleculeCharge = false 
+//input: bool rotatableBonds = false { caption: Rotatable bonds }
+//input: bool stereoCenters = false { caption: Stereo centers }
+//input: bool moleculeCharge = false { caption: Molecule charge }
 //meta.function_family: biochem-calculator
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
@@ -1027,10 +1027,10 @@ export async function getProperties(molecules: DG.Column, selected?: string[]) :
 //description: Predicts toxicity risks (mutagenicity, tumorigenicity, irritating and reproductive effects) and adds them as columns.
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
-//input: bool mutagenicity = true 
-//input: bool tumorigenicity = false 
-//input: bool irritatingEffects = false 
-//input: bool reproductiveEffects = false 
+//input: bool mutagenicity = true { caption: Mutagenicity }
+//input: bool tumorigenicity = false { caption: Tumorigenicity }
+//input: bool irritatingEffects = false { caption: Irritating effects }
+//input: bool reproductiveEffects = false { caption: Reproductive effects }
 //meta.role: hitTriageFunction,transform
 //top-menu: Chem | Calculate | Toxicity Risks...
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
