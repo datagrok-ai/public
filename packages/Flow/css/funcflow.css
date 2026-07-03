@@ -662,6 +662,24 @@
   color: var(--blue-2, #0a6ed1);
 }
 
+/* "Open editor" button in the Input Parameters pane header — opens the
+   function's own dialog */
+.funcflow-func-editor-btn {
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--blue-2, #0a6ed1);
+  background: var(--blue-4, #e3f2fd);
+  border: 1px solid var(--blue-3, #bbdefb);
+  border-radius: 3px;
+}
+
+.funcflow-func-editor-btn:hover {
+  background: var(--blue-3, #bbdefb);
+}
+
 .funcflow-prop-toggle-row {
   flex-direction: row !important;
   align-items: center;
@@ -1736,4 +1754,9 @@
 
 .funcflow-start-tour:hover {
   background: #1565c0 !important;
+}
+
+.d4-flow-function-funccall-editor .ui-input-table {
+  pointer-events: none !important;
+  user-select: none !important;
 }

@@ -123,6 +123,14 @@ export class ExecutionController {
     return !!(reg && reg[nodeId] && outputKey in reg[nodeId]);
   }
 
+  /** The captured live value for a node's output from a prior run, or
+   *  `undefined` — used to seed a function-editor FuncCall with the values
+   *  actually flowing through the node's connected inputs. */
+  liveValue(nodeId: string, outputKey: string): unknown {
+    const reg = (globalThis as {__ffFlowLive?: Record<string, Record<string, unknown>>}).__ffFlowLive;
+    return reg?.[nodeId]?.[outputKey];
+  }
+
   private clearLiveRegistry(): void {
     (globalThis as {__ffFlowLive?: unknown}).__ffFlowLive = {};
   }

@@ -2,6 +2,19 @@
 
 ## v.next
 
+### Custom function editors on the context panel
+
+* Functions that ship their **own editor dialog** (an `editor:` meta, or the explicit allowlist in
+  [func-editor-utils.ts](src/utils/func-editor-utils.ts) — e.g. **AddNewColumn**) now show a light-blue
+  **"Open editor"** button in the **Input Parameters** pane header that opens that editor for the node
+  ([func-editor-launcher.ts](src/panel/func-editor-launcher.ts)). The launcher follows the column
+  picker's ladder: every **table input must be connected** (balloon otherwise); an already-computed
+  upstream table is reused from the captured results; otherwise it offers to **run the flow up to
+  that point** first. The editor's `FuncCall` is seeded from the connections (live captured values)
+  plus the panel-edited values (column names resolved to real columns of the seeded table), and on
+  close the edited values are written back into the node — connected inputs are never overridden,
+  and columns come back as name strings (the panel edits names, not live columns).
+
 ### Domain sections sorted by relevance
 
 * The **Cheminformatics** and **Bioinformatics** toolbox sections are now ordered so the flagship

@@ -23,6 +23,7 @@ import './tests/column-picker-tests';
 import './tests/connect-interaction-tests';
 import './tests/string-list-tests';
 import './tests/rerun-node-tests';
+import './tests/func-editor-tests';
 
 export let _package = new DG.Package();
 export { tests };

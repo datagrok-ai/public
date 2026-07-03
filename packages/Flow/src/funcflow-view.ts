@@ -20,6 +20,7 @@ import {FlowNode} from './rete/scheme';
 import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
 import {ColumnPicker} from './panel/column-picker';
+import {FuncEditorLauncher} from './panel/func-editor-launcher';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
   createNode, FuncInfo,
@@ -357,6 +358,20 @@ export class FuncFlowView extends DG.ViewBase {
       tags: this.flowSettings.tags,
     }));
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
+
+    // Functions with their own custom editor (an `editor:` meta or the explicit
+    // allowlist) get an icon in the Input Parameters pane header that opens that
+    // editor seeded with the node's real upstream tables; the edited values are
+    // written back into the panel, so re-render it on completion.
+    const funcEditorLauncher = new FuncEditorLauncher(this.flow, this.executionController, () => ({
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    }));
+    this.propertyPanel.onEditFuncParams = (node) => void funcEditorLauncher.open(node).then((applied) => {
+      if (applied)
+        this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
+    }).catch((e) => grok.shell.error(`Function editor failed: ${e instanceof Error ? e.message : e}`));
     this.executionController.onBreakpointHit = () => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };

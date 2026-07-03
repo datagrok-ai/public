@@ -14,6 +14,7 @@ import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
+import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
 import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
@@ -111,6 +112,12 @@ export class PropertyPanel {
    *  point if needed). When unset, the picker icon is not rendered. */
   onPickColumns?: (req: ColumnPickRequest) => void;
 
+  /** Set by the view: opens the function's own editor dialog (functions with
+   *  `editor:` meta or on the explicit allowlist) seeded with the node's real
+   *  upstream tables, then writes the edited values back into `inputValues`.
+   *  When unset, the editor icon is not rendered. */
+  onEditFuncParams?: (node: FlowNode) => void;
+
   constructor(flow: FlowEditor) {
     this.flow = flow;
     this.contentDiv = setTid(ui.div([], 'funcflow-property-content'), 'property-content');
@@ -189,7 +196,7 @@ export class PropertyPanel {
 
     if (func.inputs.length > 0) {
       const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
-      acc.addPane('Input Parameters', () => {
+      const pane = acc.addPane('Input Parameters', () => {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
         for (const inp of func.inputs) {
           const tip = buildFuncInputTooltip(inp);
@@ -229,9 +236,34 @@ export class PropertyPanel {
         }
         return content;
       }, true);
+      this.decorateEditorHeader(pane, node, func);
     }
   }
 
+  /** Functions with their own custom editor (an `editor:` meta, or the explicit
+   *  allowlist — e.g. AddNewColumn) get a small "Open editor" button in the
+   *  Input Parameters pane header that opens that editor seeded with the node's
+   *  real upstream tables. Rendered only when the view wired `onEditFuncParams`. */
+  private decorateEditorHeader(pane: DG.AccordionPane, node: FlowNode, func: DG.Func): void {
+    if (!this.onEditFuncParams) return;
+    let hasEditor = false;
+    try {
+      hasEditor = shouldUseFunctionEditor(func);
+    } catch {/* Dart proxy access can throw — treat as no editor */}
+    if (!hasEditor) return;
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    if (!header) return;
+    const btn = document.createElement('button');
+    btn.textContent = 'Open editor';
+    btn.classList.add('funcflow-func-editor-btn');
+    ui.tooltip.bind(btn, 'Edit the parameters in the function’s own dialog (needs all table inputs connected)');
+    setTid(btn, 'prop-func-editor');
+    btn.onclick = (ev): void => {
+      ev.stopPropagation(); // don't toggle the pane
+      this.onEditFuncParams!(node);
+    };
+    header.appendChild(btn);
+  }
 
   // eslint-disable-next-line complexity
   private addInputNodePane(acc: DG.Accordion, node: FlowNode): void {
