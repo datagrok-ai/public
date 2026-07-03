@@ -77,19 +77,15 @@ export namespace funcs {
     return await grok.functions.call('Bio:LibraryPanel', { seqColumn });
   }
 
-  export async function getRegionEditor(call: any ): Promise<void> {
+  export async function getRegionEditor(call: any ): Promise<any> {
     return await grok.functions.call('Bio:GetRegionEditor', { call });
   }
 
-  export async function splitToMonomersEditor(call: any ): Promise<void> {
-    return await grok.functions.call('Bio:SplitToMonomersEditor', { call });
-  }
-
-  export async function sequenceSpaceEditor(call: any ): Promise<void> {
+  export async function sequenceSpaceEditor(call: any ): Promise<any> {
     return await grok.functions.call('Bio:SequenceSpaceEditor', { call });
   }
 
-  export async function seqActivityCliffsEditor(call: any ): Promise<void> {
+  export async function seqActivityCliffsEditor(call: any ): Promise<any> {
     return await grok.functions.call('Bio:SeqActivityCliffsEditor', { call });
   }
 

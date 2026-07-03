@@ -61,7 +61,6 @@ import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
 import {alignWithPepsea, pepseaMethods} from './utils/pepsea';
 import {WebLogoApp} from './apps/web-logo-app';
-import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
@@ -71,6 +70,7 @@ import {addCopyMenuUI} from './utils/context-menu';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
+import {FuncCallParamsEditor, MessageFuncCallEditor} from './utils/func-call-params-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
@@ -210,90 +210,79 @@ export class PackageFunctions {
 
   // -- Func Editors --
 
-  @grok.decorators.editor({tags: ['editor']})
-  static GetRegionEditor(call: DG.FuncCall): void {
+  @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
+  static GetRegionEditor(call: DG.FuncCall): DG.Widget {
     try {
       const funcEditor = new GetRegionFuncEditor(call, _package.seqHelper);
-      funcEditor.dialog();
+      return new FuncCallParamsEditor(call, {
+        inner: {
+          getEditor: () => funcEditor.getEditorForm(),
+          getParams: () => funcEditor.getParams(),
+          getStringInput: () => funcEditor.getStringInput(),
+          applyStringInput: (s) => funcEditor.applyStringInput(s),
+        },
+        stableInputs: [funcEditor.inputs.table, funcEditor.inputs.sequence, funcEditor.inputs.start,
+          funcEditor.inputs.end, funcEditor.inputs.region, funcEditor.inputs.name],
+        map: (p) => ({table: p.table, sequence: p.sequence, start: p.start, end: p.end, name: p.name}),
+        isValid: (p) => !!p.table && !!p.sequence,
+        inputFor: {table: funcEditor.inputs.table, sequence: funcEditor.inputs.sequence},
+      });
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
       const errStack = err instanceof Error ? err.stack : undefined;
-      grok.shell.error(`Get region editor error: ${errMsg}`);
       _package.logger.error(errMsg, undefined, errStack);
+      return new MessageFuncCallEditor(`Get region editor error: ${errMsg}`);
     }
   }
 
-  @grok.decorators.editor({tags: ['editor']})
-  static SplitToMonomersEditor(call: DG.FuncCall): void {
-    const funcEditor = new SplitToMonomersFunctionEditor();
-    ui.dialog({title: 'Split to Monomers'})
-      .add(funcEditor.paramsUI)
-      .onOK(async () => {
-        return call.func.prepare(funcEditor.funcParams).call(true);
-      })
-      .show();
-  }
-
-  @grok.decorators.editor({tags: ['editor']})
-  static SequenceSpaceEditor(call: DG.FuncCall) {
+  @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
+  static SequenceSpaceEditor(call: DG.FuncCall): DG.Widget {
     const df = grok.shell.tv?.dataFrame;
-    if (!df) {
-      grok.shell.error('Sequence Space requires an open table with a Macromolecule column');
-      return;
-    }
-    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
-      grok.shell.error('Current table does not contain a Macromolecule column');
-      return;
-    }
+    if (!df || df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null)
+      return new MessageFuncCallEditor('Sequence Space requires an open table with a Macromolecule column');
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-    const dialog = ui.dialog({title: 'Sequence Space'})
-      .add(funcEditor.getEditor())
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        return call.func.prepare({
-          molecules: params.col,
-          table: params.table,
-          methodName: params.methodName,
-          similarityMetric: params.similarityMetric,
-          plotEmbeddings: params.plotEmbeddings,
-          options: params.options,
-          preprocessingFunction: params.preprocessingFunction,
-          clusterEmbeddings: params.clusterEmbeddings,
-        }).call();
-      });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      stableInputs: [funcEditor.tableInput, funcEditor.methodInput,
+        funcEditor.plotEmbeddingsInput, funcEditor.clusterEmbeddingsInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        methodName: p.methodName,
+        similarityMetric: p.similarityMetric,
+        plotEmbeddings: p.plotEmbeddings,
+        options: p.options,
+        preprocessingFunction: p.preprocessingFunction,
+        clusterEmbeddings: p.clusterEmbeddings,
+      }),
+      isValid: (p) => !!p.table && !!p.col,
+      inputFor: {table: funcEditor.tableInput},
+    });
   }
 
-  @grok.decorators.editor({tags: ['editor']})
-  static SeqActivityCliffsEditor(call: DG.FuncCall) {
+  @grok.decorators.editor({outputs: [{name: 'result', type: 'widget'}]})
+  static SeqActivityCliffsEditor(call: DG.FuncCall): DG.Widget {
     const df = grok.shell.tv?.dataFrame;
-    if (!df) {
-      grok.shell.error('Sequence Activity Cliffs requires an open table with a Macromolecule column');
-      return;
-    }
-    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
-      grok.shell.error('Current table does not contain a Macromolecule column');
-      return;
-    }
+    if (!df || df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null)
+      return new MessageFuncCallEditor('Sequence Activity Cliffs requires an open table with a Macromolecule column');
     const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-    const dialog = ui.dialog({title: 'Activity Cliffs'})
-      .add(funcEditor.getEditor())
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        return call.func.prepare({
-          table: params.table,
-          molecules: params.col,
-          activities: params.activities,
-          similarity: params.similarityThreshold,
-          methodName: params.methodName,
-          similarityMetric: params.similarityMetric,
-          preprocessingFunction: params.preprocessingFunction,
-          options: params.options,
-        }).call();
-      });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      stableInputs: [funcEditor.tableInput, funcEditor.methodInput, funcEditor.similarityInput,
+        funcEditor.plotEmbeddingsInput, funcEditor.clusterEmbeddingsInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        activities: p.activities,
+        similarity: p.similarityThreshold,
+        methodName: p.methodName,
+        similarityMetric: p.similarityMetric,
+        preprocessingFunction: p.preprocessingFunction,
+        options: p.options,
+      }),
+      isValid: (p) => !!p.table && !!p.col && !!p.activities,
+      inputFor: {table: funcEditor.tableInput},
+    });
   }
 
 
@@ -481,7 +470,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Get Region Top Menu',
+    name: 'Get Sequence Region',
     description: 'Get sequences for a region specified from a Macromolecule',
     'top-menu': 'Bio | Calculate | Extract Region...',
     editor: 'Bio:GetRegionEditor'})
@@ -1226,7 +1215,6 @@ export class PackageFunctions {
     name: 'Split to Monomers',
     description: 'Splits a macromolecule column into per-position monomer columns one column per sequence position',
     'top-menu': 'Bio | Transform | Split to Monomers...',
-    editor: 'Bio:SplitToMonomersEditor',
   })
   static async splitToMonomersTopMenu(
     table: DG.DataFrame,

@@ -67,32 +67,25 @@ export async function libraryPanel(_seqColumn: DG.Column) : Promise<any> {
   return await PackageFunctions.libraryPanel(_seqColumn);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function GetRegionEditor(call: DG.FuncCall) : void {
-  PackageFunctions.GetRegionEditor(call);
+export function GetRegionEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.GetRegionEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function SplitToMonomersEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SplitToMonomersEditor(call);
+export function SequenceSpaceEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.SequenceSpaceEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function SequenceSpaceEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SequenceSpaceEditor(call);
-}
-
-//tags: editor
-//input: funccall call 
-//meta.role: editor
-export function SeqActivityCliffsEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SeqActivityCliffsEditor(call);
+export function SeqActivityCliffsEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.SeqActivityCliffsEditor(call);
 }
 
 //tags: cellRenderer
@@ -221,7 +214,7 @@ export function getRegion(sequence: DG.Column<any>, start?: string, end?: string
   return PackageFunctions.getRegion(sequence, start, end, name);
 }
 
-//name: Get Region Top Menu
+//name: Get Sequence Region
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table { description: Input data table }
 //input: column sequence { semType: Macromolecule; description: Sequence column }
@@ -537,7 +530,6 @@ export async function testDetectMacromolecule(path: string) : Promise<any> {
 //input: column sequence { semType: Macromolecule }
 //output: dataframe result
 //top-menu: Bio | Transform | Split to Monomers...
-//editor: Bio:SplitToMonomersEditor
 export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.Column) : Promise<any> {
   return await PackageFunctions.splitToMonomersTopMenu(table, sequence);
 }

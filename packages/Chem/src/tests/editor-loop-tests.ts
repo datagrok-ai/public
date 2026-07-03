@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
-import {PackageFunctions} from '../package';
 
 /**
  * Regression tests for the canonical FuncCallEditor conversions.
@@ -39,15 +39,16 @@ function measureReentrancy(editor: DG.FuncCallEditor, poke: () => void, guard = 
   return maxDepth;
 }
 
-/** Prepares the target funccall and invokes its editor function to build the widget, exactly as
- * the platform does (target's `editor:` tag → editor function → DG.Widget). Pass `inputs` to seed
- * the call (e.g. the current table) — editors read `call.inputs['table'] ?? grok.shell.t`, and in
- * the test harness `grok.shell.t` may be null, which would skip the column-input code paths. */
-async function buildEditor(targetName: string,
-  makeEditor: (call: DG.FuncCall) => DG.Widget | Promise<DG.Widget>,
+/** Prepares the target funccall and invokes its editor function through the platform (via
+ * grok.functions.call), exactly as the runtime does: target's `editor:` tag → editor func → DG.Widget.
+ * Pass `inputs` to seed the call (e.g. the current table) — editors read `call.inputs['table'] ??
+ * grok.shell.t`, and in the test harness `grok.shell.t` may be null, which would skip the
+ * column-input code paths. */
+async function buildEditor(targetName: string, editorName: string,
   inputs: object = {}): Promise<DG.FuncCallEditor> {
   const call = DG.Func.find({package: 'Chem', name: targetName})[0].prepare(inputs);
-  return await makeEditor(call) as DG.FuncCallEditor;
+  const widget = await grok.functions.call(`Chem:${editorName}`, {call});
+  return widget as DG.FuncCallEditor;
 }
 
 category('Editors: no infinite loop', () => {
@@ -66,9 +67,7 @@ category('Editors: no infinite loop', () => {
   // The exact repro from the bug report: open the MMP dialog on matched_molecular_pairs.csv and
   // pick the activity columns. Reading isValid must not re-emit onInputChanged.
   test('MMP editor does not loop on activity selection', async () => {
-    // eslint-disable-next-line new-cap
-    const editor = await buildEditor('mmpAnalysis', (call) => PackageFunctions.MMPEditor(call),
-      {table: view.dataFrame});
+    const editor = await buildEditor('mmpAnalysis', 'MMPEditor', {table: view.dataFrame});
     const df = view.dataFrame;
     const numericCols = Array.from(df.columns.numerical);
     const maxDepth = measureReentrancy(editor, () => {
@@ -85,8 +84,7 @@ category('Editors: no infinite loop', () => {
   });
 
   test('Chem Space editor does not loop', async () => {
-    // eslint-disable-next-line new-cap
-    const editor = await buildEditor('chemSpaceTopMenu', (call) => PackageFunctions.ChemSpaceEditor(call));
+    const editor = await buildEditor('chemSpaceTopMenu', 'ChemSpaceEditor', {table: view.dataFrame});
     const maxDepth = measureReentrancy(editor, () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = editor.isValid;
@@ -96,8 +94,7 @@ category('Editors: no infinite loop', () => {
   });
 
   test('Activity Cliffs editor does not loop', async () => {
-    // eslint-disable-next-line new-cap
-    const editor = await buildEditor('activityCliffs', (call) => PackageFunctions.ActivityCliffsEditor(call));
+    const editor = await buildEditor('activityCliffs', 'ActivityCliffsEditor', {table: view.dataFrame});
     const maxDepth = measureReentrancy(editor, () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = editor.isValid;
@@ -107,8 +104,7 @@ category('Editors: no infinite loop', () => {
   });
 
   test('Map Identifiers editor does not loop', async () => {
-    const editor = await buildEditor('getMapIdentifiers',
-      (call) => PackageFunctions.mapIdentifiersEditor(call), {table: view.dataFrame});
+    const editor = await buildEditor('getMapIdentifiers', 'mapIdentifiersEditor', {table: view.dataFrame});
     const maxDepth = measureReentrancy(editor, () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = editor.isValid;
@@ -118,8 +114,7 @@ category('Editors: no infinite loop', () => {
   });
 
   test('Descriptors editor does not loop', async () => {
-    const editor = await buildEditor('descriptorsDocker',
-      (call) => PackageFunctions.descriptorsEditor(call), {table: view.dataFrame});
+    const editor = await buildEditor('descriptorsDocker', 'descriptorsEditor', {table: view.dataFrame});
     const maxDepth = measureReentrancy(editor, () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = editor.isValid;
@@ -131,8 +126,7 @@ category('Editors: no infinite loop', () => {
   // regression: the constructor used to insertBefore against a not-yet-attached anchor and threw
   // NotFoundError whenever a current table was present
   test('Map Identifiers editor builds with a current table', async () => {
-    const editor: any = await buildEditor('getMapIdentifiers',
-      (call) => PackageFunctions.mapIdentifiersEditor(call), {table: view.dataFrame});
+    const editor: any = await buildEditor('getMapIdentifiers', 'mapIdentifiersEditor', {table: view.dataFrame});
     expect(editor.columnInput != null, true, 'column input not created');
     expect(editor.root.contains(editor.columnInput.root), true, 'column input not attached to the editor');
     expect(editor.root.contains(editor.fromSourceInput.root), true, 'from-source input not attached');
@@ -140,9 +134,7 @@ category('Editors: no infinite loop', () => {
 
   test('MMP editor history restore', async () => {
     console.log('[mmp-history] building editor');
-    // eslint-disable-next-line new-cap
-    const editor: any = await buildEditor('mmpAnalysis', (call) => PackageFunctions.MMPEditor(call),
-      {table: view.dataFrame});
+    const editor: any = await buildEditor('mmpAnalysis', 'MMPEditor', {table: view.dataFrame});
     console.log('[mmp-history] editor built');
     const df = view.dataFrame;
     const numCols = Array.from(df.columns.numerical);
@@ -178,8 +170,7 @@ category('Editors: no infinite loop', () => {
   });
 
   test('Map Identifiers editor history restore', async () => {
-    const editor: any = await buildEditor('getMapIdentifiers',
-      (call) => PackageFunctions.mapIdentifiersEditor(call), {table: view.dataFrame});
+    const editor: any = await buildEditor('getMapIdentifiers', 'mapIdentifiersEditor', {table: view.dataFrame});
     editor.loadHistoryString(JSON.stringify({fromSource: 'chembl', toSource: 'pubchem'}));
     expect(editor.fromSourceInput.value, 'chembl', 'fromSource not restored');
     expect(editor.toSourceInput.value, 'pubchem', 'toSource not restored');
