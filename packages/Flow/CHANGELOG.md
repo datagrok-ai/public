@@ -29,6 +29,15 @@
   (a column drag offers real column consumers first) and **functions already used on the canvas**
   float up (pipelines repeat their ops).
 
+### Drop an input drag anywhere on a producer node
+
+* The drop-anywhere-on-node connection shortcut now works in **both directions**. Dragging out of
+  an **input** socket and dropping on another node's body connects from that node's one obvious
+  output: its **real output** when compatible, else its **sole compatible pass-through** (e.g. a
+  table input dropped on *Add New Column* wires to its `table →` pass-through, since its real
+  output is a column). Zero or several equally-good candidates → the connection is simply aborted
+  (aim at a pin) — no guessing, and no suggestion menu for the upstream direction.
+
 ### Domain sections sorted by relevance
 
 * The **Cheminformatics** and **Bioinformatics** toolbox sections are now ordered so the flagship

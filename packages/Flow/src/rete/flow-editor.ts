@@ -117,6 +117,12 @@ export class FlowEditor {
    *  connection AND wasn't on a target socket, the suggestion popup opens. */
   private dragOutSource: {nodeId: string; outputKey: string; dgType: string} | null = null;
 
+  /** Input-side drag state (dragging out of an input socket, or the tail of an
+   *  existing connection). Drives the reverse drop-on-node shortcut: dropping
+   *  on a node body connects from that node's compatible output (a real output
+   *  wins over a passthrough). No suggestion menu on empty-canvas drops. */
+  private dragInSource: {nodeId: string; inputKey: string; dgType: string} | null = null;
+
   constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
     this.callbacks = callbacks;
     this.container = container;
@@ -661,37 +667,46 @@ export class FlowEditor {
         // opening it accidentally.
         if (this.lastPointerButton !== 0) {
           this.dragOutSource = null;
+          this.dragInSource = null;
           return context;
         }
         const sock = c.data.socket as {nodeId: string; key: string; side: 'input' | 'output'};
         // Dim the canvas and light up only the sockets/nodes this pick can
         // legally connect to (compatible type, opposite side).
         this.beginConnectHints(sock.nodeId, sock.key, sock.side);
-        // Suggestions and drop-on-node are output-driven only — input-side
-        // picks (dragging the tail of an existing connection) skip them.
-        if (sock.side !== 'output') {
-          this.dragOutSource = null;
-          return context;
-        }
         const node = this.editor.getNode(sock.nodeId);
-        const slot = node?.outputs[sock.key] as {socket: TypedSocket} | undefined;
-        if (node && slot)
-          this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
+        if (sock.side === 'output') {
+          this.dragInSource = null;
+          const slot = node?.outputs[sock.key] as {socket: TypedSocket} | undefined;
+          if (node && slot)
+            this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
+        } else {
+          // Input-side pick (a fresh drag out of an input, or the tail of an
+          // existing connection) — arms the reverse drop-on-node shortcut.
+          this.dragOutSource = null;
+          const slot = node?.inputs[sock.key] as {socket: TypedSocket} | undefined;
+          this.dragInSource = (node && slot && !isExecKey(sock.key)) ?
+            {nodeId: sock.nodeId, inputKey: sock.key, dgType: slot.socket.dgType} : null;
+        }
       }
       if (c.type === 'connectiondrop') {
         this.endConnectHints();
         const data = c.data as {created: boolean; socket: {nodeId: string} | null};
-        const src = this.dragOutSource;
+        const srcOut = this.dragOutSource;
+        const srcIn = this.dragInSource;
         this.dragOutSource = null;
-        if (!src) return context;
+        this.dragInSource = null;
+        if (!srcOut && !srcIn) return context;
         // A real connection happened, or the user dropped on a socket the
         // plugin handled (accepted, or rejected on type mismatch) — either way
         // they aimed at a specific socket, so don't second-guess them.
         if (data.created || data.socket) return context;
-        // Dropped without hitting a socket: if it landed on a node body with a
-        // single compatible free input, connect to it (no need to hit the tiny
-        // pin); otherwise, on empty canvas, open the suggestion menu.
-        void this.handleOutputDrop(src, lastPointer.x, lastPointer.y);
+        // Dropped without hitting a socket: if it landed on a node body,
+        // connect to its one obvious counterpart slot (no need to hit the tiny
+        // pin). An output drag on empty canvas opens the suggestion menu; an
+        // input drag just aborts (producers are upstream — aim at one).
+        if (srcOut) void this.handleOutputDrop(srcOut, lastPointer.x, lastPointer.y);
+        else if (srcIn) void this.handleInputDrop(srcIn, lastPointer.x, lastPointer.y);
       }
       return context;
     });
@@ -724,6 +739,53 @@ export class FlowEditor {
       return;
     }
     await this.openSuggestionMenu(x, y, src);
+  }
+
+  /** Drop of an input-drag that missed every socket: if it landed on another
+   *  node's body, connect from that node's one obvious output (a real output
+   *  wins over a passthrough — see `soleCompatibleOutput`). On empty canvas or
+   *  ambiguity: abort — no suggestion menu for the upstream direction. */
+  private async handleInputDrop(
+    src: {nodeId: string; inputKey: string; dgType: string}, x: number, y: number,
+  ): Promise<void> {
+    const stack = document.elementsFromPoint(x, y) as HTMLElement[];
+    let nodeEl: HTMLElement | null = null;
+    for (const el of stack) {
+      const n = el.closest?.('.ff-node') as HTMLElement | null;
+      if (n) {
+        nodeEl = n;
+        break;
+      }
+    }
+    const sourceNodeId = nodeEl?.dataset.nodeId;
+    if (!sourceNodeId || sourceNodeId === src.nodeId) return;
+    const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
+    if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
+  }
+
+  /** The output on `sourceNodeId` that can drive the dragged input: the sole
+   *  compatible **real** output wins; only when no real output is compatible
+   *  does the sole compatible **pass-through** qualify. Zero or several
+   *  candidates in the winning group → null (don't guess — aim at a pin).
+   *  Execution-order ports are ignored. Already-wired outputs stay eligible
+   *  (an output legitimately feeds many consumers). Drives the reverse
+   *  drop-on-node shortcut (drop an input drag anywhere on a producer node). */
+  soleCompatibleOutput(dragNodeId: string, dragInputKey: string, sourceNodeId: string): string | null {
+    const inSocket = (this.editor.getNode(dragNodeId)?.inputs[dragInputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    const sourceNode = this.editor.getNode(sourceNodeId);
+    if (!inSocket || !sourceNode) return null;
+    const real: string[] = [];
+    const passthrough: string[] = [];
+    for (const [key, out] of Object.entries(sourceNode.outputs) as
+      Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!out || isExecKey(key)) continue;
+      if (!out.socket.isCompatibleWith(inSocket)) continue;
+      (key.endsWith('__pt') ? passthrough : real).push(key);
+    }
+    if (real.length === 1) return real[0];
+    if (real.length === 0 && passthrough.length === 1) return passthrough[0];
+    return null;
   }
 
   /** The single input on `targetNodeId` that the source output can drive AND is
