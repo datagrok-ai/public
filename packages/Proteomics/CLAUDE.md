@@ -132,6 +132,7 @@ how the pipeline coordinates between steps — there is no other state store.
 |---|---|---|
 | `proteomics.source` | `'maxquant'` / `'spectronaut'` / `'spectronaut-candidates'` / `'fragpipe'` / `'generic'` | parsers |
 | `proteomics.groups` | JSON `GroupAssignment` | `setGroups()` after Annotate Experiment |
+| `proteomics.organism` | g:Profiler code (e.g. `rnorvegicus`) | `setOrganism()` on Enrichment dialog OK; read by enrichment + subcellular-location gene fallback |
 | `proteomics.normalized` | `'true'` | any normalization method |
 | `proteomics.preNormalized` | `'true'` | Spectronaut parser (input was already normalized) |
 | `proteomics.imputed` | `'true'` | any imputation method |

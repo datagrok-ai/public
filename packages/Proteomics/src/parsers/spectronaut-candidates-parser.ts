@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 import {addPrimaryColumnIfNeeded, detectDelimiter} from './shared-utils';
 import {resolveGeneLabels} from '../utils/gene-label-resolver';
 import {setGroups} from '../analysis/experiment-setup';
@@ -23,8 +23,10 @@ const ADJ_P_COLUMNS = ['Qvalue', 'Q-Value', 'Q.Value', 'AdjustedPValue', 'Adjust
 /** Column name variants for the raw p-value (optional in Candidates reports). */
 const P_VALUE_COLUMNS = ['Pvalue', 'PValue', 'P-Value', 'P.Value'];
 
-/** The declared contrast string, kept verbatim. Form: "group1 / group2". */
-const COMPARISON_COLUMNS = ['Comparison (group1/group2)', 'Comparison'];
+/** The declared contrast string, kept verbatim. Form: "group1 / group2".
+ * Exported so callers (e.g. the multi-contrast filter in package.ts) locate the
+ * column by the same name candidates instead of re-inlining the literals. */
+export const COMPARISON_COLUMNS = ['Comparison (group1/group2)', 'Comparison'];
 
 /** Per-group mean abundance, swapped when a row's sign is flipped (A6: only
  * when BOTH are present). */
@@ -40,10 +42,9 @@ const CONDITION_DEN_COLUMNS = ['Condition Denominator'];
  * when the FASTA was re-used across pipelines. */
 const CONTAMINANT_PREFIXES = ['contam_', 'rev_', 'CON__', 'REV__'];
 
-/** Default significance thresholds when the input does not pre-compute a boolean
- * `significant` column. Matches the defaults in `runDifferentialExpression`. */
-const DEFAULT_FC_THRESHOLD = 1.0;
-const DEFAULT_P_THRESHOLD = 0.05;
+// Default significance thresholds (DEFAULT_FC_THRESHOLD / DEFAULT_P_THRESHOLD)
+// are imported from proteomics-types — used when the input does not pre-compute
+// a boolean `significant` column, matching runDifferentialExpression.
 
 /** Finds the first existing column from a list of name candidates. */
 function findCol(df: DG.DataFrame, names: readonly string[]): DG.Column | null {

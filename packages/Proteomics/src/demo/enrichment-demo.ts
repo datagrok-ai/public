@@ -7,7 +7,7 @@ import {runEnrichmentPipeline} from '../analysis/enrichment';
 import {openEnrichmentVisualization} from '../viewers/enrichment-viewers';
 import {createVolcanoPlot} from '../viewers/volcano';
 import {focusProtein} from '../panels/protein-focus';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 
 /**
  * Single-organism pathway-enrichment demo. Loads a small engineered HUMAN
@@ -66,7 +66,7 @@ export async function runEnrichmentDemo(): Promise<void> {
     pi.update(45, 'Running g:Profiler enrichment (GO / KEGG / Reactome)…');
     try {
       const {enrichmentDf, mapped, total} = await runEnrichmentPipeline(
-        df, 1.0, 0.05, 'hsapiens',
+        df, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD, 'hsapiens',
         ['GO:BP', 'GO:MF', 'GO:CC', 'KEGG', 'REAC', 'WP'], true);
       pi.update(90, 'Opening enrichment charts…');
       // openEnrichmentVisualization opens the enrichment view and makes it current.

@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {setGroups, getGroups, GroupAssignment, seedAnnotationDialogInputs} from '../analysis/experiment-setup';
+import {setGroups, getGroups, GroupAssignment, seedAnnotationDialogInputs,
+  setOrganism, getOrganism} from '../analysis/experiment-setup';
 import {medianNormalize, quantileNormalize, vsnNormalize} from '../analysis/normalization';
 import {imputeMinProb, imputeKnn, imputeZero, imputeMean, imputeMedian} from '../analysis/imputation';
 import {runDifferentialExpression, copyDEResultsToFrame, getDefaultComparison}
@@ -62,6 +63,13 @@ category('Experiment Setup', () => {
     ]);
     const result = getGroups(df);
     expect(result, null);
+  });
+
+  test('getOrganism returns undefined until set, then round-trips the code', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('id', ['P0'])]);
+    expect(getOrganism(df) === undefined, true);
+    setOrganism(df, 'rnorvegicus');
+    expect(getOrganism(df), 'rnorvegicus');
   });
 
   test('getGroups round-trips GroupAssignment correctly', async () => {

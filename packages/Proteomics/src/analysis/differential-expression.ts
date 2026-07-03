@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 import {getGroups} from './experiment-setup';
 
 /** Guard for menu/dialog handlers that need DE results. Returns true if DE has been
@@ -45,8 +45,8 @@ export function runDifferentialExpression(
   group2Cols: string[],
   group1Name: string,
   group2Name: string,
-  fcThreshold: number = 1.0,
-  pThreshold: number = 0.05,
+  fcThreshold: number = DEFAULT_FC_THRESHOLD,
+  pThreshold: number = DEFAULT_P_THRESHOLD,
 ): {tested: number; untestable: number} {
   // Compute per-row stats into typed arrays first, then bulk-init the columns.
   // Cheaper than column.set() per row, which hops the JS/native bridge each cell.
@@ -75,7 +75,10 @@ export function runDifferentialExpression(
 
   // BH FDR correction on testable proteins only
   if (rawPValues.length > 0) {
-    const [, corrected] = fdrcorrection(new Float32Array(rawPValues), 0.05, 'i');
+    // alpha is passed for intent/consistency with the user's cutoff; it only
+    // affects the (discarded) reject array — BH-adjusted p-values are
+    // alpha-independent, so this does not change `corrected`.
+    const [, corrected] = fdrcorrection(new Float32Array(rawPValues), pThreshold, 'i');
     for (let j = 0; j < testableIndices.length; j++)
       adjArr[testableIndices[j]] = corrected[j];
   }
@@ -347,10 +350,10 @@ export function showDEDialog(df: DG.DataFrame, onComplete?: () => void): void {
     peptideRow.style.display = methodInput.value === 'DEqMS' ? '' : 'none';
   });
 
-  const fcInput = ui.input.float('|log2FC| threshold', {value: 1.0});
+  const fcInput = ui.input.float('|log2FC| threshold', {value: DEFAULT_FC_THRESHOLD});
   fcInput.setTooltip('Minimum absolute fold change for significance');
 
-  const pInput = ui.input.float('Adj. p-value threshold', {value: 0.05});
+  const pInput = ui.input.float('Adj. p-value threshold', {value: DEFAULT_P_THRESHOLD});
   pInput.setTooltip('Maximum adjusted p-value for significance');
 
   ui.dialog('Differential Expression')
@@ -362,8 +365,8 @@ export function showDEDialog(df: DG.DataFrame, onComplete?: () => void): void {
     .add(fcInput)
     .add(pInput)
     .onOK(async () => {
-      const fc = fcInput.value ?? 1.0;
-      const p = pInput.value ?? 0.05;
+      const fc = fcInput.value ?? DEFAULT_FC_THRESHOLD;
+      const p = pInput.value ?? DEFAULT_P_THRESHOLD;
       const method = methodInput.value;
 
       // Determine numerator/denominator from pairs index, not string-splitting,

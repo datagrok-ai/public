@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {fetchUniProtEntry} from '../analysis/subcellular-location';
 import {getGroups, GroupAssignment} from '../analysis/experiment-setup';
 import {findColumn} from '../utils/column-detection';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DIRECTION_COLORS_BASE} from '../utils/proteomics-types';
 
 
 /** UniProt REST API response types */
@@ -183,7 +183,14 @@ export function renderPerGroupBars(df: DG.DataFrame, accession: string): HTMLEle
   );
   const safeMax = maxVal > 0 ? maxVal : 1;
   const scale = (v: number) => H - PAD - (v / safeMax) * (H - 2 * PAD);
-  const COLORS = ['#FF00FF', '#00FFFF']; // D-04 LOCKED palette: group1=magenta, group2=cyan
+  // D-04 LOCKED palette: group1=magenta, group2=cyan — derived from the shared
+  // DIRECTION_COLORS_BASE (ARGB) so the panel can't drift from the volcano.
+  // #RRGGBB (uppercase) matches the SVG fill the panel has always emitted.
+  const hexRgb = (argb: number) => '#' + (argb & 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
+  const COLORS = [
+    hexRgb(DIRECTION_COLORS_BASE.enrichedG1),
+    hexRgb(DIRECTION_COLORS_BASE.enrichedG2),
+  ];
   const svgNs = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNs, 'svg');
   svg.setAttribute('width', String(W));
@@ -198,7 +205,7 @@ export function renderPerGroupBars(df: DG.DataFrame, accession: string): HTMLEle
     rect.setAttribute('y', String(y));
     rect.setAttribute('width', String(BAR_W));
     rect.setAttribute('height', String(Math.max(0, H - PAD - y)));
-    rect.setAttribute('fill', COLORS[i] ?? '#AAAAAA');
+    rect.setAttribute('fill', COLORS[i] ?? hexRgb(DIRECTION_COLORS_BASE.notSig));
     svg.appendChild(rect);
 
     // Mean±SD whiskers only when SD is defined (n > 1).

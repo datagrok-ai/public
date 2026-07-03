@@ -156,10 +156,15 @@ export function mergeStreamTsv(text: string): StreamTsvResult {
 
 // --- Fetch + cache + D-03 fallback (Task 2) ---
 
-/** Organism code → NCBI taxonomy id (CK-omics mapping). Optional narrowing —
- * accessions are globally unique, so the filter is omitted when unknown (A1). */
-const ORGANISM_TAXONOMY: Record<string, number> = {
-  hsapiens: 9606, mmusculus: 10090, rnorvegicus: 10116, dmelanogaster: 7227,
+/** Organism g:Profiler code → NCBI (species-level) taxonomy id. Covers all 9
+ * organisms in enrichment's `ORGANISM_LIST`. Species-level ids are used so the
+ * UniProt `taxonomy_id:` filter (hierarchical — matches the taxon and its
+ * descendants) stays inclusive of strains (e.g. E. coli K-12 under 562).
+ * Only the gene-fallback pass narrows by this; accession queries do not (A1:
+ * accessions are globally unique, so filtering them risks excluding valid hits). */
+export const ORGANISM_TAXONOMY: Record<string, number> = {
+  hsapiens: 9606, mmusculus: 10090, rnorvegicus: 10116, scerevisiae: 4932,
+  ecoli: 562, drerio: 7955, dmelanogaster: 7227, athaliana: 3702, celegans: 6239,
 };
 
 /** userDataStorage key for the cross-session accession → category cache.
@@ -277,6 +282,8 @@ export async function getSubcellularLocations(
 
   const geneByAcc = new Map<string, string>();
   const fetched: Record<string, string> = {};
+  // Applied ONLY to the Pass 2 gene fallback below — gene symbols are shared
+  // across species, so without this a rat gene resolves to the human entry.
   const taxClause = taxonomyClause(organism);
 
   // Single timer-driven incremental flush. Workers DO NOT touch the cache —
@@ -304,9 +311,11 @@ export async function getSubcellularLocations(
     const totalAcc = accChunks.length;
     let doneAcc = 0;
     await runWithConcurrency(accChunks, FETCH_CONCURRENCY, async (group) => {
+      // Pass 1 is deliberately NOT taxonomy-filtered: accessions are globally
+      // unique, so a wrong/mis-set organism must never exclude a valid protein.
       const q = group.map((a) => `accession:${a}`).join(' OR ');
       const url = 'https://rest.uniprot.org/uniprotkb/stream' +
-        `?query=(${encodeURIComponent(q)})${encodeURIComponent(taxClause)}` +
+        `?query=(${encodeURIComponent(q)})` +
         `&fields=${STREAM_FIELDS}&format=tsv`;
       try {
         const resp = await grok.dapi.fetchProxy(url);

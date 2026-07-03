@@ -3,9 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {findColumn} from '../utils/column-detection';
-import {SEMTYPE} from '../utils/proteomics-types';
+import {SEMTYPE, DIRECTION_COLORS_BASE, DEFAULT_FC_THRESHOLD,
+  DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 import {parseAccession} from '../panels/uniprot-panel';
-import {getGroups} from '../analysis/experiment-setup';
+import {getGroups, getOrganism} from '../analysis/experiment-setup';
 import {
   getSubcellularLocations,
   LOCATION_COLORS,
@@ -29,7 +30,7 @@ export type ColorDim = 'significance' | 'location';
  * early-return on existence, never remove+re-add a bound column). */
 const NEG_LOG_COL = 'negLog10P';
 const DIRECTION_COL = 'direction';
-const LOCATION_COL = 'Subcellular Location';
+export const LOCATION_COL = 'Subcellular Location';
 
 /** Persists the active metric on the DataFrame so the Volcano Options dialog
  * (G2) and the axis-label overlay (G1) can derive Y-axis text without
@@ -74,12 +75,9 @@ export function ensureNegLog10Column(
 
 /** LOCKED color contract (D-04, CONTEXT.md §"Specifics"): magenta = numerator
  * (group1), cyan = denominator (group2), gray = NS. Keys are derived per call
- * from `getGroups(df)`; the ARGB ints here are the invariant base. */
-export const DIRECTION_COLORS_BASE = {
-  enrichedG1: 0xFFFF00FF, // magenta (ARGB)
-  enrichedG2: 0xFF00FFFF, // cyan (ARGB)
-  notSig: 0xFFAAAAAA, // gray (ARGB)
-} as const;
+ * from `getGroups(df)`; the ARGB ints are the invariant base, now sourced from
+ * `proteomics-types` and re-exported here for existing importers. */
+export {DIRECTION_COLORS_BASE};
 
 /** Ensures the direction column, classified against the chosen `metric` (same
  * column the Y axis uses, so dots and coloring never disagree). Updated in
@@ -186,7 +184,10 @@ export async function ensureLocationColumn(
     return LOCATION_COL;
   }
 
-  const locByAcc = await getSubcellularLocations([...accessions], undefined, progress);
+  // Organism (set by the enrichment dialog, persisted as a df tag) narrows the
+  // gene-fallback pass so non-human data isn't mis-colored from human entries.
+  const locByAcc = await getSubcellularLocations(
+    [...accessions], getOrganism(df), progress);
   const vals: string[] = new Array(n);
   for (let i = 0; i < n; i++) {
     const acc = accForRow[i];
@@ -526,8 +527,8 @@ export function createVolcanoPlot(
   df: DG.DataFrame,
   options?: {fcThreshold?: number; pThreshold?: number; topNLabels?: number; title?: string},
 ): DG.ScatterPlotViewer {
-  const fcThreshold = options?.fcThreshold ?? 1.0;
-  const pThreshold = options?.pThreshold ?? 0.05;
+  const fcThreshold = options?.fcThreshold ?? DEFAULT_FC_THRESHOLD;
+  const pThreshold = options?.pThreshold ?? DEFAULT_P_THRESHOLD;
 
   // Re-entry contract — dispose every overlay / subscription from a prior
   // createVolcanoPlot call BEFORE attaching new ones (Pitfall 6). We do this
@@ -578,8 +579,8 @@ export async function recomputeVolcano(
   sp: DG.ScatterPlotViewer,
   metric: MetricKind,
   colorDim: ColorDim,
-  fcThreshold = 1.0,
-  pThreshold = 0.05,
+  fcThreshold = DEFAULT_FC_THRESHOLD,
+  pThreshold = DEFAULT_P_THRESHOLD,
   progress?: ProgressCb,
 ): Promise<void> {
   // Persist BEFORE the column-recompute path so the axis-label refresh below

@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {getGroups} from '../analysis/experiment-setup';
 import {ensureDirectionColumn} from './volcano';
+import {DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/proteomics-types';
 import {
   getIntensityColumns,
   computeMA,
@@ -73,7 +74,7 @@ export function openQcDashboard(df: DG.DataFrame): void {
     // Conditional coloring by direction when DE is available
     if (df.getTag('proteomics.de_complete') === 'true') {
       try {
-        const dirColName = ensureDirectionColumn(df, 1.0, 0.05);
+        const dirColName = ensureDirectionColumn(df, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD);
         maPlotOptions['colorColumnName'] = dirColName;
       } catch (_e) {
         // DE columns may not exist despite tag -- skip coloring

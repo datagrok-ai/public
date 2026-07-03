@@ -28,6 +28,20 @@ export function getGroups(df: DG.DataFrame): GroupAssignment | null {
   }
 }
 
+/** Store the experiment's organism as a g:Profiler code (e.g. `rnorvegicus`) on
+ * the DataFrame. Single source of truth shared by enrichment and the subcellular-
+ * location fetch — set once (enrichment dialog OK), read by both. */
+export function setOrganism(df: DG.DataFrame, code: string): void {
+  df.setTag('proteomics.organism', code);
+}
+
+/** Retrieve the experiment's organism code, or undefined if never chosen. The
+ * subcellular-location gene fallback narrows by this; undefined = unfiltered
+ * (safe — same behavior as before an organism was ever selected). */
+export function getOrganism(df: DG.DataFrame): string | undefined {
+  return df.getTag('proteomics.organism') || undefined;
+}
+
 /** Seed values for the Annotate Experiment dialog. */
 export interface AnnotationSeed {
   group1Name: string;
