@@ -140,6 +140,17 @@ text in [Section 5](#apache-license-version-20)).
 
 ---
 
+## JS API Libraries
+
+| Component                        | Version | License      | Upstream                                          |
+|----------------------------------|---------|--------------|---------------------------------------------------|
+| OpenChemLib JS                   | 7.x     | BSD-3-Clause | https://github.com/cheminfo/openchemlib-js        |
+| RxJS                             | 6.x     | Apache-2.0   | https://github.com/ReactiveX/rxjs                 |
+| cash-dom                         | 8.x     | MIT          | https://github.com/fabiospampinato/cash           |
+| Day.js                           | 1.x     | MIT          | https://github.com/iamkun/dayjs                   |
+| wu.js                            | 2.x     | MIT          | https://github.com/fitzgen/wu.js                  |
+
+
 ## 5. Full License Texts
 
 ### BSD 3-Clause License

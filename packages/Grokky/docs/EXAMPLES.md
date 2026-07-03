@@ -72,3 +72,13 @@
 | Shigella bioactivity                          |                |   |
 | PK for LEVOFLOXACIN                           |                |   |
 | CHO assay data                                |                |   |
+
+
+## Visualizations
+
+| prompt             | dataset |                                       |
+|--------------------|---------|---------------------------------------|
+| calculate bmi      | demog   | adds new column with (width / height) |
+| calculate lipinski | smiles  | computes lipinski                     |
+|                    |         |                                       |
+|                    |         |                                       |
