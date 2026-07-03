@@ -3,8 +3,9 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType, getRegisteredTypeNames,
-  getRegisteredFuncs,
+  getRegisteredFuncs, findNodeTypesAcceptingInput, funcCategory,
 } from '../rete/node-factory';
+import {FUNC_CATEGORIES} from '../panel/function-browser';
 import {FuncNode} from '../rete/nodes/func-node';
 import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
 
@@ -112,5 +113,100 @@ category('Flow: node-factory', () => {
     const other = DG.Func.find({name: 'AddNewColumn'})[0];
     if (other)
       expect((new FuncNode(other) as unknown as {color?: string}).color !== '#EF5350', true);
+  });
+
+  test('suggestion menu shows friendly names with "what it does" categories', async () => {
+    // Dragging a table output to empty canvas lists compatible nodes. DG funcs
+    // must read like the toolbox — friendly name + task category — not the raw
+    // `funcName (Uncategorized)` baked into the typeName.
+    const candidates = findNodeTypesAcceptingInput('dataframe');
+    expect(candidates.length > 0, true, 'a table output has compatible next steps');
+
+    // No DG function is labeled with the role-segment fallback.
+    const uncategorized = candidates.filter((c) => c.label.includes('Uncategorized'));
+    expect(uncategorized.length, 0,
+      `"Uncategorized" leaked into labels: ${uncategorized.slice(0, 3).map((c) => c.label).join(' | ')}`);
+
+    // A known catalog func shows its registry display name and task category.
+    const anc = getRegisteredFuncs().find((f) => f.func.name === 'AddNewColumn');
+    if (anc) {
+      const item = candidates.find((c) => c.typeName === anc.nodeTypeName);
+      expect(!!item, true, 'AddNewColumn is offered for a table output');
+      expect(item!.label, `${anc.name}  (${funcCategory(anc)})`, 'friendly name + what-it-does category');
+      expect(funcCategory(anc), 'Column Operations', 'AddNewColumn is a column operation');
+    }
+
+    // Every DG-func candidate carries a known category in parentheses.
+    const catRe = /\((.+)\)$/;
+    for (const c of candidates.filter((x) => !x.isBuiltin).slice(0, 50)) {
+      const m = catRe.exec(c.label);
+      expect(!!m, true, `label has a category: ${c.label}`);
+      expect((FUNC_CATEGORIES as readonly string[]).includes(m![1]), true, `known category in ${c.label}`);
+    }
+
+    // Built-ins keep their plain label.
+    const builtin = candidates.find((c) => c.typeName === 'Outputs/Table Output');
+    if (builtin) expect(builtin.label, 'Table Output');
+
+    // A Chem operation lands under its domain, same as the toolbox.
+    const chemOp = candidates.find((c) => {
+      if (c.isBuiltin) return false;
+      const info = getRegisteredFuncs().find((f) => f.nodeTypeName === c.typeName);
+      return info?.packageName === 'Chem';
+    });
+    if (chemOp) expect(chemOp.label.endsWith('(Cheminformatics)'), true, `chem op labeled by domain: ${chemOp.label}`);
+  });
+
+  test('suggestion ranking: the science in play leads, exact types beat wildcards, used funcs float', async () => {
+    const idxOf = (list: {typeName: string}[], pred: (c: {typeName: string; label: string}) => boolean): number =>
+      (list as Array<{typeName: string; label: string}>).findIndex(pred);
+    const isChem = (c: {label: string}): boolean => c.label.endsWith('(Cheminformatics)');
+    const byFunc = (name: string) => (c: {typeName: string}): boolean =>
+      (c.typeName.split('/').pop() ?? '').split(':').pop() === name;
+
+    // Value Output is always first, context or not.
+    const plain = findNodeTypesAcceptingInput('dataframe');
+    expect(plain[0].typeName, 'Outputs/Value Output', 'Value Output leads');
+
+    // Exact type match beats a wildcard acceptor in the same tier: for a table
+    // drag, Table Output (dataframe input) precedes Log (dynamic input) even
+    // though "Log" sorts first alphabetically.
+    const tableOut = idxOf(plain, (c) => c.typeName === 'Outputs/Table Output');
+    const log = idxOf(plain, (c) => c.typeName === 'Utilities/Log');
+    if (tableOut !== -1 && log !== -1)
+      expect(tableOut < log, true, 'exact dataframe consumer before a dynamic catch-all');
+
+    if (getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
+      // Dragging out of a Chem node → every Cheminformatics function precedes
+      // the common core funcs (and thus all other DG funcs).
+      const fromChem = findNodeTypesAcceptingInput('dataframe', {sourcePackageName: 'Chem'});
+      const lastChem = (fromChem as Array<{label: string}>).map(isChem).lastIndexOf(true);
+      const ancFrom = idxOf(fromChem, byFunc('AddNewColumn'));
+      expect(lastChem !== -1, true, 'chem candidates exist for a table drag');
+      if (ancFrom !== -1)
+        expect(lastChem < ancFrom, true, 'all chem funcs precede the common core funcs');
+
+      // A domain-less source (OpenFile, a utility) falls back to the science
+      // already on the canvas.
+      const viaGraph = findNodeTypesAcceptingInput('dataframe', {graphPackageNames: ['Chem']});
+      expect(isChem(viaGraph[1] as {label: string}), true, 'canvas domain boosts chem right after Value Output');
+
+      // No context → no domain boost: the common core funcs stay ahead of chem.
+      const ancPlain = idxOf(plain, byFunc('AddNewColumn'));
+      const firstChemPlain = idxOf(plain, isChem as (c: {typeName: string; label: string}) => boolean);
+      if (ancPlain !== -1 && firstChemPlain !== -1)
+        expect(ancPlain < firstChemPlain, true, 'without context, chem is not boosted');
+    }
+
+    // A function already used on the canvas floats within its tier: Aggregate
+    // jumps ahead of Add New Column (which otherwise wins alphabetically).
+    const ancIdx = idxOf(plain, byFunc('AddNewColumn'));
+    const aggIdx = idxOf(plain, byFunc('Aggregate'));
+    if (ancIdx !== -1 && aggIdx !== -1) {
+      expect(ancIdx < aggIdx, true, 'baseline: Add New Column sorts before Aggregate');
+      const used = findNodeTypesAcceptingInput('dataframe', {graphFuncNames: ['Aggregate']});
+      expect(idxOf(used, byFunc('Aggregate')) < idxOf(used, byFunc('AddNewColumn')), true,
+        'a func already on the canvas floats above its tier peers');
+    }
   });
 });

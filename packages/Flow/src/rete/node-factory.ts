@@ -10,7 +10,7 @@ import {ClassicPreset} from 'rete';
 import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE} from './scheme';
 import {FuncNode} from './nodes/func-node';
 import {TypedSocket, getSocket} from './sockets';
-import {areTypesCompatible} from '../types/type-map';
+import {areTypesCompatible, categorizeBySignature, domainCategory, domainSection} from '../types/type-map';
 
 import {
   TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode,
@@ -45,6 +45,24 @@ export interface FuncInfo {
   tags: string[];
   packageName: string;
   nodeTypeName: string;
+  /** Lazily-computed "what it does" category (see {@link funcCategory}). */
+  category?: string;
+}
+
+/** The "what it does" category for a catalog function — domain (chem/bio) wins
+ *  for operations on data, else the signature category; the same routing as the
+ *  browser's `categorizeFunc` and the node title-bar coloring. Cached on the
+ *  FuncInfo (Dart-proxy input/output reads aren't free). */
+export function funcCategory(info: FuncInfo): string {
+  if (info.category) return info.category;
+  let cat = 'Other';
+  try {
+    const ins = info.func.inputs.map((p) => String(p.propertyType));
+    const outs = info.func.outputs.map((p) => String(p.propertyType));
+    cat = domainCategory(info.packageName, ins) ?? categorizeBySignature(ins, outs, info.role);
+  } catch {/* Dart proxy edge cases — keep 'Other' */}
+  info.category = cat;
+  return cat;
 }
 
 type Factory = () => FlowNode;
@@ -109,7 +127,7 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
   try {
     const include = safeGet(func.options, 'includeInFlow');
     if (include === false || String(include).toLowerCase() === 'false') return true;
-  } catch { /* options can throw on odd Dart proxies — fall through */ }
+  } catch {/* options can throw on odd Dart proxies — fall through */}
 
   if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
 
@@ -117,7 +135,7 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
   // internal twins, demo/test, plumbing) — keyed by namespace-qualified name.
   try {
     if (EXCLUDED_FUNC_NQNAMES.has(func.nqName)) return true;
-  } catch { /* nqName can throw on odd Dart proxies — fall through */ }
+  } catch {/* nqName can throw on odd Dart proxies — fall through */}
 
   // Test scaffolding by name (TestData, testFunction, Pkg:test, …).
   const nm = (func.name || '').toLowerCase();
@@ -135,13 +153,13 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
   // Command / dialog wrappers operate on a FuncCall, not on data.
   try {
     if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
-  } catch { /* ignore introspection failures */ }
+  } catch {/* ignore introspection failures */}
 
   // Right-click / context actions take a `semantic_value` (the cell's value) and
   // just mutate the UI or clipboard — not a pipeline step.
   try {
     if (func.inputs.some((p) => String(p.propertyType) === 'semantic_value')) return true;
-  } catch { /* ignore introspection failures */ }
+  } catch {/* ignore introspection failures */}
 
   // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
   // widget) can't be previewed or composed in a flow — drop them.
@@ -154,7 +172,7 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
       const t = String(p.propertyType);
       return t === 'view' || t === 'viewer' || FILTER_CALL_OUTPUT_TYPES.has(t);
     })) return true;
-  } catch { /* ignore introspection failures */ }
+  } catch {/* ignore introspection failures */}
 
   // Primitive-only helpers: every input AND output is a scalar (string / number /
   // bool / dynamic) — not a data-flow step. Hidden to cut catalog noise.
@@ -162,7 +180,7 @@ function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], p
     const allPrim = (props: DG.Property[]): boolean =>
       props.every((p) => PRIMITIVE_TYPES.has(String(p.propertyType)));
     if (allPrim(func.inputs) && allPrim(func.outputs)) return true;
-  } catch { /* ignore introspection failures */ }
+  } catch {/* ignore introspection failures */}
 
   return false;
 }
@@ -396,12 +414,18 @@ export interface CompatibleNodeType {
   label: string;
   isBuiltin: boolean;
   description?: string;
+  /** Whether an input slot matches the dragged type exactly (vs a
+   *  `dynamic`/`object` wildcard) — exact consumers rank first in their tier. */
+  exact?: boolean;
 }
 
-/** Display label parsed from a typeName like `Inputs/Table Input` or
- *  `DG Functions/Transform/JoinTables` → the trailing segment, but for DG
- *  functions we also include the role for orientation. */
-function labelForTypeName(typeName: string): string {
+/** Display label for a suggestion-menu candidate. Built-ins show their trailing
+ *  typeName segment; DG functions show the same **friendly name** the toolbox
+ *  uses, with the "what it does" category in parentheses for orientation —
+ *  NOT the raw func name / role segment baked into the typeName (which reads
+ *  as `AddNewColumn (Uncategorized)` for the role-less majority). */
+function labelForTypeName(typeName: string, info?: FuncInfo): string {
+  if (info) return `${info.name}  (${funcCategory(info)})`;
   const parts = typeName.split('/');
   if (parts[0] === 'DG Functions' && parts.length >= 3)
     return `${parts[parts.length - 1]}  (${parts[1]})`;
@@ -425,29 +449,83 @@ function simpleFuncName(typeName: string): string {
   return (last.split(':').pop() ?? last).toLowerCase();
 }
 
+/** Canvas context the drag-out suggestion menu ranks against — what the drag
+ *  came from and what the user is already building with. All optional; without
+ *  it the ranking degrades to the context-free order. */
+export interface SuggestionContext {
+  /** Package of the node the drag started from ('' / undefined for built-ins). */
+  sourcePackageName?: string | null;
+  /** Source packages of every node already on the canvas. */
+  graphPackageNames?: Iterable<string>;
+  /** Simple function names already used on the canvas (any case). */
+  graphFuncNames?: Iterable<string>;
+}
+
 /** All registered node types whose inputs include at least one slot
  *  type-compatible with `sourceType`. Used by the drag-output suggestion menu.
- *  Ranked: Value Output first (dynamic accepts everything), then common
- *  next-step functions, then the rest of the built-ins, then DG funcs
- *  alphabetically — so the likely next node is one of the first offered. */
-export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeType[] {
-  const matches: CompatibleNodeType[] = [];
+ *
+ *  Ranked by discovery heuristics (lower tier = higher in the list):
+ *  1. **Value Output** — the universal "expose this value" terminal.
+ *  2. **The science you're doing** — Cheminformatics / Bioinformatics functions
+ *     when the drag *source* is from that domain's package (else when the
+ *     canvas already holds nodes of that domain): dragging out of Chemical
+ *     Properties should offer chem next-steps first, not bury them
+ *     alphabetically.
+ *  3. **Common next-step funcs** (`COMMON_NEXT_FUNCS` — Join, AddNewColumn,
+ *     Aggregate, Filter, …) — the usage-proxy for core table plumbing.
+ *  4. Other built-ins (viewers, outputs, utilities).
+ *  5. The remaining DG functions.
+ *
+ *  Within a tier: an **exact type match** beats a wildcard (`dynamic`/`object`)
+ *  acceptor — a `column` drag offers real column consumers before catch-alls;
+ *  then functions **already used on the canvas** (pipelines repeat their ops);
+ *  then alphabetical. */
+export function findNodeTypesAcceptingInput(
+  sourceType: string, context?: SuggestionContext,
+): CompatibleNodeType[] {
+  const matches: Array<CompatibleNodeType & {exact: boolean}> = [];
+  // typeName → catalog entry, for friendly names + "what it does" categories.
+  const infoByTypeName = new Map(funcRegistry.map((f) => [f.nodeTypeName, f]));
   for (const typeName of FACTORIES.keys()) {
     const inputTypes = getInputTypesForType(typeName);
     if (inputTypes.length === 0) continue;
     if (!inputTypes.some((t) => areTypesCompatible(sourceType, t))) continue;
     matches.push({
       typeName,
-      label: labelForTypeName(typeName),
+      label: labelForTypeName(typeName, infoByTypeName.get(typeName)),
       isBuiltin: !typeName.startsWith('DG Functions/'),
+      exact: inputTypes.includes(sourceType),
     });
   }
+
+  // The science in play: the drag-source's own domain wins; a domain-less
+  // source (OpenFile, a utility) falls back to any domain already on the
+  // canvas — a flow with chem nodes keeps offering chem next-steps.
+  const preferredDomains = new Set<string>();
+  const srcDomain = domainSection(context?.sourcePackageName || undefined);
+  if (srcDomain) preferredDomains.add(srcDomain);
+  else {
+    for (const p of context?.graphPackageNames ?? []) {
+      const d = domainSection(p);
+      if (d) preferredDomains.add(d);
+    }
+  }
+  const usedFuncs = new Set<string>();
+  for (const n of context?.graphFuncNames ?? []) usedFuncs.add(n.toLowerCase());
+
   // Lower rank number = higher in the list.
   const rank = (t: CompatibleNodeType): number => {
     if (t.typeName === 'Outputs/Value Output') return 0;
-    if (COMMON_NEXT_FUNCS.has(simpleFuncName(t.typeName))) return 1;
-    return t.isBuiltin ? 2 : 3;
+    const info = infoByTypeName.get(t.typeName);
+    if (info && preferredDomains.size > 0 && preferredDomains.has(funcCategory(info))) return 1;
+    if (COMMON_NEXT_FUNCS.has(simpleFuncName(t.typeName))) return 2;
+    return t.isBuiltin ? 3 : 4;
   };
-  matches.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
+  const used = (t: CompatibleNodeType): number => (usedFuncs.has(simpleFuncName(t.typeName)) ? 0 : 1);
+  matches.sort((a, b) =>
+    rank(a) - rank(b) ||
+    Number(b.exact) - Number(a.exact) ||
+    used(a) - used(b) ||
+    a.label.localeCompare(b.label));
   return matches;
 }

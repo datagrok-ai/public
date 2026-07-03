@@ -15,6 +15,20 @@
   close the edited values are written back into the node — connected inputs are never overridden,
   and columns come back as name strings (the panel edits names, not live columns).
 
+### Drag-out suggestion menu reads like the toolbox
+
+* The "Add node…" popup (drag a node's output to empty canvas) now shows each function's
+  **friendly name** with its **"what it does" category** in parentheses — `Add New Column
+  (Column Operations)`, `Chemical Properties  (Cheminformatics)` — instead of the raw function name
+  with the role-based `(Uncategorized)` segment. Searching by the raw name still works.
+* Suggestions are now **ranked by canvas context**, not just alphabetically: Value Output stays
+  first; then **the science you're doing** — Cheminformatics / Bioinformatics functions when the
+  drag comes out of a chem/bio node (or, for a domain-less source like OpenFile, when the canvas
+  already holds chem/bio nodes); then the common table next-steps (Join, Add New Column,
+  Aggregate, …); then the rest. Within a tier, an **exact type match** beats a `dynamic` catch-all
+  (a column drag offers real column consumers first) and **functions already used on the canvas**
+  float up (pipelines repeat their ops).
+
 ### Domain sections sorted by relevance
 
 * The **Cheminformatics** and **Bioinformatics** toolbox sections are now ordered so the flagship

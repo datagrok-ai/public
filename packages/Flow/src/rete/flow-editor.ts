@@ -794,7 +794,15 @@ export class FlowEditor {
     source: {nodeId: string; outputKey: string; dgType: string},
   ): Promise<void> {
     const {findNodeTypesAcceptingInput, createNode} = await import('./node-factory');
-    const candidates = findNodeTypesAcceptingInput(source.dgType);
+    // Canvas context for the ranking heuristics: the science the drag came
+    // from (source node's package), what's already on the canvas (packages →
+    // domain fallback), and which functions the user already reached for.
+    const nodes = this.editor.getNodes();
+    const candidates = findNodeTypesAcceptingInput(source.dgType, {
+      sourcePackageName: this.editor.getNode(source.nodeId)?.dgPackageName,
+      graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
+      graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+    });
     if (candidates.length === 0) return;
 
     const choice = await this.promptSuggestion(clientX, clientY, candidates);

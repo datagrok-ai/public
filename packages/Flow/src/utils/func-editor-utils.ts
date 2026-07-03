@@ -56,7 +56,11 @@ export async function createFuncCallEditor(fc: DG.FuncCall): Promise<DG.FuncCall
     let dialogSub: rxjs.Subscription | null = null;
     const sub = grok.events.onEvent('d4-before-run-action').subscribe((f: DG.FuncCall) => {
       if (f?.func === fc.func) {
-        fc.status = 'Canceled'; // this ,makes sure the funccall not be run,
+        try {
+          f.status = 'Canceled'; // this ,makes sure the funccall not be run,
+        } catch (e) {
+          console.error(e); // unsupported on current released version
+        }
         // and all the parameters are saved to the funccall
         sub.unsubscribe();
         dialogSub?.unsubscribe();
