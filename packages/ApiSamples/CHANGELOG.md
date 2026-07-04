@@ -1,5 +1,9 @@
 # API Samples changelog
 
+## v.next
+
+* GROK-20307: Added dapi/domains.js — domain-table row CRUD via grok.dapi.domains
+
 ## 1.2.1 (2-24-11-24)
 
 * New samples, version bump

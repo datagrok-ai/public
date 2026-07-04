@@ -20,6 +20,7 @@ import {
   UserSession,
   Property,
   FileInfo, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo, UserNotification,
+  DomainSchema,
 } from './entities';
 import { DockerImage } from "./api/grok_shared.api.g";
 import {toJs, toDart} from "./wrappers";
@@ -162,6 +163,12 @@ export class Dapi {
 
   get spaces(): SpacesDataSource {
     return new SpacesDataSource(api.grok_Dapi_Spaces());
+  }
+
+  /** Domain tables API: generic row CRUD over entity-mapped domain schemas
+   * declared by plugin manifests (databases/&lt;schema&gt;/schema.json). */
+  get domains(): DomainsDataSource {
+    return new DomainsDataSource(api.grok_Dapi_Domains());
   }
 
   /**
@@ -1044,6 +1051,91 @@ export class SpaceFilesClient {
   /** Deletes a file or directory */
   delete(file: FileInfo | string): Promise<void> {
     return api.grok_SpaceFilesClient_Delete(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+}
+
+/** Query options for {@link DomainTableClient.query}. */
+export interface DomainQuerySpec {
+  /** Smart-filter string (same grammar as entity search), e.g. `barcode starts with "P-1" and organism = "human"`. */
+  filter?: string;
+  /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
+  sort?: string;
+  /** Columns to return; omit for all viewable columns. */
+  columns?: string[];
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Generic client for domain tables — entity-mapped PostgreSQL schemas that plugins
+ * declare via `databases/<schema>/schema.json` manifests. Rows are plain JSON objects;
+ * column metadata and security come from the server-side schema registry. */
+export class DomainsDataSource {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Registered domain schemas; use `.include('tables')` to populate their tables. */
+  get schemas(): HttpDataSource<DomainSchema> {
+    return new HttpDataSource(api.grok_Dapi_Domains_Schemas(this.dart));
+  }
+
+  /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`. */
+  table(name: string): DomainTableClient {
+    const dot = name.indexOf('.');
+    if (dot < 1 || dot === name.length - 1)
+      throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
+    return new DomainTableClient(this.dart, name.substring(0, dot), name.substring(dot + 1));
+  }
+}
+
+/**
+ * Row CRUD for one domain table. Reads return only rows and columns the current
+ * user can see; writes are validated, permission-checked, and audited server-side. */
+export class DomainTableClient {
+  dart: any;
+
+  constructor(dart: any, public readonly schema: string, public readonly table: string) {
+    this.dart = dart;
+  }
+
+  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects. */
+  query(spec: DomainQuerySpec = {}): Promise<any[]> {
+    return api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec);
+  }
+
+  /** Fetches one row by id; resolves to null if the row does not exist or is not visible. */
+  get(id: string): Promise<any> {
+    return api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id);
+  }
+
+  /** Inserts a single row or a small array of rows; resolves to per-row reports
+   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match). */
+  insert(rows: object | object[]): Promise<any[]> {
+    return api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows);
+  }
+
+  /** Partially updates a row; pass `options.version` for optimistic concurrency
+   * (the update fails with a version conflict if the row has changed since). */
+  update(id: string, values: object, options?: {version?: number}): Promise<any> {
+    return api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version);
+  }
+
+  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations). */
+  delete(id: string): Promise<void> {
+    return api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id);
+  }
+
+  /** Creates the entities row for a domain row so it can be individually shared. */
+  promote(id: string): Promise<any> {
+    return api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id);
+  }
+
+  /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
+  audit(id: string): Promise<any[]> {
+    return api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id);
   }
 }
 

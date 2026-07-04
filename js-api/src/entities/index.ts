@@ -39,6 +39,9 @@ export * from './view-layout';
 // Reports and notifications
 export * from './reports';
 
+// DomainSchema, DomainTable
+export * from './domain';
+
 // Miscellaneous: Model, Notebook, Package, DockerContainer, ProgressIndicator
 export * from './misc';
 
