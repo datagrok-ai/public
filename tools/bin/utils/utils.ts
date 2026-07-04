@@ -24,6 +24,11 @@ export function kebabToCamelCase(s: string, firstUpper: boolean = true): string 
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
 }
 
+export function snakeToCamelCase(s: string, firstUpper: boolean = true): string {
+  s = s.replace(/_./g, (x) => x[1].toUpperCase());
+  return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
+}
+
 export function descriptionToComment(s: string) {
   if (s.length === 0)
     return '';
