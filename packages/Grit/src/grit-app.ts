@@ -1,0 +1,204 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+const statuses = ['open', 'in progress', 'resolved', 'closed'];
+const priorities = ['low', 'medium', 'high', 'critical'];
+
+/** Minimal issue tracker over grok.dapi.domains — the 'grit' domain schema
+ * declared in databases/grit/schema.json. */
+export class GritApp {
+  view: DG.ViewBase = DG.View.create();
+  projects: any[] = [];
+  currentProject: any = null;
+  users = new Map<string, string>();
+  gridHost = ui.div([], 'grit-grid-host');
+  detailHost = ui.div([], 'grit-detail-host');
+  projectInput?: DG.ChoiceInput<string | null>;
+  private refreshSeq = 0;
+  private detailSeq = 0;
+
+  get issues() { return grok.dapi.domains.table('grit.issue'); }
+  get comments() { return grok.dapi.domains.table('grit.comment'); }
+  get projectsTable() { return grok.dapi.domains.table('grit.project'); }
+
+  static async run(): Promise<DG.ViewBase> {
+    const app = new GritApp();
+    await app.init();
+    return app.view;
+  }
+
+  async init(): Promise<void> {
+    this.view.name = 'Grit';
+    for (const u of await grok.dapi.users.list())
+      this.users.set(u.id, u.friendlyName);
+    this.projects = await this.projectsTable.query({sort: 'key'});
+    this.currentProject = this.projects[0] ?? null;
+
+    this.projectInput = ui.input.choice('Project', {
+      items: this.projects.map((p) => p.key),
+      value: this.currentProject?.key,
+      onValueChanged: (key: string) => {
+        this.currentProject = this.projects.find((p) => p.key === key);
+        this.refresh();
+      },
+    });
+
+    this.view.setRibbonPanels([[
+      this.projectInput.root,
+      ui.bigButton('New issue', () => this.issueDialog()),
+      ui.button('New project', () => this.projectDialog()),
+      ui.iconFA('sync', () => this.refresh(), 'Refresh'),
+    ]]);
+
+    const split = ui.splitH([this.gridHost, this.detailHost], null, true);
+    split.style.height = '100%';
+    this.view.root.appendChild(split);
+    await this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    const seq = ++this.refreshSeq;
+    const rows = this.currentProject == null ? [] : await this.issues.query(
+      {filter: `project_id = "${this.currentProject.id}"`, sort: '!number'});
+    if (seq !== this.refreshSeq)
+      return;
+    ui.empty(this.detailHost);
+    ui.empty(this.gridHost);
+    if (this.currentProject == null) {
+      this.gridHost.appendChild(ui.divText('No projects yet — create one to start tracking issues.'));
+      return;
+    }
+    if (rows.length === 0) {
+      this.gridHost.appendChild(ui.divText('No issues in this project yet.'));
+      return;
+    }
+    const df = DG.DataFrame.fromObjects(rows.map((r) => ({
+      key: `${this.currentProject.key}-${r.number}`,
+      title: r.title,
+      status: r.status,
+      priority: r.priority,
+      assignee: this.users.get(r.assignee) ?? '',
+      reporter: this.users.get(r.reporter) ?? '',
+    })))!;
+    df.name = `${this.currentProject.key} issues`;
+    df.onCurrentRowChanged.subscribe(() => {
+      if (df.currentRowIdx >= 0)
+        this.showIssue(rows[df.currentRowIdx]);
+    });
+    const grid = DG.Viewer.grid(df);
+    grid.root.style.width = '100%';
+    grid.root.style.height = '100%';
+    this.gridHost.appendChild(grid.root);
+    await this.showIssue(rows[0]);
+  }
+
+  async showIssue(issue: any): Promise<void> {
+    const seq = ++this.detailSeq;
+    const key = `${this.currentProject.key}-${issue.number}`;
+    const status = ui.input.choice('Status', {items: statuses, value: issue.status,
+      onValueChanged: (v: string) => this.patch(issue, {status: v})});
+    const priority = ui.input.choice('Priority', {items: priorities, value: issue.priority,
+      onValueChanged: (v: string) => this.patch(issue, {priority: v})});
+
+    const commentRows = await this.comments.query({filter: `issue_id = "${issue.id}"`, sort: 'created_on'});
+    const audit = await this.issues.audit(issue.id);
+    if (seq !== this.detailSeq)
+      return;
+    const commentInput = ui.input.string('', {placeholder: 'Add a comment...'});
+
+    ui.empty(this.detailHost);
+    this.detailHost.appendChild(ui.divV([
+      ui.h1(`${key}: ${issue.title}`),
+      ui.inputs([status, priority]),
+      ui.divText(issue.description ?? '', 'grit-description'),
+      ui.h3('Comments'),
+      ui.divV(commentRows.map((c) =>
+        ui.divText(`${this.users.get(c.author_id) ?? 'unknown'}: ${c.text}`))),
+      ui.divH([commentInput.root, ui.button('Post', async () => {
+        if (!commentInput.value)
+          return;
+        await this.comments.insert({issue_id: issue.id, text: commentInput.value});
+        await this.showIssue(issue);
+      })]),
+      ui.h3('Timeline'),
+      ui.divV(audit.map((a) => ui.divText(this.formatAuditEntry(a)))),
+      ui.button('Delete issue', async () => {
+        await this.issues.delete(issue.id);
+        await this.refresh();
+      }),
+    ], 'grit-issue-detail'));
+  }
+
+  formatAuditEntry(a: any): string {
+    const who = this.users.get(a.actor_id) ?? 'unknown';
+    const when = a.ts?.substring(0, 16).replace('T', ' ') ?? '';
+    const changes = a.op === 'update' && a.after != null ?
+      ': ' + Object.keys(a.after).map((k) => `${k} → ${a.after[k]}`).join(', ') : '';
+    return `${when} ${who} — ${a.op}${changes}`;
+  }
+
+  async patch(issue: any, values: object): Promise<void> {
+    const fresh = await this.issues.get(issue.id);
+    const updated = await this.issues.update(issue.id, values, {version: fresh.version});
+    Object.assign(issue, values, {version: updated.version});
+  }
+
+  async nextNumber(projectId: string): Promise<number> {
+    const last = await this.issues.query({filter: `project_id = "${projectId}"`, sort: '!number', limit: 1});
+    return (last[0]?.number ?? 0) + 1;
+  }
+
+  issueDialog(): void {
+    if (this.currentProject == null) {
+      grok.shell.warning('Create a project first');
+      return;
+    }
+    const title = ui.input.string('Title');
+    const description = ui.input.textArea('Description');
+    const priority = ui.input.choice('Priority', {items: priorities, value: 'medium'});
+    const userNames = [...this.users.values()];
+    const assignee = ui.input.choice('Assignee', {items: ['', ...userNames], value: ''});
+    ui.dialog(`New issue in ${this.currentProject.key}`)
+      .add(ui.inputs([title, description, priority, assignee]))
+      .onOK(async () => {
+        const me = await grok.dapi.users.current();
+        const assigneeId = [...this.users.entries()].find(([, name]) => name === assignee.value)?.[0];
+        const [res] = await this.issues.insert({
+          project_id: this.currentProject.id,
+          number: await this.nextNumber(this.currentProject.id),
+          title: title.value,
+          description: description.value,
+          priority: priority.value,
+          reporter: me.id,
+          assignee: assigneeId,
+        });
+        if (res.status === 'duplicate')
+          grok.shell.warning('Issue number collision — try again');
+        await this.refresh();
+      })
+      .show();
+  }
+
+  projectDialog(): void {
+    const key = ui.input.string('Key', {placeholder: 'GRIT'});
+    const name = ui.input.string('Name');
+    const description = ui.input.string('Description');
+    ui.dialog('New project')
+      .add(ui.inputs([key, name, description]))
+      .onOK(async () => {
+        const [res] = await this.projectsTable.insert(
+          {key: key.value.toUpperCase(), name: name.value, description: description.value});
+        if (res.status === 'duplicate') {
+          grok.shell.warning(`Project '${key.value}' already exists`);
+          return;
+        }
+        this.projects = await this.projectsTable.query({sort: 'key'});
+        this.currentProject = this.projects.find((p) => p.id === res.id);
+        this.projectInput!.items = this.projects.map((p) => p.key);
+        this.projectInput!.value = this.currentProject.key;
+        await this.refresh();
+      })
+      .show();
+  }
+}

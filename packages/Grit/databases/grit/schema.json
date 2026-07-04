@@ -1,0 +1,61 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "grit",
+  "version": "1.0.0",
+  "tables": {
+    "project": {
+      "securityMode": "table",
+      "businessKey": ["key"],
+      "friendlyName": "Projects",
+      "columns": {
+        "key": {"type": "string", "required": true, "unique": true, "description": "Short prefix for issue numbers, e.g. GRIT"},
+        "name": {"type": "string", "required": true},
+        "description": {"type": "string"}
+      }
+    },
+    "issue": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "businessKey": ["project_id", "number"],
+      "friendlyName": "Issues",
+      "columns": {
+        "project_id": {"type": "ref", "ref": "project", "onDelete": "restrict", "required": true},
+        "number": {"type": "int", "required": true, "min": 1, "description": "Per-project issue number; assigned by the app"},
+        "title": {"type": "string", "required": true},
+        "description": {"type": "string"},
+        "status": {"type": "string", "choices": ["open", "in progress", "resolved", "closed"], "default": "open"},
+        "priority": {"type": "string", "choices": ["low", "medium", "high", "critical"], "default": "medium"},
+        "reporter": {"type": "user"},
+        "assignee": {"type": "user", "onDelete": "setnull"}
+      }
+    },
+    "comment": {
+      "securityMode": "master",
+      "delegate": "issue_id",
+      "friendlyName": "Comments",
+      "columns": {
+        "issue_id": {"type": "ref", "ref": "issue", "onDelete": "cascade", "required": true},
+        "text": {"type": "string", "required": true}
+      }
+    },
+    "label": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Labels",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "color": {"type": "string"}
+      }
+    },
+    "issue_label": {
+      "securityMode": "master",
+      "delegate": "issue_id",
+      "businessKey": ["issue_id", "label_id"],
+      "audit": false,
+      "columns": {
+        "issue_id": {"type": "ref", "ref": "issue", "onDelete": "cascade", "required": true},
+        "label_id": {"type": "ref", "ref": "label", "onDelete": "cascade", "required": true}
+      }
+    }
+  }
+}

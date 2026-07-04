@@ -1,0 +1,54 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "plates",
+  "version": "1.0.0",
+  "tables": {
+    "plate_type": {
+      "securityMode": "table",
+      "audit": false,
+      "description": "Table-mode dictionary; audit disabled to exercise the audit-off path.",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "rows": {"type": "int", "min": 1},
+        "cols": {"type": "int", "min": 1}
+      }
+    },
+    "plate": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "businessKey": ["barcode"],
+      "idempotency": true,
+      "description": "Row-mode master with lazy promotion, business-key dedup, and jsonb property schemas.",
+      "columns": {
+        "barcode": {"type": "string", "required": true, "unique": true},
+        "plate_type_id": {"type": "ref", "ref": "plate_type", "onDelete": "restrict"},
+        "row_count": {"type": "int", "min": 1},
+        "col_count": {"type": "int", "min": 1}
+      },
+      "schemas": ["bio_plate", "pricing"]
+    },
+    "plate_well": {
+      "securityMode": "master",
+      "delegate": "plate_id",
+      "description": "Master-mode detail delegating security to its plate; cascade on plate soft-delete.",
+      "columns": {
+        "plate_id": {"type": "ref", "ref": "plate", "onDelete": "cascade", "required": true},
+        "row": {"type": "int", "min": 0, "required": true},
+        "col": {"type": "int", "min": 0, "required": true},
+        "volume": {"type": "float", "min": 0},
+        "sample_state": {"type": "string", "choices": ["empty", "filled", "dosed", "failed"]}
+      },
+      "businessKey": ["plate_id", "row", "col"]
+    }
+  },
+  "propertySchemas": {
+    "bio_plate": {
+      "organism": {"type": "string"},
+      "protein": {"type": "string", "semType": "Protein"}
+    },
+    "pricing": {
+      "price": {"type": "float", "min": 0},
+      "discount": {"type": "float"}
+    }
+  }
+}

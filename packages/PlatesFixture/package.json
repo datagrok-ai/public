@@ -1,0 +1,53 @@
+{
+  "name": "@datagrok/plates-fixture",
+  "friendlyName": "PlatesFixture",
+  "version": "0.0.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "description": "Minimal domain-schema fixture (plates) for engine correctness tests: all security modes, constraints, audit",
+  "dependencies": {
+    "@datagrok-libraries/test": "^1.1.0",
+    "@datagrok-libraries/utils": "latest",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "datagrok-tools": "^5.1.5",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "debug-platesfixture": "webpack && grok publish",
+    "release-platesfixture": "webpack && grok publish --release",
+    "build-platesfixture": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-platesfixture-dev": "webpack && grok publish dev",
+    "release-platesfixture-dev": "webpack && grok publish dev --release",
+    "debug-platesfixture-public": "webpack && grok publish public",
+    "release-platesfixture-public": "webpack && grok publish public --release",
+    "debug-platesfixture-localhost": "webpack && grok publish localhost",
+    "release-platesfixture-localhost": "webpack && grok publish localhost --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PlatesFixture"
+  },
+  "servicePackage": true,
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
+}

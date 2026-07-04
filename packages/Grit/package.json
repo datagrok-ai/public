@@ -1,0 +1,52 @@
+{
+  "name": "@datagrok/grit",
+  "friendlyName": "Grit",
+  "version": "0.0.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "description": "Grit (GRok Issue Tracker) — reference app for entity-mapped domain schemas: projects, issues, comments, labels",
+  "dependencies": {
+    "@datagrok-libraries/test": "^1.1.0",
+    "@datagrok-libraries/utils": "latest",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "datagrok-tools": "^5.1.5",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "debug-grit": "webpack && grok publish",
+    "release-grit": "webpack && grok publish --release",
+    "build-grit": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-grit-dev": "webpack && grok publish dev",
+    "release-grit-dev": "webpack && grok publish dev --release",
+    "debug-grit-public": "webpack && grok publish public",
+    "release-grit-public": "webpack && grok publish public --release",
+    "debug-grit-localhost": "webpack && grok publish localhost",
+    "release-grit-localhost": "webpack && grok publish localhost --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Grit"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
+}
