@@ -95,7 +95,8 @@ for (const ds of datasets) {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
-      expect(title?.trim()).toBe('Activity Cliffs');
+      // Product renamed the dialog to "Sequence Activity Cliffs"; tolerate either form.
+      expect(title?.trim()).toContain('Activity Cliffs');
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       const baseScatter: number = await page.evaluate(() =>
         Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length);

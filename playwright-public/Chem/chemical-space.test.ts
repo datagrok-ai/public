@@ -48,7 +48,7 @@ async function openChemicalSpaceDialog(page: Page, label: string) {
     await page.locator('.d4-dialog').waitFor({timeout: 15000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
-    expect(title, `Dialog title expected /Chemical/, got "${title}"`).toMatch(/Chemical/i);
+    expect(title, `Dialog title expected /Chem(ical)? Space/, got "${title}"`).toMatch(/Chem(ical)?\s*Space/i);
     // .md step 2: editor must surface the method (UMAP/t-SNE) selector + Cluster MCS toggle.
     await expect(page.locator('.d4-dialog [name="input-Method"]'), `[${label}] method selector missing`).toHaveCount(1);
     await expect(page.locator('.d4-dialog [name="input-Cluster-MCS"]'), `[${label}] Cluster MCS toggle missing`).toHaveCount(1);
