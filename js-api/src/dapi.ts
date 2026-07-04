@@ -1054,17 +1054,88 @@ export class SpaceFilesClient {
   }
 }
 
-/** Query options for {@link DomainTableClient.query}. */
+/** Query options for {@link DomainTableClient.query} and {@link DomainTableClient.queryDf}. */
 export interface DomainQuerySpec {
-  /** Smart-filter string (same grammar as entity search), e.g. `barcode starts with "P-1" and organism = "human"`. */
+  /** Smart-filter string (same grammar as entity search), e.g. `barcode starts "P-1" and organism = "human"`. */
   filter?: string;
   /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
   sort?: string;
   /** Columns to return; omit for all viewable columns. */
   columns?: string[];
+  /** Expansions (same-schema, depth 1): `'<fk_column>'` returns the master row's declared
+   * columns prefixed `'<fk_column>.<name>'`; `'details:<table>[.<fk_column>]'` returns capped
+   * child-row arrays under the child-table name (JSON queries only — not supported by
+   * {@link DomainTableClient.queryDf}). */
+  expand?: string[];
   limit?: number;
   offset?: number;
 }
+
+/** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
+ * the output name is `as` (defaults to `fn` or `<fn>_<column>`). */
+export interface DomainAggregateMeasure {
+  fn: 'count' | 'sum' | 'avg' | 'min' | 'max';
+  column?: string;
+  as?: string;
+}
+
+/** Spec for {@link DomainTableClient.aggregate}. */
+export interface DomainAggregateSpec {
+  /** Column names to group by; omit for a single-row grand total. */
+  groupBy?: string[];
+  measures: DomainAggregateMeasure[];
+  /** Smart-filter string applied before aggregation. */
+  filter?: string;
+  /** Comma-separated output names (group columns or measure aliases); `!` prefix for descending. */
+  sort?: string;
+  limit?: number;
+}
+
+/** One operation of {@link DomainsDataSource.transaction}. */
+export interface DomainTransactionOp {
+  op: 'insert' | 'update' | 'delete';
+  /** Table name within the transaction's schema. */
+  table: string;
+  /** Names this op's new row id; later ops may reference it in values as `'$<ref>'`
+   * (escape a literal leading `$` in a value by doubling it: `'$$100'` stores `'$100'`). */
+  ref?: string;
+  values?: object;
+  id?: string;
+  /** Optimistic-concurrency guard for update ops. */
+  expectedVersion?: number;
+}
+
+/** Options for {@link DomainTableClient.batch}. */
+export interface DomainBatchOptions {
+  /** `'insert'` (default) or `'upsert'` (merge by the table's business key). */
+  mode?: 'insert' | 'upsert';
+  /** Abort the whole batch on any row error (default true); false applies good rows
+   * and reports bad ones per row. */
+  allOrNothing?: boolean;
+  /** Report business-key duplicates as errors instead of skipping them. */
+  errorOnDuplicate?: boolean;
+  /** Payload format for `Uint8Array` data: `'d42'` (default; `DataFrame.toByteArray()` output)
+   * or `'parquet'` (converted client-side via the Arrow package — fails with a clear error when
+   * Arrow is not installed). Ignored for other payloads — the format is inferred:
+   * DataFrame → sent as d42, string → `'csv'`, object[] → `'json'`. */
+  format?: 'csv' | 'd42' | 'parquet' | 'json';
+}
+
+/** Batch upload report of {@link DomainTableClient.batch}. */
+export interface DomainBatchReport {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  errorCount: number;
+  /** Per-row outcomes `{index, id?, status, errors?}`; capped server-side. */
+  rows: any[];
+  /** Set when the batch failed but a per-row report is available (e.g. an allOrNothing abort). */
+  error?: string;
+}
+
+/** Insert payload for {@link DomainTableClient.insert}: row values plus an optional
+ * idempotency key (for tables that declare `"idempotency": true`). */
+export type DomainRowInsert<TRow> = Partial<TRow> & {idempotencyKey?: string};
 
 /**
  * Generic client for domain tables — entity-mapped PostgreSQL schemas that plugins
@@ -1082,45 +1153,83 @@ export class DomainsDataSource {
     return new HttpDataSource(api.grok_Dapi_Domains_Schemas(this.dart));
   }
 
-  /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`. */
-  table(name: string): DomainTableClient {
+  /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`.
+   * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`. */
+  table<TRow = any>(name: string): DomainTableClient<TRow> {
     const dot = name.indexOf('.');
     if (dot < 1 || dot === name.length - 1)
       throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
-    return new DomainTableClient(this.dart, name.substring(0, dot), name.substring(dot + 1));
+    return new DomainTableClient<TRow>(this.dart, name.substring(0, dot), name.substring(dot + 1));
+  }
+
+  /** Executes ordered [ops] atomically within domain schema [schema]; any failure rolls the
+   * whole transaction back (the error carries `opIndex`). Resolves to ordered per-op results
+   * shaped like the corresponding single-op endpoints. */
+  transaction(schema: string, ops: DomainTransactionOp[]): Promise<any[]> {
+    return api.grok_Dapi_Domains_Transaction(this.dart, schema, ops);
   }
 }
 
 /**
  * Row CRUD for one domain table. Reads return only rows and columns the current
- * user can see; writes are validated, permission-checked, and audited server-side. */
-export class DomainTableClient {
+ * user can see; writes are validated, permission-checked, and audited server-side.
+ * Pass a row interface as `TRow` for typed reads/writes (see {@link DomainsDataSource.table}). */
+export class DomainTableClient<TRow = any> {
   dart: any;
 
   constructor(dart: any, public readonly schema: string, public readonly table: string) {
     this.dart = dart;
   }
 
-  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects. */
-  query(spec: DomainQuerySpec = {}): Promise<any[]> {
+  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
+  query(spec: DomainQuerySpec = {}): Promise<TRow[]> {
     return api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec);
   }
 
+  /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
+   * 1M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
+   * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
+   * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns. */
+  queryDf(spec: DomainQuerySpec = {}): Promise<DataFrame> {
+    return api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec);
+  }
+
+  /** Grouped aggregation over the rows and columns visible to the caller;
+   * resolves to result rows named by group column / measure alias. */
+  aggregate(spec: DomainAggregateSpec): Promise<any[]> {
+    return api.grok_Dapi_Domains_Aggregate(this.dart, this.schema, this.table, spec);
+  }
+
   /** Fetches one row by id; resolves to null if the row does not exist or is not visible. */
-  get(id: string): Promise<any> {
+  get(id: string): Promise<TRow> {
     return api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id);
   }
 
   /** Inserts a single row or a small array of rows; resolves to per-row reports
-   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match). */
-  insert(rows: object | object[]): Promise<any[]> {
+   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match).
+   * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
+   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`. */
+  insert(rows: DomainRowInsert<TRow> | DomainRowInsert<TRow>[]): Promise<any[]> {
     return api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows);
   }
 
-  /** Partially updates a row; pass `options.version` for optimistic concurrency
-   * (the update fails with a version conflict if the row has changed since). */
-  update(id: string, values: object, options?: {version?: number}): Promise<any> {
+  /** Partially updates a row; pass `options.version` (the version the client last read) for
+   * optimistic concurrency — the update fails with a version conflict if the row has changed
+   * since. Resolves to the updated row (its `version` is incremented on every update). */
+  update(id: string, values: Partial<TRow>, options?: {version?: number}): Promise<any> {
     return api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version);
+  }
+
+  /** Bulk upload: a DataFrame (sent as d42), a CSV string, an array of row objects, or raw
+   * bytes (`options.format`: `'d42'` default, `'parquet'` converted via the Arrow package).
+   * `options.mode: 'upsert'` merges by the table's business key. Resolves to the batch report;
+   * a failure that carries the per-row report (e.g. an allOrNothing abort) resolves with
+   * `error` set, report-less failures reject. */
+  batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<DomainBatchReport> {
+    const format = data instanceof DataFrame ? 'df' : typeof data === 'string' ? 'csv' :
+      data instanceof Uint8Array ? (options.format ?? 'd42') : 'json';
+    return api.grok_Dapi_Domains_Batch(this.dart, this.schema, this.table,
+      data instanceof DataFrame ? data.dart : data, format, options);
   }
 
   /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations). */

@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "apitests",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "tables": {
     "item": {
       "securityMode": "row",
@@ -13,6 +13,16 @@
         "quantity": {"type": "int", "min": 0}
       },
       "schemas": ["item_meta"]
+    },
+    "item_event": {
+      "securityMode": "master",
+      "delegate": "item_id",
+      "description": "Detail table for transaction/$ref and expand ApiTests",
+      "columns": {
+        "item_id": {"type": "ref", "ref": "item", "onDelete": "cascade", "required": true},
+        "kind": {"type": "string", "required": true},
+        "amount": {"type": "int"}
+      }
     }
   },
   "propertySchemas": {
