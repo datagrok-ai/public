@@ -39,6 +39,16 @@
         "sample_state": {"type": "string", "choices": ["empty", "filled", "dosed", "failed"]}
       },
       "businessKey": ["plate_id", "row", "col"]
+    },
+    "well_reading": {
+      "securityMode": "master",
+      "delegate": "well_id",
+      "description": "Depth-2 master mode: security delegates to plate_well, which delegates to plate.",
+      "columns": {
+        "well_id": {"type": "ref", "ref": "plate_well", "onDelete": "cascade", "required": true},
+        "wavelength": {"type": "int", "min": 0},
+        "value": {"type": "float"}
+      }
     }
   },
   "propertySchemas": {
