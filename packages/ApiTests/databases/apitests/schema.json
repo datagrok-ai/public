@@ -1,0 +1,23 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "apitests",
+  "version": "1.0.0",
+  "tables": {
+    "item": {
+      "securityMode": "row",
+      "businessKey": ["sku"],
+      "description": "Fixture table for grok.dapi.domains ApiTests",
+      "columns": {
+        "sku": {"type": "string", "required": true, "unique": true},
+        "name": {"type": "string"},
+        "quantity": {"type": "int", "min": 0}
+      },
+      "schemas": ["item_meta"]
+    }
+  },
+  "propertySchemas": {
+    "item_meta": {
+      "note": {"type": "string"}
+    }
+  }
+}
