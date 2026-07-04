@@ -25,6 +25,12 @@ export class OutputPreviewPanel {
   private rootNode: DG.DockNode | null = null;
   private hostEl: HTMLElement | null = null;
   private viewRoot: HTMLElement | null = null;
+  /** What the panel currently renders. `ExecutionState.setNodeStatus` always
+   *  builds a fresh state object, so reference identity of the state IS value
+   *  identity — re-clicking the same node with unchanged results must not
+   *  rebuild the preview (grids re-mount, scroll resets, the panel jumps). */
+  private lastNodeId: string | null = null;
+  private lastState: NodeExecState | null = null;
 
   /** Called when the user clicks "Edit settings" on a viewer preview — the host
    *  shows the viewer in the context panel and captures its option changes. */
@@ -51,27 +57,38 @@ export class OutputPreviewPanel {
     // something *renderable*: DataFrame grid, column sample, graphics image.
     if (!hasRenderablePreview(state)) return;
 
-    const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
-    inner.style.padding = '8px 12px';
-
     // Reuse the open dock — but only if it's still actually docked. The user may
     // have manually closed the panel (the dock manager won't tell us), leaving
     // our refs stale; if so, drop them and re-dock below so the click reopens it.
+    let stillDocked = false;
     if (this.hostEl && this.rootNode) {
-      const stillDocked = (() => {
+      stillDocked = (() => {
         try {
           return !!grok.shell.dockManager.findNode(this.hostEl);
         } catch {
           return false;
         }
       })();
-      if (stillDocked) {
-        this.hostEl.innerHTML = '';
-        this.hostEl.appendChild(inner);
-        return;
+      if (!stillDocked) {
+        this.hostEl = null;
+        this.rootNode = null;
       }
-      this.hostEl = null;
-      this.rootNode = null;
+    }
+
+    // Same node, same captured state, panel still open → the content is
+    // already right; rebuilding would re-mount the grids and make the panel
+    // jump on every click of the same node.
+    if (stillDocked && node.id === this.lastNodeId && state === this.lastState) return;
+
+    const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
+    inner.style.padding = '8px 12px';
+
+    if (stillDocked && this.hostEl) {
+      this.hostEl.innerHTML = '';
+      this.hostEl.appendChild(inner);
+      this.lastNodeId = node.id;
+      this.lastState = state;
+      return;
     }
 
     this.hostEl = setTid(ui.div([inner], {style: {
@@ -84,10 +101,14 @@ export class OutputPreviewPanel {
       this.rootNode = grok.shell.dockManager.dock(
         this.hostEl, DG.DOCK_TYPE.DOWN, refNode, 'Node Output', 0.4,
       );
+      this.lastNodeId = node.id;
+      this.lastState = state;
       this.onDocked?.();
     } catch (e) {
       console.warn('OutputPreview: failed to dock', e);
       this.hostEl = null;
+      this.lastNodeId = null;
+      this.lastState = null;
     }
   }
 
@@ -101,5 +122,7 @@ export class OutputPreviewPanel {
     }
     this.hostEl = null;
     this.rootNode = null;
+    this.lastNodeId = null;
+    this.lastState = null;
   }
 }

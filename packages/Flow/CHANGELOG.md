@@ -29,6 +29,13 @@
   (a column drag offers real column consumers first) and **functions already used on the canvas**
   float up (pipelines repeat their ops).
 
+### Output preview stops jumping on repeat clicks
+
+* Clicking the same node again no longer rebuilds the bottom **Node Output** panel — same node,
+  same captured results → the existing preview DOM is kept (grids don't re-mount, scroll doesn't
+  reset). The panel re-renders only when the node or its captured state actually changed (another
+  node clicked, or a re-run produced new results).
+
 ### Minimap minimizes when the output preview opens
 
 * The overview minimap and the bottom-docked **Node Output** panel share the same corner — the

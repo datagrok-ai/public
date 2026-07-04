@@ -113,6 +113,41 @@ category('Flow: execution preview', () => {
     }
   });
 
+  test('re-clicking the same node with the same state does not rebuild the preview', async () => {
+    // Every rebuild re-mounts the grids and makes the panel jump — same node +
+    // same captured state (state objects are replaced, never mutated, so
+    // reference identity IS value identity) must keep the existing DOM.
+    const panel = new OutputPreviewPanel();
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
+    const mkState = (): NodeExecState => ({
+      status: NodeExecStatus.completed,
+      outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df}},
+    });
+    const state = mkState();
+    const contentEl = (): Element | null =>
+      document.querySelector('[data-testid="ff-output-panel"]')?.firstElementChild ?? null;
+    try {
+      panel.showForNode({id: 'n1', label: 'a'}, state);
+      const first = contentEl();
+      expect(!!first, true, 'preview rendered');
+
+      // Same node, same state object → untouched DOM.
+      panel.showForNode({id: 'n1', label: 'a'}, state);
+      expect(contentEl() === first, true, 'same node + same state → no rebuild');
+
+      // A fresh state object (e.g. after a re-run) → rebuilt.
+      panel.showForNode({id: 'n1', label: 'a'}, mkState());
+      const rebuilt = contentEl();
+      expect(!!rebuilt && rebuilt !== first, true, 'a new captured state rebuilds the preview');
+
+      // A different node → rebuilt as well.
+      panel.showForNode({id: 'n2', label: 'b'}, state);
+      expect(contentEl() !== rebuilt, true, 'another node rebuilds the preview');
+    } finally {
+      panel.close();
+    }
+  });
+
   test('a widget without a real root is not renderable', async () => {
     const state: NodeExecState = {
       status: NodeExecStatus.completed,
