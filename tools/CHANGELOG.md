@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.0 (WIP)
+
+* GROK-20317: `grok api` — typed domain-table clients: for packages that declare `databases/<schema>/schema.json` manifests, generates `src/generated/db.ts` with per-table `<Table>Row`/`<Table>Insert` interfaces, `<Table>Column` name unions, and a per-schema `<schema>Db` client map over `grok.dapi.domains` (manifests are validated against `domain-schema.schema.json` first; packages without manifests are untouched).
+
 ## 6.4.5 (2026-06-23)
 
 * `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.
