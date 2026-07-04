@@ -35,4 +35,7 @@ export * from './src/chem';
 export * from './src/ml';
 export * from './src/decorators/functions';
 
+/** Generated REST client (@ExportApi server routers); call {@link dapi2Init}(grok.dapi.root, grok.dapi.token) first. */
+export {dapi2, init as dapi2Init} from './src/dapi.g';
+
 export const log = Logger.getStatic();
