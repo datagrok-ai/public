@@ -87,6 +87,19 @@ category('Dapi: domains', () => {
     }
   });
 
+  test('dapi2 generated client smoke', async () => {
+    grok.dapi2Init(grok.dapi.root, grok.dapi.token);
+    const key = sku();
+    const [ins] = await items().insert({sku: key, name: 'Gen'});
+    try {
+      const rows = await grok.dapi2.domains.queryRows('apitests', 'item', {filter: `sku = "${key}"`});
+      expect(rows.length, 1);
+      expect(rows[0].name, 'Gen');
+    } finally {
+      await items().delete(ins.id);
+    }
+  });
+
   test('table name validation', async () => {
     let error = '';
     try {
