@@ -7,6 +7,7 @@ category('Domains: plates fixture', () => {
   const types = () => grok.dapi.domains.table('plates.plate_type');
   const plates = () => grok.dapi.domains.table('plates.plate');
   const wells = () => grok.dapi.domains.table('plates.plate_well');
+  const readings = () => grok.dapi.domains.table('plates.well_reading');
   const unique = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
   const throws = async (action: () => Promise<any>): Promise<string> => {
@@ -26,6 +27,7 @@ category('Domains: plates fixture', () => {
     expect(modes.get('plate_type'), 'table');
     expect(modes.get('plate'), 'row');
     expect(modes.get('plate_well'), 'master');
+    expect(modes.get('well_reading'), 'master');
   });
 
   test('table mode: crud, audit off', async () => {
@@ -78,6 +80,19 @@ category('Domains: plates fixture', () => {
     await plates().delete(plate.id);
     expect((await wells().query({filter: `plate_id = "${plate.id}"`})).length, 0,
       'cascade soft-delete did not remove wells');
+  });
+
+  test('depth-2 master mode: readings follow the plate through the chain', async () => {
+    const [plate] = await plates().insert({barcode: unique('BC')});
+    const [well] = await wells().insert({plate_id: plate.id, row: 0, col: 0});
+    await readings().insert([
+      {well_id: well.id, wavelength: 450, value: 0.42},
+      {well_id: well.id, wavelength: 620, value: 0.13},
+    ]);
+    expect((await readings().query({filter: `well_id = "${well.id}"`})).length, 2);
+    await plates().delete(plate.id);
+    expect((await readings().query({filter: `well_id = "${well.id}"`})).length, 0,
+      'cascade soft-delete did not propagate to depth-2 readings');
   });
 
   test('constraints: required, min, choices', async () => {
