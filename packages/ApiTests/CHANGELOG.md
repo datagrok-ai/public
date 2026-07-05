@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20341: Made the `Dapi: connector writes` write-DB target configurable (defaults to the local compose demo `world` DB reachable from the grok_connect container; override via a `dgConnectorWritesDb` global) so the suite runs against a local stack instead of the hardcoded remote DB.
+
 GROK-20341: Added `Dapi: connector writes` suite for the `grok.data.db.table(...)` structured-write surface (insert object[]/DataFrame bulk, upsert by keys, update/delete by where, capability-negative). Write round trips self-skip when the running grok_connect lacks `/mutate`.
 
 GROK-20316: Added a `dapi2.domains` generated-client smoke test (`queryRows` over the wire) to the `Dapi: domains` suite.
