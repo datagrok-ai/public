@@ -10,12 +10,17 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 // advertises /mutate (WO-1..6); the stale dev image lacks it, so they self-skip cleanly.
 category('Dapi: connector writes', () => {
   const rnd = () => DG.Utils.randomString(8);
-  // A writable Postgres (GrokConnect) DB reachable in CI. Overridable via env if needed.
-  const server = 'dev.datagrok.ai:54322';
-  const db = 'northwind';
-  const login = 'datagrok';
-  const password = 'datagrok';
-  const schema = 'public';
+  // A writable Postgres (GrokConnect) DB. Defaults to the local compose demo `world` DB,
+  // reachable from the grok_connect container by its docker-network alias (`world:5432`).
+  // Override any field for another stack (e.g. remote CI) via a `dgConnectorWritesDb` global,
+  // e.g. `globalThis.dgConnectorWritesDb = {server: 'dev.datagrok.ai:54322', db: 'northwind',
+  // login: 'datagrok', password: 'datagrok'}`. When the target is unreachable or grok_connect
+  // lacks /mutate, the write round trips self-skip cleanly (see `before`).
+  const dbCfg = {
+    server: 'world:5432', db: 'world', login: 'postgres', password: 'postgres', schema: 'public',
+    ...((globalThis as any).dgConnectorWritesDb ?? {}),
+  };
+  const {server, db, login, password, schema} = dbCfg;
   const tableName = `apitests_cw_${rnd()}`;
   const fqTable = `${schema}.${tableName}`;
 
