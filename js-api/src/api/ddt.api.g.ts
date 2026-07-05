@@ -31,6 +31,8 @@ export class Tags {
 
   static ColorCodingText = '.color-coding-text';
 
+  static ColorCodingTextBackground = '.color-coding-text-background';
+
   static ColorCodingLinear = '.color-coding-linear';
 
   static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
@@ -208,6 +210,8 @@ export class Tags {
   static CreationScript = '.script';
 
   static DataSync = '.data-sync';
+
+  static UrlParams = '.url-params';
 
   static IsDbEntity = '.db.entity';
 
@@ -422,6 +426,13 @@ export class FuncOptions {
   /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
   /// Defaults to language.
   static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
+
+  /// Specifies a package function (qualified name, e.g. 'Flow:flowScriptEditor')
+  /// that opens a custom editor view for scripts of this [FuncTypes.ScriptHandler]'s
+  /// language. The function takes one script parameter and returns a view.
+  /// When absent, or when the function is not present, the default CodeMirror
+  /// script editor is used.
+  static ScriptHandlerEditorFunc = 'scriptHandler.editorFunction';
 
   /// Allows to add this function results as a column from the context menu
   static AllowAddAsColumn = 'allowAddAsColumn';

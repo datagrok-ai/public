@@ -45,33 +45,7 @@ export function emitScript(
   const lines: string[] = [];
   const inst = options?.instrumented === true;
 
-  // -------- header --------
-  lines.push(`//name: ${settings.name}`);
-  if (settings.description) lines.push(`//description: ${settings.description}`);
-  lines.push('//language: javascript');
-  if (settings.tags.length > 0) lines.push(`//tags: ${settings.tags.join(', ')}`);
-
-  // -------- input declarations (dataframes first) --------
-  const inputSteps = steps.filter((s) => s.nodeType === 'input');
-  inputSteps.sort((a, b) => {
-    const aIsTable = (flow.getNodeById(a.nodeId)?.dgOutputType) === 'dataframe';
-    const bIsTable = (flow.getNodeById(b.nodeId)?.dgOutputType) === 'dataframe';
-    return aIsTable === bIsTable ? 0 : aIsTable ? -1 : 1;
-  });
-  for (const step of inputSteps) {
-    const node = flow.getNodeById(step.nodeId);
-    if (!node) continue;
-    const line = buildInputLine(step, node);
-    if (line) lines.push(line);
-  }
-
-  // -------- output declarations --------
-  for (const step of steps.filter((s) => s.nodeType === 'output')) {
-    const node = flow.getNodeById(step.nodeId);
-    if (!node) continue;
-    lines.push(buildOutputLine(step, node));
-  }
-
+  lines.push(...buildHeaderLines(steps, flow, settings, 'javascript'));
   lines.push('');
 
   if (inst) lines.push(...emitPreamble(options!.runId!));
@@ -147,6 +121,46 @@ export function emitScript(
   if (inst) lines.push(`__ff_emit('run-complete', '', {success: true});`);
 
   return lines.join('\n');
+}
+
+/** The annotation-header block for the current steps: name / description /
+ *  language / tags plus `//input:` / `//output:` lines derived from the
+ *  Input/Output nodes (dataframe inputs first). Shared by the JS emission
+ *  (`language: javascript`) and the `.flow` entity body (`language: flow`). */
+function buildHeaderLines(
+  steps: CompiledStep[], flow: FlowEditor, settings: ScriptSettings, language: string,
+): string[] {
+  const lines: string[] = [];
+  lines.push(`//name: ${settings.name}`);
+  if (settings.description) lines.push(`//description: ${settings.description}`);
+  lines.push(`//language: ${language}`);
+  if (settings.tags.length > 0) lines.push(`//tags: ${settings.tags.join(', ')}`);
+
+  const inputSteps = steps.filter((s) => s.nodeType === 'input');
+  inputSteps.sort((a, b) => {
+    const aIsTable = (flow.getNodeById(a.nodeId)?.dgOutputType) === 'dataframe';
+    const bIsTable = (flow.getNodeById(b.nodeId)?.dgOutputType) === 'dataframe';
+    return aIsTable === bIsTable ? 0 : aIsTable ? -1 : 1;
+  });
+  for (const step of inputSteps) {
+    const node = flow.getNodeById(step.nodeId);
+    if (!node) continue;
+    const line = buildInputLine(step, node);
+    if (line) lines.push(line);
+  }
+
+  for (const step of steps.filter((s) => s.nodeType === 'output')) {
+    const node = flow.getNodeById(step.nodeId);
+    if (!node) continue;
+    lines.push(buildOutputLine(step, node));
+  }
+  return lines;
+}
+
+/** Header-only emission for a live editor — used by the `.flow` entity body,
+ *  where the payload after the header is the ffjson document, not JS. */
+export function emitHeaderLines(flow: FlowEditor, settings: ScriptSettings, language: string): string[] {
+  return buildHeaderLines(compileGraph(flow), flow, settings, language);
 }
 
 /** `__ff_stash('<nodeId>', {<outputKey>: <valueExpr>, ...})` for a step's live

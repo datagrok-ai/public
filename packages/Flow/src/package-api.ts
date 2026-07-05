@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('Flow:Info', {});
   }
 
+  export async function flowScriptHandler(scriptCall: any ): Promise<void> {
+    return await grok.functions.call('Flow:FlowScriptHandler', { scriptCall });
+  }
+
   /**
   Interactive function chain designer
   */
@@ -36,5 +40,24 @@ export namespace funcs {
 
   export async function testDialog(): Promise<void> {
     return await grok.functions.call('Flow:TestDialog', {});
+  }
+
+  /**
+  Opens the visual Flow editor for a flow script entity
+  */
+  export async function flowScriptEditor(script: any ): Promise<DG.View> {
+    return await grok.functions.call('Flow:FlowScriptEditor', { script });
+  }
+
+  export async function flowScriptPreview(script: any ): Promise<DG.View> {
+    return await grok.functions.call('Flow:FlowScriptPreview', { script });
+  }
+
+  export async function flowScriptWidget(script: any ): Promise<any> {
+    return await grok.functions.call('Flow:FlowScriptWidget', { script });
+  }
+
+  export async function viewFlowFile(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('Flow:ViewFlowFile', { file });
   }
 }

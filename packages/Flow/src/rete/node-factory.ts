@@ -328,6 +328,15 @@ export function getRegisteredFuncs(): FuncInfo[] {
   return funcRegistry;
 }
 
+/** Deterministic one-shot registration of everything `createNode` may need:
+ *  built-ins plus the DG.Func catalog. Load paths (deserializer, entity open,
+ *  headless compile) call this instead of racing the view's deferred timer —
+ *  both underlying calls are synchronous and idempotent. */
+export function ensureFunctionsRegistered(): void {
+  registerBuiltinNodes();
+  registerAllFunctions();
+}
+
 /** Node type name for a DG.Func, registering a factory on the fly when the
  *  function is not in the catalog (e.g. its role is excluded). Used by the
  *  creation-script importer, where parsed funcs must always yield a node —

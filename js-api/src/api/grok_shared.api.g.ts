@@ -266,6 +266,8 @@ export class ScriptLanguage {
 
   static PythonDocker = 'docker';
 
+  static Flow = 'flow';
+
 }
 import {Entity} from '../entities'
 

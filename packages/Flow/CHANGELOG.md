@@ -2,6 +2,42 @@
 
 ## v.next
 
+### First-class Flow entities
+
+* Introduced a hierarchical **space picker** ([space-picker.ts](src/ui/space-picker.ts)): browse
+  root spaces, drill into subspaces of any depth (lazy-loaded), and create subspaces in place.
+* Reworked the **Save Flow** dialog: tooltipped name/description, an optional **Bind to space…**
+  step using the space picker (default stays a plain script in the user's namespace), an advisory
+  duplicate-name warning (space-scoped when a space is chosen), and Save disabled until a name
+  is given.
+* Ribbon: the saving section now leads with a text **Save** button; **Save** opens the Save Flow
+  dialog for never-saved flows (including template-created ones that previously saved silently)
+  and quick-saves bound entities. In creation-script mode Save routes to the per-table creation
+  scripts dialog and the platform save/open options are hidden.
+* Fixed double-click on a flow (Browse tree node or gallery card) adding the editor view twice.
+* Opened/saved flows now set the `/script/<id>` URL — the address updates like it does for
+  scripts, and the link routes back into the visual editor.
+
+* Introduced the **Flow entity**: flows now save to the platform as Script entities with
+  `language: flow` — shareable, searchable, space-organizable, and runnable like any function.
+  The body is an annotation header (name/params derived from Input/Output nodes) followed by the
+  lossless `.ffjson` document ([flow-script-format.ts](src/serialization/flow-script-format.ts));
+  the header parses even on clients without the Flow package.
+* Added the `flow` **script-language handler** (`flowScriptHandler`, `meta.role: scriptHandler`):
+  running a flow script compiles the graph to its JS twin on a detached editor and executes it
+  in-browser, copying inputs/outputs through the FuncCall
+  ([flow-entity-handler.ts](src/entity/flow-entity-handler.ts)).
+* Added `flowScriptEditor` / `flowScriptPreview` / `flowScriptWidget` — the entity's visual editor
+  (consumed by core through the new `scriptHandler.editorFunction` seam), Browse preview, and
+  context-panel pane; all thin wrappers over one `FlowEntityHandler` class.
+* Save/Open now target the platform: **Save** updates the bound entity (or asks for a name and an
+  optional Space), **Open from platform…** lists flow entities; `.ffjson` import/export moved to
+  dedicated menu items.
+* Added a `fileViewer` for the `.flow` extension.
+* Fixed the editor-load race: `deserializeFlow` now registers the function catalog
+  deterministically (`ensureFunctionsRegistered`), and `loadFromJson`/`loadFromDoc` await editor
+  construction instead of retrying on timers.
+
 ### Custom function editors on the context panel
 
 * Functions that ship their **own editor dialog** (an `editor:` meta, or the explicit allowlist in

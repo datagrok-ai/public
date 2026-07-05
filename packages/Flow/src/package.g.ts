@@ -40,3 +40,33 @@ export async function openCreationScriptFlowDialog(script: string, tableIds: str
 export function testDialog() : void {
   PackageFunctions.testDialog();
 }
+
+//description: Opens the visual Flow editor for a flow script entity
+//input: script script 
+//output: view result
+//meta.includeInFlow: false
+export function flowScriptEditor(script: any) : any {
+  return PackageFunctions.flowScriptEditor(script);
+}
+
+//input: script script 
+//output: view result
+//meta.includeInFlow: false
+export function flowScriptPreview(script: any) : any {
+  return PackageFunctions.flowScriptPreview(script);
+}
+
+//input: script script 
+//output: widget result
+//meta.includeInFlow: false
+export function flowScriptWidget(script: any) : any {
+  return PackageFunctions.flowScriptWidget(script);
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: flow
+export function viewFlowFile(file: DG.FileInfo) : any {
+  return PackageFunctions.viewFlowFile(file);
+}

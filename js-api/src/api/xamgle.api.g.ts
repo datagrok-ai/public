@@ -24,9 +24,6 @@ export interface SettingsInterface {
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 
-  /// Default state of the "Send notifications" checkbox in the sharing dialog
-  sendNotificationOnShareCheckbox: boolean;
-
   /// Controls whether tables pane automatically shows when more
   /// than one table is open
   autoShowTablesPane: boolean;

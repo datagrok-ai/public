@@ -31,8 +31,10 @@ import {emitCreationScript, emitCreationScriptsForTables} from './compiler/creat
 import {
   serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile,
 } from './serialization/flow-serializer';
+import {flowScriptText, parseFlowBody, FLOW_TAG, FLOW_LANGUAGE} from './serialization/flow-script-format';
+import {SpacePicker} from './ui/space-picker';
 import {buildFlowFromCreationScript} from './import/creation-script-importer';
-import {FlowSettings} from './serialization/flow-schema';
+import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
@@ -84,6 +86,18 @@ export class FuncFlowView extends DG.ViewBase {
     tags: ['funcflow'],
   };
 
+  /** The platform Script entity (language 'flow') this view edits, when opened
+   *  from / saved to the server. Null for scratch flows — Save asks for a name. */
+  private boundScript: DG.Script | null = null;
+
+  /** Resolves once `initEditor()` has built the Rete editor (deferred a tick
+   *  off the constructor). Load paths await this instead of retrying on
+   *  timers, so opening an entity cannot race editor construction. */
+  private editorReadyResolve!: () => void;
+  private readonly editorReady = new Promise<void>((resolve) => {
+    this.editorReadyResolve = resolve;
+  });
+
   /** @param tableInfos tables whose creation scripts this view edits — passing a
    *  non-empty array enables the **Save Creation Scripts** ribbon action. */
   constructor(tableInfos: DG.TableInfo[] = []) {
@@ -110,6 +124,37 @@ export class FuncFlowView extends DG.ViewBase {
         console.warn('FuncFlow: error registering functions:', e);
       }
     }, 100);
+  }
+
+  /** A view bound to a platform flow-script entity: loads its body and makes
+   *  Save write back to the server. */
+  static forScript(script: DG.Script): FuncFlowView {
+    const view = new FuncFlowView();
+    view.bindScript(script);
+    return view;
+  }
+
+  private bindScript(script: DG.Script): void {
+    this.boundScript = script;
+    this.name = script.friendlyName || script.name || 'Flow';
+    this.updatePath();
+    try {
+      const {doc} = parseFlowBody(script.script);
+      void this.loadFromDoc(doc);
+    } catch (e) {
+      grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  /** Keeps the browser URL on the entity route (ScriptView's '/script/<id>'
+   *  shape, which routes back into the visual editor). The Dart host may not
+   *  be attached yet — core sets the same path at open time in that case. */
+  private updatePath(): void {
+    const id = this.boundScript?.id;
+    if (!id) return;
+    try {
+      this.path = `/script/${id}`;
+    } catch { /* view not yet attached to the platform shell */ }
   }
 
   private initUI(): void {
@@ -401,6 +446,7 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
+    this.editorReadyResolve();
   }
 
   /** Re-render every node so the pre-run "Needs input" hint reflects the
@@ -591,7 +637,7 @@ export class FuncFlowView extends DG.ViewBase {
     ui.tooltip.bind(firstFlowBtn, `Hands-on: ${TUTORIALS[0].title}`);
     setTid(firstFlowBtn, 'start-first-flow');
 
-    const openBtn = ui.button('Open a flow…', () => void this.openFlow());
+    const openBtn = ui.button('Open a flow…', () => void this.openFromPlatform());
     setTid(openBtn, 'start-open');
     const actions = ui.divH([firstFlowBtn, openBtn], 'funcflow-start-actions');
 
@@ -721,13 +767,25 @@ export class FuncFlowView extends DG.ViewBase {
   // ---------- ribbon ----------
 
   private setupRibbon(): void {
+    // In creation-script mode Save writes creation scripts back to the tables,
+    // and the platform-entity save/open options are hidden so the two save
+    // targets cannot be confused.
+    const creationMode = this.tableInfos.length > 0;
+
     // Menu is grouped around what a scientist wants to do — Flow / Run / Edit /
     // Arrange — with the script-and-code machinery tucked under "Advanced".
-    this.ribbonMenu = DG.Menu.create()
+    let m = DG.Menu.create()
       .group('Flow')
-      .item('New…', () => void this.newFlow())
-      .item('Open…', () => void this.openFlow())
-      .item('Save…', () => this.saveFlow())
+      .item('New…', () => void this.newFlow());
+    if (!creationMode)
+      m = m.item('Open from platform…', () => void this.openFromPlatform());
+    m = m.item('Save', () => void this.saveFlow());
+    if (!creationMode)
+      m = m.item('Save As…', () => void this.saveAsDialog());
+    this.ribbonMenu = m
+      .separator()
+      .item('Import .ffjson…', () => void this.openFlow())
+      .item('Export .ffjson', () => this.exportFfjson())
       .separator()
       .item('Templates…', () => this.showStartPanel())
       .item('Settings…', () => this.editSettings())
@@ -767,7 +825,18 @@ export class FuncFlowView extends DG.ViewBase {
 
     const ribbonIcon = (icon: string, action: () => void, tooltip: string, id: string): HTMLElement =>
       setTid(ui.iconFA(icon, action, tooltip), 'ribbon', id);
+
+    // Saving leads the ribbon; saveFlow routes to the right target (entity
+    // update / Save As for never-saved flows / creation scripts).
+    const saveButton = creationMode
+      ? ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table')
+      : ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
+    const savePanel: HTMLElement[] = [setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save')];
+    if (!creationMode)
+      savePanel.push(ribbonIcon('folder-open', () => void this.openFromPlatform(), 'Open a flow', 'open'));
+
     const panels: HTMLElement[][] = [
+      savePanel,
       [
         ribbonIcon('play', () => this.runInstrumented(), 'Run the flow', 'run'),
         ribbonIcon('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)', 'debug'),
@@ -776,8 +845,6 @@ export class FuncFlowView extends DG.ViewBase {
       ],
       [
         ribbonIcon('eye', () => this.generateAndPreview(), 'See the steps (generated script)', 'view-script'),
-        ribbonIcon('save', () => this.saveFlow(), 'Save / share this flow', 'save'),
-        ribbonIcon('folder-open', () => void this.openFlow(), 'Open a flow', 'open'),
       ],
       [
         ribbonIcon('undo', () => void this.flow?.undo(), 'Undo (Ctrl+Z)', 'undo'),
@@ -794,13 +861,6 @@ export class FuncFlowView extends DG.ViewBase {
         ribbonIcon('graduation-cap', () => openGuideMenu(this.guideHost, this.guideRunner), 'Tutorials & help', 'help'),
       ],
     ];
-
-    // When editing tables' creation scripts, a prominent Save action that writes
-    // a per-table creation script back to each table (leads the ribbon).
-    if (this.tableInfos.length > 0) {
-      panels.unshift([setTid(ui.bigButton('Save', () => this.saveCreationScriptsDialog(),
-        'Review and save a creation script for each table'), 'ribbon', 'save-creation-scripts')]);
-    }
 
     this.setRibbonPanels(panels);
   }
@@ -832,6 +892,7 @@ export class FuncFlowView extends DG.ViewBase {
 
   private async newFlow(): Promise<void> {
     await this.flow.clear();
+    this.boundScript = null;
     this.propertyPanel.clear();
     this.updateStatusBar();
     this.updateStartPanelVisibility();
@@ -849,6 +910,7 @@ export class FuncFlowView extends DG.ViewBase {
         const doc = await loadFlowFromFile(file);
         await deserializeFlow(doc, this.flow);
         if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+        this.boundScript = null; // an imported file is a new, unsaved flow
         this.updateStatusBar();
         grok.shell.info(`Loaded flow: ${doc.name}`);
       } catch (e: any) {
@@ -858,10 +920,176 @@ export class FuncFlowView extends DG.ViewBase {
     input.click();
   }
 
-  private saveFlow(): void {
+  /** Save: in creation-script mode writes creation scripts back to the tables;
+   *  otherwise updates the bound entity, or opens Save As for a flow that was
+   *  never saved — including templates bound to a script without an id, which
+   *  previously slipped through and saved silently under the template name. */
+  private async saveFlow(): Promise<void> {
+    if (!this.flow) return;
+    if (this.tableInfos.length > 0) {
+      this.saveCreationScriptsDialog();
+      return;
+    }
+    if (this.boundScript?.id) await this.saveToServer();
+    else await this.saveAsDialog();
+  }
+
+  /** The `.flow` entity body for the current graph — the single writer, so the
+   *  annotation header and the ffjson payload can never disagree. */
+  private entityBodyText(): string {
+    if (!this.flowSettings.tags.includes(FLOW_TAG))
+      this.flowSettings.tags.push(FLOW_TAG);
+    return flowScriptText(this.flow, this.flowSettings);
+  }
+
+  private async saveToServer(): Promise<void> {
+    try {
+      const script = DG.Script.create(this.entityBodyText());
+      if (this.boundScript?.id)
+        script.id = this.boundScript.id;
+      this.boundScript = await grok.dapi.scripts.save(script);
+      this.name = this.flowSettings.scriptName;
+      this.updatePath();
+      grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
+    } catch (e: any) {
+      grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);
+    }
+  }
+
+  /** First save (or Save As): name / description, optionally bound to a space
+   *  chosen in the hierarchical picker. By default (no space) the flow is
+   *  saved as a plain script in the user's namespace. */
+  private async saveAsDialog(): Promise<void> {
+    const nameInput = ui.input.string('Name', {value: this.flowSettings.scriptName,
+      tooltipText: 'The flow is saved as a platform script entity under this name'});
+    const descInput = ui.input.textArea('Description', {value: this.flowSettings.scriptDescription,
+      tooltipText: 'Shown in galleries, previews and the context panel'});
+
+    const noSpaceLabel = 'Saved as a plain script (not bound to a space)';
+    let targetSpace: DG.Project | null = null;
+    const spaceLabel = ui.divText(noSpaceLabel, 'funcflow-save-space-label');
+    const clearLink = ui.link('clear', () => updateSpace(null),
+      'Save as a plain script, not bound to a space');
+    const warningDiv = ui.divText('', 'funcflow-save-name-warning');
+    warningDiv.style.color = '#b26a00'; // matches the warnings strip in saveCreationScriptsDialog
+
+    // Best-effort duplicate-name check: purely advisory — the server keeps
+    // names unique within a space by suffixing, and plain scripts may repeat.
+    let warnTimer: ReturnType<typeof setTimeout> | null = null;
+    const refreshNameWarning = async () => {
+      const name = nameInput.value.trim();
+      warningDiv.textContent = '';
+      if (name === '') return;
+      const esc = name.replace(/"/g, '\\"');
+      const scope = targetSpace ? ` and namespace = "${targetSpace.nqName}:"` : '';
+      try {
+        const clashes = (await grok.dapi.scripts
+          .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
+          .filter((s) => s.id !== this.boundScript?.id);
+        if (clashes.length > 0)
+          warningDiv.textContent = targetSpace
+            ? `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name`
+            : `A flow named "${name}" already exists`;
+      } catch { /* advisory only */ }
+    };
+    const updateSpace = (space: DG.Project | null) => {
+      targetSpace = space;
+      spaceLabel.textContent = space ? `Space: ${space.friendlyName}` : noSpaceLabel;
+      clearLink.style.display = space ? '' : 'none';
+      void refreshNameWarning();
+    };
+    updateSpace(null);
+
+    const pickerHost = ui.div([]);
+    let picker: SpacePicker | null = null;
+    const bindBtn = ui.button('Add to space…', async () => {
+      if (picker == null) {
+        picker = await SpacePicker.create();
+        picker.onChanged = (space) => updateSpace(space);
+        pickerHost.appendChild(picker.root);
+      } else
+        pickerHost.style.display = pickerHost.style.display === 'none' ? '' : 'none';
+    });
+    ui.tooltip.bind(bindBtn,
+      'Choose a space (or subspace) to organize and share this flow; by default it is saved as a plain script in your namespace');
+    ui.tooltip.bind(spaceLabel, 'Where this flow will live');
+
+    const dlg = ui.dialog({title: 'Save Flow'})
+      .add(ui.divV([nameInput.root, descInput.root, warningDiv,
+        ui.divH([bindBtn, spaceLabel, clearLink], {style: {alignItems: 'center', gap: '8px'}}),
+        pickerHost]))
+      .onOK(async () => {
+        const name = nameInput.value.trim();
+        if (name === '') { // reachable via Enter even while the Save button is disabled
+          grok.shell.warning('Give the flow a name first');
+          return;
+        }
+        this.flowSettings.scriptName = name;
+        this.flowSettings.scriptDescription = descInput.value;
+        this.boundScript = null; // Save As always creates a new entity
+        await this.saveToServer();
+        const saved = this.boundScript as DG.Script | null;
+        if (targetSpace && saved?.id) {
+          try {
+            await grok.dapi.spaces.id(targetSpace.id).addEntity(saved.id, false);
+            grok.shell.info(`Added to space "${targetSpace.friendlyName}"`);
+          } catch (e: any) {
+            grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
+          }
+        }
+      });
+    dlg.show({width: 500});
+    // Validate before close: empty names never reach the OK handler.
+    const okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
+    if (okBtn) okBtn.textContent = 'Save';
+    const syncOk = () => {
+      if (okBtn == null) return;
+      const empty = nameInput.value.trim() === '';
+      okBtn.disabled = empty;
+      okBtn.classList.toggle('disabled', empty);
+    };
+    nameInput.onChanged.subscribe(() => {
+      syncOk();
+      if (warnTimer != null) clearTimeout(warnTimer);
+      warnTimer = setTimeout(() => void refreshNameWarning(), 400);
+    });
+    syncOk();
+    void refreshNameWarning();
+  }
+
+  /** Pick a flow entity from the server and open it in this view. */
+  private async openFromPlatform(): Promise<void> {
+    let flows: DG.Script[] = [];
+    try {
+      flows = await grok.dapi.scripts.filter('language = "flow"').list();
+    } catch (e: any) {
+      grok.shell.error(`Could not list flows: ${e?.message ?? e}`);
+      return;
+    }
+    if (flows.length === 0) {
+      grok.shell.info('No flows on this server yet — save one first');
+      return;
+    }
+    const byLabel = new Map(flows.map((f) => [f.friendlyName || f.name, f] as const));
+    const items = [...byLabel.keys()].sort((a, b) => a.localeCompare(b));
+    const input = ui.input.choice('Flow', {value: items[0], items});
+    ui.dialog({title: 'Open Flow'})
+      .add(input.root)
+      .onOK(async () => {
+        const picked = byLabel.get(input.value ?? '');
+        if (!picked) return;
+        // Re-find by id so the body is guaranteed present, not a lean listing row.
+        const full = await grok.dapi.scripts.find(picked.id);
+        this.bindScript(full ?? picked);
+      })
+      .show();
+  }
+
+  /** Download the graph as a local `.ffjson` file (the pre-entity behavior). */
+  private exportFfjson(): void {
     const doc = serializeFlow(this.flow, this.flowSettings);
     downloadFlow(doc);
-    grok.shell.info('Flow saved');
+    grok.shell.info('Flow exported as .ffjson');
   }
 
   private editSettings(): void {
@@ -1093,35 +1321,34 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Load a flow from a JSON string (file viewer entry point). */
   async loadFromJson(json: string): Promise<void> {
-    const doc = JSON.parse(json) as import('./serialization/flow-schema').FuncFlowDocument;
-    const load = async () => {
-      await deserializeFlow(doc, this.flow);
-      if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
-      this.name = doc.name || 'FuncFlow';
-      this.updateStatusBar();
-    };
-    if (this.flow) await load();
-    else setTimeout(() => void load(), 100);
+    await this.loadFromDoc(JSON.parse(json) as FuncFlowDocument);
+  }
+
+  /** Load a parsed flow document. Awaits editor construction, so it is safe
+   *  to call right after the constructor (no timer race). */
+  async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
+    await this.editorReady;
+    await deserializeFlow(doc, this.flow);
+    if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+    this.name = doc.name || 'FuncFlow';
+    this.updateStatusBar();
   }
 
   /** Rebuild the canvas from a table-creation script — the cascade of
    *  function calls Datagrok records for reproducibly-created tables
    *  (the script behind a project's data sync). Replaces the current graph. */
   async loadFromCreationScript(script: string): Promise<void> {
-    const load = async (): Promise<void> => {
-      try {
-        await this.flow.clear();
-        const result = await buildFlowFromCreationScript(this.flow, script);
-        this.updateStatusBar();
-        await this.flow.zoomToFit();
-        for (const warning of result.warnings) grok.shell.warning(warning);
-        grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
-      } catch (e: any) {
-        grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
-      }
-    };
-    if (this.flow) await load();
-    else setTimeout(() => void load(), 100);
+    await this.editorReady;
+    try {
+      await this.flow.clear();
+      const result = await buildFlowFromCreationScript(this.flow, script);
+      this.updateStatusBar();
+      await this.flow.zoomToFit();
+      for (const warning of result.warnings) grok.shell.warning(warning);
+      grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
+    } catch (e: any) {
+      grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
+    }
   }
 
   /** Dialog: paste a creation script (or prefill it from an open table that
