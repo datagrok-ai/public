@@ -487,6 +487,9 @@ public class BufferAccessor {
             case Types.STRING:    return new StringColumn(name, 0);
             case Types.DATE_TIME: return new DateTimeColumn(name, 0);
             case Types.BIG_INT:   return new BigIntColumn(name, 0);
+            case Types.QNUM:      return new QNumColumn(name, 0);
+            case Types.BYTE_ARRAY: return new ByteArrayColumn(name, 0);
+            case Types.DATA_FRAME: return new DataFrameColumn(name, 0);
             default:
                 throw new RuntimeException("Unknown column type for decoding: " + type);
         }

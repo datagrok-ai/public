@@ -1,0 +1,20 @@
+{
+  "frame": "natural_bigint",
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "bi",
+      "dgType": "bigint",
+      "valueEncoding": "bigint",
+      "encoderId": 2,
+      "values": [
+        "12345678901234567890",
+        null,
+        "-98765432109876543210",
+        "42",
+        "-1",
+        "1152921504606846983"
+      ]
+    }
+  ]
+}

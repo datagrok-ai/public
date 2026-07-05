@@ -48,8 +48,12 @@ public class D42DartFixtureTest {
         File[] files = fixtureDir().listFiles((d, n) -> n.endsWith(".d42"));
         Assertions.assertNotNull(files, "no d42 fixtures");
         List<String> names = new ArrayList<>();
-        for (File f : files)
-            names.add(f.getName().substring(0, f.getName().length() - ".d42".length()));
+        for (File f : files) {
+            String base = f.getName().substring(0, f.getName().length() - ".d42".length());
+            if (base.startsWith("corrupt_")) // hand-corrupted; asserted separately
+                continue;
+            names.add(base);
+        }
         Collections.sort(names);
         Assertions.assertFalse(names.isEmpty(), "no d42 fixtures");
         return names.stream();
@@ -139,6 +143,47 @@ public class D42DartFixtureTest {
                         if (!isNull) Assertions.assertEquals(v.getAsDouble(),
                                 ((DateTimeColumn) col).get(r), 0.0, at);
                         break;
+                    case "qnum": {
+                        QNumColumn q = (QNumColumn) col;
+                        if (isNull) Assertions.assertTrue(q.isNone(r), at + " expected none");
+                        else {
+                            Assertions.assertFalse(q.isNone(r), at + " unexpected none");
+                            long expBits = Long.parseUnsignedLong(v.getAsString(), 16);
+                            Assertions.assertEquals(expBits, Double.doubleToRawLongBits(q.getRaw(r)), at + " qnum bits");
+                        }
+                        break;
+                    }
+                    case "byteArray": {
+                        ByteArrayColumn ba = (ByteArrayColumn) col;
+                        if (isNull) Assertions.assertTrue(ba.isNone(r), at + " expected none");
+                        else {
+                            Assertions.assertFalse(ba.isNone(r), at + " unexpected none");
+                            JsonArray arr = v.getAsJsonArray();
+                            byte[] got = ba.get(r);
+                            Assertions.assertEquals(arr.size(), got.length, at + " byteArray length");
+                            for (int k = 0; k < arr.size(); k++)
+                                Assertions.assertEquals(arr.get(k).getAsInt(), got[k] & 0xFF, at + " byteArray[" + k + "]");
+                        }
+                        break;
+                    }
+                    case "dataframe": {
+                        DataFrameColumn dc = (DataFrameColumn) col;
+                        if (isNull) Assertions.assertTrue(dc.isNone(r), at + " expected none");
+                        else {
+                            Assertions.assertFalse(dc.isNone(r), at + " unexpected none");
+                            JsonObject exp = v.getAsJsonObject();
+                            DataFrame nested = dc.get(r);
+                            Assertions.assertNotNull(nested, at + " nested frame");
+                            Assertions.assertEquals(exp.get("rowCount").getAsInt(), nested.rowCount.intValue(),
+                                    at + " nested rowCount");
+                            JsonArray cols = exp.getAsJsonArray("cols");
+                            Assertions.assertEquals(cols.size(), nested.getColumnCount(), at + " nested colCount");
+                            for (int k = 0; k < cols.size(); k++)
+                                Assertions.assertEquals(cols.get(k).getAsString(), nested.getColumn(k).getName(),
+                                        at + " nested col " + k);
+                        }
+                        break;
+                    }
                     default:
                         Assertions.fail(base + ": unknown valueEncoding " + enc);
                 }
@@ -175,13 +220,17 @@ public class D42DartFixtureTest {
             }
         }
 
+        // The full ARCHITECTURE section 1.5 encoder-id matrix.
         Map<String, int[]> required = new LinkedHashMap<>();
         required.put("int", new int[]{1, 2, 3, 4});
-        required.put("string", new int[]{0});
+        required.put("string", new int[]{0, 1, 2, 3});
         required.put("bool", new int[]{1});
-        required.put("datetime", new int[]{3});
-        required.put("double", new int[]{1, 5});
-        required.put("bigint", new int[]{1});
+        required.put("datetime", new int[]{1, 2, 3});
+        required.put("double", new int[]{1, 2, 3, 4, 5});
+        required.put("bigint", new int[]{1, 2, 3});
+        required.put("qnum", new int[]{1});
+        required.put("byte_array", new int[]{1});
+        required.put("dataframe", new int[]{1});
 
         for (Map.Entry<String, int[]> e : required.entrySet())
             for (int id : e.getValue())
@@ -189,6 +238,16 @@ public class D42DartFixtureTest {
                         seen.getOrDefault(e.getKey(), Collections.emptySet()).contains(id),
                         "no committed fixture exercises " + e.getKey() + " encoder id " + id
                                 + " (seen: " + seen.get(e.getKey()) + ")");
+    }
+
+    @Test
+    public void testUnknownEncoderIdThrows() throws Exception {
+        File dir = fixtureDir();
+        byte[] bytes = Files.readAllBytes(new File(dir, "corrupt_unknown_encoder.d42").toPath());
+        RuntimeException ex = Assertions.assertThrows(RuntimeException.class,
+                () -> DataFrame.fromByteArray(bytes));
+        Assertions.assertTrue(ex.getMessage() != null && ex.getMessage().contains("encoder"),
+                "expected a loud 'encoder ... not found' error, got: " + ex.getMessage());
     }
 
     // Re-parses the DataFrame region (single-table blob starts at offset 0) to

@@ -86,6 +86,27 @@ public class FloatColumn extends AbstractColumn<Float> {
                     data = buf.readFloat32List();
                 length = data.length;
                 break;
+            case 2: // float:rle (legacy, no metadata header) - float32
+                doublePrecision = false;
+                data = serialization.codecs.FloatRle.decode32(buf);
+                length = data.length;
+                break;
+            case 3: // float:fcp - float32 only
+                doublePrecision = false;
+                data = new serialization.codecs.FloatFcp().decode(buf);
+                length = data.length;
+                break;
+            case 4: // float:rle64 (metadata header)
+                buf.readInt16();
+                doublePrecision = buf.readInt8() == 1;
+                if (doublePrecision) {
+                    data64 = serialization.codecs.FloatRle.decode64(buf);
+                    length = data64.length;
+                } else {
+                    data = serialization.codecs.FloatRle.decode32(buf);
+                    length = data.length;
+                }
+                break;
             case 5: // float:raw64 (metadata header)
                 buf.readInt16();
                 doublePrecision = buf.readInt8() == 1;
