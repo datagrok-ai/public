@@ -1700,6 +1700,10 @@ export interface IDartApi {
   grok_DbTableQueryBuilder_Limit(dtqb: any, n: Num): any;
   grok_DbTableQueryBuilder_Join(dtqb: any, rightTable: String, joinType: String, leftTableKeys: any, rightTableKeys: any, rightTableAlias: String, leftTable: String): any;
   grok_DbTableQueryBuilder_Build(dtqb: any): any;
+  grok_DbTable_Insert(p0: any, p1: any, p2: any, p3: any, p4: any): Promise<any>;
+  grok_DbTable_Upsert(p0: any, p1: any, p2: any, p3: any, p4: any): Promise<any>;
+  grok_DbTable_Update(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_Delete(p0: any, p1: any, p2: any, p3: any): Promise<any>;
   grok_Entity_Get_FriendlyName(p: any): any;
   grok_Entity_Set_FriendlyName(p: any, name: String): any;
   grok_Entity_Has_Tag(e: any, tag: String): any;

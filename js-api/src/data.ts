@@ -2,7 +2,7 @@ import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder, Property} from "./entities";
+import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder, TableMutationBuilder, MutationResult, Property} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Grid } from "./grid";
 import {Tags} from "./api/ddt.api.g";
@@ -121,6 +121,21 @@ export class Db {
     return TableQueryBuilder.from(tableName, connectionId);
   }
 
+  /** Returns a {@link DbTable} for structured writes (insert/upsert/update/delete)
+   * against [tableName] on the [connectionId] connection.
+   * @param connectionId - connection id or fully-qualified name (see [nqName])
+   * @param tableName - database table name (optionally schema-qualified, e.g. `public.orders`) */
+  table(connectionId: string, tableName: string): DbTable {
+    return new DbTable(connectionId, tableName);
+  }
+
+  /** Creates a {@link TableMutationBuilder} for fluent `UPDATE`/`DELETE` composition.
+   * @param connectionId - connection id or fully-qualified name (see [nqName])
+   * @param tableName - database table name */
+  buildMutation(connectionId: string, tableName: string): TableMutationBuilder {
+    return TableMutationBuilder.from(tableName, connectionId);
+  }
+
   /** Returns database catalog (e.g. database) information for the given connection.
    * If {@link catalog} is specified, returns only the matching catalog.
    * For databases that don't support catalogs (e.g., MySQL, Oracle),
@@ -128,6 +143,70 @@ export class Db {
    * or '<unknown database name>' if not set. */
   async getInfo(connection: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
     return grok.dapi.connections.getDatabaseInfo(connection, catalog);
+  }
+}
+
+/** Payloads larger than this go through the bulk (streaming) path; a smaller `object[]`
+ * is sent inline. Any DataFrame always uses the bulk path. */
+const DB_TABLE_INLINE_ROW_LIMIT = 10000;
+
+/**
+ * Structured write access to one database table, obtained via {@link Db.table}.
+ * All operations return a {@link MutationResult}; a saved-connection `DataConnection.Write`
+ * privilege and per-provider write capability are enforced server-side (unsupported
+ * operations reject with a structured capability error, never a 500). Values are always
+ * sent as bound parameters — never interpolated SQL. `where` conditions follow the platform
+ * pattern grammar (`> 5`, `10-20`, `contains foo`, ...), the same as query patterns.
+ */
+export class DbTable {
+  constructor(public readonly connectionId: string, public readonly tableName: string) {}
+
+  /** Inserts rows from a DataFrame (bulk) or an array of row objects (column types are
+   * inferred from the first non-null value per column). */
+  insert(rows: DataFrame | object[],
+    options: {allOrNothing?: boolean, errorOnDuplicate?: boolean} = {}): Promise<MutationResult> {
+    return this._insert(rows, options, false);
+  }
+
+  /** Inserts or updates rows, matching existing rows on `options.keys`. */
+  upsert(rows: DataFrame | object[],
+    options: {keys: string[], allOrNothing?: boolean}): Promise<MutationResult> {
+    if (options?.keys == null || options.keys.length === 0)
+      throw new Error('upsert requires options.keys (the match-key columns)');
+    return this._insert(rows, options, true);
+  }
+
+  /** Updates the columns in `spec.set` on the rows matching `spec.where`. */
+  async update(spec: {set: Record<string, any>, where: Record<string, any>}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Update(this.connectionId, this.tableName,
+      JSON.stringify(spec.set ?? {}), JSON.stringify(spec.where ?? {})));
+  }
+
+  /** Deletes the rows matching `spec.where`. An empty `where` requires `allowFullTable: true`. */
+  async delete(spec: {where: Record<string, any>, allowFullTable?: boolean}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
+      JSON.stringify(spec.where ?? {}), spec.allowFullTable ?? false));
+  }
+
+  private async _insert(rows: DataFrame | object[], options: any, upsert: boolean): Promise<MutationResult> {
+    let df: any = null;
+    let rowsJson: string | null = null;
+    if (rows instanceof DataFrame)
+      df = rows.dart;
+    else if (Array.isArray(rows)) {
+      if (rows.length > DB_TABLE_INLINE_ROW_LIMIT) {
+        const converted = DataFrame.fromObjects(rows);
+        df = converted ? converted.dart : null;
+      }
+      if (df == null)
+        rowsJson = JSON.stringify(rows);
+    } else
+      throw new Error('rows must be a DataFrame or an array of row objects');
+    const optionsJson = JSON.stringify(options ?? {});
+    const res: string = upsert
+      ? await api.grok_DbTable_Upsert(this.connectionId, this.tableName, df, rowsJson, optionsJson)
+      : await api.grok_DbTable_Insert(this.connectionId, this.tableName, df, rowsJson, optionsJson);
+    return JSON.parse(res);
   }
 }
 
