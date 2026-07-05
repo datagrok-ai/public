@@ -490,18 +490,53 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame execute(FuncCall queryRun) throws QueryCancelledByUser, GrokConnectException {
-        try (Connection connection = getConnection(queryRun.func.connection);
-                ResultSet resultSet = getResultSet(queryRun, connection,100)) {
-            if (resultSet == null)
-                return new DataFrame();
-            ResultSetManager resultSetManager = getResultSetManager();
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            resultSetManager.init(metaData, 100);
-            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),1, false);
+        Connection connection = null;
+        ResultSet resultSet = null;
+        try {
+            connection = getConnection(queryRun.func.connection);
+            resultSet = getResultSet(queryRun, connection, 100);
+            DataFrame dataFrame = new DataFrame();
+            if (resultSet != null) {
+                ResultSetManager resultSetManager = getResultSetManager();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                resultSetManager.init(metaData, 100);
+                dataFrame = getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(), 1, false);
+            }
+            if (!connection.getAutoCommit())
+                connection.commit();
+            return dataFrame;
         } catch (SQLException e) {
+            rollbackQuietly(connection);
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw new GrokConnectException(e);
+        } catch (QueryCancelledByUser | RuntimeException e) {
+            rollbackQuietly(connection);
+            throw e;
+        } finally {
+            if (resultSet != null)
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    logger.warn("Failed to close ResultSet", e);
+                }
+            if (connection != null)
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    logger.warn("Failed to close connection", e);
+                }
+        }
+    }
+
+    protected void rollbackQuietly(Connection connection) {
+        if (connection == null)
+            return;
+        try {
+            if (!connection.getAutoCommit())
+                connection.rollback();
+        } catch (SQLException e) {
+            logger.warn("Failed to rollback transaction", e);
         }
     }
 

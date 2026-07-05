@@ -39,6 +39,7 @@ public class SessionHandler {
     private int dfNumber = 1;
     private byte[] bytes;
     private QueryManager queryManager;
+    private boolean completedOk = false;
 
     SessionHandler(Session session, boolean skipLog) {
         this.session = session;
@@ -115,6 +116,7 @@ public class SessionHandler {
             return;
         }
         else if (message.startsWith(COMPLETED_OK)) {
+            completedOk = true;
             session.getRemote().sendStringByFuture(END_MESSAGE);
             session.close();
             return;
@@ -159,7 +161,7 @@ public class SessionHandler {
 
     public void onClose() throws SQLException {
         if (queryManager != null)
-            queryManager.close();
+            queryManager.close(completedOk);
     }
 
     private void closeQueryManagerQuietly() {
@@ -168,7 +170,7 @@ public class SessionHandler {
         }
         if (queryManager != null) {
             try {
-                queryManager.close();
+                queryManager.close(false);
             } catch (Throwable t) {
                 LOGGER.warn("Failed to close QueryManager during cleanup", t);
             }

@@ -95,7 +95,7 @@ public class QueryManager {
         provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount,
                 1, true);
         MDC.remove(QueryHandler.CALL_ID_HEADER);
-        close();
+        close(true);
         MDC.put(QueryHandler.CALL_ID_HEADER, sessionId);
     }
 
@@ -125,13 +125,21 @@ public class QueryManager {
         return df;
     }
 
-    public void close() throws SQLException {
+    public void close(boolean commit) throws SQLException {
         if (resultSet != null && !resultSet.isClosed())
             resultSet.close();
         if (connection != null && !connection.isClosed()) {
             LOGGER.debug("Closing DB connection...");
-            if (!connection.getAutoCommit())
-                connection.commit();
+            if (!connection.getAutoCommit()) {
+                if (commit)
+                    connection.commit();
+                else
+                    try {
+                        connection.rollback();
+                    } catch (SQLException e) {
+                        LOGGER.warn("Failed to rollback transaction", e);
+                    }
+            }
             QueryMonitor.getInstance().removeResultSet(query.id);
             connection.close();
             LOGGER.debug("Closed DB connection");
