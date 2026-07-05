@@ -765,6 +765,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public String insertSql(InsertRows m) {
         if (m.columns == null || m.columns.isEmpty())
             throw new MutationValidationException("InsertRows requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
         return "INSERT INTO " + mutationTableName(m) + " (" +
                 m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) +
                 ") VALUES (" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
@@ -776,6 +777,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (m.setValues == null || m.setTypes == null
                 || m.setValues.size() != m.setColumns.size() || m.setTypes.size() != m.setColumns.size())
             throw new MutationValidationException("UpdateRows setColumns/setValues/setTypes must be parallel lists of equal size");
+        m.setColumns.forEach(this::validateMutationIdentifier);
         StringBuilder sql = new StringBuilder("UPDATE ").append(mutationTableName(m)).append(" SET ");
         sql.append(m.setColumns.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
         appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
@@ -791,7 +793,34 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected String mutationTableName(TableMutation m) {
+        validateMutationIdentifier(m.tableName);
+        if (GrokConnectUtil.isNotEmpty(m.schema))
+            validateMutationIdentifier(m.schema);
+        if (GrokConnectUtil.isNotEmpty(m.catalog))
+            validateMutationIdentifier(m.catalog);
         return SqlNames.fullTableName(m.tableName, m.schema, m.catalog, this);
+    }
+
+    /**
+     * Neutralizes caller-supplied identifiers on the (destructive) mutation boundary: rejects any
+     * table/schema/catalog/column/predicate-field name whose segments are empty or carry the
+     * provider's bracket/quote chars or control chars — a hostile identifier becomes a clean
+     * pre-validation 400 instead of a downstream db-error. Applied only here, not in the shared
+     * addBrackets read path. Dotted names (schema.table, table.column) are validated per segment.
+     */
+    public void validateMutationIdentifier(String identifier) {
+        if (GrokConnectUtil.isEmpty(identifier))
+            throw new MutationValidationException("Mutation identifier must not be empty");
+        String brackets = descriptor.nameBrackets;
+        for (String segment : identifier.split("\\.", -1)) {
+            if (segment.isEmpty())
+                throw new MutationValidationException("Invalid mutation identifier: '" + identifier + "'");
+            for (int i = 0; i < segment.length(); i++) {
+                char c = segment.charAt(i);
+                if (c < 0x20 || c == '"' || c == '\'' || c == '`' || c == ';' || brackets.indexOf(c) >= 0)
+                    throw new MutationValidationException("Illegal character in mutation identifier: '" + identifier + "'");
+            }
+        }
     }
 
     /** Appends a WHERE section identical in shape to TableQuery.toSql's (shared PredicateCompiler). */
@@ -802,8 +831,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (!op.equals("and") && !op.equals("or"))
             throw new MutationValidationException("whereOp must be 'and' or 'or', got '" + whereOp + "'");
         List<String> clauses = new ArrayList<>();
-        for (FieldPredicate clause : whereClauses)
+        for (FieldPredicate clause : whereClauses) {
+            validateMutationIdentifier(clause.field);
             clauses.add(String.format("  (%s)", PredicateCompiler.compile(clause, this, collectedParams)));
+        }
         sql.append(System.lineSeparator()).append("WHERE").append(System.lineSeparator());
         sql.append(String.join(String.format(" %s%s", op, System.lineSeparator()), clauses));
     }
