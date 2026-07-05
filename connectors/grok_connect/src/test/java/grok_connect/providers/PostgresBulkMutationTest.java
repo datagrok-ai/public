@@ -1,6 +1,7 @@
 package grok_connect.providers;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -88,7 +89,8 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     @AfterAll
     public void dropScratchTables() throws SQLException {
         for (String table : new String[] {"mut_bulk_copy", "mut_bulk_batch", "mut_bulk_abort", "mut_bulk_bad",
-                "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_blank_copy", "mut_blank_batch"})
+                "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_blank_copy", "mut_blank_batch",
+                "mut_nondeterm", "mut_ups_atomic"})
             execDirect("DROP TABLE IF EXISTS " + table);
     }
 
@@ -480,6 +482,75 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
             MutationManager manager = new MutationManager(header(m));
             manager.start();
         });
+    }
+
+    @DisplayName("Fix 1: a non-reproducing atomic batch failure still forces full rollback (no silent partial commit)")
+    @Test
+    public void atomicReplay_nonReproducingFailure_rollsBackFully() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_nondeterm");
+        execDirect("CREATE TABLE mut_nondeterm (id int PRIMARY KEY, note text)");
+        // Raw pgjdbc connection (HikariProxyConnection is final and cannot be spied); drive it like the manager.
+        Connection real = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
+        try {
+            real.setAutoCommit(false);
+            Connection spy = Mockito.spy(real);
+            // The batch throws a transient 40P01 (deadlock) that does NOT recur on the row-by-row replay —
+            // executeBatch is stubbed to throw, executeUpdate delegates to the real statement and succeeds.
+            Mockito.doAnswer(inv -> {
+                PreparedStatement realStmt = (PreparedStatement) inv.callRealMethod();
+                PreparedStatement spyStmt = Mockito.spy(realStmt);
+                Mockito.doThrow(new BatchUpdateException("deadlock detected", "40P01", new int[0]))
+                        .when(spyStmt).executeBatch();
+                return spyStmt;
+            }).when(spy).prepareStatement(Mockito.anyString());
+
+            InsertRows m = insert("mut_nondeterm", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
+            m.errorOnDuplicate = true; // plain insert, no ON CONFLICT — the replay would otherwise succeed silently
+            BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, spy, m);
+            byte[] csv = csv(new String[] {"1", "a"}, new String[] {"2", "b"}, new String[] {"3", "c"});
+            MutationResult result;
+            try {
+                loader.feed(csv);
+                result = loader.finish();
+            } catch (Exception e) {
+                loader.abort();
+                real.rollback();
+                throw e;
+            }
+            // errorCount>0 must force the whole load to roll back even though no single row reproduced the error
+            Assertions.assertTrue(result.errorCount != null && result.errorCount > 0);
+            Assertions.assertEquals(0, result.affectedRows);
+            Assertions.assertEquals("conflict", result.errors.get(0).code); // 40P01 -> conflict
+            real.rollback(); // the manager would roll back; assert nothing persisted
+        } finally {
+            real.close();
+        }
+        Assertions.assertEquals(0, countDirect("mut_nondeterm"));
+    }
+
+    @DisplayName("Fix 2: allOrNothing upsert with a mid-batch violation rolls back fully through MutationManager")
+    @Test
+    public void upsert_allOrNothing_atomicRollbackThroughManager() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_ups_atomic");
+        execDirect("CREATE TABLE mut_ups_atomic (id int PRIMARY KEY, note text NOT NULL)");
+        UpsertRows m = new UpsertRows(); // allOrNothing defaults to true
+        m.tableName = "mut_ups_atomic";
+        m.columns = Arrays.asList("id", "note");
+        m.columnTypes = Arrays.asList("int", "string");
+        m.matchKeys = Arrays.asList("id");
+        m.bulk = true;
+        m.rows = null;
+        m.connection = connection;
+        // upsert routes to the batch loader (not COPY), so this exercises the manager's atomic rollback end-to-end
+        MutationResult result = runManager(m, csv(
+                new String[] {"1", "a"},
+                new String[] {"2", null}, // NOT NULL violation, mid-batch
+                new String[] {"3", "c"}));
+        Assertions.assertEquals(0, result.affectedRows);
+        Assertions.assertEquals(0, countDirect("mut_ups_atomic")); // whole load rolled back
+        Assertions.assertEquals(Integer.valueOf(1), result.errorCount);
+        Assertions.assertEquals(1, result.errors.get(0).index); // exact failing row
+        Assertions.assertEquals("notnull", result.errors.get(0).code);
     }
 
     private Object queryCount(String sql) throws SQLException {

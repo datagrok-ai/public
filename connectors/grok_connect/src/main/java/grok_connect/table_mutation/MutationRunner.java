@@ -175,7 +175,11 @@ public class MutationRunner {
                 : executeUpsertChunked(provider, connection, m, chunkRows, mainCallId);
     }
 
-    /** Key-based batched UPDATE for inline {@code mode == "update"} rows: one row of placeholders per row. */
+    /**
+     * Key-based batched UPDATE for inline {@code mode == "update"} rows: one row of placeholders per row.
+     * Unlike the bulk loader, the inline path does not report missing keys in phase A — a row whose key
+     * matches nothing (update count 0) is silently a no-op, not a {@code missing} RowError.
+     */
     private static int executeUpdateByKey(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
         if (m.columns == null || m.columns.isEmpty())
             throw new MutationValidationException("Update mode requires a non-empty columns list");
