@@ -104,9 +104,42 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     @Override
+    public String insertIgnoreDuplicatesSql(InsertRows m) {
+        return insertSql(m) + " ON CONFLICT DO NOTHING";
+    }
+
+    @Override
+    public String mutationErrorColumn(SQLException e) {
+        org.postgresql.util.ServerErrorMessage sem = serverError(e);
+        if (sem == null)
+            return null;
+        return grok_connect.utils.GrokConnectUtil.isEmpty(sem.getColumn()) ? null : sem.getColumn();
+    }
+
+    @Override
+    public String mutationErrorMessage(SQLException e) {
+        org.postgresql.util.ServerErrorMessage sem = serverError(e);
+        if (sem == null)
+            return e.getMessage();
+        String constraint = sem.getConstraint();
+        return grok_connect.utils.GrokConnectUtil.isEmpty(constraint)
+                ? e.getMessage() : e.getMessage() + " (constraint: " + constraint + ")";
+    }
+
+    /** Walks the SQLException chain (BatchUpdateException carries the real cause via getNextException). */
+    private org.postgresql.util.ServerErrorMessage serverError(SQLException e) {
+        for (SQLException cur = e; cur != null; cur = cur.getNextException())
+            if (cur instanceof org.postgresql.util.PSQLException)
+                return ((org.postgresql.util.PSQLException) cur).getServerErrorMessage();
+        return null;
+    }
+
+    @Override
     public BulkLoader createBulkLoader(Connection conn, InsertRows m) throws SQLException {
         String mode = grok_connect.utils.GrokConnectUtil.isEmpty(m.mode) ? "insert" : m.mode;
-        if (!mode.equals("insert")) // COPY is insert-only; upsert/update bulk uses the default loader (WO-6)
+        // COPY is the fast atomic path: insert-only and all-or-nothing (it cannot skip duplicates or report
+        // per-row). Partial mode, upsert and update all use the default savepoint-capable loader (WO-6).
+        if (!mode.equals("insert") || !m.allOrNothing)
             return super.createBulkLoader(conn, m);
         if (m.columns == null || m.columns.isEmpty())
             throw new MutationValidationException("Bulk insert requires a non-empty columns list");

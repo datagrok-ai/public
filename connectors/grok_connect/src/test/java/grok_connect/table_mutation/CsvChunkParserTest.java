@@ -92,11 +92,17 @@ class CsvChunkParserTest {
         Assertions.assertEquals("→", rows.get(0).get(1));
     }
 
-    @DisplayName("Blank lines between records are skipped")
+    @DisplayName("A blank line is a single null-field record (matches COPY csv; WO-6 carried finding 1)")
     @Test
-    public void blankLinesSkipped() {
+    public void blankLineIsSingleNullField() {
+        // Pre-WO-6 the batch parser silently dropped blank lines while COPY inserts a null row —
+        // a count divergence on a one-column table. Now both agree: a blank line = one null field.
         List<List<String>> rows = parse(b("a,b\n\nc,d\n"));
-        Assertions.assertEquals(2, rows.size());
+        Assertions.assertEquals(3, rows.size());
+        Assertions.assertEquals(java.util.Arrays.asList("a", "b"), rows.get(0));
+        Assertions.assertEquals(1, rows.get(1).size());
+        Assertions.assertNull(rows.get(1).get(0)); // the blank line
+        Assertions.assertEquals(java.util.Arrays.asList("c", "d"), rows.get(2));
     }
 
     @DisplayName("A newline embedded in a quoted field does not terminate the record")
