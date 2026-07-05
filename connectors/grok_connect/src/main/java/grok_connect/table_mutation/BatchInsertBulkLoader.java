@@ -173,7 +173,7 @@ public class BatchInsertBulkLoader implements BulkLoader {
                 connection.rollback(savepoint);
                 releaseQuietly(savepoint);
                 statement.clearBatch();
-                recordFirstFailure(chunkStart);
+                recordFirstFailure(chunkStart, e);
             }
             else
                 recordFailingRowFromCounts(chunkStart, e);
@@ -235,8 +235,14 @@ public class BatchInsertBulkLoader implements BulkLoader {
             inserted += rows;
     }
 
-    /** Replays a rolled-back atomic chunk row-by-row to pinpoint the first failing row (exact index). */
-    private void recordFirstFailure(int chunkStart) throws SQLException {
+    /**
+     * Replays a rolled-back atomic chunk row-by-row to pinpoint the first failing row (exact index). If the
+     * replay reproduces no error — the original failure was nondeterministic (deadlock 40P01 /
+     * serialization 40001 that does not recur) — a statement-level error is still recorded from the
+     * original {@code batchError} so {@code errorCount > 0} forces the manager's full rollback: never a
+     * silent partial commit + false success.
+     */
+    private void recordFirstFailure(int chunkStart, BatchUpdateException batchError) throws SQLException {
         for (int i = 0; i < batch.size(); i++) {
             Savepoint savepoint = connection.setSavepoint();
             try {
@@ -249,6 +255,17 @@ public class BatchInsertBulkLoader implements BulkLoader {
                 addError(chunkStart + i, e);
                 return; // the load fails as a whole; the first bad row is enough
             }
+        }
+        recordChunkFailure(chunkStart, batchError); // replay did not reproduce it — keep the load a failure
+    }
+
+    /** Records a statement-level error (index -1) naming the chunk range when a row cannot be attributed. */
+    private void recordChunkFailure(int chunkStart, BatchUpdateException e) {
+        errorCount++;
+        if (errors.size() < MAX_ERRORS) {
+            RowError error = SqlStateMapper.toRowError(provider, -1, e);
+            error.message = error.message + " (in rows " + chunkStart + ".." + (chunkStart + batch.size() - 1) + ")";
+            errors.add(error);
         }
     }
 
@@ -268,16 +285,10 @@ public class BatchInsertBulkLoader implements BulkLoader {
                 else
                     determinable = false;
             }
-        if (determinable && failPos >= 0 && failPos < batch.size()) {
+        if (determinable && failPos >= 0 && failPos < batch.size())
             addError(chunkStart + failPos, e);
-            return;
-        }
-        errorCount++;
-        if (errors.size() < MAX_ERRORS) {
-            RowError error = SqlStateMapper.toRowError(provider, -1, e);
-            error.message = error.message + " (in rows " + chunkStart + ".." + (chunkStart + batch.size() - 1) + ")";
-            errors.add(error);
-        }
+        else
+            recordChunkFailure(chunkStart, e);
     }
 
     private void addError(int rowIndex, SQLException e) {
