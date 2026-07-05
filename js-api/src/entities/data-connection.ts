@@ -351,9 +351,10 @@ export interface MutationResult {
 }
 
 /** Fluent builder for structured `UPDATE`/`DELETE` mutations. A thin wrapper over
- * {@link DbTable} that accumulates `SET` assignments and `WHERE` conditions; the where
- * grammar is the platform pattern syntax used by {@link TableQueryBuilder.where}
- * (`> 5`, `10-20`, `contains foo`, ...). Build via `grok.data.db.buildMutation(...)`. */
+ * {@link DbTable} that accumulates `SET` assignments and `WHERE` conditions. In phase A a
+ * `WHERE` condition is **equality by value**; a string value may use string patterns
+ * (e.g. `contains foo`). Numeric/date range grammar (`> 5`, `10-20`) in `where` is phase B.
+ * Build via `grok.data.db.buildMutation(...)`. */
 export class TableMutationBuilder {
   private readonly _set: Record<string, any> = {};
   private readonly _where: Record<string, any> = {};
@@ -361,7 +362,7 @@ export class TableMutationBuilder {
 
   constructor(public readonly connectionId: string, public readonly tableName: string) {}
 
-  /** Creates a builder for [tableName] against the [connectionId] connection (id or nqName). */
+  /** Creates a builder for [tableName] against the [connectionId] connection (nqName). */
   static from(tableName: string, connectionId: string): TableMutationBuilder {
     return new TableMutationBuilder(connectionId, tableName);
   }
@@ -369,7 +370,7 @@ export class TableMutationBuilder {
   /** Assigns `column = value` in the `SET` clause (update only). */
   set(column: string, value: any): TableMutationBuilder { this._set[column] = value; return this; }
 
-  /** Adds a `WHERE` condition: `pattern` follows the platform pattern grammar. */
+  /** Adds a `WHERE` condition: equality by value (a string value may use string patterns). */
   where(column: string, pattern: any): TableMutationBuilder { this._where[column] = pattern; return this; }
 
   /** Allows a `DELETE` with no `WHERE` conditions (a full-table wipe — off by default). */
