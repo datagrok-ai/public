@@ -81,7 +81,19 @@ public class TablesBlob {
     private static final String[] ACCEPTED_VERSIONS = {"0.6.0", "0.1.0"};
 
     /// Deserializes a [TablesBlob] from an array of bytes (tail-first).
+    /// A truncated / malformed / out-of-range buffer fails with a structured
+    /// RuntimeException rather than a raw ArrayIndexOutOfBoundsException - the
+    /// WS mutation/query protocol sends one TablesBlob per binary frame, so a
+    /// corrupt frame must surface cleanly.
     public static TablesBlob fromByteArray(byte[] bytes) {
+        try {
+            return fromByteArrayImpl(bytes);
+        } catch (IndexOutOfBoundsException | NegativeArraySizeException e) {
+            throw new RuntimeException("Malformed or truncated d42 buffer", e);
+        }
+    }
+
+    private static TablesBlob fromByteArrayImpl(byte[] bytes) {
         TablesBlob blob = new TablesBlob();
         blob.buffer = new BufferAccessor(bytes);
 
@@ -118,9 +130,14 @@ public class TablesBlob {
         return blob;
     }
 
-    /// Returns the i-th [DataFrame] in the blob.
+    /// Returns the i-th [DataFrame] in the blob. Wraps out-of-range offsets /
+    /// truncated column data into a clean RuntimeException (see [fromByteArray]).
     public DataFrame getTable(int idx) {
-        buffer.bufPos = tablesOffsets[idx];
-        return buffer.readDataFrame(columnsOffsets[idx]);
+        try {
+            buffer.bufPos = tablesOffsets[idx];
+            return buffer.readDataFrame(columnsOffsets[idx]);
+        } catch (IndexOutOfBoundsException | NegativeArraySizeException e) {
+            throw new RuntimeException("Malformed or truncated d42 buffer", e);
+        }
     }
 }
