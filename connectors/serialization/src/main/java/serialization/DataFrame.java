@@ -122,6 +122,16 @@ public class DataFrame implements Taggable {
         return (new TablesBlob(tables)).toByteArray();
     }
 
+    // Decodes the first table of a d42 blob. Wraps out-of-bounds reads (from a
+    // truncated/malformed buffer) into a clean exception.
+    public static DataFrame fromByteArray(byte[] bytes) {
+        try {
+            return TablesBlob.fromByteArray(bytes).getTable(0);
+        } catch (IndexOutOfBoundsException | NegativeArraySizeException e) {
+            throw new RuntimeException("Malformed or truncated d42 buffer", e);
+        }
+    }
+
     private String columnToStr(Column<?> col, int row) {
         if (col.isNone(row))
             return "";

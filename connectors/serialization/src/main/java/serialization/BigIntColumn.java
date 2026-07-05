@@ -25,4 +25,13 @@ public class BigIntColumn extends StringColumn {
         buf.writeInt32(1);
         super.encode(buf);
     }
+
+    @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        if (id != 1)
+            throw new RuntimeException("decoding " + name + ": bigint encoder " + id + " not supported");
+        // bigInt:raw delegates to the nested string-column (categories) decode.
+        super.decode(buf);
+    }
 }

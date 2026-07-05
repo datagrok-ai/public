@@ -39,6 +39,16 @@ public class DateTimeColumn extends AbstractColumn<Double> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        if (id != 3)
+            throw new RuntimeException("decoding " + name + ": datetime encoder " + id + " not found");
+        // Microseconds since epoch (float64) storage; None = FloatColumn.None.
+        data = buf.readFloat64List();
+        length = data.length;
+    }
+
+    @Override
     public void add(Double value) {
         ensureSpace(1);
         setValue(length++, (value != null) ? value : FloatColumn.None);
