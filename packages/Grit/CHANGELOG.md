@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20336: Moved the static issue-badge presentation into a `grit-badge` CSS class (status/priority color stays inline)
+* GROK-20336: Added a `renderProperties` override to the `grit.issue` ObjectHandler so the context panel shows badges, issue fields, and the timeline under whole-handler override
+* GROK-20336: Registered a `grit.issue` ObjectHandler (status/priority badges, issue timeline) that overrides the generic domain-row rendering in the Domain View, context panel, and Entity View
 * GROK-20308: Introduced Grit (GRok Issue Tracker) — reference app for entity-mapped domain schemas: projects/issues/comments/labels manifest, minimal UI over `grok.dapi.domains`, issue CRUD tests
 * GROK-20319: Moved the app and tests to the `grok api`-generated typed clients (`src/generated/db.ts`); the issue detail view now loads comments in the same query via `expand: ['details:comment']` instead of a second per-issue query
 
