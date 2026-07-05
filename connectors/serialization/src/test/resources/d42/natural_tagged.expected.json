@@ -1,0 +1,39 @@
+{
+  "frame": "natural_tagged",
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "d",
+      "dgType": "datetime",
+      "valueEncoding": "datetimeMicros",
+      "encoderId": 3,
+      "values": [
+        1609556645006007,
+        null,
+        0,
+        946598400000000,
+        null
+      ],
+      "tags": {
+        "format": "yyyy-MM-dd",
+        "quality": "Datetime"
+      }
+    },
+    {
+      "name": "s",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": [
+        "a",
+        "",
+        null,
+        "b",
+        "a"
+      ],
+      "tags": {
+        ".semantic-type": "Molecule"
+      }
+    }
+  ]
+}

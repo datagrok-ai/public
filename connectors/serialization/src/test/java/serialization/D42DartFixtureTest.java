@@ -143,6 +143,14 @@ public class D42DartFixtureTest {
                         Assertions.fail(base + ": unknown valueEncoding " + enc);
                 }
             }
+
+            // Real column tags must round-trip (non-null readColumn tag map).
+            if (c.has("tags")) {
+                JsonObject tags = c.getAsJsonObject("tags");
+                for (Map.Entry<String, JsonElement> te : tags.entrySet())
+                    Assertions.assertEquals(te.getValue().getAsString(), col.getTag(te.getKey()),
+                            base + "." + name + ": tag " + te.getKey());
+            }
         }
     }
 
