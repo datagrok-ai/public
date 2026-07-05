@@ -282,12 +282,13 @@ class PostgresMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(hostileValue, queryDirect("SELECT note FROM mut_inj WHERE id = 1").get(0)[0]);
         Assertions.assertEquals(0, countDirect("mut_probe")); // still exists
 
-        MutationResult columnProbe = runMutation(insertRows("mut_inj",
+        // hostile column identifier is refused at the mutation boundary (structured validation,
+        // not a downstream db-error): SQL is never built, nothing executes
+        Assertions.assertThrows(MutationValidationException.class, () -> runMutation(insertRows("mut_inj",
                 Arrays.asList("id", "note\"; DROP TABLE mut_probe; --"), Arrays.asList("int", "string"),
-                Arrays.asList(Arrays.asList((Object) 2.0d, "x"))));
-        Assertions.assertNotNull(columnProbe.errorMessage); // bracket-quoted -> no such column / syntax error
+                Arrays.asList(Arrays.asList((Object) 2.0d, "x")))));
         Assertions.assertEquals(0, countDirect("mut_probe")); // still exists
-        Assertions.assertEquals(1, countDirect("mut_inj")); // probe insert rolled back
+        Assertions.assertEquals(1, countDirect("mut_inj")); // probe insert never happened
     }
 
     @DisplayName("Upsert: capability error until WO-4 lands")

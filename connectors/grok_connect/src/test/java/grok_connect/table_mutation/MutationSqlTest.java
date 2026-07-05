@@ -2,6 +2,7 @@ package grok_connect.table_mutation;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.providers.MsSqlDataProvider;
@@ -189,6 +190,63 @@ public class MutationSqlTest {
         Assertions.assertEquals(3, params.size()); // qtyR0, qtyR1, status
     }
 
+    @DisplayName("Identifier validation: hostile INSERT column refused before SQL is built")
+    @Test
+    public void insertSql_hostileColumn_refused() {
+        InsertRows m = insertOrders();
+        m.columns = Arrays.asList("id", "note\"; DROP TABLE orders; --");
+        m.columnTypes = Arrays.asList("int", "string");
+        Assertions.assertThrows(MutationValidationException.class, () -> postgres.insertSql(m));
+    }
+
+    @DisplayName("Identifier validation: hostile UPDATE setColumn refused")
+    @Test
+    public void updateSql_hostileSetColumn_refused() {
+        UpdateRows m = new UpdateRows();
+        m.tableName = "orders";
+        m.setColumns = Arrays.asList("qty\" = 0; DROP TABLE orders; --");
+        m.setValues = Arrays.asList((Object) 1);
+        m.setTypes = Arrays.asList("int");
+        Assertions.assertThrows(MutationValidationException.class, () -> postgres.updateSql(m, new ArrayList<>()));
+    }
+
+    @DisplayName("Identifier validation: hostile predicate field refused")
+    @Test
+    public void deleteSql_hostilePredicateField_refused() {
+        DeleteRows m = new DeleteRows();
+        m.tableName = "orders";
+        m.whereClauses = new ArrayList<>();
+        m.whereClauses.add(predicate("id\") OR 1=1 --", "int", ">0", ">", 0));
+        Assertions.assertThrows(MutationValidationException.class, () -> postgres.deleteSql(m, new ArrayList<>()));
+    }
+
+    @DisplayName("Identifier validation: leading-quote identifier refused (addBrackets would pass it verbatim)")
+    @Test
+    public void insertSql_leadingQuoteIdentifier_refused() {
+        InsertRows m = insertOrders();
+        m.columns = Arrays.asList("id", "\"note");
+        m.columnTypes = Arrays.asList("int", "string");
+        Assertions.assertThrows(MutationValidationException.class, () -> postgres.insertSql(m));
+        // and a hostile table name is refused too
+        InsertRows table = insertOrders();
+        table.tableName = "orders\"; DROP TABLE orders; --";
+        Assertions.assertThrows(MutationValidationException.class, () -> postgres.insertSql(table));
+    }
+
+    @DisplayName("Identifier validation: dotted schema.table and table.column stay valid")
+    @Test
+    public void validateIdentifier_dottedNamesValid() {
+        InsertRows m = insertOrders();
+        m.tableName = "public.orders";
+        Assertions.assertEquals("INSERT INTO \"public\".\"orders\" (\"id\", \"note\") VALUES (?, ?)",
+                postgres.insertSql(m));
+        DeleteRows d = new DeleteRows();
+        d.tableName = "orders";
+        d.whereClauses = new ArrayList<>();
+        d.whereClauses.add(predicate("orders.id", "int", ">0", ">", 0));
+        Assertions.assertDoesNotThrow(() -> postgres.deleteSql(d, new ArrayList<>()));
+    }
+
     @DisplayName("QueryManager refuses mutation FuncCalls (dryRun/streaming path exclusion)")
     @Test
     public void queryManager_refusesMutations() {
@@ -215,5 +273,27 @@ public class MutationSqlTest {
         call.options = new HashMap<>();
         GrokConnectException e = Assertions.assertThrows(GrokConnectException.class, () -> postgres.execute(call));
         Assertions.assertTrue(e.getMessage().contains("/mutate"));
+    }
+
+    @DisplayName("POST /query mutation refusal surfaces the structured guard message, not an opaque 500")
+    @Test
+    public void queryPath_mutationRefusal_structuredMessage() {
+        DeleteRows m = new DeleteRows();
+        m.tableName = "orders";
+        m.allowFullTable = true;
+        FuncCall call = new FuncCall();
+        call.func = m;
+        call.options = new HashMap<>();
+        GrokConnectException ex = Assertions.assertThrows(GrokConnectException.class, () -> postgres.execute(call));
+        // reproduce the fixed POST /query catch: a GrokConnectException with a null cause must
+        // pack itself (not its null cause, which previously NPE'd printError -> generic 500)
+        DataQueryRunResult result = new DataQueryRunResult();
+        Exception forPack = ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
+                ? (Exception) ex.getCause() : ex;
+        Assertions.assertDoesNotThrow(() -> GrokConnect.packException(result, forPack));
+        Assertions.assertNotNull(result.errorMessage);
+        Assertions.assertTrue(result.errorMessage.contains("/mutate"));
+        // latent NPE closed: printError tolerates a null throwable
+        Assertions.assertDoesNotThrow(() -> GrokConnect.printError(null));
     }
 }

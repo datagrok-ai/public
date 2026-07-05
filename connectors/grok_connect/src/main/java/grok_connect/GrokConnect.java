@@ -122,7 +122,7 @@ public class GrokConnect {
                 buffer.bufPos = result.blob.length;
 
             } catch (QueryCancelledByUser | GrokConnectException ex) {
-                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
                         ? (Exception) ex.getCause() : ex);
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }
@@ -381,6 +381,11 @@ public class GrokConnect {
     }
 
     public static Map<String, String> printError(Throwable ex) {
+        if (ex == null)
+            return new HashMap<String, String>() {{
+                put("errorMessage", DEFAULT_LOG_EXCEPTION_MESSAGE);
+                put("errorStackTrace", "");
+            }};
         String errorMessage = ex.getMessage();
         String errorStackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
