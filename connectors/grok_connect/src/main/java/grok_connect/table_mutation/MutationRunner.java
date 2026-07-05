@@ -322,6 +322,70 @@ public class MutationRunner {
         }
     }
 
+    /**
+     * Binds cell {@code row} of a decoded d42 {@code col} by its declared dg type (java-d42-reader WO-4):
+     * {@code isNone} → {@code setNull} with the matching {@link java.sql.Types}; datetime epoch-µs →
+     * {@link java.sql.Timestamp} with a UTC calendar (no string round-trip); ints/bigints/doubles/bools/
+     * strings via the typed getters. The delegating {@link #bindValue} stays for inline {@code /mutate} rows.
+     */
+    public static void bindColumnValue(JdbcDataProvider provider, PreparedStatement statement, int idx,
+                                       serialization.Column<?> col, int row, String dgType) throws SQLException {
+        if (dgType == null)
+            throw new MutationValidationException("Missing dg type for parameter " + idx);
+        if (col.isNone(row)) {
+            statement.setNull(idx, sqlTypeFor(dgType, idx));
+            return;
+        }
+        switch (dgType) {
+            case Types.INT:
+                statement.setInt(idx, ((serialization.IntColumn) col).get(row));
+                break;
+            case Types.BIG_INT:
+                statement.setLong(idx, Long.parseLong(col.get(row).toString()));
+                break;
+            case Types.NUM:
+            case Types.FLOAT:
+                statement.setDouble(idx, ((serialization.FloatColumn) col).getDouble(row));
+                break;
+            case Types.BOOL:
+                statement.setBoolean(idx, ((serialization.BoolColumn) col).get(row));
+                break;
+            case Types.DATE_TIME:
+                statement.setTimestamp(idx, microsToTimestamp(((serialization.DateTimeColumn) col).get(row)),
+                        java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")));
+                break;
+            case Types.STRING:
+                statement.setString(idx, col.get(row).toString());
+                break;
+            default:
+                throw new MutationValidationException("Unsupported dg type '" + dgType + "' for parameter " + idx);
+        }
+    }
+
+    private static int sqlTypeFor(String dgType, int idx) {
+        switch (dgType) {
+            case Types.INT: return java.sql.Types.INTEGER;
+            case Types.BIG_INT: return java.sql.Types.BIGINT;
+            case Types.NUM:
+            case Types.FLOAT: return java.sql.Types.DOUBLE;
+            case Types.BOOL: return java.sql.Types.BOOLEAN;
+            case Types.DATE_TIME: return java.sql.Types.TIMESTAMP;
+            case Types.STRING: return java.sql.Types.VARCHAR;
+            default:
+                throw new MutationValidationException("Unsupported dg type '" + dgType + "' for parameter " + idx);
+        }
+    }
+
+    /** Epoch-µs (UTC) → Timestamp: whole-second base + µs-of-second in nanos (floor math, negative-safe). */
+    static java.sql.Timestamp microsToTimestamp(double micros) {
+        long us = (long) micros;
+        long seconds = Math.floorDiv(us, 1_000_000L);
+        long microOfSecond = Math.floorMod(us, 1_000_000L);
+        java.sql.Timestamp ts = new java.sql.Timestamp(seconds * 1000L);
+        ts.setNanos((int) (microOfSecond * 1000L));
+        return ts;
+    }
+
     /** Binds a value coerced by its declared dg type (JSON numbers arrive as Double, bigints as strings). */
     public static void bindValue(JdbcDataProvider provider, PreparedStatement statement, int idx, Object value, String dgType) throws SQLException {
         if (dgType == null)

@@ -13,11 +13,15 @@ import grok_connect.providers.JdbcDataProvider;
 import grok_connect.utils.GrokConnectUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import serialization.Column;
+import serialization.DataFrame;
 
 /**
- * Default bulk loader for any prepared-statement JDBC provider: parses the CSV stream with
- * {@link CsvChunkParser}, binds each row via {@link MutationRunner#bindValue} using the declared dg
- * types, and {@code executeBatch}es every {@value #BATCH_SIZE} rows and at {@link #finish()}.
+ * Default bulk loader for any prepared-statement JDBC provider: binds each decoded d42 row via
+ * {@link MutationRunner#bindColumnValue} using the declared dg types (the legacy CSV path,
+ * {@link #feedCsv}, still parses with {@link CsvChunkParser} and binds via
+ * {@link MutationRunner#bindValue}), and {@code executeBatch}es every {@value #BATCH_SIZE} rows and at
+ * {@link #finish()}.
  *
  * <p>Batch semantics (connector-writes WO-6): the {@code mode} selects the emitted SQL —
  * {@code insert} (optionally {@code ON CONFLICT DO NOTHING} when {@code errorOnDuplicate == false}),
@@ -50,7 +54,10 @@ public class BatchInsertBulkLoader implements BulkLoader {
     private final boolean savepoints;
     private final PreparedStatement statement;
     private final CsvChunkParser parser = new CsvChunkParser();
-    private final List<List<String>> batch = new ArrayList<>();
+    // Rows added since the last flush, retained so a failed chunk can re-bind row-by-row on replay.
+    // A d42 row captures its (chunk, row); a CSV row captures the parsed String list — the flush /
+    // savepoint / replay engine below is identical for both.
+    private final List<PendingRow> batch = new ArrayList<>();
     private final List<RowError> errors = new ArrayList<>();
 
     private int nextIndex;   // global index of the next row to be added
@@ -108,15 +115,25 @@ public class BatchInsertBulkLoader implements BulkLoader {
     }
 
     @Override
-    public void feed(byte[] csvChunk) throws SQLException {
+    public void feed(DataFrame chunk) throws SQLException {
+        if (chunk.getColumnCount() != columnCount)
+            throw new MutationValidationException("d42 chunk has " + chunk.getColumnCount() + " column(s), expected " + columnCount);
+        for (int r = 0; r < chunk.rowCount; r++) {
+            final int row = r;
+            addRow(() -> bindColumns(chunk, row));
+        }
+    }
+
+    @Override
+    public void feedCsv(byte[] csvChunk) throws SQLException {
         for (List<String> row : parser.feed(csvChunk))
-            addRow(row);
+            addCsvRow(row);
     }
 
     @Override
     public MutationResult finish() throws SQLException {
-        for (List<String> row : parser.finish())
-            addRow(row);
+        for (List<String> row : parser.finish())  // no-op tail for the d42 path (the parser was never fed)
+            addCsvRow(row);
         flush();
         closeQuietly();
         return buildResult();
@@ -127,20 +144,37 @@ public class BatchInsertBulkLoader implements BulkLoader {
         closeQuietly();
     }
 
-    private void addRow(List<String> row) throws SQLException {
+    /** A row whose columns can be (re-)bound to {@link #statement} — from a d42 chunk or a parsed CSV record. */
+    @FunctionalInterface
+    private interface PendingRow {
+        void bind() throws SQLException;
+    }
+
+    private void addCsvRow(List<String> row) throws SQLException {
         if (row.size() != columnCount)
             throw new MutationValidationException("CSV row has " + row.size() + " field(s), expected " + columnCount);
+        addRow(() -> bindStrings(row));
+    }
+
+    private void addRow(PendingRow row) throws SQLException {
         nextIndex++;
         if (stopped)  // an all-or-nothing failure already poisoned the transaction; the manager rolls it back
             return;
-        bindRow(row);
+        row.bind();
         statement.addBatch();
         batch.add(row);
         if (batch.size() == BATCH_SIZE)
             flush();
     }
 
-    private void bindRow(List<String> row) throws SQLException {
+    private void bindColumns(DataFrame chunk, int row) throws SQLException {
+        for (int i = 0; i < bindOrder.length; i++) {
+            int col = bindOrder[i];
+            MutationRunner.bindColumnValue(provider, statement, i + 1, chunk.getColumn(col), row, mutation.columnTypes.get(col));
+        }
+    }
+
+    private void bindStrings(List<String> row) throws SQLException {
         for (int i = 0; i < bindOrder.length; i++) {
             int col = bindOrder[i];
             MutationRunner.bindValue(provider, statement, i + 1, row.get(col), mutation.columnTypes.get(col));
@@ -200,7 +234,7 @@ public class BatchInsertBulkLoader implements BulkLoader {
             int rowIndex = chunkStart + i;
             Savepoint savepoint = connection.setSavepoint();
             try {
-                bindRow(batch.get(i));
+                batch.get(i).bind();
                 classifyOne(statement.executeUpdate(), rowIndex);
                 releaseQuietly(savepoint);
             } catch (SQLException e) {
@@ -246,7 +280,7 @@ public class BatchInsertBulkLoader implements BulkLoader {
         for (int i = 0; i < batch.size(); i++) {
             Savepoint savepoint = connection.setSavepoint();
             try {
-                bindRow(batch.get(i));
+                batch.get(i).bind();
                 statement.executeUpdate();
                 releaseQuietly(savepoint);
             } catch (SQLException e) {

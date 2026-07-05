@@ -3,6 +3,7 @@ package grok_connect.table_mutation;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
@@ -11,6 +12,8 @@ import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.GrokConnectUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import serialization.Column;
+import serialization.DataFrame;
 
 /**
  * Drives one streamed bulk mutation over the WebSocket transport (connector-writes WO-5) — the
@@ -22,6 +25,8 @@ import org.slf4j.LoggerFactory;
  */
 public class MutationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutationManager.class);
+    private static final String CSV = "csv";
+    private static final String D42 = "d42";
 
     public final JdbcDataProvider provider;
     private final InsertRows mutation;
@@ -44,6 +49,8 @@ public class MutationManager {
             throw new MutationValidationException("Bulk mutation header must set bulk=true");
         if (mutation.connection == null)
             throw new MutationValidationException("Mutation has no connection");
+        if (!CSV.equals(mutation.payloadFormat) && !D42.equals(mutation.payloadFormat))
+            throw new MutationValidationException("Unknown payloadFormat '" + mutation.payloadFormat + "' (expected csv|d42)");
         provider = GrokConnect.providerManager.getByName(mutation.connection.dataSource);
         if (provider == null)
             throw new MutationValidationException("Unknown data source: " + mutation.connection.dataSource);
@@ -65,10 +72,41 @@ public class MutationManager {
         }
     }
 
-    public void feed(byte[] csvChunk) throws Exception {
+    public void feed(byte[] bytes) throws Exception {
         if (finished || loader == null)
             throw new MutationValidationException("Mutation session is not active");
-        loader.feed(csvChunk);
+        if (D42.equals(mutation.payloadFormat)) {
+            DataFrame chunk = DataFrame.fromByteArray(bytes);
+            validateChunkSchema(chunk);
+            loader.feed(chunk);
+        }
+        else
+            loader.feedCsv(bytes);
+    }
+
+    /**
+     * Rejects a chunk whose columns do not match the header {@code columns}/{@code columnTypes} exactly
+     * (names and dg types, order included) — an integrity check the CSV transport never had. The Datlas
+     * sender controls the column order, so no order leniency. A mismatch throws
+     * {@link MutationValidationException}, surfacing through the existing {@code ERROR:} + rollback path.
+     */
+    private void validateChunkSchema(DataFrame chunk) {
+        List<String> columns = mutation.columns;
+        List<String> types = mutation.columnTypes;
+        if (columns == null || types == null || types.size() != columns.size())
+            throw new MutationValidationException("Bulk mutation requires columnTypes parallel to columns");
+        if (chunk.getColumnCount() != columns.size())
+            throw new MutationValidationException("d42 chunk has " + chunk.getColumnCount()
+                    + " column(s), expected " + columns.size());
+        for (int i = 0; i < columns.size(); i++) {
+            Column<?> col = chunk.getColumn(i);
+            if (!columns.get(i).equals(col.getName()))
+                throw new MutationValidationException("d42 chunk column " + i + " is '" + col.getName()
+                        + "', expected '" + columns.get(i) + "'");
+            if (!types.get(i).equals(col.getType()))
+                throw new MutationValidationException("d42 chunk column '" + col.getName() + "' has type '"
+                        + col.getType() + "', expected '" + types.get(i) + "'");
+        }
     }
 
     /**

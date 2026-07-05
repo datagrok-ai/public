@@ -7,6 +7,7 @@ public class InsertRows extends TableMutation {
     public List<String> columnTypes; // dg types per column
     public List<List<Object>> rows;  // rows == null && bulk: payload streams separately (WO-5)
     public boolean bulk;
+    public String payloadFormat = "csv"; // csv|d42 — the streamed bulk payload encoding (java-d42-reader WO-4)
     public String mode = "insert"; // insert|upsert|update (WO-6)
     public List<String> matchKeys;
     public List<String> keyColumns;

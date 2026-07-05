@@ -8,11 +8,13 @@ import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import serialization.DataFrame;
 
 /**
- * Postgres bulk-insert fast path via {@code COPY <table> (<cols>) FROM STDIN (FORMAT csv)}: CSV bytes
- * stream straight into pgjdbc's {@link CopyManager} with zero Java-side parsing. Insert-only — the
- * provider selects it only for {@code mode == "insert"} ({@link PostgresDataProvider}).
+ * Postgres bulk-insert fast path via {@code COPY <table> (<cols>) FROM STDIN (FORMAT csv)}: each decoded
+ * d42 chunk is formatted into COPY-csv text ({@link CopyCsvFormatter}) and streamed straight into pgjdbc's
+ * {@link CopyManager}. Insert-only — the provider selects it only for {@code mode == "insert"} &&
+ * {@code allOrNothing} ({@link PostgresDataProvider}).
  */
 public class PostgresCopyBulkLoader implements BulkLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresCopyBulkLoader.class);
@@ -25,8 +27,9 @@ public class PostgresCopyBulkLoader implements BulkLoader {
     }
 
     @Override
-    public void feed(byte[] csvChunk) throws SQLException {
-        copyIn.writeToCopy(csvChunk, 0, csvChunk.length);
+    public void feed(DataFrame chunk) throws SQLException {
+        byte[] csv = CopyCsvFormatter.format(chunk);
+        copyIn.writeToCopy(csv, 0, csv.length);
     }
 
     @Override
