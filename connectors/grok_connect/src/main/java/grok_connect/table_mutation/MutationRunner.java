@@ -113,6 +113,8 @@ public class MutationRunner {
     }
 
     private static int executeInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+        if (GrokConnectUtil.isEmpty(m.mode)) // hand-built payloads may omit it; the contract default is insert
+            m.mode = "insert";
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
         String sql = provider.insertSql(m);

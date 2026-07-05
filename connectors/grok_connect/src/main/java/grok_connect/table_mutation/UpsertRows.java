@@ -4,5 +4,6 @@ package grok_connect.table_mutation;
 public class UpsertRows extends InsertRows {
     public UpsertRows() {
         type = "UpsertRows";
+        mode = "upsert";
     }
 }

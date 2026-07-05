@@ -94,6 +94,7 @@ public class MutationModelTest {
         Assertions.assertNull(row.get(3));
         Assertions.assertEquals("2026-07-05T12:34:56.789Z", row.get(4));
         Assertions.assertEquals("insert", insert.mode);
+        Assertions.assertEquals("insert", new InsertRows().mode); // contract default when the field is omitted
         Assertions.assertEquals(Collections.singletonList("id"), insert.keyColumns);
         Assertions.assertTrue(insert.allOrNothing);
         Assertions.assertFalse(insert.errorOnDuplicate);
