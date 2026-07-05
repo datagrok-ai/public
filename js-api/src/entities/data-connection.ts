@@ -321,6 +321,73 @@ export class TableQueryBuilder {
   build(): TableQuery { return toJs(api.grok_DbTableQueryBuilder_Build(this.dart)); }
 }
 
+/** One failed row of a {@link MutationResult}. */
+export interface RowError {
+  /** 0-based index of the failing row within the payload (-1 for statement-level errors). */
+  index: number;
+  /** Column the error is attributed to, when the driver reports it. */
+  column?: string;
+  /** Machine code: `unique`, `fk`, `notnull`, `check`, `value`, `conflict`, `missing`, `db-error`. */
+  code: string;
+  message: string;
+}
+
+/** The structured result of a database write ({@link DbTable} insert/upsert/update/delete).
+ * Mutations never return a DataFrame. `inserted`/`updated`/`skipped` are best-effort — some
+ * dialects cannot tell inserts from updates on an upsert and leave the split `null`. */
+export interface MutationResult {
+  /** Total rows affected across the operation. */
+  affectedRows: number;
+  /** Per-row failures (populated on partial mode / batch errors). */
+  errors?: RowError[];
+  inserted?: number | null;
+  updated?: number | null;
+  skipped?: number | null;
+  errorCount?: number | null;
+  /** Top-level SQL error message, when the whole operation failed. */
+  errorMessage?: string;
+  perStatement?: {statementIndex: number, affectedRows: number}[];
+  generatedKeys?: Record<string, any>[];
+}
+
+/** Fluent builder for structured `UPDATE`/`DELETE` mutations. A thin wrapper over
+ * {@link DbTable} that accumulates `SET` assignments and `WHERE` conditions; the where
+ * grammar is the platform pattern syntax used by {@link TableQueryBuilder.where}
+ * (`> 5`, `10-20`, `contains foo`, ...). Build via `grok.data.db.buildMutation(...)`. */
+export class TableMutationBuilder {
+  private readonly _set: Record<string, any> = {};
+  private readonly _where: Record<string, any> = {};
+  private _allowFullTable = false;
+
+  constructor(public readonly connectionId: string, public readonly tableName: string) {}
+
+  /** Creates a builder for [tableName] against the [connectionId] connection (id or nqName). */
+  static from(tableName: string, connectionId: string): TableMutationBuilder {
+    return new TableMutationBuilder(connectionId, tableName);
+  }
+
+  /** Assigns `column = value` in the `SET` clause (update only). */
+  set(column: string, value: any): TableMutationBuilder { this._set[column] = value; return this; }
+
+  /** Adds a `WHERE` condition: `pattern` follows the platform pattern grammar. */
+  where(column: string, pattern: any): TableMutationBuilder { this._where[column] = pattern; return this; }
+
+  /** Allows a `DELETE` with no `WHERE` conditions (a full-table wipe — off by default). */
+  allowFullTable(): TableMutationBuilder { this._allowFullTable = true; return this; }
+
+  /** Runs the accumulated `UPDATE`. */
+  async update(): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Update(this.connectionId, this.tableName,
+      JSON.stringify(this._set), JSON.stringify(this._where)));
+  }
+
+  /** Runs the accumulated `DELETE`. */
+  async delete(): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
+      JSON.stringify(this._where), this._allowFullTable));
+  }
+}
+
 /** Represents a data job
  * @extends Func
  * {@link https://datagrok.ai/help/access}
