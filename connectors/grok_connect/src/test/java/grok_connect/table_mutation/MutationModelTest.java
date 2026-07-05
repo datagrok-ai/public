@@ -173,6 +173,23 @@ public class MutationModelTest {
                 () -> GrokConnect.gson.fromJson("{\"#type\": \"DropTable\"}", TableMutation.class));
     }
 
+    @DisplayName("DataQuery seam: missing #type is a structured error, unknown #type names the type, known types still work")
+    @Test
+    public void dataQuerySeam_typeGuards() {
+        JsonParseException missing = Assertions.assertThrows(JsonParseException.class,
+                () -> GrokConnect.gson.fromJson("{\"query\": \"select 1\"}", DataQuery.class));
+        Assertions.assertEquals("Missing #type in DataQuery JSON", missing.getMessage());
+        Assertions.assertThrows(JsonParseException.class,
+                () -> GrokConnect.gson.fromJson("{\"#type\": null, \"query\": \"select 1\"}", DataQuery.class));
+        JsonParseException unknown = Assertions.assertThrows(JsonParseException.class,
+                () -> GrokConnect.gson.fromJson("{\"#type\": \"BogusQuery\", \"query\": \"select 1\"}", DataQuery.class));
+        Assertions.assertEquals("Unknown DataQuery type: BogusQuery", unknown.getMessage());
+        // plain queries keep working — the wire always carries #type (Dart PropMixin emits it)
+        DataQuery plain = GrokConnect.gson.fromJson("{\"#type\": \"DataQuery\", \"query\": \"select 1\"}", DataQuery.class);
+        Assertions.assertEquals(DataQuery.class, plain.getClass());
+        Assertions.assertEquals("select 1", plain.query);
+    }
+
     @DisplayName("TableMutation adapter: missing #type is a structured error, not an NPE")
     @Test
     public void tableMutationAdapter_missingType() {
