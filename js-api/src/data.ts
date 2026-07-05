@@ -123,14 +123,14 @@ export class Db {
 
   /** Returns a {@link DbTable} for structured writes (insert/upsert/update/delete)
    * against [tableName] on the [connectionId] connection.
-   * @param connectionId - connection id or fully-qualified name (see [nqName])
+   * @param connectionId - fully-qualified connection name (see [nqName])
    * @param tableName - database table name (optionally schema-qualified, e.g. `public.orders`) */
   table(connectionId: string, tableName: string): DbTable {
     return new DbTable(connectionId, tableName);
   }
 
   /** Creates a {@link TableMutationBuilder} for fluent `UPDATE`/`DELETE` composition.
-   * @param connectionId - connection id or fully-qualified name (see [nqName])
+   * @param connectionId - fully-qualified connection name (see [nqName])
    * @param tableName - database table name */
   buildMutation(connectionId: string, tableName: string): TableMutationBuilder {
     return TableMutationBuilder.from(tableName, connectionId);
@@ -146,29 +146,31 @@ export class Db {
   }
 }
 
-/** Payloads larger than this go through the bulk (streaming) path; a smaller `object[]`
- * is sent inline. Any DataFrame always uses the bulk path. */
-const DB_TABLE_INLINE_ROW_LIMIT = 10000;
-
 /**
  * Structured write access to one database table, obtained via {@link Db.table}.
  * All operations return a {@link MutationResult}; a saved-connection `DataConnection.Write`
  * privilege and per-provider write capability are enforced server-side (unsupported
  * operations reject with a structured capability error, never a 500). Values are always
- * sent as bound parameters — never interpolated SQL. `where` conditions follow the platform
- * pattern grammar (`> 5`, `10-20`, `contains foo`, ...), the same as query patterns.
+ * sent as bound parameters — never interpolated SQL.
+ *
+ * `where` conditions ({@link update}/{@link delete}) are **equality by value**, plus string
+ * patterns for text columns (e.g. `contains foo`). Numeric/date range grammar (`> 5`,
+ * `10-20`) in `where` is phase B.
  */
 export class DbTable {
   constructor(public readonly connectionId: string, public readonly tableName: string) {}
 
-  /** Inserts rows from a DataFrame (bulk) or an array of row objects (column types are
-   * inferred from the first non-null value per column). */
+  /** Inserts rows from a DataFrame (bulk) or an array of row objects. For an `object[]`,
+   * each column's type is inferred from its **first non-null value** and large payloads are
+   * streamed automatically. Caveat: a column whose first value is null, or whose later values
+   * widen the type (e.g. int → float), may be mis-typed — pass a typed DataFrame to be sure. */
   insert(rows: DataFrame | object[],
     options: {allOrNothing?: boolean, errorOnDuplicate?: boolean} = {}): Promise<MutationResult> {
     return this._insert(rows, options, false);
   }
 
-  /** Inserts or updates rows, matching existing rows on `options.keys`. */
+  /** Inserts or updates rows, matching existing rows on `options.keys`. Same `object[]`
+   * type-inference caveat as {@link insert}. */
   upsert(rows: DataFrame | object[],
     options: {keys: string[], allOrNothing?: boolean}): Promise<MutationResult> {
     if (options?.keys == null || options.keys.length === 0)
@@ -176,13 +178,16 @@ export class DbTable {
     return this._insert(rows, options, true);
   }
 
-  /** Updates the columns in `spec.set` on the rows matching `spec.where`. */
+  /** Updates the columns in `spec.set` on the rows matching `spec.where`. `where` is equality
+   * by value (string values may use string patterns, e.g. `contains foo`); numeric/date range
+   * grammar is phase B. */
   async update(spec: {set: Record<string, any>, where: Record<string, any>}): Promise<MutationResult> {
     return JSON.parse(await api.grok_DbTable_Update(this.connectionId, this.tableName,
       JSON.stringify(spec.set ?? {}), JSON.stringify(spec.where ?? {})));
   }
 
-  /** Deletes the rows matching `spec.where`. An empty `where` requires `allowFullTable: true`. */
+  /** Deletes the rows matching `spec.where` (same `where` semantics as {@link update}).
+   * An empty `where` requires `allowFullTable: true`. */
   async delete(spec: {where: Record<string, any>, allowFullTable?: boolean}): Promise<MutationResult> {
     return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
       JSON.stringify(spec.where ?? {}), spec.allowFullTable ?? false));
@@ -193,14 +198,11 @@ export class DbTable {
     let rowsJson: string | null = null;
     if (rows instanceof DataFrame)
       df = rows.dart;
-    else if (Array.isArray(rows)) {
-      if (rows.length > DB_TABLE_INLINE_ROW_LIMIT) {
-        const converted = DataFrame.fromObjects(rows);
-        df = converted ? converted.dart : null;
-      }
-      if (df == null)
-        rowsJson = JSON.stringify(rows);
-    } else
+    else if (Array.isArray(rows))
+      // Sent to the interop as-is: one inference path (first-non-null) that preserves nulls
+      // and streams large payloads as a typed DataFrame, all on the Dart side.
+      rowsJson = JSON.stringify(rows);
+    else
       throw new Error('rows must be a DataFrame or an array of row objects');
     const optionsJson = JSON.stringify(options ?? {});
     const res: string = upsert

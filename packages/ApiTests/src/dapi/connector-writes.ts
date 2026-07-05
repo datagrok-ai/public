@@ -88,6 +88,20 @@ category('Dapi: connector writes', () => {
     expect(rows.col('c')!.get(0), n);
   }, {timeout: 120000});
 
+  test('insert large object[] preserves nulls', async () => {
+    if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
+    await reset();
+    // > DB_TABLE_INLINE_ROW_LIMIT (10000) rows routes through the bulk DataFrame path; a
+    // genuine null must land as SQL NULL, not '' (regression for the fromObjects coercion).
+    const n = 10001;
+    const rows: object[] = new Array(n);
+    for (let i = 0; i < n; i++) rows[i] = {id: i + 1, name: i === 0 ? null : `r${i}`, qty: i};
+    const res = await t().insert(rows);
+    expect(res.affectedRows, n);
+    const nulls = await grok.data.db.query(conn.nqName, `select count(*) as c from ${fqTable} where name is null`);
+    expect(nulls.col('c')!.get(0), 1);
+  }, {timeout: 120000});
+
   test('upsert with keys', async () => {
     if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
     await reset();
