@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ public class GrokConnect {
     public static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .registerTypeAdapter(DataQuery.class, new DataQueryDeserializer())
+            .registerTypeAdapter(TableMutation.class, new TableMutationDeserializer())
             .create();
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;

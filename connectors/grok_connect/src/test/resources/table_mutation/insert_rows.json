@@ -1,0 +1,18 @@
+{
+  "#type": "InsertRows",
+  "name": "insert orders",
+  "tableName": "orders",
+  "schema": "public",
+  "columns": ["id", "big_id", "active", "note", "created"],
+  "columnTypes": ["int", "bigint", "bool", "string", "datetime"],
+  "rows": [
+    [1, "9007199254740995", true, null, "2026-07-05T12:34:56.789Z"],
+    [2, "-9223372036854775808", false, "second", "2026-01-01T00:00:00.000Z"]
+  ],
+  "mode": "insert",
+  "keyColumns": ["id"],
+  "allOrNothing": true,
+  "errorOnDuplicate": false,
+  "returnGeneratedKeys": true,
+  "bulk": false
+}
