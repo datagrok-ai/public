@@ -1,0 +1,23 @@
+{
+  "frame": "forced_float_fcp",
+  "rowCount": 9,
+  "columns": [
+    {
+      "name": "f",
+      "dgType": "double",
+      "valueEncoding": "double32",
+      "encoderId": 3,
+      "values": [
+        "3fc00000",
+        "40100000",
+        "40480000",
+        "c0900000",
+        "42c80000",
+        "3f000000",
+        "bf000000",
+        "42280000",
+        null
+      ]
+    }
+  ]
+}

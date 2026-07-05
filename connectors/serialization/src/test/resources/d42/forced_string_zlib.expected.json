@@ -1,0 +1,21 @@
+{
+  "frame": "forced_string_zlib",
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "s",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 3,
+      "values": [
+        "hello",
+        "world",
+        "",
+        "hello",
+        null,
+        "datagrok",
+        "world"
+      ]
+    }
+  ]
+}

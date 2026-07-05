@@ -1,0 +1,17 @@
+{
+  "frame": "forced_bigint_capped",
+  "rowCount": 3,
+  "columns": [
+    {
+      "name": "bi",
+      "dgType": "bigint",
+      "valueEncoding": "bigint",
+      "encoderId": 3,
+      "values": [
+        "12345678901234567890",
+        "98765432109876543210",
+        "50000000000000000001"
+      ]
+    }
+  ]
+}

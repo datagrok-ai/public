@@ -9,6 +9,8 @@ public class Types {
     public static final String STRING = "string";
     public static final String DATE_TIME = "datetime";
     public static final String BIG_INT = "bigint";
+    public static final String QNUM = "qnum";
+    public static final String BYTE_ARRAY = "byte_array";
     public static final String NUM = "num";
     public static final String STRING_LIST = "string_list";
     public static final String OBJECT = "object";

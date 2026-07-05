@@ -62,12 +62,71 @@ public class StringColumn extends AbstractColumn<String> {
     @Override
     public void decode(BufferAccessor buf) {
         int id = buf.readInt32();
-        if (id != 0)
-            throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");
-        String[] cats = buf.readStringList();
+        String[] cats;
+        switch (id) {
+            case 0: // categories: StringList + nested int column of indices.
+                cats = buf.readStringList();
+                break;
+            case 1: // prefixes: common prefix + per-category postfixes.
+                cats = decodePrefixes(buf);
+                break;
+            case 2: // squash: fixed-length strings squashed by differing positions.
+                cats = serialization.codecs.StringSquash.decode(buf);
+                break;
+            case 3: // zlib (write-disabled, read-supported for old blobs).
+                cats = decodeZlib(buf);
+                break;
+            default:
+                throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");
+        }
+        // All string encoders finish with a nested int column of row -> category indices.
         IntColumn intCol = new IntColumn("", 0);
         intCol.decode(buf);
         adoptDecoded(cats, (int[]) intCol.toArray());
+    }
+
+    // Ports StringPrefixEncoder.decode (string_column_encoders.dart:99-137) up to,
+    // but not including, the trailing indices int column (read by the caller).
+    private static String[] decodePrefixes(BufferAccessor buf) {
+        String prefix = buf.readString();
+        int length = buf.readInt32();
+        boolean transpose = buf.readInt8() == 1;
+        int[] lengths;
+        if (transpose)
+            lengths = new int[]{ buf.readInt32() };
+        else {
+            IntColumn lc = new IntColumn("", 0);
+            lc.decode(buf);
+            lengths = (int[]) lc.toArray();
+        }
+        int archive = buf.readInt8();
+        byte[] bytes = buf.readUint8List();
+        if (archive == ColumnEncoderArchiveType.ARCHIVE_TYPE_ZLIB)
+            bytes = Zlib.inflate(bytes);
+        String[] postfixes = serialization.codecs.StringListBytes.decode(bytes, length, lengths, transpose);
+        String[] cats = new String[postfixes.length];
+        for (int i = 0; i < postfixes.length; i++)
+            cats[i] = postfixes[i].equals("$&") ? "" : prefix + postfixes[i];
+        return cats;
+    }
+
+    // Ports StringZLibEncoder.decode (string_column_encoders.dart:224-250) up to,
+    // but not including, the trailing indices int column (read by the caller). The
+    // zlib bytes precede the indices column on the wire and building the categories
+    // does not depend on the indices, so the read order is preserved.
+    private static String[] decodeZlib(BufferAccessor buf) {
+        int length = buf.readInt32();
+        boolean transpose = buf.readInt8() == 1;
+        int[] lengths;
+        if (transpose)
+            lengths = new int[]{ buf.readInt32() };
+        else {
+            IntColumn lc = new IntColumn("", 0);
+            lc.decode(buf);
+            lengths = (int[]) lc.toArray();
+        }
+        byte[] decoded = Zlib.inflate(buf.readUint8List());
+        return serialization.codecs.StringListBytes.decode(decoded, length, lengths, transpose);
     }
 
     // Adopts decoded categories + indices directly (no re-sort).
