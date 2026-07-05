@@ -1,0 +1,76 @@
+{
+  "frame": "natural_mixed",
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "ints",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 1,
+      "values": [
+        1,
+        null,
+        -2147483647,
+        -5,
+        100,
+        0
+      ]
+    },
+    {
+      "name": "strs",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": [
+        "hello",
+        "",
+        null,
+        "日本語",
+        "😀x",
+        "with,comma\"quote\nnewline"
+      ]
+    },
+    {
+      "name": "bools",
+      "dgType": "bool",
+      "valueEncoding": "bool",
+      "encoderId": 1,
+      "values": [
+        true,
+        false,
+        true,
+        null,
+        false,
+        true
+      ]
+    },
+    {
+      "name": "doubles",
+      "dgType": "double",
+      "valueEncoding": "double64",
+      "encoderId": 5,
+      "values": [
+        "3ff8000000000000",
+        null,
+        "3ff0000000000001",
+        "c000000000000000",
+        "fff8000000000000",
+        "7fe1ccf385ebc8a0"
+      ]
+    },
+    {
+      "name": "dates",
+      "dgType": "datetime",
+      "valueEncoding": "datetimeMicros",
+      "encoderId": 3,
+      "values": [
+        0,
+        -1,
+        1577836800000000,
+        null,
+        1735108200000000,
+        1500000000000001
+      ]
+    }
+  ]
+}

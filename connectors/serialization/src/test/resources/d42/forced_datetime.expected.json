@@ -1,0 +1,19 @@
+{
+  "frame": "forced_datetime",
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "d",
+      "dgType": "datetime",
+      "valueEncoding": "datetimeMicros",
+      "encoderId": 3,
+      "values": [
+        -2172077632876544,
+        1234567891123456,
+        0,
+        null,
+        1686832245123456
+      ]
+    }
+  ]
+}

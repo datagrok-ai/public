@@ -1,0 +1,20 @@
+{
+  "frame": "natural_zero_row",
+  "rowCount": 0,
+  "columns": [
+    {
+      "name": "i",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 1,
+      "values": []
+    },
+    {
+      "name": "s",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": []
+    }
+  ]
+}

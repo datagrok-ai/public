@@ -1,0 +1,19 @@
+{
+  "frame": "forced_bool",
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "b",
+      "dgType": "bool",
+      "valueEncoding": "bool",
+      "encoderId": 1,
+      "values": [
+        true,
+        false,
+        true,
+        null,
+        false
+      ]
+    }
+  ]
+}
