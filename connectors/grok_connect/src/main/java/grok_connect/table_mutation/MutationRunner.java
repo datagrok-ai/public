@@ -101,8 +101,8 @@ public class MutationRunner {
                 affected += executeOperation(provider, connection, operation, mainCallId);
             return affected;
         }
-        if (m instanceof UpsertRows) // WO-4 adds upsertSql; until then upsert is a capability error
-            throw new UnsupportedOperationException("Upsert is not supported yet for provider " + provider.descriptor.type);
+        if (m instanceof UpsertRows) // must precede InsertRows: UpsertRows extends InsertRows
+            return executeUpsert(provider, connection, (UpsertRows) m, mainCallId);
         if (m instanceof InsertRows)
             return executeInsert(provider, connection, (InsertRows) m, mainCallId);
         if (m instanceof UpdateRows)
@@ -148,6 +148,86 @@ public class MutationRunner {
                 queryMonitor.removeStatement(mainCallId);
             }
         }
+    }
+
+    private static int executeUpsert(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId) throws SQLException {
+        if (!provider.descriptor.supportsUpsert)
+            throw new UnsupportedOperationException("Upsert is not supported for provider " + provider.descriptor.type);
+        if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
+            throw new UnsupportedOperationException("Bulk upsert streaming is not supported yet");
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty columns list");
+        if (m.columnTypes == null || m.columnTypes.size() != m.columns.size())
+            throw new MutationValidationException("UpsertRows requires columnTypes parallel to columns");
+        if (m.matchKeys == null || m.matchKeys.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty matchKeys list");
+        if (m.rows == null || m.rows.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty rows list");
+        int chunkRows = provider.upsertBatchRows(m.columns.size());
+        return chunkRows <= 1
+                ? executeUpsertBatched(provider, connection, m, mainCallId)
+                : executeUpsertChunked(provider, connection, m, chunkRows, mainCallId);
+    }
+
+    /** addBatch single-row upsert (Postgres/MySQL: ON CONFLICT / ON DUPLICATE KEY; Oracle: MERGE FROM dual). */
+    private static int executeUpsertBatched(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId) throws SQLException {
+        String sql = provider.upsertSql(m, 1);
+        LOGGER.info("Mutation before execution: {}", sql);
+        QueryMonitor queryMonitor = QueryMonitor.getInstance();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            queryMonitor.addNewStatement(mainCallId, statement);
+            try {
+                int affected = 0;
+                int pending = 0;
+                for (int r = 0; r < m.rows.size(); r++) {
+                    bindRow(provider, statement, m, r, 1);
+                    statement.addBatch();
+                    if (++pending == BATCH_SIZE) {
+                        affected += sumBatchCounts(statement.executeBatch());
+                        pending = 0;
+                    }
+                }
+                if (pending > 0)
+                    affected += sumBatchCounts(statement.executeBatch());
+                return affected;
+            } finally {
+                queryMonitor.removeStatement(mainCallId);
+            }
+        }
+    }
+
+    /** Multi-row VALUES chunks, one executeUpdate per chunk (MS SQL / Snowflake MERGE-over-VALUES). */
+    private static int executeUpsertChunked(JdbcDataProvider provider, Connection connection, UpsertRows m, int chunkRows, String mainCallId) throws SQLException {
+        QueryMonitor queryMonitor = QueryMonitor.getInstance();
+        int total = m.rows.size();
+        int affected = 0;
+        for (int start = 0; start < total; start += chunkRows) {
+            int end = Math.min(start + chunkRows, total);
+            String sql = provider.upsertSql(m, end - start);
+            LOGGER.info("Mutation before execution: {}", sql);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                queryMonitor.addNewStatement(mainCallId, statement);
+                try {
+                    int idx = 1;
+                    for (int r = start; r < end; r++)
+                        idx = bindRow(provider, statement, m, r, idx);
+                    affected += Math.max(statement.executeUpdate(), 0);
+                } finally {
+                    queryMonitor.removeStatement(mainCallId);
+                }
+            }
+        }
+        return affected;
+    }
+
+    /** Binds row {@code r} starting at parameter {@code idx}; returns the next free parameter index. */
+    private static int bindRow(JdbcDataProvider provider, PreparedStatement statement, InsertRows m, int r, int idx) throws SQLException {
+        List<Object> row = m.rows.get(r);
+        if (row == null || row.size() != m.columns.size())
+            throw new MutationValidationException("Row " + r + " size does not match the columns list");
+        for (int c = 0; c < row.size(); c++)
+            bindValue(provider, statement, idx++, row.get(c), m.columnTypes.get(c));
+        return idx;
     }
 
     private static int executeUpdate(JdbcDataProvider provider, Connection connection, UpdateRows m, String mainCallId) throws SQLException {
