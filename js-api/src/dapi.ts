@@ -1154,12 +1154,13 @@ export class DomainsDataSource {
   }
 
   /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`.
-   * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`. */
-  table<TRow = any>(name: string): DomainTableClient<TRow> {
+   * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`;
+   * pass an insert interface as the second argument to also gate {@link DomainTableClient.insert}. */
+  table<TRow = any, TInsert = DomainRowInsert<TRow>>(name: string): DomainTableClient<TRow, TInsert> {
     const dot = name.indexOf('.');
     if (dot < 1 || dot === name.length - 1)
       throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
-    return new DomainTableClient<TRow>(this.dart, name.substring(0, dot), name.substring(dot + 1));
+    return new DomainTableClient<TRow, TInsert>(this.dart, name.substring(0, dot), name.substring(dot + 1));
   }
 
   /** Executes ordered [ops] atomically within domain schema [schema]; any failure rolls the
@@ -1173,8 +1174,10 @@ export class DomainsDataSource {
 /**
  * Row CRUD for one domain table. Reads return only rows and columns the current
  * user can see; writes are validated, permission-checked, and audited server-side.
- * Pass a row interface as `TRow` for typed reads/writes (see {@link DomainsDataSource.table}). */
-export class DomainTableClient<TRow = any> {
+ * Pass a row interface as `TRow` for typed reads/writes, and an insert interface
+ * as `TInsert` so {@link insert} enforces required columns (`grok api`-generated
+ * clients pass both; see {@link DomainsDataSource.table}). */
+export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
   dart: any;
 
   constructor(dart: any, public readonly schema: string, public readonly table: string) {
@@ -1209,7 +1212,7 @@ export class DomainTableClient<TRow = any> {
    * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match).
    * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
    * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`. */
-  insert(rows: DomainRowInsert<TRow> | DomainRowInsert<TRow>[]): Promise<any[]> {
+  insert(rows: TInsert | TInsert[]): Promise<any[]> {
     return api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows);
   }
 
