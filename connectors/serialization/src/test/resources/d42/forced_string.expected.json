@@ -1,0 +1,48 @@
+{
+  "frame": "forced_string",
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "s",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": [
+        "hello",
+        "",
+        null,
+        "日本語",
+        "😀x",
+        "with,comma\"quote\nnewline"
+      ]
+    },
+    {
+      "name": "allnull",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "name": "empty",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 0,
+      "values": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  ]
+}
