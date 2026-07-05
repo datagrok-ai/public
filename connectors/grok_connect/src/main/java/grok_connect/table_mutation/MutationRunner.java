@@ -29,8 +29,6 @@ import serialization.Types;
 public class MutationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutationRunner.class);
     private static final int BATCH_SIZE = 1000;
-    /** Generic SQLState-independent error code; refined per-state by WO-6's SqlStateMapper. */
-    private static final String DB_ERROR_CODE = "db-error";
 
     public static MutationResult execute(JdbcDataProvider provider, FuncCall call) throws GrokConnectException, QueryCancelledByUser {
         TableMutation mutation = (TableMutation) call.func;
@@ -71,11 +69,7 @@ public class MutationRunner {
                 throw new QueryCancelledByUser();
             LOGGER.info("Mutation failed and was rolled back", e);
             result.errorMessage = e.getMessage();
-            RowError error = new RowError();
-            error.index = currentStatement;
-            error.code = DB_ERROR_CODE;
-            error.message = e.getMessage();
-            result.errors = Collections.singletonList(error);
+            result.errors = Collections.singletonList(SqlStateMapper.toRowError(provider, currentStatement, e));
             result.errorCount = 1;
             return result;
         } catch (RuntimeException e) {
@@ -115,6 +109,18 @@ public class MutationRunner {
     private static int executeInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
         if (GrokConnectUtil.isEmpty(m.mode)) // hand-built payloads may omit it; the contract default is insert
             m.mode = "insert";
+        // an InsertRows carrying mode=upsert/update routes to the matching engine (bulk parity, WO-6);
+        // any other mode fails loud rather than silently doing a plain insert
+        switch (m.mode) {
+            case "insert":
+                break;
+            case "upsert":
+                return executeUpsert(provider, connection, m instanceof UpsertRows ? (UpsertRows) m : new UpsertRows(m), mainCallId);
+            case "update":
+                return executeUpdateByKey(provider, connection, m, mainCallId);
+            default:
+                throw new MutationValidationException("Unsupported insert mode: " + m.mode);
+        }
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
         String sql = provider.insertSql(m);
@@ -167,6 +173,44 @@ public class MutationRunner {
         return chunkRows <= 1
                 ? executeUpsertBatched(provider, connection, m, mainCallId)
                 : executeUpsertChunked(provider, connection, m, chunkRows, mainCallId);
+    }
+
+    /** Key-based batched UPDATE for inline {@code mode == "update"} rows: one row of placeholders per row. */
+    private static int executeUpdateByKey(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty columns list");
+        if (m.columnTypes == null || m.columnTypes.size() != m.columns.size())
+            throw new MutationValidationException("Update mode requires columnTypes parallel to columns");
+        if (m.rows == null || m.rows.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty rows list");
+        String sql = provider.updateByKeySql(m);
+        int[] bindOrder = provider.updateByKeyBindOrder(m);
+        LOGGER.info("Mutation before execution: {}", sql);
+        QueryMonitor queryMonitor = QueryMonitor.getInstance();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            queryMonitor.addNewStatement(mainCallId, statement);
+            try {
+                int affected = 0;
+                int pending = 0;
+                for (int r = 0; r < m.rows.size(); r++) {
+                    List<Object> row = m.rows.get(r);
+                    if (row == null || row.size() != m.columns.size())
+                        throw new MutationValidationException("Row " + r + " size does not match the columns list");
+                    for (int i = 0; i < bindOrder.length; i++)
+                        bindValue(provider, statement, i + 1, row.get(bindOrder[i]), m.columnTypes.get(bindOrder[i]));
+                    statement.addBatch();
+                    if (++pending == BATCH_SIZE) {
+                        affected += sumBatchCounts(statement.executeBatch());
+                        pending = 0;
+                    }
+                }
+                if (pending > 0)
+                    affected += sumBatchCounts(statement.executeBatch());
+                return affected;
+            } finally {
+                queryMonitor.removeStatement(mainCallId);
+            }
+        }
     }
 
     /** addBatch single-row upsert (Postgres/MySQL: ON CONFLICT / ON DUPLICATE KEY; Oracle: MERGE FROM dual). */

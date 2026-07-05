@@ -775,6 +775,16 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     /**
+     * INSERT that tolerates duplicate-key conflicts by skipping them (batch mode, {@code errorOnDuplicate ==
+     * false}; connector-writes WO-6). The generic provider has no portable ignore-duplicates form, so it
+     * emits the plain insert — duplicates surface as errors. Providers with a native form (Postgres
+     * {@code ON CONFLICT DO NOTHING}) override; a skipped row reports an update count of 0.
+     */
+    public String insertIgnoreDuplicatesSql(InsertRows m) {
+        return insertSql(m);
+    }
+
+    /**
      * Creates the streamed bulk-insert loader for {@code m} on {@code conn} (connector-writes WO-5).
      * The default chunked-{@code executeBatch} loader works on any prepared-statement provider;
      * providers with a native fast path (Postgres COPY) override this.
@@ -794,6 +804,61 @@ public abstract class JdbcDataProvider extends DataProvider {
         sql.append(m.setColumns.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
         appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
         return sql.toString();
+    }
+
+    /**
+     * Key-based batched UPDATE for the {@code mode == "update"} batch path (connector-writes WO-6):
+     * {@code UPDATE <fqtn> SET <non-key col> = ? ... WHERE <keyColumn> = ? AND ...}, one row of
+     * placeholders bound per CSV / inline row. {@code keyColumns} must be a non-empty subset of
+     * {@code columns} (a payload lacking a key column is a validation error) and at least one non-key
+     * column must remain to update. Bind parameters follow {@link #updateByKeyBindOrder}.
+     */
+    public String updateByKeySql(InsertRows m) {
+        validateUpdateByKeyColumns(m);
+        List<String> nonKey = updateNonKeyColumns(m);
+        StringBuilder sql = new StringBuilder("UPDATE ").append(mutationTableName(m)).append(" SET ");
+        sql.append(nonKey.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
+        sql.append(" WHERE ").append(m.keyColumns.stream().map((k) -> addBrackets(k) + " = ?")
+                .collect(Collectors.joining(" AND ")));
+        return sql.toString();
+    }
+
+    /** Parameter bind order for {@link #updateByKeySql}: non-key columns (in column order) then key columns. */
+    public int[] updateByKeyBindOrder(InsertRows m) {
+        validateUpdateByKeyColumns(m);
+        List<Integer> order = new ArrayList<>();
+        for (int c = 0; c < m.columns.size(); c++)
+            if (!m.keyColumns.contains(m.columns.get(c)))
+                order.add(c);
+        for (String key : m.keyColumns)
+            order.add(m.columns.indexOf(key));
+        int[] result = new int[order.size()];
+        for (int i = 0; i < result.length; i++)
+            result[i] = order.get(i);
+        return result;
+    }
+
+    protected void validateUpdateByKeyColumns(InsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty columns list");
+        if (m.keyColumns == null || m.keyColumns.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty keyColumns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        for (String key : m.keyColumns) {
+            validateMutationIdentifier(key);
+            if (!m.columns.contains(key))
+                throw new MutationValidationException("keyColumn '" + key + "' must be present in columns");
+        }
+        if (updateNonKeyColumns(m).isEmpty())
+            throw new MutationValidationException("Update mode requires at least one non-key column");
+    }
+
+    private List<String> updateNonKeyColumns(InsertRows m) {
+        List<String> nonKey = new ArrayList<>();
+        for (String col : m.columns)
+            if (!m.keyColumns.contains(col))
+                nonKey.add(col);
+        return nonKey;
     }
 
     public String deleteSql(DeleteRows m, List<FuncParam> collectedParams) {
@@ -901,6 +966,20 @@ public abstract class JdbcDataProvider extends DataProvider {
                     throw new MutationValidationException("Illegal character in mutation identifier: '" + identifier + "'");
             }
         }
+    }
+
+    /**
+     * Offending column name for a per-row mutation error, or {@code null} if the driver does not expose
+     * it (connector-writes WO-6). Postgres reads {@code PSQLException.getServerErrorMessage()}; other
+     * drivers fall back to code + message only.
+     */
+    public String mutationErrorColumn(SQLException e) {
+        return null;
+    }
+
+    /** Human-readable mutation-error message; providers may enrich it (Postgres appends the constraint name). */
+    public String mutationErrorMessage(SQLException e) {
+        return e.getMessage();
     }
 
     /** Appends a WHERE section identical in shape to TableQuery.toSql's (shared PredicateCompiler). */

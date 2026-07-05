@@ -15,6 +15,12 @@ import java.util.List;
  *
  * <p>Null convention (matches Postgres {@code COPY ... FORMAT csv}): an empty <em>unquoted</em> field
  * is {@code null}; an empty <em>quoted</em> field ({@code ""}) is the empty string.
+ *
+ * <p>Blank-line convention (connector-writes WO-6, carried finding 1): a blank line is emitted as a
+ * single-field record whose only field is {@code null} — exactly what {@code COPY ... FORMAT csv}
+ * ingests for a one-column table. The batch loader and the COPY fast path therefore agree row-for-row;
+ * a blank line against a multi-column table is a field-count mismatch in both (never a silently dropped
+ * row, the pre-WO-6 divergence).
  */
 class CsvChunkParser {
     private final List<String> fields = new ArrayList<>();
@@ -105,7 +111,9 @@ class CsvChunkParser {
     }
 
     private void endRecord(List<List<String>> out) {
-        if (!dirty) { // blank line — no content
+        if (!dirty) { // blank line = a single null field (matches COPY csv for a one-column table)
+            fields.add(null);
+            out.add(new ArrayList<>(fields));
             reset();
             return;
         }

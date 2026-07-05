@@ -71,14 +71,21 @@ public class MutationManager {
         loader.feed(csvChunk);
     }
 
-    /** Flushes the loader, commits and closes the connection. */
+    /**
+     * Flushes the loader, then commits — or, for an all-or-nothing load that hit a constraint error,
+     * rolls the whole transaction back (connector-writes WO-6) — and closes the connection. Partial-mode
+     * loads (allOrNothing=false) always commit the surviving rows; the per-row errors travel in the result.
+     */
     public MutationResult finish() throws Exception {
         if (finished || loader == null)
             throw new MutationValidationException("Mutation session is not active");
         MutationResult result;
         try {
             result = loader.finish();
-            if (connection != null && !connection.getAutoCommit())
+            boolean rollback = mutation.allOrNothing && result.errorCount != null && result.errorCount > 0;
+            if (rollback)
+                provider.rollbackQuietly(connection);
+            else if (connection != null && !connection.getAutoCommit())
                 connection.commit();
         } catch (Exception e) {
             abort();
