@@ -1,0 +1,18 @@
+{
+  "#type": "UpdateRows",
+  "name": "update orders",
+  "tableName": "orders",
+  "schema": "public",
+  "set": {"status": "shipped", "qty": 5},
+  "setColumns": ["status", "qty"],
+  "setTypes": ["string", "int"],
+  "whereClauses": [
+    {
+      "field": "id",
+      "pattern": ">3",
+      "dataType": "int",
+      "matcher": {"expression": ">3", "op": ">", "values": ["3"]}
+    }
+  ],
+  "whereOp": "and"
+}

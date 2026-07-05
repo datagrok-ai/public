@@ -1,0 +1,70 @@
+{
+  "#type": "MutationBatch",
+  "name": "batch",
+  "tableName": "orders",
+  "schema": "public",
+  "operations": [
+    {
+      "#type": "InsertRows",
+      "tableName": "orders",
+      "schema": "public",
+      "columns": ["id", "big_id"],
+      "columnTypes": ["int", "bigint"],
+      "rows": [[3, "9007199254740997"]],
+      "mode": "insert",
+      "allOrNothing": true,
+      "bulk": false
+    },
+    {
+      "#type": "UpdateRows",
+      "tableName": "orders",
+      "schema": "public",
+      "set": {"qty": 7},
+      "setColumns": ["qty"],
+      "setTypes": ["int"],
+      "whereClauses": [
+        {
+          "field": "id",
+          "pattern": "3",
+          "dataType": "int",
+          "matcher": {"expression": "3", "op": "equals", "values": ["3"]}
+        }
+      ],
+      "whereOp": "and"
+    },
+    {
+      "#type": "DeleteRows",
+      "tableName": "order_items",
+      "schema": "public",
+      "whereClauses": [
+        {
+          "field": "order_id",
+          "pattern": "3",
+          "dataType": "int",
+          "matcher": {"expression": "3", "op": "equals", "values": ["3"]}
+        }
+      ],
+      "whereOp": "and",
+      "allowFullTable": false
+    },
+    {
+      "#type": "MutationBatch",
+      "tableName": "orders",
+      "schema": "public",
+      "operations": [
+        {
+          "#type": "UpsertRows",
+          "tableName": "orders",
+          "schema": "public",
+          "columns": ["id", "qty"],
+          "columnTypes": ["int", "int"],
+          "rows": [[4, 40]],
+          "mode": "upsert",
+          "matchKeys": ["id"],
+          "allOrNothing": true,
+          "bulk": false
+        }
+      ]
+    }
+  ]
+}
