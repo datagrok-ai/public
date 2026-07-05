@@ -2,6 +2,7 @@
 
 ## 6.5.0 (WIP)
 
+* GROK-20319: `grok api` — generated domain clients now pass the `<Table>Insert` interface as the second `DG.DomainTableClient` generic, so `insert()` enforces required columns at compile time (e.g. `insert({})` no longer compiles); over-long client lines wrap before the type.
 * GROK-20317: `grok api` — typed domain-table clients: for packages that declare `databases/<schema>/schema.json` manifests, generates `src/generated/db.ts` with per-table `<Table>Row`/`<Table>Insert` interfaces, `<Table>Column` name unions, and a per-schema `<schema>Db` client map over `grok.dapi.domains` (manifests are validated against `domain-schema.schema.json` first; packages without manifests are untouched).
 
 ## 6.4.5 (2026-06-23)

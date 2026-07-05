@@ -115,10 +115,12 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/export type SampleEventColumn = [^;]*'sample_id' \| 'kind';/);
     expect(code).toContain(`'measured_on'`);
 
-    // per-schema typed clients
+    // per-schema typed clients (row + insert generics; long lines wrap before the type)
     expect(code).toContain('export const testdbDb = {');
-    expect(code).toContain(`  sample: grok.dapi.domains.table('testdb.sample') as DG.DomainTableClient<SampleRow>,`);
-    expect(code).toContain(`  sampleEvent: grok.dapi.domains.table('testdb.sample_event') as DG.DomainTableClient<SampleEventRow>,`);
+    expect(code).toContain(
+      `  sample: grok.dapi.domains.table('testdb.sample') as DG.DomainTableClient<SampleRow, SampleInsert>,`);
+    expect(code).toContain(`  sampleEvent: grok.dapi.domains.table('testdb.sample_event') as\r\n` +
+      `    DG.DomainTableClient<SampleEventRow, SampleEventInsert>,`);
 
     // CRLF line endings per the repo code style
     expect(code).not.toMatch(/[^\r]\n/);
@@ -211,5 +213,8 @@ describe('generateDomainClients', () => {
     expect(res.output.match(/error TS2322: Type 'string' is not assignable/g)).toHaveLength(2);
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
+    // the TInsert generic gates required columns: an empty insert payload must be rejected
+    expect(res.output).toContain('usage-bad.ts(8,');
+    expect(res.output).toMatch(/error TS2345: Argument of type '\{\}' is not assignable/);
   });
 });

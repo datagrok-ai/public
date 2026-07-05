@@ -298,8 +298,11 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     decls.push(formatColumnUnion(`${typeName}Column`,
       [...domainSystemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
 
-    clients.push(`  ${utils.snakeToCamelCase(tableName, false)}: ` +
-      `grok.dapi.domains.table('${manifest.name}.${tableName}') as DG.DomainTableClient<${typeName}Row>,`);
+    const clientHead = `  ${utils.snakeToCamelCase(tableName, false)}: ` +
+      `grok.dapi.domains.table('${manifest.name}.${tableName}') as`;
+    const clientType = `DG.DomainTableClient<${typeName}Row, ${typeName}Insert>,`;
+    clients.push(clientHead.length + clientType.length + 1 > 120 ?
+      `${clientHead}${sep}    ${clientType}` : `${clientHead} ${clientType}`);
   }
 
   decls.push([`/** Typed clients for the \`${manifest.name}\` domain schema tables. */`,

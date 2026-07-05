@@ -66,6 +66,7 @@ export type StockMovementsColumn = 'id' | 'version' | 'created_on' | 'updated_on
 
 /** Typed clients for the `inventory` domain schema tables. */
 export const inventoryDb = {
-  items: grok.dapi.domains.table('inventory.items') as DG.DomainTableClient<ItemsRow>,
-  stockMovements: grok.dapi.domains.table('inventory.stock_movements') as DG.DomainTableClient<StockMovementsRow>,
+  items: grok.dapi.domains.table('inventory.items') as DG.DomainTableClient<ItemsRow, ItemsInsert>,
+  stockMovements: grok.dapi.domains.table('inventory.stock_movements') as
+    DG.DomainTableClient<StockMovementsRow, StockMovementsInsert>,
 };
