@@ -14,6 +14,8 @@ import grok_connect.handlers.QueryHandler;
 import grok_connect.log.EventType;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_query.TableQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,9 @@ public class QueryManager {
     public QueryManager(String message) {
         LOGGER.debug("Deserializing json call and preprocessing it...");
         query = GrokConnect.gson.fromJson(message, FuncCall.class);
+        // mutations must never enter the query/dryRun path (dryRun executes twice and commits)
+        if (query.func instanceof TableMutation)
+            throw new MutationValidationException("Table mutations are not allowed on the query socket; use POST /mutate");
         query.setParamValues();
         query.afterDeserialization();
         isDebug = query.debugQuery;

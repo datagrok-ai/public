@@ -9,8 +9,6 @@ import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.utils.GrokConnectUtil;
-import grok_connect.utils.PatternMatcherResult;
-import serialization.Types;
 
 public class TableQuery extends DataQuery {
     public String whereOp = "and";
@@ -188,43 +186,15 @@ public class TableQuery extends DataQuery {
 
     private String preparePredicate(FieldPredicate clause, StringBuilder sqlHeader, JdbcDataProvider provider) {
         String paramName = clause.getParamName();
-        clause.matcher.colName = provider.addBrackets(clause.field);
-        if (clause instanceof HavingPredicate && GrokConnectUtil.isNotEmpty(((HavingPredicate) clause).aggType)) {
-            provider.descriptor.aggregations.stream()
-                    .filter((a) -> a.functionName.equals(((HavingPredicate) clause).aggType))
-                    .findFirst()
-                    .ifPresent(info -> clause.matcher.colName = info.dbFunctionName
-                            .replaceAll("#", clause.matcher.colName));
-        }
-        PatternMatcherResult result;
-        switch (clause.dataType) {
-            case Types.NUM:
-            case Types.FLOAT:
-            case Types.INT:
-                result = provider.numericPatternConverter(paramName, clause.dataType, clause.matcher);
-                break;
-            case Types.STRING:
-                result = provider.stringPatternConverter(paramName, clause.matcher);
-                break;
-            case Types.DATE_TIME:
-                result = provider.dateTimePatternConverter(paramName, clause.matcher);
-                break;
-            case Types.BOOL:
-                result = provider.boolPatternConverter(paramName, clause.matcher);
-                break;
-            case Types.BIG_INT:
-                result = provider.bigIntPatternConverter(paramName, clause.matcher);
-                break;
-            default:
-                throw new UnsupportedOperationException(clause.dataType + " is not supported");
-        }
+        List<FuncParam> collected = new ArrayList<>();
+        String query = PredicateCompiler.compile(clause, provider, collected);
         params.removeIf((p) -> p.name.equals(paramName));
-        params.addAll(result.params);
-        for (FuncParam p: result.params) {
+        params.addAll(collected);
+        for (FuncParam p: collected) {
             sqlHeader.append(String.format("%sinput: %s %s", provider.descriptor.commentStart, p.propertyType, p.name));
             sqlHeader.append(System.lineSeparator());
         }
 
-        return result.query;
+        return query;
     }
 }

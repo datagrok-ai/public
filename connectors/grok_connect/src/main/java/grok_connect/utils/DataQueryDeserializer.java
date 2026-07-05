@@ -27,14 +27,17 @@ public class DataQueryDeserializer implements JsonDeserializer<DataQuery> {
 
     @Override
     public DataQuery deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        String myType = jsonElement.getAsJsonObject().get("#type").getAsString();
+        JsonElement typeElement = jsonElement.getAsJsonObject().get("#type");
+        if (typeElement == null || typeElement.isJsonNull())
+            throw new JsonParseException("Missing #type in DataQuery JSON");
+        String myType = typeElement.getAsString();
         Class<? extends TableMutation> mutationClass = getMutationClass(myType);
         if (mutationClass != null)
             return jsonDeserializationContext.deserialize(jsonElement, mutationClass);
         switch (myType) {
             case "TableQuery": return jsonDeserializationContext.deserialize(jsonElement, TableQuery.class);
             case "DataQuery": return gson.fromJson(jsonElement, DataQuery.class);
-            default: return null;
+            default: throw new JsonParseException("Unknown DataQuery type: " + myType);
         }
     }
 }

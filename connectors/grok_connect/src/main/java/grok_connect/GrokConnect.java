@@ -6,8 +6,12 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.table_mutation.MutationResult;
+import grok_connect.table_mutation.MutationRunner;
+import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
@@ -135,6 +139,42 @@ public class GrokConnect {
             }
 
             return response;
+        });
+
+        post("/mutate", (request, response) -> {
+            response.type(MediaType.APPLICATION_JSON);
+            try {
+                FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                if (call == null || call.func == null)
+                    return mutationError(response, "validation", "Request body must be a FuncCall with a TableMutation func", null);
+                if (call.options == null)
+                    call.options = new HashMap<>();
+                call.setParamValues();
+                call.afterDeserialization();
+                if (!(call.func instanceof TableMutation))
+                    return mutationError(response, "validation", "func must be a TableMutation, got: " + call.func.type, null);
+                if (call.func.connection == null)
+                    return mutationError(response, "validation", "Mutation has no connection", null);
+                DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+                if (provider == null)
+                    return mutationError(response, "validation", "Unknown data source: " + call.func.connection.dataSource, null);
+                if (!(provider instanceof JdbcDataProvider) || !((JdbcDataProvider) provider).autoInterpolation())
+                    return mutationError(response, "capability", "Provider does not support structured mutations", provider.descriptor.type);
+                MutationResult result = MutationRunner.execute((JdbcDataProvider) provider, call);
+                return gson.toJson(result);
+            } catch (JsonParseException | MutationValidationException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "validation", ex.getMessage(), null);
+            } catch (UnsupportedOperationException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "capability", ex.getMessage(), null);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                // execution errors are reported inside the payload, mirroring /query
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                MutationResult result = new MutationResult();
+                result.errorMessage = ex.getMessage();
+                return gson.toJson(result);
+            }
         });
 
         post("/test", (request, response) -> {
@@ -321,6 +361,16 @@ public class GrokConnect {
         BufferAccessor buffer = new BufferAccessor(result.blob);
         buffer.bufPos = result.blob.length;
         return buffer;
+    }
+
+    private static String mutationError(Response response, String error, String message, String providerType) {
+        response.status(HttpURLConnection.HTTP_BAD_REQUEST);
+        Map<String, String> body = new HashMap<>();
+        body.put("error", error);
+        body.put("message", message);
+        if (providerType != null)
+            body.put("provider", providerType);
+        return gson.toJson(body);
     }
 
     public static BufferAccessor packException(DataQueryRunResult result, Exception ex) {

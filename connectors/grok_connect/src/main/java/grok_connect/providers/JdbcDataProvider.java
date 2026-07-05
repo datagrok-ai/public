@@ -22,8 +22,16 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.DeleteRows;
+import grok_connect.table_mutation.InsertRows;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.TableMutation;
+import grok_connect.table_mutation.UpdateRows;
 import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.FieldPredicate;
 import grok_connect.table_query.GroupAggregation;
+import grok_connect.table_query.PredicateCompiler;
+import grok_connect.table_query.SqlNames;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import org.apache.commons.lang.NotImplementedException;
@@ -296,7 +304,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         if (funcParam.value == null) {
             statement.setNull(parameterIndex, java.sql.Types.TIMESTAMP);
             return;
@@ -386,7 +394,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         statement.setString(n, value);
     }
 
-    protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
+    public List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
         String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
         query = query
@@ -490,6 +498,8 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame execute(FuncCall queryRun) throws QueryCancelledByUser, GrokConnectException {
+        if (queryRun.func instanceof TableMutation)
+            throw new GrokConnectException("Table mutations must be executed via POST /mutate, not the query path");
         Connection connection = null;
         ResultSet resultSet = null;
         try {
@@ -529,7 +539,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected void rollbackQuietly(Connection connection) {
+    public void rollbackQuietly(Connection connection) {
         if (connection == null)
             return;
         try {
@@ -750,6 +760,52 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String queryTableSql(TableQuery query) {
         return query.toSql();
+    }
+
+    public String insertSql(InsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("InsertRows requires a non-empty columns list");
+        return "INSERT INTO " + mutationTableName(m) + " (" +
+                m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) +
+                ") VALUES (" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
+    }
+
+    public String updateSql(UpdateRows m, List<FuncParam> collectedParams) {
+        if (m.setColumns == null || m.setColumns.isEmpty())
+            throw new MutationValidationException("UpdateRows requires a non-empty setColumns list");
+        if (m.setValues == null || m.setTypes == null
+                || m.setValues.size() != m.setColumns.size() || m.setTypes.size() != m.setColumns.size())
+            throw new MutationValidationException("UpdateRows setColumns/setValues/setTypes must be parallel lists of equal size");
+        StringBuilder sql = new StringBuilder("UPDATE ").append(mutationTableName(m)).append(" SET ");
+        sql.append(m.setColumns.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
+        appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
+        return sql.toString();
+    }
+
+    public String deleteSql(DeleteRows m, List<FuncParam> collectedParams) {
+        if ((m.whereClauses == null || m.whereClauses.isEmpty()) && !m.allowFullTable)
+            throw new MutationValidationException("DeleteRows without whereClauses requires allowFullTable");
+        StringBuilder sql = new StringBuilder("DELETE FROM ").append(mutationTableName(m));
+        appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
+        return sql.toString();
+    }
+
+    protected String mutationTableName(TableMutation m) {
+        return SqlNames.fullTableName(m.tableName, m.schema, m.catalog, this);
+    }
+
+    /** Appends a WHERE section identical in shape to TableQuery.toSql's (shared PredicateCompiler). */
+    protected void appendWhere(StringBuilder sql, List<FieldPredicate> whereClauses, String whereOp, List<FuncParam> collectedParams) {
+        if (whereClauses == null || whereClauses.isEmpty())
+            return;
+        String op = GrokConnectUtil.isEmpty(whereOp) ? "and" : whereOp;
+        if (!op.equals("and") && !op.equals("or"))
+            throw new MutationValidationException("whereOp must be 'and' or 'or', got '" + whereOp + "'");
+        List<String> clauses = new ArrayList<>();
+        for (FieldPredicate clause : whereClauses)
+            clauses.add(String.format("  (%s)", PredicateCompiler.compile(clause, this, collectedParams)));
+        sql.append(System.lineSeparator()).append("WHERE").append(System.lineSeparator());
+        sql.append(String.join(String.format(" %s%s", op, System.lineSeparator()), clauses));
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {

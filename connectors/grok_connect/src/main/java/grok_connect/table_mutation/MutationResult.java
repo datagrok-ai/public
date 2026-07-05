@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class MutationResult {
     public int affectedRows;
+    public String errorMessage; // execution (SQL) errors are reported inside the payload, mirroring /query
     public List<PerStatementResult> perStatement;
     public List<Map<String, Object>> generatedKeys;
     public List<RowError> errors;
