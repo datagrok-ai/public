@@ -19,8 +19,8 @@
       "#type": "UpdateRows",
       "tableName": "orders",
       "schema": "public",
-      "set": {"qty": 7},
       "setColumns": ["qty"],
+      "setValues": [7],
       "setTypes": ["int"],
       "whereClauses": [
         {

@@ -112,15 +112,17 @@ public class MutationModelTest {
         Assertions.assertEquals(20, ((Number) upsert.rows.get(1).get(1)).intValue());
     }
 
-    @DisplayName("UpdateRows: set/setColumns/setTypes + FieldPredicate matcher passthrough")
+    @DisplayName("UpdateRows: setColumns/setValues/setTypes parallel lists + FieldPredicate matcher passthrough")
     @Test
     public void updateRows_roundTrip() throws IOException {
         UpdateRows update = roundTrip("update_rows.json", UpdateRows.class);
         Assertions.assertEquals("UpdateRows", update.type);
-        Assertions.assertEquals("shipped", update.set.get("status"));
-        Assertions.assertEquals(5, ((Number) update.set.get("qty")).intValue());
         Assertions.assertEquals(Arrays.asList("status", "qty"), update.setColumns);
+        Assertions.assertEquals("shipped", update.setValues.get(0));
+        Assertions.assertEquals(5, ((Number) update.setValues.get(1)).intValue());
         Assertions.assertEquals(Arrays.asList("string", "int"), update.setTypes);
+        Assertions.assertEquals(update.setColumns.size(), update.setValues.size());
+        Assertions.assertEquals(update.setColumns.size(), update.setTypes.size());
         Assertions.assertEquals("and", update.whereOp);
         FieldPredicate predicate = update.whereClauses.get(0);
         Assertions.assertEquals("id", predicate.field);
@@ -169,5 +171,15 @@ public class MutationModelTest {
         Assertions.assertEquals(MutationBatch.class, mutation.getClass());
         Assertions.assertThrows(JsonParseException.class,
                 () -> GrokConnect.gson.fromJson("{\"#type\": \"DropTable\"}", TableMutation.class));
+    }
+
+    @DisplayName("TableMutation adapter: missing #type is a structured error, not an NPE")
+    @Test
+    public void tableMutationAdapter_missingType() {
+        JsonParseException e = Assertions.assertThrows(JsonParseException.class,
+                () -> GrokConnect.gson.fromJson("{\"tableName\": \"orders\"}", TableMutation.class));
+        Assertions.assertEquals("Missing #type in TableMutation JSON", e.getMessage());
+        Assertions.assertThrows(JsonParseException.class,
+                () -> GrokConnect.gson.fromJson("{\"#type\": null, \"tableName\": \"orders\"}", TableMutation.class));
     }
 }

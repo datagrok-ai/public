@@ -3,8 +3,8 @@
   "name": "update orders",
   "tableName": "orders",
   "schema": "public",
-  "set": {"status": "shipped", "qty": 5},
   "setColumns": ["status", "qty"],
+  "setValues": ["shipped", 5],
   "setTypes": ["string", "int"],
   "whereClauses": [
     {
