@@ -23,6 +23,13 @@ public class DataSource
     public boolean limitAtEnd = true;
     public boolean requiresFullyQualifiedTable = false;
     public boolean supportCatalogs = false;
+    // Write capability flags (connector-writes WO-4); default false, set centrally in ProviderManager
+    // (supportsWrite) and per-provider (upsert/bulk/ddl/generatedKeys). Consulted by /mutate and Datlas/UI.
+    public boolean supportsWrite = false;
+    public boolean supportsUpsert = false;
+    public boolean supportsBulkInsert = false;
+    public boolean supportsDdl = false;
+    public boolean supportsGeneratedKeys = false;
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
     public List<Property> cacheTemplate = new ArrayList<Property>() {{

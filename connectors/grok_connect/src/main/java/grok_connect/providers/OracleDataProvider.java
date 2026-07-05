@@ -42,6 +42,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "\"";
+        descriptor.supportsUpsert = true;
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
@@ -87,6 +88,26 @@ public class OracleDataProvider extends JdbcDataProvider {
                     "Use NCHAR semantics for all character data", new Prop()));
         }};
 
+    }
+
+    /** MERGE ... USING (SELECT ? AS col FROM dual) — one row per statement, addBatch'd by MutationRunner. */
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String selectCols = m.columns.stream().map((c) -> "? AS " + addBrackets(c)).collect(Collectors.joining(", "));
+        String on = m.matchKeys.stream().map((k) -> "t." + addBrackets(k) + " = src." + addBrackets(k))
+                .collect(Collectors.joining(" AND "));
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        StringBuilder sql = new StringBuilder("MERGE INTO ").append(mutationTableName(m)).append(" t USING (SELECT ")
+                .append(selectCols).append(" FROM dual) src ON (").append(on).append(")");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (!nonKey.isEmpty())
+            sql.append(" WHEN MATCHED THEN UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> "t." + addBrackets(c) + " = src." + addBrackets(c)).collect(Collectors.joining(", ")));
+        sql.append(" WHEN NOT MATCHED THEN INSERT (").append(colList).append(") VALUES (")
+                .append(m.columns.stream().map((c) -> "src." + addBrackets(c)).collect(Collectors.joining(", ")))
+                .append(")");
+        return sql.toString();
     }
 
     @Override

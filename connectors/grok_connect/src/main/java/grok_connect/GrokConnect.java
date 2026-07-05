@@ -158,8 +158,8 @@ public class GrokConnect {
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
                 if (provider == null)
                     return mutationError(response, "validation", "Unknown data source: " + call.func.connection.dataSource, null);
-                if (!(provider instanceof JdbcDataProvider) || !((JdbcDataProvider) provider).autoInterpolation())
-                    return mutationError(response, "capability", "Provider does not support structured mutations", provider.descriptor.type);
+                if (!(provider instanceof JdbcDataProvider) || !provider.descriptor.supportsWrite)
+                    return mutationError(response, "capability", "Provider does not support writes", provider.descriptor.type);
                 MutationResult result = MutationRunner.execute((JdbcDataProvider) provider, call);
                 return gson.toJson(result);
             } catch (JsonParseException | MutationValidationException ex) {

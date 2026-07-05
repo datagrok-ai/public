@@ -5,14 +5,23 @@ import grok_connect.providers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ProviderManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProviderManager.class);
+    /**
+     * Read-oriented engines / federation layers that must never advertise write support even though
+     * they are JDBC providers with auto-interpolation (connector-writes WO-4).
+     */
+    private static final Set<String> WRITE_DENYLIST = new HashSet<>(Arrays.asList(
+            "Athena", "BigQuery", "Impala", "Hive", "Hive2", "Virtuoso", "Denodo", "Neptune", "PI"));
     private final Map<String, JdbcDataProvider> providersMap;
 
     public ProviderManager() {
@@ -52,6 +61,13 @@ public class ProviderManager {
         providersMap = providersList.stream()
                 .collect(Collectors.toMap(provider -> provider.descriptor.type,
                 Function.identity()));
+        // Central supportsWrite default: every auto-interpolation JDBC provider not on the denylist can
+        // execute prepared-statement mutations. Providers that set the flag explicitly keep their value.
+        for (JdbcDataProvider provider : providersMap.values()) {
+            DataSource descriptor = provider.descriptor;
+            if (!descriptor.supportsWrite)
+                descriptor.supportsWrite = provider.autoInterpolation() && !WRITE_DENYLIST.contains(descriptor.type);
+        }
     }
 
     public Collection<String> getAllProvidersTypes() {

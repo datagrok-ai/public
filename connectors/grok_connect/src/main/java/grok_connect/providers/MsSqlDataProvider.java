@@ -35,6 +35,8 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.supportCatalogs = true;
+        descriptor.supportsUpsert = true;
+        descriptor.supportsGeneratedKeys = true;
         descriptor.defaultSchema = "dbo";
         descriptor.limitAtEnd = false;
 
@@ -66,6 +68,17 @@ public class MsSqlDataProvider extends JdbcDataProvider {
             put("xml", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stdev(#)", Types.dataFrameNumericTypes));
+    }
+
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        return mergeValuesUpsertSql(m, rowCount, true); // T-SQL MERGE requires a terminating semicolon
+    }
+
+    /** Chunk MERGE-over-VALUES to stay under the 2100 bound-parameter limit (~2000 usable). */
+    @Override
+    public int upsertBatchRows(int columnCount) {
+        return Math.max(1, Math.min(500, 2000 / Math.max(1, columnCount)));
     }
 
     @Override
