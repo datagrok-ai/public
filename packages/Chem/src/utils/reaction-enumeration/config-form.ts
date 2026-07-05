@@ -36,17 +36,14 @@ function sectionHeader(text: string): HTMLElement {
 
 export async function openConfigDialog(initial: EnumeratorConfig): Promise<EnumeratorConfig | null> {
   // Start from a clone so cancel/discard leaves `initial` untouched. Fields not exposed in this
-  // dialog (file paths, column names, delimiter, output path, depth_first, num_rounds, etc. —
-  // all configured in the main UI or unused at runtime) are preserved as-is from `initial`.
+  // dialog (file paths, column names, delimiter, output path, depth_first, num_rounds, max
+  // components, max routes per compound, etc. — all configured in the main UI or unused at
+  // runtime) are preserved as-is from `initial`.
   const cfg = cloneConfig(initial);
 
   const general = {
     keepBBs: boolInput('Keep building blocks in output', cfg.keep_building_blocks_in_final_output,
       'Include the original building blocks (round 0) in the final product list.'),
-    maxComponents: intInput('Max # components', cfg.max_num_components,
-      'Max number of reactant components a template may have.'),
-    maxRoutes: intInput('Max routes per compound', cfg.max_num_routes_per_compound,
-      `Cap on number of routes saved per product. ${DISABLED_HINT}`),
     maxCombos: intInput('Max combinations per template', cfg.max_num_combinations_per_template,
       'Per template per round: cap on the number of reactant combinations actually run. If the cartesian product exceeds this, the enumerator runs the first N and stops.'),
   };
@@ -78,7 +75,7 @@ export async function openConfigDialog(initial: EnumeratorConfig): Promise<Enume
     ui.div([sectionHeader(title), ui.form(inputs.map((i) => i.input))]);
 
   const body = ui.div([
-    buildSection('General Settings', [general.keepBBs, general.maxComponents, general.maxRoutes, general.maxCombos]),
+    buildSection('General Settings', [general.keepBBs, general.maxCombos]),
     buildSection('Product Filters', [
       products.maxHeavy, products.minC, products.maxC, products.maxHetero,
       products.maxN, products.maxS, products.maxO, products.maxMetals, products.maxHal,
@@ -97,10 +94,9 @@ export async function openConfigDialog(initial: EnumeratorConfig): Promise<Enume
     dlg.add(body);
     dlg.onOK(() => {
       // Mutate the clone in-place so any field NOT exposed in this dialog (column names, file
-      // paths, delimiter, output path, depth_first, num_rounds, etc.) keeps its original value.
+      // paths, delimiter, output path, depth_first, num_rounds, max components, max routes per
+      // compound, etc.) keeps its original value.
       cfg.keep_building_blocks_in_final_output = general.keepBBs.get();
-      cfg.max_num_components = general.maxComponents.get();
-      cfg.max_num_routes_per_compound = general.maxRoutes.get();
       cfg.max_num_combinations_per_template = general.maxCombos.get();
       Object.assign(cfg.products_specs, {
         max_num_heavy_atoms: products.maxHeavy.get(),

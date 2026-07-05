@@ -7,16 +7,17 @@ import {_package} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
 import {openConfigDialog} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {enumerate, EnumerationProgress, OutputRow, TemplateInput} from './enumerate';
+import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput} from './enumerate';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
-// Sniff string columns and set semType so the grid renders reactions and molecules. We sample a
-// handful of non-empty values per column: presence of `>>` wins as ChemicalReaction; otherwise if
-// every sampled value looks like SMILES/SMARTS we mark the column as Molecule.
+// Sniff string columns and set semType so the grid renders reactions and molecules: presence of
+// `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
 function detectChemSemTypes(df: DG.DataFrame): void {
+  // detectSemanticTypes() scans the WHOLE dataframe; calling it per-column made this O(columns²)
+  // and it ran on every step-clone. Tag ChemicalReaction columns first, then auto-detect once.
   for (const col of df.columns.toList()) {
     if (col.type !== DG.COLUMN_TYPE.STRING) continue;
     if (col.semType) continue;
@@ -31,8 +32,8 @@ function detectChemSemTypes(df: DG.DataFrame): void {
     if (samples.length === 0) continue;
     if (samples.some((s) => s.includes('>>')))
       col.semType = 'ChemicalReaction';
-    df.meta.detectSemanticTypes();
   }
+  df.meta.detectSemanticTypes();
 }
 
 async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
@@ -101,8 +102,6 @@ interface BuiltInputs {
 
 const isStringCol = (c: DG.Column) => c.type === DG.COLUMN_TYPE.STRING;
 
-// Build a column input bound to a table. If the preferred column name exists and matches the
-// filter, it's pre-selected; otherwise the first matching column is used (Datagrok default).
 function makeColInput(
   label: string, table: DG.DataFrame | null, preferredName: string,
   filter: (c: DG.Column) => boolean, tooltip: string, nullable: boolean,
@@ -119,8 +118,8 @@ function makeColInput(
   return inp;
 }
 
-// When the parent table changes, swap the column input's table in-place (preserves DOM identity
-// so form layout stays valid). Re-selects the preferred column name in the new table if it exists.
+// Swap the column input's table in-place on parent-table change (preserves DOM identity so
+// form layout stays valid), re-selecting the preferred column name if it exists in the new table.
 function bindColToTable(
   colInput: DG.InputBase<DG.Column | null>, tableInput: DG.InputBase<DG.DataFrame | null>,
   getPreferredName: () => string, filter: (c: DG.Column) => boolean,
@@ -137,10 +136,8 @@ function bindColToTable(
   });
 }
 
-function buildInputs(
-  config: EnumeratorConfig, tDf: DG.DataFrame, bDf: DG.DataFrame,
-  xDf: DG.DataFrame | null, rDf: DG.DataFrame | null,
-): BuiltInputs {
+// Factored out of buildInputs so the same extraction also runs on a per-step subset table.
+function extractTemplates(config: EnumeratorConfig, tDf: DG.DataFrame): TemplateInput[] {
   const smartsList = getStringColumn(tDf, config.enumeration.smarts_col);
   const blockingCol = config.enumeration.reactant_blocking_groups_per_template_column;
   const rxnNameCol = config.enumeration.reaction_name_col;
@@ -156,9 +153,24 @@ function buildInputs(
       blockingRaw.split(/[;|]/).map((s) => s.trim()).filter((s) => s.length > 0) : [];
     templates.push({smarts, blockingSmartsList, reactionName: rxnNameList?.[i] ?? ''});
   }
+  return templates;
+}
 
-  const buildingBlocks = getStringColumn(bDf, config.enumeration.bb_smiles_column)
-    .filter((s) => s.trim().length > 0);
+function extractBuildingBlocks(config: EnumeratorConfig, bDf: DG.DataFrame): string[] {
+  return getStringColumn(bDf, config.enumeration.bb_smiles_column).filter((s) => s.trim().length > 0);
+}
+
+function extractReagents(config: EnumeratorConfig, rDf: DG.DataFrame): string[] {
+  const rCol = config.enumeration.reagent_smiles_column;
+  return rDf.col(rCol) ? getStringColumn(rDf, rCol).filter((s) => s.trim().length > 0) : [];
+}
+
+function buildInputs(
+  config: EnumeratorConfig, tDf: DG.DataFrame, bDf: DG.DataFrame,
+  xDf: DG.DataFrame | null, rDf: DG.DataFrame | null,
+): BuiltInputs {
+  const templates = extractTemplates(config, tDf);
+  const buildingBlocks = extractBuildingBlocks(config, bDf);
 
   let exclusionSmarts: string[] = [];
   if (xDf) {
@@ -167,12 +179,7 @@ function buildInputs(
       exclusionSmarts = getStringColumn(xDf, excCol).filter((s) => s.trim().length > 0);
   }
 
-  let reagents: string[] = [];
-  if (rDf) {
-    const rCol = config.enumeration.reagent_smiles_column;
-    if (rDf.col(rCol))
-      reagents = getStringColumn(rDf, rCol).filter((s) => s.trim().length > 0);
-  }
+  const reagents = rDf ? extractReagents(config, rDf) : [];
 
   return {templates, buildingBlocks, exclusionSmarts, reagents};
 }
@@ -231,8 +238,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol,
     'Column in the exclusion substructures file that contains the SMARTS strings.', true);
 
-  // Re-bind column inputs whenever the parent table changes. Preserves the column input identity
-  // (so form layout stays valid) and re-selects the preferred column name in the new table.
+  // Re-bind column inputs whenever the parent table changes.
   view.subs.push(
     bindColToTable(smartsColInput, templatesInput, () => config.enumeration.smarts_col, isStringCol),
     bindColToTable(blockingColInput, templatesInput,
@@ -246,10 +252,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   );
 
   // ---- CONFIG inputs ----
-  const numRoundsInput = ui.input.int('Number of rounds', {value: config.enumeration.num_rounds, min: 1});
+  const MAX_ROUNDS = 10;
+  const numRoundsInput = ui.input.int('Number of rounds', {value: config.enumeration.num_rounds, min: 1, max: MAX_ROUNDS});
   numRoundsInput.setTooltip(
     'Number of consecutive enumeration rounds. Round 1 reacts BBs only; round 2 takes round-1 ' +
-    'products and (in depth-first mode) reacts each one with original BBs. Increase for deeper libraries.');
+    `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
+    `libraries (capped at ${MAX_ROUNDS} — a step tab is built for every round, and product counts ` +
+    `grow combinatorially with each one).`);
 
   const depthFirstInput = ui.input.bool('Depth first', {value: config.enumeration.depth_first});
   depthFirstInput.setTooltip(
@@ -257,20 +266,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
     'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
-  // True while we're pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires
-  // onChanged, which triggers refreshTooltip → syncQuickInputsToConfig — and that read-back
-  // happens MID-loop while only some inputs have been updated, overwriting config with the stale
-  // values of the inputs we haven't reached yet. The flag short-circuits the read-back during the
-  // sync; refreshTooltip just reads the live `config` instead.
+  // Promoted out of "Advanced limits & product filters" — used often enough to live at top level.
+  const maxComponentsInput = ui.input.int('Max # components', {value: config.max_num_components, min: 1});
+  maxComponentsInput.setTooltip('Max number of reactant components a template may have.');
+  const maxRoutesInput = ui.input.int('Max routes per compound', {value: config.max_num_routes_per_compound});
+  maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Default -1 disables the cap.');
+
+  // True while pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires onChanged,
+  // which triggers a read-back (syncQuickInputsToConfig) mid-loop — before all inputs are updated —
+  // overwriting config with stale values. The flag short-circuits that read-back during the sync.
   let pushingConfigToInputs = false;
 
   // ---- Info icons ----
-  // Two distinct tooltips:
-  //   - appInfoIcon (next to the view title) describes WHAT this app is and HOW it works.
-  //   - configInfoIcon (next to the "Enumeration options" header) shows the FULL current
-  //     config — every YAML field — as a structured, scannable card (not raw YAML).
-  // Both are bound to live factories so the rendered HTML reflects the current state every time
-  // the user hovers over the icon; no proactive refresh is needed.
+  // appInfoIcon: what this app is / how it works. configInfoIcon: full current config as a card.
+  // Both bind to live factories so hovering always reflects current state.
   const mkIcon = (): HTMLElement => {
     const i = ui.iconFA('info-circle', () => {});
     i.style.marginLeft = '8px';
@@ -316,7 +325,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function buildConfigCard(): HTMLElement {
     const en = config.enumeration;
     const ps = config.products_specs;
-    const mode = reagentsInput.value != null ? 'reagents' : (en.depth_first ? 'depth' : 'breadth');
+    const mode = currentMode();
     const MODE_DESC = {
       depth: '(linear chain extension)',
       breadth: '(convergent allowed)',
@@ -378,8 +387,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const syncQuickInputsToConfig = () => {
     config.enumeration.num_rounds = numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!depthFirstInput.value;
-    // Column inputs hold a Column object; persist its name in the YAML config. If the input has no
-    // selection, keep the previous config value so YAML round-trip stays stable.
+    config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
+    config.max_num_routes_per_compound = maxRoutesInput.value ?? config.max_num_routes_per_compound;
+    // Column inputs hold a Column object; persist its name. Keep the previous value if unselected.
     config.enumeration.smarts_col = smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
       blockingColInput.value?.name ?? config.enumeration.reactant_blocking_groups_per_template_column;
@@ -392,10 +402,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
   };
 
-  // Setting `input.value = X` updates the model but, on int/float/string inputs, does NOT always
-  // refresh the rendered <input type="number"> text — the Dart-side widget skips the re-render
-  // when the value comes via the API rather than user typing. The fix is to also push the new
-  // value into the underlying HTMLInputElement so its visible text matches the model.
+  // `input.value = X` updates the model but the Dart widget doesn't always re-render the visible
+  // <input> text when set via API rather than typing — also push the value into the DOM element.
   const setAndFire = <T>(input: DG.InputBase<T>, v: T) => {
     input.value = v;
     try {
@@ -411,9 +419,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const syncConfigToQuickInputs = () => {
     pushingConfigToInputs = true;
     try {
+      // Clamp on load too — a hand-edited/older YAML could carry num_rounds above the UI's max.
+      if (config.enumeration.num_rounds > MAX_ROUNDS) config.enumeration.num_rounds = MAX_ROUNDS;
       setAndFire(numRoundsInput, config.enumeration.num_rounds);
       setAndFire(depthFirstInput, config.enumeration.depth_first);
-      // For column inputs, look up the column object by name on the currently-selected table.
+      setAndFire(maxComponentsInput, config.max_num_components);
+      setAndFire(maxRoutesInput, config.max_num_routes_per_compound);
       const tDf = templatesInput.value;
       if (tDf) {
         const sc = tDf.col(config.enumeration.smarts_col);
@@ -482,16 +493,36 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   if (!pushingConfigToInputs) syncQuickInputsToConfig();
 
   // ---- Side grids with explicit selection-driven subsetting ----
-  // Each side grid renders the DataFrame currently held in the corresponding table input. The
-  // user picks rows in the grid (Ctrl/Shift+click), then presses "Subset by selection": we clone
-  // the current DataFrame with the selection mask, register the clone with the workspace (the
-  // table input is a choice widget backed by the workspace tables list — values not registered
-  // are silently rejected and the input snaps back), set it as the input value, and remount the
-  // grid against the subset. Previous subsets we created are closed to keep the workspace tidy.
-  type SubsetState = {prev: DG.DataFrame | null; suppress: boolean};
-  const templatesState: SubsetState = {prev: null, suppress: false};
-  const bbsState: SubsetState = {prev: null, suppress: false};
-  const reagentsState: SubsetState = {prev: null, suppress: false};
+  // "Subset by selection" clones the DataFrame with the selection mask, registers the clone with
+  // the workspace (table input is a choice widget backed by the workspace list — unregistered
+  // values are silently rejected), and remounts the grid. `original` remembers the user-loaded
+  // full table so "Use all" can restore it without a file reload; resets on file swap.
+  type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null; suppress: boolean};
+  const templatesState: SubsetState = {prev: null, original: null, suppress: false};
+  const bbsState: SubsetState = {prev: null, original: null, suppress: false};
+  const reagentsState: SubsetState = {prev: null, original: null, suppress: false};
+
+  // ---- Per-step (per-round) subsetting state ----
+  // Each component (0 = reactions, 1 = BBs, 2 = reagents) can be narrowed per round. We keep a
+  // display-only clone (NOT registered in the workspace) per (component, round); its row SELECTION
+  // is the per-step subset — empty/full selection means "use the global table". null = not built yet.
+  interface StepCompDef {
+    idx: number;
+    getGlobal: () => DG.DataFrame | null;
+    apply: (o: PerRoundOverride, work: DG.DataFrame, cfg: EnumeratorConfig) => void;
+  }
+  const stepCompDefs: StepCompDef[] = [
+    {idx: 0, getGlobal: () => templatesInput.value,
+      apply: (o, work, cfg) => { o.templates = extractTemplates(cfg, work); }},
+    {idx: 1, getGlobal: () => bbsInput.value,
+      apply: (o, work, cfg) => { o.buildingBlocks = extractBuildingBlocks(cfg, work); }},
+    {idx: 2, getGlobal: () => reagentsInput.value,
+      apply: (o, work, cfg) => { o.reagents = extractReagents(cfg, work); }},
+  ];
+  const stepWork: (DG.DataFrame | null)[][] = [[], [], []];
+  // Per-clone selection subscriptions, parallel to `stepWork` — unsubscribed explicitly when a
+  // clone is dropped, so repeated file swaps don't accumulate dead subscriptions in `view.subs`.
+  const stepWorkSubs: ({unsubscribe: () => void} | null)[][] = [[], [], []];
 
   const templatesGridHost = ui.div([]);
   const bbsGridHost = ui.div([]);
@@ -504,12 +535,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let reagentsBadge: TabBadge | null = null;
 
   const GRID_ROW_HEIGHT = 75;
-  const reagentsEmptyEl = ui.divText(
-    'No reagents file selected. Pick one in the Data section to enable reagents-mode ' +
-    'enumeration (every step uses exactly one BB / earlier product plus reagents in the ' +
-    'remaining slots).',
-    {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}},
-  );
 
   function applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
     try {
@@ -519,35 +544,76 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     } catch { /* setColumnsWidthType not available on older Dart builds */ }
   }
 
-  function mountGrid(
-    host: HTMLElement, input: DG.InputBase<DG.DataFrame | null>,
-    badge: TabBadge | null, emptyEl?: HTMLElement,
+  // A single RAF after appending a resizable ui.splitH isn't enough for children to report a real
+  // clientWidth (view may not be attached yet; observed live: 10 retries still left `total` at 0).
+  // Worse, RAF never fires while the tab is backgrounded (verified: 2+s with zero ticks), so an
+  // RAF-based retry can stall forever. setTimeout keeps firing regardless of visibility — use that,
+  // retrying generously (~10s) until both children have real width.
+  function sizeSplitOnceLaidOut(
+    a: HTMLElement, b: HTMLElement, computeAWidth: (total: number) => number, retriesLeft = 300,
   ): void {
-    host.innerHTML = '';
-    const df = input.value;
-    if (!df) {
-      if (emptyEl) host.appendChild(emptyEl);
-      badge?.refresh(null);
-      return;
-    }
-    const grid = DG.Viewer.grid(df);
-    grid.props.rowHeight = GRID_ROW_HEIGHT;
-    grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
-    host.appendChild(grid.root);
-    applyGridColumnSizing(grid);
-    badge?.refresh(df.rowCount);
+    setTimeout(() => {
+      const total = a.clientWidth + b.clientWidth;
+      if (total === 0) {
+        if (retriesLeft > 0) sizeSplitOnceLaidOut(a, b, computeAWidth, retriesLeft - 1);
+        return;
+      }
+      const aWidth = computeAWidth(total);
+      a.style.width = aWidth + 'px';
+      a.style.flexGrow = String(aWidth / total);
+      b.style.width = (total - aWidth) + 'px';
+      b.style.flexGrow = String((total - aWidth) / total);
+    }, 33);
   }
 
-  const mountTemplates = (): void => mountGrid(templatesGridHost, templatesInput, templatesBadge);
-  const mountBbs = (): void => mountGrid(bbsGridHost, bbsInput, bbsBadge);
-  const mountReagents = (): void => mountGrid(reagentsGridHost, reagentsInput, reagentsBadge, reagentsEmptyEl);
+  // mountDf creates a detached DG.TableView per call when withFilters is on; `host.innerHTML = ''`
+  // only drops the DOM node, so the TableView leaks unless explicitly closed. Track the live view
+  // per host and close the previous one before mounting a replacement.
+  const liveFilterViews = new Map<HTMLElement, DG.TableView>();
 
-  // ui.input.table is a Dart-side ChoiceInput whose items list is the workspace tables. Setting
-  // .value to a DataFrame that's not in that list is silently rejected (the input snaps back to
-  // the previous value). We side-step this by registering the clone with the workspace via
-  // grok.shell.addTable before assigning, and we briefly dip the value through null to force the
-  // widget to drop any cached pointer-equality with the previous selection.
+  // `withFilters` adds the platform's real auto-detected default filters panel. A detached TableView
+  // (addToWorkspace=false) never gets the shell's "added to dock tree" call, so grid/filters silently
+  // fail to init (verified: blank grid, substructure filter errors) — fire `_onAdded()` manually,
+  // same trick as `mpo-create-profile.ts`. We keep only the grid + default FilterGroup, not tv.root.
+  function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
+    const prevTv = liveFilterViews.get(host);
+    if (prevTv) {
+      liveFilterViews.delete(host);
+      try {prevTv.close();} catch (e) {console.warn('Could not close previous filters view:', e);}
+    }
+    host.innerHTML = '';
+    if (!withFilters) {
+      const grid = DG.Viewer.grid(df);
+      grid.props.rowHeight = GRID_ROW_HEIGHT;
+      grid.root.style.cssText += ';width:100%;height:100%';
+      host.appendChild(grid.root);
+      applyGridColumnSizing(grid);
+      return;
+    }
+    const tv = DG.TableView.create(df, false);
+    (tv as any)._onAdded();
+    liveFilterViews.set(host, tv);
+    tv.grid.props.rowHeight = GRID_ROW_HEIGHT;
+    tv.grid.root.style.cssText += ';width:100%;height:100%';
+    const filterGroup = tv.getFiltersGroup({createDefaultFilters: true});
+    filterGroup.root.style.cssText += ';width:100%;height:100%;overflow:auto';
+    const gridBox = ui.div([tv.grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
+    const filtersBox = ui.div([filterGroup.root], {style: {flex: '0 0 auto', width: '220px', height: '100%',
+      overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
+    const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
+    host.appendChild(split);
+    // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
+    // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
+    const filtersWrap = split.children[0] as HTMLElement;
+    const gridWrap = split.children[2] as HTMLElement;
+    if (gridWrap && filtersWrap)
+      sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
+    applyGridColumnSizing(tv.grid);
+  }
+
+  // ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
+  // not in that list is silently rejected. Register via grok.shell.addTable first, and dip through
+  // null to drop any cached pointer-equality with the previous selection.
   function assignTableInput(input: DG.InputBase<DG.DataFrame | null>, df: DG.DataFrame,
     setSuppress: (v: boolean) => void): void {
     grok.shell.addTable(df);
@@ -556,6 +622,24 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       try {input.value = null;} catch {/* nullable: false rejects */}
       input.value = df;
     } finally {setSuppress(false);}
+  }
+
+  // Shared clone/rename/detect core for both the global ("All steps") and per-step "Subset by
+  // selection" actions — returns null (after an info toast) when there's nothing to subset.
+  function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | null {
+    const sel = df.selection;
+    if (sel.trueCount === 0) {
+      grok.shell.info(emptyMsg);
+      return null;
+    }
+    if (sel.trueCount === df.rowCount) {
+      grok.shell.info('All rows are selected — nothing to subset.');
+      return null;
+    }
+    const subset = df.clone(sel);
+    subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
+    detectChemSemTypes(subset);
+    return subset;
   }
 
   function subsetBySelection(
@@ -567,18 +651,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (noTableMsg) grok.shell.info(noTableMsg);
       return;
     }
-    const sel = df.selection;
-    if (sel.trueCount === 0) {
-      grok.shell.info(`Select rows in the ${gridLabel} first (Ctrl/Shift+click).`);
-      return;
-    }
-    if (sel.trueCount === df.rowCount) {
-      grok.shell.info('All rows are selected — nothing to subset.');
-      return;
-    }
-    const subset = df.clone(sel);
-    subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
-    detectChemSemTypes(subset);
+    const subset = cloneSubsetByRows(df, `Select rows in the ${gridLabel} first (Ctrl/Shift+click).`);
+    if (!subset) return;
+    if (df !== state.prev) state.original = df; // remember the user's own table for "Use all"
     const prev = state.prev;
     state.prev = subset;
     assignTableInput(input, subset, (v) => { state.suppress = v; });
@@ -589,23 +664,24 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
 
-  // When the user picks a different table or uploads a new CSV through the table input control,
-  // detect chem semtypes (if needed) and re-mount the side grid. Programmatic value sets (our own
-  // subset path) are guarded by `templatesState.suppress` / `bbsState.suppress`.
-  const wireTableInput = (
-    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void,
-  ): void => {
-    view.subs.push(input.onChanged.subscribe(() => {
-      if (state.suppress) return;
-      const df = input.value;
-      if (df) detectChemSemTypes(df);
-      mountFn();
-      refreshValidation();
-    }));
-  };
-  wireTableInput(templatesInput, templatesState, mountTemplates);
-  wireTableInput(bbsInput, bbsState, mountBbs);
-  wireTableInput(reagentsInput, reagentsState, mountReagents);
+  // Undo "Subset by selection": put the remembered full table back into the input and close the
+  // subset clone. No-op (with a hint) when the full library is already in use.
+  function restoreFullTable(
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void, noun: string,
+  ): void {
+    const orig = state.original;
+    if (!orig || input.value === orig) {
+      grok.shell.info(`The full ${noun} library is already in use.`);
+      return;
+    }
+    const prev = state.prev;
+    state.prev = null;
+    assignTableInput(input, orig, (v) => { state.suppress = v; });
+    mountFn();
+    refreshValidation();
+    if (prev && prev !== orig)
+      try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
+  }
 
   // Re-validate on every input change so the Run button stays accurate.
   const wireValidation = (input: DG.InputBase<unknown>): void => {
@@ -615,6 +691,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   [smartsColInput, blockingColInput, rxnNameColInput, bbColInput, reagentsColInput,
     exclusionInput, exclusionColInput, numRoundsInput, depthFirstInput,
+    maxComponentsInput, maxRoutesInput,
   ].forEach((inp) => wireValidation(inp));
 
   // ---- Buttons ----
@@ -650,7 +727,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // ---- Run / Cancel ----
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
-  const runBtn = ui.bigButton('Enumerate', async () => {
+  const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
+  ui.tooltip.bind(runBtn, 'Run enumeration with the current config and add the result to the workspace.');
+
+  const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
+  cancelBtn.style.display = 'none';
+
+  // Shared run chrome: validate, disable the Run button, show Cancel + progress, restore on finish.
+  async function runWithUi(fn: () => Promise<void>): Promise<void> {
     if (validate() != null) return;
     syncQuickInputsToConfig();
     cancelled = false;
@@ -658,7 +742,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     cancelBtn.style.display = '';
     progressLabel.textContent = 'Initializing…';
     try {
-      await runFullEnumeration();
+      await fn();
     } catch (e) {
       grok.shell.error(`Enumeration failed: ${e instanceof Error ? e.message : String(e)}`);
       console.error(e);
@@ -667,13 +751,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       cancelBtn.style.display = 'none';
       progressLabel.textContent = '';
     }
-  });
-  ui.tooltip.bind(runBtn, 'Run enumeration with the current config and add the result to the workspace.');
+  }
 
-  const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
-  cancelBtn.style.display = 'none';
-
-  async function runFullEnumeration(): Promise<void> {
+  async function runEnumeration(): Promise<void> {
     progressLabel.textContent = 'Loading RDKit…';
     const rdkit = await getRdKitModule();
     const tDf = templatesInput.value!;
@@ -684,7 +764,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
     const reagentsPart = inputs.reagents.length > 0 ? ` × ${inputs.reagents.length} reagents` : '';
     progressLabel.textContent =
-      `Running: ${inputs.templates.length} templates × ${inputs.buildingBlocks.length} BBs${reagentsPart} × ${config.enumeration.num_rounds} rounds`;
+      `Running: ${inputs.templates.length} templates × ${inputs.buildingBlocks.length} BBs${reagentsPart} × ${config.enumeration.num_rounds} round(s)`;
     const onProgress = (p: EnumerationProgress) => {
       const combo = p.combosTotal && p.combosTotal > 0 ?
         `, combos ${p.combosDone}/${p.combosTotal}` : '';
@@ -692,9 +772,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         `Round ${p.round}/${p.numRounds}, template ${p.templateIndex + 1}/${p.numTemplates}${combo}, products: ${p.productsSoFar}`;
     };
 
+    const perRoundOverrides = buildPerRoundOverrides(config);
+    if (perRoundOverrides)
+      progressLabel.textContent += ' · per-step subsets active';
+
     const start = performance.now();
     const {rows, warnings} = await enumerate({
-      rdkit, config, ...inputs, onProgress, isCancelled: () => cancelled,
+      rdkit, config, ...inputs, perRoundOverrides, onProgress, isCancelled: () => cancelled,
     });
     const elapsed = ((performance.now() - start) / 1000).toFixed(1);
 
@@ -705,7 +789,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
     if (warnings.length > 0) {
       console.warn('Enumeration warnings:', warnings);
-      grok.shell.warning(`${warnings.length} warning(s); see console for details.`);
+      // Surface the actual warning TEXT, not just a count — e.g. a per-step override silently not
+      // applying is only visible this way, not as a bare count.
+      const preview = warnings.slice(0, 3).join(' | ');
+      const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
+      grok.shell.warning(`${preview}${more}`);
     }
     if (rows.length > 0) grok.shell.addTableView(buildResultDataFrame(rows));
   }
@@ -725,9 +813,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     card.icon.style.color = sel ? 'var(--blue-2)' : 'var(--grey-5)';
   };
 
-  // Strategy cards replace the depth-first checkbox: three explicit choices. depth/breadth drive the
-  // hidden `depthFirstInput` (so all existing sync/validation keeps working); the reagents card is
-  // active only when a reagents file is selected in Extras (reagents-mode follows its presence).
+  // Strategy cards replace the depth-first checkbox: depth/breadth drive the hidden `depthFirstInput`
+  // (existing sync/validation keeps working); reagents card is active only when a reagents file is set.
   const buildStratCard = (icon: string, title: string, desc: string): StratCard => {
     const ic = ui.iconFA(icon);
     ic.style.marginTop = '2px';
@@ -791,8 +878,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
-  const mkNextBtn = (target: DG.AccordionPane): HTMLElement => {
-    const btn = ui.button('Next →', () => openAccPaneExclusive(target));
+  // Target pane resolved lazily via a thunk: Reactions pane is added expanded, so its factory runs
+  // synchronously inside addPane, before later panes exist — capturing directly would hit the TDZ.
+  const mkNextBtn = (getTarget: () => DG.AccordionPane): HTMLElement => {
+    const btn = ui.button('Next →', () => openAccPaneExclusive(getTarget()));
     btn.classList.add('chem-enum-next-btn');
     return btn;
   };
@@ -800,19 +889,19 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const accordion = ui.accordion();
   accordion.root.classList.add('chem-enum-accordion');
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(accBbsPane)]), true);
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(() => accBbsPane)]), true);
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(accCombinePane)]), false);
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accCombinePane)]), false);
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
       configInfoIcon,
     ], {style: {alignItems: 'center', gap: '4px'}}),
     ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
-    ui.form([numRoundsInput]),
+    ui.form([numRoundsInput, maxComponentsInput, maxRoutesInput]),
     editConfigBtn,
     yamlRow,
-    mkNextBtn(accExtrasPane),
+    mkNextBtn(() => accExtrasPane),
   ], {style: {gap: '8px'}}), false);
   const accExtrasPane = accordion.addPane('Extras (optional)',
     () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
@@ -911,20 +1000,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }});
   };
 
-  const templatesSubsetBtn = ui.button('Subset by selection', () =>
-    subsetBySelection(templatesInput, templatesState, mountTemplates, 'reaction templates grid'));
-  ui.tooltip.bind(templatesSubsetBtn, 'Replace the reaction templates with only the rows currently ' +
-    'selected in the grid. To restore the full set, reload the table from the input on the left.');
-
-  const bbsSubsetBtn = ui.button('Subset by selection', () =>
-    subsetBySelection(bbsInput, bbsState, mountBbs, 'building blocks grid'));
-  ui.tooltip.bind(bbsSubsetBtn, 'Replace the building blocks with only the rows currently selected ' +
-    'in the grid. To restore the full set, reload the table from the input on the left.');
-
-  const reagentsSubsetBtn = ui.button('Subset by selection', () =>
-    subsetBySelection(reagentsInput, reagentsState, mountReagents, 'reagents grid', 'No reagents file selected.'));
-  ui.tooltip.bind(reagentsSubsetBtn, 'Replace the reagents with only the rows currently selected ' +
-    'in the grid. To restore the full set, reload the table from the input on the left.');
+  // Per-component "Subset by selection" now lives inside each tab's step bar (see makeDataPanel).
 
   const tabPanel = (header: HTMLElement, gridHost: HTMLElement): HTMLElement => {
     // display:flex on the host turns the grid's inline-flex outer display into a block-level
@@ -941,12 +1017,320 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }});
   };
 
-  const subsetHint = (what: string) =>
-    `Select rows (Ctrl/Shift+click) and click "Subset by selection" to enumerate only chosen ${what}.`;
+  // ---- Single-grid per-component panel with a per-step strip ----
+  // Each data tab shows ONE grid plus a horizontal step strip: "All steps" shows the full library
+  // (with the global "Subset by selection"); "Step k" shows a display-only clone whose row selection
+  // is that round's subset. Switching chips swaps what the single grid displays — no second grid.
+  interface DataPanelOpts {
+    idx: number; noun: string;
+    input: DG.InputBase<DG.DataFrame | null>;
+    state: SubsetState;
+    gridHost: HTMLElement;
+    badge?: () => TabBadge | null;
+    noTableMsg?: string;
+    emptyMsg?: string;
+  }
+  interface DataPanel {
+    panel: HTMLElement; render: () => void; onTableChanged: () => void; onRoundsChanged: () => void;
+  }
+  function makeDataPanel(o: DataPanelOpts): DataPanel {
+    let selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
+    let filtersOn = false; // funnel toggle: swap the grid for an embedded TableView with its filters group
+    let currentDf: DG.DataFrame | null = null;
+    // Step selector: a real ui.tabControl. All steps share the SAME barHost + gridHost (one grid,
+    // not one per step) — on tab switch, relocate that content node into the current pane and
+    // re-render. Since contentHost ends up nested inside stepTabsHost's own subtree (not a flex
+    // sibling), stepTabsHost must be flex:1 1 0 to fill available height, not size to content.
+    const stepTabsHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', display: 'flex',
+      flexDirection: 'column', overflow: 'hidden'}});
+    let stepTabsSub: {unsubscribe: () => void} | null = null;
+    const stepDots: (HTMLElement | null)[] = []; // index k = 1..rounds; index 0 ("All steps") unused
+    const barHost = ui.div([], {style: {display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
+      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)'}});
+    o.gridHost.style.cssText += ';display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden';
+    const contentHost = ui.div([barHost, o.gridHost], {style: {
+      height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}});
 
-  const templatesPanel = tabPanel(panelHeader(subsetHint('templates'), templatesSubsetBtn), templatesGridHost);
-  const bbsPanel = tabPanel(panelHeader(subsetHint('building blocks'), bbsSubsetBtn), bbsGridHost);
-  const reagentsPanel = tabPanel(panelHeader(subsetHint('reagents'), reagentsSubsetBtn), reagentsGridHost);
+    // A step "has an override" once its clone has FEWER rows than "All steps" — i.e. "Subset by
+    // selection" was committed for it. A freshly-visited step's clone starts full-size, so merely
+    // browsing/selecting doesn't count, only committing does. Row-count comparison (not clone-
+    // nullness) also lets a step track "All steps" narrowing/reverting automatically.
+    const hasOverride = (k: number): boolean => {
+      const w = stepWork[o.idx][k - 1];
+      const global = o.input.value;
+      if (!w || !global || w.rowCount >= global.rowCount) return false;
+      // Breadth-first ignores per-round BB overrides entirely (enumerate() draws round-R's reactant
+      // pool from the union of all prior products, see `eligibleSmiles`) — don't show the override
+      // dot/status as if it did something. Reactions/reagents overrides are unaffected. NOTE:
+      // `currentMode()` treats any selected reagents file as "reagents mode"; enumerate()'s actual
+      // gate additionally requires at least one reagent to survive canonicalization. A file that's
+      // selected but entirely invalid is the one edge case where this dot can read stale — enumerate()
+      // itself still warns correctly when that happens, so it's a display-lag risk, not silent data loss.
+      if (o.idx === 1 && currentMode() === 'breadth') return false;
+      return true;
+    };
+    const roundCount = (): number => Math.max(1, numRoundsInput.value ?? config.enumeration.num_rounds);
+    const updateDots = (): void => {
+      for (let k = 1; k <= stepDots.length - 1; k++) {
+        const dot = stepDots[k];
+        if (dot) dot.style.display = hasOverride(k) ? '' : 'none';
+      }
+    };
+    // Backs the "per-step overrides about to be cleared" warning — only worth flagging when there's
+    // actually something to lose.
+    const hasAnyOverride = (): boolean => {
+      for (let k = 1; k <= roundCount(); k++) if (hasOverride(k)) return true;
+      return false;
+    };
+
+    // Shared bookkeeping behind every place a step's clone changes: unsubscribe the old selection
+    // listener, subscribe the new one (if any), and keep `stepWork`/`stepWorkSubs` in lockstep.
+    const setStepWork = (k: number, work: DG.DataFrame | null): void => {
+      stepWorkSubs[o.idx][k - 1]?.unsubscribe();
+      const sub = work ? work.onSelectionChanged.subscribe(() => { updateDots(); renderBar(); }) : null;
+      if (sub) view.subs.push(sub);
+      stepWorkSubs[o.idx][k - 1] = sub;
+      stepWork[o.idx][k - 1] = work;
+    };
+
+    const stepClone = (k: number): DG.DataFrame | null => {
+      const existing = stepWork[o.idx][k - 1];
+      if (existing) return existing;
+      const global = o.input.value;
+      if (!global) return null;
+      // Display-only clone, never registered in the workspace; its selection carries the subset.
+      const work = global.clone(null);
+      work.name = `${global.name} · step ${k}`;
+      detectChemSemTypes(work);
+      setStepWork(k, work);
+      return work;
+    };
+
+    // Per-step mirror of the global "Subset by selection": selecting rows in a step's grid is just
+    // staging, the round only narrows once this commits it by swapping in a new clone.
+    const subsetStepBySelection = (k: number): void => {
+      const w = stepWork[o.idx][k - 1];
+      if (!w) return; // grid must be mounted (via stepClone) before this button is reachable
+      const subset = cloneSubsetByRows(w,
+        `Select rows (Ctrl/Shift+click) to use only those ${o.noun} in step ${k} first.`);
+      if (!subset) return;
+      setStepWork(k, subset);
+      renderBar(); renderGrid(); updateDots();
+    };
+
+    // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
+    const useAllForStep = (k: number): void => {
+      setStepWork(k, null);
+      renderBar(); renderGrid(); updateDots();
+    };
+
+    // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
+    // add/remove-pane API, only clear()+re-addPane(); `tc.panes` insertion order lines up with selStep.
+    function buildStepTabs(initialStep = 0): void {
+      stepTabsSub?.unsubscribe();
+      stepTabsHost.innerHTML = '';
+      stepDots.length = 0;
+      const tc = ui.tabControl(null, false);
+      // Same reasoning as stepTabsHost above: contentHost lives in this tabControl's active-pane
+      // content div, so tc.root must fill available height, not size to its header-strip content.
+      tc.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
+      const allPane = tc.addPane('All steps', () => ui.div([]));
+      ui.tooltip.bind(allPane.header, 'Narrow this component for one round only. "All steps" is the full ' +
+        'library used by every round; pick a step to restrict just that round. Per-step building-block ' +
+        'subsets apply in depth-first / reagents mode; in breadth-first mode a round draws from all earlier ' +
+        'products, so a BB subset has no effect. Resets when you change the round count or swap an input file.');
+      stepDots.push(null);
+      for (let k = 1; k <= roundCount(); k++) {
+        const pane = tc.addPane(`Step ${k}`, () => ui.div([]));
+        // Position dot absolutely (header stacks children vertically, so marginLeft lands below the
+        // label). Positive left offset only — a negative one bleeds into the adjacent tab (tabs sit
+        // flush, live-verified). Fixed top offset, not top:50% — the header's box shrinks ~7px when
+        // selected (underline indicator), so a percentage-based center drifts on selection.
+        const dot = ui.div([], {style: {position: 'absolute', left: '5px', top: '12px',
+          width: '6px', height: '6px', borderRadius: '50%',
+          background: 'var(--orange-2, #c98a1b)', display: 'none'}});
+        pane.header.style.cssText += ';position:relative';
+        pane.header.appendChild(dot);
+        stepDots.push(dot);
+      }
+      // Relocating `contentHost` while it holds a LIVE mounted DG.Grid corrupts it (verified live:
+      // clicking a row after a tab switch threw and froze the page) — DG.Grid ties bookkeeping to
+      // its DOM parent. So: destroy the grid first, move the empty container, then mount fresh.
+      const relocateAndRender = (): void => {
+        o.gridHost.innerHTML = '';
+        const target = tc.currentPane;
+        target?.content.appendChild(contentHost);
+        renderBar(); renderGrid(); updateDots();
+      };
+      stepTabsSub = tc.onTabChanged.subscribe(() => {
+        const name = tc.currentPane?.name;
+        selStep = !name || name === 'All steps' ? 0 : parseInt(name.slice('Step '.length), 10);
+        relocateAndRender();
+      });
+      stepTabsHost.appendChild(tc.root);
+      // Select explicitly — onTabChanged may not fire if the target is already the control's default.
+      const clamped = Math.min(Math.max(0, initialStep), roundCount());
+      selStep = clamped;
+      const target = tc.panes[clamped] ?? allPane;
+      if (target !== tc.currentPane) tc.currentPane = target;
+      relocateAndRender();
+    }
+
+    function renderBar(): void {
+      barHost.innerHTML = '';
+      const hintEl = (t: string): HTMLElement =>
+        ui.divText(t, {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px'}});
+      // Funnel toggle — shows the standard Datagrok filters panel for the visible grid. Off by default.
+      const filterIcon = ui.iconFA('filter',
+        () => { filtersOn = !filtersOn; renderBar(); renderGrid(); },
+        filtersOn ? 'Hide filters' : 'Show filters');
+      filterIcon.style.cssText += `;cursor:pointer;padding:2px 5px;flex:0 0 auto;` +
+        `color:${filtersOn ? 'var(--blue-2)' : 'var(--grey-5)'}`;
+      if (selStep === 0) {
+        // Warn only when the click actually swaps the table AND overrides existed to lose — a no-op
+        // click already gets its own info toast from subsetBySelection/restoreFullTable.
+        const doGlobalAction = (action: () => void, clearedSuffix: string): void => {
+          const hadOverride = hasAnyOverride();
+          const prevValue = o.input.value;
+          action();
+          if (hadOverride && o.input.value !== prevValue)
+            grok.shell.info(`Per-step ${o.noun} overrides were cleared — every step now uses the ${clearedSuffix}.`);
+        };
+        const btn = ui.button('Subset by selection', () => doGlobalAction(
+          () => subsetBySelection(o.input, o.state, renderGrid, `${o.noun} grid`, o.noTableMsg),
+          `new ${o.noun} subset`));
+        ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows (applies to every ` +
+          `step). Click "Use all" to restore the full set.`);
+        const useAll = ui.button('Use all', () => doGlobalAction(
+          () => restoreFullTable(o.input, o.state, renderGrid, o.noun),
+          `full ${o.noun} library again`));
+        ui.tooltip.bind(useAll, `Restore the full ${o.noun} library (undo "Subset by selection").`);
+        barHost.append(hintEl(`Full ${o.noun} library — used by every step unless a step overrides it.`),
+          filterIcon, btn, useAll);
+      } else {
+        const w = stepWork[o.idx][selStep - 1];
+        const status = ui.divText(
+          w ? (hasOverride(selStep) ? `using ${w.rowCount} / ${o.input.value?.rowCount ?? w.rowCount}` : `all ${w.rowCount}`) : '',
+          {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
+        const btn = ui.button('Subset by selection', () => subsetStepBySelection(selStep));
+        ui.tooltip.bind(btn, `Narrow step ${selStep} to only the selected rows (select rows with ` +
+          `Ctrl/Shift+click first). Click "Use all" to go back to the full ${o.noun} library.`);
+        const useAll = ui.button('Use all', () => useAllForStep(selStep));
+        ui.tooltip.bind(useAll, `Undo "Subset by selection" so step ${selStep} uses the full ${o.noun} library ` +
+          `(same as "All steps").`);
+        barHost.append(
+          hintEl(`Select rows (Ctrl/Shift+click), then "Subset by selection" to use only those ${o.noun} in ` +
+            `step ${selStep}.`),
+          status, filterIcon, btn, useAll);
+      }
+    }
+
+    function renderGrid(): void {
+      o.gridHost.innerHTML = '';
+      currentDf = selStep === 0 ? o.input.value : stepClone(selStep);
+      if (!currentDf) {
+        o.gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
+          {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
+        if (selStep === 0) o.badge?.()?.refresh(null);
+        return;
+      }
+      mountDf(o.gridHost, currentDf, filtersOn);
+      if (selStep === 0) o.badge?.()?.refresh(currentDf.rowCount);
+    }
+
+    function render(): void { renderBar(); renderGrid(); updateDots(); }
+
+    const onTableChanged = (): void => {
+      if (o.input.value) detectChemSemTypes(o.input.value);
+      // Guarded: subsetBySelection/restoreFullTable reassign o.input.value under suppress=true so
+      // THIS handler won't treat their own programmatic swap as a genuine user file change and erase
+      // "Use all"'s remembered original.
+      if (!o.state.suppress) o.state.original = null;
+      for (const sub of stepWorkSubs[o.idx]) sub?.unsubscribe();
+      stepWorkSubs[o.idx].length = 0;
+      stepWork[o.idx].length = 0;
+      buildStepTabs(0);
+      refreshValidation();
+    };
+    const onRoundsChanged = (): void => {
+      // Drop only clones for rounds that no longer exist — must not wipe overrides still in range.
+      const n = roundCount();
+      if (stepWork[o.idx].length > n) {
+        for (let i = n; i < stepWorkSubs[o.idx].length; i++) stepWorkSubs[o.idx][i]?.unsubscribe();
+        stepWorkSubs[o.idx].length = n;
+        stepWork[o.idx].length = n;
+      }
+      buildStepTabs(selStep);
+    };
+
+    const panel = ui.div([stepTabsHost, contentHost], {style: {
+      height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--white)', overflow: 'hidden'}});
+    buildStepTabs(0); // also mounts the grid once hosts are in the DOM
+    return {panel, render, onTableChanged, onRoundsChanged};
+  }
+
+  const templatesCtl = makeDataPanel({idx: 0, noun: 'reaction templates',
+    input: templatesInput, state: templatesState, gridHost: templatesGridHost, badge: () => templatesBadge});
+  const bbsCtl = makeDataPanel({idx: 1, noun: 'building blocks',
+    input: bbsInput, state: bbsState, gridHost: bbsGridHost, badge: () => bbsBadge});
+  const reagentsCtl = makeDataPanel({idx: 2, noun: 'reagents',
+    input: reagentsInput, state: reagentsState, gridHost: reagentsGridHost, badge: () => reagentsBadge,
+    noTableMsg: 'No reagents file selected.', emptyMsg: 'No reagents file selected. Add one in the Extras ' +
+      'section to subset reagents per step.'});
+  const templatesPanel = templatesCtl.panel;
+  const bbsPanel = bbsCtl.panel;
+  const reagentsPanel = reagentsCtl.panel;
+  const dataCtls = [templatesCtl, bbsCtl, reagentsCtl];
+
+  // Rebuilds step strips on round-count change or when a component's "All steps" table changes (file
+  // load, Subset by selection, Use all) — narrowing "All steps" intentionally discards every step's
+  // committed override, since "All steps" is the fallback source of truth. Runs unconditionally, not
+  // gated by `*State.suppress` (that only guards `state.original` inside onTableChanged).
+  //
+  // `max` on an int input only shows a tooltip, it doesn't clamp — do it here. Must defer via
+  // setTimeout: correcting synchronously while still inside this same input's onChanged dispatch is
+  // Dart-side re-entrant (verified live — breaks the rebuild or corrupts the ribbon).
+  view.subs.push(numRoundsInput.onChanged.subscribe(() => {
+    const v = numRoundsInput.value;
+    if (v != null && v > MAX_ROUNDS) {
+      setTimeout(() => setAndFire(numRoundsInput, MAX_ROUNDS), 0);
+      return;
+    }
+    refreshValidation();
+    dataCtls.forEach((c) => c.onRoundsChanged());
+  }));
+  view.subs.push(templatesInput.onChanged.subscribe(() => templatesCtl.onTableChanged()));
+  view.subs.push(bbsInput.onChanged.subscribe(() => bbsCtl.onTableChanged()));
+  // BB override dot/status is mode-aware (hasOverride hides it in breadth-first) — re-render the
+  // OTHER panels on any mode switch so they don't show stale state. reagentsCtl itself already gets
+  // a full rebuild from onTableChanged below (its own table changed) — re-rendering it a second time
+  // here would be redundant work, so it's excluded from the mode-refresh pass.
+  view.subs.push(depthFirstInput.onChanged.subscribe(() => dataCtls.forEach((c) => c.render())));
+  view.subs.push(reagentsInput.onChanged.subscribe(() => {
+    reagentsCtl.onTableChanged();
+    templatesCtl.render();
+    bbsCtl.render();
+  }));
+
+  // A step's clone IS the subset once committed via "Subset by selection" — no deriving from a live
+  // .selection bitset at run time. A round with no narrowed component falls back to the global set;
+  // the whole result is undefined when nothing is overridden.
+  function buildPerRoundOverrides(cfg: EnumeratorConfig): PerRoundOverride[] | undefined {
+    const overrides: PerRoundOverride[] = [];
+    let any = false;
+    for (let r = 0; r < cfg.enumeration.num_rounds; r++) {
+      const o: PerRoundOverride = {};
+      for (const def of stepCompDefs) {
+        const work = stepWork[def.idx][r];
+        const global = def.getGlobal();
+        if (!work || !global || work.rowCount === global.rowCount) continue; // no override committed
+        def.apply(o, work, cfg);
+        any = true;
+      }
+      overrides.push(o);
+    }
+    return any ? overrides : undefined;
+  }
 
   // ---- Preview tab (lazy) ----
   // Same idea as the old persistent preview: build inputs, run a budgeted enumerate, show the
@@ -959,7 +1343,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const previewStatus = ui.divText('',
     {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
   const previewHeader = panelHeader(
-    'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of products.',
+    'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of ' +
+    'products. Uses the global reactions / building blocks / reagents; per-step subsets are not applied here.',
     undefined,
     previewStatus);
   const previewPanel = tabPanel(
@@ -1077,14 +1462,19 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // ---- Right pane: TabControl with lazy panes ----
   // addPane's factory is called once when the tab is first activated; we then keep the panel DOM
-  // alive across switches. The preview tab additionally listens on onTabChanged to re-run whenever
-  // the user comes back to it (so it picks up edits made on the left while another tab was shown).
+  // alive across switches.
   const tabs = ui.tabControl(null, false);
   tabs.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
   templatesPane = tabs.addPane('Reaction templates', () => templatesPanel);
   bbsPane = tabs.addPane('Building blocks', () => bbsPanel);
   reagentsPane = tabs.addPane('Reagents', () => reagentsPanel);
   tabs.addPane('Preview', () => previewPanel);
+  view.subs.push(tabs.onTabChanged.subscribe(() => {
+    if (tabs.currentPane?.name === 'Preview') refreshPreview();
+    // Bump previewRunId on tab-away too, or an in-flight preview keeps running unattended
+    // (isCancelled only checked previewRunId bumps from starting a NEW preview before).
+    else previewRunId++;
+  }));
   // Row-count badges on each data tab header — updated whenever the underlying grid changes.
   const makeTabBadge = (): TabBadge => {
     const el = document.createElement('span');
@@ -1101,10 +1491,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   bbsPane.header.appendChild(bbsBadge.el);
   reagentsPane.header.appendChild(reagentsBadge.el);
 
-  view.subs.push(tabs.onTabChanged.subscribe(() => {
-    if (tabs.currentPane?.name === 'Preview') refreshPreview();
-  }));
-
+  // Right pane: a single component-tab control (each tab has its own step strip + one grid).
   const rightPane = ui.divV([tabs.root], {style: {height: '100%', overflow: 'hidden'}});
 
   // Resizable horizontal split — drag the divider to rebalance inputs vs side grids.
@@ -1113,19 +1500,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Initial split ~38/62: right pane gets more space for the grids.
   // Must target the wrapper boxes (mainRow.children[0/2]) — direct flex children of the split
   // container — because spliterResize() reads their flexGrow during drag to compute sumFlexGrow.
-  requestAnimationFrame(() => {
-    const splitLeft = mainRow.children[0] as HTMLElement;
-    const splitRight = mainRow.children[2] as HTMLElement;
-    if (splitLeft && splitRight) {
-      const total = splitLeft.clientWidth + splitRight.clientWidth;
-      if (total > 0) {
-        splitLeft.style.width = Math.round(total * 0.38) + 'px';
-        splitLeft.style.flexGrow = '0.38';
-        splitRight.style.width = Math.round(total * 0.62) + 'px';
-        splitRight.style.flexGrow = '0.62';
-      }
-    }
-  });
+  const splitLeft = mainRow.children[0] as HTMLElement;
+  const splitRight = mainRow.children[2] as HTMLElement;
+  if (splitLeft && splitRight)
+    sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.38));
 
   const root = ui.divV([
     mainRow,
@@ -1133,14 +1511,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
     classes: 'chem-enumerator'});
 
-  view.root.classList.add('chem-enumerator-view');
-  view.setRibbonPanels([[appInfoIcon], [runGroup], [chipReactions], [ribbonArrow], [chipBbs], [chipCombine], [cfgEstEl]]);
+  view.setRibbonPanels([[appInfoIcon, runGroup, chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl]]);
   view.append(root);
 
-  // Mount the initial grids and run validation once everything is wired up.
-  mountTemplates();
-  mountBbs();
-  mountReagents();
+  // Render each component panel (step strip + "All steps" grid) and run validation once wired up.
+  templatesCtl.render();
+  bbsCtl.render();
+  reagentsCtl.render();
   refreshValidation();
   return view;
 }

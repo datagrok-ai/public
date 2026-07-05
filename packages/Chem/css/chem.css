@@ -1276,24 +1276,6 @@
   min-width: 0;
 }
 
-/* The platform lays out views as: .d4-ribbon ~ view.root (.chem-enumerator-view).
-   These :has(~ .chem-enumerator-view) rules scope ribbon overrides to this view only. */
-.d4-ribbon:has(~ .chem-enumerator-view) {
-  background: var(--white);
-}
-
-.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item:hover {
-  background: transparent !important;
-}
-
-.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-item > :hover:not(button):not(.ui-btn):not(.chem-enum-chip) {
-  background: transparent !important;
-}
-
-.d4-ribbon:has(~ .chem-enumerator-view) .d4-ribbon-separator {
-  display: none;
-}
-
 .chem-enum-accordion {
   width: 100%;
   min-width: 0;
