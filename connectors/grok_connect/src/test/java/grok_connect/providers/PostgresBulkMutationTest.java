@@ -1,6 +1,9 @@
 package grok_connect.providers;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -11,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -32,21 +36,31 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import serialization.BigIntColumn;
+import serialization.BoolColumn;
+import serialization.Column;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 
 /**
- * Integration tests for GROK-20337: bulk CSV transport driven through {@link MutationManager} against
- * a containerized Postgres, for both the COPY fast path and the default chunked-executeBatch loader.
- * Proves 100k rows land identically (incl. nulls, quotes, unicode, embedded newlines), that abort and
- * a malformed stream leave zero rows, and logs COPY-vs-batch timing as flagship evidence.
+ * Integration tests for GROK-20347 (java-d42-reader WO-4): the bulk mutation transport re-driven with
+ * typed d42 frames, through {@link MutationManager} against a containerized Postgres, for both the COPY
+ * fast path ({@code CopyCsvFormatter}) and the default typed-batch loader. Re-drives the WO-6 batch
+ * matrix (allOrNothing / partial / upsert / update / errorOnDuplicate / atomic replay), proves the two
+ * loaders store identical values (loader-parity pin), replays committed Dart d42 fixtures (exotic
+ * encoders) through the real transport, and keeps the legacy CSV path green through the batch loader.
  */
 class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresBulkMutationTest.class);
     private static final int ROWS = 100_000;
+    private static final int CHUNK_ROWS = 20_000;
     private static final int CHUNK_BYTES = 64 * 1024;
     private static final List<String> COLUMNS = Arrays.asList("id", "big", "val", "active", "note");
     private static final List<String> TYPES = Arrays.asList("int", "bigint", "double", "bool", "string");
 
-    // Special notes at low ids exercise every CSV escaping case; nulls, unicode, quotes, comma, newline.
     private static final String UNICODE = "café ☕ → ünîcödé";
     private static final String QUOTED = "he said \"hi\"";
     private static final String NEWLINE = "line1\nline2";
@@ -58,7 +72,6 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
 
     @BeforeAll
     public void initProviderManager() {
-        // MutationManager resolves its provider via the GrokConnect static registry.
         GrokConnect.providerManager = new ProviderManager();
     }
 
@@ -89,8 +102,10 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     @AfterAll
     public void dropScratchTables() throws SQLException {
         for (String table : new String[] {"mut_bulk_copy", "mut_bulk_batch", "mut_bulk_abort", "mut_bulk_bad",
-                "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_blank_copy", "mut_blank_batch",
-                "mut_nondeterm", "mut_ups_atomic"})
+                "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_null_copy", "mut_null_batch",
+                "mut_nondeterm", "mut_ups_atomic", "mut_parity_copy", "mut_parity_batch", "mut_csv_batch", "mut_mismatch",
+                "mut_fx_forced_string_prefixes", "mut_fx_forced_string_squash",
+                "mut_fx_natural_string_categories", "mut_fx_natural_float64"})
             execDirect("DROP TABLE IF EXISTS " + table);
     }
 
@@ -110,45 +125,99 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         }
     }
 
-    private String csvField(String value) {
-        if (value == null)
-            return ""; // empty unquoted field = COPY csv NULL
-        if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0)
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        return value;
-    }
+    // ---- d42 frame construction (the transport now carries typed DataFrames, not CSV) ----
 
-    /** Builds the full CSV payload for {@link #ROWS} rows (UTF-8, no header). */
-    private byte[] buildCsv() {
-        StringBuilder sb = new StringBuilder(ROWS * 24);
-        for (int id = 0; id < ROWS; id++) {
-            sb.append(id).append(',')
-              .append(9007199254740995L + id).append(',') // beyond 2^53
-              .append(id * 0.25).append(',')
-              .append(id % 2 == 0).append(',')
-              .append(csvField(note(id))).append('\n');
+    /** Builds a typed d42 column from string cells (null cell -> None), by dg type. */
+    private Column<?> column(String name, String type, String[] rows, int col) {
+        int n = rows == null ? 0 : rows.length;
+        switch (type) {
+            case "int": {
+                Integer[] v = new Integer[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r) == null ? null : Integer.parseInt(cell(rows, r));
+                return new IntColumn(name, v);
+            }
+            case "bigint": {
+                String[] v = new String[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r);
+                return new BigIntColumn(name, v);
+            }
+            case "double": {
+                Double[] v = new Double[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r) == null ? null : Double.parseDouble(cell(rows, r));
+                return FloatColumn.double64(name, v);
+            }
+            case "bool": {
+                Boolean[] v = new Boolean[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r) == null ? null : Boolean.parseBoolean(cell(rows, r));
+                return new BoolColumn(name, v);
+            }
+            case "datetime": {
+                Double[] v = new Double[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r) == null ? null : Double.parseDouble(cell(rows, r));
+                return new DateTimeColumn(name, v);
+            }
+            default: {
+                String[] v = new String[n];
+                for (int r = 0; r < n; r++) v[r] = cell(rows, r);
+                return new StringColumn(name, v);
+            }
         }
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private List<byte[]> chunk(byte[] data) {
+    private String cell(String[] flat, int r) { return flat[r]; }
+
+    /** Serializes a typed frame (one column per name/type, values from row-major {@code rows}) to d42. */
+    private byte[] d42(List<String> names, List<String> types, String[]... rows) {
+        Column<?>[] cols = new Column[names.size()];
+        for (int c = 0; c < names.size(); c++) {
+            String[] colValues = new String[rows.length];
+            for (int r = 0; r < rows.length; r++)
+                colValues[r] = rows[r][c];
+            cols[c] = column(names.get(c), types.get(c), colValues, c);
+        }
+        return DataFrame.fromColumns(cols).toByteArray();
+    }
+
+    /** Builds the {@link #ROWS}-row flagship frame as d42 sub-frames of {@link #CHUNK_ROWS} rows each. */
+    private List<byte[]> flagshipChunks() {
         List<byte[]> chunks = new ArrayList<>();
-        for (int off = 0; off < data.length; off += CHUNK_BYTES) {
-            int len = Math.min(CHUNK_BYTES, data.length - off);
-            byte[] c = new byte[len];
-            System.arraycopy(data, off, c, 0, len);
-            chunks.add(c);
+        for (int start = 0; start < ROWS; start += CHUNK_ROWS) {
+            int len = Math.min(CHUNK_ROWS, ROWS - start);
+            Integer[] id = new Integer[len];
+            String[] big = new String[len];
+            Double[] val = new Double[len];
+            Boolean[] active = new Boolean[len];
+            String[] note = new String[len];
+            for (int i = 0; i < len; i++) {
+                int gid = start + i;
+                id[i] = gid;
+                big[i] = Long.toString(9007199254740995L + gid); // beyond 2^53
+                val[i] = gid * 0.25;
+                active[i] = gid % 2 == 0;
+                note[i] = note(gid);
+            }
+            chunks.add(DataFrame.fromColumns(
+                    new IntColumn("id", id),
+                    new BigIntColumn("big", big),
+                    FloatColumn.double64("val", val),
+                    new BoolColumn("active", active),
+                    new StringColumn("note", note)).toByteArray());
         }
         return chunks;
     }
 
     private InsertRows bulkInsert(String table) {
+        return insert(table, COLUMNS, TYPES);
+    }
+
+    private InsertRows insert(String table, List<String> cols, List<String> types) {
         InsertRows m = new InsertRows();
         m.tableName = table;
-        m.columns = COLUMNS;
-        m.columnTypes = TYPES;
+        m.columns = cols;
+        m.columnTypes = types;
         m.bulk = true;
         m.rows = null; // streamed
+        m.payloadFormat = "d42";
         m.connection = connection;
         return m;
     }
@@ -160,143 +229,25 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         return GrokConnect.gson.toJson(call);
     }
 
-    private void assertSpecialsAndCount(String table) throws SQLException {
-        Assertions.assertEquals(ROWS, countDirect(table));
-        Assertions.assertEquals(UNICODE, rowById(table, 0)[3]);
-        Assertions.assertEquals(QUOTED, rowById(table, 1)[3]);
-        Assertions.assertEquals(NEWLINE, rowById(table, 2)[3]);
-        Assertions.assertEquals(COMMA, rowById(table, 3)[3]);
-        Assertions.assertNull(rowById(table, 4)[3]); // null note
-        Object[] last = rowById(table, ROWS - 1);
-        Assertions.assertEquals(9007199254740995L + (ROWS - 1), last[0]); // bigint beyond 2^53, exact
-        Assertions.assertEquals((ROWS - 1) * 0.25, last[1]);
-        Assertions.assertEquals((ROWS - 1) % 2 == 0, last[2]);
-    }
-
-    @DisplayName("COPY fast path: 100k rows via MutationManager land with nulls/quotes/unicode/newlines intact")
-    @Test
-    public void copyLoader_100k() throws Exception {
-        createTable("mut_bulk_copy");
-        byte[] csv = buildCsv();
-        MutationManager manager = new MutationManager(header(bulkInsert("mut_bulk_copy")));
-        long t0 = System.nanoTime();
-        manager.start();
-        for (byte[] c : chunk(csv))
-            manager.feed(c);
-        MutationResult result = manager.finish();
-        long ms = (System.nanoTime() - t0) / 1_000_000;
-        LOGGER.info("BULK COPY: {} rows in {} ms", ROWS, ms);
-        Assertions.assertEquals(ROWS, result.affectedRows);
-        assertSpecialsAndCount("mut_bulk_copy");
-    }
-
-    @DisplayName("Default batch loader: same 100k CSV lands identically to COPY")
-    @Test
-    public void batchLoader_100k() throws Exception {
-        createTable("mut_bulk_batch");
-        byte[] csv = buildCsv();
-        InsertRows m = bulkInsert("mut_bulk_batch");
-        // Force the default loader (Postgres would otherwise pick COPY) by constructing it directly,
-        // driven through the same connection/commit discipline MutationManager applies.
-        long t0 = System.nanoTime();
-        Connection conn = provider.getConnection(connection);
-        try {
-            provider.configureAutoCommit(conn);
-            BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, conn, m);
-            MutationResult result;
-            try {
-                for (byte[] c : chunk(csv))
-                    loader.feed(c);
-                result = loader.finish();
-                conn.commit();
-            } catch (Exception e) {
-                loader.abort();
-                provider.rollbackQuietly(conn);
-                throw e;
-            }
-            long ms = (System.nanoTime() - t0) / 1_000_000;
-            LOGGER.info("BULK BATCH: {} rows in {} ms (affected {})", ROWS, ms, result.affectedRows);
-        } finally {
-            conn.close();
-        }
-        assertSpecialsAndCount("mut_bulk_batch");
-    }
-
-    @DisplayName("Abort after 50 chunks rolls back to zero rows")
-    @Test
-    public void abort_leavesZeroRows() throws Exception {
-        createTable("mut_bulk_abort");
-        List<byte[]> chunks = chunk(buildCsv());
-        MutationManager manager = new MutationManager(header(bulkInsert("mut_bulk_abort")));
-        manager.start();
-        for (int i = 0; i < 50 && i < chunks.size(); i++)
-            manager.feed(chunks.get(i));
-        manager.abort();
-        Assertions.assertEquals(0, countDirect("mut_bulk_abort"));
-    }
-
-    @DisplayName("Malformed CSV mid-stream surfaces an error and rolls back to zero rows")
-    @Test
-    public void malformed_leavesZeroRows() throws Exception {
-        createTable("mut_bulk_bad");
-        MutationManager manager = new MutationManager(header(bulkInsert("mut_bulk_bad")));
-        manager.start();
-        // valid opening rows, then a row with the wrong number of fields
-        Assertions.assertThrows(Exception.class, () -> {
-            manager.feed("1,100,0.5,true,ok\n2,200,1.5,false,fine\n".getBytes(StandardCharsets.UTF_8));
-            manager.feed("3,only,two\n".getBytes(StandardCharsets.UTF_8)); // malformed
-            manager.finish();
-        });
-        manager.abort();
-        Assertions.assertEquals(0, countDirect("mut_bulk_bad"));
-    }
-
-    // ---- WO-6: batch modes, allOrNothing, savepoint partial errors, SqlStateMapper, carried findings ----
-
-    private InsertRows insert(String table, List<String> cols, List<String> types) {
-        InsertRows m = new InsertRows();
-        m.tableName = table;
-        m.columns = cols;
-        m.columnTypes = types;
-        m.bulk = true;
-        m.rows = null; // streamed
-        m.connection = connection;
-        return m;
-    }
-
-    /** Builds a UTF-8, header-less CSV payload; null cells become empty unquoted fields (COPY csv NULL). */
-    private byte[] csv(String[]... rows) {
-        StringBuilder sb = new StringBuilder();
-        for (String[] row : rows) {
-            for (int i = 0; i < row.length; i++) {
-                if (i > 0)
-                    sb.append(',');
-                sb.append(csvField(row[i]));
-            }
-            sb.append('\n');
-        }
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    /** Drives a streamed mutation end-to-end through MutationManager (the real WS path minus the socket). */
-    private MutationResult runManager(InsertRows m, byte[] csv) throws Exception {
+    /** Drives a streamed d42 mutation end-to-end through MutationManager (the real WS path minus the socket). */
+    private MutationResult runManager(InsertRows m, byte[]... chunks) throws Exception {
         MutationManager manager = new MutationManager(header(m));
         manager.start();
-        for (byte[] c : chunk(csv))
+        for (byte[] c : chunks)
             manager.feed(c);
         return manager.finish();
     }
 
-    /** Forces the default batch loader (Postgres would otherwise pick COPY), mirroring the manager's commit/rollback. */
-    private MutationResult runBatchLoader(InsertRows m, byte[] csv) throws Exception {
+    /** Forces the default typed-batch loader (Postgres would otherwise pick COPY), mirroring the manager's commit/rollback. */
+    private MutationResult runBatchLoader(InsertRows m, byte[]... chunks) throws Exception {
         Connection conn = provider.getConnection(connection);
         try {
             provider.configureAutoCommit(conn);
             BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, conn, m);
             MutationResult result;
             try {
-                for (byte[] c : chunk(csv))
-                    loader.feed(c);
+                for (byte[] c : chunks)
+                    loader.feed(DataFrame.fromByteArray(c));
                 result = loader.finish();
             } catch (Exception e) {
                 loader.abort();
@@ -313,6 +264,147 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         }
     }
 
+    private void assertSpecialsAndCount(String table) throws SQLException {
+        Assertions.assertEquals(ROWS, countDirect(table));
+        Assertions.assertEquals(UNICODE, rowById(table, 0)[3]);
+        Assertions.assertEquals(QUOTED, rowById(table, 1)[3]);
+        Assertions.assertEquals(NEWLINE, rowById(table, 2)[3]);
+        Assertions.assertEquals(COMMA, rowById(table, 3)[3]);
+        Assertions.assertNull(rowById(table, 4)[3]); // null note
+        Object[] last = rowById(table, ROWS - 1);
+        Assertions.assertEquals(9007199254740995L + (ROWS - 1), last[0]); // bigint beyond 2^53, exact
+        Assertions.assertEquals((ROWS - 1) * 0.25, last[1]);
+        Assertions.assertEquals((ROWS - 1) % 2 == 0, last[2]);
+    }
+
+    @DisplayName("COPY fast path: 100k-row d42 via MutationManager land with nulls/quotes/unicode/newlines intact")
+    @Test
+    public void copyLoader_100k() throws Exception {
+        createTable("mut_bulk_copy");
+        List<byte[]> chunks = flagshipChunks();
+        MutationManager manager = new MutationManager(header(bulkInsert("mut_bulk_copy")));
+        long t0 = System.nanoTime();
+        manager.start();
+        for (byte[] c : chunks)
+            manager.feed(c);
+        MutationResult result = manager.finish();
+        long ms = (System.nanoTime() - t0) / 1_000_000;
+        LOGGER.info("BULK d42 COPY: {} rows in {} ms", ROWS, ms);
+        Assertions.assertEquals(ROWS, result.affectedRows);
+        assertSpecialsAndCount("mut_bulk_copy");
+    }
+
+    @DisplayName("Default typed-batch loader: same 100k d42 lands identically to COPY")
+    @Test
+    public void batchLoader_100k() throws Exception {
+        createTable("mut_bulk_batch");
+        InsertRows m = bulkInsert("mut_bulk_batch");
+        long t0 = System.nanoTime();
+        Connection conn = provider.getConnection(connection);
+        try {
+            provider.configureAutoCommit(conn);
+            BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, conn, m);
+            MutationResult result;
+            try {
+                for (byte[] c : flagshipChunks())
+                    loader.feed(DataFrame.fromByteArray(c));
+                result = loader.finish();
+                conn.commit();
+            } catch (Exception e) {
+                loader.abort();
+                provider.rollbackQuietly(conn);
+                throw e;
+            }
+            long ms = (System.nanoTime() - t0) / 1_000_000;
+            LOGGER.info("BULK d42 BATCH: {} rows in {} ms (affected {})", ROWS, ms, result.affectedRows);
+        } finally {
+            conn.close();
+        }
+        assertSpecialsAndCount("mut_bulk_batch");
+    }
+
+    @DisplayName("Legacy CSV path (dual-format): 100k CSV via the batch loader feedCsv still lands (+ timing)")
+    @Test
+    public void csvBatch_100k_dualFormat() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_csv_batch");
+        execDirect("CREATE TABLE mut_csv_batch (id int PRIMARY KEY, big bigint, val double precision, active boolean, note text)");
+        InsertRows m = bulkInsert("mut_csv_batch");
+        m.payloadFormat = "csv"; // exercise the surviving CSV branch through the batch loader
+        byte[] csv = buildCsv();
+        long t0 = System.nanoTime();
+        Connection conn = provider.getConnection(connection);
+        try {
+            provider.configureAutoCommit(conn);
+            BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, conn, m);
+            for (byte[] c : chunkBytes(csv))
+                loader.feedCsv(c);
+            MutationResult result = loader.finish();
+            conn.commit();
+            long ms = (System.nanoTime() - t0) / 1_000_000;
+            LOGGER.info("BULK CSV BATCH (legacy): {} rows in {} ms (affected {})", ROWS, ms, result.affectedRows);
+        } finally {
+            conn.close();
+        }
+        assertSpecialsAndCount("mut_csv_batch");
+    }
+
+    @DisplayName("Abort after a chunk rolls back to zero rows")
+    @Test
+    public void abort_leavesZeroRows() throws Exception {
+        createTable("mut_bulk_abort");
+        List<byte[]> chunks = flagshipChunks();
+        MutationManager manager = new MutationManager(header(bulkInsert("mut_bulk_abort")));
+        manager.start();
+        manager.feed(chunks.get(0));
+        manager.abort();
+        Assertions.assertEquals(0, countDirect("mut_bulk_abort"));
+    }
+
+    @DisplayName("Schema-mismatch d42 frame surfaces an error and rolls back to zero rows")
+    @Test
+    public void schemaMismatch_leavesZeroRows() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_mismatch");
+        execDirect("CREATE TABLE mut_mismatch (id int PRIMARY KEY, note text)");
+        MutationManager manager = new MutationManager(header(insert("mut_mismatch",
+                Arrays.asList("id", "note"), Arrays.asList("int", "string"))));
+        manager.start();
+        // frame's 2nd column is named 'wrong' — validateChunkSchema must reject it before any insert
+        byte[] bad = d42(Arrays.asList("id", "wrong"), Arrays.asList("int", "string"),
+                new String[] {"1", "a"}, new String[] {"2", "b"});
+        Assertions.assertThrows(MutationValidationException.class, () -> manager.feed(bad));
+        manager.abort();
+        Assertions.assertEquals(0, countDirect("mut_mismatch"));
+    }
+
+    @DisplayName("Loader-parity pin: identical d42 chunk through COPY and batch stores identical values (us timestamps, doubles, nulls)")
+    @Test
+    public void loaderParity_copyVsBatch_identical() throws Exception {
+        for (String t : new String[] {"mut_parity_copy", "mut_parity_batch"}) {
+            execDirect("DROP TABLE IF EXISTS " + t);
+            execDirect("CREATE TABLE " + t + " (id int PRIMARY KEY, note text, amount double precision, active boolean, ts timestamp)");
+        }
+        List<String> cols = Arrays.asList("id", "note", "amount", "active", "ts");
+        List<String> types = Arrays.asList("int", "string", "double", "bool", "datetime");
+        byte[] chunk = d42(cols, types,
+                new String[] {"1", "east",  "1.0000000000000002", "true",  "1751722496789012"},
+                new String[] {"2", null,     "-0.0",               "false", "1751722496000000"},
+                new String[] {"3", "a,b\"c", "1.0e308",            "true",  "1000000000123456"},
+                new String[] {"4", "z",      null,                 "false", null});
+        // COPY (insert + allOrNothing routes to CopyCsvFormatter); batch (forced)
+        runManager(insert("mut_parity_copy", cols, types), chunk);
+        runBatchLoader(insert("mut_parity_batch", cols, types), chunk);
+        Assertions.assertEquals(4, countDirect("mut_parity_copy"));
+        Assertions.assertEquals(4, countDirect("mut_parity_batch"));
+        // IS DISTINCT FROM covers nulls; exact equality covers us-precision timestamps and doubles
+        int diffs = ((Number) queryCount(
+                "SELECT count(*) FROM mut_parity_copy c FULL JOIN mut_parity_batch b USING (id) WHERE "
+                + "c.note IS DISTINCT FROM b.note OR c.amount IS DISTINCT FROM b.amount OR "
+                + "c.active IS DISTINCT FROM b.active OR c.ts IS DISTINCT FROM b.ts")).intValue();
+        Assertions.assertEquals(0, diffs, "COPY and batch stored different values for the same chunk");
+    }
+
+    // ---- WO-6 batch matrix, re-driven with d42 frames (semantics unchanged) ----
+
     @DisplayName("(a) allOrNothing: one NOT NULL violation among 1000 rows -> 0 written, exact index + code + column")
     @Test
     public void allOrNothing_reportsFailingRowAndRollsBack() throws Exception {
@@ -321,12 +413,11 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         String[][] rows = new String[1000][];
         for (int i = 0; i < 1000; i++)
             rows[i] = new String[] {String.valueOf(i), i == 500 ? null : "n" + i};
-        // insert+allOrNothing routes to COPY, which cannot report the row index — drive the batch loader,
-        // the component that owns precise all-or-nothing error reporting (batchLoader_100k precedent).
+        // insert+allOrNothing routes to COPY, which cannot report the row index — drive the batch loader.
         MutationResult result = runBatchLoader(insert("mut_aon", Arrays.asList("id", "note"),
-                Arrays.asList("int", "string")), csv(rows));
+                Arrays.asList("int", "string")), d42(Arrays.asList("id", "note"), Arrays.asList("int", "string"), rows));
         Assertions.assertEquals(0, result.affectedRows);
-        Assertions.assertEquals(0, countDirect("mut_aon")); // whole load rolled back
+        Assertions.assertEquals(0, countDirect("mut_aon"));
         Assertions.assertEquals(Integer.valueOf(1), result.errorCount);
         Assertions.assertEquals(1, result.errors.size());
         Assertions.assertEquals(500, result.errors.get(0).index);
@@ -344,7 +435,7 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
             rows[i] = new String[] {String.valueOf(i), i == 500 ? null : "n" + i};
         InsertRows m = insert("mut_partial", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
         m.allOrNothing = false;
-        MutationResult result = runManager(m, csv(rows));
+        MutationResult result = runManager(m, d42(Arrays.asList("id", "note"), Arrays.asList("int", "string"), rows));
         Assertions.assertEquals(999, result.affectedRows);
         Assertions.assertEquals(999, countDirect("mut_partial"));
         Assertions.assertEquals(Integer.valueOf(999), result.inserted);
@@ -367,8 +458,9 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         m.matchKeys = Arrays.asList("id");
         m.bulk = true;
         m.rows = null;
+        m.payloadFormat = "d42";
         m.connection = connection;
-        MutationResult result = runManager(m, csv(
+        MutationResult result = runManager(m, d42(m.columns, m.columnTypes,
                 new String[] {"1", "east2", "111"},   // update
                 new String[] {"2", "west2", "222"},   // update
                 new String[] {"4", "south", "40"},    // insert
@@ -392,7 +484,7 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         m.mode = "update";
         m.keyColumns = Arrays.asList("id");
         m.allOrNothing = false;
-        MutationResult result = runManager(m, csv(
+        MutationResult result = runManager(m, d42(m.columns, m.columnTypes,
                 new String[] {"1", "100"},
                 new String[] {"2", "200"},
                 new String[] {"99", "999"})); // no such row
@@ -404,35 +496,35 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(100.0d, scalarDouble("SELECT amount FROM mut_upd_key WHERE id = 1"));
         Assertions.assertEquals(200.0d, scalarDouble("SELECT amount FROM mut_upd_key WHERE id = 2"));
         Assertions.assertEquals(30.0d, scalarDouble("SELECT amount FROM mut_upd_key WHERE id = 3")); // untouched
-        Assertions.assertEquals(3, countDirect("mut_upd_key")); // missing key not inserted
+        Assertions.assertEquals(3, countDirect("mut_upd_key"));
     }
 
     @DisplayName("(e) errorOnDuplicate=false skips the duplicate; =true reports it as a unique error")
     @Test
     public void errorOnDuplicate_bothSettings() throws Exception {
-        // false: ON CONFLICT DO NOTHING -> the duplicate is skipped, the rest land
+        List<String> cols = Arrays.asList("id", "note");
+        List<String> types = Arrays.asList("int", "string");
         execDirect("DROP TABLE IF EXISTS mut_dup");
         execDirect("CREATE TABLE mut_dup (id int PRIMARY KEY, note text)");
         execDirect("INSERT INTO mut_dup VALUES (1, 'seed')");
-        InsertRows skip = insert("mut_dup", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
+        InsertRows skip = insert("mut_dup", cols, types);
         skip.allOrNothing = false;
         skip.errorOnDuplicate = false;
-        MutationResult skipResult = runManager(skip, csv(
+        MutationResult skipResult = runManager(skip, d42(cols, types,
                 new String[] {"1", "a"}, new String[] {"2", "b"}, new String[] {"3", "c"}));
         Assertions.assertEquals(Integer.valueOf(2), skipResult.inserted);
         Assertions.assertEquals(Integer.valueOf(1), skipResult.skipped);
         Assertions.assertEquals(Integer.valueOf(0), skipResult.errorCount);
         Assertions.assertEquals(3, countDirect("mut_dup"));
-        Assertions.assertEquals("seed", scalarString("SELECT note FROM mut_dup WHERE id = 1")); // not overwritten
+        Assertions.assertEquals("seed", scalarString("SELECT note FROM mut_dup WHERE id = 1"));
 
-        // true: the duplicate surfaces as a unique RowError, the rest still land (partial)
         execDirect("DROP TABLE IF EXISTS mut_dup");
         execDirect("CREATE TABLE mut_dup (id int PRIMARY KEY, note text)");
         execDirect("INSERT INTO mut_dup VALUES (1, 'seed')");
-        InsertRows err = insert("mut_dup", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
+        InsertRows err = insert("mut_dup", cols, types);
         err.allOrNothing = false;
         err.errorOnDuplicate = true;
-        MutationResult errResult = runManager(err, csv(
+        MutationResult errResult = runManager(err, d42(cols, types,
                 new String[] {"1", "a"}, new String[] {"2", "b"}, new String[] {"3", "c"}));
         Assertions.assertEquals(Integer.valueOf(2), errResult.inserted);
         Assertions.assertEquals(Integer.valueOf(1), errResult.errorCount);
@@ -455,25 +547,26 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertTrue(ex.getMessage().contains("Partial mode"));
     }
 
-    @DisplayName("Carried finding 1: a blank line / null row lands identically through COPY and the batch loader")
+    @DisplayName("A none string cell lands as SQL NULL identically through COPY and the batch loader")
     @Test
-    public void blankLine_copyAndBatchAgree() throws Exception {
-        execDirect("DROP TABLE IF EXISTS mut_blank_copy");
-        execDirect("DROP TABLE IF EXISTS mut_blank_batch");
-        execDirect("CREATE TABLE mut_blank_copy (v text)");
-        execDirect("CREATE TABLE mut_blank_batch (v text)");
-        byte[] payload = "a\n\nb\n".getBytes(StandardCharsets.UTF_8); // middle line is blank = a null row
+    public void nullCell_copyAndBatchAgree() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_null_copy");
+        execDirect("DROP TABLE IF EXISTS mut_null_batch");
+        execDirect("CREATE TABLE mut_null_copy (v text)");
+        execDirect("CREATE TABLE mut_null_batch (v text)");
+        byte[] chunk = d42(Arrays.asList("v"), Arrays.asList("string"),
+                new String[] {"a"}, new String[] {(String) null}, new String[] {"b"});
 
-        runManager(insert("mut_blank_copy", Arrays.asList("v"), Arrays.asList("string")), payload); // COPY
-        runBatchLoader(insert("mut_blank_batch", Arrays.asList("v"), Arrays.asList("string")), payload); // batch
+        runManager(insert("mut_null_copy", Arrays.asList("v"), Arrays.asList("string")), chunk); // COPY
+        runBatchLoader(insert("mut_null_batch", Arrays.asList("v"), Arrays.asList("string")), chunk); // batch
 
-        Assertions.assertEquals(3, countDirect("mut_blank_copy"));
-        Assertions.assertEquals(countDirect("mut_blank_copy"), countDirect("mut_blank_batch")); // no divergence
-        Assertions.assertEquals(1, ((Number) queryCount("SELECT count(*) FROM mut_blank_copy WHERE v IS NULL")).intValue());
-        Assertions.assertEquals(1, ((Number) queryCount("SELECT count(*) FROM mut_blank_batch WHERE v IS NULL")).intValue());
+        Assertions.assertEquals(3, countDirect("mut_null_copy"));
+        Assertions.assertEquals(countDirect("mut_null_copy"), countDirect("mut_null_batch"));
+        Assertions.assertEquals(1, ((Number) queryCount("SELECT count(*) FROM mut_null_copy WHERE v IS NULL")).intValue());
+        Assertions.assertEquals(1, ((Number) queryCount("SELECT count(*) FROM mut_null_batch WHERE v IS NULL")).intValue());
     }
 
-    @DisplayName("Carried finding 2: an unwired bulk mode fails loud instead of silently inserting")
+    @DisplayName("An unwired bulk mode fails loud instead of silently inserting")
     @Test
     public void unknownBulkMode_failsLoud() {
         InsertRows m = insert("mut_unknown", Arrays.asList("id"), Arrays.asList("int"));
@@ -484,18 +577,23 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         });
     }
 
+    @DisplayName("Unknown payloadFormat fails at construction")
+    @Test
+    public void unknownPayloadFormat_failsLoud() {
+        InsertRows m = insert("mut_unknown", Arrays.asList("id"), Arrays.asList("int"));
+        m.payloadFormat = "avro";
+        Assertions.assertThrows(MutationValidationException.class, () -> new MutationManager(header(m)));
+    }
+
     @DisplayName("Fix 1: a non-reproducing atomic batch failure still forces full rollback (no silent partial commit)")
     @Test
     public void atomicReplay_nonReproducingFailure_rollsBackFully() throws Exception {
         execDirect("DROP TABLE IF EXISTS mut_nondeterm");
         execDirect("CREATE TABLE mut_nondeterm (id int PRIMARY KEY, note text)");
-        // Raw pgjdbc connection (HikariProxyConnection is final and cannot be spied); drive it like the manager.
         Connection real = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
         try {
             real.setAutoCommit(false);
             Connection spy = Mockito.spy(real);
-            // The batch throws a transient 40P01 (deadlock) that does NOT recur on the row-by-row replay —
-            // executeBatch is stubbed to throw, executeUpdate delegates to the real statement and succeeds.
             Mockito.doAnswer(inv -> {
                 PreparedStatement realStmt = (PreparedStatement) inv.callRealMethod();
                 PreparedStatement spyStmt = Mockito.spy(realStmt);
@@ -507,21 +605,21 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
             InsertRows m = insert("mut_nondeterm", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
             m.errorOnDuplicate = true; // plain insert, no ON CONFLICT — the replay would otherwise succeed silently
             BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, spy, m);
-            byte[] csv = csv(new String[] {"1", "a"}, new String[] {"2", "b"}, new String[] {"3", "c"});
+            byte[] chunk = d42(Arrays.asList("id", "note"), Arrays.asList("int", "string"),
+                    new String[] {"1", "a"}, new String[] {"2", "b"}, new String[] {"3", "c"});
             MutationResult result;
             try {
-                loader.feed(csv);
+                loader.feed(DataFrame.fromByteArray(chunk));
                 result = loader.finish();
             } catch (Exception e) {
                 loader.abort();
                 real.rollback();
                 throw e;
             }
-            // errorCount>0 must force the whole load to roll back even though no single row reproduced the error
             Assertions.assertTrue(result.errorCount != null && result.errorCount > 0);
             Assertions.assertEquals(0, result.affectedRows);
             Assertions.assertEquals("conflict", result.errors.get(0).code); // 40P01 -> conflict
-            real.rollback(); // the manager would roll back; assert nothing persisted
+            real.rollback();
         } finally {
             real.close();
         }
@@ -533,24 +631,173 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     public void upsert_allOrNothing_atomicRollbackThroughManager() throws Exception {
         execDirect("DROP TABLE IF EXISTS mut_ups_atomic");
         execDirect("CREATE TABLE mut_ups_atomic (id int PRIMARY KEY, note text NOT NULL)");
-        UpsertRows m = new UpsertRows(); // allOrNothing defaults to true
+        UpsertRows m = new UpsertRows();
         m.tableName = "mut_ups_atomic";
         m.columns = Arrays.asList("id", "note");
         m.columnTypes = Arrays.asList("int", "string");
         m.matchKeys = Arrays.asList("id");
         m.bulk = true;
         m.rows = null;
+        m.payloadFormat = "d42";
         m.connection = connection;
-        // upsert routes to the batch loader (not COPY), so this exercises the manager's atomic rollback end-to-end
-        MutationResult result = runManager(m, csv(
+        MutationResult result = runManager(m, d42(m.columns, m.columnTypes,
                 new String[] {"1", "a"},
                 new String[] {"2", null}, // NOT NULL violation, mid-batch
                 new String[] {"3", "c"}));
         Assertions.assertEquals(0, result.affectedRows);
-        Assertions.assertEquals(0, countDirect("mut_ups_atomic")); // whole load rolled back
+        Assertions.assertEquals(0, countDirect("mut_ups_atomic"));
         Assertions.assertEquals(Integer.valueOf(1), result.errorCount);
-        Assertions.assertEquals(1, result.errors.get(0).index); // exact failing row
+        Assertions.assertEquals(1, result.errors.get(0).index);
         Assertions.assertEquals("notnull", result.errors.get(0).code);
+    }
+
+    // ---- Committed Dart d42 fixtures (exotic encoders) replayed through the real transport ----
+
+    private byte[] readD42Fixture(String name) throws IOException {
+        for (String root : new String[] {
+                "../serialization/src/test/resources/d42/",
+                "serialization/src/test/resources/d42/",
+                "connectors/serialization/src/test/resources/d42/"}) {
+            File f = new File(root + name + ".d42");
+            if (f.exists())
+                return Files.readAllBytes(f.toPath());
+        }
+        throw new IOException("d42 fixture not found on any known root: " + name);
+    }
+
+    private String sqlType(String dgType) {
+        switch (dgType) {
+            case "int": return "int";
+            case "bigint": return "bigint";
+            case "double": return "double precision";
+            case "bool": return "boolean";
+            case "datetime": return "timestamp";
+            default: return "text";
+        }
+    }
+
+    /** Replays a single-column Dart fixture through the transport and asserts the DB round-trips the decoded values. */
+    private void replaySingleColumn(String fixture, boolean forceBatch) throws Exception {
+        byte[] bytes = readD42Fixture(fixture);
+        DataFrame expected = DataFrame.fromByteArray(bytes);
+        Column<?> col = expected.getColumn(0);
+        String table = "mut_fx_" + fixture;
+        execDirect("DROP TABLE IF EXISTS " + table);
+        execDirect("CREATE TABLE " + table + " (\"" + col.getName() + "\" " + sqlType(col.getType()) + ")");
+        InsertRows m = insert(table, Collections.singletonList(col.getName()), Collections.singletonList(col.getType()));
+        if (forceBatch)
+            runBatchLoader(m, bytes);
+        else
+            runManager(m, bytes);
+        Assertions.assertEquals(expected.rowCount.intValue(), (int) countDirect(table),
+                fixture + ": row count through transport");
+
+        if (col.getType().equals("string")) {
+            List<String> exp = new ArrayList<>();
+            for (int r = 0; r < expected.rowCount; r++)
+                exp.add(col.isNone(r) ? null : col.get(r).toString());
+            List<String> got = queryStrings("SELECT \"" + col.getName() + "\" FROM " + table);
+            exp.sort(nullsLast());
+            got.sort(nullsLast());
+            Assertions.assertEquals(exp, got, fixture + ": string values through transport");
+        }
+        else { // double
+            List<Double> exp = new ArrayList<>();
+            for (int r = 0; r < expected.rowCount; r++)
+                exp.add(col.isNone(r) ? null : ((FloatColumn) col).getDouble(r));
+            List<Double> got = queryDoubles("SELECT \"" + col.getName() + "\" FROM " + table);
+            exp.sort(nullDoubles());
+            got.sort(nullDoubles());
+            Assertions.assertEquals(exp.size(), got.size());
+            for (int i = 0; i < exp.size(); i++)
+                Assertions.assertTrue(doubleEq(exp.get(i), got.get(i)),
+                        fixture + ": double mismatch at " + i + " expected " + exp.get(i) + " got " + got.get(i));
+        }
+    }
+
+    @DisplayName("Dart fixtures: string:prefixes + string:squash replay through the COPY transport (exotic decoders)")
+    @Test
+    public void dartFixtures_stringEncoders_viaCopy() throws Exception {
+        replaySingleColumn("forced_string_prefixes", false);
+        replaySingleColumn("forced_string_squash", false);
+    }
+
+    @DisplayName("Dart fixtures: string:categories(+int:bitIntList) + float:raw64 replay through the batch bind path")
+    @Test
+    public void dartFixtures_viaBatchBind() throws Exception {
+        replaySingleColumn("natural_string_categories", true);
+        replaySingleColumn("natural_float64", true);
+    }
+
+    // ---- CSV helpers (legacy dual-format path) ----
+
+    private String csvField(String value) {
+        if (value == null)
+            return "";
+        if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0)
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    private byte[] buildCsv() {
+        StringBuilder sb = new StringBuilder(ROWS * 24);
+        for (int id = 0; id < ROWS; id++) {
+            sb.append(id).append(',')
+              .append(9007199254740995L + id).append(',')
+              .append(id * 0.25).append(',')
+              .append(id % 2 == 0).append(',')
+              .append(csvField(note(id))).append('\n');
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private List<byte[]> chunkBytes(byte[] data) {
+        List<byte[]> chunks = new ArrayList<>();
+        for (int off = 0; off < data.length; off += CHUNK_BYTES) {
+            int len = Math.min(CHUNK_BYTES, data.length - off);
+            byte[] c = new byte[len];
+            System.arraycopy(data, off, c, 0, len);
+            chunks.add(c);
+        }
+        return chunks;
+    }
+
+    // ---- query helpers ----
+
+    private java.util.Comparator<String> nullsLast() {
+        return (a, b) -> a == null ? (b == null ? 0 : 1) : (b == null ? -1 : a.compareTo(b));
+    }
+
+    private java.util.Comparator<Double> nullDoubles() {
+        return (a, b) -> a == null ? (b == null ? 0 : 1) : (b == null ? -1 : Double.compare(a, b));
+    }
+
+    private boolean doubleEq(Double a, Double b) {
+        if (a == null || b == null)
+            return a == null && b == null;
+        return a.doubleValue() == b.doubleValue() || (Double.isNaN(a) && Double.isNaN(b));
+    }
+
+    private List<String> queryStrings(String sql) throws SQLException {
+        List<String> out = new ArrayList<>();
+        try (Connection c = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
+             ResultSet rs = c.createStatement().executeQuery(sql)) {
+            while (rs.next())
+                out.add(rs.getString(1));
+        }
+        return out;
+    }
+
+    private List<Double> queryDoubles(String sql) throws SQLException {
+        List<Double> out = new ArrayList<>();
+        try (Connection c = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
+             ResultSet rs = c.createStatement().executeQuery(sql)) {
+            while (rs.next()) {
+                double d = rs.getDouble(1);
+                out.add(rs.wasNull() ? null : d);
+            }
+        }
+        return out;
     }
 
     private Object queryCount(String sql) throws SQLException {

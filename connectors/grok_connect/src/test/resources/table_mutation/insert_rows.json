@@ -14,5 +14,6 @@
   "allOrNothing": true,
   "errorOnDuplicate": false,
   "returnGeneratedKeys": true,
-  "bulk": false
+  "bulk": false,
+  "payloadFormat": "csv"
 }

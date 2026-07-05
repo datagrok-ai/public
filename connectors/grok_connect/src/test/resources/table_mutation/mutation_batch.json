@@ -13,7 +13,8 @@
       "rows": [[3, "9007199254740997"]],
       "mode": "insert",
       "allOrNothing": true,
-      "bulk": false
+      "bulk": false,
+      "payloadFormat": "csv"
     },
     {
       "#type": "UpdateRows",
@@ -62,7 +63,8 @@
           "mode": "upsert",
           "matchKeys": ["id"],
           "allOrNothing": true,
-          "bulk": false
+          "bulk": false,
+          "payloadFormat": "csv"
         }
       ]
     }

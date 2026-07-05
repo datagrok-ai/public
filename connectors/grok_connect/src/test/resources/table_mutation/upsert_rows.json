@@ -12,5 +12,6 @@
   "mode": "upsert",
   "matchKeys": ["id"],
   "allOrNothing": true,
-  "bulk": false
+  "bulk": false,
+  "payloadFormat": "csv"
 }
