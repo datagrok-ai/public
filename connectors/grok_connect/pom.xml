@@ -491,11 +491,6 @@
             <version>3.0.2</version>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.14.0</version>
-        </dependency>
-        <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
             <version>1.4</version>
@@ -707,12 +702,12 @@
             <artifactId>commons-compress</artifactId>
             <version>1.28.0</version>
         </dependency>
-        <dependency> <!-- commons-compress 1.28 requires modern lang3 (ArrayFill, SystemProperties); transitive 3.10 breaks TestContainers -->
+        <dependency> <!-- compile scope: main code uses lang3 (DataQuery -> WordUtils); commons-compress 1.28 needs modern lang3 (ArrayFill, SystemProperties) - transitive 3.10 breaks TestContainers -->
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.18.0</version>
         </dependency>
-        <dependency> <!-- commons-compress 1.28 requires modern commons-io (FileTimes); stale transitive version breaks TestContainers -->
+        <dependency> <!-- compile scope: main code uses commons-io (Blob/ClobTypeConverter -> IOUtils); commons-compress 1.28 needs modern commons-io (FileTimes) - stale version breaks TestContainers -->
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.20.0</version>

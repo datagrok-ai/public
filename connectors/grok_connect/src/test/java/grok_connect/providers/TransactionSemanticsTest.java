@@ -7,13 +7,17 @@ import grok_connect.providers.utils.Provider;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryManager;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import serialization.DataFrame;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 
 /**
@@ -32,6 +36,20 @@ class TransactionSemanticsTest extends ContainerizedProviderBaseTest {
         // which is only set in GrokConnect.main
         if (GrokConnect.providerManager == null)
             GrokConnect.providerManager = new ProviderManager();
+    }
+
+    /** Direct JDBC, bypassing grok_connect entirely — setup/teardown must not depend on the code under test. */
+    private void execDirect(String sql) throws SQLException {
+        try (Connection c = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
+             Statement statement = c.createStatement()) {
+            statement.execute(sql);
+        }
+    }
+
+    @AfterAll
+    public void dropScratchTables() throws SQLException {
+        for (String table : new String[] {"tx_exec_ok", "tx_qm_ok", "tx_qm_err", "tx_qm_abort", "tx_exec_err"})
+            execDirect("DROP TABLE IF EXISTS " + table);
     }
 
     private DataFrame run(String query) throws Exception {
@@ -65,7 +83,7 @@ class TransactionSemanticsTest extends ContainerizedProviderBaseTest {
     @DisplayName("(b) Streaming QueryManager.close(true) commits an INSERT")
     @Test
     public void queryManager_closeWithCommit_persistsWrite() throws Exception {
-        run("CREATE TABLE tx_qm_ok (id int PRIMARY KEY)");
+        execDirect("CREATE TABLE tx_qm_ok (id int PRIMARY KEY)");
         FuncCall call = FuncCallBuilder.fromQuery("INSERT INTO tx_qm_ok (id) VALUES (1)");
         call.func.connection = connection;
         QueryManager qm = buildQueryManager(call);
@@ -85,7 +103,7 @@ class TransactionSemanticsTest extends ContainerizedProviderBaseTest {
     @DisplayName("(c1) Streaming error path: close(false) after a mid-batch failure rolls back the first statement")
     @Test
     public void queryManager_closeAfterMidBatchFailure_rollsBack() throws Exception {
-        run("CREATE TABLE tx_qm_err (id int PRIMARY KEY)");
+        execDirect("CREATE TABLE tx_qm_err (id int PRIMARY KEY)");
         FuncCall call = buildBatchCall(
                 "INSERT INTO tx_qm_err (id) VALUES (1)",
                 "INSERT INTO tx_qm_err (id) VALUES (1)"); // PK violation
@@ -99,7 +117,7 @@ class TransactionSemanticsTest extends ContainerizedProviderBaseTest {
     @DisplayName("(c2) Streaming abort before COMPLETED_OK: close(false) on a healthy transaction rolls back, not commits")
     @Test
     public void queryManager_closeWithoutCompletion_rollsBack() throws Exception {
-        run("CREATE TABLE tx_qm_abort (id int PRIMARY KEY)");
+        execDirect("CREATE TABLE tx_qm_abort (id int PRIMARY KEY)");
         FuncCall call = buildBatchCall(
                 "INSERT INTO tx_qm_abort (id) VALUES (1)",
                 "SELECT id FROM tx_qm_abort");
