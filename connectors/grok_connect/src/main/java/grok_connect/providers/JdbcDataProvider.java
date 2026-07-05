@@ -22,6 +22,8 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.BatchInsertBulkLoader;
+import grok_connect.table_mutation.BulkLoader;
 import grok_connect.table_mutation.DeleteRows;
 import grok_connect.table_mutation.InsertRows;
 import grok_connect.table_mutation.MutationValidationException;
@@ -770,6 +772,15 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "INSERT INTO " + mutationTableName(m) + " (" +
                 m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) +
                 ") VALUES (" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
+    }
+
+    /**
+     * Creates the streamed bulk-insert loader for {@code m} on {@code conn} (connector-writes WO-5).
+     * The default chunked-{@code executeBatch} loader works on any prepared-statement provider;
+     * providers with a native fast path (Postgres COPY) override this.
+     */
+    public BulkLoader createBulkLoader(Connection conn, InsertRows m) throws SQLException {
+        return new BatchInsertBulkLoader(this, conn, m);
     }
 
     public String updateSql(UpdateRows m, List<FuncParam> collectedParams) {

@@ -318,7 +318,7 @@ public class MutationRunner {
         }
     }
 
-    private static int sumBatchCounts(int[] counts) {
+    static int sumBatchCounts(int[] counts) {
         int sum = 0;
         for (int count : counts)
             sum += count == Statement.SUCCESS_NO_INFO ? 1 : Math.max(count, 0);
