@@ -9,6 +9,10 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.table_mutation.BulkLoader;
+import grok_connect.table_mutation.InsertRows;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.PostgresCopyBulkLoader;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.PatternMatcher;
@@ -97,6 +101,19 @@ public class PostgresDataProvider extends JdbcDataProvider {
                     .map((c) -> addBrackets(c) + " = EXCLUDED." + addBrackets(c))
                     .collect(java.util.stream.Collectors.joining(", ")));
         return sql.toString();
+    }
+
+    @Override
+    public BulkLoader createBulkLoader(Connection conn, InsertRows m) throws SQLException {
+        String mode = grok_connect.utils.GrokConnectUtil.isEmpty(m.mode) ? "insert" : m.mode;
+        if (!mode.equals("insert")) // COPY is insert-only; upsert/update bulk uses the default loader (WO-6)
+            return super.createBulkLoader(conn, m);
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("Bulk insert requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        String cols = m.columns.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        String copySql = "COPY " + mutationTableName(m) + " (" + cols + ") FROM STDIN (FORMAT csv)";
+        return new PostgresCopyBulkLoader(conn, copySql);
     }
 
     @Override

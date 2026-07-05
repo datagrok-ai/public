@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-@WebSocket(maxTextMessageSize = 1024 * 1024) // set textMessageSize to 1MB
+@WebSocket(maxTextMessageSize = 1024 * 1024, maxBinaryMessageSize = 16 * 1024 * 1024) // text 1MB, bulk CSV frames up to 16MB
 public class QueryHandler {
     public static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
     public static final String CALL_ID_HEADER = "callId";
@@ -62,6 +62,19 @@ public class QueryHandler {
             String id = setMDC(session);
             if (sessions.containsKey(id))
                 sessions.get(id).onMessage(message);
+        } catch (Throwable e) {
+            onError(session, e);
+        } finally {
+            MDC.clear();
+        }
+    }
+
+    @OnWebSocketMessage
+    public void onMessage(Session session, byte[] payload, int offset, int len) {
+        try {
+            String id = setMDC(session);
+            if (sessions.containsKey(id))
+                sessions.get(id).onBinary(payload, offset, len);
         } catch (Throwable e) {
             onError(session, e);
         } finally {
