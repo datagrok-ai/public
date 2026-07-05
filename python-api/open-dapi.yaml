@@ -53,6 +53,68 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DomainSchema"
+  /domains/grants/{entityId}:
+    get:
+      operationId: getGrants
+      summary: get grants
+      description: "Direct permission rows on a registry entity (a domain schema, table, or property schema): [{group: {id, friendlyName, personal}, permission}]. Requires Share on the entity."
+      tags:
+        - domains
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+    post:
+      operationId: grantPermission
+      summary: grant permission
+      description: "Idempotently grants body 'permission' (View|Edit|Delete|Share) on a registry entity to body 'group' (a group id — sharing with a user resolves to their personal group on the client, as everywhere). Requires Share on the entity."
+      tags:
+        - domains
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+    delete:
+      operationId: revokePermission
+      summary: revoke permission
+      description: "Revokes 'permission' from 'group' on a registry entity; omitting 'permission' revokes all four common permissions for that group. Requires Share on the entity."
+      tags:
+        - domains
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: permission
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/{table}/query:
     post:
       operationId: queryRows

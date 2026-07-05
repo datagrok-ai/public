@@ -30,6 +30,28 @@ export namespace dapi2 {
       return _fetch(url);
     }
 
+    /** Direct permission rows on a registry entity (a domain schema, table, or property schema): [{group: {id, friendlyName, personal}, permission}]. Requires Share on the entity. */
+    export async function getGrants(entityId: string): Promise<any> {
+      let url = `/domains/grants/${entityId}`;
+      return _fetch(url);
+    }
+
+    /** Idempotently grants body 'permission' (View|Edit|Delete|Share) on a registry entity to body 'group' (a group id — sharing with a user resolves to their personal group on the client, as everywhere). Requires Share on the entity. */
+    export async function grantPermission(entityId: string, body: any): Promise<any> {
+      let url = `/domains/grants/${entityId}`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+
+    /** Revokes 'permission' from 'group' on a registry entity; omitting 'permission' revokes all four common permissions for that group. Requires Share on the entity. */
+    export async function revokePermission(entityId: string, options?: {group?: string, permission?: string}): Promise<any> {
+      let url = `/domains/grants/${entityId}`;
+      const params = new URLSearchParams();
+      if (options?.group !== undefined) params.set('group', String(options.group));
+      if (options?.permission !== undefined) params.set('permission', String(options.permission));
+      if (params.toString()) url += '?' + params.toString();
+      return _fetch(url, {method: 'DELETE'});
+    }
+
     /** Output format is selected by the spec's 'format': JSON rows (default) or a d42 binary DataFrame (pattern: TablesRouter.getTableData); unknown formats are rejected by the spec parse (400). */
     export async function queryRows(schema: string, table: string, spec: any): Promise<any> {
       let url = `/domains/${schema}/${table}/query`;
