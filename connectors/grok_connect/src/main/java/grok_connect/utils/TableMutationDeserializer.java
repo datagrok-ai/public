@@ -14,7 +14,10 @@ import java.lang.reflect.Type;
 public class TableMutationDeserializer implements JsonDeserializer<TableMutation> {
     @Override
     public TableMutation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        String myType = jsonElement.getAsJsonObject().get("#type").getAsString();
+        JsonElement typeElement = jsonElement.getAsJsonObject().get("#type");
+        if (typeElement == null || typeElement.isJsonNull())
+            throw new JsonParseException("Missing #type in TableMutation JSON");
+        String myType = typeElement.getAsString();
         Class<? extends TableMutation> mutationClass = DataQueryDeserializer.getMutationClass(myType);
         if (mutationClass == null)
             throw new JsonParseException("Unknown TableMutation type: " + myType);
