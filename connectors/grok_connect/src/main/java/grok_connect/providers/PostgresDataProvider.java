@@ -31,6 +31,8 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
         descriptor.canBrowseSchema = true;
         descriptor.supportCatalogs = true;
+        descriptor.supportsUpsert = true;
+        descriptor.supportsGeneratedKeys = true;
         descriptor.defaultSchema = "public";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -76,6 +78,25 @@ public class PostgresDataProvider extends JdbcDataProvider {
                     "Enable TCP keepalive", new Prop()));
         }};
 
+    }
+
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        String tuple = "(" + String.join(", ", java.util.Collections.nCopies(m.columns.size(), "?")) + ")";
+        String values = String.join(", ", java.util.Collections.nCopies(rowCount, tuple));
+        String keyList = m.matchKeys.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        StringBuilder sql = new StringBuilder("INSERT INTO ").append(mutationTableName(m)).append(" (")
+                .append(colList).append(") VALUES ").append(values).append(" ON CONFLICT (").append(keyList).append(") ");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (nonKey.isEmpty())
+            sql.append("DO NOTHING");
+        else
+            sql.append("DO UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> addBrackets(c) + " = EXCLUDED." + addBrackets(c))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+        return sql.toString();
     }
 
     @Override

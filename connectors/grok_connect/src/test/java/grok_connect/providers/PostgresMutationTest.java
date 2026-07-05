@@ -75,7 +75,7 @@ class PostgresMutationTest extends ContainerizedProviderBaseTest {
 
     @AfterAll
     public void dropScratchTables() throws SQLException {
-        for (String table : new String[] {"mut_ins", "mut_upd", "mut_del", "mut_batch", "mut_full", "mut_probe", "mut_inj"})
+        for (String table : new String[] {"mut_ins", "mut_upd", "mut_del", "mut_batch", "mut_full", "mut_probe", "mut_inj", "mut_upsert"})
             execDirect("DROP TABLE IF EXISTS " + table);
     }
 
@@ -291,15 +291,40 @@ class PostgresMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(1, countDirect("mut_inj")); // probe insert never happened
     }
 
-    @DisplayName("Upsert: capability error until WO-4 lands")
+    @DisplayName("Upsert: seed 3, merge a 4-row payload (2 update + 2 insert by matchKeys), final state correct")
     @Test
-    public void upsert_capabilityError() {
+    public void upsert_seedAndMerge() throws Exception {
+        runDdl("CREATE TABLE mut_upsert (id int PRIMARY KEY, region text, amount double precision)");
+        execDirect("INSERT INTO mut_upsert VALUES (1, 'east', 10), (2, 'west', 20), (3, 'north', 30)");
         UpsertRows m = new UpsertRows();
-        m.tableName = "mut_ins";
+        m.tableName = "mut_upsert";
+        m.columns = Arrays.asList("id", "region", "amount");
+        m.columnTypes = Arrays.asList("int", "string", "double");
+        m.matchKeys = Arrays.asList("id");
+        m.rows = Arrays.asList(
+                Arrays.asList((Object) 1.0d, "east", 111.0d),   // update
+                Arrays.asList((Object) 2.0d, "west", 222.0d),   // update
+                Arrays.asList((Object) 4.0d, "south", 40.0d),   // insert
+                Arrays.asList((Object) 5.0d, "central", 50.0d));// insert
+        MutationResult result = runMutation(m);
+        Assertions.assertNull(result.errorMessage);
+        Assertions.assertEquals(4, result.affectedRows); // Postgres reports 1 per affected row
+        Assertions.assertEquals(5, countDirect("mut_upsert"));
+        Assertions.assertEquals(111.0d, ((Number) queryDirect("SELECT amount FROM mut_upsert WHERE id = 1").get(0)[0]).doubleValue());
+        Assertions.assertEquals(222.0d, ((Number) queryDirect("SELECT amount FROM mut_upsert WHERE id = 2").get(0)[0]).doubleValue());
+        Assertions.assertEquals(30.0d, ((Number) queryDirect("SELECT amount FROM mut_upsert WHERE id = 3").get(0)[0]).doubleValue()); // untouched
+        Assertions.assertEquals("south", queryDirect("SELECT region FROM mut_upsert WHERE id = 4").get(0)[0]);
+        Assertions.assertEquals("central", queryDirect("SELECT region FROM mut_upsert WHERE id = 5").get(0)[0]);
+    }
+
+    @DisplayName("Upsert: absent matchKeys is a structured validation error")
+    @Test
+    public void upsert_noMatchKeys_refused() {
+        UpsertRows m = new UpsertRows();
+        m.tableName = "mut_upsert";
         m.columns = Arrays.asList("id");
         m.columnTypes = Arrays.asList("int");
-        m.matchKeys = Arrays.asList("id");
         m.rows = Arrays.asList(Arrays.asList((Object) 1.0d));
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> runMutation(m));
+        Assertions.assertThrows(grok_connect.table_mutation.MutationValidationException.class, () -> runMutation(m));
     }
 }

@@ -27,6 +27,7 @@ import grok_connect.table_mutation.InsertRows;
 import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_mutation.UpdateRows;
+import grok_connect.table_mutation.UpsertRows;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.FieldPredicate;
 import grok_connect.table_query.GroupAggregation;
@@ -789,6 +790,74 @@ public abstract class JdbcDataProvider extends DataProvider {
             throw new MutationValidationException("DeleteRows without whereClauses requires allowFullTable");
         StringBuilder sql = new StringBuilder("DELETE FROM ").append(mutationTableName(m));
         appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
+        return sql.toString();
+    }
+
+    /**
+     * Dialect-specific INSERT-or-UPDATE for {@code rowCount} value tuples. The generic JDBC provider has
+     * no portable upsert — overridden per dialect (connector-writes WO-4); MutationRunner maps the
+     * {@link UnsupportedOperationException} to the structured capability error. {@code rowCount} is 1 for
+     * dialects executed via addBatch ({@link #upsertBatchRows}==1: Postgres/MySQL/Oracle) and the chunk
+     * size for MERGE-over-VALUES dialects (MS SQL, Snowflake).
+     */
+    public String upsertSql(UpsertRows m, int rowCount) {
+        throw new UnsupportedOperationException("Upsert is not supported for provider " + descriptor.type);
+    }
+
+    /**
+     * Number of value tuples emitted per upsert statement: 1 = single-row statements executed via
+     * addBatch (Postgres, MySQL, Oracle); &gt;1 = multi-row VALUES chunks executed one executeUpdate per
+     * chunk (MERGE-over-VALUES dialects). {@code columnCount} lets bound-parameter-limited dialects cap
+     * the chunk size (MS SQL: 2100-parameter limit).
+     */
+    public int upsertBatchRows(int columnCount) {
+        return 1;
+    }
+
+    protected void validateUpsertColumns(UpsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty columns list");
+        if (m.matchKeys == null || m.matchKeys.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty matchKeys list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        for (String key : m.matchKeys) {
+            validateMutationIdentifier(key);
+            if (!m.columns.contains(key))
+                throw new MutationValidationException("matchKey '" + key + "' must be present in columns");
+        }
+    }
+
+    protected List<String> upsertNonKeyColumns(UpsertRows m) {
+        List<String> nonKey = new ArrayList<>();
+        for (String col : m.columns)
+            if (!m.matchKeys.contains(col))
+                nonKey.add(col);
+        return nonKey;
+    }
+
+    private String valuesTuples(int columnCount, int rowCount) {
+        String tuple = "(" + String.join(", ", Collections.nCopies(columnCount, "?")) + ")";
+        return String.join(", ", Collections.nCopies(rowCount, tuple));
+    }
+
+    /** MERGE-over-VALUES upsert (MS SQL / Snowflake shape). {@code trailingSemicolon} for T-SQL's MERGE. */
+    protected String mergeValuesUpsertSql(UpsertRows m, int rowCount, boolean trailingSemicolon) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        String on = m.matchKeys.stream().map((k) -> "t." + addBrackets(k) + " = src." + addBrackets(k))
+                .collect(Collectors.joining(" AND "));
+        StringBuilder sql = new StringBuilder("MERGE INTO ").append(mutationTableName(m)).append(" AS t USING (VALUES ")
+                .append(valuesTuples(m.columns.size(), rowCount)).append(") AS src (").append(colList)
+                .append(") ON (").append(on).append(")");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (!nonKey.isEmpty())
+            sql.append(" WHEN MATCHED THEN UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> "t." + addBrackets(c) + " = src." + addBrackets(c)).collect(Collectors.joining(", ")));
+        sql.append(" WHEN NOT MATCHED THEN INSERT (").append(colList).append(") VALUES (")
+                .append(m.columns.stream().map((c) -> "src." + addBrackets(c)).collect(Collectors.joining(", ")))
+                .append(")");
+        if (trailingSemicolon)
+            sql.append(";");
         return sql.toString();
     }
 

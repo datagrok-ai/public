@@ -29,6 +29,8 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
         descriptor.commentStart = "-- ";
+        descriptor.supportsUpsert = true;
+        descriptor.supportsGeneratedKeys = true;
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("bool", Types.BOOL);
@@ -56,6 +58,27 @@ public class MySqlDataProvider extends JdbcDataProvider {
             put("json", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "std(#)", Types.dataFrameNumericTypes));
+    }
+
+    /**
+     * INSERT ... ON DUPLICATE KEY UPDATE. Caveat: MySQL matches against <b>any</b> unique key, not
+     * specifically {@code matchKeys} — if the table has no unique index the statement silently inserts
+     * duplicates instead of updating. {@code matchKeys} is still validated/required so the intent is
+     * explicit and the emitted UPDATE targets the non-key columns.
+     */
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        String tuple = "(" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
+        String values = String.join(", ", Collections.nCopies(rowCount, tuple));
+        List<String> nonKey = upsertNonKeyColumns(m);
+        String updates = nonKey.isEmpty()
+                ? addBrackets(m.columns.get(0)) + " = " + addBrackets(m.columns.get(0)) // no-op keeps the clause valid
+                : nonKey.stream().map((c) -> addBrackets(c) + " = VALUES(" + addBrackets(c) + ")")
+                        .collect(Collectors.joining(", "));
+        return "INSERT INTO " + mutationTableName(m) + " (" + colList + ") VALUES " + values
+                + " ON DUPLICATE KEY UPDATE " + updates;
     }
 
     @Override
