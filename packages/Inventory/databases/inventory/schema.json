@@ -1,0 +1,46 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "inventory",
+  "version": "1.0.0",
+  "tables": {
+    "items": {
+      "securityMode": "table",
+      "businessKey": ["sku"],
+      "friendlyName": "Items",
+      "description": "Warehouse items: relational core plus per-department jsonb property schemas.",
+      "columns": {
+        "sku": {"type": "string", "required": true, "unique": true, "description": "Stock keeping unit; the business key batch upserts merge by"},
+        "name": {"type": "string", "required": true},
+        "quantity": {"type": "int", "min": 0, "default": 0, "description": "Stock on hand"},
+        "location": {"type": "string"}
+      },
+      "schemas": ["chemistry", "procurement", "quality"]
+    },
+    "stock_movements": {
+      "securityMode": "master",
+      "delegate": "item_id",
+      "audit": false,
+      "friendlyName": "Stock movements",
+      "description": "High-churn movement log; audit is off deliberately (the movement IS the history).",
+      "columns": {
+        "item_id": {"type": "ref", "ref": "items", "onDelete": "cascade", "required": true},
+        "delta": {"type": "int", "required": true, "description": "Signed quantity change"},
+        "reason": {"type": "string", "choices": ["received", "shipped", "adjustment", "damaged", "returned"]},
+        "moved_on": {"type": "datetime"}
+      }
+    }
+  },
+  "propertySchemas": {
+    "chemistry": {
+      "cas_number": {"type": "string", "description": "CAS registry number"},
+      "hazard_class": {"type": "string", "choices": ["non-hazardous", "flammable", "corrosive", "toxic", "oxidizer"]}
+    },
+    "procurement": {
+      "unit_cost": {"type": "float", "min": 0},
+      "reorder_point": {"type": "int"}
+    },
+    "quality": {
+      "inspection_status": {"type": "string", "choices": ["pending", "passed", "failed", "quarantined"]}
+    }
+  }
+}
