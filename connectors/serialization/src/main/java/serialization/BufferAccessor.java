@@ -76,7 +76,7 @@ public class BufferAccessor {
         bufPos += 1;
     }
 
-    private void writeInt16(short value) {
+    void writeInt16(short value) {
         _ensureSpace(2);
         view.setInt16(bufPos, value);
         bufPos += 2;
@@ -266,5 +266,253 @@ public class BufferAccessor {
         _ensureSpace(bytes.length);
         System.arraycopy(bytes, 0, buf, bufPos, bytes.length);
         bufPos += bytes.length;
+    }
+
+    // ===================================================================
+    // Read half (mirror of the write methods; ports serialization.dart).
+    // ===================================================================
+
+    private static void _checkTypeCode(int typeCode) {
+        if ((typeCode & 0xF000) != TYPE)
+            throw new RuntimeException("Invalid type identifier: " + typeCode);
+    }
+
+    // Reads the previously saved type code and asserts its equality to [expectedTypeCode].
+    public void readTypeCode(int expectedTypeCode) {
+        int code = readUint16();
+        _checkTypeCode(code);
+        if (code != expectedTypeCode)
+            throw new RuntimeException("Type code mismatch. Read code " + code
+                    + ". Expected code " + expectedTypeCode);
+    }
+
+    public int readInt8() {
+        return view.getInt8(bufPos++);
+    }
+
+    public int readInt16() {
+        short v = view.getInt16(bufPos);
+        bufPos += 2;
+        return v;
+    }
+
+    public int readInt32() {
+        int v = view.getInt32(bufPos);
+        bufPos += 4;
+        return v;
+    }
+
+    public int readUint8() {
+        return view.getUint8(bufPos++);
+    }
+
+    public int readUint16() {
+        int v = view.getUint16(bufPos);
+        bufPos += 2;
+        return v;
+    }
+
+    // NOTE dart2js has no Int64 accessor, so int64 is encoded as a float64.
+    // Reader reads a double, rejects values above 2^53, and casts.
+    public long readInt64() {
+        double f = view.getFloat64(bufPos);
+        bufPos += 8;
+        if (f > 0x1FFFFFFFFFFFFFL)
+            throw new RuntimeException("Value too big");
+        return (long) f;
+    }
+
+    public float readFloat32() {
+        float v = view.getFloat32(bufPos);
+        bufPos += 4;
+        return v;
+    }
+
+    public double readFloat64() {
+        double v = view.getFloat64(bufPos);
+        bufPos += 8;
+        return v;
+    }
+
+    public String readString() {
+        byte[] bytes = readUint8List();
+        return bytes == null ? null : new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    public byte[] readUint8List() {
+        readTypeCode(TYPE_UINT_8_LIST);
+        int len = (int) readInt64();
+        if (len == -1)
+            return null;
+        byte[] list = new byte[len];
+        System.arraycopy(buf, bufPos, list, 0, len);
+        bufPos += len;
+        return list;
+    }
+
+    public byte[] readInt8List() {
+        readTypeCode(TYPE_INT_8_LIST);
+        int len = (int) readInt64();
+        if (len == -1)
+            return null;
+        byte[] list = new byte[len];
+        System.arraycopy(buf, bufPos, list, 0, len);
+        bufPos += len;
+        return list;
+    }
+
+    public short[] readInt16List() {
+        readTypeCode(TYPE_INT_16_LIST);
+        int len = (int) readInt64();
+        short[] list = new short[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getInt16(bufPos + i * 2);
+        bufPos += len * 2;
+        return list;
+    }
+
+    public short[] readUint16List() {
+        readTypeCode(TYPE_UINT_16_LIST);
+        int len = (int) readInt64();
+        short[] list = new short[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getInt16(bufPos + i * 2);
+        bufPos += len * 2;
+        return list;
+    }
+
+    public int[] readInt32List() {
+        readTypeCode(TYPE_INT_32_LIST);
+        int len = (int) readInt64();
+        int[] list = new int[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getInt32(bufPos + i * 4);
+        bufPos += len * 4;
+        return list;
+    }
+
+    public int[] readUint32List() {
+        readTypeCode(TYPE_UINT_32_LIST);
+        int len = (int) readInt64();
+        int[] list = new int[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getInt32(bufPos + i * 4);
+        bufPos += len * 4;
+        return list;
+    }
+
+    public float[] readFloat32List() {
+        readTypeCode(TYPE_FLOAT_32_LIST);
+        int len = (int) readInt64();
+        float[] list = new float[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getFloat32(bufPos + i * 4);
+        bufPos += len * 4;
+        return list;
+    }
+
+    public double[] readFloat64List() {
+        readTypeCode(TYPE_FLOAT_64_LIST);
+        int len = (int) readInt64();
+        double[] list = new double[len];
+        for (int i = 0; i < len; i++)
+            list[i] = view.getFloat64(bufPos + i * 8);
+        bufPos += len * 8;
+        return list;
+    }
+
+    // String list. Lengths are UTF-16 code-unit counts (NOT UTF-8 byte lengths):
+    // decode the whole byte region as one UTF-8 string, then slice by cumulative
+    // code-unit offsets (String.substring is UTF-16 in Java, as in Dart).
+    // A -1 length decodes to '' (also the string-column None slot).
+    public String[] readStringList() {
+        readTypeCode(TYPE_STRING_LIST);
+        String str = readString();
+        int[] lengths = readInt32List();
+        String[] list = new String[lengths.length];
+        int start = 0;
+        for (int n = 0; n < lengths.length; n++) {
+            int len = lengths[n];
+            if (len >= 0) {
+                list[n] = str.substring(start, start + len);
+                start += len;
+            } else
+                list[n] = "";
+        }
+        return list;
+    }
+
+    public Map<String, String> readStringMap() {
+        readTypeCode(TYPE_STRING_MAP);
+        int pairs = readInt32();
+        if (pairs == -1)
+            return null;
+        Map<String, String> map = new LinkedHashMap<>();
+        for (int i = 0; i < pairs; i++) {
+            String key = readString();
+            map.put(key, readString());
+        }
+        return map;
+    }
+
+    public byte[] readRawBytes(int length) {
+        byte[] list = new byte[length];
+        System.arraycopy(buf, bufPos, list, 0, length);
+        bufPos += length;
+        return list;
+    }
+
+    // Reads a Column: TYPE_COLUMN, name, typeName, tags, then encoder payload.
+    public Column<?> readColumn() {
+        readTypeCode(TYPE_COLUMN);
+        String colName = readString();
+        String colType = readString();
+        Map<String, String> tags = readStringMap();
+
+        Column<?> col = createColumn(colType, colName);
+        col.decode(this);
+        if (tags != null && !tags.isEmpty())
+            col.getTags().putAll(tags);
+
+        return col;
+    }
+
+    private static Column<?> createColumn(String type, String name) {
+        switch (type) {
+            case Types.INT:       return new IntColumn(name, 0);
+            case Types.FLOAT:     return new FloatColumn(name, 0);
+            case Types.BOOL:      return new BoolColumn(name, 0);
+            case Types.STRING:    return new StringColumn(name, 0);
+            case Types.DATE_TIME: return new DateTimeColumn(name, 0);
+            case Types.BIG_INT:   return new BigIntColumn(name, 0);
+            default:
+                throw new RuntimeException("Unknown column type for decoding: " + type);
+        }
+    }
+
+    // Reads a DataFrame, which can be null. When [offsets] is provided, seeks to
+    // each column's absolute offset before reading it.
+    public DataFrame readDataFrame(int[] offsets) {
+        readTypeCode(TYPE_DATA_FRAME);
+        long rowCount = readInt64();
+        if (rowCount == -1)
+            return null;
+
+        int colCount = (int) readInt64();
+        String name = readString();
+        Map<String, String> tags = readStringMap();
+
+        DataFrame df = new DataFrame();
+        df.name = name;
+        if (tags != null && !tags.isEmpty())
+            df.getTags().putAll(tags);
+
+        for (int i = 0; i < colCount; i++) {
+            if (offsets != null)
+                bufPos = offsets[i];
+            df.addColumn(readColumn());
+        }
+        df.rowCount = (int) rowCount;
+        return df;
     }
 }

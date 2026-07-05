@@ -6,6 +6,7 @@ public interface Column<T> extends Taggable {
     int getLength();
     String getType();
     void encode(BufferAccessor buf);
+    void decode(BufferAccessor buf);
     void add(T value);
     void addAll(T[] value);
     T get(int idx);

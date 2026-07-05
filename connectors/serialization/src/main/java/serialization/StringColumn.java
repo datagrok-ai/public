@@ -1,6 +1,7 @@
 package serialization;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,11 @@ public class StringColumn extends AbstractColumn<String> {
     private String[] data;
     private Integer[] idxs;
     private List<String> categories;
+
+    // Decoded categorical state (set by decode): resolve get(idx) via
+    // categories[catIndexes[idx]] WITHOUT re-categorizing / re-sorting.
+    private int[] catIndexes;
+    private boolean decoded;
 
     public StringColumn(String name) {
         super(name);
@@ -36,12 +42,15 @@ public class StringColumn extends AbstractColumn<String> {
     @Override
     public void empty() {
         length = 0;
+        decoded = false;
+        catIndexes = null;
         data = new String[initColumnSize];
         categorize();
     }
 
     @Override
     public void encode(BufferAccessor buf) {
+        materialize();
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
@@ -51,13 +60,35 @@ public class StringColumn extends AbstractColumn<String> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        if (id != 0)
+            throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");
+        String[] cats = buf.readStringList();
+        IntColumn intCol = new IntColumn("", 0);
+        intCol.decode(buf);
+        adoptDecoded(cats, (int[]) intCol.toArray());
+    }
+
+    // Adopts decoded categories + indices directly (no re-sort).
+    void adoptDecoded(String[] cats, int[] indices) {
+        categories = new ArrayList<>(Arrays.asList(cats));
+        catIndexes = indices;
+        length = indices.length;
+        decoded = true;
+        data = null;
+    }
+
+    @Override
     public void add(String value) {
+        materialize();
         ensureSpace(1);
         data[length++] = value;
     }
 
     @Override
     public void addAll(String[] values) {
+        materialize();
         ensureSpace(values.length);
         for (String value : values)
             data[length++] = value;
@@ -65,16 +96,24 @@ public class StringColumn extends AbstractColumn<String> {
 
     @Override
     public String get(int idx) {
-        return data[idx];
+        return decoded ? categories.get(catIndexes[idx]) : data[idx];
     }
 
     @Override
     public void set(int index, String value) {
+        materialize();
         data[index] = value;
     }
 
     @Override
     public long memoryInBytes() {
+        if (decoded) {
+            long size = 0;
+            for (String s : categories)
+                if (s != null)
+                    size += s.length();
+            return size * 2 + (long) catIndexes.length * 4;
+        }
         long size = 0;
         for (String s : data)
             if (s != null)
@@ -84,11 +123,18 @@ public class StringColumn extends AbstractColumn<String> {
 
     @Override
     public boolean isNone(int idx) {
-        return data[idx] == null || data[idx].equals("");
+        String v = decoded ? categories.get(catIndexes[idx]) : data[idx];
+        return v == null || v.equals("");
     }
 
     @Override
     public Object toArray() {
+        if (decoded) {
+            String[] arr = new String[length];
+            for (int i = 0; i < length; i++)
+                arr[i] = categories.get(catIndexes[i]);
+            return arr;
+        }
         return data;
     }
 
@@ -98,6 +144,19 @@ public class StringColumn extends AbstractColumn<String> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    // Rebuilds the flat [data] array from decoded categorical state so mutating /
+    // re-encoding paths keep working after a decode.
+    private void materialize() {
+        if (!decoded)
+            return;
+        String[] arr = new String[length];
+        for (int i = 0; i < length; i++)
+            arr[i] = categories.get(catIndexes[i]);
+        data = arr;
+        catIndexes = null;
+        decoded = false;
     }
 
     private void categorize() {

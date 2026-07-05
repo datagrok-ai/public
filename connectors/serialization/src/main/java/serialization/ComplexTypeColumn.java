@@ -40,6 +40,13 @@ public class ComplexTypeColumn extends AbstractColumn<Map<String, Object>> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        // Complex columns are expanded into concrete columns on write and never
+        // appear as such on the wire; there is nothing to decode here.
+        throw new UnsupportedOperationException("ComplexTypeColumn does not support decode");
+    }
+
+    @Override
     public void add(Map<String, Object> value) {
         data.add(value != null ? value : Collections.emptyMap());
         length++;
