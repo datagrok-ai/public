@@ -7,6 +7,7 @@
 import {toJs} from '../wrappers';
 import {IDartApi} from '../api/grok_api.g';
 import {Entity} from './entity';
+import dayjs from 'dayjs';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -48,4 +49,52 @@ export class DomainTable extends Entity {
 
   /** Whether writes leave an in-transaction audit trail. */
   get audit(): boolean { return api.grok_DomainTable_Get_Audit(this.dart); }
+}
+
+
+/** A single row of a {@link DomainTable}. Its semantic type is the row's entity
+ * type name, `'<schema>.<table>'` — the string an {@link ObjectHandler} keys on to
+ * override rendering per table (see Grit's `grit.issue` handler). */
+export class DomainRow {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Domain schema name (also the physical PostgreSQL schema). */
+  get schemaName(): string { return api.grok_DomainRow_Get_SchemaName(this.dart); }
+
+  /** Table name within the schema. */
+  get tableName(): string { return api.grok_DomainRow_Get_TableName(this.dart); }
+
+  /** Row entity type and semantic type: `'<schema>.<table>'`. */
+  get typeName(): string { return api.grok_DomainRow_Get_TypeName(this.dart); }
+
+  /** Display/addressing identity: business-key values joined by `'-'`, or the row id. */
+  get semValue(): string { return api.grok_DomainRow_Get_SemValue(this.dart); }
+
+  /** Raw row values keyed by wire column name (declared columns, jsonb keys, system fields). */
+  get values(): {[key: string]: any} { return toJs(api.grok_DomainRow_Get_Values(this.dart)); }
+
+  /** Row id (GUID) — the storage and security identity. */
+  get id(): string { return api.grok_DomainRow_Get_Id(this.dart); }
+
+  /** Optimistic-concurrency version. */
+  get version(): number { return api.grok_DomainRow_Get_Version(this.dart); }
+
+  /** Id of the user who last authored the row. */
+  get authorId(): string { return api.grok_DomainRow_Get_AuthorId(this.dart); }
+
+  get createdOn(): dayjs.Dayjs | null {
+    const d = api.grok_DomainRow_Get_CreatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
+
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_DomainRow_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
+
+  toString(): string { return this.semValue; }
 }

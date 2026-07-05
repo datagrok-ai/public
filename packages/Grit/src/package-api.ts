@@ -12,6 +12,17 @@ export namespace funcs {
     return await grok.functions.call('Grit:Info', {});
   }
 
+  export async function initGrit(): Promise<void> {
+    return await grok.functions.call('Grit:InitGrit', {});
+  }
+
+  /**
+  Custom rendering for grit.issue domain rows (status/priority badges, timeline)
+  */
+  export async function gritIssueHandler(): Promise<any> {
+    return await grok.functions.call('Grit:GritIssueHandler', {});
+  }
+
   /**
   GRok Issue Tracker — projects, issues, comments over entity-mapped domain schemas
   */

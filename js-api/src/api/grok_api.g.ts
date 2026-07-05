@@ -1208,6 +1208,16 @@ export interface IDartApi {
   grok_DomainTable_Get_SecurityMode(t: any): any;
   grok_DomainTable_Get_BusinessKey(t: any): any;
   grok_DomainTable_Get_Audit(t: any): any;
+  grok_DomainRow_Get_SchemaName(r: any): any;
+  grok_DomainRow_Get_TableName(r: any): any;
+  grok_DomainRow_Get_TypeName(r: any): any;
+  grok_DomainRow_Get_SemValue(r: any): any;
+  grok_DomainRow_Get_Values(r: any): any;
+  grok_DomainRow_Get_Id(r: any): any;
+  grok_DomainRow_Get_Version(r: any): any;
+  grok_DomainRow_Get_CreatedOn(r: any): any;
+  grok_DomainRow_Get_UpdatedOn(r: any): any;
+  grok_DomainRow_Get_AuthorId(r: any): any;
   grok_GetType(x: any): any;
   grok_EventData_Get_CausedBy(e: any): any;
   grok_EventData_Get_Sender(e: any): any;

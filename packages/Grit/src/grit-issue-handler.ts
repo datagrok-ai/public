@@ -1,0 +1,143 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {gritDb} from './generated/db';
+
+/** semType (= entity type) of `grit.issue` rows. */
+const ISSUE_TYPE = 'grit.issue';
+
+const statusColors: {[key: string]: string} = {
+  'open': '#1f8fff', 'in progress': '#e8912d', 'resolved': '#2a9d3a', 'closed': '#8b95a1',
+};
+const priorityColors: {[key: string]: string} = {
+  'low': '#8b95a1', 'medium': '#1f8fff', 'high': '#e8912d', 'critical': '#d9463f',
+};
+
+/** Injects the static badge presentation once; the per-badge color stays inline. */
+function ensureBadgeStyles(): void {
+  if (document.getElementById('grit-badge-styles') != null)
+    return;
+  const style = document.createElement('style');
+  style.id = 'grit-badge-styles';
+  style.textContent =
+    '.grit-badge{color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px;font-size:11px;}';
+  document.head.appendChild(style);
+}
+
+function badge(text: string, color: string): HTMLElement {
+  ensureBadgeStyles();
+  const b = ui.span([text], 'grit-badge');
+  b.style.backgroundColor = color;
+  return b;
+}
+
+/** Renders a `grit.issue` domain row throughout the platform — Domain View cards,
+ * the context panel, and the Entity View — overriding the generic Dart
+ * `DomainRowMeta` for this table only (other grit/plates tables keep the defaults).
+ * Registered at startup via {@link DG.ObjectHandler.register} (wins `forEntity`
+ * dispatch) and discoverable by semType through the `gritIssueHandler` package
+ * function (wins `forSemType('grit.issue')`). */
+export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
+  get type(): string { return ISSUE_TYPE; }
+  get name(): string { return 'Grit issue handler'; }
+
+  isApplicable(x: any): boolean {
+    if (x instanceof DG.DomainRow)
+      return x.typeName === ISSUE_TYPE;
+    if (x instanceof DG.SemanticValue)
+      return x.semType === ISSUE_TYPE ||
+        (x.value instanceof DG.DomainRow && x.value.typeName === ISSUE_TYPE);
+    return false;
+  }
+
+  private issueOf(x: DG.DomainRow | DG.SemanticValue): DG.DomainRow {
+    return x instanceof DG.SemanticValue ? x.value : x;
+  }
+
+  getCaption(x: DG.DomainRow): string { return this.issueOf(x).semValue; }
+
+  private badges(row: DG.DomainRow): HTMLElement[] {
+    const v = row.values;
+    const res: HTMLElement[] = [];
+    if (v.status != null)
+      res.push(badge(v.status, statusColors[v.status] ?? '#8b95a1'));
+    if (v.priority != null)
+      res.push(badge(v.priority, priorityColors[v.priority] ?? '#8b95a1'));
+    return res;
+  }
+
+  renderIcon(x: DG.DomainRow): HTMLElement { return ui.iconFA('bug'); }
+
+  renderMarkup(x: DG.DomainRow): HTMLElement {
+    const row = this.issueOf(x);
+    return ui.span([this.renderIcon(row), ui.label(row.values.title ?? row.semValue), ...this.badges(row)]);
+  }
+
+  renderTooltip(x: DG.DomainRow): HTMLElement {
+    const row = this.issueOf(x);
+    return ui.divV([
+      ui.divH([ui.label(row.values.title ?? row.semValue), ...this.badges(row)]),
+      ui.divText(row.values.description ?? ''),
+    ]);
+  }
+
+  renderCard(x: DG.DomainRow): HTMLElement {
+    const row = this.issueOf(x);
+    return ui.bind(x, ui.divV([
+      ui.divH([
+        ui.divText(row.semValue, {style: {fontWeight: 'bold'}}),
+        ...this.badges(row),
+      ]),
+      ui.divText(row.values.title ?? ''),
+    ], 'd4-gallery-item'));
+  }
+
+  renderView(x: DG.DomainRow): HTMLElement {
+    const row = this.issueOf(x);
+    const v = row.values;
+    const timeline = ui.divV([ui.loader()]);
+    this.buildTimeline(row).then((el) => ui.empty(timeline).appendChild(el)).catch(() => {});
+    return ui.divV([
+      ui.divH([ui.h1(row.semValue), ...this.badges(row)]),
+      ui.h2(v.title ?? ''),
+      ui.divText(v.description ?? ''),
+      ui.h3('Timeline'),
+      timeline,
+    ], 'grit-issue-view');
+  }
+
+  renderProperties(x: DG.DomainRow): HTMLElement {
+    const row = this.issueOf(x);
+    const v = row.values;
+    const timeline = ui.divV([ui.loader()]);
+    this.buildTimeline(row).then((el) => ui.empty(timeline).appendChild(el)).catch(() => {});
+    return ui.divV([
+      ui.divH([ui.h2(row.semValue), ...this.badges(row)]),
+      ui.tableFromMap({
+        'Title': v.title ?? '',
+        'Description': v.description ?? '',
+        'Status': v.status ?? '',
+        'Priority': v.priority ?? '',
+        'Project': v.project ?? '',
+      }),
+      ui.h3('Timeline'),
+      timeline,
+    ], 'grit-issue-properties');
+  }
+
+  private async buildTimeline(row: DG.DomainRow): Promise<HTMLElement> {
+    const users = new Map<string, string>();
+    for (const u of await grok.dapi.users.list())
+      users.set(u.id, u.friendlyName);
+    const audit = await gritDb.issue.audit(row.id);
+    if (audit.length === 0)
+      return ui.divText('No changes recorded.');
+    return ui.divV(audit.map((a: any) => {
+      const who = users.get(a.actor_id) ?? 'unknown';
+      const when = a.ts?.substring(0, 16).replace('T', ' ') ?? '';
+      const changes = a.op === 'update' && a.after != null ?
+        ': ' + Object.keys(a.after).map((k) => `${k} → ${a.after[k]}`).join(', ') : '';
+      return ui.divText(`${when}  ${who} — ${a.op}${changes}`);
+    }));
+  }
+}
