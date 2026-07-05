@@ -371,12 +371,14 @@ public class BufferAccessor {
         return list;
     }
 
-    public short[] readUint16List() {
+    // Unsigned 16-bit list: values >= 0x8000 must NOT sign-extend, so read via
+    // the unsigned accessor into an int[] (mask & 0xFFFF).
+    public int[] readUint16List() {
         readTypeCode(TYPE_UINT_16_LIST);
         int len = (int) readInt64();
-        short[] list = new short[len];
+        int[] list = new int[len];
         for (int i = 0; i < len; i++)
-            list[i] = view.getInt16(bufPos + i * 2);
+            list[i] = view.getUint16(bufPos + i * 2);
         bufPos += len * 2;
         return list;
     }

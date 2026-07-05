@@ -266,7 +266,71 @@ public class D42ReaderRoundTripTest {
         byte[] bytes = buildFullFrame().toByteArray();
         byte[] truncated = new byte[bytes.length / 2];
         System.arraycopy(bytes, 0, truncated, 0, truncated.length);
-        Assertions.assertThrows(RuntimeException.class,
+        RuntimeException e = Assertions.assertThrows(RuntimeException.class,
                 () -> DataFrame.fromByteArray(truncated));
+        Assertions.assertFalse(e instanceof IndexOutOfBoundsException, "must not leak a raw OOB");
+    }
+
+    // A truncated multi-table blob must fail cleanly from TablesBlob.fromByteArray +
+    // getTable(0), not leak an ArrayIndexOutOfBoundsException with a garbage index.
+    @Test
+    public void testTruncatedMultiTableBlobThrowsCleanException() {
+        DataFrame a = new DataFrame();
+        a.name = "a";
+        a.addColumn(new IntColumn("ints", INTS));
+        DataFrame b = new DataFrame();
+        b.name = "b";
+        b.addColumn(new StringColumn("strs", STRS));
+
+        byte[] bytes = new TablesBlob(new DataFrame[]{a, b}).toByteArray();
+        byte[] truncated = new byte[bytes.length / 2];
+        System.arraycopy(bytes, 0, truncated, 0, truncated.length);
+
+        RuntimeException e = Assertions.assertThrows(RuntimeException.class,
+                () -> TablesBlob.fromByteArray(truncated).getTable(0));
+        Assertions.assertFalse(e instanceof IndexOutOfBoundsException, "must not leak a raw OOB");
+    }
+
+    // Guards the highest-risk change in WO-1: a default float column must encode as
+    // id 1 (raw32) and round-trip single-precision; only double64() emits id 5.
+    // A regression flipping the default to id 5 would silently alter query-result
+    // serialization platform-wide.
+    @Test
+    public void testFloatDefaultEncoderPathIsId1() {
+        FloatColumn f = new FloatColumn("f", new Float[]{1.5F, -2.25F, null});
+        BufferAccessor buf = new BufferAccessor();
+        f.encode(buf);
+        Assertions.assertEquals(1, new BufferAccessor(buf.toUint8List()).readInt32(),
+                "default float column must encode as id 1 (raw32)");
+
+        FloatColumn d = FloatColumn.double64("d", new Double[]{1.5, -2.25});
+        BufferAccessor buf2 = new BufferAccessor();
+        d.encode(buf2);
+        Assertions.assertEquals(5, new BufferAccessor(buf2.toUint8List()).readInt32(),
+                "double64 column must encode as id 5 (raw64)");
+
+        // Default float round-trips single precision.
+        DataFrame df = new DataFrame();
+        df.name = "f";
+        df.addColumn(new FloatColumn("f", new Float[]{1.5F, -2.25F, null}));
+        FloatColumn decoded = (FloatColumn) DataFrame.fromByteArray(df.toByteArray()).getColumn("f");
+        Assertions.assertFalse(decoded.isDoublePrecision());
+        Assertions.assertEquals(1.5F, decoded.get(0), 0.0F);
+        Assertions.assertTrue(decoded.isNone(2));
+    }
+
+    // readUint16List must be unsigned: values >= 0x8000 read back as 32768..65535,
+    // not sign-extended negatives.
+    @Test
+    public void testReadUint16ListIsUnsigned() {
+        BufferAccessor buf = new BufferAccessor();
+        buf.writeInt16((short) BufferAccessor.TYPE_UINT_16_LIST); // type code
+        buf.writeInt64(3);                                        // count
+        buf.writeInt16((short) 0xFFFF);
+        buf.writeInt16((short) 0x8000);
+        buf.writeInt16((short) 0x1234);
+
+        int[] r = new BufferAccessor(buf.toUint8List()).readUint16List();
+        Assertions.assertArrayEquals(new int[]{0xFFFF, 0x8000, 0x1234}, r);
     }
 }
