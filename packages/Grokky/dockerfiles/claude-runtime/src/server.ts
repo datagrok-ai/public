@@ -9,7 +9,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query, createSdkMcpServer, tool as sdkTool} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import {z} from 'zod/v4';
-import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName, ImageAttachment} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles} from './sync/orchestrator';
@@ -166,11 +166,20 @@ function getSession(clientId: string): SessionRecord | undefined {
   return rec;
 }
 
-async function* promptStream(message: string) {
+async function* promptStream(message: string, images?: ImageAttachment[]) {
+  const content = images?.length ?
+    [
+      ...images.map((img) => ({
+        type: 'image' as const,
+        source: {type: 'base64' as const, media_type: img.mediaType, data: img.data},
+      })),
+      ...(message ? [{type: 'text' as const, text: message}] : []),
+    ] :
+    message;
   yield {
     type: 'user' as const,
     session_id: '',
-    message: {role: 'user' as const, content: message},
+    message: {role: 'user' as const, content},
     parent_tool_use_id: null,
   };
 }
@@ -540,7 +549,8 @@ function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
   let message = data.message ?? '';
-  if (!message)
+  const images = data.images;
+  if (!message && !images?.length)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
   if (activeQueries.has(sid))
     return emit(ws, {type: 'busy', sessionId: sid});
@@ -586,7 +596,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       return {behavior: 'allow' as const, updatedInput: input};
     };
     const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
-    const q = query({prompt: promptStream(message), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
+    const q = query({prompt: promptStream(message, images), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
     active.queryHandle = q;
     for await (const event of q) {
       if (abortController.signal.aborted)

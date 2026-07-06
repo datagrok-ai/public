@@ -36,10 +36,16 @@ export const ClaudeModel = {
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
+export interface ImageAttachment {
+  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+  data: string;
+}
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
   message: string;
+  images?: ImageAttachment[];
   apiKey?: string;
   mcpServerUrl?: string;
   outputSchema?: object;
